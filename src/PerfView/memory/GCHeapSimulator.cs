@@ -20,11 +20,15 @@ namespace PerfView
     /// </summary>
     public class GCHeapSimulators : IEnumerable<GCHeapSimulator>
     {
-        public GCHeapSimulators(TraceLog traceLog, TraceEventDispatcher source, MutableTraceEventStackSource stackSource)
+        public GCHeapSimulators(TraceLog traceLog, TraceEventDispatcher source, MutableTraceEventStackSource stackSource, TextWriter log)
         {
             m_simulators = new GCHeapSimulator[traceLog.Processes.Count];
             m_source = source;
             m_stackSource = stackSource;
+            m_log = log;
+            
+            // Save a symbol resolver for this trace log.
+            s_typeNameSymbolResolvers[traceLog.FilePath] = new TypeNameSymbolResolver(traceLog.FilePath, log);
 
             var etwClrProfileTraceEventParser = new ETWClrProfilerTraceEventParser(source);
             etwClrProfileTraceEventParser.ClassIDDefintion += CheckForNewProcess;
@@ -43,9 +47,14 @@ namespace PerfView
             {
                 var ret = m_simulators[(int)process.ProcessIndex];
                 if (ret == null)
-                    m_simulators[(int)process.ProcessIndex] = ret = CreateNewSimulator(process.ProcessID);
+                    m_simulators[(int)process.ProcessIndex] = ret = CreateNewSimulator(process);
                 return ret;
             }
+        }
+
+        internal static Dictionary<string, TypeNameSymbolResolver> TypeNameSymbolResolvers
+        {
+            get { return s_typeNameSymbolResolvers; }
         }
 
         /// <summary>
@@ -67,13 +76,13 @@ namespace PerfView
             if (process != null)
             {
                 if (m_simulators[(int)process.ProcessIndex] == null)
-                    m_simulators[(int)process.ProcessIndex] = CreateNewSimulator(process.ProcessID);
+                    m_simulators[(int)process.ProcessIndex] = CreateNewSimulator(process);
             }
         }
 
-        GCHeapSimulator CreateNewSimulator(int processID)
+        GCHeapSimulator CreateNewSimulator(TraceProcess process)
         {
-            var ret = new GCHeapSimulator(m_source, processID, m_stackSource, UseOnlyAllocTicks);
+            var ret = new GCHeapSimulator(m_source, process, m_stackSource, m_log, UseOnlyAllocTicks);
             if (OnNewGCHeapSimulator != null)
                 OnNewGCHeapSimulator(ret);
             return ret;
@@ -83,6 +92,11 @@ namespace PerfView
 
         GCHeapSimulator[] m_simulators;
         MutableTraceEventStackSource m_stackSource;
+        TextWriter m_log;
+
+        // Map of FilePath to symbol resolvers.
+        static Dictionary<string, TypeNameSymbolResolver> s_typeNameSymbolResolvers = new Dictionary<string, TypeNameSymbolResolver>();
+
         IEnumerator<GCHeapSimulator> IEnumerable<GCHeapSimulator>.GetEnumerator()
         {
             foreach (var simulator in m_simulators)
@@ -117,10 +131,17 @@ namespace PerfView
         /// either the etwClrProfiler or GCSampledObjectAllocation as allocation events (so you can reliably 
         /// get a coarse sampled simulation independent of what other events are in the trace).  
         /// </summary>
-        public GCHeapSimulator(TraceEventDispatcher source, int processID, MutableTraceEventStackSource stackSource, bool useOnlyAllocationTicks=false)
+        public GCHeapSimulator(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource, TextWriter log, bool useOnlyAllocationTicks=false)
         {
-            m_processID = processID;
+            m_processID = process.ProcessID;
+            m_process = process;
             m_pointerSize = 4;          // We guess this,  It is OK for this to be wrong.
+            m_typeNameSymbolResolver =
+            m_typeNameSymbolResolver = GCHeapSimulators.TypeNameSymbolResolvers[process.Log.FilePath];
+            if (m_typeNameSymbolResolver == null)
+            {
+                m_typeNameSymbolResolver = GCHeapSimulators.TypeNameSymbolResolvers[process.Log.FilePath] = new TypeNameSymbolResolver(process.Log.FilePath, log);
+            }
 
             m_ObjsInGen = new Dictionary<Address, GCHeapSimulatorObject>[4];   // generation 0-2 + 1 for gen 2    
             for (int i = 0; i < m_ObjsInGen.Length; i++)
@@ -466,9 +487,20 @@ namespace PerfView
             if (data.ProcessID != m_processID)
                 return;
 
-            // Log the type ID to type name mapping.  
+            // Check to see if we have cached type info. 
             var typeName = data.TypeName;
-            m_classNamesAsFrames[data.TypeID] = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
+            if (string.IsNullOrEmpty(typeName) && !m_classNamesAsFrames.ContainsKey(data.TypeID))
+            {
+                // Attempt to resolve the type name.
+                TraceLoadedModule module = m_process.LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                if (module != null)
+                {
+                    // Resolve the type name.
+                    typeName = m_typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                }
+                TypeInfo typeInfo = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
+                m_classNamesAsFrames[data.TypeID] = typeInfo;
+            }
 
             // Support for old versions of this event
             long alloc = data.AllocationAmount64;
@@ -571,8 +603,10 @@ namespace PerfView
 
         Dictionary<Address, GCHeapSimulatorObject>[] m_ObjsInGen;
         MutableTraceEventStackSource m_stackSource;
+        TypeNameSymbolResolver m_typeNameSymbolResolver;
 
         int m_processID;
+        TraceProcess m_process;
         int m_pointerSize;                  // Size of a pointer for the process (4 or 8).  Note it may be 4 when it should be 8 if some events are dropped.  
         int m_condemedGenerationNum = 0;
         double m_lastAllocTimeRelativeMSec;
@@ -589,7 +623,7 @@ namespace PerfView
         // Stuff set at allocation and never changed.  
         public double AllocationTimeRelativeMSec;       // We guarantee uniqueness of these timestamps, so it can be used as durable object ID
         public StackSourceCallStackIndex AllocStack;    // This is the stack at the allocation point
-        public StackSourceFrameIndex ClassFrame;        // This identifies the class being allocated.  
+        public StackSourceFrameIndex ClassFrame;        // This identifies the class being allocated.
         public int Size;                                // This is the size of the object being allocated on this particular event.  
         public int RepresentativeSize;                  // If sampling is on, this sample may represent many allocations. This is the sum of the sizes of all those allocations.  
         // If sampling is off this is the same as Size.  

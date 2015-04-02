@@ -2582,7 +2582,7 @@ namespace PerfView
             }
             else if (streamName == "GC Heap Alloc Ignore Free")
             {
-                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource);
+                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
                 gcHeapSimulators.OnNewGCHeapSimulator = delegate(GCHeapSimulator newHeap)
                 {
                     newHeap.OnObjectCreate += delegate(Address objAddress, GCHeapSimulatorObject objInfo)
@@ -2600,7 +2600,7 @@ namespace PerfView
             }
             else if (streamName.StartsWith("GC Heap Net Mem"))
             {
-                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource);
+                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
                 if (streamName == "GC Heap Net Mem (Coarse Sampling)")
                 {
                     gcHeapSimulators.UseOnlyAllocTicks = true;
@@ -2632,7 +2632,7 @@ namespace PerfView
             }
             else if (streamName == "Gen 2 Object Deaths")
             {
-                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource);
+                var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
                 gcHeapSimulators.OnNewGCHeapSimulator = delegate(GCHeapSimulator newHeap)
                 {
                     newHeap.OnObjectDestroy += delegate(double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
@@ -2652,18 +2652,31 @@ namespace PerfView
             }
             else if (streamName == "GC Heap Alloc Ignore Free (Coarse Sampling)")
             {
+                TypeNameSymbolResolver typeNameSymbolResolver = new TypeNameSymbolResolver(FilePath, log);
+
                 bool seenBadAllocTick = false;
 
                 eventSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData data)
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-
+                    
                     var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
 
                     var typeName = data.TypeName;
+                    if (string.IsNullOrEmpty(typeName))
+                    {
+                        // Attempt to resolve the type name.
+                        TraceLoadedModule module = data.Process().LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                        if (module != null)
+                        {
+                            // Resolve the type name.
+                            typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                        }
+                    }
+
                     if (typeName.Length > 0)
                     {
-                        var nodeIndex = stackSource.Interner.FrameIntern("Type " + data.TypeName);
+                        var nodeIndex = stackSource.Interner.FrameIntern("Type " + typeName);
                         stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
                     }
 
@@ -2714,7 +2727,7 @@ namespace PerfView
             else if (streamName == "Pinning At GC Time")
             {
                 // Wire up the GC heap simulations.  
-                GCHeapSimulators gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource);
+                GCHeapSimulators gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
 
                 // Keep track of the current GC per process 
                 var curGCGen = new int[eventLog.Processes.Count];
@@ -3041,12 +3054,12 @@ namespace PerfView
             }
             else if (streamName == "Heap Snapshot Pinning")
             {
-                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample);
+                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample, log);
                 pinnedObjectAnalyzer.Execute(GCPinnedObjectViewType.PinnedHandles);
             }
             else if (streamName == "Heap Snapshot Pinned Object Allocation")
             {
-                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample);
+                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample, log);
                 pinnedObjectAnalyzer.Execute(GCPinnedObjectViewType.PinnedObjectAllocations);
             }
             else if (streamName == "CCW Ref Count")
@@ -5726,7 +5739,39 @@ namespace PerfView
     /// </summary>
     class TypeNameSymbolResolver
     {
+        public enum TypeNameOptions
+        {
+            None,
+            StripModuleName,
+        }
+
         public TypeNameSymbolResolver(string filePath, TextWriter log) { m_filePath = filePath; m_log = log; }
+
+        public string ResolveTypeName(int typeID, TraceLoadedModule module, TypeNameOptions options = TypeNameOptions.None)
+        {
+            Module mod = new Module(module.ImageBase);
+            mod.BuildTime = module.ModuleFile.BuildTime;
+            mod.Path = module.ModuleFile.FilePath;
+            mod.PdbAge = module.ModuleFile.PdbAge;
+            mod.PdbGuid = module.ModuleFile.PdbSignature;
+            mod.PdbName = module.ModuleFile.PdbName;
+            mod.Size = module.ModuleFile.ImageSize;
+
+            string typeName = ResolveTypeName(typeID, mod);
+
+            // Trim the module from the type name if requested.
+            if (options == TypeNameOptions.StripModuleName && !string.IsNullOrEmpty(typeName))
+            {
+                // Strip off the module name if present.
+                string[] typeNameParts = typeName.Split(new char[] { '!' }, 2);
+                if (typeNameParts.Length == 2)
+                {
+                    typeName = typeNameParts[1];
+                }
+            }
+
+            return typeName;
+        }
 
         public string ResolveTypeName(int typeID, Graphs.Module module)
         {
@@ -5741,7 +5786,11 @@ namespace PerfView
                 return null;
             }
 
-            if (m_lastModule != module)
+            // We check the PDB age and GUID as a proxy for comparing the module itself.
+            // This is because the module is per-process, and in a trace where there are many
+            // processes of the same application, we end up creating many symbol modules which seems
+            // to create memory leaks and takes a very long time to resolve symbols.
+            if(!(m_lastModule != null && module != null && m_lastModule.PdbGuid == module.PdbGuid && m_lastModule.PdbAge == module.PdbAge))
             {
                 m_lastModule = module;
                 m_lastSymModule = null;
