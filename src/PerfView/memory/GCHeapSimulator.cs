@@ -43,7 +43,7 @@ namespace PerfView
             {
                 var ret = m_simulators[(int)process.ProcessIndex];
                 if (ret == null)
-                    m_simulators[(int)process.ProcessIndex] = ret = CreateNewSimulator(process.ProcessID);
+                    m_simulators[(int)process.ProcessIndex] = ret = CreateNewSimulator(process);
                 return ret;
             }
         }
@@ -52,6 +52,21 @@ namespace PerfView
         /// If you wish to get control when a new Heap Simulator is activated, set this.   
         /// </summary>
         public Action<GCHeapSimulator> OnNewGCHeapSimulator;
+
+        /// <summary>
+        /// Update unresolved type names.
+        /// </summary>
+        public void ResolveUnresolvedTypeNames(ProjectNTypeNameResolver typeNameResolver)
+        {
+            for (int i = 0; i < m_simulators.Length; i++)
+            {
+                GCHeapSimulator heapSimulator = m_simulators[i];
+                if (heapSimulator != null)
+                {
+                    heapSimulator.UpdateUnresolvedTypeNames(typeNameResolver);
+                }
+            }
+        }
 
         #region private
 
@@ -67,13 +82,13 @@ namespace PerfView
             if (process != null)
             {
                 if (m_simulators[(int)process.ProcessIndex] == null)
-                    m_simulators[(int)process.ProcessIndex] = CreateNewSimulator(process.ProcessID);
+                    m_simulators[(int)process.ProcessIndex] = CreateNewSimulator(process);
             }
         }
 
-        GCHeapSimulator CreateNewSimulator(int processID)
+        GCHeapSimulator CreateNewSimulator(TraceProcess process)
         {
-            var ret = new GCHeapSimulator(m_source, processID, m_stackSource, UseOnlyAllocTicks);
+            var ret = new GCHeapSimulator(m_source, process, m_stackSource, UseOnlyAllocTicks);
             if (OnNewGCHeapSimulator != null)
                 OnNewGCHeapSimulator(ret);
             return ret;
@@ -117,15 +132,17 @@ namespace PerfView
         /// either the etwClrProfiler or GCSampledObjectAllocation as allocation events (so you can reliably 
         /// get a coarse sampled simulation independent of what other events are in the trace).  
         /// </summary>
-        public GCHeapSimulator(TraceEventDispatcher source, int processID, MutableTraceEventStackSource stackSource, bool useOnlyAllocationTicks=false)
+        public GCHeapSimulator(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource, bool useOnlyAllocationTicks=false)
         {
-            m_processID = processID;
+            m_processID = process.ProcessID;
+            m_processIndex = process.ProcessIndex;
             m_pointerSize = 4;          // We guess this,  It is OK for this to be wrong.
 
             m_ObjsInGen = new Dictionary<Address, GCHeapSimulatorObject>[4];   // generation 0-2 + 1 for gen 2    
             for (int i = 0; i < m_ObjsInGen.Length; i++)
                 m_ObjsInGen[i] = new Dictionary<Address, GCHeapSimulatorObject>(10000);        // Stays in small object heap 
             m_classNamesAsFrames = new Dictionary<ulong, TypeInfo>(500);
+            m_unresolvedClassNamesAsFrames = new Dictionary<ulong, TypeInfo>(500);
             m_stackSource = stackSource;
 
             AllocateObject = () => new GCHeapSimulatorObject();
@@ -240,6 +257,25 @@ namespace PerfView
                 for (int i = 2; 0 <= i; --i)
                     foreach (var keyValue in m_ObjsInGen[i])
                         yield return keyValue;
+            }
+        }
+
+        /// <summary>
+        /// Resolve any unresolved type names using the specified resolver.
+        /// </summary>
+        internal void UpdateUnresolvedTypeNames(ProjectNTypeNameResolver typeNameResolver)
+        {
+            foreach (KeyValuePair<ulong, TypeInfo> info in m_unresolvedClassNamesAsFrames)
+            {
+                ulong typeID = info.Key;
+                TypeInfo typeInfo = info.Value;
+
+                string typeName = typeNameResolver.ResolveTypeName(m_processIndex, typeID);
+                if (!string.IsNullOrEmpty(typeName))
+                {
+                    typeInfo.TypeName = typeName;
+                    StackSource.Interner.UpdateFrameName(typeInfo.FrameIdx, "Type " + typeName);
+                }
             }
         }
 
@@ -468,7 +504,19 @@ namespace PerfView
 
             // Log the type ID to type name mapping.  
             var typeName = data.TypeName;
-            m_classNamesAsFrames[data.TypeID] = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
+            if (string.IsNullOrEmpty(typeName))
+            {
+                typeName = data.ProcessID.ToString() + data.TypeID.ToString();
+            }
+            TypeInfo typeInfo = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
+            m_classNamesAsFrames[data.TypeID] = typeInfo;
+
+            // Save the information required to resolve the typename once
+            // the event stream has been processed.
+            if(string.IsNullOrEmpty(data.TypeName))
+            {
+                m_unresolvedClassNamesAsFrames[data.TypeID] = typeInfo;
+            }
 
             // Support for old versions of this event
             long alloc = data.AllocationAmount64;
@@ -562,6 +610,7 @@ namespace PerfView
         // Fields
         ulong m_currentHeapSize = 0;
         Dictionary<ulong, TypeInfo> m_classNamesAsFrames;
+        Dictionary<ulong, TypeInfo> m_unresolvedClassNamesAsFrames;
 
         struct TypeInfo
         {
@@ -573,6 +622,7 @@ namespace PerfView
         MutableTraceEventStackSource m_stackSource;
 
         int m_processID;
+        ProcessIndex m_processIndex;
         int m_pointerSize;                  // Size of a pointer for the process (4 or 8).  Note it may be 4 when it should be 8 if some events are dropped.  
         int m_condemedGenerationNum = 0;
         double m_lastAllocTimeRelativeMSec;
@@ -589,7 +639,7 @@ namespace PerfView
         // Stuff set at allocation and never changed.  
         public double AllocationTimeRelativeMSec;       // We guarantee uniqueness of these timestamps, so it can be used as durable object ID
         public StackSourceCallStackIndex AllocStack;    // This is the stack at the allocation point
-        public StackSourceFrameIndex ClassFrame;        // This identifies the class being allocated.  
+        public StackSourceFrameIndex ClassFrame;        // This identifies the class being allocated.
         public int Size;                                // This is the size of the object being allocated on this particular event.  
         public int RepresentativeSize;                  // If sampling is on, this sample may represent many allocations. This is the sum of the sizes of all those allocations.  
         // If sampling is off this is the same as Size.  

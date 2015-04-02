@@ -2600,6 +2600,8 @@ namespace PerfView
             }
             else if (streamName.StartsWith("GC Heap Net Mem"))
             {
+                var typeNameResolver = new ProjectNTypeNameResolver(eventSource, log, FilePath);
+
                 var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource);
                 if (streamName == "GC Heap Net Mem (Coarse Sampling)")
                 {
@@ -2628,6 +2630,7 @@ namespace PerfView
                     };
                 };
                 eventSource.Process();
+                gcHeapSimulators.ResolveUnresolvedTypeNames(typeNameResolver);
                 stackSource.DoneAddingSamples();
             }
             else if (streamName == "Gen 2 Object Deaths")
@@ -2653,18 +2656,31 @@ namespace PerfView
             else if (streamName == "GC Heap Alloc Ignore Free (Coarse Sampling)")
             {
                 bool seenBadAllocTick = false;
+                var typeNameResolver = new ProjectNTypeNameResolver(eventSource, log, FilePath);
+                List<UnresolvedTypeInfo> unresolvedTypes = new List<UnresolvedTypeInfo>();
 
                 eventSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData data)
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    
 
                     var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
 
                     var typeName = data.TypeName;
-                    if (typeName.Length > 0)
+                    if (string.IsNullOrEmpty(typeName))
                     {
-                        var nodeIndex = stackSource.Interner.FrameIntern("Type " + data.TypeName);
-                        stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
+                        // Generate a unique string so that the interner generates a unique frame index that we can update with the resolved type name.
+                        typeName = data.ProcessID.ToString() + data.TypeID.ToString();
+                    }
+
+                    var nodeIndex = stackSource.Interner.FrameIntern("Type " + typeName);
+                    stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
+
+                    if (string.IsNullOrEmpty(data.TypeName))
+                    {
+                        // Save the information required to resolve the type name after we've finished
+                        // processing the event stream.
+                        unresolvedTypes.Add(new UnresolvedTypeInfo() { TypeID = data.TypeID, ProcessIndex = data.Process().ProcessIndex, FrameIdx = nodeIndex });
                     }
 
                     sample.Metric = data.GetAllocAmount(ref seenBadAllocTick);
@@ -2672,7 +2688,7 @@ namespace PerfView
                     if (data.AllocationKind == GCAllocationKind.Large)
                     {
 
-                        var nodeIndex = stackSource.Interner.FrameIntern("LargeObject");
+                        nodeIndex = stackSource.Interner.FrameIntern("LargeObject");
                         stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
                     }
 
@@ -2681,6 +2697,16 @@ namespace PerfView
                 };
                 eventSource.Process();
                 m_extraTopStats = "Sampled only 100K bytes";
+
+                // Resolve unresolved type names.
+                foreach (UnresolvedTypeInfo typeInfo in unresolvedTypes)
+                {
+                    string typeName = typeNameResolver.ResolveTypeName(typeInfo.ProcessIndex, typeInfo.TypeID);
+                    if (!string.IsNullOrEmpty(typeName))
+                    {
+                        stackSource.Interner.UpdateFrameName(typeInfo.FrameIdx, "Type " + typeName);
+                    }
+                }
             }
             else if (streamName == "Exceptions")
             {
@@ -4983,6 +5009,24 @@ namespace PerfView
         #endregion
     }
 
+    class UnresolvedTypeInfo
+    {
+        /// <summary>
+        /// The process index.
+        /// </summary>
+        public ProcessIndex ProcessIndex { get; set; }
+        
+        /// <summary>
+        /// The type ID.
+        /// </summary>
+        public Address TypeID { get; set; }
+        
+        /// <summary>
+        /// The frame index associated with the type node.
+        /// </summary>
+        public StackSourceFrameIndex FrameIdx { get; set; }
+    }
+
     class WTPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "CDB WT calls"; } }
@@ -5741,7 +5785,11 @@ namespace PerfView
                 return null;
             }
 
-            if (m_lastModule != module)
+            // We check the PDB age and GUID as a proxy for comparing the module itself.
+            // This is because the module is per-process, and in a trace where there are many
+            // processes of the same application, we end up creating many symbol modules which seems
+            // to create memory leaks and takes a very long time to resolve symbols.
+            if(!(m_lastModule != null && module != null && m_lastModule.PdbGuid == module.PdbGuid && m_lastModule.PdbAge == module.PdbAge))
             {
                 m_lastModule = module;
                 m_lastSymModule = null;

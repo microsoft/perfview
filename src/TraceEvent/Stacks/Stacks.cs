@@ -1018,7 +1018,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         ///  Allows an existing frame to be updated in place (thus all references to the old name go to the new name).  
         /// </summary>
-        internal void UpdateFrameName(StackSourceFrameIndex frameIndex, string newName)
+        public void UpdateFrameName(StackSourceFrameIndex frameIndex, string newName)
         {
             int relFrameIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(relFrameIndex >= 0);

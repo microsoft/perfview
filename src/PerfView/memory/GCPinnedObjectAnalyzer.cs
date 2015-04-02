@@ -213,7 +213,7 @@ namespace PerfView
                 eventDispatcher.StopProcessing();
             };
 
-            var heapWithPinningInfo = new PinningStackAnalysis(eventDispatcher, _ProcessID, _StackSource);
+            var heapWithPinningInfo = new PinningStackAnalysis(eventDispatcher, _TraceLog.Processes.GetProcess(_ProcessID, _TraceLog.SessionDuration.TotalMilliseconds), _StackSource);
             // Process the ETL file up until we detect that the heap snapshot was taken.
             eventDispatcher.Process();
 
@@ -487,8 +487,8 @@ namespace PerfView
     /// </summary>
     internal sealed class PinningStackAnalysis : GCHeapSimulator
     {
-        public PinningStackAnalysis(TraceEventDispatcher source, int processID, MutableTraceEventStackSource stackSource)
-            : base(source, processID, stackSource)
+        public PinningStackAnalysis(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource)
+            : base(source, process, stackSource)
         {
             var clrPrivateParser = new ClrPrivateTraceEventParser(source);
             clrPrivateParser.GCSetGCHandle += OnSetGCHandle;

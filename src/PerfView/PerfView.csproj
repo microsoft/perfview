@@ -259,6 +259,7 @@
     <Compile Include="PerfViewEventSource.cs" />
     <Compile Include="PerfViewTraceEventParser.cs" />
     <Compile Include="PinningGCHeapSimulatorObject.cs" />
+    <Compile Include="ProjectNTypeNameResolver.cs" />
     <Compile Include="Screenshot.cs" />
     <Compile Include="StateMachineFramework\ServerRequestComputer.cs" />
     <Compile Include="StackViewer\CallerCalleeView.xaml.cs">
