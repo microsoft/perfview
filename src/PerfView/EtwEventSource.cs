@@ -1,0 +1,866 @@
+﻿using EventSources;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using Triggers;
+using EventSource = EventSources.EventSource;
+
+namespace PerfView
+{
+    /// <summary>
+    /// The EventViewer takes a abstract EventSource and displays it.  ETWEventSource
+    /// is the implementation of the abstract EventSource class for ETW data.  
+    /// </summary>
+    public class ETWEventSource : EventSource
+    {
+        public ETWEventSource(TraceLog traceLog)
+        {
+            m_tracelog = traceLog;
+            NonRestFields = 4;
+            MaxEventTimeRelativeMsec = traceLog.SessionDuration.TotalMilliseconds;
+        }
+        public override ICollection<string> EventNames
+        {
+            get
+            {
+                if (m_eventNames == null)
+                {
+                    m_eventNames = new List<string>();
+                    m_nameToCounts = new Dictionary<string, TraceEventCounts>();
+                    foreach (var counts in m_tracelog.Stats)
+                    {
+                        var eventName = counts.FullName;
+                        if (!m_nameToCounts.ContainsKey(eventName))
+                            m_eventNames.Add(eventName);
+                        m_nameToCounts[eventName] = counts; // we assume if there are collisions the others have the same fields  
+                        // so it does not matter which one we pick.  
+                    }
+                    m_eventNames.Sort();
+                }
+                return m_eventNames;
+            }
+        }
+        public override void SetEventFilter(List<string> eventNames)
+        {
+            m_selectedAllEvents = (eventNames.Count >= EventNames.Count);
+
+            m_selectedEvents = new Dictionary<string, bool>();
+            foreach (var eventName in eventNames)
+            {
+                m_selectedEvents[eventName] = false;
+                // If this is a stop, mark the corresponding /Start as included (but not to be shown).  
+                if (eventName.EndsWith("/Stop") || eventName.EndsWith("/End"))
+                {
+                    var startName = eventName.Substring(0, eventName.LastIndexOf('/')) + "/Start";
+                    if (!m_selectedEvents.ContainsKey(startName))
+                        m_selectedEvents.Add(startName, true);
+                }
+            }
+        }
+        public override void ForEach(Func<EventRecord, bool> callback)
+        {
+            int cnt = 0;
+            double startTime = StartTimeRelativeMSec;
+            double endTime = EndTimeRelativeMSec;
+            // TODO could be more efficient about process filtering by getting all the processes that match.  
+            Regex procRegex = null;
+            string procNameMustStartWith = null;
+            if (ProcessFilterRegex != null)
+            {
+                // As an optimization, find the part that is just alphaNumeric
+                procNameMustStartWith = Regex.Match(ProcessFilterRegex, @"^(\w*)").Groups[1].Value;
+                procRegex = new Regex(ProcessFilterRegex, RegexOptions.IgnoreCase);
+            }
+
+            Predicate<ETWEventRecord> textFilter = null;
+            if (!string.IsNullOrWhiteSpace(TextFilterRegex))
+            {
+                string pat = TextFilterRegex;
+                bool negate = false;
+                if (pat.StartsWith("!"))
+                {
+                    negate = true;
+                    pat = pat.Substring(1);
+                }
+                var textRegex = new Regex(pat, RegexOptions.IgnoreCase);
+                textFilter = delegate(ETWEventRecord eventRecord)
+                {
+                    bool match = eventRecord.Matches(textRegex);
+                    return negate ? !match : match;
+                };
+            }
+
+            Dictionary<string, int> columnOrder = null;
+            ColumnSums = null;
+            if (ColumnsToDisplay != null)
+            {
+                columnOrder = new Dictionary<string, int>();
+                for (int i = 0; i < ColumnsToDisplay.Count; )
+                {
+                    // Discard duplicate columns
+                    if (columnOrder.ContainsKey(ColumnsToDisplay[i]))
+                    {
+                        ColumnsToDisplay.RemoveAt(i);
+                        continue;
+                    }
+                    columnOrder.Add(ColumnsToDisplay[i], i);
+                    i++;
+                }
+
+                ColumnSums = new double[ColumnsToDisplay.Count];
+            }
+
+            if (m_selectedEvents != null)
+            {
+                ETWEventRecord emptyEventRecord = new ETWEventRecord(this);
+                var startStopRecords = new Dictionary<StartStopKey, double>(10);
+
+                // Figure out if you need m_activityComputer or not 
+                if (ColumnsToDisplay == null || ColumnsToDisplay.Count == 0)
+                    m_needsComputers = true;
+                else
+                {
+                    m_needsComputers = false;
+                    foreach (string column in ColumnsToDisplay)
+                    {
+                        if (column == "*" || column == "TaskIndex" || column == "StartStopActvity" || column == "TaskCreationMSec")
+                        {
+                            m_needsComputers = true;
+                            break;
+                        }
+                    }
+                }
+                
+                /***********************************************************************/
+                /*                        The main event loop                          */
+                EventVisitedVersion.CurrentVersion++;
+                var source = m_tracelog.Events.FilterByTime(m_needsComputers ? 0 : startTime, endTime).GetSource(); // If you need computers, you need the events from the start.  
+                if (m_needsComputers)
+                {
+                    m_activityComputer = new ActivityComputer(source, App.GetSymbolReader());
+                    m_startStopActivityComputer = new StartStopActivityComputer(source, m_activityComputer);
+                }
+                source.AllEvents += delegate(TraceEvent data)
+                {
+                    // FilterByTime would cover this, however for m_needsComputer == true we may not be able to do it that way.  
+                    if (data.TimeStampRelativeMSec < startTime)
+                        return;
+
+                    double durationMSec = -1;
+                    var eventFilterVersion = data.EventTypeUserData as EventVisitedVersion;
+
+                    if (eventFilterVersion == null || eventFilterVersion.Version != EventVisitedVersion.CurrentVersion)
+                    {
+                        var eventName = data.ProviderName + "/" + data.EventName;
+
+                        bool processButDontShow = false;
+                        var shouldKeep = m_selectedAllEvents;
+                        if (!shouldKeep)
+                            if (m_selectedEvents.TryGetValue(eventName, out processButDontShow))
+                                shouldKeep = true;
+                        eventFilterVersion = new EventVisitedVersion(shouldKeep, processButDontShow);
+                        if (!(data is UnhandledTraceEvent))
+                            data.EventTypeUserData = eventFilterVersion;
+                    }
+                    if (!eventFilterVersion.ShouldProcess)
+                        return;
+
+                    // If this is a StopEvent compute the DURATION_MSEC
+                    var opcode = data.Opcode;
+                    var task = data.Task;
+                    CorelationOptions corelationOptions = CorelationOptions.None;
+                    if (data.ProviderGuid == ClrTraceEventParser.ProviderGuid)
+                    {
+                        // Fix Suspend and restart events to line up to make durations.   
+                        if ((int)data.ID == 9)          // SuspendEEStart
+                        {
+                            corelationOptions = CorelationOptions.UseThreadContext;
+                            task = (TraceEventTask)0xFFFE;      // unique task
+                            opcode = TraceEventOpcode.Start;
+                        }
+                        else if ((int)data.ID == 8)     // SuspendEEStop
+                        {
+                            corelationOptions = CorelationOptions.UseThreadContext;
+                            task = (TraceEventTask)0xFFFE;      // unique task  (used for both suspend and Suspend-Restart. 
+                            opcode = TraceEventOpcode.Stop;
+                        }
+                        else if ((int)data.ID == 3)     // RestartEEStop
+                        {
+                            corelationOptions = CorelationOptions.UseThreadContext;
+                            task = (TraceEventTask)0xFFFE;      // unique task
+                            opcode = TraceEventOpcode.Stop;
+                        }
+                    }
+
+                    if (data.ProviderGuid == httpServiceProviderGuid)
+                    {
+                        corelationOptions = CorelationOptions.UseActivityID;
+                        if (opcode == (TraceEventOpcode)13)    // HttpServiceDeliver
+                            opcode = TraceEventOpcode.Start;
+                        // HttpServiceSendComplete  ZeroSend FastSend
+                        else if (opcode == (TraceEventOpcode)51 || opcode == (TraceEventOpcode)22 || opcode == (TraceEventOpcode)21)
+                            opcode = TraceEventOpcode.Stop;
+                    }
+
+                    if (opcode == TraceEventOpcode.Start || opcode == TraceEventOpcode.Stop)
+                    {
+                        // Figure out what we use as a correlater between the start and stop.  
+                        Guid contextID = GetCoorelationIDForEvent(data, corelationOptions);
+                        var key = new StartStopKey(data.ProviderGuid, task, contextID);
+                        if (opcode == TraceEventOpcode.Start)
+                            startStopRecords[key] = data.TimeStampRelativeMSec;
+                        else
+                        {
+                            double startTimeStamp;
+                            if (startStopRecords.TryGetValue(key, out startTimeStamp))
+                            {
+                                durationMSec = data.TimeStampRelativeMSec - startTimeStamp;
+
+                                // A bit of a hack.  WE use the same start event (SuspenEEStart) for two durations.
+                                // THus don't remove i after SuspendEEStop because we also use it for RestartEEStop.  
+                                if (!(task == (TraceEventTask)0xFFFE && (int)data.ID == 8)) // Is this the SuspendEEStop event?
+                                    startStopRecords.Remove(key);
+                            }
+                        }
+                    }
+
+                    if (!eventFilterVersion.ShouldShow)
+                        return;
+
+                    if (procRegex != null)
+                    {
+                        CSwitchTraceData cSwitch = data as CSwitchTraceData;
+                        if (!data.ProcessName.StartsWith(procNameMustStartWith, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (cSwitch == null)
+                                return;
+                            // Special case.  Context switches will work for both the old and the new process
+                            if (!cSwitch.OldProcessName.StartsWith(procNameMustStartWith, StringComparison.OrdinalIgnoreCase))
+                                return;
+                        }
+
+                        var fullProcessName = data.ProcessName;
+                        if (!fullProcessName.StartsWith("("))
+                            fullProcessName += " (" + data.ProcessID + ")";
+                        if (!procRegex.IsMatch(fullProcessName))
+                        {
+                            if (cSwitch == null)
+                                return;
+                            // Special case.  Context switches will work for both the old and the new process
+                            var fullOldProcessName = cSwitch.OldProcessName;
+                            if (!fullOldProcessName.StartsWith("("))
+                                fullOldProcessName += " (" + cSwitch.OldProcessName + ")";
+                            if (!procRegex.IsMatch(fullOldProcessName))
+                                return;
+                        }
+                    }
+
+                    ETWEventRecord eventRecord = null;
+                    if (textFilter != null)
+                    {
+                        eventRecord = new ETWEventRecord(this, data, columnOrder, NonRestFields, durationMSec);
+                        if (!textFilter(eventRecord))
+                            return;
+                    }
+
+                    cnt++;
+                    if (MaxRet < cnt)
+                    {
+                        // We have exceeded our MaxRet, return an empty record.  
+                        eventRecord = emptyEventRecord;
+                        eventRecord.m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
+                    }
+
+                    if (eventRecord == null)
+                        eventRecord = new ETWEventRecord(this, data, columnOrder, NonRestFields, durationMSec);
+
+                    if (ColumnSums != null)
+                    {
+                        var fields = eventRecord.DisplayFields;
+                        var min = Math.Min(ColumnSums.Length, fields.Length);
+                        for (int i = 0; i < min; i++)
+                        {
+                            string value = fields[i];
+                            double asDouble;
+                            if (value != null && double.TryParse(value, out asDouble))
+                                ColumnSums[i] += asDouble;
+                        }
+                    }
+                    if (!callback(eventRecord))
+                        source.StopProcessing();
+                };
+                source.Process();
+            }
+        }
+
+        [Flags]
+        enum CorelationOptions
+        {
+            None = 0,
+            UseThreadContext = 1,
+            UseActivityID = 2,
+        }
+        static Guid httpServiceProviderGuid = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
+
+        private unsafe Guid GetCoorelationIDForEvent(TraceEvent data, CorelationOptions options)
+        {
+            int intContextID = -1;          // When the obvious ID is an integer, this is it, -1 means it is unused.  
+            if ((options & CorelationOptions.UseThreadContext) == 0)
+            {
+                if ((options & CorelationOptions.UseActivityID) == 0)
+                {
+                    // If the payloads have parameters that indicate it is a coorelation event, use that.  
+                    var names = data.PayloadNames;
+                    if (names != null && names.Length > 0)
+                    {
+                        int fieldNum = -1;    // First try to use a field as the coorelator
+                        if (0 < names.Length)
+                        {
+                            if (names[0].EndsWith("id", StringComparison.OrdinalIgnoreCase) || names[0] == "Count") // Hack for GC/Start 
+                                fieldNum = 0;
+                            else if (1 < names.Length && names[1] == "ContextId")       // This is for ASP.NET events 
+                                fieldNum = 1;
+                        }
+
+                        if (0 <= fieldNum)
+                        {
+                            var value = data.PayloadValue(fieldNum);
+                            if (value is Guid)
+                                return (Guid)value;
+                            else
+                            {
+                                if (value != null)
+                                    intContextID = value.GetHashCode();                 // Use the hash if it is not a GUID
+                            }
+                        }
+                    }
+                }
+                // If we have not found a context, and there is an activity ID use that.  
+                if (intContextID == -1 && data.ActivityID != Guid.Empty)
+                    return data.ActivityID;
+            }
+
+            // If we have not found a context, use the thread as a context.  
+            if (intContextID == -1)
+                intContextID = data.ThreadID;                  // By default use the thread as the correlation ID
+            return new Guid(intContextID, 1, 5, 45, 23, 23, 3, 5, 5, 4, 5);
+        }
+
+        public override ICollection<string> ProcessNames
+        {
+            get
+            {
+                var set = new SortedDictionary<string, string>();
+                foreach (var process in m_tracelog.Processes)
+                {
+                    if (process.ProcessID > 0 &&
+                        process.Name != "svchost" && process.Name != "winlogon" && process.Name != "conhost")
+                        set[process.Name] = "";
+                }
+                return set.Keys;
+            }
+        }
+
+        public override ICollection<string> AllColumnNames(List<string> eventNames)
+        {
+            var columnsForSelectedEvents = new SortedDictionary<string, string>();
+            var selectedEventCounts = GetEventCounts(eventNames);
+            foreach (var selectedEventCount in selectedEventCounts.Keys)
+            {
+                var payloadNames = selectedEventCount.PayloadNames;
+                if (payloadNames != null)
+                {
+                    foreach (var fieldName in payloadNames)
+                        columnsForSelectedEvents[fieldName] = fieldName;
+                }
+            }
+            columnsForSelectedEvents["TaskIndex"] = "TaskIndex";
+            columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
+            columnsForSelectedEvents["TaskCreationMSec"] = "TaskCreationMSec";
+            columnsForSelectedEvents["ThreadID"] = "ThreadID";
+            columnsForSelectedEvents["ActivityID"] = "ActivityID";
+            // columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
+            columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
+            columnsForSelectedEvents["HasStack"] = "HasStack";
+            columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
+            columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
+            return columnsForSelectedEvents.Keys;
+        }
+        public override EventSource Clone()
+        {
+            return new ETWEventSource(m_tracelog);
+        }
+
+        public TraceLog Log { get { return m_tracelog; } }
+
+        #region private
+        private Dictionary<TraceEventCounts, TraceEventCounts> GetEventCounts(List<string> eventNames)
+        {
+            var selectedEventCounts = new Dictionary<TraceEventCounts, TraceEventCounts>();
+            foreach (var eventName in eventNames)
+            {
+                var eventCounts = m_nameToCounts[eventName];
+                selectedEventCounts[eventCounts] = eventCounts;
+            }
+            return selectedEventCounts;
+        }
+
+        TraceLog m_tracelog;
+        bool m_needsComputers;          // True if you are looking at fields that need m_activityComputer or m_startStopActivityComputer
+        ActivityComputer m_activityComputer;
+        StartStopActivityComputer m_startStopActivityComputer;
+        Dictionary<string, TraceEventCounts> m_nameToCounts;
+        List<string> m_eventNames;
+        Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
+        bool m_selectedAllEvents;       // This insures that when a user selects all events he gets everything 
+
+        internal class ETWEventRecord : EventRecord
+        {
+            // Used as the null record (after MaxRet happens). 
+            internal ETWEventRecord(ETWEventSource source) : base(0) { m_source = source; }
+
+            internal ETWEventRecord(ETWEventSource source, TraceEvent data, Dictionary<string, int> columnOrder, int nonRestFields, double durationMSec)
+                : base(nonRestFields)
+            {
+                m_source = source;
+                m_name = data.ProviderName + "/" + data.EventName;
+                m_processName = data.ProcessName;
+                if (!m_processName.StartsWith("("))
+                    m_processName += " (" + data.ProcessID + ")";
+                m_timeStampRelativeMSec = data.TimeStampRelativeMSec;
+                m_idx = data.EventIndex;
+
+                // Compute the data column 
+                var restString = new StringBuilder();
+
+                // Deal with the special HasStack, ThreadID and ActivityID, DataLength fields;
+                var hasStack = data.CallStackIndex() != CallStackIndex.Invalid;
+                if (hasStack)
+                    AddField("HasStack", hasStack.ToString(), columnOrder, restString);
+
+                AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
+
+                var message = data.FormattedMessage;
+                if (message != null)
+                    AddField("FormattedMessage", message, columnOrder, restString);
+
+                if (0 < durationMSec)
+                    AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString);
+
+                var payloadNames = data.PayloadNames;
+                if (payloadNames.Length == 0 && data.EventDataLength != 0)
+                {
+                    // WPP events look classic and use the EventID as their discriminator
+                    if (data.IsClassicProvider && data.ID != 0)
+                        AddField("EventID", ((int)data.ID).ToString(), columnOrder, restString);
+                    AddField("DataLength", data.EventDataLength.ToString(), columnOrder, restString);
+                }
+
+                try
+                {
+                    for (int i = 0; i < payloadNames.Length; i++)
+                        AddField(payloadNames[i], data.PayloadString(i), columnOrder, restString);
+                }
+                catch (Exception e)
+                {
+                    AddField("ErrorParsingFields", e.Message, columnOrder, restString);
+                }
+
+                if (source.m_needsComputers)
+                {
+                    TraceThread thread = data.Thread();
+                    if (thread != null)
+                    {
+                        var activity = source.m_activityComputer.GetCurrentActivity(thread);
+                        if (activity != null)
+                        {
+                            string id = activity.ID;
+                            if (Math.Abs(activity.StartTimeRelativeMSec - m_timeStampRelativeMSec) < .0005)
+                                id = "^" + id;              // Indicates it is at the start of the task. 
+                            AddField("TaskIndex", id, columnOrder, restString);
+                            if (activity.Creator != null)
+                                AddField("TaskCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
+                        }
+
+                        var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread);
+                        if (startStopActivity != null)
+                            AddField("StartStopActivity", startStopActivity.Name, columnOrder, restString);
+                    }
+                }
+
+                if (data.ActivityID != Guid.Empty)
+                    AddField("ActivityID", ActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString);
+
+                Guid relatedActivityID = data.RelatedActivityID;
+                if (relatedActivityID != Guid.Empty)
+                    AddField("RelatedActivityID", ActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
+
+
+                m_asText = restString.ToString();
+            }
+
+            public override string EventName { get { return m_name; } }
+            public override string ProcessName { get { return m_processName; } }
+            public override double TimeStampRelatveMSec { get { return m_timeStampRelativeMSec; } }
+            public override string Rest { get { return m_asText; } set { } }
+            public EventIndex Index { get { return m_idx; } }
+
+            #region private
+
+            /// <summary>
+            /// Adds 'fieldName' with value 'fieldValue' to the output.  It either goes into a column (based on columnOrder) or it goes into
+            /// 'rest' as a fieldName="fieldValue" string.   It also updates 'columnSums' for the fieldValue for any in a true column 
+            /// </summary>
+            private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString)
+            {
+                var putInRest = true;
+                if (columnOrder != null)
+                {
+                    int colNum;
+                    putInRest = false;
+                    if (columnOrder.TryGetValue(fieldName, out colNum))
+                    {
+                        putInRest = false;
+                        if (colNum < m_displayFields.Length)
+                            m_displayFields[colNum] = PadIfNumeric(fieldValue);
+                        else
+                            putInRest = true;
+                    }
+                }
+                if (putInRest)
+                {
+                    if (fieldValue == null)
+                        fieldValue = "";
+                    restString.Append(fieldName).Append("=").Append(Utilities.Command.Quote(fieldValue)).Append(' ');
+                }
+            }
+
+            /// <summary>
+            /// Hack to make sort work properly most of the time.   Basically if 'fieldValue' looks like a number pad it with 
+            /// spaces to the left to make sure it sorts like a number.   This works for numbers with 6 digits (or comma) in
+            /// front of the decimal point.   Thus it works up to 99,999.999
+            /// </summary>  
+            private string PadIfNumeric(string fieldValue)
+            {
+                // Hack, if it looks numeric, pad so it sorts like one.  It is a hack because we don't know how much to pad, we guess 6 after the dot.  
+                int charsAfterDot = 0;
+                bool seenDot = false;
+                char decimalPoint = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator[0];
+                char separatorChar = '\0';
+                string separator = System.Globalization.CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator;
+                if (0 < separator.Length)
+                    separatorChar = separator[0];
+                for (int idx = 0; idx < fieldValue.Length; idx++)
+                {
+                    char c = fieldValue[idx];
+                    if (c == decimalPoint)
+                    {
+                        if (seenDot)
+                            return fieldValue;      // Not numeric.
+                        seenDot = true;
+                        charsAfterDot = fieldValue.Length - idx;
+                    }
+                    else if (!Char.IsDigit(c) && c != separatorChar)
+                        return fieldValue;          // Not numeric.
+                }
+                return fieldValue.PadLeft(6 + charsAfterDot);
+            }
+
+            public override bool Matches(Regex textRegex)
+            {
+                if (textRegex.IsMatch(Rest))
+                    return true;
+                for (int i = 0; i < m_displayFields.Length; i++)
+                {
+                    var field = m_displayFields[i];
+                    if (field != null && textRegex.IsMatch(field))
+                        return true;
+                }
+                if (textRegex.IsMatch(EventName))
+                    return true;
+                if (textRegex.IsMatch(ProcessName))
+                    return true;
+                if (textRegex.IsMatch(TimeStampRelatveMSec.ToString("n3")))
+                    return true;
+                return false;
+            }
+
+            string m_name;
+            string m_processName;
+            internal double m_timeStampRelativeMSec;
+            string m_asText;
+            EventIndex m_idx;
+            ETWEventSource m_source;        // Lets you get at source information
+            #endregion
+        }
+
+        // We tag every event template as we see it with whether we should filter it or not
+        // However we need to have a version number associated with it so that we don't use 'old' 
+        // filters.  That is what EventVisitedVersion does.  
+        class EventVisitedVersion
+        {
+            public static int CurrentVersion;
+            public EventVisitedVersion(bool shouldKeep, bool processButDontShow)
+            {
+                Version = CurrentVersion;
+                ShouldShow = shouldKeep && !processButDontShow;
+                ShouldProcess = shouldKeep || processButDontShow;
+            }
+            public readonly int Version;
+            public readonly bool ShouldShow;
+            /// <summary>
+            /// We match start and stop opcodes.  We want to allow Start opcodes even if they are not selected to insure that
+            /// we can compute the duration between start and stop events.  
+            /// </summary>
+            public readonly bool ShouldProcess;
+        }
+        #endregion
+    }
+
+#if false 
+    // This is experimental 
+    /// <summary>
+    /// The EventViewer takes a abstract EventSource and displays it.  GenericEventSource
+    /// is the implementation of the abstract EventSource class that takes it data from an
+    /// arbitrary source
+    /// 
+    /// </summary>
+    public class GenericEventSource : EventSource
+    {
+        public GenericEventSource() : this(new GenericEventRecords()) { }
+
+        public GenericEventSource(GenericEventRecords records)
+        {
+            m_records = records;
+            m_records.OnNewRecord += this.EventCallback;
+
+            NonRestFields = 4;
+            MaxEventTimeRelativeMsec = 60000;       // Currently set to 1 min, will expand when we exceed that.  
+            m_allEventRecords = new List<GenericEventRecord>();
+            m_eventFieldNames = new SortedDictionary<string, string[]>();
+            m_processFilter = new SortedDictionary<string, bool>();
+        }
+
+        public override ICollection<string> EventNames { get { return m_eventFieldNames.Keys; } }
+        public override void SetEventFilter(List<string> eventNames)
+        {
+            m_selectedAllEvents = (eventNames.Count >= EventNames.Count);
+            m_selectedEvents = new Dictionary<string, bool>();
+            foreach (var eventName in eventNames)
+                m_selectedEvents[eventName] = false;
+        }
+        public override IEnumerable<EventRecord> Events
+        {
+            get
+            {
+                m_textFilter = null;
+                if (!string.IsNullOrWhiteSpace(TextFilterRegex))
+                {
+                    string pat = TextFilterRegex;
+                    bool negate = false;
+                    if (pat.StartsWith("!"))
+                    {
+                        negate = true;
+                        pat = pat.Substring(1);
+                    }
+                    var textRegex = new Regex(pat, RegexOptions.IgnoreCase);
+                    m_textFilter = delegate(GenericEventRecord record)
+                    {
+                        bool match = record.Matches(textRegex);
+                        return negate ? !match : match;
+                    };
+                }
+
+                foreach (var eventRecord in m_allEventRecords)
+                    if (PassesFilter(eventRecord))
+                        yield return eventRecord;
+            }
+        }
+        public override ICollection<string> ProcessNames { get { return m_processFilter.Keys; } }
+        public override ICollection<string> AllColumnNames(List<string> eventNames)
+        {
+            var retFields = new SortedDictionary<string, string>();
+            foreach (var eventName in eventNames)
+            {
+                string[] fieldNames;
+                if (m_eventFieldNames.TryGetValue(eventName, out fieldNames))
+                {
+                    foreach (var fieldName in fieldNames)
+                        retFields[fieldName] = null;
+                }
+            }
+            retFields["ThreadID"] = null;
+            retFields["ActivityID"] = null;
+            retFields["RelatedActivityID"] = null;
+            retFields["HasStack"] = null;
+            retFields["DURATION_MSEC"] = null;
+            retFields["FormattedMessage"] = null;
+
+            return retFields.Keys;
+        }
+        public override EventSource Clone()
+        {
+            // TODO FIX NOW Implement. 
+            throw new NotImplementedException();
+        }
+
+        public GenericEventRecords Records { get { return m_records; } }
+
+        event Action OnEventNamesChanged;
+        event Action<EventRecord> OnEvent;
+
+    #region private
+        GenericEventRecords m_records;
+
+        // Keeps running sets of things users interact with in the GUI.  
+        SortedDictionary<string, string[]> m_eventFieldNames;
+        SortedDictionary<string, bool> m_processFilter;
+
+        Dictionary<string, bool> m_selectedEvents;      // set to true if the event is only present because it is a start for a stop.  
+        bool m_selectedAllEvents;                       // This insures that when a user selects all events he gets everything 
+        List<GenericEventRecord> m_allEventRecords;
+        Predicate<GenericEventRecord> m_textFilter;
+
+        private void EventCallback(GenericEventRecord eventRecord)
+        {
+            if (!m_processFilter.ContainsKey(eventRecord.ProcessName))
+            {
+                bool isSelected = true;
+                var processFilterRegexStr = ProcessFilterRegex;
+                if (!string.IsNullOrWhiteSpace(processFilterRegexStr))
+                    isSelected = Regex.IsMatch(eventRecord.ProcessName, processFilterRegexStr);
+                m_processFilter[eventRecord.ProcessName] = isSelected;
+            }
+
+            string[] fieldNames;
+            if (!m_eventFieldNames.TryGetValue(eventRecord.EventName, out fieldNames))
+            {
+                m_eventFieldNames[eventRecord.EventName] = eventRecord.FieldNames;
+                if (OnEventNamesChanged != null)
+                    OnEventNamesChanged();
+            }
+
+            m_allEventRecords.Add(eventRecord);
+
+            if (PassesFilter(eventRecord))
+                OnEvent(eventRecord);
+        }
+
+        private bool PassesFilter(GenericEventRecord eventRecord)
+        {
+            if (eventRecord.TimeStampRelatveMSec < StartTimeRelativeMSec)
+                return false;
+            if (EndTimeRelativeMSec < eventRecord.TimeStampRelatveMSec)
+                return false;
+
+            if (!m_processFilter[eventRecord.ProcessName])
+                return false;
+
+            if (!m_selectedAllEvents && !m_selectedEvents.ContainsKey(eventRecord.EventName))
+                return false;
+
+            if (m_textFilter != null && !m_textFilter(eventRecord))
+                return false;
+
+            return true;
+        }
+
+    #endregion
+    }
+
+    public class GenericEventRecord : EventRecord
+    {
+        public GenericEventRecord(string eventName, string processName, double timeStampRelativeMSec, string[] fieldNames, string[] fields)
+        {
+            m_EventName = eventName;
+            m_ProcessName = processName;
+            m_TimeStampRelativeMSec = timeStampRelativeMSec;
+            m_FieldNames = fieldNames;
+            m_Fields = fields;
+        }
+
+        public override string EventName { get { return m_EventName; } }
+        public override string ProcessName { get { return m_ProcessName; } }
+        public override double TimeStampRelatveMSec { get { return m_TimeStampRelativeMSec; } }
+        public override string[] FieldNames { get { return m_FieldNames; } }
+        public override string Field(int index) { return m_Fields[index]; }
+
+    #region private
+        string m_EventName;
+        string m_ProcessName;
+        double m_TimeStampRelativeMSec;
+        string[] m_FieldNames;
+        string[] m_Fields;
+    #endregion
+    }
+
+    public class GenericEventRecords
+    {
+        public GenericEventRecords()
+        {
+            Records = new List<GenericEventRecord>();
+        }
+        public void AddRecord(GenericEventRecord eventRecord)
+        {
+            Records.Add(eventRecord);
+            if (OnNewRecord != null)
+                OnNewRecord(eventRecord);
+        }
+
+        public Action<GenericEventRecord> OnNewRecord;
+        public List<GenericEventRecord> Records;
+    }
+
+    public class XXX
+    {
+        public static void X()
+        {
+            // Create a new session, turn on some events, and get the stream of events
+            var session = new TraceEventSession("MySession");
+            session.EnableProvider(TraceEventProviders.GetEventSourceGuidFromName("MyEventSource"));
+            var eventStream = session.Source;
+
+            // Create an in memory GENERIC list of parsed (basically string) records that can hold the results
+            GenericEventSource eventSource = new GenericEventSource();
+
+            // Hook up the ETW eventStream to the generic in memory event source. 
+            var dynamicParser = new DynamicTraceEventParser(eventStream);
+            Action<TraceEvent> sendToEventStore = delegate(TraceEvent data)
+            {
+                var processName = data.ProcessName;
+                if (!processName.StartsWith("("))
+                    processName += " (" + data.ProcessID + ")";
+
+                var fieldNames = data.PayloadNames;
+                var fields = new string[fieldNames.Length];
+                for (int i = 0; i < fields.Length; i++)
+                    fields[i] = data.PayloadString(i);
+
+                var genericRecord = new GenericEventRecord(data.EventName, data.ProcessName, data.TimeStampRelativeMSec, fieldNames, fields);
+                eventSource.Records.AddRecord(genericRecord);
+            };
+            dynamicParser.All += sendToEventStore;
+            var registeredParser = new RegisteredTraceEventParser(eventStream);
+            registeredParser.All += sendToEventStore;
+            eventStream.UnhandledEvents += sendToEventStore;
+
+            // Start processing ETW events and filling the in-memory list (which the GUI is observing).  
+            var thread = new Thread(delegate()
+            {
+                session.Source.Process();
+            });
+            thread.Start();
+
+            var window = new EventWindow(GuiApp.MainWindow, eventSource);
+            window.Show();
+        }
+    }
+#endif
+}

@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ToolsDevDiv>$(MSBuildThisFileDirectory)\..\tools\devdiv</ToolsDevDiv>
+    <PerfLibRootPath>$(MSBuildThisFileDirectory)</PerfLibRootPath>
+  </PropertyGroup>
+  
+  <Import Project="$(ToolsDevDiv)\DualBuild\DualBuild.settings.targets"
+          Condition="Exists('$(ToolsDevDiv)\DualBuild\DualBuild.settings.targets')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+          Condition="!Exists('$(ToolsDevDiv)\DualBuild\DualBuild.settings.targets')" />
+  
+  <!-- setup BuildInRazzle -->
+  <PropertyGroup Condition="'$(RazzleToolPath)'!=''">
+    <BuildInRazzle>true</BuildInRazzle>
+  </PropertyGroup>
+  
+  <!-- determine project code type -->
+  <PropertyGroup>
+    <!--
+        The default code type for projects will be managed.  This is due to how Xaml files that reference internal Dll types
+        gets compiled.  A two pass is done via the _CompileTemporaryAssembly task.  The first pass recreates the project with
+        the 'tmp_proj' extension.  This extension confuses the dual VS/Razzle build system and we don't know what to include.      
+        Therefore we will assume all code is managed unless the extension indicates it is native.        
+      -->
+    <ProjectCodeType Condition="'$(MSBuildProjectExtension)'=='.csproj' Or '$(ProjectCodeType)'==''">managed</ProjectCodeType>
+  </PropertyGroup>
+
+  <!-- build in razzle -->
+  <Import Project="$(PerfLibRootPath)\PerfLib.Razzle.settings.targets" Condition="'$(BuildInRazzle)' == 'true'" />
+
+  <!-- build outside razzle -->
+  <Import Project="$(PerfLibRootPath)\PerfLib.NonRazzle.settings.targets" Condition="'$(BuildInRazzle)' != 'true'" />
+  
+  <!-- source control settings -->
+  <PropertyGroup>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  
+  <!-- common build configuration properties -->
+  <PropertyGroup Condition="'$(ProjectCodeType)'=='managed'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VsPerfLibSettingsImported>true</VsPerfLibSettingsImported>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DeployExtension>False</DeployExtension>
+  </PropertyGroup>
+
+</Project>
