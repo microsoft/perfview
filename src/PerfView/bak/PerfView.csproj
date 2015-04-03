@@ -1,0 +1,734 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6BAC7496-6953-41B8-9042-AAE45405A095}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>PerfView</RootNamespace>
+    <AssemblyName>PerfView</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;PERFVIEW</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;PERFVIEW</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
+    <NoWarn>1591 0436</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
+    <NoWarn>1591 0436</NoWarn>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>performance.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>
+    </StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
+      <HintPath>SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    </Reference>
+    <Reference Include="ReachFramework" />
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Printing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="DiagnosticsHub.Packaging.Interop">
+      <HintPath>SupportDlls\x86\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx">
+      <HintPath>SupportDlls\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\heapDump\GCHeapDump.cs">
+      <Link>memory\GCHeapDump.cs</Link>
+    </Compile>
+    <Compile Include="..\MemoryGraph\graph.cs">
+      <Link>memory\graph.cs</Link>
+    </Compile>
+    <Compile Include="..\MemoryGraph\MemoryGraph.cs">
+      <Link>memory\MemoryGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\DirectoryUtilities.cs">
+      <Link>Utilities\DirectoryUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\EnvironmentUtilities.cs">
+      <Link>Utilities\EnvironmentUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\FileUtilities.cs">
+      <Link>Utilities\FileUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\StringUtilities.cs">
+      <Link>Utilities\StringUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\XmlUtilities.cs">
+      <Link>Utilities\XmlUtilities.cs</Link>
+    </Compile>
+    <Compile Include="CAP.cs" />
+    <Compile Include="ClrStats.cs" />
+    <Compile Include="CommandLineArgs.cs" />
+    <Compile Include="CommandProcessor.cs" />
+    <Compile Include="ConfigData.cs" />
+    <Compile Include="Dialogs\EmptySymbolPathDialog.xaml.cs">
+      <DependentUpon>EmptySymbolPathDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\EULADialog.xaml.cs">
+      <DependentUpon>EULADialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\FeedbackDialog.xaml.cs">
+      <DependentUpon>FeedbackDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\MemoryDataDialog.xaml.cs">
+      <DependentUpon>MemoryDataDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\SourceNameLookup.xaml.cs">
+      <DependentUpon>SourceNameLookup.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\SymbolPathDialog.xaml.cs">
+      <DependentUpon>SymbolPathDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\UserCommandDialog.xaml.cs">
+      <DependentUpon>UserCommandDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="EventViewer\EventWindow.xaml.cs">
+      <DependentUpon>EventWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\UnhandledExceptionDialog.xaml.cs">
+      <DependentUpon>UnhandledExceptionDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Extensibility.cs" />
+    <Compile Include="..\EtwHeapDump\DotNetHeapDumper.cs">
+      <Link>memory\DotNetHeapDumper.cs</Link>
+    </Compile>
+    <Compile Include="..\EtwHeapDump\DotNetHeapDumpGraphReader.cs">
+      <Link>memory\DotNetHeapDumpGraphReader.cs</Link>
+    </Compile>
+    <Compile Include="GcStats.cs" />
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="memory\GCHeapSimulator.cs" />
+    <Compile Include="memory\GCPinnedObjectAnalyzer.cs" />
+    <Compile Include="GuiUtilities\GuiUtilities.cs" />
+    <Compile Include="GuiUtilities\HistoryComboBox\HistoryCombBox.cs" />
+    <Compile Include="GuiUtilities\StatusBar\StatusBar.xaml.cs">
+      <DependentUpon>StatusBar.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="GuiUtilities\TextEditor\TextEditorControl.xaml.cs">
+      <DependentUpon>TextEditorControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="GuiUtilities\TextEditor\TextEditorWindow.xaml.cs">
+      <DependentUpon>TextEditorWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="GuiUtilities\WebBrowser\WebBrowser.xaml.cs">
+      <DependentUpon>WebBrowser.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="HeapView\GcInfoView.cs" />
+    <Compile Include="HeapView\HeapAllocView.cs" />
+    <Compile Include="HeapView\HeapAnalyzer.cs" />
+    <Compile Include="HeapView\HeapDiagram.cs" />
+    <Compile Include="HeapView\HeapView.cs" />
+    <Compile Include="HeapView\IssueView.cs" />
+    <Compile Include="HeapView\ThreadView.cs" />
+    <Compile Include="HeapView\Toolbox.cs" />
+    <Compile Include="InteropReport.cs" />
+    <Compile Include="IProcess.cs" />
+    <Compile Include="memory\ClrProfilerMemoryGraph.cs" />
+    <Compile Include="memory\ClrProfilerParser.cs" />
+    <Compile Include="Dialogs\RunCommandDialog.xaml.cs">
+      <DependentUpon>RunCommandDialog.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Dialogs\SelectProcess.xaml.cs">
+      <DependentUpon>SelectProcess.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="memory\ClrProfilerSources.cs" />
+    <Compile Include="memory\GenerationAwareMemoryGraph.cs" />
+    <Compile Include="memory\HeapSnapshot.cs" />
+    <Compile Include="memory\MemoryGraphStackSource.cs" />
+    <Compile Include="memory\MemoryStats.cs" />
+    <Compile Include="memory\JavaScriptDumpGraph.cs" />
+    <Compile Include="memory\JavaScriptHeapDumper.cs" />
+    <Compile Include="memory\PdbScopeMemoryGraph.cs" />
+    <Compile Include="Microsoft-Windows-NDIS-PacketCapture.cs" />
+    <Compile Include="ObjectViewer\ObjectViewer.xaml.cs">
+      <DependentUpon>ObjectViewer.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ObjectViewer\TreeViewGrid.xaml.cs" />
+    <Compile Include="OtherSources\AggregateStackSource.cs" />
+    <Compile Include="OtherSources\DebuggerStackSource.cs" />
+    <Compile Include="OtherSources\FileSizeStackSource.cs" />
+    <Compile Include="OtherSources\OffProfStackSource.cs" />
+    <Compile Include="OtherSources\WTStackSource.cs" />
+    <Compile Include="OtherSources\XMLStackSource.cs" />
+    <Compile Include="PerfViewData.cs" />
+    <Compile Include="PerfViewEventSource.cs" />
+    <Compile Include="PerfViewTraceEventParser.cs" />
+    <Compile Include="PinningGCHeapSimulatorObject.cs" />
+    <Compile Include="Screenshot.cs" />
+    <Compile Include="StateMachineFramework\ServerRequestComputer.cs" />
+    <Compile Include="StackViewer\CallerCalleeView.xaml.cs">
+      <DependentUpon>CallerCalleeView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="StackViewer\CallTreeView.cs" />
+    <Compile Include="StackViewer\FilterStacks.cs" />
+    <Compile Include="StackViewer\PerfDataGrid.xaml.cs">
+      <DependentUpon>PerfDataGrid.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="StackViewer\StackWindow.xaml.cs">
+      <DependentUpon>StackWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="StateMachineFramework\ComputingResourceStateMachine.cs" />
+    <Compile Include="Triggers.cs" />
+    <Compile Include="Utilities\CacheFiles.cs" />
+    <Compile Include="Utilities\commandLine.cs" />
+    <Compile Include="Utilities\CommandLineUtilities.cs" />
+    <Compile Include="Utilities\ExceptionMessage.cs" />
+    <Compile Include="Utilities\IndexMap.cs" />
+    <Compile Include="Utilities\ProcessTree.cs" />
+    <Compile Include="Utilities\SupportFiles.cs" />
+    <Compile Include="..\Utilities\TeeTextWriter.cs" />
+    <Compile Include="Utilities\UsersGuide.cs" />
+    <Compile Include="Utilities\_README.cs" />
+    <Page Include="Dialogs\EmptySymbolPathDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\EULADialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\FeedbackDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\MemoryDataDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\SourceNameLookup.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\SymbolPathDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\UserCommandDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="EventViewer\EventWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Dialogs\UnhandledExceptionDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="GuiUtilities\StatusBar\StatusBar.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="GuiUtilities\TextEditor\TextEditorControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="GuiUtilities\TextEditor\TextEditorWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="GuiUtilities\WebBrowser\WebBrowser.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <!-- To allow for control (not loading WPF on ARM machines, we take over
+         the App.Xaml and do it directly in App.cs -->
+    <Compile Include="App.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="GuiApp.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Page Include="Dialogs\RunCommandDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Dialogs\SelectProcess.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ObjectViewer\ObjectViewer.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ObjectViewer\TreeViewGrid.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="StackViewer\CallerCalleeView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="StackViewer\PerfDataGrid.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="StackViewer\StackWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utilities\ResourceUtilities.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Utilities\StreamUtilities.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <None Include="app.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <AppDesigner Include="Properties\" />
+    <None Include="SupportDlls\Eula.rtf" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\TraceEvent\x86\msdia120.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\msdia120.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\x86\sd.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\sd.exe</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\x86\KernelTraceControl.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\arm\KernelTraceControl.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\AMD64\KernelTraceControl.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\AMD64\KernelTraceControl.dll</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\TraceEvent\AMD64\msdia120.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\AMD64\msdia120.dll</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\dbghelp.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\dbghelp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\dbgeng.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\dbgeng.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\symsrv.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\symsrv.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\dbghelp.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\AMD64\dbghelp.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\dbgeng.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\AMD64\dbgeng.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\symsrv.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\AMD64\symsrv.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\HeapDump.exe</LogicalName>
+      <Link>SupportDlls\x64\HeapDump.exe.config</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe.config">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
+      <Link>SupportDlls\x64\HeapDump.exe.config</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x86\HeapDump.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\HeapDump.exe</LogicalName>
+      <Link>SupportDlls\x86\HeapDump.exe</Link>
+    </EmbeddedResource>
+    <!-- For Forcing GC and per-object allocation stats -->
+    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(OutDir)\PerfView.xml">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\PerfView.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\FastSerialization\$(OutDir)Microsoft.Diagnostics.FastSerialization.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Microsoft.Diagnostics.Runtime.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Dia2Lib.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\Dia2Lib.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\x86\DiagnosticsHub.Packaging.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\x86\DiagnosticsHub.Packaging.Interop.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\Interop.Dia2Lib.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\tutorial.exe">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\tutorial.exe</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\tutorial.pdb">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\tutorial.pdb</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\buildDate.txt">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\buildDate.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\tutorial.cs">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\tutorial.cs.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\EULA.rtf">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\EULA.rtf</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\CsvReader\$(OutDir)CsvReader.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\CsvReader.dll</LogicalName>
+      <Link>SupportDlls\CsvReader.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\Zip\$(OutDir)ZipLib.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\ZipLib.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\UsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\UsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\PerfViewWebVideos.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\PerfViewWebVideos.htm</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\HtmlReportUsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HtmlReportUsersGuide.htm</LogicalName>
+    </EmbeddedResource>
+    <!-- Support for perfview extensions -->
+    <EmbeddedResource Include="..\PerfViewExtensions\GlobalSrc\Commands.cs">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\ExtensionTemplate\Commands.cs</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfViewExtensions\GlobalSrc\Global.csproj">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\ExtensionTemplate\Global.csproj</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfViewExtensions\GlobalSrc\Global.csproj.user">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\ExtensionTemplate\Global.csproj.user</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\MainViewer.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\MainViewer.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\StackViewer.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\StackViewer.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\EventViewer.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\EventViewer.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\CallerCalleeView.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\CallerCalleeView.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\CallTreeView.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\CallTreeView.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\PrunedCallTreeView.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\PrunedCallTreeView.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\Ungrouped.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\Ungrouped.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\SourceCode.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\SourceCode.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\MemoryCollection.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\MemoryCollection.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\AspNetThreadTime.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\AspNetThreadTime.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SupportDlls\Images\ServerRequestThreadTime.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\ServerRequestThreadTime.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CSVReader\CSVReader.csproj">
+      <Project>{F7D0F851-9B0D-4224-91AB-7FC12477F206}</Project>
+      <Name>CSVReader</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
+      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
+      <Name>FastSerialization</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj">
+      <Project>{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}</Project>
+      <Name>HeapDumpInterface</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
+      <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
+      <Name>TraceEvent</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zip\Zip.csproj">
+      <Project>{6FA47D21-6B1C-40E1-AD6B-D9139FA4123B}</Project>
+      <Name>Zip</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="performance.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <SplashScreen Include="SplashScreen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="images\VSFolder_open.png" />
+    <Resource Include="images\VSProject_genericfile.png" />
+    <Resource Include="images\VSProject_cab.png" />
+    <Resource Include="images\VSProject_form.png" />
+    <Resource Include="images\VSProject_schema.png" />
+    <Resource Include="images\VSProject_html.png" />
+    <Resource Include="images\Chart.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="SupportDlls\Images\ServerRequestThreadTime.PNG" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>REM Need to set the path for EditBin to work properly.  
+set path=%25path%25;$(DevEnvDir)
+if "$(PlatformName)" == "x86" (
+    echo Updating X86 build to be large address aware
+    "$(DevEnvDir)..\..\vc\bin\editbin.exe" /LARGEADDRESSAWARE "$(TargetPath)"
+    if  NOT "%25ERRORLEVEL%25" == "0" (
+        echo EDITBIN Failed
+        exit /b %25ERRORLEVEL%25
+    )
+    "$(SolutionDir)..\tools\corflags.exe" /32bitPref+  "$(TargetPath)"
+)
+echo Done
+mkdir "$(ProjectDir)..\VS"
+echo COPYING xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
+xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
+</PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportDlls\BuildDate.txt"</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

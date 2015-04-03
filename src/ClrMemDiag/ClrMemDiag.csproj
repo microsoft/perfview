@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
+  </PropertyGroup>
+  <!--Target CLR v2-->
+  <PropertyGroup>
+    <AllowCrossTargeting>true</AllowCrossTargeting>
+    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
+  <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
+    <UseVsVersion>false</UseVsVersion>
+    <UseOwnAssemblyVersion>true</UseOwnAssemblyVersion>
+    <GenerateAssemblyAttribute>false</GenerateAssemblyAttribute>
+    <CreateMetaAssembly>true</CreateMetaAssembly>
+    <PublishMetaAssemblyVisibility>Inter</PublishMetaAssemblyVisibility>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(BuildInRazzle)' != 'true' ">
+    <IgnoreDualBuildAssemblyInfo>True</IgnoreDualBuildAssemblyInfo>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{A82126CA-23AA-41F1-8586-A5938D44D0A7}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.Diagnostics.Runtime</RootNamespace>
+    <AssemblyName>Microsoft.Diagnostics.Runtime</AssemblyName>
+    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
+    <FileAlignment>512</FileAlignment>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>0649,1591</NoWarn>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\$(Configuration)\Microsoft.Diagnostics.Runtime.xml</DocumentationFile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE;MULTITHREAD</DefineConstants>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('$(ToolsDevDiv)\FinalPublicKey.snk')">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>$(ToolsDevDiv)\FinalPublicKey.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Dia2Lib">
+      <HintPath>Refs\Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="datatargetimpl.cs" />
+    <Compile Include="dbgengdatatarget.cs" />
+    <Compile Include="heapbase.cs" />
+    <Compile Include="internal.cs" />
+    <Compile Include="metadata.cs" />
+    <Compile Include="public.cs" />
+    <Compile Include="livedatatarget.cs" />
+    <Compile Include="sigparser.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Debugger\Enums.cs" />
+    <Compile Include="Debugger\IDebugAdvanced.cs" />
+    <Compile Include="Debugger\IDebugAdvanced2.cs" />
+    <Compile Include="Debugger\IDebugAdvanced3.cs" />
+    <Compile Include="Debugger\IDebugBreakpoint.cs" />
+    <Compile Include="Debugger\IDebugBreakpoint2.cs" />
+    <Compile Include="Debugger\IDebugBreakpoint3.cs" />
+    <Compile Include="Debugger\IDebugClient.cs" />
+    <Compile Include="Debugger\IDebugClient2.cs" />
+    <Compile Include="Debugger\IDebugClient3.cs" />
+    <Compile Include="Debugger\IDebugClient4.cs" />
+    <Compile Include="Debugger\IDebugClient5.cs" />
+    <Compile Include="Debugger\IDebugControl.cs" />
+    <Compile Include="Debugger\IDebugControl2.cs" />
+    <Compile Include="Debugger\IDebugControl3.cs" />
+    <Compile Include="Debugger\IDebugControl4.cs" />
+    <Compile Include="Debugger\IDebugControl5.cs" />
+    <Compile Include="Debugger\IDebugControl6.cs" />
+    <Compile Include="Debugger\IDebugDataSpaces.cs" />
+    <Compile Include="Debugger\IDebugDataSpaces2.cs" />
+    <Compile Include="Debugger\IDebugDataSpaces3.cs" />
+    <Compile Include="Debugger\IDebugDataSpaces4.cs" />
+    <Compile Include="Debugger\IDebugEventCallbacks.cs" />
+    <Compile Include="Debugger\IDebugEventCallbacksWide.cs" />
+    <Compile Include="Debugger\IDebugInputCallbacks.cs" />
+    <Compile Include="Debugger\IDebugOutputCallbacks.cs" />
+    <Compile Include="Debugger\IDebugOutputCallbacks2.cs" />
+    <Compile Include="Debugger\IDebugOutputCallbacksWide.cs" />
+    <Compile Include="Debugger\IDebugRegisters.cs" />
+    <Compile Include="Debugger\IDebugRegisters2.cs" />
+    <Compile Include="Debugger\IDebugSymbolGroup.cs" />
+    <Compile Include="Debugger\IDebugSymbolGroup2.cs" />
+    <Compile Include="Debugger\IDebugSymbols.cs" />
+    <Compile Include="Debugger\IDebugSymbols2.cs" />
+    <Compile Include="Debugger\IDebugSymbols3.cs" />
+    <Compile Include="Debugger\IDebugSymbols4.cs" />
+    <Compile Include="Debugger\IDebugSymbols5.cs" />
+    <Compile Include="Debugger\IDebugSystemObjects.cs" />
+    <Compile Include="Debugger\IDebugSystemObjects2.cs" />
+    <Compile Include="Debugger\IDebugSystemObjects3.cs" />
+    <Compile Include="Debugger\Structs.cs" />
+    <Compile Include="Desktop\com.cs" />
+    <Compile Include="dacprivate.cs" />
+    <Compile Include="Desktop\threadpool.cs" />
+    <Compile Include="Desktop\domains.cs" />
+    <Compile Include="Desktop\fields.cs" />
+    <Compile Include="Desktop\heap.cs" />
+    <Compile Include="Desktop\helpers.cs" />
+    <Compile Include="Desktop\legacyruntime.cs" />
+    <Compile Include="Desktop\methods.cs" />
+    <Compile Include="Desktop\modules.cs" />
+    <Compile Include="Desktop\runtimebase.cs" />
+    <Compile Include="Desktop\threads.cs" />
+    <Compile Include="Desktop\types.cs" />
+    <Compile Include="Desktop\v45runtime.cs" />
+    <Compile Include="dumpdatareader.cs" />
+    <Compile Include="Desktop\lockinspection.cs" />
+    <Compile Include="Utilities\command.cs" />
+    <Compile Include="Utilities\DirectoryUtilities.cs" />
+    <Compile Include="Utilities\DumpReader.cs" />
+    <Compile Include="Utilities\FileUtilities.cs" />
+    <Compile Include="Utilities\pefile.cs" />
+    <Compile Include="Utilities\SymbolPath.cs" />
+    <Compile Include="Utilities\SymbolReader.cs" />
+    <Compile Include="Redhawk\dacprivate.cs" />
+    <Compile Include="Redhawk\heap.cs" />
+    <Compile Include="Redhawk\module.cs" />
+    <Compile Include="Redhawk\roots.cs" />
+    <Compile Include="Redhawk\runtime.cs" />
+    <Compile Include="Redhawk\types.cs" />
+    <Compile Include="runtimebase.cs" />
+  </ItemGroup>
+  <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
+</Project>
