@@ -181,3 +181,8 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# PerfView
+BuildDate.txt
+Global.dll
+PerfView.exe
