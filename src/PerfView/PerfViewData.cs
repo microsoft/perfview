@@ -2990,8 +2990,8 @@ namespace PerfView
                 var liveHandles = new Dictionary<long, GCHandleInfo>();
                 int maxLiveHandles = 0;
                 double maxLiveHandleRelativeMSec = 0;
-
-                clrPrivate.GCSetGCHandle += delegate(SetGCHandleTraceData data)
+                    
+                Action<SetGCHandleTraceData> onSetHandle = delegate(SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
                         return;
@@ -3020,7 +3020,10 @@ namespace PerfView
                         info.PinStack = stackSource.Interner.CallStackIntern(frameIndex, callStackIndex);
                     }
                 };
-                clrPrivate.GCDestroyGCHandle += delegate(DestroyGCHandleTraceData data)
+                clrPrivate.GCSetGCHandle += onSetHandle;
+                eventSource.Clr.GCSetGCHandle += onSetHandle;
+
+                Action<DestroyGCHandleTraceData> onDestroyHandle = delegate(DestroyGCHandleTraceData data)
                 {
                     GCHandleInfo info;
                     var handle = (long)data.HandleID;
@@ -3030,6 +3033,8 @@ namespace PerfView
                         liveHandles.Remove(handle);
                     }
                 };
+                clrPrivate.GCDestroyGCHandle += onDestroyHandle;
+                eventSource.Clr.GCDestoryGCHandle += onDestroyHandle;
 
                 eventSource.Process();
                 // Pick up any handles that were never destroyed.  
