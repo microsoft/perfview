@@ -88,6 +88,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 TraceActivity createdActivity = OnCreated(data, GetTPLRawID(data, data.TaskID, IDType.TplContinuation),
                     data.Behavior == TaskWaitBehavior.Synchronous ? TraceActivities.ActivityKind.TaskWaitSynchronous : TraceActivities.ActivityKind.TaskWait);
+                if (createdActivity == null)
+                    return;
 
                 // Remember the first begin on this activity (AwaitUnblock support).  
                 int idx = (int)createdActivity.Creator.Index;
@@ -515,6 +517,9 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(!m_rawIDToActivity.ContainsKey(rawScheduledActivityId) || m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivities.ActivityKind.FxTimer);
 
             TraceThread thread = data.Thread();
+            if (thread == null)
+                return null;
+
             TraceActivity creator = GetCurrentActivity(thread);
 
             TraceActivity created = new TraceActivity((ActivityIndex)m_indexToActivity.Count, creator, data.EventIndex, data.CallStackIndex(),
@@ -538,6 +543,9 @@ namespace Microsoft.Diagnostics.Tracing
             // EndWaits don't have a Stop associated with them.  It is assumed that there can only be one outstanding one so
             // so if we see a TaskWaitEnd AND the previous one is a TaskWaitEnd we will auto-stop it.    
             TraceThread thread = data.Thread();
+            if (thread == null)
+                return;
+
             TraceActivity existingActivity = m_threadToCurrentActivity[(int)thread.ThreadIndex];
             if (existingActivity != null && isAwaitEnd && NeedsImplicitCompletion(existingActivity.kind))
                 OnStop(data, existingActivity, thread);
@@ -615,7 +623,11 @@ namespace Microsoft.Diagnostics.Tracing
         private void OnStop(TraceEvent data, TraceActivity activity, TraceThread thread = null)
         {
             if (thread == null)
+            {
                 thread = data.Thread();
+                if (thread == null)
+                    return;
+            }
 
             // Invoke user callback if present.  We do this BEFORE the activity stops as that is the most useful.   
             var stop = Stop;

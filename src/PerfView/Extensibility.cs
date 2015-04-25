@@ -2644,6 +2644,19 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
+        /// Reads a project N metaData.csv file (From ILC.exe)  and converts it to a .GCDump file (a heap)
+        /// </summary>
+        public void ProjectNMetaData(string projectNMetadataDataCsv)
+        {
+            var metaDataReader = new ProjectNMetaDataLogReader();
+            var memoryGraph = metaDataReader.Read(projectNMetadataDataCsv);
+            var gcHeapDump = new GCHeapDump(memoryGraph);
+            var outputName = Path.ChangeExtension(projectNMetadataDataCsv, ".gcdump");
+            gcHeapDump.Write(outputName);
+            LogFile.WriteLine("[Writing the GCDump to {0}]");
+        }
+
+        /// <summary>
         /// This is used to visualize the Project N ILTransformed\*.reflectionlog.csv file so it can viewed 
         /// in PerfVIew.   
         /// </summary>

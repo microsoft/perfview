@@ -484,3 +484,110 @@ public class PdbScopeMemoryGraph : MemoryGraph
     Dictionary<int, AssemblyName> m_moduleMap;      // TODO FIX NOW not needed after PdbScope is fixed.  
     #endregion
 }
+
+
+/// <summary>
+/// Knows how to read the project N metadata.csv file format
+/// </summary>
+public class ProjectNMetaDataLogReader
+{
+    public ProjectNMetaDataLogReader() { }
+    public MemoryGraph Read(string projectNMetaDataLog)
+    {
+        m_graph = new MemoryGraph(1000);
+        m_knownTypes = new Dictionary<string, NodeTypeIndex>(1000);
+
+        using (TextReader reader = File.OpenText(projectNMetaDataLog))
+        {
+            int lineNum = 0;
+            string line;
+            try
+            {
+                // Skip headers line
+                line = reader.ReadLine();
+                lineNum++;
+                if (line == null)
+                    return null;
+
+                LineData lineData = new LineData();
+                for (; ; )
+                {
+                    line = reader.ReadLine();
+                    if (line == null)
+                        break;
+                    lineNum++;
+
+                    Match m = Regex.Match(line, "^(\\S+), +(\\S+), +\"(.*)\", +\"(.*?)\"$");
+                    if (m.Success)
+                    {
+                        uint newOffset = uint.Parse(m.Groups[1].Value, NumberStyles.HexNumber) & 0xFFFFFF;
+                        lineData.Size = (int)(newOffset - lineData.Offset);
+                        if (lineNum > 2)
+                        {
+                            NodeIndex nodeIndex = AddLineData(ref lineData);
+                            if (lineNum == 3)
+                                m_graph.RootIndex = nodeIndex;
+                        }
+
+                        lineData.Offset = newOffset;
+                        lineData.Kind = m.Groups[2].Value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+                        lineData.Name = m.Groups[3].Value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+                        lineData.Children.Clear();
+                        if (m.Groups[4].Length > 0)
+                        {
+                            string[] handleStrs = m.Groups[4].Value.Split(' ');
+                            foreach (var handleStr in handleStrs)
+                                lineData.Children.Add(m_graph.GetNodeIndex(uint.Parse(handleStr, NumberStyles.HexNumber) & 0xFFFFFF));
+                        }
+                    }
+                    else
+                        throw new FileFormatException();
+                }
+                if (lineNum > 1)
+                {
+                    lineData.Size = 16;  // TODO Better estimate. 
+                    AddLineData(ref lineData);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new FileFormatException("Error on line number " + lineNum + "  " + e.Message);
+            }
+        }
+        m_graph.AllowReading();
+        return m_graph;
+    }
+
+    private NodeIndex AddLineData(ref LineData lineData)
+    {
+        NodeIndex nodeIndex = m_graph.GetNodeIndex(lineData.Offset);
+        NodeTypeIndex nodeType = GetType(lineData.Kind + " " + lineData.Name, lineData.Size);
+        m_graph.SetNode(nodeIndex, nodeType, lineData.Size, lineData.Children);
+        return nodeIndex;
+    }
+
+    #region private
+    struct LineData
+    {
+        public int Size;
+        public uint Offset;
+        public string Kind;
+        public string Name;
+        public GrowableArray<NodeIndex> Children;
+    }
+
+    private NodeTypeIndex GetType(string name, int size=-1)
+    {
+        NodeTypeIndex ret;
+        if (!m_knownTypes.TryGetValue(name, out ret))
+        {
+            ret = m_graph.CreateType(name, null, size);
+            m_knownTypes.Add(name, ret);
+        }
+        return ret;
+    }
+
+    MemoryGraph m_graph;
+    Dictionary<string, NodeTypeIndex> m_knownTypes;
+    #endregion
+}
