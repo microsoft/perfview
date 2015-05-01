@@ -446,7 +446,19 @@ namespace ClrCap
         [XmlText]
         public string Details;
 
+        public DataPoint[] DataPoints;
+
         public MetricEffect[] MetricEffects;
+    }
+
+    [Serializable()]
+    public class DataPoint
+    {
+        [XmlAttribute]
+        public string Name;
+
+        [XmlAttribute]
+        public string Value;
     }
 
     [Serializable()]
@@ -594,12 +606,17 @@ namespace ClrCap
     class SBA
     {
         public bool IsIssue;
-        public string Description;
+        // Not all issues have detailed data. Detailed data is for things that are not
+        // easily visible from looking at GCStats, eg, which GCs demoted a large amount of memory.
+        public string DetailedData;
         public SBAType Type;
         // Each issue has 1 to 3 resource values associated with it. 
         public double PauseResourceValue;
         public double SizeResourceValue;
         public double RatioResourceValue;
+        // Not all issues have DataPoints because for some issues they are easily calculatable from 
+        // the data that we already expose in Process.
+        public DataPoint[] DataPoints;
         public MetricEffect[] MetricEffects;
 
         public SBA(SBAType _Type, bool _IsIssue = true)
@@ -635,20 +652,6 @@ namespace ClrCap
             if (InducedPercentage > 10)
             {
                 SBA Scenario = new SBA(SBAType.SBA_Excessive_Induced);
-
-                StringBuilder sbDescription = new StringBuilder("Too many induced GCs: ");
-                sbDescription.AppendFormat("{0}% GCs are induced ({1} out of {2} total GCs) - \r\n", InducedPercentage, stats.Total.NumInduced, Total.GCCount);
-
-                for (int i = 0; i < Generations.Length; i++)
-                {
-                    if (Generations[i].GCCount != 0)
-                    {
-                        int genInducedPercentage = stats.Generations[i].NumInduced * 100 / Generations[i].GCCount;
-                        sbDescription.AppendFormat("{0}% gen{1} GCs induced; ", genInducedPercentage, i);
-                    }
-                }
-
-                Scenario.Description = sbDescription.ToString();
                 Scenario.PauseResourceValue = Total.TotalInducedPauseDurationMSec;
 
                 Scenario.MetricEffects = new MetricEffect[]
@@ -674,10 +677,6 @@ namespace ClrCap
             if (LOHTriggeredPercentage > 30)
             {
                 SBA Scenario = new SBA(SBAType.SBA_Excessive_LOH_Triggered);
-
-                StringBuilder sbDescription = new StringBuilder("Too many GCs triggered by large object allocations: ");
-                sbDescription.AppendFormat("{0}% ({1} out of {2} GCs total)", LOHTriggeredPercentage, Total.NumLOHTriggered, NumFullGCs);
-                Scenario.Description = sbDescription.ToString();
                 Scenario.PauseResourceValue = Total.TotalLOHTriggeredPauseDurationMSec;
 
                 Scenario.MetricEffects = new MetricEffect[]
@@ -707,7 +706,6 @@ namespace ClrCap
                 if (SuspensionPercentage > 0.05)
                 {
                     ShouldAddSolution = true;
-                    sbDescription.AppendFormat("Before a GC can start the managed threads need to be suspended. {0}% spent in suspension - {1:f2}ms out of {2:f2}ms total pause.\r\n", (int)(SuspensionPercentage * (double)100), TotalSuspensionMSec, TotalPauseMSec);
                 }
 
                 int LongSuspensionCount = 0;
@@ -720,7 +718,6 @@ namespace ClrCap
                 if (LongSuspensionCount > 0)
                 {
                     ShouldAddSolution = true;
-                    sbDescription.Append("The following GCs had long suspension (> 10ms)\r\n");
                     for (int i = 0; i < Generations.Length; i++)
                     {
                         if ((Generations[i].LongSuspensionGCIndices != null) && (Generations[i].LongSuspensionGCIndices.Count > 0))
@@ -738,7 +735,7 @@ namespace ClrCap
                 if (ShouldAddSolution)
                 {
                     SBA Scenario = new SBA(SBAType.SBA_Long_Suspension);
-                    Scenario.Description = sbDescription.ToString();
+                    Scenario.DetailedData = sbDescription.ToString();
                     Scenario.PauseResourceValue = TotalSuspensionMSec;
                     Scenario.MetricEffects = new MetricEffect[]
                     {
@@ -761,7 +758,7 @@ namespace ClrCap
                 int TotalLowEphemeralGen1Count = 0;
                 SBA Scenario = new SBA(SBAType.SBA_Continous_Gen1_LowEph);
 
-                StringBuilder sbDescription = new StringBuilder("Continuous gen1 GCs triggered due to low ephemeral segment space: \r\n");
+                StringBuilder sbDescription = new StringBuilder();
 
                 for (int i = 0; i < Total.LowEphemeralGen1Indices.Count; i++)
                 {
@@ -779,11 +776,8 @@ namespace ClrCap
                     sbDescription.AppendFormat("#{0} to {1} ({2} GCs, {3:f2}ms pause)\r\n",
                         events[BeginIndex].GCNumber, events[EndIndex].GCNumber, (events[EndIndex].GCNumber - events[BeginIndex].GCNumber + 1), TotalPause);
                 }
-                sbDescription.AppendFormat("Pause caused by total {0} gen1 GCs due to low ephemeral is {1:f2}ms, {2}% of total pause",
-                    TotalLowEphemeralGen1Count, TotalLowEphemeralGen1Pause,
-                    (int)(TotalLowEphemeralGen1Pause * 100 / stats.Total.TotalPauseTimeMSec));
 
-                Scenario.Description = sbDescription.ToString();
+                Scenario.DetailedData = sbDescription.ToString();
                 Scenario.PauseResourceValue = TotalLowEphemeralGen1Pause;
 
                 Scenario.MetricEffects = new MetricEffect[]
@@ -813,11 +807,6 @@ namespace ClrCap
                 if (ObjRatio < 5)
                 {
                     SBA Scenario = new SBA(SBAType.SBA_High_Gen0_Frag, false);
-                    StringBuilder sbDescription = new StringBuilder("Gen0 fragmentation is high: \r\n");
-                    sbDescription.AppendFormat("Gen0 takes up {0}% total heap size, this seems big but {1}% is fragmentation which is used to satisfy object allocations.\r\n",
-                        Gen0Ratio, (100 - ObjRatio));
-                    sbDescription.AppendFormat("Objects in Gen0 are only taking up {0:f2}MB on average after GCs", (Total.TotalGen0ObjSizeAfterMB / Total.GCCount));
-                    Scenario.Description = sbDescription.ToString();
                     Scenario.SizeResourceValue = (Total.TotalGen0SizeAfterMB - Total.TotalGen0ObjSizeAfterMB) / Total.GCCount;
 
                     Scenario.MetricEffects = new MetricEffect[]
@@ -848,10 +837,6 @@ namespace ClrCap
                 if (ObjRatio < 50)
                 {
                     SBA Scenario = new SBA(SBAType.SBA_High_LOH_Frag);
-                    StringBuilder sbDescription = new StringBuilder("LOH fragmentation is high: \r\n");
-                    sbDescription.AppendFormat("LOH takes up {0}% total heap size and {1}% is fragmentation. This is considered high.",
-                        LOHRatio, ObjRatio);
-                    Scenario.Description = sbDescription.ToString();
                     Scenario.SizeResourceValue = (Total.TotalGen3SizeAfterMB - Total.TotalGen3ObjSizeAfterMB) / Total.GCCount;
 
                     Scenario.MetricEffects = new MetricEffect[]
@@ -892,12 +877,21 @@ namespace ClrCap
                 }
 
                 SBA Scenario = new SBA(SBAType.SBA_High_Gen2Fb_Frag);
-                StringBuilder sbDescription = new StringBuilder("Gen2 fragmentation is high after full blocking GCs: \r\n");
-                sbDescription.AppendFormat("We observe {0}% fragmentation in gen2 after full blocking GCs and on average {1} pinned object for these GCs ",
-                    (100 - Gen2BlockingRatio), (int)(Gen2BlockingPinnedObjCount / Gen2BlockingCount));
-                Scenario.Description = sbDescription.ToString();
                 Scenario.SizeResourceValue = (Total.TotalGen2SizeAfterFbMB - Total.TotalGen2ObjSizeAfterFbMB) / Total.GCCount;
 
+                Scenario.DataPoints = new DataPoint[]
+                {
+                    new DataPoint() 
+                    {
+                        Name = "Gen2FbFragRatio",
+                        Value = (100 - Gen2BlockingRatio).ToString()
+                    },
+                    new DataPoint()
+                    {
+                        Name = "AvgNumberOfPinnedObjects",
+                        Value = ((int)(Gen2BlockingPinnedObjCount / Gen2BlockingCount)).ToString()
+                    }
+                };
                 Scenario.MetricEffects = new MetricEffect[]
                 {
                     new MetricEffect()
@@ -929,9 +923,7 @@ namespace ClrCap
             if ((Total.LargeGen0PerHeapObjSize != null) && (Total.LargeGen0PerHeapObjSize.Count > 0))
             {
                 SBA Scenario = new SBA(SBAType.SBA_Excessive_Demotion);
-                StringBuilder sbDescription = new StringBuilder("When pinning occurs, GC may choose to leave pinned objects in Gen0 so that the free space between them can be used for allocations\r\n");
-                sbDescription.AppendFormat("but this means it could cause possible long Gen0 pauses. Detected {0} GCs where we left more than 6mb in gen0: \r\n",
-                    Total.LargeGen0PerHeapObjSize.Count);
+                StringBuilder sbDescription = new StringBuilder();
 
                 double AffectedPauseTimeMsec = 0.0;
                 for (int i = 0; i < Total.LargeGen0PerHeapObjSize.Count; i++)
@@ -943,8 +935,16 @@ namespace ClrCap
                 }
 
                 Scenario.PauseResourceValue = AffectedPauseTimeMsec;
-                Scenario.Description = sbDescription.ToString();
+                Scenario.DetailedData = sbDescription.ToString();
 
+                Scenario.DataPoints = new DataPoint[]
+                {
+                    new DataPoint()
+                    {
+                        Name = "NumberOfGCsDemotion",
+                        Value = (Total.LargeGen0PerHeapObjSize.Count).ToString()
+                    }
+                };
                 Scenario.MetricEffects = new MetricEffect[]
                 {
                     new MetricEffect()
@@ -958,23 +958,36 @@ namespace ClrCap
             }
         }
 
-        static string[] CondemnedReasonDescription = new string[]
+        struct  CondemnedReasonInfo
         {
-            "Initial generation",
-            "Final generation",
-            "Budget exceeded",
-            "Time tuning",
-            "Induced",
-            "Low ephemeral",
-            "Expand heap",
-            "Fragmented ephemeral generations",
-            "Very fragmented ephemeral generations",
-            "Fragmented Gen2",
-            "High memory",
-            "Last GC before OOM",
-            "Small Heap",
-            "Ephemeral GC before a background GC starts",
-            "Internal Tuning"
+            public string DataPointName;
+            public string Description;
+            
+            public CondemnedReasonInfo(string name, string descr)
+            {
+                DataPointName = name;
+                Description = descr;
+            }
+        }
+
+        // Note, if you change this, you should change it in the CAP website code as well.
+        static CondemnedReasonInfo[] CondemnedReasonDescription = new CondemnedReasonInfo[]
+        {
+            new CondemnedReasonInfo("InitialGen", "Initial generation"),
+            new CondemnedReasonInfo("FinalGen", "Final generation"),
+            new CondemnedReasonInfo("BudgetExceeded", "Budget exceeded"),
+            new CondemnedReasonInfo("TimeTuning", "Time tuning"),
+            new CondemnedReasonInfo("Induced", "Induced"),
+            new CondemnedReasonInfo("LowEphemeral", "Low ephemeral"),
+            new CondemnedReasonInfo("ExpandHeap", "Expand heap"),
+            new CondemnedReasonInfo("FragmentEphemeral", "Fragmented ephemeral generations"),
+            new CondemnedReasonInfo("VFragmentEphemera", "Very fragmented ephemeral generations"),
+            new CondemnedReasonInfo("FragmentGen2", "Fragmented Gen2"),
+            new CondemnedReasonInfo("HighMemory", "High memory"),
+            new CondemnedReasonInfo("LastGC", "Last GC before OOM"),
+            new CondemnedReasonInfo("SmallHeap", "Small Heap"),
+            new CondemnedReasonInfo("EphemeralBeforeBGC", "Ephemeral GC before a background GC starts"),
+            new CondemnedReasonInfo("InternalTuning", "Internal Tuning")
         };
 
         static string[] FullGCCondemnedReasonActionItem = new string[]
@@ -1011,7 +1024,7 @@ namespace ClrCap
 
             if (FullGCPauseRatio > 30)
             {
-                double TotalHighMemSweepingGen2Pause = 0;
+                double TotalHighMemSweepingGen2PauseMSec = 0;
                 if ((Total.HighMemSweepingFullGCIndices != null) && (Total.HighMemSweepingFullGCIndices.Count > 0))
                 {
                     int TotalHighMemSweepingGen2Count = 0;
@@ -1028,37 +1041,39 @@ namespace ClrCap
                         {
                             TotalPause += events[index].PauseDurationMSec;
                         }
-                        TotalHighMemSweepingGen2Pause += TotalPause;
+                        TotalHighMemSweepingGen2PauseMSec += TotalPause;
                         TotalHighMemSweepingGen2Count += EndIndex - BeginIndex + 1;
 
                         sbDescription.AppendFormat("#{0} to {1} ({2} GCs, {3:f2}ms pause)\r\n",
                             events[BeginIndex].GCNumber, events[EndIndex].GCNumber, (EndIndex - BeginIndex + 1), TotalPause);
                     }
-                    sbDescription.AppendFormat("Pause caused by total {0} back to back gen2 GCs in high memory is {1:f2}ms, {2}% of total pause",
-                        TotalHighMemSweepingGen2Count, TotalHighMemSweepingGen2Pause,
-                        (int)(TotalHighMemSweepingGen2Pause * 100 / stats.Total.TotalPauseTimeMSec));
 
-                    Scenario.Description = sbDescription.ToString();
-                    Scenario.PauseResourceValue = TotalHighMemSweepingGen2Pause;
+                    Scenario.DetailedData = sbDescription.ToString();
+                    Scenario.PauseResourceValue = TotalHighMemSweepingGen2PauseMSec;
+                    Scenario.DataPoints = new DataPoint[]
+                    {
+                        new DataPoint()
+                        {
+                            Name = "TotalHighMemSweepingGen2Count",
+                            Value = TotalHighMemSweepingGen2Count.ToString()
+                        }
+                    };
 
                     Scenario.MetricEffects = new MetricEffect[]
                     {
                         new MetricEffect()
                         {
                             Metric = Metric.GCPauseTime,
-                            Effect = TotalHighMemSweepingGen2Pause / stats.Total.TotalPauseTimeMSec
+                            Effect = TotalHighMemSweepingGen2PauseMSec / stats.Total.TotalPauseTimeMSec
                         }
                     };
 
                     SBAs.Add(Scenario);
                 }
 
-                if ((int)(TotalHighMemSweepingGen2Pause * 100.0 / stats.Generations[2].TotalPauseTimeMSec) < 80)
+                if ((int)(TotalHighMemSweepingGen2PauseMSec * 100.0 / stats.Generations[2].TotalPauseTimeMSec) < 80)
                 {
                     SBA Scenario = new SBA(SBAType.SBA_Excessive_Pause_FullGCs);
-                    StringBuilder sbDescription = new StringBuilder("Full GCs caused long pauses - ");
-                    sbDescription.AppendFormat("{0}% total pause ({1:f2}ms) is caused by full GCs ({2:f2}ms, full blocking GCs took {3:f2}ms). They happened due to the following reasons - \r\n",
-                        FullGCPauseRatio, stats.Total.TotalPauseTimeMSec, stats.Generations[2].TotalPauseTimeMSec, Total.TotalBlockingGen2Pause);
 
                     if (stats.m_detailedGCInfo)
                     {
@@ -1078,13 +1093,18 @@ namespace ClrCap
                             }
                         }
 
+                        Scenario.DataPoints = new DataPoint[FullGCReasonInfo.Count];
+                        int ReasonIndex = 0;
+
                         foreach (KeyValuePair<CondemnedReasonGroup, int> Reason in FullGCReasonInfo)
                         {
-                            sbDescription.AppendFormat("{0,8} GCs hit reason: {1}\r\n", Reason.Value, CondemnedReasonDescription[(int)(Reason.Key)]);
+                            Scenario.DataPoints[ReasonIndex] = new DataPoint();
+                            Scenario.DataPoints[ReasonIndex].Name = CondemnedReasonDescription[(int)(Reason.Key)].DataPointName;
+                            Scenario.DataPoints[ReasonIndex].Value = Reason.Value.ToString();
+                            ReasonIndex++;
                         }
 
-                        Scenario.Description = sbDescription.ToString();
-                        StringBuilder sbAction = new StringBuilder("The following are reasons for full blocking GCs\r\n");
+                        StringBuilder sbAction = new StringBuilder("The following is more info on these GCs\r\n");
 
                         foreach (KeyValuePair<CondemnedReasonGroup, int> Reason in FullGCReasonInfo)
                         {
@@ -1094,18 +1114,19 @@ namespace ClrCap
                                 (Reason.Key == CondemnedReasonGroup.CRG_GC_Before_OOM))
                                 sbAction.AppendFormat("{0} causes full blocking GCs: {1}\r\n", Reason.Key, FullGCCondemnedReasonActionItem[(int)Reason.Key]);
                             else
-                                sbAction.AppendFormat("{0} alone doesn't cause full blocking GCs\r\n", CondemnedReasonDescription[(int)(Reason.Key)]);
+                                sbAction.AppendFormat("{0} alone doesn't cause full blocking GCs\r\n", CondemnedReasonDescription[(int)(Reason.Key)].Description);
                         }
 
+                        Scenario.DetailedData = sbAction.ToString();
                         SBAs.Add(Scenario);
                     }
-                    else
-                    {
-                        sbDescription.Append("No GC events available to figure out reasons for full GCs. \r\n");
-                        sbDescription.Append("This means either you are not collecting private GC events or you are not using CLR 4.0 or newer}");
-                        Scenario.Description = sbDescription.ToString();
-                        SBAs.Add(Scenario);
-                    }
+                    //else
+                    //{
+                    //    sbDescription.Append("No GC events available to figure out reasons for full GCs. \r\n");
+                    //    sbDescription.Append("This means either you are not collecting private GC events or you are not using CLR 4.0 or newer}");
+                    //    Scenario.DetailedData = sbDescription.ToString();
+                    //    SBAs.Add(Scenario);
+                    //}
                 }
             }
         }
@@ -1122,7 +1143,7 @@ namespace ClrCap
             if (!stats.m_detailedGCInfo) return;
 
             int[] TotalLongGCCount = new int[2];
-            double[] TotalGCTime = new double[2];
+            double[] TotalLongGCTime = new double[2];
             double[] TotalMaxMarkTime = new double[2];
             double[] TotalAvgMarkTime = new double[2];
 
@@ -1183,7 +1204,7 @@ namespace ClrCap
                         }
 
                         {
-                            TotalGCTime[index] += _event.GCDurationMSec;
+                            TotalLongGCTime[index] += _event.GCDurationMSec;
                             TotalMaxMarkTime[index] += CurrentMaxTotalMark;
                             TotalAvgMarkTime[index] += (MarkTimeAllHeaps / _event.PerHeapMarkTimes.Count);
 
@@ -1196,31 +1217,64 @@ namespace ClrCap
                 }
             }
 
-            for (int i = 0; i < TotalGCTime.Length; i++)
+            for (int i = 0; i < TotalLongGCTime.Length; i++)
             {
-                if (TotalGCTime[i] != 0)
+                if (TotalLongGCTime[i] != 0)
                 {
-                    int MarkRatio = (int)(TotalMaxMarkTime[i] * 100.0 / TotalGCTime[i]);
+                    int MarkRatio = (int)(TotalMaxMarkTime[i] * 100.0 / TotalLongGCTime[i]);
                     if (MarkRatio > 30)
                     {
+                        int Balanced = 100;
                         SBA Scenario = new SBA((i == 0) ? SBAType.SBA_LongMarking_Ephemeral : SBAType.SBA_LongMarking_FullBlocking);
-                        StringBuilder sbDescription = new StringBuilder("");
-                        sbDescription.AppendFormat("{0} long {1} GCs (> {2}ms) found; marking took {3:f2}ms, {4}% of the total GC duration ({5:f2}ms)\r\n",
-                            TotalLongGCCount[i], ((i == 0) ? "ephemeral" : "full blocking"), LongGCTimeThreshold[i], TotalMaxMarkTime[i], MarkRatio, TotalGCTime[i]);
-                        if (stats.isServerGCUsed == 1)
-                        {
-                            int Balanced = (int)(TotalAvgMarkTime[i] * 100.0 / TotalMaxMarkTime[i]);
-                            sbDescription.AppendFormat("Marking was {0} balanced, total max time spent was {1:f2}ms, total average {2:f2}ms.\r\n",
-                                ((Balanced > 50) ? "fairly" : "not very"), TotalMaxMarkTime[i], TotalAvgMarkTime[i]);
-                        }
-
-                        sbDescription.AppendFormat("Displaying what the longest stages took:\r\n");
-                        foreach (KeyValuePair<MarkRootType, double> item in TotalMaxMarkStage[i])
-                        {
-                            sbDescription.AppendFormat("Stage {0,8} took {1:f2}ms total when it was the longest\r\n", item.Key, item.Value);
-                        }
-                        Scenario.Description = sbDescription.ToString();
                         Scenario.PauseResourceValue = TotalMaxMarkTime[i];
+                        Scenario.DataPoints = new DataPoint[]
+                        {
+                            new DataPoint()
+                            {
+                                Name = "TotalLongGCCount",
+                                Value = TotalLongGCCount[i].ToString()
+                            },
+                            new DataPoint()
+                            {
+                                Name = "LongGCTimeThreshold",
+                                Value = LongGCTimeThreshold[i].ToString()
+                            },
+                            new DataPoint()
+                            {
+                                Name = "TotalLongGCTime",
+                                Value = TotalLongGCTime[i].ToString()
+                            },
+                            new DataPoint()
+                            {
+                                Name = "Balanced",
+                                Value = ((Balanced > 50) ? "fairly" : "not very")
+                            },
+                            new DataPoint()
+                            {
+                                Name = "TotalAvgMarkTime",
+                                Value = TotalAvgMarkTime[i].ToString()
+                            },
+                            new DataPoint()
+                            {
+                                Name = "MarkStack",
+                                Value = (TotalMaxMarkStage[i].ContainsKey(MarkRootType.MarkStack) ? TotalMaxMarkStage[i][MarkRootType.MarkStack].ToString() : "0")
+                            },
+                            new DataPoint()
+                            {
+                                Name = "MarkFQ",
+                                Value = (TotalMaxMarkStage[i].ContainsKey(MarkRootType.MarkFQ) ? TotalMaxMarkStage[i][MarkRootType.MarkFQ].ToString() : "0")
+                            },
+                            new DataPoint()
+                            {
+                                Name = "MarkHandles",
+                                Value = (TotalMaxMarkStage[i].ContainsKey(MarkRootType.MarkHandles) ? TotalMaxMarkStage[i][MarkRootType.MarkHandles].ToString() : "0")
+                            },
+                            new DataPoint()
+                            {
+                                Name = "MarkOlder",
+                                Value = (TotalMaxMarkStage[i].ContainsKey(MarkRootType.MarkOlder) ? TotalMaxMarkStage[i][MarkRootType.MarkOlder].ToString() : "0")
+                            }
+                        };
                         Scenario.MetricEffects = new MetricEffect[]
                         {
                             new MetricEffect()
@@ -1263,9 +1317,6 @@ namespace ClrCap
                 //}
 
                 SBA Scenario = new SBA(SBAType.SBA_Overly_Pinned);
-                StringBuilder sbDescription = new StringBuilder("");
-                sbDescription.AppendFormat("{0}% pinning was due to GC instead of due to user code. This is a GC problem", (100 - ActualPinnedRatio));
-                Scenario.Description = sbDescription.ToString();
                 Scenario.RatioResourceValue = 100 - ActualPinnedRatio;
                 
                 SBAs.Add(Scenario);
@@ -1282,10 +1333,6 @@ namespace ClrCap
             if (FreeListEfficiency < 50)
             {
                 SBA Scenario = new SBA(SBAType.SBA_Low_Gen2Free_Efficiency);
-                StringBuilder sbDescription = new StringBuilder("We detected the free list in gen2 was not used efficiently\r\n");
-                sbDescription.AppendFormat("We looked at {0} gen1 GCs that survived {1} total bytes into gen2 and consumed {2} bytes of gen2's free list. Efficiency is only {3}%.",
-                    Total.Gen2FreeListEfficiency.GCCount, Total.Gen2FreeListEfficiency.TotalAllocated,
-                    Total.Gen2FreeListEfficiency.TotalFreeListConsumed, FreeListEfficiency);
 
                 //for (int i = 0; i < events.Count; i++)
                 //{
@@ -1302,9 +1349,25 @@ namespace ClrCap
                 //    }
                 //}
 
-                Scenario.Description = sbDescription.ToString();
                 Scenario.RatioResourceValue = FreeListEfficiency;
-
+                Scenario.DataPoints = new DataPoint[]
+                {
+                    new DataPoint()
+                    {
+                        Name = "Gen1GCCount",
+                        Value = Total.Gen2FreeListEfficiency.GCCount.ToString()
+                    },
+                    new DataPoint()
+                    {
+                        Name = "Gen1SurvIntoGen2",
+                        Value = Total.Gen2FreeListEfficiency.TotalAllocated.ToString()
+                    },
+                    new DataPoint()
+                    {
+                        Name = "FreeListConsumed",
+                        Value = Total.Gen2FreeListEfficiency.TotalFreeListConsumed.ToString()
+                    }
+                };
                 // Calculate the ratio of unused free list to heap size.
                 double totalGen2HeapSizeMB = Total.Gen2FreeListEfficiency.TotalHeapSizeMB;
                 double totalGen2UnusedFreeListMB = (Total.Gen2FreeListEfficiency.TotalFreeListConsumed * ((100.0 - FreeListEfficiency)/100.0))/1024/1024;
@@ -1379,12 +1442,15 @@ namespace ClrCap
                 if ((AverageWaitRatio > 10) || (LongWaitCount != 0))
                 {
                     SBA Scenario = new SBA(SBAType.SBA_LOHAlloc_BGC);
-                    StringBuilder sbDescription = new StringBuilder("Detected threads making large object allocations having to wait due to Background GC\r\n");
-                    sbDescription.AppendFormat("In {0} background GCs on average threads spent {1}% time waiting; observed wait > 200ms {2} times",
-                        BGCCount, AverageWaitRatio, LongWaitCount);
-                    Scenario.Description = sbDescription.ToString();
                     Scenario.PauseResourceValue = LongWaitCount;
-
+                    Scenario.DataPoints = new DataPoint[]
+                    {
+                        new DataPoint()
+                        {
+                            Name = "AverageWaitRatio",
+                            Value = AverageWaitRatio.ToString()
+                        }
+                    };
                     SBAs.Add(Scenario);
                 }
             }
@@ -1816,22 +1882,24 @@ namespace ClrCap
                     {
                         Issues[issueIndex] = new Issue();
                         Issues[issueIndex].Name = sba.Type.ToString();
-                        Issues[issueIndex].Details = sba.Description;
+                        Issues[issueIndex].Details = sba.DetailedData;
                         Issues[issueIndex].PauseResourceValue = sba.PauseResourceValue;
                         Issues[issueIndex].SizeResourceValue = sba.SizeResourceValue;
                         Issues[issueIndex].RatioResourceValue = sba.RatioResourceValue;
                         Issues[issueIndex].MetricEffects = sba.MetricEffects;
+                        Issues[issueIndex].DataPoints = sba.DataPoints;
                         issueIndex++;
                     }
                     else
                     {
                         FYIs[fyiIndex] = new Issue();
                         FYIs[fyiIndex].Name = sba.Type.ToString();
-                        FYIs[fyiIndex].Details = sba.Description;
+                        FYIs[fyiIndex].Details = sba.DetailedData;
                         FYIs[fyiIndex].PauseResourceValue = sba.PauseResourceValue;
                         FYIs[fyiIndex].SizeResourceValue = sba.SizeResourceValue;
                         FYIs[fyiIndex].RatioResourceValue = sba.RatioResourceValue;
                         FYIs[fyiIndex].MetricEffects = sba.MetricEffects;
+                        FYIs[fyiIndex].DataPoints = sba.DataPoints;
                         fyiIndex++;
                     }
                 }
