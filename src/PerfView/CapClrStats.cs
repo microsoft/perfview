@@ -52,11 +52,11 @@ namespace PerfView.CapStats
             this.eventDispatcher = eventDispatcher;
         }
 
-        internal ProcessLookup<GCProcess> Collect(string etlDataFilePath, TraceLog traceLog)
+        internal ProcessLookup<GCProcess> Collect(string etlDataFilePath, ETWTraceEventSource eventSource)
         {
             CapCollection.SetupCapCollectors(eventDispatcher, Report);
             ProcessLookup<GCProcess> stats = Stats.GCProcess.Collect(eventDispatcher, 1);
-            CapCollection.UpdateCommonInfo(etlDataFilePath, traceLog, Report);
+            CapCollection.UpdateCommonInfo(etlDataFilePath, eventSource, Report);
             return stats;
         }
     }
@@ -78,7 +78,7 @@ namespace PerfView.CapStats
         {
             CapCollection.SetupCapCollectors(Source, Report);
             ProcessLookup<JitCapProcess> stats = JitCapProcess.Collect(this);
-            CapCollection.UpdateCommonInfo(EtlDataFile.FilePath, TraceLog, Report);
+            //CapCollection.UpdateCommonInfo(EtlDataFile.FilePath, TraceLog, Report);
             return stats;
         }
 
@@ -186,7 +186,7 @@ namespace PerfView.CapStats
             };
         }
 
-        public static void UpdateCommonInfo(string savedEtlFile, TraceLog source, ClrCap.CAPAnalysisBase report)
+        public static void UpdateCommonInfo(string savedEtlFile, ETWTraceEventSource source, ClrCap.CAPAnalysisBase report)
         {
             report.TraceInfo.NumberOfLostEvents = source.EventsLost;
             report.TraceInfo.TraceDurationSeconds = source.SessionDuration.TotalSeconds;
@@ -194,7 +194,7 @@ namespace PerfView.CapStats
             report.TraceInfo.TraceStart = source.SessionStartTime;
             report.TraceInfo.FileLocation = Path.GetFullPath(savedEtlFile);
             report.OSInfo.Version = source.OSVersion.ToString();
-            report.EventStats.PopulateEventCounts(source.Stats);
+            //report.EventStats.PopulateEventCounts(source.Stats);
         }
     }
 
