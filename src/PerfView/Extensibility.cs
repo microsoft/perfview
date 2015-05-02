@@ -2982,9 +2982,9 @@ namespace PerfViewExtensibility
         {
             string savedEtlFile = etlFile;
             ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
-            TraceLog source = TraceLog.OpenOrConvert(etlFile);
+            ETWTraceEventSource source = new ETWTraceEventSource(etlFile, TraceEventSourceType.MergeAll);
 
-            GcCapCollector gcCollector = new GcCapCollector(source.Events.GetSource());
+            GcCapCollector gcCollector = new GcCapCollector(source);
             var gcStats = gcCollector.Collect(etlFile, source);
             ClrCap.CAP.GenerateCAPReport(gcStats, gcCollector.Report);
             gcCollector.Report.WriteToFileXML(StripFileExt(savedEtlFile));
