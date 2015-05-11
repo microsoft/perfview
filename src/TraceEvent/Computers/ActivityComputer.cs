@@ -371,8 +371,10 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
 
-        // If set, we don't assume that the top top frames are an attribute of the TOP THREAD  (if they vary based on
-        // the current activity, then you can't cache.   Setting this disables caching.  
+        /// <summary>
+        /// If set, we don't assume that the top top frames are an attribute of the TOP THREAD  (if they vary based on
+        /// the current activity, then you can't cache.   Setting this disables caching.  
+        /// </summary>
         public bool NoCache;
 
         #region Private

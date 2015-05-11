@@ -905,7 +905,7 @@ namespace FastSerialization
         {
             long len = Length;
             if (len != (uint)len)
-                throw new NotSupportedException("Streams larger than 4Gig");
+                throw new NotSupportedException("Streams larger than 4 GB.  You need to use /MaxEventCount to limit the size.");
             return (StreamLabel)len;
         }
         /// <summary>

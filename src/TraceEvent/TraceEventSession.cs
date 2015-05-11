@@ -262,7 +262,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
                 }
 
-                const int MaxDesc = 7;  // This number needs to be bumped for to insure that all curDescrIdx never exceeds it below.  
+                const int MaxDesc = 7;  // This number may need to be bumped in the future,  to insure that all curDescrIdx never exceeds it below.  
                 TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR* filterDescrPtr = stackalloc TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR[MaxDesc];
                 int curDescrIdx = 0;
                 fixed (byte* providerDataPtr = valueData)
@@ -1200,7 +1200,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
 
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
-                if (retValue != 0)
+                if (retValue != 0 || retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
                     throw new ApplicationException("Merge operation failed return code 0x" + retValue.ToString("x"));
             }
             finally

@@ -435,6 +435,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     /// </summary>
     public enum CallTreeNodeIndex
     {
+        /// <summary>
+        /// An Invalid Node Index.
+        /// </summary>
         Invalid = -1
     };
 

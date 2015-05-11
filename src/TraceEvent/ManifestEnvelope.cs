@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
         public ManifestFormats Format;
         public byte MajorVersion;
         public byte MinorVersion;
-        public byte Magic;
+        public byte Magic;              // This is always 0x5B, which marks this as an envelope (with 1/256 probability of random collision)
         public ushort TotalChunks;
         public ushort ChunkNumber;
     };

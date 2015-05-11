@@ -115,6 +115,8 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
                         info.UsesDotNet = true;
                     else if (fileName.EndsWith("mscorwks.dll", StringComparison.OrdinalIgnoreCase))
                         info.UsesDotNet = true;
+                    else if (0 <= fileName.IndexOf(@"\mrt", StringComparison.OrdinalIgnoreCase))
+                        info.UsesDotNet = true;
                     else if (fileName.EndsWith("jscript9.dll", StringComparison.OrdinalIgnoreCase))
                         info.UsesJavaScript = true;
                     else if (fileName.EndsWith("chakra.dll", StringComparison.OrdinalIgnoreCase))

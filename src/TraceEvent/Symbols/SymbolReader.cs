@@ -1005,12 +1005,12 @@ namespace Microsoft.Diagnostics.Symbols
             if (SecurityCheck == null)
             {
                 m_log.WriteLine("Found PDB {0}, however this is in an unsafe location.", pdbName);
-                m_log.WriteLine("If you trust this location, place this directory the symbol path to correct this.");
+                m_log.WriteLine("If you trust this location, place this directory the symbol path to correct this (or use the SecurityCheck method to override)");
                 return false;
             }
             if (!SecurityCheck(pdbName))
             {
-                m_log.WriteLine("Found PDB {0}, but failed securty check.", pdbName);
+                m_log.WriteLine("Found PDB {0}, but failed security check.", pdbName);
                 return false;
             }
             return true;

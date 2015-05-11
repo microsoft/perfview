@@ -35,7 +35,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (state == null)
             {
                 StateObject = state = new DynamicTraceEventParserState();
-                dynamicManifests = new Dictionary<Guid, DynamicManifestInfo>();
+                partialManifests = new Dictionary<Guid, List<PartialManifestInfo>>();
 
                 this.source.RegisterUnhandledEvent(CheckForDynamicManifest);
             }
@@ -177,18 +177,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
 
             // Look up our information. 
-            DynamicManifestInfo dynamicManifest;
-            if (!dynamicManifests.TryGetValue(data.ProviderGuid, out dynamicManifest))
+            List<PartialManifestInfo> partialManifestsForGuid;
+            if (!partialManifests.TryGetValue(data.ProviderGuid, out partialManifestsForGuid))
             {
-                dynamicManifest = new DynamicManifestInfo();
-                dynamicManifests.Add(data.ProviderGuid, dynamicManifest);
+                partialManifestsForGuid = new List<PartialManifestInfo>();
+                partialManifests.Add(data.ProviderGuid, partialManifestsForGuid);
             }
 
-            ProviderManifest provider = dynamicManifest.AddChunk(data);
+            var partialManifest = partialManifestsForGuid.Find(e => data.ProcessID == e.ProcessID && data.ThreadID == e.ThreadID);
+            if (partialManifest == null)
+            {
+                partialManifest = new PartialManifestInfo() { ProcessID = data.ProcessID, ThreadID = data.ThreadID };
+                partialManifestsForGuid.Add(partialManifest);
+            }
+
+            ProviderManifest provider = partialManifest.AddChunk(data);
             // We have a completed manifest, add it to our list.  
             if (provider != null)
             {
-                dynamicManifests.Remove(data.ProviderGuid);
+                partialManifestsForGuid.Remove(partialManifest);
+
+                // Throw away emtpy lists or lists that are old
+                var nowUtc = DateTime.UtcNow;
+                if (partialManifestsForGuid.Count == 0 || partialManifestsForGuid.TrueForAll(e => (nowUtc - e.StartedUtc).TotalSeconds > 10))
+                    partialManifests.Remove(data.ProviderGuid);
                 AddDynamicProvider(provider, true);
                 return true;  // I should have added a manifest event, so re-lookup the event 
             }
@@ -220,12 +232,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private class DynamicManifestInfo
+        private class PartialManifestInfo
         {
-            internal DynamicManifestInfo() { }
+            internal PartialManifestInfo() { StartedUtc = DateTime.UtcNow; }
 
+            internal DateTime StartedUtc;    // When we started
             byte[][] Chunks;
             int ChunksLeft;
+            internal int ProcessID;          // The process and thread ID that is emitting this manifest (acts as a stream ID)
+            internal int ThreadID;           // The process and thread ID that is emitting this manifest (acts as a stream ID)
+
             ProviderManifest provider;
             byte majorVersion;
             byte minorVersion;
@@ -234,19 +250,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             internal unsafe ProviderManifest AddChunk(TraceEvent data)
             {
                 if (provider != null)
-                    return null;
+                    goto Fail;
 
-                // TODO 
                 if (data.EventDataLength <= sizeof(ManifestEnvelope) || data.GetByteAt(3) != 0x5B)  // magic number 
-                    return null;
+                    goto Fail;
 
                 ushort totalChunks = (ushort)data.GetInt16At(4);
                 ushort chunkNum = (ushort)data.GetInt16At(6);
                 if (chunkNum >= totalChunks || totalChunks == 0)
-                    return null;
+                    goto Fail;
 
                 if (Chunks == null)
                 {
+                    // To allow for resyncing at 0, otherwise we fail aggressively. 
+                    if (chunkNum != 0)
+                        goto Fail;
+
                     format = (ManifestEnvelope.ManifestFormats)data.GetByteAt(0);
                     majorVersion = (byte)data.GetByteAt(1);
                     minorVersion = (byte)data.GetByteAt(2);
@@ -258,11 +277,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Chunks have to agree with the format and version information. 
                     if (format != (ManifestEnvelope.ManifestFormats)data.GetByteAt(0) ||
                         majorVersion != data.GetByteAt(1) || minorVersion != data.GetByteAt(2))
-                        return null;
+                        goto Fail;
                 }
 
-                if (Chunks[chunkNum] != null)
-                    return null;
+                if (Chunks.Length <= chunkNum || Chunks[chunkNum] != null)
+                    goto Fail;
 
                 byte[] chunk = new byte[data.EventDataLength - 8];
                 Chunks[chunkNum] = data.EventData(chunk, 0, 8, chunk.Length);
@@ -292,11 +311,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion);
                 provider.ISDynamic = true;
                 return provider;
+
+            Fail:
+                Chunks = null;
+                return null;
             }
         }
 
         DynamicTraceEventParserState state;
-        private Dictionary<Guid, DynamicManifestInfo> dynamicManifests;
+        private Dictionary<Guid, List<PartialManifestInfo>> partialManifests;
+
         #endregion
     }
 
@@ -474,7 +498,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var ret = Array.CreateInstance(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
-                    ret.SetValue(GetPayloadValueAt(ref arrayInfo.Element, offset), i);
+                    object value = GetPayloadValueAt(ref arrayInfo.Element, offset);
+                    if (value.GetType() != elementType)
+                        value = ((IConvertible) value).ToType(elementType, null);
+                    ret.SetValue(value, i);
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset);
                 }
                 return ret;
@@ -575,8 +602,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         return GetGuidAt(offset);
                     else if (type == typeof(DateTime))
                         return DateTime.FromFileTime(GetInt64At(offset));
-                            else
-                    return "[UNSUPPORTED TYPE]";
+                    else
+                        return "[UNSUPPORTED TYPE]";
             }
         }
 
@@ -845,15 +872,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// array data (skips past the count). 
         /// </summary>
         private int GetCountForArray(PayloadFetch payloadFetch, PayloadFetchArrayInfo arrayInfo, ref int offset)
+        {
+            var arrayCount = arrayInfo.FixedCount;
+            if (arrayCount == 0)
             {
-                var arrayCount = arrayInfo.FixedCount;
-                if (arrayCount == 0)
+                if (payloadFetch.Size == DynamicTraceEventData.SIZE16_PREFIX)
                 {
-                    if (payloadFetch.Size == DynamicTraceEventData.SIZE16_PREFIX)
-                    {
-                        arrayCount = (ushort)GetInt16At(offset);
-                        offset += 2;
-                    }
+                    arrayCount = (ushort)GetInt16At(offset);
+                    offset += 2;
+                }
                 else if ((payloadFetch.Size == DynamicTraceEventData.SIZE16_PRECEEDS))
                     arrayCount = (ushort)GetInt16At(offset - 2);
                 else if (payloadFetch.Size == DynamicTraceEventData.SIZE32_PRECEEDS)
@@ -863,12 +890,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     arrayCount = GetInt32At(offset);
                     offset += 4;
                 }
-                    else
-                    {
+                else
+                {
                     Debug.Assert(false);
                     throw new NotSupportedException();      // Actually an assert.  
-                    }
                 }
+            }
+            if (0x10000 <= arrayCount)
+                throw new ArgumentOutOfRangeException();
             return arrayCount;
         }
 
@@ -1088,7 +1117,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
-                ret.Size = DynamicTraceEventData.SIZE32_PRECEEDS;
+                ret.Size = DynamicTraceEventData.SIZE16_PRECEEDS;
                 ret.info = new PayloadFetchArrayInfo() { Element = element, FixedCount = fixedCount };
                 return ret;
             }

@@ -3688,7 +3688,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     /// <summary>
     /// This structure is in the ndp\clr\src\vm\gcrecord.h file. 
     /// The easiest way to get th layout is to do a 'dt' command on the structure (use x command to search)
-
+    ///
     /// dt WKS::gc_generation_data 
     /// dt WKS::gc_history_per_heap
     /// 
@@ -4570,9 +4570,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public GcJoinTime JoinTime { get { return (GcJoinTime)GetInt32At(4); } }
         public GcJoinType JoinType { get { return (GcJoinType)GetInt32At(8); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(12); return 0; } }
-        public int ID { get { if (Version >= 2) return GetInt32At(14); return 0; } }
+        public int GCID { get { if (Version >= 2) return GetInt32At(14); return 0; } }
 
-        public bool HasID()
+        public bool HasGCID()
         {
             return (Version >= 2);
         }

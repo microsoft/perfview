@@ -2841,7 +2841,10 @@ namespace PerfView
                         info.PinStartTimeRelativeMSec = data.TimeStampRelativeMSec;         // We guess the pinning started at this GC.  
                     }
 
-                    // This is heuristic logic to determine if the pin handles are async or not.  
+                    // This is heuristic logic to determine if the pin handles are async or not. 
+                    // Basically async handles are themselves pinned and then point at pinned things.  Thus
+                    // if you see handles that point near other handles that is likely an async handle. 
+                    // TODO I think we can remove this, because we no longer pin the async handle.  
                     if (pinStack == StackSourceCallStackIndex.Invalid)
                     {
                         var lastHandleInfo = lastHandleInfoForThreads[(int)thread.ThreadIndex];
@@ -3095,9 +3098,6 @@ namespace PerfView
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.StackIndex = StackSourceCallStackIndex.Invalid;
-
-                    if (sample.TimeRelativeMSec > 2484.650)
-                        GC.KeepAlive("");
 
                     sample.Metric = 1;
                     // Closes use the call stack of the allocation site if possible (since that is more helpful)  

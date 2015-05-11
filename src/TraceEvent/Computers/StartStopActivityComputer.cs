@@ -366,6 +366,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public double DurationMSec { get; private set; }
 
+        /// <summary>
+        /// This activity has completed (the Stop event has been received).  Thus Duration is valid.
+        /// </summary>
         public bool IsStopped { get { return DurationMSec != 0 && key == null; } }
 
         /// <summary>

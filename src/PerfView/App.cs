@@ -220,10 +220,12 @@ namespace PerfView
                     CommandLineArgs.DoCommand == CommandProcessor.Collect))
                 {
                     string verboseLogName;
-                    if (CommandLineArgs.DataFile == null)
+                    if (CommandLineArgs.DataFile == null) 
                         verboseLogName = "PerfViewData.log.txt";
                     else
                         verboseLogName = Path.ChangeExtension(CommandLineArgs.DataFile, "log.txt");
+
+                    App.LogFileName = verboseLogName;
                     CommandProcessor.LogFile.WriteLine("VERBOSE LOG IN: {0}", verboseLogName);
                     if (CommandLineArgs.DoCommand != CommandProcessor.Collect)
                         CommandProcessor.LogFile.WriteLine("Use /LogFile:FILE  to redirect output entirely.");
@@ -234,6 +236,8 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
+                    App.LogFileName = CommandLineArgs.LogFile;
+
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
@@ -310,6 +314,11 @@ namespace PerfView
                     }
                 }
                 return s_LogFileName;
+            }
+            set
+            {
+                Debug.Assert(s_LogFileName == null);
+                s_LogFileName = value;
             }
         }
         private static string s_LogFileName;

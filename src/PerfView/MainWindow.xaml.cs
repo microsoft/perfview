@@ -79,7 +79,7 @@ using System.Collections.Generic;
 /* EXTERNAL REPORTS */
 // Localization bug Windows 102699  
 //          Hi, In PerfView you can select cells in the data view and it will sum up the values in the bottom of the window. Problem is, it converts the numbers for displaying using American culture (eg. 1,234.56), while the sum functionality interprets the formatted numbers using the local culture (in my case danish: 1.234,56). I took a screenshot: imgur.com/GbYEL The values selected are 95 and 2.9 and they get summed up to 979. Similarly, when I select 4717 and 142 they get summed up to 146.717. I also found the same problem in the event window. If you select a time cell in the data view and right click -> Open Any Stacks, you will get a CPU stack window where the start and end time has been set to the wrong number. Example: I select the time 319.879 and when the cpu stack window opens, it's empty and the start and end time has been set to 319879. This is again because the data view doesn't use the local culture, while everything else does.
-
+ 
 // *** VIDEOS needed
 // Catching Intermittent issues Using the /StopOnPerfCounter* and /StopOnRequestMSec* options. (this is probably 2 or 3 videos).  
 // Using Diffing to investigate regressions.  
@@ -134,7 +134,13 @@ using System.Collections.Generic;
 // Blog about Directing EventSource to TraceSource.  
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
-/* UNTRIAGED */ 
+/* UNTRIAGED */
+// *** Fix the Wiki link (currently broken).
+// Make sure that the Win 8.1 mechanisms for turning on events work properly.  (Andre 4/2015)
+// Make sure that creating manifest for registered providers works properly (Andre 4/2015)
+// Make attaching the PerfVIewLogFile.txt work even if multiple PerfViews are collecting data  
+// **** FIX the Daylight savings time issue with sessionStartTime   (Need ot use UTC instead) ** Reply to mail from Jean-Richard on 4/2/2015 
+// Fix it so that DynamicTraceEventParser can also look up the TraceLogging data.   
 // Make a Rename operation that is like Flatten without removing stack structure.   
 // Fix it so that two traceLogging providers don't collide on event IDs.  
 // Allow users to pick the segments they care about?  

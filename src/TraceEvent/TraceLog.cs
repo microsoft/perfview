@@ -753,7 +753,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (eventRecord->ExtendedDataCount == 1)
             {
                 int idIndex = (int)eventRecord->ExtendedData;
-                if (idIndex < relatedActivityIDs.Count)
+                if ((uint) idIndex < (uint) relatedActivityIDs.Count)
                     return relatedActivityIDs[idIndex];
             }
             return Guid.Empty;

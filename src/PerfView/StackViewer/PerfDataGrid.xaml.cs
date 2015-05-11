@@ -383,9 +383,15 @@ namespace PerfView
                     if (numSelectedCells == 2)
                     {
                         var dataGrid = sender as DataGrid;
-                        var cells = dataGrid.SelectedCells;
-                        m_clipboardRangeStart = GetCellStringValue(cells[0]);
-                        m_clipboardRangeEnd = GetCellStringValue(cells[1]);
+                        if (dataGrid != null)
+                        {
+                            var cells = dataGrid.SelectedCells;
+                            if (cells != null)
+                            {
+                                m_clipboardRangeStart = GetCellStringValue(cells[0]);
+                                m_clipboardRangeEnd = GetCellStringValue(cells[1]);
+                            }
+                        }
                     }
                     Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;
                 }

@@ -310,7 +310,7 @@ namespace PerfView
 
             if (profilerKeywords != 0)
             {
-                InstallETWClrProfiler(LogFile, (int) profilerKeywords);
+                InstallETWClrProfiler(LogFile, (int)profilerKeywords);
                 LogFile.WriteLine("WARNING: Only processes that start after this point will log object allocation events.");
             }
 
@@ -578,14 +578,14 @@ namespace PerfView
                                     parsedArgs.ClrEventLevel,
                                     (ulong)(
                                         FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
-                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer     |
+                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
                                         FrameworkEventSourceTraceEventParser.Keywords.NetClient),
                                     stacksEnabled);
                             }
 
                             // Turn on new SQL client logging 
                             EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
-                                TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"), 
+                                TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"),
                                 TraceEventLevel.Informational,
                                 1, // This enableds just the client events.  
                                 stacksEnabled);
@@ -722,7 +722,7 @@ namespace PerfView
                     if (parsedArgs.NetMonCapture)
                         parsedArgs.NetworkCapture = true;
                     if (parsedArgs.NetworkCapture)
-                    {       
+                    {
                         string maxSize = "maxSize=1";
                         string correlation = "correlation=no";
                         string report = "report=disabled";
@@ -1168,7 +1168,8 @@ namespace PerfView
             if (parsedArgs.StackCompression)
                 etlWriter.CompressETL = true;
             etlWriter.DeleteInputFile = false;
-            etlWriter.AddFile(App.LogFileName, "PerfViewLogFile.txt");
+            if (File.Exists(App.LogFileName))
+                etlWriter.AddFile(App.LogFileName, "PerfViewLogFile.txt");
 
             // Actually create the archive.  
             var success = etlWriter.WriteArchive();
