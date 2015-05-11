@@ -113,7 +113,7 @@ namespace Stats
                 }
             };
 
-
+#if (!CAP)
             CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(10000);
             source.Kernel.ThreadCSwitch += delegate(CSwitchTraceData data)
             {
@@ -217,7 +217,7 @@ namespace Stats
                     }
                 }
             };
-
+#endif
             source.Clr.GCSuspendEEStart += delegate(GCSuspendEETraceData data)
             {
                 var stats = perProc[data];
@@ -375,6 +375,7 @@ namespace Stats
                         _event.ProcessCpuAtLastGC = stats.ProcessCpuAtLastGC;
                     }
 
+#if (!CAP)
                     if ((_event.Type != GCType.BackgroundGC) && (stats.isServerGCUsed == 1))
                     {
                         _event.SetUpServerGcHistory();
@@ -383,6 +384,7 @@ namespace Stats
                         foreach (var s in RecentThreadSwitches)
                             _event.AddServerGcThreadSwitch(s);
                     }
+#endif 
                 }
             };
 

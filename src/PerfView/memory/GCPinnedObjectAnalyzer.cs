@@ -132,6 +132,11 @@ namespace PerfView
         private int _ProcessID;
 
         /// <summary>
+        /// The log for diagnostic data.
+        /// </summary>
+        private TextWriter _Log;
+
+        /// <summary>
         /// The set of pinning roots and pinned objects in the heap snapshot.
         /// </summary>
         /// <remarks>
@@ -144,12 +149,14 @@ namespace PerfView
             string etlFilePath,
             TraceLog traceLog,
             MutableTraceEventStackSource stackSource,
-            StackSourceSample sample)
+            StackSourceSample sample,
+            TextWriter log)
         {
             _HeapSnapshotFilePath = GetHeapSnapshotPath(etlFilePath);
             _TraceLog = traceLog;
             _StackSource = stackSource;
             _Sample = sample;
+            _Log = log;
         }
 
         /// <summary>
@@ -213,7 +220,7 @@ namespace PerfView
                 eventDispatcher.StopProcessing();
             };
 
-            var heapWithPinningInfo = new PinningStackAnalysis(eventDispatcher, _ProcessID, _StackSource);
+            var heapWithPinningInfo = new PinningStackAnalysis(eventDispatcher, _TraceLog.Processes.GetProcess(_ProcessID, _TraceLog.SessionDuration.TotalMilliseconds), _StackSource, _Log);
             // Process the ETL file up until we detect that the heap snapshot was taken.
             eventDispatcher.Process();
 
@@ -487,8 +494,8 @@ namespace PerfView
     /// </summary>
     internal sealed class PinningStackAnalysis : GCHeapSimulator
     {
-        public PinningStackAnalysis(TraceEventDispatcher source, int processID, MutableTraceEventStackSource stackSource)
-            : base(source, processID, stackSource)
+        public PinningStackAnalysis(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource, TextWriter log)
+            : base(source, process, stackSource, log)
         {
             var clrPrivateParser = new ClrPrivateTraceEventParser(source);
             clrPrivateParser.GCSetGCHandle += OnSetGCHandle;
