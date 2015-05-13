@@ -806,7 +806,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // If this is a ETL file, we also need to compute all the normal TraceLog stuff the raw stream
             this.pointerSize = rawEvents.PointerSize;
-            this.sessionStartTime = rawEvents.SessionStartTime;
+            this.sessionStartTimeUTC = rawEvents.sessionStartTimeUTC;
             this._QPCFreq = rawEvents._QPCFreq;
             this.sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
             this.sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
@@ -2688,7 +2688,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(sessionStartTime.ToFileTime());
+            serializer.Write(sessionStartTimeUTC.ToFileTimeUtc());
             serializer.Write(pointerSize);
             serializer.Write(numberOfProcessors);
             serializer.Write(cpuSpeedMHz);
@@ -2794,7 +2794,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyRawEvents.Read(deserializer, null);
 
             deserializer.Log("<Marker Name=\"sessionStartTime\"/>");
-            sessionStartTime = DateTime.FromFileTime(deserializer.ReadInt64());
+            sessionStartTimeUTC = DateTime.FromFileTimeUtc(deserializer.ReadInt64());
             deserializer.Read(out pointerSize);
             deserializer.Read(out numberOfProcessors);
             deserializer.Read(out cpuSpeedMHz);
@@ -3820,7 +3820,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public TraceEvents FilterByTime(DateTime startTime, DateTime endTime)
         {
             // +1 because DateTimeToQPC will truncate and we want to avoid roundoff exclusion (round up)
-            return Filter(log.DateTimeToQPC(startTime), log.DateTimeToQPC(endTime) + 1, null);
+            return Filter(log.UTCDateTimeToQPC(startTime.ToUniversalTime()), log.UTCDateTimeToQPC(endTime.ToUniversalTime()) + 1, null);
         }
         /// <summary>
         /// Filter the events by time.  StartTimeRelativeMSec and endTimeRelativeMSec are relative to the SessionStartTime and are inclusive.  
@@ -3847,7 +3847,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returns a time that is guaranteed  to be before the first event in the TraceEvents list.  
         /// It is returned as DateTime
         /// </summary>
-        public DateTime StartTime { get { return log.QPCTimeToDateTime(startTimeQPC); } }
+        public DateTime StartTime { get { return log.QPCTimeToDateTimeUTC(startTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// Returns a time that is guaranteed to be before the first event in the TraceEvents list.  
         /// It is returned as floating point number of MSec since the start of the TraceLog
@@ -3858,7 +3858,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returns a time that is guaranteed to be after the last event in the TraceEvents list.  
         /// It is returned as DateTime
         /// </summary>
-        public DateTime EndTime { get { return log.QPCTimeToDateTime(endTimeQPC); } }
+        public DateTime EndTime { get { return log.QPCTimeToDateTimeUTC(endTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// Returns a time that is guaranteed to be after the last event in the TraceEvents list.  
         /// It is returned as floating point number of MSec since the start of the TraceLog
@@ -4451,7 +4451,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// The time when the process started.  Returns the time the trace started if the process existed when the trace started.  
         /// </summary>
-        public DateTime StartTime { get { return log.QPCTimeToDateTime(startTimeQPC); } }
+        public DateTime StartTime { get { return log.QPCTimeToDateTimeUTC(startTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// The time when the process started.  Returns the time the trace started if the process existed when the trace started.  
         /// Returned as the number of MSec from the beginning of the trace. 
@@ -4461,7 +4461,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// The time when the process ended.  Returns the time the trace ended if the process existed when the trace ended.  
         /// Returned as a DateTime
         /// </summary>
-        public DateTime EndTime { get { return log.QPCTimeToDateTime(endTimeQPC); } }
+        public DateTime EndTime { get { return log.QPCTimeToDateTimeUTC(endTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// The time when the process ended.  Returns the time the trace ended if the process existed when the trace ended. 
         /// Returned as the number of MSec from the beginning of the trace. 
@@ -5112,7 +5112,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// The time when the thread started.  Returns the time the trace started if the thread existed when the trace started.  
         /// Returned as a DateTime
         /// </summary>
-        public DateTime StartTime { get { return Process.Log.QPCTimeToDateTime(startTimeQPC); } }
+        public DateTime StartTime { get { return Process.Log.QPCTimeToDateTimeUTC(startTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// The time when the thread started.  Returns the time the trace started if the thread existed when the trace started.  
         /// Returned as the number of MSec from the beginning of the trace. 
@@ -5134,7 +5134,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// The time when the thread ended.  Returns the time the trace ended if the thread existed when the trace ended.  
         /// Returned as a DateTime
         /// </summary>
-        public DateTime EndTime { get { return Process.Log.QPCTimeToDateTime(endTimeQPC); } }
+        public DateTime EndTime { get { return Process.Log.QPCTimeToDateTimeUTC(endTimeQPC).ToLocalTime(); } }
         /// <summary>
         /// The time when the thread ended.  Returns the time the trace ended if the thread existed when the trace ended. 
         /// Returned as the number of MSec from the beginning of the trace. 

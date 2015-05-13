@@ -344,8 +344,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             sessionStartTimeQPC = 0;                        // Will get set on first event or in real time case below 
-            sessionStartTime = DateTime.MaxValue;
-            DateTime sessionEndTime = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year.  
+            sessionStartTimeUTC = DateTime.MaxValue;
+            DateTime sessionEndTimeUTC = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year.  
 
             // Open all the traces
             for (int i = 0; i < handles.Length; i++)
@@ -355,14 +355,14 @@ namespace Microsoft.Diagnostics.Tracing
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
 
                 // Start time is minimum of all start times
-                DateTime logFileStartTime = DateTime.FromFileTime(logFiles[i].LogfileHeader.StartTime);
-                DateTime logFileEndTime = DateTime.FromFileTime(logFiles[i].LogfileHeader.EndTime);
+                DateTime logFileStartTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
+                DateTime logFileEndTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.EndTime);
 
-                if (logFileStartTime < sessionStartTime)
-                    sessionStartTime = logFileStartTime;
+                if (logFileStartTimeUTC < sessionStartTimeUTC)
+                    sessionStartTimeUTC = logFileStartTimeUTC;
                 // End time is maximum of all start times
-                if (logFileEndTime > sessionEndTime)
-                    sessionEndTime = logFileEndTime;
+                if (logFileEndTimeUTC > sessionEndTimeUTC)
+                    sessionEndTimeUTC = logFileEndTimeUTC;
 
                 // TODO do we even need log pointer size anymore?   
                 // We take the max pointer size.  
@@ -377,17 +377,17 @@ namespace Microsoft.Diagnostics.Tracing
             // Real time providers don't set this to something useful
             if ((logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0)
             {
-                DateTime now = DateTime.Now;
-                long nowQPC = QPCTime.GetTimeAsQPC(now);
+                DateTime nowUTC = DateTime.UtcNow;
+                long nowQPC = QPCTime.GetUTCTimeAsQPC(nowUTC);
 
-                sessionStartTime = now - new TimeSpan(10000 * 100);  // Subtract 1/10 sec to avoid negative numbers
+                sessionStartTimeUTC = nowUTC - new TimeSpan(10000 * 100);  // Subtract 1/10 sec to avoid negative numbers
                 sessionStartTimeQPC = nowQPC - _QPCFreq / 10;            // Subtract 1/10 sec to keep now and nowQPC in sync.  
                 sessionEndTimeQPC = long.MaxValue;                      // Represents infinity.      
             }
             else
-                sessionEndTimeQPC = this.DateTimeToQPC(sessionEndTime);
+                sessionEndTimeQPC = this.UTCDateTimeToQPC(sessionEndTimeUTC);
 
-            Debug.Assert(sessionStartTime.Ticks != 0 && sessionEndTime.Ticks != 0 && SessionStartTime < SessionEndTime);
+            Debug.Assert(sessionStartTimeUTC.Ticks != 0 && sessionEndTimeUTC.Ticks != 0 && SessionStartTime < SessionEndTime);
             Debug.Assert(_QPCFreq != 0);
 
             if (pointerSize == 0)       // Real time does not set this (grrr). 
@@ -452,7 +452,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         class QPCTime
         {
-            public static long GetTimeAsQPC(DateTime utcTime)
+            public static long GetUTCTimeAsQPC(DateTime utcTime)
             {
                 return Get()._GetUTCTimeAsQPC(utcTime);
             }
@@ -461,7 +461,7 @@ namespace Microsoft.Diagnostics.Tracing
             long _GetUTCTimeAsQPC(DateTime utcTime)
             {
                 // Convert to seconds from the baseline
-                double deltaSec = (utcTime.Ticks - m_timeAsDateTime.Ticks) / 10000000.0;
+                double deltaSec = (utcTime.Ticks - m_timeAsDateTimeUTC.Ticks) / 10000000.0;
                 // scale to QPC units and then add back in the base.  
                 return (long)(deltaSec * Stopwatch.Frequency) + m_timeAsQPC;
             }
@@ -487,7 +487,7 @@ namespace Microsoft.Diagnostics.Tracing
                     m_timeAsQPC = Stopwatch.GetTimestamp();
                     if (next != start)
                     {
-                        m_timeAsDateTime = next.ToLocalTime();
+                        m_timeAsDateTimeUTC = next;
                         m_timeAsQPC = lastQPC;       // We would rather be before than after.   
                         break;
                     }
@@ -496,7 +496,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             // A QPC object just needs to hold a point in time in both units (DateTime and QPC). 
-            DateTime m_timeAsDateTime;
+            DateTime m_timeAsDateTimeUTC;
             long m_timeAsQPC;
 
             static QPCTime s_time;          // this is s singleton class and this is the singleton.

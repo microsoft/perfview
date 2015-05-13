@@ -407,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
                         m_source.pointerSize = sizeof(IntPtr);
                         m_source.numberOfProcessors = Environment.ProcessorCount;
                         m_source._QPCFreq = Stopwatch.Frequency;
-                        m_source.sessionStartTime = DateTime.Now;
+                        m_source.sessionStartTimeUTC = DateTime.UtcNow;
                         m_source.sessionStartTimeQPC = rawData->EventHeader.TimeStamp;
                         m_source.sessionEndTimeQPC = long.MaxValue;
                     }
@@ -426,13 +426,13 @@ namespace Microsoft.Diagnostics.Tracing
                 int ver = eventHeader.Version;
                 m_source.osVersion = new Version((byte)ver, (byte)(ver >> 8));
                 m_source._QPCFreq = eventHeader.PerfFreq;
-                m_source.sessionStartTime = DateTime.FromFileTime(eventHeader.StartTime100ns);
+                m_source.sessionStartTimeUTC = DateTime.FromFileTimeUtc(eventHeader.StartTime100ns);
                 m_source.sessionStartTimeQPC = rawData->EventHeader.TimeStamp;
 
                 if (eventHeader.EndTime100ns == 0)
                     m_source.sessionEndTimeQPC = long.MaxValue;
                 else
-                    m_source.sessionEndTimeQPC = m_source.DateTimeToQPC(DateTime.FromFileTime(eventHeader.EndTime100ns));
+                    m_source.sessionEndTimeQPC = m_source.UTCDateTimeToQPC(DateTime.FromFileTimeUtc(eventHeader.EndTime100ns));
             }
 
             ETWReloggerTraceEventSource m_source;

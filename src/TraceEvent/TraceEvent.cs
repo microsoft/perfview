@@ -203,7 +203,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The time when session started logging. 
         /// </summary>
-        public DateTime SessionStartTime { get { return sessionStartTime; } }
+        public DateTime SessionStartTime { get { return sessionStartTimeUTC.ToLocalTime(); } }
         /// <summary>
         /// The time that the session stopped logging.
         /// </summary>
@@ -211,9 +211,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                var ret = QPCTimeToDateTime(sessionEndTimeQPC);
+                var ret = QPCTimeToDateTimeUTC(sessionEndTimeQPC);
                 Debug.Assert(SessionStartTime <= ret);
-                return ret;
+                return ret.ToLocalTime();
             }
         }
         /// <summary>
@@ -352,7 +352,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int cpuSpeedMHz;
         internal /*protected*/ Version osVersion;
         internal /*protected*/ long _QPCFreq;
-        internal /*protected*/ DateTime sessionStartTime;
+        internal /*protected*/ DateTime sessionStartTimeUTC;
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
@@ -438,23 +438,23 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Converts a DateTime to the Query Performance Counter (QPC) ticks 
         /// </summary>
-        internal long DateTimeToQPC(DateTime time)
+        internal long UTCDateTimeToQPC(DateTime time)
         {
-            long ret = (long)((time.Ticks - sessionStartTime.Ticks) / 10000000.0 * _QPCFreq) + sessionStartTimeQPC;
-            Debug.Assert((QPCTimeToDateTime(ret) - time).TotalMilliseconds < 1);
+            long ret = (long)((time.Ticks - sessionStartTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + sessionStartTimeQPC;
+            Debug.Assert((QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
 
         /// <summary>
         /// Converts the Query Performance Counter (QPC) ticks to a DateTime  
         /// </summary>
-        internal DateTime QPCTimeToDateTime(long QPCTime)
+        internal DateTime QPCTimeToDateTimeUTC(long QPCTime)
         {
             if (QPCTime == long.MaxValue)   // We maxvalue as a special case.  
                 return DateTime.MaxValue;
 
             long inTicks = (long)((QPCTime - sessionStartTimeQPC) * 10000000.0 / _QPCFreq);
-            var ret = new DateTime(sessionStartTime.Ticks + inTicks);
+            var ret = new DateTime(sessionStartTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
             return ret;
         }
 
@@ -665,7 +665,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public DateTime TimeStamp
         {
-            get { return source.QPCTimeToDateTime(TimeStampQPC); }
+            get { return source.QPCTimeToDateTimeUTC(TimeStampQPC).ToLocalTime(); }
         }
         /// <summary>
         /// Returns a double representing the number of milliseconds since the beginning of the session.     
@@ -830,96 +830,96 @@ namespace Microsoft.Diagnostics.Tracing
         {
             try
             {
-                var value = PayloadValue(index);
-                if (value == null)
-                    return "";
-                if (value is Address)
-                    return "0x" + ((Address)value).ToString("x");
-                if (value is int)
-                {
+            var value = PayloadValue(index);
+            if (value == null)
+                return "";
+            if (value is Address)
+                return "0x" + ((Address)value).ToString("x");
+            if (value is int)
+            {
 
-                    int intValue = (int)value;
-                    if (intValue != 0 && payloadNames[index] == "IPv4Address")
-                    {
-                        return (intValue & 0xFF).ToString() + "." +
-                               ((intValue >> 8) & 0xFF).ToString() + "." +
-                               ((intValue >> 16) & 0xFF).ToString() + "." +
-                               ((intValue >> 24) & 0xFF).ToString();
-                    }
-                    return intValue.ToString("n0");
-                }
-                if (value is long)
+                int intValue = (int)value;
+                if (intValue != 0 && payloadNames[index] == "IPv4Address")
                 {
-                    if (payloadNames[index] == "objectId")      // TODO this is a hack.  
-                        return "0x" + ((long)value).ToString("x");
-                    return ((long)value).ToString("n0");
+                    return (intValue & 0xFF).ToString() + "." +
+                           ((intValue >> 8) & 0xFF).ToString() + "." +
+                           ((intValue >> 16) & 0xFF).ToString() + "." +
+                           ((intValue >> 24) & 0xFF).ToString();
                 }
-                if (value is double)
-                    return ((double)value).ToString("n3");
-                if (value is DateTime)
+                return intValue.ToString("n0");
+            }
+            if (value is long)
+            {
+                if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                    return "0x" + ((long)value).ToString("x");
+                return ((long)value).ToString("n0");
+            }
+            if (value is double)
+                return ((double)value).ToString("n3");
+            if (value is DateTime)
+            {
+                var asDateTime = (DateTime)value;
+                var ret = asDateTime.ToString("HH:mm:ss.ffffff");
+                if (source.SessionStartTime <= asDateTime)
+                    ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
+                return ret;
+            }
+            var asByteArray = value as byte[];
+            if (asByteArray != null)
+            {
+                StringBuilder sb = new StringBuilder();
+                if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
                 {
-                    var asDateTime = (DateTime)value;
-                    var ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                    if (source.SessionStartTime <= asDateTime)
-                        ret += " (" + (asDateTime - source.sessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
-                    return ret;
+                    if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                    {
+                        sb.Append(asByteArray[4].ToString()).Append('.');
+                        sb.Append(asByteArray[5].ToString()).Append('.');
+                        sb.Append(asByteArray[6].ToString()).Append('.');
+                        sb.Append(asByteArray[7].ToString()).Append(':');
+                        int port = (asByteArray[2] << 8) + asByteArray[3];
+                        sb.Append(port);
+                    }
+                    else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
+                    {
+                        var ipV6 = new byte[16];
+                        Array.Copy(asByteArray, 8, ipV6, 0, 16);
+                        int port = (asByteArray[2] << 8) + asByteArray[3];
+                        sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
+                    }
                 }
-                var asByteArray = value as byte[];
-                if (asByteArray != null)
+                // If we did not find a way of pretty printing int, dump it as bytes. 
+                if (sb.Length == 0)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
+                    var limit = Math.Min(asByteArray.Length, 16);
+                    for (int i = 0; i < limit; i++)
                     {
-                        if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
-                        {
-                            sb.Append(asByteArray[4].ToString()).Append('.');
-                            sb.Append(asByteArray[5].ToString()).Append('.');
-                            sb.Append(asByteArray[6].ToString()).Append('.');
-                            sb.Append(asByteArray[7].ToString()).Append(':');
-                            int port = (asByteArray[2] << 8) + asByteArray[3];
-                            sb.Append(port);
-                        }
-                        else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
-                        {
-                            var ipV6 = new byte[16];
-                            Array.Copy(asByteArray, 8, ipV6, 0, 16);
-                            int port = (asByteArray[2] << 8) + asByteArray[3];
-                            sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
-                        }
+                        var b = asByteArray[i];
+                        sb.Append(HexDigit((b / 16)));
+                        sb.Append(HexDigit((b % 16)));
                     }
-                    // If we did not find a way of pretty printing int, dump it as bytes. 
-                    if (sb.Length == 0)
-                    {
-                        var limit = Math.Min(asByteArray.Length, 16);
-                        for (int i = 0; i < limit; i++)
-                        {
-                            var b = asByteArray[i];
-                            sb.Append(HexDigit((b / 16)));
-                            sb.Append(HexDigit((b % 16)));
-                        }
-                        if (limit < asByteArray.Length)
-                            sb.Append("...");
-                    }
-                    return sb.ToString();
+                    if (limit < asByteArray.Length)
+                        sb.Append("...");
                 }
-                var asArray = value as System.Array;
-                if (asArray != null && asArray.Rank == 1)
+                return sb.ToString();
+            }
+            var asArray = value as System.Array;
+            if (asArray != null && asArray.Rank == 1)
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.Append('[');
+                bool first = true;
+                foreach (var elem in asArray)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.Append('[');
-                    bool first = true;
-                    foreach (var elem in asArray)
-                    {
-                        if (!first)
-                            sb.Append(',');
-                        first = false;
-                        sb.Append(elem.ToString());
-                    }
-                    sb.Append(']');
-                    return sb.ToString();
+                    if (!first)
+                        sb.Append(',');
+                    first = false;
+                    sb.Append(elem.ToString());
                 }
+                sb.Append(']');
+                return sb.ToString();
+            }
 
-                return value.ToString();
+            return value.ToString();
             }
             catch (Exception e)
             {
