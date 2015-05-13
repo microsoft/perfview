@@ -357,9 +357,12 @@ public class PdbScopeMemoryGraph : MemoryGraph
                     var moduleIndex = int.Parse(original);
 
                     string name = null;
-                    AssemblyName assemblyName;
-                    if (m_moduleMap.TryGetValue(moduleIndex, out assemblyName))
+                    string fullAssemblyName;
+                    if (m_moduleMap.TryGetValue(moduleIndex, out fullAssemblyName))
+                    {
+                        var assemblyName = new AssemblyName(fullAssemblyName);
                         name = assemblyName.Name;
+                    }
                     if (name == null)
                         return "$" + original + "_";
 
@@ -481,7 +484,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
         return true;
     }
 
-    Dictionary<int, AssemblyName> m_moduleMap;      // TODO FIX NOW not needed after PdbScope is fixed.  
+    Dictionary<int, string> m_moduleMap;      // TODO FIX NOW not needed after PdbScope is fixed.  
     #endregion
 }
 
@@ -576,7 +579,7 @@ public class ProjectNMetaDataLogReader
         public GrowableArray<NodeIndex> Children;
     }
 
-    private NodeTypeIndex GetType(string name, int size=-1)
+    private NodeTypeIndex GetType(string name, int size = -1)
     {
         NodeTypeIndex ret;
         if (!m_knownTypes.TryGetValue(name, out ret))

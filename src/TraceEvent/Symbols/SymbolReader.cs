@@ -1209,11 +1209,17 @@ namespace Microsoft.Diagnostics.Symbols
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
-                    AssemblyName assemblyName;
-                    if (mergedAssembliesMap.TryGetValue(moduleIndex, out assemblyName))
-                        return assemblyName.Name + "!";
-                    else
-                        return original;
+                    string fullAssemblyName;
+                    if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
+                    {
+                        try
+                        {
+                            var assemblyName = new AssemblyName(fullAssemblyName);
+                            return assemblyName.Name + "!";
+                        }
+                        catch (Exception) { } // Catch all AssemlyName fails with ' in the name.   
+                    }
+                    return original;
                 });
 
                 // corefx.dll does not have a tag.  TODO this feels like a hack!
@@ -1461,7 +1467,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public Dictionary<int, AssemblyName> GetMergedAssembliesMap()
+        public Dictionary<int, string> GetMergedAssembliesMap()
         {
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
@@ -1471,11 +1477,10 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     int index = (int)inputAssembly.index;
                     string assemblyName = inputAssembly.fileName;
-                    AssemblyName an = new AssemblyName(assemblyName);
 
                     if (m_mergedAssemblies == null)
-                        m_mergedAssemblies = new Dictionary<int, AssemblyName>();
-                    m_mergedAssemblies.Add(index, an);
+                        m_mergedAssemblies = new Dictionary<int, string>();
+                    m_mergedAssemblies.Add(index, assemblyName);
                 }
                 m_checkedForMergedAssemblies = true;
             }
@@ -1545,7 +1550,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         bool m_checkedForMergedAssemblies;
-        Dictionary<int, AssemblyName> m_mergedAssemblies;
+        Dictionary<int, string> m_mergedAssemblies;
 
         private string m_managedPdbName;
         private Guid m_managedPdbGuid;
