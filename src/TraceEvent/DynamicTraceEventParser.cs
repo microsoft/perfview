@@ -500,7 +500,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     object value = GetPayloadValueAt(ref arrayInfo.Element, offset);
                     if (value.GetType() != elementType)
-                        value = ((IConvertible) value).ToType(elementType, null);
+                        value = ((IConvertible)value).ToType(elementType, null);
                     ret.SetValue(value, i);
                     offset = OffsetOfNextField(ref arrayInfo.Element, offset);
                 }
@@ -1157,12 +1157,44 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Non null of 'Type' is a enum
             public IDictionary<long, string> Map
             {
-                get { return info as Dictionary<long, string>; }
+                get
+                {
+                    if (info == null)
+                        return null;
+                    var ret = info as IDictionary<long, string>;
+                    if (ret == null)
+                    {
+                        var asLazyMap = LazyMap;
+                        if (asLazyMap != null)
+                        {
+                            ret = asLazyMap();      // resolve it.  
+                            if (ret != null)
+                                info = ret;         // If it resolves, remember the resolution for next time.  
+                        }
+                    }
+                    return ret;
+                }
                 set
                 {
                     Debug.Assert(info == null);         // We only expect one time initialization.   Not a class or an array
                     info = value;
                 }
+            }
+
+            /// <summary>
+            /// LazyMap allow out to set a function that returns a map 
+            /// instead of the map itself.   This will be evaluated when the map
+            /// is fetched (which gives time for the map table to be populated.  
+            /// </summary>
+            public Func<IDictionary<long, string>> LazyMap
+            {
+                get { return info as Func<IDictionary<long, string>>; }
+                set
+                {
+                    Debug.Assert(info == null);         // We only expect one time initialization.   Not a class or an array
+                    info = value;
+                }
+
             }
 
             #region private
@@ -1195,16 +1227,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 else
                     serializer.Write(Type.FullName);
 
-                if (Map != null)
+                var map = Map;
+                if (map != null)
                 {
-                    var asSortedList = Map as SortedList<long, string>;
+                    var asSortedList = map as SortedList<long, string>;
                     if (asSortedList != null)
                         serializer.Write((byte)1);
                     else
                         serializer.Write((byte)2);
 
-                    serializer.Write(Map.Count);
-                    foreach (var keyValue in Map)
+                    serializer.Write(map.Count);
+                    foreach (var keyValue in map)
                     {
                         serializer.Write(keyValue.Key);
                         serializer.Write(keyValue.Value);
