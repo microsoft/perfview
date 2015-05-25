@@ -923,7 +923,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             catch (Exception e)
             {
-                return "<<<EXCEPTION_DURING_VALUE_LOOKUP>>>";
+                return "<<<EXCEPTION_DURING_VALUE_LOOKUP " + e.GetType().Name + ">>>";
             }
         }
         /// <summary>

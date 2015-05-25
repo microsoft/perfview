@@ -465,25 +465,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override object PayloadValue(int index)
         {
+#if DEBUG
+            // Confirm that the serialization 'adds up'
+            var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
+            Debug.Assert(computedSize <= this.EventDataLength);
+            if ((int) ID != 0xFFFE) // If it is not a manifest event
+                Debug.Assert(computedSize == this.EventDataLength);
+#endif
             int offset = payloadFetches[index].Offset;
             if (offset == ushort.MaxValue)
-                offset = SkipToField(payloadFetches, index, 0);
+                offset = SkipToField(payloadFetches, index, 0, EventDataLength);
 
-            return GetPayloadValueAt(ref payloadFetches[index], offset);
+            Debug.Assert(offset < this.EventDataLength);
+
+            return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
         }
 
-        private object GetPayloadValueAt(ref PayloadFetch payloadFetch, int offset)
+        private object GetPayloadValueAt(ref PayloadFetch payloadFetch, int offset, int payloadLength)
         {
+            if (payloadLength <= offset)
+                throw new ArgumentOutOfRangeException();
+
             // Is this a struct field? 
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue();
+                var ret = new StructValue();    
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
-                    ret.Add(classInfo.FieldNames[i], GetPayloadValueAt(ref classInfo.FieldFetches[i], offset));
-                    offset = OffsetOfNextField(ref classInfo.FieldFetches[i], offset);
+                    ret.Add(classInfo.FieldNames[i], GetPayloadValueAt(ref classInfo.FieldFetches[i], offset, payloadLength));
+                    offset = OffsetOfNextField(ref classInfo.FieldFetches[i], offset, payloadLength);
                 }
                 return ret;
             }
@@ -498,11 +510,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var ret = Array.CreateInstance(elementType, arrayCount);
                 for (int i = 0; i < arrayCount; i++)
                 {
-                    object value = GetPayloadValueAt(ref arrayInfo.Element, offset);
+                    object value = GetPayloadValueAt(ref arrayInfo.Element, offset, payloadLength);
                     if (value.GetType() != elementType)
                         value = ((IConvertible) value).ToType(elementType, null);
                     ret.SetValue(value, i);
-                    offset = OffsetOfNextField(ref arrayInfo.Element, offset);
+                    offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
                 }
                 return ret;
             }
@@ -570,6 +582,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
+                case TypeCode.Char:
+                    return (Char)GetInt16At(offset);
                 case TypeCode.Byte:
                     return (byte)GetByteAt(offset);
                 case TypeCode.SByte:
@@ -828,7 +842,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     // If there are byte[] values, we hide the argument for the size that is in the manifest.
                     // Thus we remove it here as well.  
-                    for (int i = index - 1; 0 <= i; --i)
+                    for (int i = Math.Min(index - 1, payloadFetches.Length); 0 <= i; --i)
                         if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
                             --index;
 
@@ -841,7 +855,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         #endregion
         #region private
-        private int SkipToField(PayloadFetch[] payloadFetches, int index, int startOffset)
+        private int SkipToField(PayloadFetch[] payloadFetches, int index, int startOffset, int payloadLength)
         {
             // search backwards for the the first field that has a fixed offset. 
             int offset = 0;
@@ -849,9 +863,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             while (0 < cur)
             {
                 --cur;
-                offset = payloadFetches[cur].Offset;
-                if (offset != ushort.MaxValue)
+                if (payloadFetches[cur].Offset != ushort.MaxValue)
+                {
+                    offset = payloadFetches[cur].Offset;
                     break;
+                }
             }
 
             offset += startOffset;
@@ -860,7 +876,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // algorithm is N*N
             while (cur < index)
             {
-                offset = OffsetOfNextField(ref payloadFetches[cur], offset);
+                offset = OffsetOfNextField(ref payloadFetches[cur], offset, payloadLength);
+                if (payloadLength < offset)
+                    throw new ArgumentOutOfRangeException();
                 cur++;
             }
             return offset;
@@ -901,23 +919,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return arrayCount;
         }
 
-        internal int OffsetOfNextField(ref PayloadFetch payloadFetch, int offset)
+        internal int OffsetOfNextField(ref PayloadFetch payloadFetch, int offset, int payloadLength)
         {
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
-                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset);
+                return SkipToField(classInfo.FieldFetches, classInfo.FieldFetches.Length, offset, payloadLength);
 
             // TODO cache this when you parse the value so that you don't need to do it twice.  Right now it is pretty inefficient. 
             PayloadFetchArrayInfo arrayInfo = payloadFetch.Array;
             if (arrayInfo != null)
             {
+                if (payloadLength <= offset)
+                    throw new ArgumentOutOfRangeException();
                 var arrayCount = GetCountForArray(payloadFetch, arrayInfo, ref offset);
 
                 if (arrayInfo.Element.Array == null && arrayInfo.Element.Class == null && arrayInfo.Element.Size < SPECIAL_SIZES)
                     return offset + arrayCount * arrayInfo.Element.Size;
 
                 for (ushort i = 0; i < arrayCount; i++)
-                    offset = OffsetOfNextField(ref arrayInfo.Element, offset);
+                    offset = OffsetOfNextField(ref arrayInfo.Element, offset, payloadLength);
 
                 return offset;
             }
@@ -1026,21 +1046,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         Size = DynamicTraceEventData.NULL_TERMINATED | DynamicTraceEventData.IS_ANSI;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.UInt8:
-                        if (outType == 3)       // Encoding for boolean
+                        if (outType == 13)       // Encoding for boolean
                         {
                             Type = typeof(bool);
                             Size = 1;
                             break;
                         }
                         goto case RegisteredTraceEventParser.TdhInputType.Int8; // Fall through
+                    case RegisteredTraceEventParser.TdhInputType.Binary:
+                    // Binary is an array of bytes.  The later logic will transform it to array, thus Binary is like byte 
                     case RegisteredTraceEventParser.TdhInputType.Int8:
                         Type = typeof(byte);
                         Size = 1;
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int16:
                     case RegisteredTraceEventParser.TdhInputType.UInt16:
-                        Type = typeof(short);
                         Size = 2;
+                        if (outType == 1)       // Encoding for String
+                        {
+                            Type = typeof(char);
+                            break;
+                        }
+                        Type = typeof(short);
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Int32:
                     case RegisteredTraceEventParser.TdhInputType.UInt32:
@@ -1096,12 +1123,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.SYSTEMTIME:
                         Type = typeof(DateTime);
                         Size = 16;
-                        break;
-                    case RegisteredTraceEventParser.TdhInputType.Binary:
-                        // Set it up as an array of bytes.  
-                        Type = null;
-                        Size = DynamicTraceEventData.SIZE16_PREFIX;
-                        info = new PayloadFetchArrayInfo() { Element = new PayloadFetch() { Type = typeof(Byte), Size = 1, } };
                         break;
                     default:
                         Size = DynamicTraceEventData.UNKNOWN_SIZE;
@@ -1177,13 +1198,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     sw.WriteLine(">");
                     if (Array != null)
                         sw.WriteLine(Array.ToString());
-                    if (Class != null)
+                    else if (Class != null)
                     {
                         for (int i = 0; i < Class.FieldFetches.Length; i++)
                             sw.WriteLine("<Field Name=\"{0}\">{1}</Field>", Class.FieldNames[i], Class.FieldFetches[i].ToString());
                     }
                     sw.WriteLine("<PayloadFetch>");
                 }
+                else
+                    sw.WriteLine("/>");
                 return sw.ToString();
             }
             public void ToStream(Serializer serializer)
@@ -1295,20 +1318,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public PayloadFetch[] FieldFetches;
             public string[] FieldNames;
 
-            internal void Truncate(int len)
-            {
-                if (FieldFetches.Length != len)
-                {
-                    Array.Resize(ref FieldFetches, len);
-                    Array.Resize(ref FieldNames, len);
-                }
-            }
         }
 
         internal class PayloadFetchArrayInfo
         {
             public PayloadFetch Element;
             public int FixedCount;          // Normally 0 which means dynamic size
+
+            public override string ToString()
+            {
+                return "<Array size = \"" + FixedCount + "\">\r\n" + Element.ToString() + "\r\n</Array>";
+            }
         }
 
         public void ToStream(Serializer serializer)
@@ -1897,10 +1917,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
                             lengthStr == ret.payloadNames[prevFieldIdx] && ret.payloadFetches[prevFieldIdx].Type == typeof(int))
-                        {
+                        {                           
                             // Remove the previous field, since it was just there to encode the length of the blob.   
-                            // This is to maintain consistancy with the self-describing serialization.  
-                            offset -= 4;
+                            if (offset != ushort.MaxValue)
+                                offset -= 4;
                             ret.payloadNames.RemoveAt(prevFieldIdx);
                             ret.payloadFetches.RemoveAt(prevFieldIdx);
 
