@@ -480,7 +480,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // TODO cache the buffer?, handle more types, handle structs...
             int buffSize = 4096;
             byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-            int status =    TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
             if (status == 122)      // Buffer too big 
             {
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
@@ -761,8 +761,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     newTemplate.lookupAsClassic = true;
 
                 if (eventInfo->EventMessageOffset != 0)
-                    newTemplate.MessageFormat = new string((char*)(&buffer[eventInfo->EventMessageOffset]));
-                
+                    newTemplate.MessageFormat = new string((char*)(&eventBuffer[eventInfo->EventMessageOffset]));
+
                 Trace.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
                 DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, eventInfo->TopLevelPropertyCount);
                 newTemplate.payloadNames = fields.FieldNames;
@@ -817,7 +817,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             Trace.WriteLine("    Unknown type for  " + propertyName + " " + propertyInfo->InType.ToString() + " fields from here will be missing.");
                             goto Exit;
                         }
-                        }
 
                         // Deal with any maps (bit fields or enumerations)
                         if (propertyInfo->MapNameOffset != 0)
@@ -833,7 +832,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
                                 var hr = TdhGetEventMapInformation(eventRecord, mapName, enumInfo, ref buffSize);
                                 if (hr == 0)
-                                    ret.FieldFetches[curField].Map = ParseMap(enumInfo, enumBuffer);
+                                    propertyFetch.Map = ParseMap(enumInfo, enumBuffer);
 
                                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)enumBuffer);
                             }
@@ -842,7 +841,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 // This is the kernelTraceControl case,  the map information will be provided
                                 // later, so we have to set up a LAZY map which will be evaluted when we need the
                                 // enum (giving time for the enum defintion to be processed. 
-                                var mapKey = new MapKey(eventInfo->ProviderGuid , mapName);
+                                var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
                                 // Set the map to be a lazyMap, which is a Func that returns a map.  
                                 Func<IDictionary<long, string>> lazyMap = delegate()
@@ -851,12 +850,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     this.mapTable.TryGetValue(mapKey, out map);
                                     return map;
                                 };
-                                ret.FieldFetches[curField].LazyMap = lazyMap;
+                                propertyFetch.LazyMap = lazyMap;
                             }
                         }
+                    }
 
-                        // is this dynamically sized with another field specifying the length?
-
+                    // is this dynamically sized with another field specifying the length?
                     // Is it an array? 
                     if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0)
                     {
@@ -872,14 +871,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             fixedCount = countOrCountIndex;
                             arraySize = fixedCount;
                         }
-                        else 
+                        else
                         {
                             // We only support the case where the length/count is right before the array.   We remove this field
                             // and use the PREFIX size to indicate that the size of the array is determined by the 32 or 16 bit number before 
                             // the array data.   
                             if (countOrCountIndex == startField + curField - 1)
                             {
-                                var lastFieldIdx = fieldFetches.Count-1;
+                                var lastFieldIdx = fieldFetches.Count - 1;
                                 if (fieldFetches[lastFieldIdx].Size == 4)
                                     arraySize = DynamicTraceEventData.SIZE32_PREFIX;    // TODO we can probably remove this...
                                 else if (fieldFetches[lastFieldIdx].Size == 2)
@@ -895,15 +894,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     arrayFieldOffset -= fieldFetches[lastFieldIdx].Size;
                                 fieldNames.RemoveAt(lastFieldIdx);
                                 fieldFetches.RemoveAt(lastFieldIdx);
-                        }
+                            }
                             else
-                        {
-                            Trace.WriteLine("    Error: Array is variable sized and does not follow  prefix convention.");
+                            {
+                                Trace.WriteLine("    Error: Array is variable sized and does not follow  prefix convention.");
                                 goto Exit;
                             }
                         }
 
-                        Trace.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE")  + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
+                        Trace.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
                         propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
                         propertyFetch.Size = arraySize;
                         fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
