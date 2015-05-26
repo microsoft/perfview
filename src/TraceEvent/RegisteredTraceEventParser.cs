@@ -477,10 +477,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            // TODO react if 4K is not big enough, cache the buffer?, handle more types, handle structs...
+            // TODO cache the buffer?, handle more types, handle structs...
             int buffSize = 4096;
             byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-            int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            int status =    TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            if (status == 122)      // Buffer too big 
+            {
+                System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
+                buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            }
+
             if (status == 0)
                 ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, MapTable)).ParseEventMetaData();
 
@@ -630,6 +637,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                     else
                     {
+                        if (inType == TdhInputType.UInt8 && outType == 3)       // This encodes as boolean
+                            outType = 13;          // This TDH_OUTTYPE_BOOLEAN   
                         payloadFetch = new DynamicTraceEventData.PayloadFetch(fieldOffset, inType, outType);
                         if (payloadFetch.Size == DynamicTraceEventData.UNKNOWN_SIZE)
                         {
@@ -639,7 +648,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
 
                     // Is it an array? 
-                    if (countFlags != 0)
+                    if (countFlags != 0 || inType == TdhInputType.Binary)
                     {
                         payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(fieldOffset, payloadFetch, fixedCount);
                         payloadFetch.Size = DynamicTraceEventData.SIZE16_PREFIX;    // It is not an explicit field beforehand, but a prefix. 
@@ -751,8 +760,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (eventID == (int)TraceEventID.Illegal)
                     newTemplate.lookupAsClassic = true;
 
+                if (eventInfo->EventMessageOffset != 0)
+                    newTemplate.MessageFormat = new string((char*)(&buffer[eventInfo->EventMessageOffset]));
+                
                 Trace.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
-                DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, 0, eventInfo->TopLevelPropertyCount);
+                DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, eventInfo->TopLevelPropertyCount);
                 newTemplate.payloadNames = fields.FieldNames;
                 newTemplate.payloadFetches = fields.FieldFetches;
 
@@ -764,23 +776,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// Will return the parse fields in 'payloadNamesRet' and 'payloadFetchesRet'
             /// Will return true if successful, false means an error occurred.  
             /// </summary>
-            private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(ushort fieldOffset, int startField, int numFields)
+            private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(int startField, int numFields)
             {
-                var ret = new DynamicTraceEventData.PayloadFetchClassInfo();
-                ret.FieldNames = new string[numFields];
-                ret.FieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
+                ushort fieldOffset = 0;
+                var fieldNames = new List<string>(numFields);
+                var fieldFetches = new List<DynamicTraceEventData.PayloadFetch>(numFields);
 
-                int curField = 0;   // Needs to be outside the scope of the for
-                for (; curField < numFields; curField++)
+                for (int curField = 0; curField < numFields; curField++)
                 {
+                    DynamicTraceEventData.PayloadFetch propertyFetch = new DynamicTraceEventData.PayloadFetch();
                     var propertyInfo = &propertyInfos[curField + startField];
                     var propertyName = new string((char*)(&eventBuffer[propertyInfo->NameOffset]));
                     // Remove anything that does not look like an ID (.e.g space)
-                    ret.FieldNames[curField] = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
+                    propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
 
                     // If it is an array, the field offset starts over at 0.  (since each element has a different offset from the beginning)
                     var arrayFieldOffset = fieldOffset;
-                    if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0)
                         fieldOffset = 0;
 
                     // Is this a nested struct?
@@ -788,22 +800,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     {
                         int numStructFields = propertyInfo->NumOfStructMembers;
                         Trace.WriteLine("   " + propertyName + " Is a nested type with " + numStructFields + " fields {");
-                        DynamicTraceEventData.PayloadFetchClassInfo classInfo = ParseFields(fieldOffset, propertyInfo->StructStartIndex, numStructFields);
+                        DynamicTraceEventData.PayloadFetchClassInfo classInfo = ParseFields(propertyInfo->StructStartIndex, numStructFields);
                         if (classInfo == null)
                         {
                             Trace.WriteLine("    Failure parsing nested struct.");
-                            goto Fail;
+                            goto Exit;
                         }
                         Trace.WriteLine(" } " + propertyName + " Nested struct completes.");
-                        ret.FieldFetches[curField] = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
+                        propertyFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
                     }
                     else // A normal type
                     {
-                        ret.FieldFetches[curField] = new DynamicTraceEventData.PayloadFetch(fieldOffset, propertyInfo->InType, propertyInfo->OutType);
-                        if (ret.FieldFetches[curField].Size == DynamicTraceEventData.UNKNOWN_SIZE)
+                        propertyFetch = new DynamicTraceEventData.PayloadFetch(fieldOffset, propertyInfo->InType, propertyInfo->OutType);
+                        if (propertyFetch.Size == DynamicTraceEventData.UNKNOWN_SIZE)
                         {
                             Trace.WriteLine("    Unknown type for  " + propertyName + " " + propertyInfo->InType.ToString() + " fields from here will be missing.");
-                            goto Fail;
+                            goto Exit;
+                        }
                         }
 
                         // Deal with any maps (bit fields or enumerations)
@@ -843,45 +856,63 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
 
                         // is this dynamically sized with another field specifying the length?
-                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
-                        {
-                            if (propertyInfo->LengthOrLengthIndex == curField - 1)
-                            {
-                                if (propertyInfos[curField - 1].LengthOrLengthIndex == 4)
-                                    ret.FieldFetches[curField].Size = DynamicTraceEventData.SIZE32_PRECEEDS;
-                                else if (propertyInfos[curField - 1].LengthOrLengthIndex == 2)
-                                    ret.FieldFetches[curField].Size = DynamicTraceEventData.SIZE16_PRECEEDS;
-                                else
-                                {
-                                    Trace.WriteLine("WARNING: Unexpected dynamic length, giving up");
-                                    goto Fail;
-                                }
-                            }
-                            if (ret.FieldFetches[curField].Size != DynamicTraceEventData.UNKNOWN_SIZE && propertyInfo->InType == TdhInputType.AnsiString)
-                                ret.FieldFetches[curField].Size |= DynamicTraceEventData.IS_ANSI;
-                        }
-                    }
 
                     // Is it an array? 
-                    if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamCount) != 0)
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0)
                     {
+                        // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
+                        var countOrCountIndex = propertyInfo->CountOrCountIndex;
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                            countOrCountIndex = propertyInfo->LengthOrLengthIndex;
+
                         ushort fixedCount = 0;
+                        ushort arraySize;
                         if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamFixedLength) != 0)
                         {
-                            fixedCount = propertyInfo->CountOrCountIndex;
+                            fixedCount = countOrCountIndex;
+                            arraySize = fixedCount;
                         }
-                        else if (!(propertyInfo->CountOrCountIndex == startField + curField - 1 && propertyInfos[propertyInfo->CountOrCountIndex].InType == TdhInputType.UInt16))
+                        else 
+                        {
+                            // We only support the case where the length/count is right before the array.   We remove this field
+                            // and use the PREFIX size to indicate that the size of the array is determined by the 32 or 16 bit number before 
+                            // the array data.   
+                            if (countOrCountIndex == startField + curField - 1)
+                            {
+                                var lastFieldIdx = fieldFetches.Count-1;
+                                if (fieldFetches[lastFieldIdx].Size == 4)
+                                    arraySize = DynamicTraceEventData.SIZE32_PREFIX;    // TODO we can probably remove this...
+                                else if (fieldFetches[lastFieldIdx].Size == 2)
+                                    arraySize = DynamicTraceEventData.SIZE16_PREFIX;
+                                else
+                                {
+                                    Trace.WriteLine("WARNING: Unexpected dynamic length size, giving up");
+                                    goto Exit;
+                                }
+
+                                // remove the previous field (so we have to adjust our offset)
+                                if (arrayFieldOffset != ushort.MaxValue)
+                                    arrayFieldOffset -= fieldFetches[lastFieldIdx].Size;
+                                fieldNames.RemoveAt(lastFieldIdx);
+                                fieldFetches.RemoveAt(lastFieldIdx);
+                        }
+                            else
                         {
                             Trace.WriteLine("    Error: Array is variable sized and does not follow  prefix convention.");
-                            goto Fail;
+                                goto Exit;
+                            }
                         }
-                        Trace.WriteLine("    Field is an array of size " + fixedCount + " at offset " + arrayFieldOffset.ToString("x") + " where 0 means variable sized.");
-                        ret.FieldFetches[curField] = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, ret.FieldFetches[curField], fixedCount);
-                        fieldOffset = ushort.MaxValue;           // Indicate that the offset must be computed at run time. 
+
+                        Trace.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE")  + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
+                        propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
+                        propertyFetch.Size = arraySize;
+                        fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
                     }
 
-                    var size = ret.FieldFetches[curField].Size;
-                    Trace.WriteLine("    Got TraceLogging Field " + propertyName + " " + (ret.FieldFetches[curField].Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x"));
+                    fieldFetches.Add(propertyFetch);
+                    fieldNames.Add(propertyName);
+                    var size = propertyFetch.Size;
+                    Trace.WriteLine("    Got TraceLogging Field " + propertyName + " " + (propertyFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x") + " (void probably means array)");
 
                     Debug.Assert(0 < size);
                     if (size >= DynamicTraceEventData.SPECIAL_SIZES)
@@ -892,9 +923,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         fieldOffset += size;
                     }
                 }
-                return ret;
-            Fail:
-                ret.Truncate(curField);
+
+            Exit:
+                var ret = new DynamicTraceEventData.PayloadFetchClassInfo() { FieldNames = fieldNames.ToArray(), FieldFetches = fieldFetches.ToArray() };
                 return ret; ;
             }
 
@@ -1023,7 +1054,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // These are valid if Flags & Struct not set. 
             public TdhInputType InType;
-            public ushort OutType;             // Really TdhOutputType
+            public ushort OutType;             // Really TDH_OUT_TYPE
             public int MapNameOffset;
 
             // These are valid if Flags & Struct is set.  
