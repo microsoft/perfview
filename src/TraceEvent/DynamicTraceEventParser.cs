@@ -842,7 +842,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     // If there are byte[] values, we hide the argument for the size that is in the manifest.
                     // Thus we remove it here as well.  
-                    for (int i = Math.Min(index - 1, payloadFetches.Length); 0 <= i; --i)
+                    for (int i = Math.Min(index, payloadFetches.Length)-1; 0 <= i; --i)
                         if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
                             --index;
 
