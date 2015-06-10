@@ -469,6 +469,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
 
+                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
+                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
+                // that happens this path where we parse the TraceLogging data explicitly will become 
+                // unreachable and can be removed.    A fair bit of code can be removed in this way. 
                 if (!hasETWEventInformation)
                 {
                     ret = CheckForTraceLoggingEventDefinition(unknownEvent);
@@ -549,7 +553,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             string eventName = data.GetUTF8StringAt(offset); offset = data.SkipUTF8String(offset);
 
             var event_ = new DynamicTraceEventData(null, (int)data.ID, 0, eventName, Guid.Empty, 0, "", data.ProviderGuid, providerName);
-            Trace.WriteLine("Got TraceLogging Provider " + providerName + " Event " + eventName);
+            Debug.WriteLine("Got TraceLogging Provider " + providerName + " Event " + eventName);
 
             TraceLoggingFieldParser fieldParser = new TraceLoggingFieldParser(data, offset, eventMetaDataEnd);
             fieldParser.ParseFields(out event_.payloadNames, out event_.payloadFetches, (ushort)eventMetaDataEnd);
@@ -629,7 +633,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (inType == TdhInputType.Struct)
                     {
                         int numStructFields = outType;
-                        Trace.WriteLine("   " + fieldName + " Is a nested type with " + numStructFields + " fields");
+                        Debug.WriteLine("   " + fieldName + " Is a nested type with " + numStructFields + " fields");
                         var classInfo = new DynamicTraceEventData.PayloadFetchClassInfo();
                         if (!ParseFields(out classInfo.FieldNames, out classInfo.FieldFetches, 0, numStructFields))
                             goto Fail;
@@ -656,7 +660,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     var size = payloadFetch.Size;
                     Debug.Assert(0 < size);
-                    Trace.WriteLine("    Got TraceLogging Field " + fieldName + " " + (payloadFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x"));
+                    Debug.WriteLine("    Got TraceLogging Field " + fieldName + " " + (payloadFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x"));
                     payloadNames.Add(fieldName);
                     payloadFetches.Add(payloadFetch);
                     if (fieldOffset != ushort.MaxValue)
@@ -763,7 +767,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (eventInfo->EventMessageOffset != 0)
                     newTemplate.MessageFormat = new string((char*)(&eventBuffer[eventInfo->EventMessageOffset]));
 
-                Trace.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
+                Debug.WriteLine("In TdhEventParser for event" + providerName + "/" + taskName + "/" + opcodeName + " with " + eventInfo->TopLevelPropertyCount + " fields");
                 DynamicTraceEventData.PayloadFetchClassInfo fields = ParseFields(0, eventInfo->TopLevelPropertyCount);
                 newTemplate.payloadNames = fields.FieldNames;
                 newTemplate.payloadFetches = fields.FieldFetches;
@@ -799,14 +803,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if ((propertyInfo->Flags & PROPERTY_FLAGS.Struct) != 0)
                     {
                         int numStructFields = propertyInfo->NumOfStructMembers;
-                        Trace.WriteLine("   " + propertyName + " Is a nested type with " + numStructFields + " fields {");
+                        Debug.WriteLine("   " + propertyName + " Is a nested type with " + numStructFields + " fields {");
                         DynamicTraceEventData.PayloadFetchClassInfo classInfo = ParseFields(propertyInfo->StructStartIndex, numStructFields);
                         if (classInfo == null)
                         {
-                            Trace.WriteLine("    Failure parsing nested struct.");
+                            Debug.WriteLine("    Failure parsing nested struct.");
                             goto Exit;
                         }
-                        Trace.WriteLine(" } " + propertyName + " Nested struct completes.");
+                        Debug.WriteLine(" } " + propertyName + " Nested struct completes.");
                         propertyFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(fieldOffset, classInfo);
                     }
                     else // A normal type
@@ -902,7 +906,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        Trace.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
+                        Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
                         propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
                         propertyFetch.Size = arraySize;
                         fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
@@ -911,7 +915,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     fieldFetches.Add(propertyFetch);
                     fieldNames.Add(propertyName);
                     var size = propertyFetch.Size;
-                    Trace.WriteLine("    Got TraceLogging Field " + propertyName + " " + (propertyFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x") + " (void probably means array)");
+                    Debug.WriteLine("    Got TraceLogging Field " + propertyName + " " + (propertyFetch.Type ?? typeof(void)) + " size " + size.ToString("x") + " offset " + fieldOffset.ToString("x") + " (void probably means array)");
 
                     Debug.Assert(0 < size);
                     if (size >= DynamicTraceEventData.SPECIAL_SIZES)

@@ -253,8 +253,8 @@ namespace Microsoft.Diagnostics.Tracing
                         stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern(thread.VerboseThreadName), stackIndex);
                     }
                     // WE purposely avoid adding these 'orphan' event to to the activity because they are very likely part of the activity.  
-                    //else if (GroupByStartStopActivity)
-                    //    stackIndex = m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, thread);
+                    else if (GroupByStartStopActivity)
+                        stackIndex = m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, thread);
                     else
                         stackIndex = m_outputStackSource.GetCallStackForThread(thread);
 

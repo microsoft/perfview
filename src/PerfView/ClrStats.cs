@@ -191,7 +191,7 @@ namespace Stats
 
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate(MulticoreJitPrivateTraceData data)
-            {                
+            {
                 JitProcess proc = perProc[data];
                 if (!backgroundJITEventsOn)
                 {
@@ -497,13 +497,13 @@ namespace Stats
                 "<TH Title=\"Is Jit compilation occuring in the background (BG) or not (JIT).\">BG</TH><TH>Module</TH>");
             if (backgroundJitEnabled)
             {
-                 writer.Write("<TH Title=\"How far ahead of the method usage was relative to the background JIT operation.\">Distance Ahead</TH><TH Title=\"Why the method was not JITTed in the background.\">Background JIT Blocking Reason</TH>");
+                writer.Write("<TH Title=\"How far ahead of the method usage was relative to the background JIT operation.\">Distance Ahead</TH><TH Title=\"Why the method was not JITTed in the background.\">Background JIT Blocking Reason</TH>");
             }
             writer.WriteLine("</TR>");
             foreach (JitEvent _event in events)
             {
                 writer.Write("<TR><TD Align=\"Center\">{0:n3}</TD><TD Align=\"Center\">{1:n1}</TD><TD Align=\"Center\">{2:n0}</TD><TD Align=\"Center\">{3:n0}</TD><TD Align=Left>{4}</TD><TD Align=\"Center\">{5}</TD><TD Align=\"Center\">{6}</TD>",
-                    _event.StartTimeMSec, _event.JitTimeMSec, _event.ILSize, _event.NativeSize, _event.MethodName ?? "&nbsp;", (_event.IsBackGround ? "BG" : "JIT"), 
+                    _event.StartTimeMSec, _event.JitTimeMSec, _event.ILSize, _event.NativeSize, _event.MethodName ?? "&nbsp;", (_event.IsBackGround ? "BG" : "JIT"),
                     _event.ModuleILPath.Length != 0 ? Path.GetFileName(_event.ModuleILPath) : "&lt;UNKNOWN&gt;");
                 if (backgroundJitEnabled)
                 {
@@ -660,7 +660,7 @@ namespace Stats
                     {
                         moduleName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
                     }
-                    
+
                     // Check to see if this module is in the profile.
                     if (!recordedModules.Contains(moduleName))
                     {
@@ -1021,7 +1021,7 @@ namespace Stats
 
         public int ParentID;
         public float CpuMSec;
-        
+
         public double StartTimeRelativeMSec;
         public double EndTimeRelativeMSec;
         public double DurationMSec { get { return EndTimeRelativeMSec - StartTimeRelativeMSec; } }
@@ -1282,11 +1282,18 @@ namespace Stats
             }
             writer.WriteLine("</{0}>", tag);
         }
-        public void ToHtml(TextWriter writer, string fileName, string title, Predicate<T> filter)
+        public void ToHtml(TextWriter writer, string fileName, string title, Predicate<T> filter, bool justBody=false)
         {
-            writer.WriteLine("<html>");
-            writer.WriteLine("<head><meta http-equiv='X-UA-Compatible' content='IE=edge'/></head>");
-            writer.WriteLine("<body>");
+            if (!justBody)
+            {
+                writer.WriteLine("<html>");
+                writer.WriteLine("<head>");
+                writer.WriteLine("<title>{0}</title>", Path.GetFileNameWithoutExtension(fileName));
+                writer.WriteLine("<meta charset=\"UTF-8\"/>");
+                writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+                writer.WriteLine("</head>");
+                writer.WriteLine("<body>");
+            }
             writer.WriteLine("<H2>{0}</H2>", title);
             List<T> sortedProcs = new List<T>(perProc.Values);
             sortedProcs.Sort();
@@ -1332,8 +1339,11 @@ namespace Stats
             }
 
             writer.WriteLine("<BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/><BR/>");
-            writer.WriteLine("</body>");
-            writer.WriteLine("</html>");
+            if (!justBody)
+            {
+                writer.WriteLine("</body>");
+                writer.WriteLine("</html>");
+            }
         }
 
         public bool TryGetByID(int processID, out T ret)
@@ -1350,7 +1360,7 @@ namespace Stats
             ToXml(sw, "Processes");
             return sw.ToString();
         }
-        
+
         #region private
         /// <summary>
         /// Returns a shortened command line

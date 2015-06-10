@@ -358,7 +358,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         parameters.FilterDescCount = curDescrIdx;
                         parameters.EnableFilterDesc = filterDescrPtr;
 
-                        if (options.StacksEnabled)
+                        if (options.StacksEnabled || options.EventIDStacksToEnable != null || options.EventIDStacksToDisable != null)
                             parameters.EnableProperty = TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
 
                         if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.  
@@ -1173,6 +1173,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         /// <param name="inputETLFileNames">The input ETL files to merge</param>
         /// <param name="outputETLFileName">The output ETL file to produce.</param>
+        /// <param name="options">Optional Additional options for the Merge (seeTraceEventMergeOptions) </param>
         public static void Merge(string[] inputETLFileNames, string outputETLFileName, TraceEventMergeOptions options = TraceEventMergeOptions.None)
         {
             if (!s_KernelTraceControlLoaded)
@@ -1200,7 +1201,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
 
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
-                if (retValue != 0 || retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
+                if (retValue != 0 && retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
                     throw new ApplicationException("Merge operation failed return code 0x" + retValue.ToString("x"));
             }
             finally

@@ -224,7 +224,7 @@ namespace PerfView
                                 durationMSec = data.TimeStampRelativeMSec - startTimeStamp;
 
                                 // A bit of a hack.  WE use the same start event (SuspenEEStart) for two durations.
-                                // THus don't remove i after SuspendEEStop because we also use it for RestartEEStop.  
+                                // Thus don't remove it after SuspendEEStop because we also use it for RestartEEStop.  
                                 if (!(task == (TraceEventTask)0xFFFE && (int)data.ID == 8)) // Is this the SuspendEEStop event?
                                     startStopRecords.Remove(key);
                             }

@@ -4068,8 +4068,10 @@
                 in its OnEventCommand method).&nbsp; The special ETW keywords include
                 <ul>
                     <li>@StacksEnabled - If this key&#39;s value is &#39;true&#39; then the stack associated with the event is taken (for every event in the provider)</li>
-                    <li>@ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected</li>
-                    <li>@ProcessNameFilter - a space separated list of process names (a process name is the name if the executable with a path or .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp; </li>
+                    <li>@ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected.
+                    Since IDs only exist after a process is created, this only works on processes that are running at the time collection starts. </li>
+                    <li>@ProcessNameFilter - a space separated list of process names (a process name is the file name (no path) of the executable INCLUDING the .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp; 
+                    It does not matter if the process was running before collection or not.</li>
                     <li>@EventIDsToEnable -a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be collected in addition to any events specified by the Keywords.&nbsp;&nbsp; </li>
                     <li>@EventIDsToDisable - a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be suppressed from those specified by the Keywords.&nbsp;&nbsp; </li>
                     <li>@EventIDStacksToEnable - a space separated list of decimal event ID numbers whose events should have their stacks collected.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will have a stack logged as well as the event information.</li>
@@ -5857,11 +5859,21 @@
         '/StopOnPerfCounter qualifier.
     </p>
     <p>
+        You can specify the /StopOnPerfCounter qualifier more than once and each acts as a trigger.
+        Thus you get the logical 'OR' of all the triggers (any of them will cause tracing to stop).
+        There is currently no way of specifying a logical 'AND'. 
+    </p>
+    <p>
         If the process you want to monitor lives a long time, then you can specify the instance
         of that process in the /StopOnPerfCounter qualifier. Sometimes, however it is difficult
         to identify the process instance you want. Some counters (like the GC counters and
         others), have a special instance that represents 'all' processes in some way. Look
-        for these in the 'instances' listbox in PerfMon. These can be handy.
+        for these in the 'instances' listbox in PerfMon. These can be handy.  If don't have a 
+        aggregate instance, you can /StopOnPerfCounter for each process instance that MIGHT exist.
+        This is not hard to do because Perf Counters are given names like EXE, EXE#1, EXE#2 etc.  
+        THus you can specify /StopOnPerfCounter for each of the N from 1 up to the maximum
+        number of instance you expect.   PerfView is robust to instances that don't exist (it waits 
+        for them to exist), so you get the behavior you want.   
     </p>
     <p>
         Here are some other useful /StopOnPerfCounter examples
@@ -6138,7 +6150,7 @@
         you could stop whenever your requests took more than 2 seconds by doing
     </p>
     <ul>
-        <li>PerfView /StopOnEtwEvent:*MyEventSource/MyRequestStart;TriggerMSec=2000 collect</li>
+        <li>PerfView /StopOnEtwEvent:*MyEventSource/MyRequest/Start;TriggerMSec=2000 collect</li>
     </ul>
     <p>
         If want to stop when the process named 'GCTest' (that is the exe is named GCTest.exe) stops (you can also use a process number).
@@ -7631,6 +7643,18 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.7.22 6/4/2015
+            <ul>
+                <li>Fixed issues with some cases when payloads are emitted the the Self-describing format in EventSource on some OSes.</li>
+                <li>Added support for newer symbol servers that prefix the PDB path with the first two leters of the PDB name.</li>
+                <li>Fixed formating oddities of the HTML reports in French and other non-english languages when printing numbers</li>
+                <li>
+                    Fixed issue with the @EventIDStacksToEnable capability.  It actually worked before you just had to also specify the @StacksEnabled.
+                    Now this happens implicitly.  
+                </li>
+            </ul>
+        </li>
         <li>
             Version 1.7.20 - 4/2/2015
             <ul>

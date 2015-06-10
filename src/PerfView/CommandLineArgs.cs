@@ -226,7 +226,7 @@ namespace PerfView
                 "When that condition is true then collection will stop.  You can specify this qualifier more than once.  See 'Stop Trigger' in the users guide for more.");
             parser.DefineOptionalQualifier("StopOnEventLogMessage", ref StopOnEventLogMessage,
                 "Stop when an event log message that matches the given (ignore case) regular expression is written to the Windows 'Application' event log.  " +
-                "You can specify a particular event log with the syntax eventLogName@RegExp.");
+                "You can specify a particular event log with the syntax eventLogName@RegExp.   Can be specified more than once (logical OR).");
 
             parser.DefineOptionalQualifier("StopOnEtwEvent", ref StopOnEtwEvent,
                 "This is of the form PROVIDER/EVENTNAME;key1=value1;key2=value2... " +

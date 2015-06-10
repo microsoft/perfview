@@ -141,7 +141,7 @@ namespace PerfView
         SCCInfo[] m_sccInfo;
         Stack<int> m_stack;
         MemoryGraph m_graph;
-        StreamWriter m_htmlRaw;
+        TextWriter m_htmlRaw;
         TextWriter m_log;
         int index;
         List<int> m_currentCycle = new List<int>();
@@ -154,7 +154,7 @@ namespace PerfView
             return sPrint;
         }
 
-        public void Init(MemoryGraph graph, StreamWriter writer, TextWriter log)
+        public void Init(MemoryGraph graph, TextWriter writer, TextWriter log)
         {
             m_graph = graph;
             m_sccInfo = new SCCInfo[(int)graph.NodeIndexLimit];
@@ -313,7 +313,7 @@ namespace PerfView
     {
         HeapDumpPerfViewFile m_heapDumpFile;
         string m_mainOutput;
-        StreamWriter m_htmlRaw;
+        TextWriter m_htmlRaw;
         TextWriter m_log;
 
         MemoryGraph m_graph;
@@ -551,7 +551,7 @@ namespace PerfView
                     }
                 }
             }
-#endif 
+#endif
             return false;
         }
 
@@ -580,7 +580,7 @@ namespace PerfView
             {
                 ModuleTable();
             }
-#endif 
+#endif
             m_htmlRaw.WriteLine("</ul>");
 
             GraphWalker walker = new GraphWalker();
@@ -644,41 +644,38 @@ namespace PerfView
             m_htmlRaw.WriteLine("</ul>");
         }
 
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             m_log = log;
 
-            using (var writer = File.CreateText(outputFileName))
+            m_htmlRaw = writer;
+
+            m_heapDumpFile.OpenDump(log);
+
+            writer.WriteLine("<H2>CLR Interop Objects</H2><p>");
+
+            writer.WriteLine("<b>RCW</b>: Runtime Callable Wrapper: wrapping COM objects to be called by managed runtime.<p>");
+            writer.WriteLine("<b>CCW</b>: COM Callable Wrapper: wrapping managed objects to be called by COM.<p>");
+
+            m_graph = m_heapDumpFile.m_gcDump.MemoryGraph;
+            m_interop = m_heapDumpFile.m_gcDump.InteropInfo;
+
+            if ((m_interop != null) && m_interop.InteropInfoExists())
             {
-                m_htmlRaw = writer;
+                writer.WriteLine("Interop data stream<p>");
+                writer.WriteLine("<ul>");
+                writer.WriteLine("<li>Heap dump file: {0}, {1:N0} nodes</li>", m_heapDumpFile.FilePath, (int)m_graph.NodeIndexLimit);
+                writer.WriteLine("<li>CCW   : {0}</li>", m_interop.currentCCWCount);
+                writer.WriteLine("<li>RCW   : {0}</li>", m_interop.currentRCWCount);
+                writer.WriteLine("<li>Module: {0}</li>", m_interop.currentModuleCount);
+                writer.WriteLine("</ul>");
 
-                m_heapDumpFile.OpenDump(log);
-
-                writer.WriteLine("<H2>CLR Interop Objects</H2><p>");
-
-                writer.WriteLine("<b>RCW</b>: Runtime Callable Wrapper: wrapping COM objects to be called by managed runtime.<p>");
-                writer.WriteLine("<b>CCW</b>: COM Callable Wrapper: wrapping managed objects to be called by COM.<p>");
-
-                m_graph = m_heapDumpFile.m_gcDump.MemoryGraph;
-                m_interop = m_heapDumpFile.m_gcDump.InteropInfo;
-
-                if ((m_interop != null) && m_interop.InteropInfoExists())
-                {
-                    writer.WriteLine("Interop data stream<p>");
-                    writer.WriteLine("<ul>");
-                    writer.WriteLine("<li>Heap dump file: {0}, {1:N0} nodes</li>", m_heapDumpFile.FilePath, (int)m_graph.NodeIndexLimit);
-                    writer.WriteLine("<li>CCW   : {0}</li>", m_interop.currentCCWCount);
-                    writer.WriteLine("<li>RCW   : {0}</li>", m_interop.currentRCWCount);
-                    writer.WriteLine("<li>Module: {0}</li>", m_interop.currentModuleCount);
-                    writer.WriteLine("</ul>");
-
-                    m_mainOutput = outputFileName;
-                    GenerateReports();
-                }
-                else
-                {
-                    writer.WriteLine("<li>No Interop stream</li>");
-                }
+                m_mainOutput = fileName;
+                GenerateReports();
+            }
+            else
+            {
+                writer.WriteLine("<li>No Interop stream</li>");
             }
         }
     }

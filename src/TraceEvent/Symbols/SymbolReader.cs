@@ -897,6 +897,16 @@ namespace Microsoft.Diagnostics.Symbols
                     m_log.WriteLine("FindSymbolFilePath: Error, Don't know how to look up redirected location {0}", filePtrData);
                 }
             }
+
+            // See if we already have a prefix XX/ prefix.  
+            if (2 < fileIndexPath.Length && fileIndexPath[2] != '/')
+            {
+                m_log.WriteLine("Trying the XX/XXYYY.PDB convention");
+                // See if it is following the XX/XXYYYY.PDB convention (used to make directories smaller).  
+                var prefixedPath = fileIndexPath.Substring(0, 2) + "/" + fileIndexPath;
+                return GetFileFromServer(urlForServer, prefixedPath, targetPath);
+            }
+
             return null;
         }
 

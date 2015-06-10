@@ -851,7 +851,7 @@ namespace PerfView
         public PerfViewFile DataFile { get; private set; }
         public WebBrowserWindow Viewer { get; internal set; }
         public override string FilePath { get { return DataFile.FilePath; } }
-        protected abstract void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log);
+        protected abstract void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log);
         /// <summary>
         /// You can make Command:XXXX urls which come here when users click on them.   
         /// Returns an  error message (or null if it succeeds).  
@@ -881,7 +881,22 @@ namespace PerfView
                 worker.StartWork("Opening " + Name, delegate()
                 {
                     var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
-                    OpenImpl(trace, reportFileName, worker.LogWriter);
+                    using (var writer = File.CreateText(reportFileName))
+                    {
+                        writer.WriteLine("<html>");
+                        writer.WriteLine("<head>");
+                        writer.WriteLine("<title>{0}</title>", Title);
+                        writer.WriteLine("<meta charset=\"UTF-8\"/>");
+                        writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+                        writer.WriteLine("</head>");
+                        writer.WriteLine("<body>");
+                        WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
+                        writer.WriteLine("</body>");
+                        writer.WriteLine("</html>");
+
+
+                    }
+
                     worker.EndWork(delegate()
                     {
                         Viewer = new WebBrowserWindow();
@@ -938,53 +953,49 @@ namespace PerfView
     public class PerfViewTraceInfo : PerfViewHtmlReport
     {
         public PerfViewTraceInfo(PerfViewFile dataFile) : base(dataFile, "TraceInfo") { }
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
-            using (var writer = File.CreateText(outputFileName))
+            writer.WriteLine("<H2>Information on the Trace and Machine</H2>");
+            writer.WriteLine("<Center>");
+            writer.WriteLine("<Table Border=\"1\">");
+            writer.WriteLine("<TR><TD>Machine Name</TD><TD Align=\"Center\">{0}</TD></TR>",
+                string.IsNullOrEmpty(dataFile.MachineName) ? "&nbsp;" : dataFile.MachineName);
+            writer.WriteLine("<TR><TD>Operating System</TD><TD Align=\"Center\">{0}</TD></TR>",
+                string.IsNullOrEmpty(dataFile.OSName) ? "&nbsp;" : dataFile.OSName);
+            writer.WriteLine("<TR><TD>OS Build Number</TD><TD Align=\"Center\">{0}</TD></TR>",
+                string.IsNullOrEmpty(dataFile.OSBuild) ? "&nbsp;" : dataFile.OSBuild);
+            writer.WriteLine("<TR><TD>UTC offset of this timezone</TD><TD Align=\"Center\">{0}</TD></TR>",
+                TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
+            writer.WriteLine("<TR><TD>OS Boot Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.BootTime);
+            writer.WriteLine("<TR><TD>Trace Start Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionStartTime);
+            writer.WriteLine("<TR><TD>Trace End Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionEndTime);
+            writer.WriteLine("<TR><TD>Trace Duration (Sec)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", dataFile.SessionDuration.TotalSeconds);
+            writer.WriteLine("<TR><TD>CPU Frequency (Mhz)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.CpuSpeedMHz);
+            writer.WriteLine("<TR><TD>Number Of Processors</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.NumberOfProcessors);
+            writer.WriteLine("<TR><TD>Memory Size (Meg)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.MemorySizeMeg);
+            writer.WriteLine("<TR><TD>Pointer Size</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.PointerSize);
+            writer.WriteLine("<TR><TD>Sample Profile Interval (MSec) </TD><TD Align=\"Center\">{0:n2}</TD></TR>", dataFile.SampleProfileInterval.TotalMilliseconds);
+            writer.WriteLine("<TR><TD>Total Events</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.EventCount);
+            writer.WriteLine("<TR><TD>Lost Events</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.EventsLost);
+
+            double len = 0;
+            try
             {
-                writer.WriteLine("<H2>Information on the Trace and Machine</H2>");
-                writer.WriteLine("<Center>");
-                writer.WriteLine("<Table Border=\"1\">");
-                writer.WriteLine("<TR><TD>Machine Name</TD><TD Align=\"Center\">{0}</TD></TR>",
-                    string.IsNullOrEmpty(dataFile.MachineName) ? "&nbsp;" : dataFile.MachineName);
-                writer.WriteLine("<TR><TD>Operating System</TD><TD Align=\"Center\">{0}</TD></TR>",
-                    string.IsNullOrEmpty(dataFile.OSName) ? "&nbsp;" : dataFile.OSName);
-                writer.WriteLine("<TR><TD>OS Build Number</TD><TD Align=\"Center\">{0}</TD></TR>",
-                    string.IsNullOrEmpty(dataFile.OSBuild) ? "&nbsp;" : dataFile.OSBuild);
-                writer.WriteLine("<TR><TD>UTC offset of this timezone</TD><TD Align=\"Center\">{0}</TD></TR>",
-                    TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
-                writer.WriteLine("<TR><TD>OS Boot Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.BootTime);
-                writer.WriteLine("<TR><TD>Trace Start Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionStartTime);
-                writer.WriteLine("<TR><TD>Trace End Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionEndTime);
-                writer.WriteLine("<TR><TD>Trace Duration (Sec)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", dataFile.SessionDuration.TotalSeconds);
-                writer.WriteLine("<TR><TD>CPU Frequency (Mhz)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.CpuSpeedMHz);
-                writer.WriteLine("<TR><TD>Number Of Processors</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.NumberOfProcessors);
-                writer.WriteLine("<TR><TD>Memory Size (Meg)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.MemorySizeMeg);
-                writer.WriteLine("<TR><TD>Pointer Size</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.PointerSize);
-                writer.WriteLine("<TR><TD>Sample Profile Interval (MSec) </TD><TD Align=\"Center\">{0:n2}</TD></TR>", dataFile.SampleProfileInterval.TotalMilliseconds);
-                writer.WriteLine("<TR><TD>Total Events</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.EventCount);
-                writer.WriteLine("<TR><TD>Lost Events</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.EventsLost);
-
-                double len = 0;
-                try
-                {
-                    len = new System.IO.FileInfo(DataFile.FilePath).Length / 1000000.0;
-                }
-                catch (Exception) { }
-                if (len > 0)
-                    writer.WriteLine("<TR><TD>ETL File Size (MB)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", len);
-                string logPath = null;
-                int etlIdx = dataFile.FilePath.LastIndexOf(".etl", dataFile.FilePath.Length - 6);       // Start search right before .etlx
-                if (0 <= etlIdx)
-                    logPath = dataFile.FilePath.Substring(0, etlIdx) + ".LogFile.txt";
-                if (logPath != null && File.Exists(logPath))
-                    writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
-                else
-                    writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>", logPath);
-                writer.WriteLine("</Table>");
-                writer.WriteLine("</Center>");
-
+                len = new System.IO.FileInfo(DataFile.FilePath).Length / 1000000.0;
             }
+            catch (Exception) { }
+            if (len > 0)
+                writer.WriteLine("<TR><TD>ETL File Size (MB)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", len);
+            string logPath = null;
+            int etlIdx = dataFile.FilePath.LastIndexOf(".etl", dataFile.FilePath.Length - 6);       // Start search right before .etlx
+            if (0 <= etlIdx)
+                logPath = dataFile.FilePath.Substring(0, etlIdx) + ".LogFile.txt";
+            if (logPath != null && File.Exists(logPath))
+                writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
+            else
+                writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>", logPath);
+            writer.WriteLine("</Table>");
+            writer.WriteLine("</Center>");
         }
 
         protected override string DoCommand(string command, StatusBar worker)
@@ -1016,7 +1027,7 @@ namespace PerfView
     {
 
         public PerfViewProcesses(PerfViewFile dataFile) : base(dataFile, "Processes") { }
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             m_processes = new List<TraceProcess>(dataFile.Processes);
             // Sort by CPU time (largest first), then by start time (latest first)
@@ -1041,8 +1052,6 @@ namespace PerfView
                     shortProcs.Add(process);
             }
 
-            using (var writer = File.CreateText(outputFileName))
-            {
                 writer.WriteLine("<H2>Process Summary</H2>");
 
                 writer.WriteLine("<UL>");
@@ -1060,7 +1069,6 @@ namespace PerfView
                     writer.WriteLine("<H3>Processes that <strong>did</strong> live for the entire trace.</H3>");
                     WriteProcTable(writer, longProcs, false);
                 }
-            }
         }
         /// <summary>
         /// Takes in either "processes" or "module" which will make a csv of their respective format
@@ -1094,7 +1102,7 @@ namespace PerfView
             return null;
         }
         #region private
-        private void WriteProcTable(StreamWriter writer, List<TraceProcess> processes, bool showExit)
+        private void WriteProcTable(TextWriter writer, List<TraceProcess> processes, bool showExit)
         {
             bool showBitness = false;
             if (processes.Count > 0)
@@ -1202,7 +1210,7 @@ namespace PerfView
     public class PerfViewAspNetStats : PerfViewHtmlReport
     {
         public PerfViewAspNetStats(PerfViewFile dataFile) : base(dataFile, "Asp.Net Stats") { }
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             var dispatcher = dataFile.Events.GetSource();
             var aspNet = new AspNetTraceEventParser(dispatcher);
@@ -1486,9 +1494,6 @@ namespace PerfView
             if (procAdjust != 0)
                 log.WriteLine("There were {0} handler starts without a matching handler end in the trace", procAdjust);
 
-            // Create the HTML report 
-            using (var writer = File.CreateText(outputFileName))
-            {
                 writer.WriteLine("<H2>ASP.Net Statistics</H2>");
                 writer.WriteLine("<UL>");
                 var fileInfo = new System.IO.FileInfo(dataFile.FilePath);
@@ -1643,7 +1648,6 @@ namespace PerfView
                 writer.WriteLine("<p>&nbsp;</p>");
                 writer.WriteLine("<p>&nbsp;</p>");
                 writer.WriteLine("<p>&nbsp;</p>");
-            }
         }
 
         protected override string DoCommand(string command, StatusBar worker)
@@ -1810,13 +1814,11 @@ namespace PerfView
     public class PerfViewEventStats : PerfViewHtmlReport
     {
         public PerfViewEventStats(PerfViewFile dataFile) : base(dataFile, "EventStats") { }
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             m_counts = new List<TraceEventCounts>(dataFile.Stats);
             // Sort by count
             m_counts.Sort((x, y) => y.Count - x.Count);
-            using (var writer = File.CreateText(outputFileName))
-            {
                 writer.WriteLine("<H2>Event Statistics</H2>");
                 writer.WriteLine("<UL>");
                 writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
@@ -1841,7 +1843,6 @@ namespace PerfView
                     writer.WriteLine("</TR>");
                 }
                 writer.WriteLine("</Table>");
-            }
         }
         protected override string DoCommand(string command, StatusBar worker)
         {
@@ -1940,14 +1941,11 @@ namespace PerfView
             return "Unknown command " + command;
         }
 
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             var source = dataFile.Events.GetSource();
             m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
-            using (var output = File.CreateText(outputFileName))
-            {
-                m_gcStats.ToHtml(output, outputFileName, "GCStats", null);
-            }
+            m_gcStats.ToHtml(writer, fileName, "GCStats", null, true);
         }
 
         ProcessLookup<GCProcess> m_gcStats;
@@ -1994,11 +1992,10 @@ namespace PerfView
             return "Unknown command " + command;
         }
 
-        protected override void OpenImpl(TraceLog dataFile, string outputFileName, TextWriter log)
+        protected override void WriteHtmlBody(TraceLog dataFile, TextWriter output, string fileName, TextWriter log)
         {
             m_jitStats = JitProcess.Collect(dataFile.Events.GetSource());
-            using (var output = File.CreateText(outputFileName))
-                m_jitStats.ToHtml(output, outputFileName, "JITStats", null);
+            m_jitStats.ToHtml(output, fileName, "JITStats", null, true);
         }
 
         ProcessLookup<JitProcess> m_jitStats;
@@ -2659,7 +2656,7 @@ namespace PerfView
                 eventSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData data)
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    
+
                     var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
 
                     var typeName = data.TypeName;
@@ -3006,7 +3003,7 @@ namespace PerfView
                 var liveHandles = new Dictionary<long, GCHandleInfo>();
                 int maxLiveHandles = 0;
                 double maxLiveHandleRelativeMSec = 0;
-                    
+
                 Action<SetGCHandleTraceData> onSetHandle = delegate(SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
@@ -3060,6 +3057,7 @@ namespace PerfView
                 stackSource.DoneAddingSamples();
                 log.WriteLine("The maximum number of live pinning handles is {0} at {1:n3} Msec ", maxLiveHandles, maxLiveHandleRelativeMSec);
             }
+
             else if (streamName == "Heap Snapshot Pinning")
             {
                 GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample, log);
@@ -3118,7 +3116,7 @@ namespace PerfView
                     {
                         sample.Metric = -1;
 
-                        long key = (((long) handleProcess) << 32) + handleInstance;
+                        long key = (((long)handleProcess) << 32) + handleInstance;
                         StackSourceCallStackIndex stackIndex;
                         if (allocationsStacks.TryGetValue(key, out stackIndex))
                             sample.StackIndex = stackIndex;
@@ -5795,7 +5793,7 @@ namespace PerfView
             // This is because the module is per-process, and in a trace where there are many
             // processes of the same application, we end up creating many symbol modules which seems
             // to create memory leaks and takes a very long time to resolve symbols.
-            if(!(m_lastModule != null && module != null && m_lastModule.PdbGuid == module.PdbGuid && m_lastModule.PdbAge == module.PdbAge))
+            if (!(m_lastModule != null && module != null && m_lastModule.PdbGuid == module.PdbGuid && m_lastModule.PdbAge == module.PdbAge))
             {
                 m_lastModule = module;
                 m_lastSymModule = null;
