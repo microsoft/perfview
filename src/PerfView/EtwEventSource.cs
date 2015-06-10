@@ -314,16 +314,18 @@ namespace PerfView
             int intContextID = -1;          // When the obvious ID is an integer, this is it, -1 means it is unused.  
             if ((options & CorelationOptions.UseThreadContext) == 0)
             {
-                if ((options & CorelationOptions.UseActivityID) == 0)
+                if ((options & CorelationOptions.UseActivityID) == 0 && !ActivityComputer.IsActivityPath(data.ActivityID))
                 {
-                    // If the payloads have parameters that indicate it is a coorelation event, use that.  
+                    // If the payloads have parameters that indicate it is a correlation event, use that.  
                     var names = data.PayloadNames;
                     if (names != null && names.Length > 0)
                     {
-                        int fieldNum = -1;    // First try to use a field as the coorelator
+                        int fieldNum = -1;    // First try to use a field as the correlater
                         if (0 < names.Length)
                         {
-                            if (names[0].EndsWith("id", StringComparison.OrdinalIgnoreCase) || names[0] == "Count") // Hack for GC/Start 
+                            if (names[0].EndsWith("id", StringComparison.OrdinalIgnoreCase) || 
+                                string.Compare("Name", names[0], StringComparison.OrdinalIgnoreCase) == 0 ||    // Used for simple generic taskss
+                                names[0] == "Count") // Hack for GC/Start 
                                 fieldNum = 0;
                             else if (1 < names.Length && names[1] == "ContextId")       // This is for ASP.NET events 
                                 fieldNum = 1;
