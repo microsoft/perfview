@@ -158,6 +158,9 @@ namespace PerfView
                                 // Filter out any items we were asked to filter out.  
                                 if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(dir)))
                                     continue;
+                                // We know that .NGENPDB directories are uninteresting, filter them out.  
+                                if (dir.EndsWith(".NENPDB", StringComparison.OrdinalIgnoreCase))
+                                    continue;
 
                                 m_Children.Add(new PerfViewDirectory(dir));
                             }
@@ -3174,20 +3177,39 @@ namespace PerfView
                 StartStopActivityComputer startStopComputer = null;
                 bool isAnyTaskTree = (streamName == "Any TaskTree");
                 bool isAnyWithTasks = (streamName == "Any Stacks (with Tasks)");
-                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Tasks)");
-                bool isAnyStartStopTree = (streamName == "Any StartStopTree");
-                if (isAnyTaskTree || isAnyWithTasks || isAnyWithStartStop || isAnyStartStopTree)
+                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Tasks)");          // These have the call stacks 
+                bool isAnyStartStopTreeNoCallStack = (streamName == "Any StartStopTree");               // These have just the start-stop tasks.  
+                if (isAnyTaskTree || isAnyWithTasks || isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                 {
                     activityComputer = new ActivityComputer(eventSource, GetSymbolReader(log));
 
                     // Log a pseudo-event that indicates when the activity dies
                     activityComputer.Stop += delegate(TraceActivity activity, TraceEvent data)
                     {
+                        // TODO This is a clone of the logic below, factor it.  
+                        TraceThread thread = data.Thread();
+                        if (thread != null)
+                            return;
+
                         StackSourceCallStackIndex stackIndex;
                         if (isAnyTaskTree)
-                            stackIndex = activityComputer.GetActivityStack(stackSource, activity);
+                        {
+                            // Compute the stack where frames using an activity Name as a frame name.
+                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
+                        }
+                        else if (isAnyStartStopTreeNoCallStack)
+                        {
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
+                        }
                         else
-                            stackIndex = activityComputer.GetCallStack(stackSource, data);
+                        {
+                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
+                            if (isAnyWithStartStop)
+                                topFrames = delegate(TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+
+                            // Use the call stack 
+                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
+                        }
 
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
                         sample.StackIndex = stackIndex;
@@ -3196,7 +3218,7 @@ namespace PerfView
                         stackSource.AddSample(sample);
                     };
 
-                    if (isAnyWithStartStop || isAnyStartStopTree)
+                    if (isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
                 }
 
@@ -3219,7 +3241,7 @@ namespace PerfView
                             // Compute the stack where frames using an activity Name as a frame name.
                             stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
                         }
-                        else if (isAnyStartStopTree)
+                        else if (isAnyStartStopTreeNoCallStack)
                         {
                             stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
                         }

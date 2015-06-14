@@ -102,6 +102,12 @@ namespace Microsoft.Diagnostics.Tracing
                             }
                         }
                     }
+                    else
+                    {
+                        // Include the first argument if it is a string
+                        if (0 < data.PayloadNames.Length)
+                            extraInfo = data.PayloadValue(0) as string;
+                    }
 
                     if (goodActivityID)      // Means that activityID is set to something useful. 
                     {
@@ -234,6 +240,11 @@ namespace Microsoft.Diagnostics.Tracing
         public StackSourceCallStackIndex GetStartStopActivityStack(MutableTraceEventStackSource outputStackSource, StartStopActivity curActivity, TraceProcess process)
         {
             StackSourceCallStackIndex stackIdx = outputStackSource.GetCallStackForProcess(process);
+
+            // Add Pseudo frame for whether it is an activity or not 
+            string firstFrameName = curActivity == null  ? "(Non-Activities)" : "(Activities)";
+            stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(firstFrameName), stackIdx);
+
             if (curActivity != null)
                 stackIdx = curActivity.GetActivityStack(outputStackSource, stackIdx);
             return stackIdx;
@@ -377,15 +388,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public StackSourceCallStackIndex GetActivityStack(MutableTraceEventStackSource outputStackSource, StackSourceCallStackIndex rootStack)
         {
-            StackSourceCallStackIndex stackIdx;
+            StackSourceCallStackIndex stackIdx = rootStack;
             if (Creator != null)
-                stackIdx = Creator.GetActivityStack(outputStackSource, rootStack);
-            else
-            {
-                stackIdx = rootStack;
-                // Add the pseduo-frame for all activities 
-                stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activities"), stackIdx);
-            }
+                stackIdx = Creator.GetActivityStack(outputStackSource, stackIdx);
 
             // Add my name to the list of frames.  
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activity " + Name), stackIdx);
