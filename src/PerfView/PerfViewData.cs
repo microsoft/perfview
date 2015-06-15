@@ -2893,7 +2893,7 @@ namespace PerfView
                     if (objectInfo != null)
                     {
                         allocStack = objectInfo.AllocStack;
-                        if ((allocStack != StackSourceCallStackIndex.Start) && (objectInfo.ClassFrame != StackSourceFrameIndex.Invalid))
+                        if ((allocStack != StackSourceCallStackIndex.Invalid) && (objectInfo.ClassFrame != StackSourceFrameIndex.Invalid))
                         {
                             if (512 <= objectInfo.Size)
                             {
@@ -2943,18 +2943,18 @@ namespace PerfView
                     }
 
                     /*****  OK we now have all the information we collected, create the sample.  *****/
-                    var currentSample = new StackSourceSample(stackSource);
+                    sample.StackIndex = StackSourceCallStackIndex.Invalid;
 
                     // Choose the stack to use 
-                    if ((allocStack != StackSourceCallStackIndex.Invalid) && (allocStack != StackSourceCallStackIndex.Start))
+                    if (allocStack != StackSourceCallStackIndex.Invalid)
                     {
-                        currentSample.StackIndex = allocStack;
-                        currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocation Location"), currentSample.StackIndex);
+                        sample.StackIndex = allocStack;
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocation Location"), sample.StackIndex);
                     }
                     else if (pinStack != StackSourceCallStackIndex.Invalid)
                     {
-                        currentSample.StackIndex = pinStack;
-                        currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Pinning Location"), currentSample.StackIndex);
+                        sample.StackIndex = pinStack;
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Pinning Location"), sample.StackIndex);
                     }
                     else
                     {
@@ -2962,8 +2962,8 @@ namespace PerfView
                         if (gcThread == null)
                             return;             // TODO WARN
 
-                        currentSample.StackIndex = stackSource.GetCallStackForThread(gcThread);
-                        currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC Location"), currentSample.StackIndex);
+                        sample.StackIndex = stackSource.GetCallStackForThread(gcThread);
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC Location"), sample.StackIndex);
                     }
 
                     // Duration of the pin. 
@@ -2975,28 +2975,28 @@ namespace PerfView
                         pinDuration = "<= " + roundedDuration.ToString("n");
                     }
                     var pinDurationInfo = "PINNED_FOR " + pinDuration + " msec";
-                    currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pinDurationInfo), currentSample.StackIndex);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pinDurationInfo), sample.StackIndex);
 
                     // Add the Pin Kind;
-                    currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pinKind), currentSample.StackIndex);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pinKind), sample.StackIndex);
 
                     // Add the type and size 
                     var typeName = data.TypeName;
                     if (data.ObjectSize > 0)
-                        currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Type " + typeName + " Size: 0x" + data.ObjectSize.ToString("x")), currentSample.StackIndex);
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Type " + typeName + " Size: 0x" + data.ObjectSize.ToString("x")), sample.StackIndex);
 
                     // Add the generation.
-                    currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Generation " + gcGen), currentSample.StackIndex);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Generation " + gcGen), sample.StackIndex);
 
                     // Add GC
-                    currentSample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC " + gcIndex), currentSample.StackIndex);
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC " + gcIndex), sample.StackIndex);
 
                     // _sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Handle 0x" + data.HandleID.ToString("x") +  " Object 0x" + data.ObjectID.ToString("x")), _sample.StackIndex);
 
                     // We now have the stack, fill in the rest of the _sample and add it to the stack source.  
-                    currentSample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    currentSample.Metric = 1;
-                    stackSource.AddSample(currentSample);
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    sample.Metric = 1;
+                    stackSource.AddSample(sample);
                 };
                 eventSource.Clr.GCPinObjectAtGCTime += objectAtGCTime;
                 clrPrivate.GCPinObjectAtGCTime += objectAtGCTime;         // TODO FIX NOW REMOVE AFTER PRIVATE IS GONE
