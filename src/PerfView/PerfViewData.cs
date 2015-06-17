@@ -2731,12 +2731,14 @@ namespace PerfView
 
                 // Keep track of the current GC per process 
                 var curGCGen = new int[eventLog.Processes.Count];
+                var curGCIndex = new int[eventLog.Processes.Count];
                 eventSource.Clr.GCStart += delegate(Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
                 {
                     var process = data.Process();
                     if (process == null)
                         return;
                     curGCGen[(int)process.ProcessIndex] = data.Depth;
+                    curGCIndex[(int)process.ProcessIndex] = data.Count;
                 };
 
                 // Keep track of the live Pinning handles per process.  
@@ -2828,6 +2830,7 @@ namespace PerfView
                     StackSourceCallStackIndex pinStack = StackSourceCallStackIndex.Invalid;
                     StackSourceCallStackIndex allocStack = StackSourceCallStackIndex.Invalid;
                     int gcGen = curGCGen[(int)process.ProcessIndex];
+                    int gcIndex = curGCIndex[(int)process.ProcessIndex];
 
                     GCHandleInfo info;
                     if (liveHandles.TryGetValue(data.HandleID, out info))
@@ -2893,7 +2896,7 @@ namespace PerfView
                     if (objectInfo != null)
                     {
                         allocStack = objectInfo.AllocStack;
-                        if (objectInfo.ClassFrame != StackSourceFrameIndex.Invalid)
+                        if ((allocStack != StackSourceCallStackIndex.Invalid) && (objectInfo.ClassFrame != StackSourceFrameIndex.Invalid))
                         {
                             if (512 <= objectInfo.Size)
                             {
@@ -2943,6 +2946,7 @@ namespace PerfView
                     }
 
                     /*****  OK we now have all the information we collected, create the sample.  *****/
+                    sample.StackIndex = StackSourceCallStackIndex.Invalid;
 
                     // Choose the stack to use 
                     if (allocStack != StackSourceCallStackIndex.Invalid)
@@ -2987,9 +2991,12 @@ namespace PerfView
                     // Add the generation.
                     sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Generation " + gcGen), sample.StackIndex);
 
-                    // sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Handle 0x" + data.HandleID.ToString("x") +  " Object 0x" + data.ObjectID.ToString("x")), sample.StackIndex);
+                    // Add GC
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC " + gcIndex), sample.StackIndex);
 
-                    // We now have the stack, fill in the rest of the sample and add it to the stack source.  
+                    // _sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Handle 0x" + data.HandleID.ToString("x") +  " Object 0x" + data.ObjectID.ToString("x")), _sample.StackIndex);
+
+                    // We now have the stack, fill in the rest of the _sample and add it to the stack source.  
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
                     stackSource.AddSample(sample);

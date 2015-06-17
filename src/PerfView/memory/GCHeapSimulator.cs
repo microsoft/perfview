@@ -622,7 +622,7 @@ namespace PerfView
     {
         // Stuff set at allocation and never changed.  
         public double AllocationTimeRelativeMSec;       // We guarantee uniqueness of these timestamps, so it can be used as durable object ID
-        public StackSourceCallStackIndex AllocStack;    // This is the stack at the allocation point
+        public StackSourceCallStackIndex AllocStack = StackSourceCallStackIndex.Invalid;    // This is the stack at the allocation point
         public StackSourceFrameIndex ClassFrame;        // This identifies the class being allocated.
         public int Size;                                // This is the size of the object being allocated on this particular event.  
         public int RepresentativeSize;                  // If sampling is on, this sample may represent many allocations. This is the sum of the sizes of all those allocations.  
