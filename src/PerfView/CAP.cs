@@ -1164,6 +1164,8 @@ namespace ClrCap
                     continue;
                 if (_event.PerHeapMarkTimes == null)
                     continue;
+                if (!(_event.AllHeapsSeenMark()))
+                    continue;
 
                 int index = ((_event.GCGeneration == 2) ? 1 : 0);
                 if (_event.Type != GCType.BackgroundGC)
