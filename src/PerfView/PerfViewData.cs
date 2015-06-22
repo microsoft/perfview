@@ -6014,7 +6014,7 @@ namespace PerfView
             var defaultRegex = new Regex(@"(.*)", RegexOptions.IgnoreCase);
 
             // TODO: Directory.GetFile
-            foreach (string file in Directory.GetFiles(dir, pattern))
+            foreach (string file in Directory.GetFiles(dir, pattern, SearchOption.AllDirectories))
             {
                 string name = null;
                 if (namePattern != null)
