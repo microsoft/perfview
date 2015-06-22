@@ -1642,7 +1642,10 @@ namespace Stats
 
             GCEvent _event = GetLastGC();
             if (_event != null)
+            {
                 _event.GlobalHeapHistory = (GCGlobalHeapHistoryTraceData)data.Clone();
+                _event.SetHeapCount(heapCount);
+            }
         }
 
         private void ProcessPerHeapHistory(GCPerHeapHistoryTraceData data)
@@ -2010,6 +2013,24 @@ namespace Stats
             totalPinnedPlugSize = -1;
             totalUserPinnedPlugSize = -1;
             duplicatedPinningReports = 0;
+        }
+
+        public void SetHeapCount(int count)
+        {
+            if (heapCount == -1)
+            {
+                heapCount = count;
+            }
+        }
+
+        // Unfortunately sometimes we just don't get mark events from all heaps, even for GCs that we have seen GCStart for.
+        // So accommodating this scenario.
+        public bool AllHeapsSeenMark()
+        {
+            if (PerHeapMarkTimes != null)
+                return (heapCount == PerHeapMarkTimes.Count);
+            else
+                return false;
         }
 
         public class ServerGcHistory
