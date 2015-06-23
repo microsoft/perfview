@@ -12,6 +12,10 @@ using Microsoft.Diagnostics.Utilities;
 using System.Xml;
 #endif
 
+/// <summary>
+/// Represents a .GCDump file.  You can open it for reading with the construtor
+/// and you can write one with WriteMemoryGraph 
+/// </summary>
 public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 {
     public GCHeapDump(string inputFileName) :
@@ -21,6 +25,16 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     public GCHeapDump(Stream inputStream, string streamName) :
         this(new Deserializer(inputStream, streamName))
     { }
+
+    /// <summary>
+    /// Writes the memory graph 'graph' as a .gcump file to 'outputFileName'
+    /// TODO can't set the rest of the meta-data associated with the graph this way.  
+    /// </summary>
+    public static void WriteMemoryGraph(MemoryGraph graph, string outputFileName)
+    {
+        var dumper = new GCHeapDump(graph);
+        dumper.Write(outputFileName);
+    }
 
     /// <summary>
     /// The 
@@ -146,7 +160,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     /// <summary>
     /// Writes the data to 'outputFileName'   
     /// </summary>
-    internal void Write(string outputFileName)
+    private void Write(string outputFileName)
     {
         Debug.Assert(MemoryGraph != null);
         var serializer = new Serializer(outputFileName, this);

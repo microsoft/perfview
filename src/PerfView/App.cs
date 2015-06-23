@@ -220,7 +220,7 @@ namespace PerfView
                     CommandLineArgs.DoCommand == CommandProcessor.Collect))
                 {
                     string verboseLogName;
-                    if (CommandLineArgs.DataFile == null) 
+                    if (CommandLineArgs.DataFile == null)
                         verboseLogName = "PerfViewData.log.txt";
                     else
                         verboseLogName = Path.ChangeExtension(CommandLineArgs.DataFile, "log.txt");
@@ -236,7 +236,7 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
-                    App.LogFileName = CommandLineArgs.LogFile;
+                App.LogFileName = CommandLineArgs.LogFile;
 
 
                 var allArgs = string.Join(" ", args);

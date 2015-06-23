@@ -489,17 +489,26 @@ namespace PerfView
 
             // Check to see if we have cached type info. 
             var typeName = data.TypeName;
-            if (string.IsNullOrEmpty(typeName) && !m_classNamesAsFrames.ContainsKey(data.TypeID))
+            if (!m_classNamesAsFrames.ContainsKey(data.TypeID))
             {
-                // Attempt to resolve the type name.
-                TraceLoadedModule module = m_process.LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
-                if (module != null)
+                if (string.IsNullOrEmpty(typeName))
                 {
-                    // Resolve the type name.
-                    typeName = m_typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                    // This could be project N, try to resolve it that way.  
+                    TraceLoadedModule module = m_process.LoadedModules.GetModuleContainingAddress(data.TypeID, data.TimeStampRelativeMSec);
+                    if (module != null)
+                    {
+                        // Resolve the type name using project N resolution 
+                        typeName = m_typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                    }
                 }
-                TypeInfo typeInfo = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
-                m_classNamesAsFrames[data.TypeID] = typeInfo;
+
+                // Add the ID -> Type Name to the mapping.  
+                if (!string.IsNullOrEmpty(typeName))
+                {
+                    TypeInfo typeInfo = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
+                    m_classNamesAsFrames[data.TypeID] = typeInfo;
+                }
+
             }
 
             // Support for old versions of this event

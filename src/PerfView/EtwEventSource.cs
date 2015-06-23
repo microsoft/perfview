@@ -137,7 +137,7 @@ namespace PerfView
                         }
                     }
                 }
-                
+
                 /***********************************************************************/
                 /*                        The main event loop                          */
                 EventVisitedVersion.CurrentVersion++;
@@ -311,10 +311,10 @@ namespace PerfView
 
         private unsafe Guid GetCoorelationIDForEvent(TraceEvent data, CorelationOptions options)
         {
-            int intContextID = -1;          // When the obvious ID is an integer, this is it, -1 means it is unused.  
+            int? intContextID = null;      // When the obvious ID is an integer 
             if ((options & CorelationOptions.UseThreadContext) == 0)
             {
-                if ((options & CorelationOptions.UseActivityID) == 0 && !ActivityComputer.IsActivityPath(data.ActivityID))
+                if ((options & CorelationOptions.UseActivityID) == 0)
                 {
                     // If the payloads have parameters that indicate it is a correlation event, use that.  
                     var names = data.PayloadNames;
@@ -323,7 +323,7 @@ namespace PerfView
                         int fieldNum = -1;    // First try to use a field as the correlater
                         if (0 < names.Length)
                         {
-                            if (names[0].EndsWith("id", StringComparison.OrdinalIgnoreCase) || 
+                            if (names[0].EndsWith("id", StringComparison.OrdinalIgnoreCase) ||
                                 string.Compare("Name", names[0], StringComparison.OrdinalIgnoreCase) == 0 ||    // Used for simple generic taskss
                                 names[0] == "Count") // Hack for GC/Start 
                                 fieldNum = 0;
@@ -344,15 +344,28 @@ namespace PerfView
                         }
                     }
                 }
-                // If we have not found a context, and there is an activity ID use that.  
-                if (intContextID == -1 && data.ActivityID != Guid.Empty)
-                    return data.ActivityID;
+                // If we have not found a context field, and there is an activity ID use that.  
+                if (data.ActivityID != Guid.Empty)
+                {
+                    if (!intContextID.HasValue)
+                        return data.ActivityID;
+
+                    //TODO Currently, people may have recursive tasks that are not marked (because they can't if they want it to work before V4.6)
+                    // For now we don't try to correlate with activity IDS.  
+                    if (false && ActivityComputer.IsActivityPath(data.ActivityID))
+                    {
+                        int guidHash = data.ActivityID.GetHashCode();
+                        // Make up a correlater that is the combination of both the value and the Activity ID, the tail is arbitrary 
+                        // TODO this is causing unnecessary collisions. 
+                        return new Guid(intContextID.Value, (short)guidHash, (short)(guidHash >> 16), 45, 34, 34, 67, 4, 4, 5, 5);
+                    }
+                }
             }
 
             // If we have not found a context, use the thread as a context.  
-            if (intContextID == -1)
+            if (!intContextID.HasValue)
                 intContextID = data.ThreadID;                  // By default use the thread as the correlation ID
-            return new Guid(intContextID, 1, 5, 45, 23, 23, 3, 5, 5, 4, 5);
+            return new Guid(intContextID.Value, 1, 5, 45, 23, 23, 3, 5, 5, 4, 5);
         }
 
         public override ICollection<string> ProcessNames

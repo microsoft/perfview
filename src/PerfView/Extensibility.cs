@@ -124,6 +124,7 @@ namespace PerfViewExtensibility
 
             // TODO FIX NOW better name. 
             var retStacks = new Stacks(retSource, "GC Heap Dump of " + Path.GetFileName(gcDumpFileName));
+            retStacks.m_fileName = gcDumpFileName;
             retStacks.ExtraTopStats = extraTopStats;
             return retStacks;
         }
@@ -205,7 +206,7 @@ namespace PerfViewExtensibility
                 {
                     filePath = stacks.m_EtlFile.FilePath;
                     ETLPerfViewData file = (ETLPerfViewData)PerfViewFile.Get(filePath);
-                    file.OpenNonGui(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+                    file.OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
                     var stackSourceName = stacks.Name.Substring(0, stacks.Name.IndexOf(" file"));
                     perfViewStackSource = file.GetStackSource(stackSourceName);
                     if (perfViewStackSource == null)
@@ -213,7 +214,10 @@ namespace PerfViewExtensibility
                 }
                 else
                 {
-                    filePath = stacks.Name;
+                    if (stacks.m_fileName != null)
+                        filePath = stacks.m_fileName;
+                    else 
+                        filePath = stacks.Name;
                     if (string.IsNullOrWhiteSpace(filePath))
                         filePath = "X.PERFVIEW.XML";            // MAJOR HACK.
 
@@ -221,8 +225,8 @@ namespace PerfViewExtensibility
                     var gcDumpFile = perfViewFile as HeapDumpPerfViewFile;
                     if (gcDumpFile != null)
                     {
-                        gcDumpFile.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
-                        return;
+                        gcDumpFile.OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+                        perfViewStackSource = gcDumpFile.GetStackSource();
                     }
                     else
                     {
@@ -237,6 +241,7 @@ namespace PerfViewExtensibility
                 stackWindow.Filter = stacks.Filter;
                 stackWindow.SetStackSource(stacks.StackSource, delegate
                 {
+                    perfViewStackSource.ConfigureStackWindow(stackWindow);
                     stackWindow.GuiState = stacks.GuiState;
                     LogFile.WriteLine("[Opened stack viewer {0}]", filePath);
                     if (OnOpened != null)
@@ -1102,6 +1107,7 @@ namespace PerfViewExtensibility
         private List<CallTreeNodeBase> m_byName;
         private FilterParams m_Filter;
         internal ETLDataFile m_EtlFile;                 // If this stack came from and ETL File this is that file.  
+        internal string m_fileName;                     // TODO is this a hack.  This is the file name if present.  
         StackWindowGuiState m_GuiState;
         #endregion
     }
@@ -2218,8 +2224,7 @@ namespace PerfViewExtensibility
             // TODO FIX NOW retrieve the process name, ID etc.  
             var reader = new JavaScriptDumpGraphReader(LogFile);
             var memoryGraph = reader.Read(etlFileName);
-            var gcDump = new GCHeapDump(memoryGraph);
-            gcDump.Write(gcDumpOutputFileName);
+            GCHeapDump.WriteMemoryGraph(memoryGraph, gcDumpOutputFileName);
             LogFile.WriteLine("[Wrote gcDump file {0}]", gcDumpOutputFileName);
         }
 
@@ -2237,8 +2242,7 @@ namespace PerfViewExtensibility
             // TODO FIX NOW retrieve the process name, ID etc.  
             var reader = new DotNetHeapDumpGraphReader(LogFile);
             var memoryGraph = reader.Read(etlFileName, processNameOrId);
-            var gcDump = new GCHeapDump(memoryGraph);
-            gcDump.Write(gcDumpOutputFileName);
+            GCHeapDump.WriteMemoryGraph(memoryGraph, gcDumpOutputFileName);
             LogFile.WriteLine("[Wrote gcDump file {0}]", gcDumpOutputFileName);
         }
 
@@ -2650,10 +2654,10 @@ namespace PerfViewExtensibility
         {
             var metaDataReader = new ProjectNMetaDataLogReader();
             var memoryGraph = metaDataReader.Read(projectNMetadataDataCsv);
-            var gcHeapDump = new GCHeapDump(memoryGraph);
+
             var outputName = Path.ChangeExtension(projectNMetadataDataCsv, ".gcdump");
-            gcHeapDump.Write(outputName);
-            LogFile.WriteLine("[Writing the GCDump to {0}]");
+            GCHeapDump.WriteMemoryGraph(memoryGraph, outputName);
+            LogFile.WriteLine("[Writing the GCDump to {0}]", outputName);
         }
 
         /// <summary>
@@ -2881,17 +2885,15 @@ namespace PerfViewExtensibility
         public void NGenImageSize(string ngenImagePath)
         {
             SymbolReader symReader = App.GetSymbolReader();
-
             MemoryGraph imageGraph = ImageFileMemoryGraph.Create(ngenImagePath, symReader);
-            var gcDump = new GCHeapDump(imageGraph);
 
             var fileName = Path.GetFileNameWithoutExtension(ngenImagePath);
             var outputFileName = fileName + ".gcdump";
-            gcDump.Write(outputFileName);
+            GCHeapDump.WriteMemoryGraph(imageGraph, outputFileName);
             LogFile.WriteLine("[Wrote file " + outputFileName + "]");
 
-            // if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
-            //    OpenStackViewer(OpenGCDumpFile(outputFileName));
+            if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+                OpenStackViewer(OpenGCDumpFile(outputFileName));
         }
 
         /// <summary>

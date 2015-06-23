@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Registry name stuff needs review.  It probably is unbounded and not clear it looks up names properly and is efficient.  
 // Update the symbol server lookup to track the new format with /XX/XXYYY.pdb directories
 // Fix it so that the Regsitry events are decode the full paths.  https://social.msdn.microsoft.com/Forums/en-US/ff07fc25-31e3-4b6f-810e-7a1ee458084b/etw-registry-monitoring?forum=etw
 // When you do a 'Open Any Stacks' from the Events view with nothing selected or a non-timestamp), it shows everything which is confusing.  Simply cause an error.  

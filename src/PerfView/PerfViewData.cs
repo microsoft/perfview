@@ -702,6 +702,12 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[group classes]            {%!*}.%(->class $1;{%!*}::->class $1");
         }
 
+        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread) 
+        internal void OpenWithoutWorker(Window parentWindow, StatusBar worker)
+        {
+            OpenImpl(parentWindow, worker);
+        }
+
         // This is the global list of all known file types.  
         private static List<PerfViewFile> Formats = new List<PerfViewFile>()
         {
@@ -4543,12 +4549,6 @@ namespace PerfView
             return App.GetSymbolReader(FilePath, symbolFlags);
         }
 
-        // ideally this function would not exist.  
-        internal void OpenNonGui(Window parentWindow, StatusBar worker)
-        {
-            OpenImpl(parentWindow, worker);
-        }
-
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
             var tracelog = GetTraceLog(worker.LogWriter, delegate(bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
@@ -5519,6 +5519,8 @@ namespace PerfView
 
         public const string DiagSessionIdentity = "Microsoft.Diagnostics.GcDump";
 
+        public override string DefaultStackSourceName { get { return "Heap"; }}
+
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec, double endRelativeMSec, Predicate<TraceEvent> predicate)
         {
             OpenDump(log);
@@ -5588,7 +5590,7 @@ namespace PerfView
                     m_Children.Add(new HeapDumpInteropObjects(this));
                 }
 
-                var defaultSource = new PerfViewStackSource(this, "Heap");
+                var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
                 defaultSource.IsSelected = true;
                 m_Children.Add(defaultSource);
                 if (m_gcDump.DotNetHeapInfo != null)
@@ -5983,7 +5985,7 @@ namespace PerfView
         /// Defaults to the directory of the XML file represented by this ScenarioSetPerfViewFile.
         /// </param>
         private void AddScenariosToDictionary(
-            string filePattern, string namePattern,
+            string filePattern, string namePattern, string includePattern, string excludePattern,
             Dictionary<string, string> dict, TextWriter log,
             string baseDir = null)
         {
@@ -6016,6 +6018,13 @@ namespace PerfView
             // TODO: Directory.GetFile
             foreach (string file in Directory.GetFiles(dir, pattern, SearchOption.AllDirectories))
             {
+                // Filter out those that don't match the include pattern 
+                if (includePattern != null && !Regex.IsMatch(file, includePattern))
+                    continue;
+                // or do match the exclude pattern.  
+                if (excludePattern != null && Regex.IsMatch(file, excludePattern))
+                    continue;
+
                 string name = null;
                 if (namePattern != null)
                 {
@@ -6089,11 +6098,13 @@ namespace PerfView
             {
                 string filePattern = reader["files"];
                 string namePattern = reader["namePattern"];
+                string includePattern = reader["includePattern"];
+                string excludePattern = reader["excludePattern"];
 
                 if (filePattern == null)
                     throw new ApplicationException("File path is required.");
 
-                AddScenariosToDictionary(filePattern, namePattern, pathDict, log);
+                AddScenariosToDictionary(filePattern, namePattern, includePattern, excludePattern, pathDict, log);
             }
             while (reader.ReadToNextSibling("Scenarios"));
 

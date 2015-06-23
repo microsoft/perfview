@@ -550,14 +550,15 @@ namespace PerfView
 
                             // Used to determine what is going on with tasks. 
                             var netTaskStacks = stacksEnabled;
-                            if (false && TraceEventProviderOptions.FilteringSupported)      // TODO FIX NOW this did not work.  Find out why. 
+                            if (TraceEventProviderOptions.FilteringSupported)
                             {
-                                netTaskStacks = new TraceEventProviderOptions();
-                                netTaskStacks.EventIDStacksToEnable = new List<int>() { 7 }; // This is the TaskScheduled event only.   
+                                // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
+                                netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
                             }
                             EnableUserProvider(userModeSession, ".NETTasks",
-                                TplEtwProviderTraceEventParser.ProviderGuid,
-                                parsedArgs.ClrEventLevel, ulong.MaxValue, netTaskStacks);
+                                TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
+                                ulong.MaxValue, // (ulong) (TplEtwProviderTraceEventParser.Keywords.Tasktransfer | TplEtwProviderTraceEventParser.Keywords.Tasks | TplEtwProviderTraceEventParser.Keywords.Parallel), 
+                                netTaskStacks);
 
                             // TODO FIX NOW remove this ugly versioning logic 1/2015.  We should just be turning on the FrameworkEventSource.   
                             var ver = Environment.Version;
