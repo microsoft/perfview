@@ -431,15 +431,20 @@ namespace PerfView
             Debug.Assert(Directory.Exists(SupportFiles.SupportFileDir));
             try
             {
+                bool updatedExe = false;
                 var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(exe));
                 if (!File.Exists(targetExe) || File.GetLastWriteTimeUtc(targetExe) != File.GetLastWriteTimeUtc(exe))
                 {
                     Directory.CreateDirectory(SupportFiles.SupportFileDir);
                     File.Copy(exe, targetExe);
+                    updatedExe = true;
                 }
 
+                // Unpacking can create the EXE file but it does not do extensions (because they are not 
+                // needed if you don't launch PerfView from a file share).  It will however create a
+                // ExtentionNotCopied file to mark the fact that it is just the EXE so we can do this quick check.  
                 var extensionsCopiedFile = Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied");
-                if (File.Exists(extensionsCopiedFile))
+                if (updatedExe || File.Exists(extensionsCopiedFile))
                 {
                     var pdbFile = Path.ChangeExtension(exe, ".pdb");
                     if (File.Exists(pdbFile))
@@ -463,7 +468,7 @@ namespace PerfView
                     }
 
                     // Indicate that we have the extensions directory copied.  
-                    File.Delete(extensionsCopiedFile);
+                    FileUtilities.ForceDelete(extensionsCopiedFile);
                 }
 
                 var m = System.Text.RegularExpressions.Regex.Match(cmdLine, "^\\s*\"(.*?)\"\\s*(.*)");

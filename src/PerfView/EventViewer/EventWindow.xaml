@@ -171,7 +171,7 @@
             </Popup>
             <controls:HistoryComboBox Grid.Column="6" Margin="0,3,0,3" x:Name="ColumnsToDisplayTextBox" Enter="DoUpdate">
                 <controls:HistoryComboBox.ToolTip>
-                    <TextBlock>A comma separated list of column #-# ranges to show in the 'data' field.</TextBlock>
+                    <TextBlock>A space separated list of column names to show in the 'data' field.</TextBlock>
                 </controls:HistoryComboBox.ToolTip>
             </controls:HistoryComboBox>
         </Grid>

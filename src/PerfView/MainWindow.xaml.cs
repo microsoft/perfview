@@ -135,6 +135,9 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// For TraceLogging Events don't rely on the event ID for identity.   (sigh).  At the very least don't assume this across processes (ideally sessions).  
+// Localization does not seem to be correct still.   See comments by Peter Palotas 20 Jun 2015 http://blogs.msdn.com/b/vancem/archive/2014/11/03/perfview-version-v1-7-released-to-the-web.aspx// 
+//    Some local testing suggests that it works properly...
 // Registry name stuff needs review.  It probably is unbounded and not clear it looks up names properly and is efficient.  
 // Update the symbol server lookup to track the new format with /XX/XXYYY.pdb directories
 // Fix it so that the Regsitry events are decode the full paths.  https://social.msdn.microsoft.com/Forums/en-US/ff07fc25-31e3-4b6f-810e-7a1ee458084b/etw-registry-monitoring?forum=etw
@@ -1953,6 +1956,15 @@ namespace PerfView
         private static WebBrowserWindow s_Browser;
         private UserCommandDialog m_UserDefineCommandDialog;
         #endregion
+
+        /// <summary>
+        /// Opens the given file after 
+        /// </summary>
+        /// <param name="outputFileName"></param>
+        public static void OpenNext(string outputFileName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 

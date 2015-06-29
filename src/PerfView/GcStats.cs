@@ -206,7 +206,8 @@ namespace Stats
                         else if (stats.IsBGCThread(data.ThreadID))
                         {
                             Debug.Assert(stats.currentBGC != null);
-                            stats.currentBGC.GCCpuMSec += cpuIncrement;
+                            if (stats.currentBGC != null)
+                                stats.currentBGC.GCCpuMSec += cpuIncrement;
                             isThreadDoingGC = true;
                         }
 

@@ -237,12 +237,14 @@ namespace PerfViewExtensibility
                     }
                 }
                 var stackWindow = new StackWindow(GuiApp.MainWindow, perfViewStackSource);
-                stackWindow.RestoreWindow(stacks.GuiState, filePath);
+                if (stacks.HasGuiState)
+                    stackWindow.RestoreWindow(stacks.GuiState, filePath);
                 stackWindow.Filter = stacks.Filter;
                 stackWindow.SetStackSource(stacks.StackSource, delegate
                 {
                     perfViewStackSource.ConfigureStackWindow(stackWindow);
-                    stackWindow.GuiState = stacks.GuiState;
+                    if (stacks.HasGuiState)
+                        stackWindow.GuiState = stacks.GuiState;
                     LogFile.WriteLine("[Opened stack viewer {0}]", filePath);
                     if (OnOpened != null)
                         OnOpened(stackWindow);
@@ -994,6 +996,9 @@ namespace PerfViewExtensibility
             }
             set { m_GuiState = value; }
         }
+
+        public bool HasGuiState { get { return m_GuiState != null; } }
+
         public static StackWindowGuiState DefaultCallStackWindowState(string name)
         {
             // TODO logic for getting out of ConfigSettings.  
@@ -2709,7 +2714,7 @@ namespace PerfViewExtensibility
         /// <param name="inputExeName">The name of the EXE (or DLL) that you wish to analyze</param>
         /// <param name="outputFileName">The name of the report file.  Defaults to the inputExeName
         /// with a .imageSize.xml suffix.</param>
-        public void ImageSize(string inputExeName = null, string outputFileName = null)
+        public void ImageSize(string inputExeName, string outputFileName = null)
         {
             if (outputFileName == null)
                 outputFileName = Path.ChangeExtension(inputExeName,  ".imageSize.xml");
@@ -2771,12 +2776,7 @@ namespace PerfViewExtensibility
                 FileUtilities.ForceMove(pdbScopeOutputFile, outputFileName);
             }
 
-            // TODO This is pretty ugly.  If the main window is working we can't launch it.   
-            if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null && !GuiApp.MainWindow.StatusBar.IsWorking)
-            {
-                if (outputFileName.EndsWith(".imageSize.xml", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
-                    GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate() { GuiApp.MainWindow.Open(outputFileName); });
-            }
+            MainWindow.OpenNext(outputFileName);
         }
 
 #if false 

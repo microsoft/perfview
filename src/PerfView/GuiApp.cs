@@ -38,8 +38,10 @@ namespace PerfView
             StatusBar.AttachWriterToLogStream(logFile);
             App.CommandProcessor.LogFile = MainWindow.StatusBar.LogWriter;
 
-            // Work around.   WPF never uses the CurrentCulture when it formats numbers (it always uses US)
+            // Work around for Non-English/US locale (e.g. French) where among other things the decimal point is a comma.    
+            // WPF never uses the CurrentCulture when it formats numbers (it always uses US)
             // This sets the default to the current culture.  
+            // see http://serialseb.blogspot.com/2007/04/wpf-tips-1-have-all-your-dates-times.html
             FrameworkElement.LanguageProperty.OverrideMetadata(
               typeof(FrameworkElement),
               new FrameworkPropertyMetadata(XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag)));
