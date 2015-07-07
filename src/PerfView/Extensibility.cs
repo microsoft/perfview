@@ -1554,6 +1554,8 @@ namespace PerfViewExtensibility
             }
             catch (TargetInvocationException ex)
             {
+                // TODO we don't get the stack for the inner exception. 
+                // When we move to V4.5.1 we can use ExceptionDispatchInfo to fix.  
                 throw ex.InnerException;
             }
             catch (AggregateException ex)

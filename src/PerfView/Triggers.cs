@@ -337,7 +337,7 @@ namespace Triggers
                 string fullMessage = asException.ExceptionType + ": " + asException.ExceptionMessage;
                 log.WriteLine("Exception: {0}", fullMessage);
                 log.WriteLine("Exception Pattern: {0}", exceptionRegEx);
-                
+
                 return Regex.IsMatch(fullMessage, exceptionRegEx);
             };
             ret.StartEvent = "Exception/Start";
@@ -1240,6 +1240,7 @@ namespace Triggers
                 throw new ApplicationException(
                     "Performance monitor specification does not match syntax CATEGORY:COUNTER:INSTANCE");
             m_spec = m.Groups[1].Value;
+            m_log = log;
 
             string categoryName = m.Groups[2].Value;
             string counterName = m.Groups[3].Value;
@@ -1249,6 +1250,15 @@ namespace Triggers
             if (intervalSecStr.Length > 0)
                 intervalSec = double.Parse(intervalSecStr);
 
+            try { m_category = new PerformanceCounterCategory(categoryName); }
+            catch (Exception) { throw new ApplicationException("Could not start performance counter " + m_spec); }
+
+            if (!m_category.CounterExists(counterName))
+                throw new ApplicationException("Count not find performance counter " + counterName + " in category " + categoryName);
+
+            // If the instance does not exist, this will not throw until we try to get a value.   
+            m_counter = new PerformanceCounter(categoryName, counterName, instanceName);
+
             // Don't allow the interval to be less than .1 seconds
             if (intervalSec < .1)
             {
@@ -1256,14 +1266,6 @@ namespace Triggers
                 intervalSec = 0.1;
             }
 
-            try
-            {
-                m_counter = new PerformanceCounter(categoryName, counterName, instanceName);
-            }
-            catch (Exception)
-            {
-                throw new ApplicationException("Could not start performance counter " + m_spec);
-            }
             log.WriteLine("Starting monitoring of performance counter {0} every {1} msec.", m_spec, intervalSec);
             m_timer = new System.Threading.Timer(TimerTick, null, 0, (int)(intervalSec * 1000));
         }
@@ -1282,12 +1284,24 @@ namespace Triggers
         #region private
         private void TimerTick(object obj)
         {
-            PerfViewLogger.Log.PerformanceCounterUpdate(m_spec, m_counter.NextValue());
+            try
+            {
+                float value = m_counter.NextValue();
+                PerfViewLogger.Log.PerformanceCounterUpdate(m_spec, value);
+            }
+            catch (InvalidOperationException e)
+            {
+                // ignore any 'does not exist exceptions
+                if (!e.Message.Contains("does not exist") || m_counter.InstanceName.Length == 0)
+                    m_log.WriteLine("Error logging performance counter {0}: {1}", m_spec, e.Message);
+            }
         }
 
         string m_spec;
+        PerformanceCounterCategory m_category;
         PerformanceCounter m_counter;
         System.Threading.Timer m_timer;
+        TextWriter m_log;
         #endregion
     }
 
@@ -1317,7 +1331,7 @@ namespace Triggers
 
         public override string ToString()
         {
-            return "<Key Provider=\"" + Provider + "\" ActivityId=\"" + ActivityId + "\" Task=\"" + ((int) task) + ">";
+            return "<Key Provider=\"" + Provider + "\" ActivityId=\"" + ActivityId + "\" Task=\"" + ((int)task) + ">";
         }
     }
     #endregion

@@ -858,10 +858,16 @@ namespace Microsoft.Diagnostics.Tracing
                 return ((double)value).ToString("n3");
             if (value is DateTime)
             {
-                var asDateTime = (DateTime)value;
-                var ret = asDateTime.ToString("HH:mm:ss.ffffff");
+                DateTime asDateTime = (DateTime)value;
+                string ret;
                 if (source.SessionStartTime <= asDateTime)
+                {
+                    ret = asDateTime.ToString("HH:mm:ss.ffffff");
                     ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
+                }
+                else
+                    ret = asDateTime.ToString();
+
                 return ret;
             }
             var asByteArray = value as byte[];

@@ -3803,7 +3803,7 @@
             The <strong><a id="MemoryCheckBox">Page Fault CheckBox</a></strong> - Causes a kernel
             event to be logged every time a page fault or other primitive memory operation is
             done. A stack is logged for this event.
-            Adding the Memory flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Memmory)
+            Adding the Memory flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Memory)
             can be used to turn this option on the comand line. 
         </li>
         <li>
@@ -7643,6 +7643,13 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.7.26 7/7/2015
+            <ul>
+                <li>Fixed /MonitorPerfCounter to work with instances that don't exist at first, but then do (e.g. process not started)</li>
+                <li>Fixed BuildTime date for ImageLoaded events to have a complete date (was only showing the time) </li>
+            </ul>
+        </li>
         <li>
             Version 1.7.25 6/29/2015
             <ul>

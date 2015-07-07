@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Allow PerfView to extract the heap dump from a live image (or a dump file). 
 // For TraceLogging Events don't rely on the event ID for identity.   (sigh).  At the very least don't assume this across processes (ideally sessions).  
 // Localization does not seem to be correct still.   See comments by Peter Palotas 20 Jun 2015 http://blogs.msdn.com/b/vancem/archive/2014/11/03/perfview-version-v1-7-released-to-the-web.aspx// 
 //    Some local testing suggests that it works properly...

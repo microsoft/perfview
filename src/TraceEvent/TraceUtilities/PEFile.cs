@@ -516,12 +516,10 @@ namespace PEFile
         {
             // Convert seconds from Jan 1 1970 to DateTime ticks.  
             // The 621356004000000000L represents Jan 1 1970 as DateTime 100ns ticks.  
-            DateTime ret = new DateTime((long)timeDateStampSec * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
+            DateTime ret = new DateTime(((long)timeDateStampSec) * 10000000 + 621356004000000000L, DateTimeKind.Utc).ToLocalTime();
 
-            // From what I can tell TimeDateSec does not take into account daylight savings time when
-            // computing the UTC time. Because of this we adjust here to get the proper local time.  
-            if (ret.IsDaylightSavingTime())
-                ret = ret.AddHours(-1.0);
+            // Calculation above seems to be off by an hour  Don't know why 
+            ret = ret.AddHours(-1.0);
             return ret;
         }
 
