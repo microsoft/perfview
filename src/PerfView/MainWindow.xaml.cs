@@ -1233,6 +1233,11 @@ namespace PerfView
                     if (App.CommandProcessor.ShowLog)
                         worker.OpenLog();
 
+                    var openNext = GuiApp.MainWindow.m_openNextFileName;
+                    GuiApp.MainWindow.m_openNextFileName = null;
+                    if (openNext != null)
+                        Open(openNext);
+
                     if (continuation != null)
                         continuation();
                 });
@@ -1959,13 +1964,14 @@ namespace PerfView
         #endregion
 
         /// <summary>
-        /// Opens the given file after 
+        /// Indicates that 'outputFileName' should be opened after the command is completed.  
         /// </summary>
         /// <param name="outputFileName"></param>
-        public static void OpenNext(string outputFileName)
+        public void OpenNext(string fileName)
         {
-            throw new NotImplementedException();
+            m_openNextFileName = fileName;
         }
+        string m_openNextFileName;
     }
 }
 

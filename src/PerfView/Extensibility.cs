@@ -2635,7 +2635,7 @@ namespace PerfViewExtensibility
             if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
             {
                 if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
-                    OpenStackViewer(OpenPerfViewXmlFile(outputFileName));
+                    GuiApp.MainWindow.OpenNext(outputFileName);
             }
         }
 
@@ -2713,10 +2713,10 @@ namespace PerfViewExtensibility
         /// the file, or in its original build location).   This report can be viewed with
         /// PerfView (it looks like a GC heap).  
         /// </summary>
-        /// <param name="inputExeName">The name of the EXE (or DLL) that you wish to analyze</param>
+        /// <param name="inputExeName">The name of the EXE (or DLL) that you wish to analyze.  If blank it will prompt for one.</param>
         /// <param name="outputFileName">The name of the report file.  Defaults to the inputExeName
         /// with a .imageSize.xml suffix.</param>
-        public void ImageSize(string inputExeName, string outputFileName = null)
+        public void ImageSize(string inputExeName=null, string outputFileName = null)
         {
             if (outputFileName == null)
                 outputFileName = Path.ChangeExtension(inputExeName,  ".imageSize.xml");
@@ -2732,14 +2732,7 @@ namespace PerfViewExtensibility
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize", inExeName, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
-                        GuiApp.MainWindow.ExecuteCommand("Computing directory size", App.CommandLineArgs.DoCommand, null,
-                            delegate()
-                            {
-                                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
-                                {
-                                    GuiApp.MainWindow.Open(outFileName);
-                                });
-                            });
+                        GuiApp.MainWindow.ExecuteCommand("Computing directory size", App.CommandLineArgs.DoCommand);
                     });
                     dialog.InputExtentions = new string[] { ".dll", ".exe" };
                     dialog.OutputExtension = ".imageSize.xml";
@@ -2767,7 +2760,6 @@ namespace PerfViewExtensibility
             FileUtilities.ForceDelete(outputFileName);
             Command.Run(commandLine, new CommandOptions().AddOutputStream(LogFile).AddTimeout(3600000));
 
-
             if (!File.Exists(outputFileName))
             {
                 // TODO can remove after pdbScope gets a proper outputFileName parameter
@@ -2778,7 +2770,12 @@ namespace PerfViewExtensibility
                 FileUtilities.ForceMove(pdbScopeOutputFile, outputFileName);
             }
 
-            MainWindow.OpenNext(outputFileName);
+            // TODO This is pretty ugly.  If the main window is working we can't launch it.   
+            if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+            {
+                if (outputFileName.EndsWith(".imageSize.xml", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+                    GuiApp.MainWindow.OpenNext(outputFileName);
+            }
         }
 
 #if false 
@@ -2895,7 +2892,7 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Wrote file " + outputFileName + "]");
 
             if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
-                OpenStackViewer(OpenGCDumpFile(outputFileName));
+                GuiApp.MainWindow.OpenNext(outputFileName);
         }
 
         /// <summary>
