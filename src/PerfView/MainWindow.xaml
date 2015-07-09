@@ -36,6 +36,7 @@
         <CommandBinding Command="{x:Static src:MainWindow.HeapSnapshotCommand}" Executed="DoTakeHeapSnapshot"/>
         <CommandBinding Command="{x:Static src:MainWindow.DirectorySizeCommand}" Executed="DoDirectorySize"/>
         <CommandBinding Command="{x:Static src:MainWindow.ImageSizeCommand}" Executed="DoImageSize"/>
+        <CommandBinding Command="{x:Static src:MainWindow.ILSizeCommand}" Executed="DoILSize"/>
         <CommandBinding Command="{x:Static src:MainWindow.HeapSnapshotFromDumpCommand}" Executed="DoTakeHeapShapshotFromProcessDump"/>
         <CommandBinding Command="Help" Executed="DoHyperlinkHelp"/>
     </Window.CommandBindings>
@@ -81,6 +82,11 @@
                     <MenuItem Name="ImageSizeMenuItem" Visibility="Collapsed" Header="_ImageSize" Command="{x:Static src:MainWindow.ImageSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
                         <MenuItem.Icon>
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ImageSize">?</Hyperlink></TextBlock>
+                        </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Name="ILSizeMenuItem" Visibility="Collapsed" Header="ILSize" Command="{x:Static src:MainWindow.ILSizeCommand}"  ToolTip="Displays the breakdown of what is in a DLL or EXE by symbol. (needs PDB for DLL or EXE).">
+                        <MenuItem.Icon>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"><Hyperlink Command="Help" CommandParameter="ILSize">?</Hyperlink></TextBlock>
                         </MenuItem.Icon>
                     </MenuItem>
                 </MenuItem>

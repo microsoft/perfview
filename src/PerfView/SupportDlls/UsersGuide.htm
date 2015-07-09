@@ -2390,7 +2390,7 @@
                             ClrPrivate in the 'Additional Providers' textbox).
                         </li>
                         <li>
-                            <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> - 
+                            <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
                             Show the stacks
                             where any Windows OS Handle were created, duplicated or closed.  When handles are created
                             or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
@@ -2399,7 +2399,7 @@
                             views).  Thus balenced creation and closing will cancel out if both are in the time intveral
                             of interest.   There are a few handles that are allocated in a process but are closed by
                             system processes, so may be some imbalences, but generally there are only a handful of these
-                            Thus it is relative easy to spot 'leaks' since they will show up as an imbalence.  
+                            Thus it is relative easy to spot 'leaks' since they will show up as an imbalence.
                             In order for this view to be shown you need to collect with the <a href="#HandleCheckBox">'Handle'</a> kernel events.
                         </li>
                         <li>
@@ -3791,40 +3791,40 @@
             like process, thread, image and network events. Typically these events are only
             turned off if you are doing monitoring rather than performance analysis. (e.g. you
             just want to see the messages from your EventSource.
-            The option /kernelEvents=None can be used to achieve this effect at the command line. 
+            The option /kernelEvents=None can be used to achieve this effect at the command line.
         </li>
         <li>
             The <strong><a id="CpuSamplesCheckBox">Cpu Samples Checkbox.</a></strong> Turns
             on or off the CPU sampling (by default every 1MSec per CPU). This is on by default.
             Removing the Profile flags to the '/kernelEvents' option (e.g. /kernelEvents=default-Profile)
-            can be used to achieve this effect at the command line.  
+            can be used to achieve this effect at the command line.
         </li>
         <li>
             The <strong><a id="MemoryCheckBox">Page Fault CheckBox</a></strong> - Causes a kernel
             event to be logged every time a page fault or other primitive memory operation is
             done. A stack is logged for this event.
             Adding the Memory flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Memory)
-            can be used to turn this option on the comand line. 
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="FileIOCheckBox">File I/O Checkbox </a></strong>- Causes a kernel
             event to be logged every time a file operation is initiated. Many of these may not
-            cause disk events because the data is in the file system cache.  
-            Adding the FileIOInit flags to the '/kernelEvents' option (e.g. /kernelEvents=default+FileIOInit) 
-            can be used to turn this option on the comand line.   
+            cause disk events because the data is in the file system cache.
+            Adding the FileIOInit flags to the '/kernelEvents' option (e.g. /kernelEvents=default+FileIOInit)
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="RegistryCheckBox">Registry CheckBox</a></strong> - Causes a kernel
             event to be logged every time a registry operation is performed.
-            Adding the Registry flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Registry) 
-            can be used to turn this option on the comand line. 
+            Adding the Registry flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Registry)
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="VirtualAllocCheckBox">Virtual Alloc CheckBox</a></strong> - Causes
             a kernel event to be logged every time a VirtualAlloc call (primitive memory allocation)
             is make (or freed). See <a href="#UnmanagedMemoryAnalysis">Unmanaged Memory Analysis</a> for more.
             Adding the VirtualAlloc+VAMap flags to the '/kernelEvents' option (e.g. /kernelEvents=default+VirtualAlloc+VAMap)
-            can be used to turn this option on the comand line.  
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="IISCheckbox">IIS CheckBox</a></strong> - Causes detailed logging for
@@ -3837,9 +3837,9 @@
         <li>
             The <strong><a id="RefSetCheckBox">RefSet CheckBox</a></strong> - Causes detailed
             kernel events associated with memory usage (called Reference Set) to be logged.
-            This information can be viewed in the 'Any Stacks' view (look for PageAccess).   
+            This information can be viewed in the 'Any Stacks' view (look for PageAccess).
             Adding the ReferenceSet flags to the '/kernelEvents' option (e.g. /kernelEvents=default+ReferenceSet)
-            can be used to turn this option on the comand line.  
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="HandleCheckBox">Handle CheckBox</a></strong> - Causes detailed
@@ -3847,7 +3847,7 @@
             You will see 'Windows Kernel/Object/*' events to show up in the 'events' view as well
             as activating the <a href="#WindowsHandleRefCountStacks">Windows OS Handle Stacks</a> view (as well as the 'Any Stacks' view).
             Adding the Hanldle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Hanldle)
-            can be used to turn this option on the comand line.  
+            can be used to turn this option on the comand line.
         </li>
         <li>
             The <strong><a id="DotNetAllocCheckBox">.NET Alloc CheckBox</a></strong> - Causes
@@ -3930,7 +3930,7 @@
             PerfVIew's event viewer has rudimentary packet parsing capabilities, but for non
             trivial scenarios it is recommend that you use the <a href="#NetMonCheckBox">NetMon option</a> and use the
             <a href="http://www.microsoft.com/en-us/download/details.aspx?id=4865">NetMon tool</a> to parse
-            the packets.  The /NetworkCapture option enables this from the command line. 
+            the packets.  The /NetworkCapture option enables this from the command line.
         </li>
         <li>
             The <strong><a id="NetMonCheckBox">NetMon Checkbox</a></strong>  This option is like
@@ -3949,7 +3949,7 @@
         <li>
             The <strong><a id="ClrCheckBox">.NET Checkbox</a></strong> - Turns on the default
             .NET providers. Unless you have No .NET code in the process of interested, you should
-            leave this provider on.   The /ClrEvents=None command line option achieves the same effect.  
+            leave this provider on.   The /ClrEvents=None command line option achieves the same effect.
         </li>
         <li>
             The <strong><a id="ClrAllCheckBox">.NET All Checkbox</a></strong> - Turns on all
@@ -3969,7 +3969,7 @@
             providers (including the default ones) except for those needed to do a .NET GC Heap
             analysis. In this mode relatively few events are logged, so you can collect data
             about a large period of time (say an hour), in a reasonable size (say 200Meg). This
-            option shows you stacks for a SAMPLING of GC allocations.  
+            option shows you stacks for a SAMPLING of GC allocations.
             The /GCOnly command line option achieves the same efffect.
         </li>
         <li>
@@ -3985,7 +3985,7 @@
             be useful tracking down non-deterministic &#39;stress&#39; bugs.&nbsp;&nbsp; You
             can also turn these events on by specifying the &#39;ClrStress&#39; provider in
             the Additional Providers textbox.&nbsp;&nbsp;&nbsp;
-            The option /Providers=ClrStress can achive this at the command line.  
+            The option /Providers=ClrStress can achive this at the command line.
         </li>
 
         <li>
@@ -4068,10 +4068,14 @@
                 in its OnEventCommand method).&nbsp; The special ETW keywords include
                 <ul>
                     <li>@StacksEnabled - If this key&#39;s value is &#39;true&#39; then the stack associated with the event is taken (for every event in the provider)</li>
-                    <li>@ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected.
-                    Since IDs only exist after a process is created, this only works on processes that are running at the time collection starts. </li>
-                    <li>@ProcessNameFilter - a space separated list of process names (a process name is the file name (no path) of the executable INCLUDING the .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp; 
-                    It does not matter if the process was running before collection or not.</li>
+                    <li>
+                        @ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected.
+                        Since IDs only exist after a process is created, this only works on processes that are running at the time collection starts.
+                    </li>
+                    <li>
+                        @ProcessNameFilter - a space separated list of process names (a process name is the file name (no path) of the executable INCLUDING the .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp;
+                        It does not matter if the process was running before collection or not.
+                    </li>
                     <li>@EventIDsToEnable -a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be collected in addition to any events specified by the Keywords.&nbsp;&nbsp; </li>
                     <li>@EventIDsToDisable - a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be suppressed from those specified by the Keywords.&nbsp;&nbsp; </li>
                     <li>@EventIDStacksToEnable - a space separated list of decimal event ID numbers whose events should have their stacks collected.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will have a stack logged as well as the event information.</li>
@@ -5266,23 +5270,28 @@
         different symbols within the file when loaded.
     </p>
     <h4>Flattening the Trace</h4>
-    <p> As mentioned, by default PerfView tries to creata a 'GC heap' of the items in the DLL if one
-    item refers to another it will have a link from the referencer to the object being referenced.   <strong>However
-    this behavior can interfer with some analysis.</strong>.   In particular if you use the 'include pats or
-    'exclude pats' texboxes, it will include or exclude ON THE ENTIRE PATH.   When this is not what you
-    want, one easy way to fix the problem is to 'flatten' the graph.   
     <p>
-    Flattening a set of nodes takes one set of nodes, and returns a new 'GC Heap' where 
+        As mentioned, by default PerfView tries to creata a 'GC heap' of the items in the DLL if one
+        item refers to another it will have a link from the referencer to the object being referenced.   <strong>
+            However this behavior can interfer with some analysis.
+        </strong>.   In particular if you use the 'include pats or
+        'exclude pats' texboxes, it will include or exclude ON THE ENTIRE PATH.   When this is not what you
+        want, one easy way to fix the problem is to 'flatten' the graph.
+    <p>
+        Flattening a set of nodes takes one set of nodes, and returns a new 'GC Heap' where
         <ul>
-            <li>All links between nodes are ignored.   Instead you get a 'flat' list, where every node
-            is a child of 'ROOT' and has no children of its own.
+            <li>
+                All links between nodes are ignored.   Instead you get a 'flat' list, where every node
+                is a child of 'ROOT' and has no children of its own.
             </li>
-            <li>Any grouping is 'frozen' int the name.   Normally the 'Group Pats' text box just effects
-            how the nodes are displayed, but the nodes still have their original names.   After flattening
-            the node name is really what is being displayed (changing the grouping will no longer have 
-            an effect).</li>
-        </ul>  
-    Thus if you to to the 'RefTree' view select the metric associated with the 'ROOT' node, right click, and
+            <li>
+                Any grouping is 'frozen' int the name.   Normally the 'Group Pats' text box just effects
+                how the nodes are displayed, but the nodes still have their original names.   After flattening
+                the node name is really what is being displayed (changing the grouping will no longer have
+                an effect).
+            </li>
+        </ul>
+        Thus if you to to the 'RefTree' view select the metric associated with the 'ROOT' node, right click, and
         select 'Flatten' you will get a new view in which there is no links between nodes.  Now the 'include pats'
         and 'exclude pats' will select a node based on ONLY THAT NAME (not the name of any of its parents).
     </p>
@@ -5352,7 +5361,29 @@
             how to decode stack frames.   It is needed by both the GC and EH system.
         </li>
     </ul>
-    <h4>Meaning of certain tags in a Image Size analysis</h4>
+
+    <h3><a id="ILSize">IL Size Analysis</a></h3>
+    <h4>Collecting data</h4>
+    <p>
+        Selecting the Size -> IL Size menu entry allows you to do a analysis of what is in a .NET
+        Intermediate File (IL), which is what .NET Compilers like C# and VB create.   It will generate
+        a .gcdump file that makes graph of types, methods, fields and other structures in the IL file
+        where each node of the graph idicates how big it is in the file, and the arcs between the nodes
+        are are references from one item to another.   Thus you can do dependency analyssis (what things
+        refer to what other things), in the same way as objects in a GC heap.
+    </p><p>
+        The Size -> IL Size menu entry will bring up a dialog box you use to specify
+        the DLL or EXE to do the size analysis on.  This file needs to be a DLL or EXE that contains
+        .NET IL (e.g. the output of a .NET compiler).  In addition it will allow you to set the
+        name of the output file that holds the resulting data.    The dialog will derive a
+        output file name from the input file name and generally this default is fine.
+    </p>
+    <h4>Analyzing the data</h4>
+    <p>
+        The image size menu entry will generated a .gcdump file the describes the breakdown of types
+        methods fields and other items in the IL file.   It works in much the same way as the GC heap
+        analsysis or the native <a href="#ImageSize">Image Size Analysis</a>.
+    </p>
 
     <!--  ********************************** -->
     <h2>
@@ -5861,19 +5892,19 @@
     <p>
         You can specify the /StopOnPerfCounter qualifier more than once and each acts as a trigger.
         Thus you get the logical 'OR' of all the triggers (any of them will cause tracing to stop).
-        There is currently no way of specifying a logical 'AND'. 
+        There is currently no way of specifying a logical 'AND'.
     </p>
     <p>
         If the process you want to monitor lives a long time, then you can specify the instance
         of that process in the /StopOnPerfCounter qualifier. Sometimes, however it is difficult
         to identify the process instance you want. Some counters (like the GC counters and
         others), have a special instance that represents 'all' processes in some way. Look
-        for these in the 'instances' listbox in PerfMon. These can be handy.  If don't have a 
+        for these in the 'instances' listbox in PerfMon. These can be handy.  If don't have a
         aggregate instance, you can /StopOnPerfCounter for each process instance that MIGHT exist.
-        This is not hard to do because Perf Counters are given names like EXE, EXE#1, EXE#2 etc.  
+        This is not hard to do because Perf Counters are given names like EXE, EXE#1, EXE#2 etc.
         THus you can specify /StopOnPerfCounter for each of the N from 1 up to the maximum
-        number of instance you expect.   PerfView is robust to instances that don't exist (it waits 
-        for them to exist), so you get the behavior you want.   
+        number of instance you expect.   PerfView is robust to instances that don't exist (it waits
+        for them to exist), so you get the behavior you want.
     </p>
     <p>
         Here are some other useful /StopOnPerfCounter examples
@@ -6161,7 +6192,7 @@
     <p>
         If want to stop when a process starts it is a bit more problematic because the 'start' event actually occurs in the process that
         spawned the process not the process being created.  Instead you can use the fact that the ProcessStart has a 'ImageName' field
-        and you can use the ~ operator of the <a href="#FieldFilter">FieldFilter</a> option to trigger on that.  
+        and you can use the ~ operator of the <a href="#FieldFilter">FieldFilter</a> option to trigger on that.
         Thus to stop when a process called GCTest.exe is launch you can do
     </p>
     <ul>
@@ -6169,7 +6200,7 @@
     </ul>
     <p>
         Here is a slightly more complex example where we only stop of the GCTest.exe executable fails with a non-zero exit code.   Here
-        we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process failes.   
+        we use the ImageName field to find a particular Exe and well as the ExitCode field to determine if the process failes.
         You can use this to stop PerfView when a paritcular process in a large script fails (which is a reasonably common scenario).
     </p>
     <ul>
@@ -6177,7 +6208,7 @@
     </ul>
     <p>
         Here is an example where we want to stop when a particular URL is serviced by a ASP.NET server.  Bascially we stop wan a ASP.NET
-        Request event fires with a 'FullUrl' field that matches the pattern (ends in /stop.aspx).  
+        Request event fires with a 'FullUrl' field that matches the pattern (ends in /stop.aspx).
     </p>
     <ul>
         <li>PerfView PerfView "/StopOnEtwEvent:*Microsoft-Windows-ASPNET/Request/Start;FieldFilter=FullUrl~http://.*/stop.aspx" collect</li>
@@ -6185,7 +6216,7 @@
     <p>
         In general the option is pretty powerful, especially if you have the ability to add ETW events to your code (EventSource)  Coupled with
         the FieldFilter you can use this to stop on particular DLLs in particular processes loading, or unloading, registry keys being touched
-        files being opened, as well as any of your specific EventSource events happening (testing their arguments).  
+        files being opened, as well as any of your specific EventSource events happening (testing their arguments).
     </p>
     <h5>Using Keywords on /StopOnEtwEvent providers</h5>
     <p>
@@ -6201,11 +6232,11 @@
         This is the same as the previous example but it has the Keywords=0x10 option placed on it.   This tells PerfView to only turn on particular events
         designated by the 0x10 bitfield.   The only issue is how do you know what 0x10 means?    You can determine this by looking at the manifest for
         the Microsoft-Windows-Kernel-Process provider.    You can do this by opening the advanced section of the 'collection' dialog box, and clicking on the
-        <a href="#ProviderBrowser">Provider Browser</a> button.   Select the provider of interest in the 'Providers' listbox and then click the 'View Manifest' 
+        <a href="#ProviderBrowser">Provider Browser</a> button.   Select the provider of interest in the 'Providers' listbox and then click the 'View Manifest'
         button.  This will bring up the complete XML manifest for the provider.  You will find a 'keywords' section and in that you will find the defintions
-        of each keyword.  THus we find that the WINEVENT_KEYWORD_PROCESS keyword has the value 0x10, and we can see that the event of interest (ProcessStop/Stop) 
-        is tied to this keyword, we know that this is the only keyword we actually need.   Thus we know the 'magic' number to give to the 'Keywords' option 
-        above.   Note you don't have to do this, but it does make debugging easier (since there are fewer events to have to filter out).  
+        of each keyword.  THus we find that the WINEVENT_KEYWORD_PROCESS keyword has the value 0x10, and we can see that the event of interest (ProcessStop/Stop)
+        is tied to this keyword, we know that this is the only keyword we actually need.   Thus we know the 'magic' number to give to the 'Keywords' option
+        above.   Note you don't have to do this, but it does make debugging easier (since there are fewer events to have to filter out).
     </p>
 
     <h5>Debugging Triggering Issues</h5>
@@ -7644,6 +7675,15 @@
         </li>
         -->
         <li>
+            Version 1.7.28 7/9/2015
+            <ul>
+                <li>Added lightup (GUI entry under the 'Size' Menu bar) for IL Size analysis (which lets you look at an IL file
+                 as if it were a GC heap).
+                </li>
+                <li>Fixed crash when looking at GC Alloc Stacks view with project N processes present. </li>
+            </ul>
+        </li>
+        <li>
             Version 1.7.27 7/8/2015
             <ul>
                 <li>Fixed broken ImageSize (would not spawn sub-window)</li>
@@ -7679,14 +7719,15 @@
                 <li>Fixed formating oddities of the HTML reports in French and other non-english languages when printing numbers</li>
                 <li>
                     Fixed issue with the @EventIDStacksToEnable capability.  It actually worked before you just had to also specify the @StacksEnabled.
-                    Now this happens implicitly.  
+                    Now this happens implicitly.
                 </li>
             </ul>
         </li>
         <li>
             Version 1.7.20 - 4/2/2015
             <ul>
-                <li> Moved to GitHub  
+                <li>
+                    Moved to GitHub
                 </li>
             </ul>
         </li>
@@ -7695,16 +7736,17 @@
             <ul>
                 <li>
                     Modified the Windows Handle support so that 'close' operations use the same stack as the 'create' if that is known.
-                    This insures that creates and closes always 'cancel out' perfectly if they are both present.  
+                    This insures that creates and closes always 'cancel out' perfectly if they are both present.
                 </li>
             </ul>
         </li>
         <li>
             Version 1.7.16 - 2/28/2015
             <ul>
-                <li> Added support for diagnosing windows handles issues.   The 'Handle' collection option was added to the 
-                     Advanced section of the data collection dialog and a new 'Windows Handle Stacks' view was added that 
-                     display this data nicely. 
+                <li>
+                    Added support for diagnosing windows handles issues.   The 'Handle' collection option was added to the
+                    Advanced section of the data collection dialog and a new 'Windows Handle Stacks' view was added that
+                    display this data nicely.
                 </li>
             </ul>
         </li>

@@ -1410,6 +1410,9 @@ namespace PerfView
                 string pdbScopeFile = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "PdbScope.exe");
                 bool pdbScopeExists = File.Exists(pdbScopeFile);
 
+                string ilSizeFile = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "ILSize.dll");
+                bool ilSizeExists = File.Exists(ilSizeFile);
+
                 Dispatcher.BeginInvoke((Action)delegate()
                 {
                     if (canSendFeedback)
@@ -1423,6 +1426,13 @@ namespace PerfView
                     {
                         StatusBar.Log("Warning: PdbScope not found at " + pdbScopeFile);
                         StatusBar.Log("Disabling the Image Size Menu Item.");
+                    }
+                    if (ilSizeExists)
+                        ILSizeMenuItem.Visibility = System.Windows.Visibility.Visible;
+                    else
+                    {
+                        StatusBar.Log("Warning: ILSize not found at " + ilSizeFile);
+                        StatusBar.Log("Disabling the IL Size Menu Item.");
                     }
                 });
             });
@@ -1488,6 +1498,12 @@ namespace PerfView
         private void DoImageSize(object sender, RoutedEventArgs e)
         {
             App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize" };
+            App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
+            ExecuteCommand("Computing image size", App.CommandLineArgs.DoCommand);
+        }
+        private void DoILSize(object sender, RoutedEventArgs e)
+        {
+            App.CommandLineArgs.CommandAndArgs = new string[] { "ILSize.ILSize" };
             App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
             ExecuteCommand("Computing image size", App.CommandLineArgs.DoCommand);
         }
@@ -1769,7 +1785,8 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.D, ModifierKeys.Alt) });
         public static RoutedUICommand ImageSizeCommand = new RoutedUICommand("Image Size", "ImageSize", typeof(MainWindow),
             new InputGestureCollection() { new KeyGesture(Key.I, ModifierKeys.Alt) });
-
+        public static RoutedUICommand ILSizeCommand = new RoutedUICommand("IL Size", "ILSize", typeof(MainWindow),
+            new InputGestureCollection() { new KeyGesture(Key.L, ModifierKeys.Alt) });
 
         public static RoutedUICommand HeapSnapshotFromDumpCommand = new RoutedUICommand("Take Heap Snapshot from Process Dump", "HeapSnapshotFromDump",
             typeof(MainWindow));

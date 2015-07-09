@@ -2760,7 +2760,7 @@ namespace PerfViewExtensibility
             FileUtilities.ForceDelete(outputFileName);
             Command.Run(commandLine, new CommandOptions().AddOutputStream(LogFile).AddTimeout(3600000));
 
-            if (!File.Exists(outputFileName))
+            if (!File.Exists(outputFileName) || File.GetLastWriteTimeUtc(outputFileName) <= File.GetLastWriteTimeUtc(inputExeName))
             {
                 // TODO can remove after pdbScope gets a proper outputFileName parameter
                 string pdbScopeOutputFile = Path.ChangeExtension(Path.GetFullPath(Path.GetFileName(inputExeName)), ".pdb.xml");

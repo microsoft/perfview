@@ -2680,7 +2680,7 @@ namespace PerfView
                         }
                     }
 
-                    if (typeName.Length > 0)
+                    if (typeName != null && typeName.Length > 0)
                     {
                         var nodeIndex = stackSource.Interner.FrameIntern("Type " + typeName);
                         stackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackIndex);
@@ -5779,7 +5779,11 @@ namespace PerfView
             StripModuleName,
         }
 
-        public TypeNameSymbolResolver(string filePath, TextWriter log) { m_filePath = filePath; m_log = log; }
+        /// <summary>
+        /// Create a new symbol resolver.  You give it a context file path (PDBS are looked up next to this if non-null) and
+        /// a text writer in which to write symbol diagnostic messages.  
+        /// </summary>
+        public TypeNameSymbolResolver(string contextFilePath, TextWriter log) { m_contextFilePath = contextFilePath; m_log = log; }
 
         public string ResolveTypeName(int typeID, TraceLoadedModule module, TypeNameOptions options = TypeNameOptions.None)
         {
@@ -5819,6 +5823,10 @@ namespace PerfView
                 m_log.WriteLine("Error: module for typeID 0x{0:x} {1} does not have PDB signature info.", typeID, module.Path);
                 return null;
             }
+            if (module.PdbGuid == m_badPdb  && m_badPdb != Guid.Empty) 
+                return null;
+            if (m_pdbLookupFailures != null && m_pdbLookupFailures.ContainsKey(module.PdbGuid))  // TODO we are assuming unique PDB names (at least for failures). 
+                return null;
 
             // We check the PDB age and GUID as a proxy for comparing the module itself.
             // This is because the module is per-process, and in a trace where there are many
@@ -5830,15 +5838,20 @@ namespace PerfView
                 m_lastSymModule = null;
 
                 if (m_symReader == null)
-                    m_symReader = App.GetSymbolReader(m_filePath);
+                    m_symReader = App.GetSymbolReader(m_contextFilePath);
                 var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge);
                 if (pdbPath != null)
                     m_lastSymModule = m_symReader.OpenSymbolFile(pdbPath);
+                else
+                {
+                    if (m_pdbLookupFailures == null)
+                        m_pdbLookupFailures = new Dictionary<Guid, bool>();
+                    m_pdbLookupFailures.Add(module.PdbGuid, true);
+                }
             }
             if (m_lastSymModule == null)
             {
                 m_numFailures++;
-
                 if (m_numFailures <= 5)
                 {
                     if (m_numFailures == 1 && !Path.GetFileName(module.Path).StartsWith("mrt", StringComparison.OrdinalIgnoreCase))
@@ -5859,7 +5872,19 @@ namespace PerfView
                 }
                 return null;
             }
-            string typeName = m_lastSymModule.FindNameForRva((uint)typeID);
+
+            string typeName;
+            try
+            {
+                typeName = m_lastSymModule.FindNameForRva((uint)typeID);
+            }
+            catch (OutOfMemoryException)
+            {
+                // TODO find out why this happens?   I think this is because we try to do a ReadRVA 
+                m_log.WriteLine("Error: Caught out of memory exception on file " + m_lastSymModule.SymbolFilePath + ".   Skipping.");
+                m_badPdb = module.PdbGuid;
+                return null;
+            }
 
             typeName = typeName.Replace(@"::`vftable'", "");
             typeName = typeName.Replace(@"::", ".");
@@ -5870,11 +5895,13 @@ namespace PerfView
         }
 
         TextWriter m_log;
-        string m_filePath;
+        string m_contextFilePath;
         SymbolReader m_symReader;
         SymbolModule m_lastSymModule;
         Graphs.Module m_lastModule;
         int m_numFailures;
+        Guid m_badPdb;        // If we hit a bad PDB remember it to avoid logging too much 
+        Dictionary<Guid, bool> m_pdbLookupFailures;
     }
 
     class ClrProfilerCodeSizePerfViewFile : PerfViewFile
