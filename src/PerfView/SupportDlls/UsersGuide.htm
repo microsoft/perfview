@@ -4158,18 +4158,25 @@
             space-separated list of strings of the form <strong>CpuCtrName:RolloverCount</strong>,
             where <strong>CpuCtrName</strong> is the name of the counter and <strong>RolloverCount</strong>
             is the number of such events to skip after taking a sample (thus BranchInstruction:10000
-            will take a stack trace once ever 10K branch instructions.&nbsp;&nbsp;&nbsp; <b>
-                The
-                set of CPU counters that are supported depends on the processor chip
-            </b>.  Many laptops don't
-            support the hardware counters necessary.   This feature is only supported on Windows 8 and and
-            above, and currently does NOT work in virtual machines (this may be fixed in the future).  If
-            you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
-            suggestions to start with.&nbsp;&nbsp; You can select several of these options from
-            the drop down menu and the modify the counts if desired.&nbsp;&nbsp;  Currently there
-            is no special view for these events, they show up in the 'Any Stacks Stacks' view as the
-            PMCSample event.  Thus going to that view and doing a 'Include Item' on this
-            item will allow you to see at what stacks the samples where taken.
+            will take a stack trace once ever 10K branch instructions.&nbsp;&nbsp;&nbsp;
+            <b>The set of CPU counters that are supported depends on the processor chip</b>.  
+            This feature is only supported on Windows 8 and and above, and currently <strong>does NOT work in virtual machines</strong>
+            or <strong>if you have hypervisor installed (that is you can host virtual machines)</strong>.   You can
+            telll if hypervisor is installed by trying to launch the hyper-V manager (type 'virtmgmt.msc' in the 'Run' dialog).  
+            If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
+            and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
+            do your collection and the turn it back on without losing your virtual machines (although it is a pain).
+            Hopefully this will be fixed in Win 10.  
+            <p>
+                If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
+                suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
+                you are running in a VM or a machine that has Hyper-V installed (see above).  
+                You can select several of these options from
+                the drop down menu and the modify the counts if desired.&nbsp;&nbsp;  Currently there
+                is no special view for these events, they show up in the 'Any Stacks Stacks' view as the
+                PMCSample event.  Thus going to that view and doing a 'Include Item' on this
+                item will allow you to see at what stacks the samples where taken.
+            </p>
         </li>
         <li>
             The <strong><a id="OSHeapExeTextBox">OS Heap Executable TextBox</a></strong> -&nbsp;
@@ -5383,6 +5390,21 @@
         The image size menu entry will generated a .gcdump file the describes the breakdown of types
         methods fields and other items in the IL file.   It works in much the same way as the GC heap
         analsysis or the native <a href="#ImageSize">Image Size Analysis</a>.
+    </p>
+    <h4>Multi-File heap</h4>
+    <p>
+        The Menu entry only allows you to specify one IL file when creating the node-arc graph for
+        the IL code.   Any refernces outside this file are not traversed, but simply marked as a
+        special 'external refernece' node.    It is sometimes useful to select a group of IL files
+        (e.g. represneting a complete application) which are traversed and only when you leave this
+        group would you use 'external reference' nodes.   You can do this with the 'ILSize.ILSize'
+        user command.    Thus the command
+    </p>
+    <ul>
+        <li>PerfView userCommand ILSize.ILSize File1.dll File2.dll File3.dll</li>
+    </ul>
+    <p>
+        Will create a GC heap of File1.dll File2.dll and File3.dll as if they were one file.
     </p>
 
     <!--  ********************************** -->
@@ -7675,10 +7697,21 @@
         </li>
         -->
         <li>
+            Version 1.7.29 7/13/2015
+            <ul>
+
+                <!--
+                                    <li> Added UTC offset of the location where data is collected to the TraceInfo display (helps in worldwide scenarios) </li>
+                    -->
+                <li>Fixed defaults for GroupPats FoldPats for ILSize capability </li>
+            </ul>
+        </li>
+        <li>
             Version 1.7.28 7/9/2015
             <ul>
-                <li>Added lightup (GUI entry under the 'Size' Menu bar) for IL Size analysis (which lets you look at an IL file
-                 as if it were a GC heap).
+                <li>
+                    Added lightup (GUI entry under the 'Size' Menu bar) for IL Size analysis (which lets you look at an IL file
+                    as if it were a GC heap).
                 </li>
                 <li>Fixed crash when looking at GC Alloc Stacks view with project N processes present. </li>
             </ul>
