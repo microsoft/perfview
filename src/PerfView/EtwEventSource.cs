@@ -535,6 +535,12 @@ namespace PerfView
             /// </summary>
             private void AddField(string fieldName, string fieldValue, Dictionary<string, int> columnOrder, StringBuilder restString)
             {
+                if (fieldValue == null)
+                    fieldValue = "";
+                // If the field value has to many newlines in it, the GUI gets confused because the text block is larger than
+                // the vertical size.   WPF may fix this at some point, but in the mean time this is a work around. 
+                fieldValue = Regex.Replace(fieldValue, " *[\r\n\t]+ *", " ");
+
                 var putInRest = true;
                 if (columnOrder != null)
                 {
@@ -550,11 +556,7 @@ namespace PerfView
                     }
                 }
                 if (putInRest)
-                {
-                    if (fieldValue == null)
-                        fieldValue = "";
                     restString.Append(fieldName).Append("=").Append(Utilities.Command.Quote(fieldValue)).Append(' ');
-                }
             }
 
             /// <summary>
