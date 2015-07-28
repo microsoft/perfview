@@ -350,6 +350,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int pointerSize;
         internal /*protected*/ int numberOfProcessors;
         internal /*protected*/ int cpuSpeedMHz;
+        internal /*protected*/ int? utcOffsetMinutes;
         internal /*protected*/ Version osVersion;
         internal /*protected*/ long _QPCFreq;
         internal /*protected*/ DateTime sessionStartTimeUTC;
@@ -777,6 +778,16 @@ namespace Microsoft.Diagnostics.Tracing
         /// <para>It will return null if the event provider did not define a 'message'  for this event</para>
         /// </summary>
         public virtual string FormattedMessage { get { return null; } }
+
+        /// <summary>
+        /// Creates and returns the value of the 'message' for the event with payload values substituted.
+        /// Payload values are formatted using the given formatProvider. 
+        /// </summary>
+        public virtual string GetFormattedMessage(IFormatProvider formatProvider)
+        {
+            return null;
+        }
+
         /// <summary>
         /// An EventIndex is a integer that is guaranteed to be unique for this event over the entire log.  Its
         /// primary purpose is to act as a key that allows side tables to be built up that allow value added
@@ -821,111 +832,131 @@ namespace Microsoft.Diagnostics.Tracing
         /// Given an index from 0 to PayloadNames.Length-1, return the value for that payload item as an object (boxed if necessary).  
         /// </summary>
         public abstract object PayloadValue(int index);
+
         /// <summary>
         /// PayloadString is like PayloadValue(index).ToString(), however it can do a better job in some cases.  In particular
         /// if the payload is a enumeration or a bitfield and the manifest defined the enumeration values, then it will print the string name
         /// of the enumeration value instead of the integer value.  
         /// </summary>
-        public virtual string PayloadString(int index)
+        public virtual string PayloadString(int index, IFormatProvider formatProvider = null)
         {
             try
             {
-            var value = PayloadValue(index);
-            if (value == null)
-                return "";
-            if (value is Address)
-                return "0x" + ((Address)value).ToString("x");
-            if (value is int)
-            {
+                var value = PayloadValue(index);
 
-                int intValue = (int)value;
-                if (intValue != 0 && payloadNames[index] == "IPv4Address")
-                {
-                    return (intValue & 0xFF).ToString() + "." +
-                           ((intValue >> 8) & 0xFF).ToString() + "." +
-                           ((intValue >> 16) & 0xFF).ToString() + "." +
-                           ((intValue >> 24) & 0xFF).ToString();
-                }
-                return intValue.ToString("n0");
-            }
-            if (value is long)
-            {
-                if (payloadNames[index] == "objectId")      // TODO this is a hack.  
-                    return "0x" + ((long)value).ToString("x");
-                return ((long)value).ToString("n0");
-            }
-            if (value is double)
-                return ((double)value).ToString("n3");
-            if (value is DateTime)
-            {
-                DateTime asDateTime = (DateTime)value;
-                string ret;
-                if (source.SessionStartTime <= asDateTime)
-                {
-                    ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                    ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
-                }
-                else
-                    ret = asDateTime.ToString();
+                if (value == null)
+                    return "";
 
-                return ret;
-            }
-            var asByteArray = value as byte[];
-            if (asByteArray != null)
-            {
-                StringBuilder sb = new StringBuilder();
-                if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
-                {
-                    if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
-                    {
-                        sb.Append(asByteArray[4].ToString()).Append('.');
-                        sb.Append(asByteArray[5].ToString()).Append('.');
-                        sb.Append(asByteArray[6].ToString()).Append('.');
-                        sb.Append(asByteArray[7].ToString()).Append(':');
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append(port);
-                    }
-                    else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
-                    {
-                        var ipV6 = new byte[16];
-                        Array.Copy(asByteArray, 8, ipV6, 0, 16);
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
-                    }
-                }
-                // If we did not find a way of pretty printing int, dump it as bytes. 
-                if (sb.Length == 0)
-                {
-                    var limit = Math.Min(asByteArray.Length, 16);
-                    for (int i = 0; i < limit; i++)
-                    {
-                        var b = asByteArray[i];
-                        sb.Append(HexDigit((b / 16)));
-                        sb.Append(HexDigit((b % 16)));
-                    }
-                    if (limit < asByteArray.Length)
-                        sb.Append("...");
-                }
-                return sb.ToString();
-            }
-            var asArray = value as System.Array;
-            if (asArray != null && asArray.Rank == 1)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append('[');
-                bool first = true;
-                foreach (var elem in asArray)
-                {
-                    if (!first)
-                        sb.Append(',');
-                    first = false;
-                    sb.Append(elem.ToString());
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
+                if (value is Address)
+                    return "0x" + ((Address)value).ToString("x", formatProvider);
 
-            return value.ToString();
+                if (value is int)
+                {
+
+                    int intValue = (int)value;
+                    if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                    {
+                        return (intValue & 0xFF).ToString() + "." +
+                               ((intValue >> 8) & 0xFF).ToString() + "." +
+                               ((intValue >> 16) & 0xFF).ToString() + "." +
+                               ((intValue >> 24) & 0xFF).ToString();
+                    }
+                    if (formatProvider != null)
+                        return intValue.ToString(formatProvider);
+                    else
+                        return intValue.ToString("n0");
+                }
+
+                if (value is long)
+                {
+                    if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                        return "0x" + ((long)value).ToString("x");
+
+                    if (formatProvider != null)
+                        return ((long)value).ToString(formatProvider);
+                    else
+                        return ((long)value).ToString("n0");
+                }
+
+                if (value is double)
+                {
+                    if (formatProvider != null)
+                        return ((double)value).ToString(formatProvider);
+                    else
+                        return ((double)value).ToString("n3");
+                }
+
+                if (value is DateTime)
+                {
+                    DateTime asDateTime = (DateTime)value;
+                    string ret;
+                    if (source.SessionStartTime <= asDateTime)
+                    {
+                        ret = asDateTime.ToString("HH:mm:ss.ffffff");
+                        ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
+                    }
+                    else
+                        ret = asDateTime.ToString();
+
+                    return ret;
+                }
+
+                var asByteArray = value as byte[];
+                if (asByteArray != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
+                    {
+                        if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                        {
+                            sb.Append(asByteArray[4].ToString()).Append('.');
+                            sb.Append(asByteArray[5].ToString()).Append('.');
+                            sb.Append(asByteArray[6].ToString()).Append('.');
+                            sb.Append(asByteArray[7].ToString()).Append(':');
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append(port);
+                        }
+                        else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
+                        {
+                            var ipV6 = new byte[16];
+                            Array.Copy(asByteArray, 8, ipV6, 0, 16);
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
+                        }
+                    }
+                    // If we did not find a way of pretty printing int, dump it as bytes. 
+                    if (sb.Length == 0)
+                    {
+                        var limit = Math.Min(asByteArray.Length, 16);
+                        for (int i = 0; i < limit; i++)
+                        {
+                            var b = asByteArray[i];
+                            sb.Append(HexDigit((b / 16)));
+                            sb.Append(HexDigit((b % 16)));
+                        }
+                        if (limit < asByteArray.Length)
+                            sb.Append("...");
+                    }
+                    return sb.ToString();
+                }
+                var asArray = value as System.Array;
+                if (asArray != null && asArray.Rank == 1)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append('[');
+                    bool first = true;
+                    foreach (var elem in asArray)
+                    {
+                        if (!first)
+                            sb.Append(',');
+                        first = false;
+                        sb.Append(elem.ToString());
+                    }
+                    sb.Append(']');
+                    return sb.ToString();
+                }
+
+                return value.ToString();
             }
             catch (Exception e)
             {
@@ -1032,9 +1063,11 @@ namespace Microsoft.Diagnostics.Tracing
 
                 CopyBlob(userData, userDataBuffer, userDataLength);
                 ret.userData = userDataBuffer;
+                ret.eventRecord->UserData = ret.userData;
 
                 // we don't have extended data (we have to handle each case specially.  Related Activity ID above. 
                 ret.eventRecord->ExtendedDataCount = 0;
+                ret.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)IntPtr.Zero;
             }
             return ret;
         }
@@ -1045,21 +1078,39 @@ namespace Microsoft.Diagnostics.Tracing
         {
             return ToXml(new StringBuilder()).ToString();
         }
+
+        /// <summary>
+        /// Pretty print the event using XML syntax, formatting data using the supplied IFormatProvider
+        /// </summary>
+        public virtual string ToString(IFormatProvider formatProvider)
+        {
+            return ToXml(new StringBuilder(), formatProvider).ToString();
+        }
+
         /// <summary>
         /// Write an XML representation to the stringBuilder sb and return it.  
         /// </summary>
         public virtual StringBuilder ToXml(StringBuilder sb)
         {
+            return ToXml(sb, null);
+        }
+
+        /// <summary>
+        /// Writes an XML representation of the event to a StringBuilder sb, formatting data using the passed format provider. 
+        /// Returns the StringBuilder.
+        /// </summary>
+        public virtual StringBuilder ToXml(StringBuilder sb, IFormatProvider formatProvider)
+        {
             Prefix(sb);
             if (ProviderGuid != Guid.Empty)
                 XmlAttrib(sb, "ProviderName", ProviderName);
-            string message = FormattedMessage;
+            string message = GetFormattedMessage(formatProvider);
             if (message != null)
                 XmlAttrib(sb, "FormattedMessage", message);
             string[] payloadNames = PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
-                XmlAttrib(sb, payloadNames[i], PayloadString(i));
+                XmlAttrib(sb, payloadNames[i], PayloadString(i, formatProvider));
             }
             sb.Append("/>");
             return sb;
@@ -1533,6 +1584,8 @@ namespace Microsoft.Diagnostics.Tracing
             sb.Append(" PID="); QuotePadLeft(sb, ProcessID.ToString(), 6);
             sb.Append(" PName="); QuotePadLeft(sb, ProcessName, 10);
             sb.Append(" TID="); QuotePadLeft(sb, ThreadID.ToString(), 6);
+            if (ActivityID != Guid.Empty)
+                sb.AppendFormat(" ActivityID=\"{0:n}\"", ActivityID);
             sb.Append(" EventName=\"").Append(EventName).Append('"');
             return sb;
         }

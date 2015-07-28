@@ -1,6 +1,4 @@
-﻿#define DEBUG
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -180,7 +178,7 @@ namespace Graphs
                     m_entries.Set(id, new Entry()
                     {
                         Parent = parent,
-                        Value = value, 
+                        Value = value,
                     });
 
                     if (id < necessary.Count && necessary[id])
@@ -323,8 +321,8 @@ namespace Graphs
                                 parentCount++;
                             }
                             while (
-                                parentCount < MaxParents && 
-                                m_mergedEntries.TryGetValue(parent, out parent) && 
+                                parentCount < MaxParents &&
+                                m_mergedEntries.TryGetValue(parent, out parent) &&
                                 parent != entry.Parent && parent != 0);
                         }
                     }
@@ -396,7 +394,7 @@ namespace Graphs
             readonly Dictionary<IMethodReference, List<NodeIndex>> m_methodToNodeMap = new Dictionary<IMethodReference, List<NodeIndex>>(MethodReferenceOnlyComparer.Instance);
 
             readonly ITokenDecoder m_tokenDecoder;
-            readonly ITypeDefinition m_systemCanonType;
+            readonly ITypeReference m_systemCanonType;
 
             readonly SymbolModule m_symbolModule;
 
@@ -404,6 +402,31 @@ namespace Graphs
             {
                 m_graph = graph;
                 m_host = host;
+
+                var sysAssembly = new Microsoft.Cci.MutableCodeModel.AssemblyReference()
+                {
+                    Host = host,
+                    AssemblyIdentity = new AssemblyIdentity(host.NameTable.GetNameFor("System.Runtime.CoreLib"), null, null, Enumerable.Empty<byte>(), null)
+                };
+
+                var rootNamespace = new Microsoft.Cci.MutableCodeModel.RootUnitNamespaceReference()
+                {
+                    Unit = sysAssembly,
+                };
+
+                var systemNamespace = new Microsoft.Cci.MutableCodeModel.NestedUnitNamespaceReference()
+                {
+                    ContainingUnitNamespace = rootNamespace,
+                    Name = host.NameTable.GetNameFor("System")
+                };
+
+                m_systemCanonType = new Microsoft.Cci.MutableCodeModel.NamespaceTypeReference()
+                {
+                    InternFactory = host.InternFactory,
+                    ContainingUnitNamespace = systemNamespace,
+                    Name = host.NameTable.GetNameFor("__Canon")
+                };
+
 
                 using (var symReader = new SymbolReader(PerfView.App.CommandProcessor.LogFile))
                 {
@@ -419,7 +442,11 @@ namespace Graphs
 
                         m_symbolModule = symReader.OpenSymbolFile(entry.Name, pdbStream);
 
-                        byte[] ilImage = m_symbolModule.GetEmbeddedILImage();
+                        MemoryStream ilImage = m_symbolModule.GetPseudoAssembly();
+                        bool isPseudoIl = ilImage != null;
+                        if (!isPseudoIl)
+                            ilImage = m_symbolModule.GetEmbeddedILImage();
+
                         if (ilImage != null)
                         {
                             m_rvaToMethodMap = new Dictionary<uint, HashSet<IMethodReference>>();
@@ -428,13 +455,11 @@ namespace Graphs
                             m_typeIndexToTypeMap = new Dictionary<uint, ITypeReference>();
 
 
-                            var assembly = m_host.LoadUnitFrom(new MemoryStream(ilImage, writable: false));
+                            var assembly = m_host.LoadUnitFrom(ilImage);
                             m_tokenDecoder = (ITokenDecoder)assembly;
 
-                            m_systemCanonType = new PlatformType(m_host).CreateReference((IAssemblyReference)assembly, "System", "__Canon").ResolvedType;
-
                             PopulateTypeIndexMap();
-                            PopulateFuncTokenMap();
+                            PopulateFuncTokenMap(isPseudoIl);
                             PouplateTypeTokenMap();
 
                             PopulateSharedGenerics();
@@ -646,7 +671,7 @@ namespace Graphs
                 }
             }
 
-            private unsafe void PopulateFuncTokenMap()
+            private unsafe void PopulateFuncTokenMap(bool isPseudoIl)
             {
                 byte[] buf = m_symbolModule.GetFuncMDTokenMap();
                 fixed (byte* pBuf = buf)
@@ -663,33 +688,45 @@ namespace Graphs
 
                         if ((offset & 0x80000000) != 0)
                         {
-                            uint token = (offset & 0x00ffffff) | (uint)CorTokenType.mdtMethodDef;
+                            uint token = (offset & ~0x80000000);
+                            if (!isPseudoIl)
+                                token |= (uint)CorTokenType.mdtMethodDef;
                             var methodRef = (IMethodReference)m_tokenDecoder.GetObjectForToken(token);
                             if (methodRef != null)
                                 AddMethod(methodRef, rva);
                         }
                         else
                         {
-                            byte* pMethod = pMethodData + pEntry[1];
+                            byte* pMethod = pMethodData + offset;
                             int genericArgCount = (*(int*)pMethod) >> 24;
-                            uint token = (*(uint*)pMethod & 0x00ffffff) | (uint)CorTokenType.mdtMethodDef;
-
-                            var methodDef = (IMethodDefinition)m_tokenDecoder.GetObjectForToken(token);
-                            if (methodDef != null)
+                            if (isPseudoIl)
                             {
-                                if (genericArgCount == 0)
+                                uint token = (*(uint*)pMethod & 0x00ffffff) | (uint)CorTokenType.mdtMemberRef;
+                                var methodRef = (IMethodReference)m_tokenDecoder.GetObjectForToken(token);
+                                if (methodRef != null)
+                                    AddMethod(methodRef, rva);
+                            }
+                            else
+                            {
+                                uint token = (*(uint*)pMethod & 0x00ffffff) | (uint)CorTokenType.mdtMethodDef;
+
+                                var methodDef = (IMethodDefinition)m_tokenDecoder.GetObjectForToken(token);
+                                if (methodDef != null)
                                 {
-                                    AddMethod(methodDef, rva);
-                                }
-                                else
-                                {
-                                    byte* pSig = pMethod + 4;
-                                    int sigOffset = (int)(pSig - pBuf);
-                                    AddMethod(
-                                        GetMethodWithTypeArgs(
-                                            methodDef,
-                                            GetTypeArguments(genericArgCount, new SigParser(buf, buf.Length - sigOffset, sigOffset), m_tokenDecoder)),
-                                        rva);
+                                    if (genericArgCount == 0)
+                                    {
+                                        AddMethod(methodDef, rva);
+                                    }
+                                    else
+                                    {
+                                        byte* pSig = pMethod + 4;
+                                        int sigOffset = (int)(pSig - pBuf);
+                                        AddMethod(
+                                            GetMethodWithTypeArgs(
+                                                methodDef,
+                                                GetTypeArguments(genericArgCount, new SigParser(buf, buf.Length - sigOffset, sigOffset), m_tokenDecoder)),
+                                            rva);
+                                    }
                                 }
                             }
                         }
@@ -728,7 +765,7 @@ namespace Graphs
                     var canonizedType = Canonize(type);
                     var canonizedMethods = canonizedType.ResolvedType.Methods.Select(m => Canonize(m));
 
-                    var methods = type.ResolvedType.Methods.Zip(canonizedMethods, 
+                    var methods = type.ResolvedType.Methods.Zip(canonizedMethods,
                         (uncanonizedMethod, canonizedMethod) => new { uncanonizedMethod, canonizedMethod });
 
                     foreach (var method in methods)
@@ -1025,7 +1062,8 @@ namespace Graphs
                 }
             }
 
-            public Host() : base(new Microsoft.Cci.NameTable(), new InternFactory(), 0, null, false)
+            public Host()
+                : base(new Microsoft.Cci.NameTable(), new InternFactory(), 0, null, false)
             {
                 m_reader = new PeReader(this);
             }
@@ -1176,7 +1214,7 @@ namespace Graphs
                 int ret = 0;
                 byte b = m_buffer[m_position++];
                 ret = b << 25 >> 25;
-                for (; ;)
+                for (; ; )
                 {
                     if ((b & 0x80) == 0)
                         break;

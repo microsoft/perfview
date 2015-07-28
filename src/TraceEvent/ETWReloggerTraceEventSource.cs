@@ -250,6 +250,12 @@ namespace Microsoft.Diagnostics.Tracing
                     *((long*)&m_scratchBuffer[curBlobPtr]) = (long)payloadArg;
                     curBlobPtr += 8;
                 }
+                else if (argType == typeof(double))
+                {
+                    EnsureSratchBufferSpace(curBlobPtr + 8);
+                    *((double*)&m_scratchBuffer[curBlobPtr]) = (double)payloadArg;
+                    curBlobPtr += 8;
+                }
                 else
                     throw new NotImplementedException();
             }
@@ -423,6 +429,7 @@ namespace Microsoft.Diagnostics.Tracing
                 m_source.numberOfProcessors = eventHeader.NumberOfProcessors;
                 Debug.Assert(m_source.numberOfProcessors < 10000);
                 m_source.cpuSpeedMHz = eventHeader.CPUSpeed;
+                m_source.utcOffsetMinutes = eventHeader.UTCOffsetMinutes;
                 int ver = eventHeader.Version;
                 m_source.osVersion = new Version((byte)ver, (byte)(ver >> 8));
                 m_source._QPCFreq = eventHeader.PerfFreq;

@@ -1024,7 +1024,24 @@ namespace Microsoft.Diagnostics.Tracing
           out int FinalUncompressedSize
        );
 
-
+        internal const uint ERROR_WMI_INSTANCE_NOT_FOUND = 4201;
     } // end class
+    #endregion
+
+    #region Provider control commands
+    /// <summary>
+    /// Possible control commands (borrowed from EventSource)
+    /// </summary>
+    internal enum ControllerCommand
+    {
+        /// <summary>
+        /// Standard 'update' command to send additional information to a provider
+        /// </summary>
+        Update = 0,
+        /// <summary>
+        /// Instructs an EventSource-based provider to send its manifest
+        /// </summary>
+        SendManifest = -1,
+    }
     #endregion
 }

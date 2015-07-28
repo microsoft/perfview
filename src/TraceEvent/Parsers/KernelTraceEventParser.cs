@@ -3528,9 +3528,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public new int PointerSize { get { return GetInt32At(44); } }
         public int EventsLost { get { return GetInt32At(48); } }
         public int CPUSpeed { get { return GetInt32At(52); } }
-        //  Skipping SessionName (pointer)
-        //  Skipping LogFileName (pointer) 
-        // Skipping  TimeZoneInformation
+        // Skipping LoggerName (pointer size)
+        // Skipping LogFileName (pointer size) 
+        // TimeZoneInformation HostOffset(60, 2), size 176?  see https://msdn.microsoft.com/en-us/library/windows/desktop/ms725481(v=vs.85).aspx
+        /// <summary>
+        /// This is the number of minutes between the local time where the data was collected and UTC time. 
+        /// It does NOT take Daylight savings time into account.   
+        /// It is positive if your time zone is WEST of Greenwich.  
+        /// </summary>
+        public int UTCOffsetMinutes { get { return GetInt32At(HostOffset(64, 2)); } }
+#if false
+
+  uint8  TimeZoneInformation[];
+  uint64 BootTime;
+  uint64 PerfFreq;
+  uint64 StartTime;
+  uint32 ReservedFlags;
+  uint32 BuffersLost;
+#endif
+
 #if KEEP_OBSOLETE
         [Obsolete("Use BootTime")]
         public 
@@ -3594,6 +3610,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttrib(sb, "BuffersLost", BuffersLost);
             XmlAttrib(sb, "SessionName", SessionName);
             XmlAttrib(sb, "LogFileName", LogFileName);
+            XmlAttrib(sb, "UTCOffsetMinutes", UTCOffsetMinutes);
             sb.Append("/>");
             return sb;
         }
@@ -3603,7 +3620,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "BufferSize", "Version", "ProviderVersion", "NumberOfProcessors", "EndTime", "TimerResolution", "MaxFileSize", "LogFileMode", "BuffersWritten", "StartBuffers", "PointerSize", "EventsLost", "CPUSpeed", "BootTime", "PerfFreq", "StartTime", "ReservedFlags", "BuffersLost", "SessionName", "LogFileName" };
+                    payloadNames = new string[] { "BufferSize", "Version", "ProviderVersion", "NumberOfProcessors", "EndTime", "TimerResolution", "MaxFileSize", "LogFileMode", "BuffersWritten", "StartBuffers", "PointerSize", "EventsLost", "CPUSpeed", "BootTime", "PerfFreq", "StartTime", "ReservedFlags", "BuffersLost", "SessionName", "LogFileName", "UtcOffsetMinutes" };
                 return payloadNames;
             }
         }
@@ -3652,6 +3669,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     return SessionName;
                 case 19:
                     return LogFileName;
+                case 20:
+                    return UTCOffsetMinutes;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;

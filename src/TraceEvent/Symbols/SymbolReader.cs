@@ -1396,7 +1396,7 @@ namespace Microsoft.Diagnostics.Symbols
             m_source.openSession(out m_session);
             m_session.getSymbolsByAddr(out m_symbolsByAddr);
 
-            m_reader.m_log.WriteLine("Opening PDB with signature GUID {0} Age {1}", PdbGuid, PdbAge);
+            m_reader.m_log.WriteLine("Opening PDB {0} with signature GUID {1} Age {2}", pdbFilePath, PdbGuid, PdbAge);
         }
 
         internal SymbolModule(SymbolReader reader, string pdbFilePath)
@@ -1497,11 +1497,10 @@ namespace Microsoft.Diagnostics.Symbols
             return m_mergedAssemblies;
         }
 
-        /// <summary>
-        /// For ProjectN modules, gets the IL image embedded in the .PDB
+        /// For ProjectN modules, gets the merged IL image embedded in the .PDB (only valid for single-file compilation)
         /// </summary>
         /// <returns></returns>
-        public byte[] GetEmbeddedILImage()
+        public MemoryStream GetEmbeddedILImage()
         {
             try
             {
@@ -1511,7 +1510,31 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     byte[] ilImage = new byte[ilimageSize];
                     m_source.getStreamRawData("ilimage", ilimageSize, out ilImage[0]);
-                    return ilImage;
+                    return new MemoryStream(ilImage);
+                }
+            }
+            catch (COMException)
+            {
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// For ProjectN modules, gets the pseudo-assembly embedded in the .PDB, if there is one.
+        /// </summary>
+        /// <returns></returns>
+        public MemoryStream GetPseudoAssembly()
+        {
+            try
+            {
+                uint ilimageSize;
+                m_source.getStreamSize("pseudoil", out ilimageSize);
+                if (ilimageSize > 0)
+                {
+                    byte[] ilImage = new byte[ilimageSize];
+                    m_source.getStreamRawData("pseudoil", ilimageSize, out ilImage[0]);
+                    return new MemoryStream(ilImage, writable: false);
                 }
             }
             catch (COMException)

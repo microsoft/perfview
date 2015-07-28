@@ -226,7 +226,18 @@ namespace PerfViewExtensibility
                     if (gcDumpFile != null)
                     {
                         gcDumpFile.OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+                        var gcDump = gcDumpFile.GCDump;
+                        if (gcDump.CreationTool != null && gcDump.CreationTool == "ILSize")
+                        {
+                            // Right now we set nothing.  
+                            stacks.GuiState = new StackWindowGuiState();
+                            stacks.GuiState.Columns = new List<string> { "NameColumn", 
+                                "ExcPercentColumn", "ExcColumn", "ExcCountColumn", 
+                                "IncPercentColumn", "IncColumn", "IncCountColumn", 
+                                "FoldColumn", "FoldCountColumn" };
+                        }
                         perfViewStackSource = gcDumpFile.GetStackSource();
+
                     }
                     else
                     {
@@ -242,9 +253,11 @@ namespace PerfViewExtensibility
                 stackWindow.Filter = stacks.Filter;
                 stackWindow.SetStackSource(stacks.StackSource, delegate
                 {
-                    perfViewStackSource.ConfigureStackWindow(stackWindow);
                     if (stacks.HasGuiState)
                         stackWindow.GuiState = stacks.GuiState;
+                    else
+                        perfViewStackSource.ConfigureStackWindow(stackWindow);
+
                     LogFile.WriteLine("[Opened stack viewer {0}]", filePath);
                     if (OnOpened != null)
                         OnOpened(stackWindow);

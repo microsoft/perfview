@@ -973,8 +973,16 @@ namespace PerfView
                 string.IsNullOrEmpty(dataFile.OSName) ? "&nbsp;" : dataFile.OSName);
             writer.WriteLine("<TR><TD>OS Build Number</TD><TD Align=\"Center\">{0}</TD></TR>",
                 string.IsNullOrEmpty(dataFile.OSBuild) ? "&nbsp;" : dataFile.OSBuild);
-            writer.WriteLine("<TR><TD>UTC offset of this timezone</TD><TD Align=\"Center\">{0}</TD></TR>",
+            writer.WriteLine("<TR><TD Title=\"This is negative if the data was collected in a time zone west of UTC\">UTC offset where data was collected</TD><TD Align=\"Center\">{0}</TD></TR>",
+                dataFile.UTCOffsetMinutes.HasValue ? (dataFile.UTCOffsetMinutes.Value / 60.0).ToString("f2") : "Unknown");
+            writer.WriteLine("<TR><TD Title=\"This is negative if PerfView is running in a time zone west of UTC\">UTC offset where PerfView is running</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                 TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
+            
+            if (false && dataFile.UTCOffsetMinutes.HasValue)
+            {
+                writer.WriteLine("<TR><TD Title=\"This is negative if analysis is happening west of collection\">Delta of Local and Collection Time</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
+                    TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours - (dataFile.UTCOffsetMinutes.Value / 60.0));
+            }
             writer.WriteLine("<TR><TD>OS Boot Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.BootTime);
             writer.WriteLine("<TR><TD>Trace Start Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionStartTime);
             writer.WriteLine("<TR><TD>Trace End Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionEndTime);
@@ -1061,23 +1069,23 @@ namespace PerfView
                     shortProcs.Add(process);
             }
 
-                writer.WriteLine("<H2>Process Summary</H2>");
+            writer.WriteLine("<H2>Process Summary</H2>");
 
-                writer.WriteLine("<UL>");
-                writer.WriteLine("<LI> <A HREF=\"command:processes\">View Process Data in Excel</A></LI>");
-                writer.WriteLine("<LI> <A HREF=\"command:module\">View Process Modules in Excel</A></LI>");
-                writer.WriteLine("</UL>");
+            writer.WriteLine("<UL>");
+            writer.WriteLine("<LI> <A HREF=\"command:processes\">View Process Data in Excel</A></LI>");
+            writer.WriteLine("<LI> <A HREF=\"command:module\">View Process Modules in Excel</A></LI>");
+            writer.WriteLine("</UL>");
 
-                if (shortProcs.Count > 0)
-                {
-                    writer.WriteLine("<H3>Processes that did <strong>not</strong> live for the entire trace.</H3>");
-                    WriteProcTable(writer, shortProcs, true);
-                }
-                if (longProcs.Count > 0)
-                {
-                    writer.WriteLine("<H3>Processes that <strong>did</strong> live for the entire trace.</H3>");
-                    WriteProcTable(writer, longProcs, false);
-                }
+            if (shortProcs.Count > 0)
+            {
+                writer.WriteLine("<H3>Processes that did <strong>not</strong> live for the entire trace.</H3>");
+                WriteProcTable(writer, shortProcs, true);
+            }
+            if (longProcs.Count > 0)
+            {
+                writer.WriteLine("<H3>Processes that <strong>did</strong> live for the entire trace.</H3>");
+                WriteProcTable(writer, longProcs, false);
+            }
         }
         /// <summary>
         /// Takes in either "processes" or "module" which will make a csv of their respective format
@@ -1503,160 +1511,160 @@ namespace PerfView
             if (procAdjust != 0)
                 log.WriteLine("There were {0} handler starts without a matching handler end in the trace", procAdjust);
 
-                writer.WriteLine("<H2>ASP.Net Statistics</H2>");
-                writer.WriteLine("<UL>");
-                var fileInfo = new System.IO.FileInfo(dataFile.FilePath);
-                writer.WriteLine("<LI> Total Requests: {0:n} </LI>", m_requests.Count);
-                writer.WriteLine("<LI> Trace Duration (Sec): {0:n1} </LI>", dataFile.SessionDuration.TotalSeconds);
-                writer.WriteLine("<LI> Average Request/Sec: {0:n2} </LI>", m_requests.Count / dataFile.SessionDuration.TotalSeconds);
-                writer.WriteLine("<LI> Number of CPUs: {0}</LI>", dataFile.NumberOfProcessors);
-                writer.WriteLine("<LI> Maximum Number of requests recieved but not replied to: {0}</LI>", globalMaxRequestsReceived);
-                writer.WriteLine("<LI> Maximum Number of requests queued waiting for processing: {0}</LI>", globalMaxRequestsQueued);
-                writer.WriteLine("<LI> Maximum Number of requests concurrently being worked on: {0}</LI>", globalMaxRequestsProcessing);
-                writer.WriteLine("<LI> Total Memory (Meg): {0:n0}</LI>", dataFile.MemorySizeMeg);
-                writer.WriteLine("<LI> GC Kind: {0} </LI>", GCType);
-                writer.WriteLine("<LI> <A HREF=\"#rollupPerTime\">Rollup over time</A></LI>");
-                writer.WriteLine("<LI> <A HREF=\"#rollupPerRequestType\">Rollup per request type</A></LI>");
-                writer.WriteLine("<LI> <A HREF=\"command:excel/requests\">View ALL individual requests in Excel</A></LI>");
-                writer.WriteLine("</UL>");
+            writer.WriteLine("<H2>ASP.Net Statistics</H2>");
+            writer.WriteLine("<UL>");
+            var fileInfo = new System.IO.FileInfo(dataFile.FilePath);
+            writer.WriteLine("<LI> Total Requests: {0:n} </LI>", m_requests.Count);
+            writer.WriteLine("<LI> Trace Duration (Sec): {0:n1} </LI>", dataFile.SessionDuration.TotalSeconds);
+            writer.WriteLine("<LI> Average Request/Sec: {0:n2} </LI>", m_requests.Count / dataFile.SessionDuration.TotalSeconds);
+            writer.WriteLine("<LI> Number of CPUs: {0}</LI>", dataFile.NumberOfProcessors);
+            writer.WriteLine("<LI> Maximum Number of requests recieved but not replied to: {0}</LI>", globalMaxRequestsReceived);
+            writer.WriteLine("<LI> Maximum Number of requests queued waiting for processing: {0}</LI>", globalMaxRequestsQueued);
+            writer.WriteLine("<LI> Maximum Number of requests concurrently being worked on: {0}</LI>", globalMaxRequestsProcessing);
+            writer.WriteLine("<LI> Total Memory (Meg): {0:n0}</LI>", dataFile.MemorySizeMeg);
+            writer.WriteLine("<LI> GC Kind: {0} </LI>", GCType);
+            writer.WriteLine("<LI> <A HREF=\"#rollupPerTime\">Rollup over time</A></LI>");
+            writer.WriteLine("<LI> <A HREF=\"#rollupPerRequestType\">Rollup per request type</A></LI>");
+            writer.WriteLine("<LI> <A HREF=\"command:excel/requests\">View ALL individual requests in Excel</A></LI>");
+            writer.WriteLine("</UL>");
 
-                writer.Write("<P><A ID=\"rollupPerTime\">Statistics over time.  Hover over column headings for explaination of columns.</A></P>");
-                writer.WriteLine("<Table Border=\"1\">");
+            writer.Write("<P><A ID=\"rollupPerTime\">Statistics over time.  Hover over column headings for explaination of columns.</A></P>");
+            writer.WriteLine("<Table Border=\"1\">");
+            writer.Write("<TR>");
+            writer.Write("<TH Align=\"Center\">Time Interval MSec</TH>");
+            writer.Write("<TH Align=\"Center\">Req/Sec</TH>");
+            writer.Write("<TH Align=\"Center\">Max Resp<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The start time of the maximum response (may preceed bucket start)\">Start of<BR/>Max</TH>");
+            writer.Write("<TH Align=\"Center\">Thread of<BR/>Max</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The time from when the response is read from the OS until we have written a reply.\">Mean Resp<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The time a request waits before processing begins.\">Mean Queue<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The minium number of requests that have been recieved but not yet processed.\">Min<BR>Queued</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The average number of requests that are actively being processed simultaneously.\">Mean<BR>Proc</TH>");
+            writer.Write("<TH Align=\"Center\">CPU %</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The number of context switches per second.\">CSwitch / Sec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The total amount of time (MSec) the disk was active (all disks), machine wide.\">Disk<BR>MSec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The average number of thread-pool worker over this time period\">Thread<BR>Workers</TH>");
+            writer.Write("<TH Align=\"Center\">GC Alloc<BR/>MB/Sec</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The maximum of the GC heap size (in any process) after any GC\">GC Heap<BR/>MB</TH>");
+            writer.Write("<TH Align=\"Center\">GCs</TH>");
+            writer.Write("<TH Align=\"Center\">Gen2<BR/>GCs</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The number of times one thread had to wait for another thread because of a .NET lock\">.NET<BR/>Contention</TH>");
+            writer.WriteLine("</TR>");
+
+            // Rollup by time 
+
+            // Only print until CPU goes to 0.  This is because the kernel events stop sooner, and it is confusing 
+            // to have one without the other 
+            var limit = numBuckets;
+            while (0 < limit && byTimeStats[limit - 1].CpuMSec == 0)
+                --limit;
+            if (limit == 0)             // Something went wrong (e.g no CPU sampling turned on), give up on trimming.
+                limit = numBuckets;
+
+            bool wroteARow = false;
+            for (int i = 0; i < limit; i++)
+            {
+                var byTimeStat = byTimeStats[i];
+                if (byTimeStat.NumRequests == 0 && !wroteARow)       // Skip initial cases if any. 
+                    continue;
+                wroteARow = true;
+                var startBucketMSec = startIntervalMSec + i * bucketIntervalMSec;
                 writer.Write("<TR>");
-                writer.Write("<TH Align=\"Center\">Time Interval MSec</TH>");
-                writer.Write("<TH Align=\"Center\">Req/Sec</TH>");
-                writer.Write("<TH Align=\"Center\">Max Resp<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The start time of the maximum response (may preceed bucket start)\">Start of<BR/>Max</TH>");
-                writer.Write("<TH Align=\"Center\">Thread of<BR/>Max</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The time from when the response is read from the OS until we have written a reply.\">Mean Resp<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The time a request waits before processing begins.\">Mean Queue<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The minium number of requests that have been recieved but not yet processed.\">Min<BR>Queued</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The average number of requests that are actively being processed simultaneously.\">Mean<BR>Proc</TH>");
-                writer.Write("<TH Align=\"Center\">CPU %</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The number of context switches per second.\">CSwitch / Sec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The total amount of time (MSec) the disk was active (all disks), machine wide.\">Disk<BR>MSec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The average number of thread-pool worker over this time period\">Thread<BR>Workers</TH>");
-                writer.Write("<TH Align=\"Center\">GC Alloc<BR/>MB/Sec</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The maximum of the GC heap size (in any process) after any GC\">GC Heap<BR/>MB</TH>");
-                writer.Write("<TH Align=\"Center\">GCs</TH>");
-                writer.Write("<TH Align=\"Center\">Gen2<BR/>GCs</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The number of times one thread had to wait for another thread because of a .NET lock\">.NET<BR/>Contention</TH>");
+                writer.Write("<TD Align=\"Center\">{0:n0} - {1:n0}</TD>", startBucketMSec, startBucketMSec + bucketIntervalMSec);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.NumRequests / (bucketIntervalMSec / 1000.0));
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.RequestsMSecMax);
+                writer.Write("<TD Align=\"Center\">{0:n3}</TD>", byTimeStat.RequestsTimeOfMax);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.RequestsThreadOfMax);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.DurationMSecTotal / byTimeStat.NumRequests);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.QueuedDurationMSecTotal / byTimeStat.NumRequests);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", (byTimeStat.MinRequestsQueued == int.MaxValue) ? 0 : byTimeStat.MinRequestsQueued - 1);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.MeanRequestsProcessing);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", byTimeStat.CpuMSec * 100.0 / (dataFile.NumberOfProcessors * bucketIntervalMSec));
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", byTimeStat.ContextSwitch / (bucketIntervalMSec / 1000.0));
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.DiskIOMsec);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.MeanThreadPoolThreads);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.GCHeapAllocMB / (bucketIntervalMSec / 1000.0));
+                writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.GCHeapSizeMB == 0 ? "No GCs" : byTimeStat.GCHeapSizeMB.ToString("f3"));
+                writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.NumGcs);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.NumGen2Gcs);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.Contentions);
                 writer.WriteLine("</TR>");
+            }
+            writer.WriteLine("</Table>");
 
-                // Rollup by time 
+            var byRequestType = new Dictionary<string, ByRequestStats>();
+            foreach (var request in m_requests)
+            {
+                // Skip requests that did not finish.  
+                if (request.StopTimeRelativeMSec == 0)
+                    continue;
 
-                // Only print until CPU goes to 0.  This is because the kernel events stop sooner, and it is confusing 
-                // to have one without the other 
-                var limit = numBuckets;
-                while (0 < limit && byTimeStats[limit - 1].CpuMSec == 0)
-                    --limit;
-                if (limit == 0)             // Something went wrong (e.g no CPU sampling turned on), give up on trimming.
-                    limit = numBuckets;
+                var key = request.Method + request.Path + request.QueryString;
+                ByRequestStats stats;
+                if (!byRequestType.TryGetValue(key, out stats))
+                    byRequestType.Add(key, new ByRequestStats(request));
+                else
+                    stats.AddRequest(request);
+            }
 
-                bool wroteARow = false;
-                for (int i = 0; i < limit; i++)
-                {
-                    var byTimeStat = byTimeStats[i];
-                    if (byTimeStat.NumRequests == 0 && !wroteARow)       // Skip initial cases if any. 
-                        continue;
-                    wroteARow = true;
-                    var startBucketMSec = startIntervalMSec + i * bucketIntervalMSec;
-                    writer.Write("<TR>");
-                    writer.Write("<TD Align=\"Center\">{0:n0} - {1:n0}</TD>", startBucketMSec, startBucketMSec + bucketIntervalMSec);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.NumRequests / (bucketIntervalMSec / 1000.0));
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.RequestsMSecMax);
-                    writer.Write("<TD Align=\"Center\">{0:n3}</TD>", byTimeStat.RequestsTimeOfMax);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.RequestsThreadOfMax);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.DurationMSecTotal / byTimeStat.NumRequests);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.QueuedDurationMSecTotal / byTimeStat.NumRequests);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", (byTimeStat.MinRequestsQueued == int.MaxValue) ? 0 : byTimeStat.MinRequestsQueued - 1);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.MeanRequestsProcessing);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", byTimeStat.CpuMSec * 100.0 / (dataFile.NumberOfProcessors * bucketIntervalMSec));
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", byTimeStat.ContextSwitch / (bucketIntervalMSec / 1000.0));
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.DiskIOMsec);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.MeanThreadPoolThreads);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", byTimeStat.GCHeapAllocMB / (bucketIntervalMSec / 1000.0));
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.GCHeapSizeMB == 0 ? "No GCs" : byTimeStat.GCHeapSizeMB.ToString("f3"));
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.NumGcs);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.NumGen2Gcs);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", byTimeStat.Contentions);
-                    writer.WriteLine("</TR>");
-                }
-                writer.WriteLine("</Table>");
+            var requestStats = new List<ByRequestStats>(byRequestType.Values);
+            requestStats.Sort(delegate(ByRequestStats x, ByRequestStats y)
+            {
+                return -x.TotalDurationMSec.CompareTo(y.TotalDurationMSec);
+            });
 
-                var byRequestType = new Dictionary<string, ByRequestStats>();
-                foreach (var request in m_requests)
-                {
-                    // Skip requests that did not finish.  
-                    if (request.StopTimeRelativeMSec == 0)
-                        continue;
+            // Rollup by kind of kind of page request
+            writer.Write("<P><A ID=\"rollupPerRequestType\">Statistics Per Request URL</A></P>");
+            writer.WriteLine("<Table Border=\"1\">");
+            writer.Write("<TR>");
+            writer.Write("<TH Align=\"Center\">Method</TH>");
+            writer.Write("<TH Align=\"Center\">Path</TH>");
+            writer.Write("<TH Align=\"Center\">Query String</TH>");
+            writer.Write("<TH Align=\"Center\">Num</TH>");
+            writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 1s</TH>");
+            writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 5s</TH>");
+            writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 10s</TH>");
+            writer.Write("<TH Align=\"Center\">Total<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\">Mean Resp<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\">Max Resp<BR/>MSec</TH>");
+            writer.Write("<TH Align=\"Center\">Start of<BR/>Max</TH>");
+            writer.Write("<TH Align=\"Center\">End of<BR/>Max</TH>");
+            writer.Write("<TH Align=\"Center\">Thread of<BR/>Max</TH>");
+            writer.WriteLine("</TR>");
 
-                    var key = request.Method + request.Path + request.QueryString;
-                    ByRequestStats stats;
-                    if (!byRequestType.TryGetValue(key, out stats))
-                        byRequestType.Add(key, new ByRequestStats(request));
-                    else
-                        stats.AddRequest(request);
-                }
-
-                var requestStats = new List<ByRequestStats>(byRequestType.Values);
-                requestStats.Sort(delegate(ByRequestStats x, ByRequestStats y)
-                {
-                    return -x.TotalDurationMSec.CompareTo(y.TotalDurationMSec);
-                });
-
-                // Rollup by kind of kind of page request
-                writer.Write("<P><A ID=\"rollupPerRequestType\">Statistics Per Request URL</A></P>");
-                writer.WriteLine("<Table Border=\"1\">");
+            foreach (var requestStat in requestStats)
+            {
                 writer.Write("<TR>");
-                writer.Write("<TH Align=\"Center\">Method</TH>");
-                writer.Write("<TH Align=\"Center\">Path</TH>");
-                writer.Write("<TH Align=\"Center\">Query String</TH>");
-                writer.Write("<TH Align=\"Center\">Num</TH>");
-                writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 1s</TH>");
-                writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 5s</TH>");
-                writer.Write("<TH Align=\"Center\">Num<BR/>&gt; 10s</TH>");
-                writer.Write("<TH Align=\"Center\">Total<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\">Mean Resp<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\">Max Resp<BR/>MSec</TH>");
-                writer.Write("<TH Align=\"Center\">Start of<BR/>Max</TH>");
-                writer.Write("<TH Align=\"Center\">End of<BR/>Max</TH>");
-                writer.Write("<TH Align=\"Center\">Thread of<BR/>Max</TH>");
+                writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.Method);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.Path);
+                var queryString = requestStat.MaxRequest.QueryString;
+                if (string.IsNullOrWhiteSpace(queryString))
+                    queryString = "&nbsp;";
+                writer.Write("<TD Align=\"Center\">{0}</TD>", queryString);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequests);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest1Sec);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest5Sec);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest10Sec);
+                writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.TotalDurationMSec);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", requestStat.MeanRequestMSec);
+                writer.Write("<TD Align=\"Center\">{0:n1}</TD>", requestStat.MaxRequest.DurationMSec);
+                writer.Write("<TD Align=\"Center\">{0:n3}</TD>", requestStat.MaxRequest.StartTimeRelativeMSec);
+                writer.Write("<TD Align=\"Center\">{0:n3}</TD>", requestStat.MaxRequest.StopTimeRelativeMSec);
+                writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.HandlerThreadID);
                 writer.WriteLine("</TR>");
-
-                foreach (var requestStat in requestStats)
-                {
-                    writer.Write("<TR>");
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.Method);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.Path);
-                    var queryString = requestStat.MaxRequest.QueryString;
-                    if (string.IsNullOrWhiteSpace(queryString))
-                        queryString = "&nbsp;";
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", queryString);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequests);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest1Sec);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest5Sec);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest10Sec);
-                    writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.TotalDurationMSec);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", requestStat.MeanRequestMSec);
-                    writer.Write("<TD Align=\"Center\">{0:n1}</TD>", requestStat.MaxRequest.DurationMSec);
-                    writer.Write("<TD Align=\"Center\">{0:n3}</TD>", requestStat.MaxRequest.StartTimeRelativeMSec);
-                    writer.Write("<TD Align=\"Center\">{0:n3}</TD>", requestStat.MaxRequest.StopTimeRelativeMSec);
-                    writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.HandlerThreadID);
-                    writer.WriteLine("</TR>");
-                }
-                writer.WriteLine("</Table>");
-                // create some whitespace at the end 
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
-                writer.WriteLine("<p>&nbsp;</p>");
+            }
+            writer.WriteLine("</Table>");
+            // create some whitespace at the end 
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
+            writer.WriteLine("<p>&nbsp;</p>");
         }
 
         protected override string DoCommand(string command, StatusBar worker)
@@ -1828,30 +1836,30 @@ namespace PerfView
             m_counts = new List<TraceEventCounts>(dataFile.Stats);
             // Sort by count
             m_counts.Sort((x, y) => y.Count - x.Count);
-                writer.WriteLine("<H2>Event Statistics</H2>");
-                writer.WriteLine("<UL>");
-                writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
-                writer.WriteLine("<LI>Total Event Count = {0:n0}</LI>", dataFile.EventCount);
-                writer.WriteLine("<LI>Total Lost Events = {0}</LI>", dataFile.EventsLost);
-                writer.WriteLine("</UL>");
+            writer.WriteLine("<H2>Event Statistics</H2>");
+            writer.WriteLine("<UL>");
+            writer.WriteLine("<LI> <A HREF=\"command:excel\">View Event Statistics in Excel</A></LI>");
+            writer.WriteLine("<LI>Total Event Count = {0:n0}</LI>", dataFile.EventCount);
+            writer.WriteLine("<LI>Total Lost Events = {0}</LI>", dataFile.EventsLost);
+            writer.WriteLine("</UL>");
 
-                writer.WriteLine("<Table Border=\"1\">");
+            writer.WriteLine("<Table Border=\"1\">");
+            writer.Write("<TR>");
+            writer.Write("<TH Align=\"Center\">Name</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The number of times this event occurs in the log.\">Count</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The average size of just the payload of this event.\">Average<BR/>Data Size</TH>");
+            writer.Write("<TH Align=\"Center\" Title=\"The number of times this event has a stack trace associated with it.\">Stack<BR/>Count</TH>");
+            writer.WriteLine("</TR>");
+            foreach (TraceEventCounts count in m_counts)
+            {
                 writer.Write("<TR>");
-                writer.Write("<TH Align=\"Center\">Name</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The number of times this event occurs in the log.\">Count</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The average size of just the payload of this event.\">Average<BR/>Data Size</TH>");
-                writer.Write("<TH Align=\"Center\" Title=\"The number of times this event has a stack trace associated with it.\">Stack<BR/>Count</TH>");
+                writer.Write("<TD Align=\"Left\">{0}/{1}</TD>", count.ProviderName, count.EventName);
+                writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.Count);
+                writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.AveragePayloadSize);
+                writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.StackCount);
                 writer.WriteLine("</TR>");
-                foreach (TraceEventCounts count in m_counts)
-                {
-                    writer.Write("<TR>");
-                    writer.Write("<TD Align=\"Left\">{0}/{1}</TD>", count.ProviderName, count.EventName);
-                    writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.Count);
-                    writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.AveragePayloadSize);
-                    writer.Write("<TD Align=\"Right\">{0:n0}</TD>", count.StackCount);
-                    writer.WriteLine("</TR>");
-                }
-                writer.WriteLine("</Table>");
+            }
+            writer.WriteLine("</Table>");
         }
         protected override string DoCommand(string command, StatusBar worker)
         {
@@ -5495,12 +5503,12 @@ namespace PerfView
         {
             stackWindow.IsMemoryWindow = true;
 
-            stackWindow.PriorityTextBox.Text = "Runtime directives->-1000000000;ILT$Main->1000000000";
+            stackWindow.PriorityTextBox.Text = "Runtime directives->-1000000000;Reflection mapping->-100000000000;ILT$Main->1000000000";
             stackWindow.FoldPercentTextBox.Text = "0";
             stackWindow.FoldRegExTextBox.Items.Insert(0, "[]");
 
-
-            stackWindow.GroupRegExTextBox.Text = "^%: FrozenString->Frozen Strings;^%: InitData->Static Initialization Data;^%: InterfaceDispatchCell->Interface Dispatch Cells";
+            stackWindow.GroupRegExTextBox.Text = "^%!FrozenString->Frozen Strings;^%!InitData->Static Initialization Data;^%!InterfaceDispatchCell->Interface Dispatch Cells";
+            stackWindow.ExcludeRegExTextBox.Text = "^SharedLibrary!";
 
             stackWindow.RemoveColumn("WhenColumn");
             stackWindow.RemoveColumn("WhichColumn");
@@ -5519,7 +5527,9 @@ namespace PerfView
 
         public const string DiagSessionIdentity = "Microsoft.Diagnostics.GcDump";
 
-        public override string DefaultStackSourceName { get { return "Heap"; }}
+        public override string DefaultStackSourceName { get { return "Heap"; } }
+
+        public GCHeapDump GCDump { get { return m_gcDump; } }
 
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec, double endRelativeMSec, Predicate<TraceEvent> predicate)
         {
@@ -5823,7 +5833,7 @@ namespace PerfView
                 m_log.WriteLine("Error: module for typeID 0x{0:x} {1} does not have PDB signature info.", typeID, module.Path);
                 return null;
             }
-            if (module.PdbGuid == m_badPdb  && m_badPdb != Guid.Empty) 
+            if (module.PdbGuid == m_badPdb && m_badPdb != Guid.Empty)
                 return null;
             if (m_pdbLookupFailures != null && m_pdbLookupFailures.ContainsKey(module.PdbGuid))  // TODO we are assuming unique PDB names (at least for failures). 
                 return null;
@@ -5839,7 +5849,9 @@ namespace PerfView
 
                 if (m_symReader == null)
                     m_symReader = App.GetSymbolReader(m_contextFilePath);
-                var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge);
+
+                m_log.WriteLine("TYPE LOOKUP: Looking up PDB for Module {0}", module.Path);
+                var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
                 if (pdbPath != null)
                     m_lastSymModule = m_symReader.OpenSymbolFile(pdbPath);
                 else

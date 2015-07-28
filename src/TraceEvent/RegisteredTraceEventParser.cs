@@ -453,6 +453,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal override DynamicTraceEventData TryLookup(TraceEvent unknownEvent)
         {
+            return TryLookupWorker(unknownEvent, MapTable);
+        }
+
+        /// <summary>
+        /// Try to look up 'unknonwEvent using TDH or the TraceLogging mechanism.   if 'mapTable' is non-null it will be used
+        /// look up the string names for fields that have bitsets or enumerated values.   This is only need for the KernelTraceControl
+        /// case where the map information is logged as special events and can't be looked up with TDH APIs.  
+        /// </summary>
+        internal static DynamicTraceEventData TryLookupWorker(TraceEvent unknownEvent, Dictionary<MapKey, IDictionary<long, string>> mapTable=null)
+        {
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
             if (unknownEvent.Channel == TraceLoggingMarker)
@@ -493,7 +503,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             if (status == 0)
-                ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, MapTable)).ParseEventMetaData();
+                ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             return ret;
@@ -511,7 +521,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// definition to lookup logic if necessary.   Returns true if a new definition was added
         /// (which means you need to retry lookup).  
         /// </summary>
-        private unsafe DynamicTraceEventData CheckForTraceLoggingEventDefinition(TraceEvent data)
+        private static unsafe DynamicTraceEventData CheckForTraceLoggingEventDefinition(TraceEvent data)
         {
             Debug.Assert(data.Channel == TraceLoggingMarker);
 
@@ -701,7 +711,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             #endregion // private
         }
 
-
         /*************************** End TraceLogging format Support *****************************/
 
         /// <summary>
@@ -843,15 +852,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             else
                             {
                                 // This is the kernelTraceControl case,  the map information will be provided
-                                // later, so we have to set up a LAZY map which will be evaluted when we need the
+                                // later, so we have to set up a LAZY map which will be evaluated when we need the
                                 // enum (giving time for the enum defintion to be processed. 
                                 var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
                                 // Set the map to be a lazyMap, which is a Func that returns a map.  
                                 Func<IDictionary<long, string>> lazyMap = delegate()
                                 {
-                                    IDictionary<long, string> map;
-                                    this.mapTable.TryGetValue(mapKey, out map);
+                                    IDictionary<long, string> map = null;
+                                    if (this.mapTable != null)
+                                        this.mapTable.TryGetValue(mapKey, out map);
                                     return map;
                                 };
                                 propertyFetch.LazyMap = lazyMap;

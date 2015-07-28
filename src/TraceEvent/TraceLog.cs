@@ -290,6 +290,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public DateTime BootTime { get { if (bootTime100ns == 0) return DateTime.MaxValue; return DateTime.FromFileTime(bootTime100ns); } }
         /// <summary>
+         /// This is the number of minutes between the local time where the data was collected and UTC time.  
+        /// It is negative if your time zone is WEST of Greenwich.  This DOES take Daylights savings time into account
+        /// but might be a daylight savings time transition happens inside the trace.  
+        /// May be unknown, in which case it returns null.
+        /// </summary>
+        public int? UTCOffsetMinutes { get { return utcOffsetMinutes;  } }
+        /// <summary>
         /// When an ETL file is 'merged', for every DLL in the trace information is added that allows the symbol
         /// information (PDBS) to be identified unambiguously on a symbol server.   This property returns true
         /// if the ETLX file was created from an ETL file with this added information.    
@@ -838,6 +845,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.EventTraceHeader += delegate(EventTraceHeaderTraceData data)
             {
                 bootTime100ns = data.BootTime100ns;
+                utcOffsetMinutes = -data.UTCOffsetMinutes;
+                if (SessionStartTime.IsDaylightSavingTime())
+                    utcOffsetMinutes += 60;         // Compensate for Daylight savings time. 
+
                 if (sessionStartTimeQPC == 0)
                 {                 // This is for the TraceLog, not just for the ETWTraceEventSource
                     sessionStartTimeQPC += data.TimeStampQPC;
@@ -2768,6 +2779,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(osName);
             serializer.Write(osBuild);
             serializer.Write(bootTime100ns);
+            serializer.Write(utcOffsetMinutes ?? int.MinValue);
             serializer.Write(hasPdbInfo);
 
             serializer.Log("<WriteCollection name=\"m_relatedActivityIds\" count=\"" + relatedActivityIDs.Count + "\">\r\n");
@@ -2885,6 +2897,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out osName);
             deserializer.Read(out osBuild);
             deserializer.Read(out bootTime100ns);
+            int encodedUtcOffsetMinutes;
+            deserializer.Read(out encodedUtcOffsetMinutes);
+            if (encodedUtcOffsetMinutes != int.MinValue)
+                utcOffsetMinutes = encodedUtcOffsetMinutes;
             deserializer.Read(out hasPdbInfo);
 
             count = deserializer.ReadInt();
@@ -2899,7 +2915,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 52; }
+            get { return 53; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {

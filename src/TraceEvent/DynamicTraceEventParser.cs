@@ -24,6 +24,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     public class DynamicTraceEventParser : TraceEventParser
     {
         /// <summary>
+        /// The event ID for the EventSource manifest emission event.
+        /// </summary>
+        public const TraceEventID ManifestEventID = (TraceEventID)0xFFFE;
+
+        /// <summary>
         /// Create a new DynamicTraceEventParser (which can parse ETW providers that dump their manifests
         /// to the ETW data stream) an attach it to the ETW data stream 'source'.  
         /// </summary>
@@ -37,7 +42,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 StateObject = state = new DynamicTraceEventParserState();
                 partialManifests = new Dictionary<Guid, List<PartialManifestInfo>>();
 
-                this.source.RegisterUnhandledEvent(CheckForDynamicManifest);
+                this.source.RegisterUnhandledEvent(delegate(TraceEvent unknownEvent)
+                {
+                    // First look for manifests. 
+                    CheckForDynamicManifest(unknownEvent);
+
+                    // if this is not an event that came from an EventSource, then we are done.
+                    if (!state.providers.ContainsKey(unknownEvent.ProviderGuid))
+                        return false;
+
+                    // However if it is from an eventSource, it may be a Write<T> event (that uses 
+                    // the self-describing format.   In that case, try looking that up.  
+                    DynamicTraceEventData parsedTemplate = RegisteredTraceEventParser.TryLookupWorker(unknownEvent);
+                    if (parsedTemplate == null)
+                        return false;
+
+                    // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
+                    // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
+                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
+                    // only add the event definition once.  
+                    if (!parsedTemplate.registeredWithTraceEventSource)
+                    {
+                        parsedTemplate.registeredWithTraceEventSource = true;
+                        return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
+                    }
+                    return false;
+                });
             }
         }
 
@@ -108,7 +138,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
-        /// Utility method that read all the manifests the directory 'directoryPath' into the parser.  
+        /// Utility method that read all the manifests the directory 'directoryPath' into the parser.   
+        /// Manifests must end in a .man or .manifest.xml suffix.   It will throw an error if
+        /// the manifest is incorrect or using unsupported options.  
         /// </summary>        
         public void ReadAllManifests(string directoryPath)
         {
@@ -169,7 +201,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         bool CheckForDynamicManifest(TraceEvent data)
         {
-            if (data.ID != (TraceEventID)0xFFFE)
+            if (data.ID != ManifestEventID)
                 return false;
 
             // We also are expecting only these tasks and opcodes.  
@@ -759,7 +791,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Implements TraceEvent interface
         /// </summary>
-        public override string PayloadString(int index)
+        public override string PayloadString(int index, IFormatProvider formatProvider=null)
         {
             // See if you can do enumeration mapping.  
             var map = payloadFetches[index].Map;
@@ -769,7 +801,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (value == null)
                     return "";
 
-                long asLong = (long)((IConvertible)value).ToInt64(null);
+                long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
                 if (map is SortedList<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
@@ -792,9 +824,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             sb.Append('|');
                         sb.Append("0x");
                         if (asLong == (int)asLong)
-                            sb.Append(((int)asLong).ToString("x"));
+                            sb.Append(((int)asLong).ToString("x", formatProvider));
                         else
-                            sb.Append(asLong.ToString("x"));
+                            sb.Append(asLong.ToString("x", formatProvider));
                     }
                     else if (sb.Length == 0)
                         sb.Append('0');
@@ -810,7 +842,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Otherwise do the default transformations. 
-            return base.PayloadString(index);
+            return base.PayloadString(index, formatProvider);
         }
         /// <summary>
         /// Implements TraceEvent interface
@@ -831,27 +863,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             get
             {
-                if (MessageFormat == null)
-                    return null;
-
-                // TODO is this error handling OK?  
-                // Replace all %N with the string value for that parameter.  
-                return Regex.Replace(MessageFormat, @"%(\d+)", delegate(Match m)
-                {
-                    int index = int.Parse(m.Groups[1].Value) - 1;
-
-                    // If there are byte[] values, we hide the argument for the size that is in the manifest.
-                    // Thus we remove it here as well.  
-                    for (int i = Math.Min(index, payloadFetches.Length)-1; 0 <= i; --i)
-                        if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
-                            --index;
-
-                    if ((uint)index < (uint)PayloadNames.Length)
-                        return PayloadString(index);
-                    else
-                        return "<<BadFieldIdx>>";
-                });
+                return GetFormattedMessage(null);
             }
+        }
+
+        public override string GetFormattedMessage(IFormatProvider formatProvider)
+        {
+            if (MessageFormat == null)
+                return null;
+
+            // TODO is this error handling OK?  
+            // Replace all %N with the string value for that parameter.  
+            return Regex.Replace(MessageFormat, @"%(\d+)", delegate(Match m)
+            {
+                int index = int.Parse(m.Groups[1].Value) - 1;
+
+                // If there are byte[] values, we hide the argument for the size that is in the manifest.
+                // Thus we remove it here as well.  
+                for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
+                    if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
+                        --index;
+
+                if ((uint)index < (uint)PayloadNames.Length)
+                    return PayloadString(index, formatProvider);
+                else
+                    return "<<BadFieldIdx>>";
+            });
         }
         #endregion
         #region private
@@ -1423,7 +1460,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     internal class DynamicManifestTraceEventData : DynamicTraceEventData
     {
         internal DynamicManifestTraceEventData(Action<TraceEvent> action, ProviderManifest manifest)
-            : base(action, 0xFFFE, 0xFFFE, "ManifestData", Guid.Empty, 0xFE, "", manifest.Guid, manifest.Name)
+            : base(action, (int)DynamicTraceEventParser.ManifestEventID, 0xFFFE, "ManifestData", Guid.Empty, 0xFE, "", manifest.Guid, manifest.Name)
         {
             this.manifest = manifest;
             payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumber" };
@@ -1989,28 +2026,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             switch (manifestTypeName)
             {
-                // TODO do we want to support unsigned?
                 case "win:Pointer":
                 case "trace:SizeT":
                     return typeof(IntPtr);
                 case "win:Boolean":
                     return typeof(bool);
                 case "win:UInt8":
-                case "win:Int8":
                     return typeof(byte);
-                case "win:UInt16":
+                case "win:Int8":
+                    return typeof(sbyte);
                 case "win:Int16":
-                case "trace:Port":
                     return typeof(short);
-                case "win:UInt32":
+                case "win:UInt16":
+                case "trace:Port":
+                    return typeof(ushort);
                 case "win:Int32":
+                    return typeof(int);
+                case "win:UInt32":
                 case "trace:    ":
                 case "trace:IPAddrV4":
-                    return typeof(int);
-                case "trace:WmiTime":
-                case "win:UInt64":
+                    return typeof(uint);
                 case "win:Int64":
+                case "trace:WmiTime":
                     return typeof(long);
+                case "win:UInt64":
+                    return typeof(ulong);
                 case "win:Double":
                     return typeof(double);
                 case "win:Float":

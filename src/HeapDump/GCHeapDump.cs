@@ -28,11 +28,15 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     /// <summary>
     /// Writes the memory graph 'graph' as a .gcump file to 'outputFileName'
+    /// 'toolName' is the name of the tool generating the data.  It is persisted in the GCDump file
+    /// and can be used by the viewer to customize the view.  
+    /// 
     /// TODO can't set the rest of the meta-data associated with the graph this way.  
     /// </summary>
-    public static void WriteMemoryGraph(MemoryGraph graph, string outputFileName)
+    public static void WriteMemoryGraph(MemoryGraph graph, string outputFileName, string toolName = null)
     {
         var dumper = new GCHeapDump(graph);
+        dumper.CreationTool = toolName;
         dumper.Write(outputFileName);
     }
 
@@ -83,6 +87,11 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     public int ProcessID { get; internal set; }
     public long TotalProcessCommit { get; internal set; }
     public long TotalProcessWorkingSet { get; internal set; }
+
+    /// <summary>
+    /// Returns a string that represents the tool that created this GCDump file.  May be null if not known/supported.  
+    /// </summary>
+    public string CreationTool { get; set; }
 
     public struct ProcessInfo
     {
@@ -259,6 +268,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         // the version order (thus always add at the end).  Also use the 
         // WriteTagged variation to write. 
         serializer.WriteTagged(m_interop);
+        serializer.WriteTagged(CreationTool);
     }
 
     void IFastSerializable.FromStream(Deserializer deserializer)
@@ -302,6 +312,9 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         // Things after version 8 go here. Always add the the end, and it should always work
         // and use the tagged variation.  
         deserializer.TryReadTagged<InteropInfo>(ref m_interop);
+        string creationTool = null;
+        deserializer.TryReadTagged(ref creationTool);
+        CreationTool = creationTool;
     }
 
     /// <summary>
