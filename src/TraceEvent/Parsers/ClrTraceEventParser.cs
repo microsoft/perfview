@@ -3910,7 +3910,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 {
                     return this.V4_5;
                 }
-                return false;
+                return true;
             }
         }
 
