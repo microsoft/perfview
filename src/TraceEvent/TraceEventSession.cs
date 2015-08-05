@@ -134,7 +134,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
         /// <summary>
-        /// Looks for an existing active session named 'sessionName; and returns the TraceEventSession associated with it if it exists.
+        /// Looks for an existing active session named 'sessionName; and returns the TraceEventSession associated with it if it exists. 
         /// Returns null if the session does not exist.   You can use the GetActiveSessionNames() to get a list of names to pass to this method. 
         /// </summary>
         public static TraceEventSession GetActiveSession(string sessionName)
@@ -279,8 +279,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                     if (valueDataType != ControllerCommand.SendManifest) // don't write anything to the registry for SendManifest commands
                     {
-                        SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
-                    }
+                    SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
+                }
                 }
 
                 const int MaxDesc = 7;  // This number needs to be bumped for to insure that all curDescrIdx never exceeds it below.  
@@ -878,7 +878,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var matchAnyKeywords = kvp.Value;
 
                         CaptureState(providerGuid, matchAnyKeywords);
-                    }
+        }
                 }
             }
         }
@@ -1167,6 +1167,20 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 return (int)(properties->EventsLost);
             }
         }
+        /// <summary>
+        /// Returns true if the session is logging to a circular buffer.  This may be in-memory (FileName == null)
+        /// or to a file (FileName != null)
+        /// </summary>
+        public bool IsCircular { get { return m_CircularBufferMB != 0;  } }
+        /// <summary>
+        /// Returns true if the session is Real Time.  This means it is not to a file, and not circular.  
+        /// </summary>
+        public bool IsRealTime { get { return m_FileName == null && !IsCircular; } }
+        /// <summary>
+        /// Returns true if this is a in-memory circular buffer (it is circular without an output file).  
+        /// Use SetFileName() to dump the in-memory buffer to a file.  
+        /// </summary>
+        public bool IsInMemoryCircular { get { return m_FileName == null && IsCircular; } }
 
         /// <summary>
         /// ETW trace sessions survive process shutdown. Thus you can attach to existing active sessions.
@@ -1206,70 +1220,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
             return activeTraceNames;
         }
 
-#if false   // TODO FIX NOW Remove and integrate with Session.  
-        /// <summary>
-        /// Retrieves a list of active ETW sessions.
-        /// </summary>
-        /// <returns></returns>
-        public unsafe static List<SessionInfo> GetActiveSessionInfos()
-        {
-            const int MAX_SESSIONS = 64;
-            int sizeOfProperties = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) +
-                                   sizeof(char) * TraceEventSession.MaxNameSize +     // For log moduleFile name 
-                                   sizeof(char) * TraceEventSession.MaxNameSize;      // For session name
-
-            byte* sessionsArray = stackalloc byte[MAX_SESSIONS * sizeOfProperties];
-            TraceEventNativeMethods.EVENT_TRACE_PROPERTIES** propertiesArray = stackalloc TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*[MAX_SESSIONS];
-
-            for (int i = 0; i < MAX_SESSIONS; i++)
-            {
-                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
-                properties->Wnode.BufferSize = (uint)sizeOfProperties;
-                properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
-                properties->LogFileNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + sizeof(char) * TraceEventSession.MaxNameSize;
-                propertiesArray[i] = properties;
-            }
-            int sessionCount = 0;
-            int hr = TraceEventNativeMethods.QueryAllTraces((IntPtr)propertiesArray, MAX_SESSIONS, ref sessionCount);
-            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
-
-            List<SessionInfo> sessions = new List<SessionInfo>(sessionCount);
-            for (int i = 0; i < sessionCount; i++)
-            {
-                TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)&sessionsArray[sizeOfProperties * i];
-                byte* propertiesBlob = (byte*)propertiesArray[i];
-                var info = new SessionInfo();
-
-                info.IsCircular = (properties->LogFileMode & TraceEventNativeMethods.EVENT_TRACE_FILE_MODE_CIRCULAR) != 0;
-                info.IsRealtime = (properties->LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0;
-                info.SessionName = new string((char*)(&propertiesBlob[propertiesArray[i]->LoggerNameOffset]));
-                if (info.IsCircular) info.Filename = string.Empty;
-                else info.Filename = new string((char*)&propertiesBlob[propertiesArray[i]->LogFileNameOffset]);
-                info.BufferSizeKB = (int)properties->BufferSize;
-                info.MinimumBuffers = (int)properties->MinimumBuffers;
-                info.MaximumBuffers = (int)properties->MaximumBuffers;
-                info.EventsLost = properties->EventsLost;
-                info.BuffersLost = properties->LogBuffersLost;
-                info.FlushTimeSeconds = (int)properties->FlushTimer;
-                sessions.Add(info);
-            }
-            return sessions;
-        }
-
-        /// <summary>
-        /// Returns the SessionInfo structure for 'sessionName' or null if there is no session by that name. 
-        /// </summary>
-        public static SessionInfo GetSessionInfo(string sessionName)
-        {
-            foreach (var session in GetActiveSessionInfos())
-            {
-                if (session.SessionName == sessionName)
-                    return session;
-            }
-            return null;
-        }
-#endif
-
         // Post processing (static methods)
         /// <summary>
         /// It is sometimes useful to merge the contents of several ETL files into a single 
@@ -1307,7 +1257,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if ((options | TraceEventMergeOptions.Compress) != 0)
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
-
+                
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
                 if (retValue != 0 && retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
                     throw new ApplicationException("Merge operation failed return code 0x" + retValue.ToString("x"));
@@ -2370,63 +2320,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         #endregion
     }
 
-#if false 
-    /// <summary>
-    /// Information about a trace session.  Used by TraceEventSession.GetActiveSessions and TraceEventSession.GetSession
-    /// </summary>
-    public sealed class SessionInfo
-    {
-        /// <summary>
-        /// Name of the session.
-        /// </summary>
-        public string SessionName { get; internal set; }
-        /// <summary>
-        /// Current filename (if any).
-        /// </summary>
-        public string Filename { get; internal set; }
-        /// <summary>
-        /// Size in kilobytes of individual buffers.
-        /// </summary>
-        public int BufferSizeKB { get; internal set; }
-        /// <summary>
-        /// Minimum used buffers.
-        /// </summary>
-        public int MinimumBuffers { get; internal set; }
-        /// <summary>
-        /// Maximum used buffers.
-        /// </summary>
-        public int MaximumBuffers { get; internal set; }
-        /// <summary>
-        /// Maximum total memory commitment in kilobytes.
-        /// </summary>
-        public int MinimumTotalBufferSizeKB { get { return this.BufferSizeKB * this.MinimumBuffers; } }
-        /// <summary>
-        /// Maximum total memory commitment in kilobytes.
-        /// </summary>
-        public int MaximumTotalBufferSizeKB { get { return this.BufferSizeKB * this.MaximumBuffers; } }
-        /// <summary>
-        /// Flush time for the session.
-        /// </summary>
-        public int FlushTimeSeconds { get; internal set; }
-        /// <summary>
-        /// Whether the session is circular or sequential.
-        /// </summary>
-        public bool IsCircular { get; internal set; }
-        /// <summary>
-        /// Whether the session is real time.
-        /// </summary>
-        public bool IsRealtime { get; internal set; }
-        /// <summary>
-        /// Number of lost events.
-        /// </summary>
-        public long EventsLost { get; internal set; }
-        /// <summary>
-        /// Number of lost buffers.
-        /// </summary>
-        public long BuffersLost { get; internal set; }
-    }
-#endif
-
     /// <summary>
     /// Used in the TraceEventSession.Merge method 
     /// </summary>
@@ -2435,11 +2328,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// No special options 
         /// </summary>
-        None = 0,
+        None = 0,           
         /// <summary>
         /// Compress the resulting file.  
         /// </summary>
-        Compress = 1,
+        Compress = 1, 
     }
 
     /// <summary>

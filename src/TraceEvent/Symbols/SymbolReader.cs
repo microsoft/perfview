@@ -441,26 +441,39 @@ namespace Microsoft.Diagnostics.Symbols
                     var clrFileVersion = fileVersionInfo.FileVersion;
                     log.WriteLine("Got NGEN image file version number: {0}", clrFileVersion);
 
-                    m = Regex.Match(clrFileVersion, @"^[\d.]+\.(\d+) ");       // Fetch the build number (last number)
+                    m = Regex.Match(clrFileVersion, @"(\d+).(\d+)((\d|\.)*)");
                     if (m.Success)
                     {
-                        // Is this a V4.5 runtime?
-                        var buildNumber = int.Parse(m.Groups[1].Value);
-                        log.WriteLine("Got NGEN.exe Build number: {0}", buildNumber);
-                        if (buildNumber > 16000 || !string.IsNullOrEmpty(privateRuntimeVerString))
+                        var majorVersion = int.Parse(m.Groups[1].Value);
+                        var minorVersion = int.Parse(m.Groups[2].Value);
+                        var majorMinor = majorVersion * 10 + minorVersion;
+                        if (majorMinor >= 46)
                         {
-                            if (ilPdbName != null)
-                            {
-                                var ilPdbPath = symReader.FindSymbolFilePath(ilPdbName, ilPdbGuid, ilPdbAge);
-                                if (ilPdbPath != null)
-                                    lineNumberArg = "/lines " + Command.Quote(Path.GetDirectoryName(ilPdbPath));
-                                else
-                                    log.WriteLine("Could not find IL PDB {0} Guid {1} Age {2}.", ilPdbName, ilPdbGuid, ilPdbAge);
-                            }
-                            else
-                                log.WriteLine("NGEN image did not have IL PDB information, giving up on line number info.");
+                            log.WriteLine("Is a V4.6 or beyond");
                             isV4_5Runtime = true;
                         }
+                        else if (majorMinor == 40)
+                        {
+                            // 4.0.30319.16000 == V4.5 We need a build number >= 16000) to be a V4.5 runtime.  
+                            m = Regex.Match(m.Groups[3].Value, @"(\d+)$");
+                            if (m.Success && int.Parse(m.Groups[1].Value) >= 16000)
+                                isV4_5Runtime = true;
+                        }
+                    }
+
+                    if (isV4_5Runtime)
+                    {
+                        log.WriteLine("Is a V4.5 Runtime or beyond");
+                        if (ilPdbName != null)
+                        {
+                            var ilPdbPath = symReader.FindSymbolFilePath(ilPdbName, ilPdbGuid, ilPdbAge);
+                            if (ilPdbPath != null)
+                                lineNumberArg = "/lines " + Command.Quote(Path.GetDirectoryName(ilPdbPath));
+                            else
+                                log.WriteLine("Could not find IL PDB {0} Guid {1} Age {2}.", ilPdbName, ilPdbGuid, ilPdbAge);
+                        }
+                        else
+                            log.WriteLine("NGEN image did not have IL PDB information, giving up on line number info.");
                     }
                 }
             }
@@ -713,7 +726,7 @@ namespace Microsoft.Diagnostics.Symbols
                 else if (!task.IsCompleted)
                 {
                     canceled = true;
-                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.  Setting as dead server", 
+                    m_log.WriteLine("FindSymbolFilePath: Time {0} sec.  Timeout of {1} seconds exceeded for {2}.  Setting as dead server",
                             sw.Elapsed.TotalSeconds, limit / 10, serverPath);
                     if (m_deadServers == null)
                         m_deadServers = new List<string>();
@@ -1497,9 +1510,9 @@ namespace Microsoft.Diagnostics.Symbols
             return m_mergedAssemblies;
         }
 
+        /// <summary>
         /// For ProjectN modules, gets the merged IL image embedded in the .PDB (only valid for single-file compilation)
         /// </summary>
-        /// <returns></returns>
         public MemoryStream GetEmbeddedILImage()
         {
             try
@@ -1547,7 +1560,6 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// For ProjectN modules, gets the binary blob that describes the mapping from RVAs to methods.
         /// </summary>
-        /// <returns></returns>
         public byte[] GetFuncMDTokenMap()
         {
             uint mapSize;
@@ -1672,7 +1684,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             uint fetchCount;
             var ret = new List<Symbol>();
-            for (; ;)
+            for (; ; )
             {
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
@@ -1690,7 +1702,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public int CompareTo(Symbol other)
         {
-            return ((int)RVA - (int)other.RVA); 
+            return ((int)RVA - (int)other.RVA);
         }
         #region private
 #if false 
@@ -1714,15 +1726,16 @@ namespace Microsoft.Diagnostics.Symbols
             return string.Format("Symbol({0}, Tag={1}, RVA=0x{2:x}", Name, Tag, RVA);
         }
 
-        internal Symbol(SymbolModule module, IDiaSymbol diaSymbol) { 
-            m_module = module; 
+        internal Symbol(SymbolModule module, IDiaSymbol diaSymbol)
+        {
+            m_module = module;
             m_diaSymbol = diaSymbol;
             m_name = m_diaSymbol.name;
         }
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-        #endregion 
+        #endregion
     }
 
 
@@ -2408,4 +2421,5 @@ namespace Dia2Lib
     }
 }
 #endregion
+
 

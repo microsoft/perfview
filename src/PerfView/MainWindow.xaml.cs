@@ -135,7 +135,8 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
-// Pumb the HyperTHreading flag to the TraceLog report. 
+// From Andre:  A more user-friendly message when you start PerfView and a kernel logger is already running.   
+// Plumb the HyperTHreading flag to the TraceLog report. 
 // Allow PerfView to extract the heap dump from a live image (or a dump file). 
 // For TraceLogging Events don't rely on the event ID for identity.   (sigh).  At the very least don't assume this across processes (ideally sessions).  
 // Localization does not seem to be correct still.   See comments by Peter Palotas 20 Jun 2015 http://blogs.msdn.com/b/vancem/archive/2014/11/03/perfview-version-v1-7-released-to-the-web.aspx// 
