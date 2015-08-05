@@ -847,7 +847,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 bootTime100ns = data.BootTime100ns;
                 utcOffsetMinutes = -data.UTCOffsetMinutes;
                 if (SessionStartTime.IsDaylightSavingTime())
-                    utcOffsetMinutes += 60;         // Compensate for Daylight savings time. 
+                    utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
 
                 if (sessionStartTimeQPC == 0)
                 {                 // This is for the TraceLog, not just for the ETWTraceEventSource
