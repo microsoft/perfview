@@ -4065,7 +4065,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         // Not present in V2 public int WaitMode { get { if (Version >= 1) return GetByteAt(HostOffset(32, 6)); return 0; } }
         public Address TebBase { get { if (Version >= 2) return GetAddressAt(HostOffset(32, 6)); return 0; } }
         public int SubProcessTag { get { if (Version >= 2) return GetInt32At(HostOffset(36, 7)); return 0; } }
-
+        // The thread that started this thread (only in start events 
+        public int ParentThreadID
+        {
+            get
+            {
+                if (Version < 2)
+                    return -1;
+                return GetInt32At(4);   // THis is not the standard location see FixupData, we swap the ThreadIDs   See FixupData 
+                ;
+            }
+        }
+        public int ParentProcessID
+        {
+            get
+            {
+                if (Version < 2)
+                    return -1;
+                return GetInt32At(0);   // THis is not the standard location see FixupData, we swap the Process ID   See FixupData 
+                ;
+            }
+        }
         #region Private
         internal ThreadTraceData(Action<ThreadTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -4098,6 +4118,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "Win32StartAddr", Win32StartAddr);
             XmlAttribHex(sb, "TebBase", TebBase);
             XmlAttribHex(sb, "SubProcessTag", SubProcessTag);
+            XmlAttribHex(sb, "ParentThreadID", ParentThreadID);
+            XmlAttribHex(sb, "ParentProcessID", ParentProcessID);
             sb.Append("/>");
             return sb;
         }
@@ -4107,7 +4129,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "StackBase", "StackLimit", "UserStackBase", "UserStackLimit", "StartAddr", "Win32StartAddr", "TebBase", "SubProcessTag" };
+                    payloadNames = new string[] { "StackBase", "StackLimit", "UserStackBase", "UserStackLimit", "StartAddr", "Win32StartAddr", "TebBase", "SubProcessTag", "ParentThreadID", "ParentProcessID" };
                 return payloadNames;
             }
         }
@@ -4132,6 +4154,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     return TebBase;
                 case 7:
                     return SubProcessTag;
+                case 8:
+                    return ParentThreadID;
+                case 9:
+                    return ParentProcessID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -4144,16 +4170,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
         internal unsafe override void FixupData()
         {
+            if (Version < 2)
+                return;
+
             // We wish to create the illusion that the events are reported by the thread being started.   
-            eventRecord->EventHeader.ProcessId = GetInt32At(0);
-            if (Opcode != TraceEventOpcode.Stop)             // Stop events do have the correct ThreadID, so keep it
+            var parentProcess = -1;
+            ParentThread = -1;
+            if (Opcode != TraceEventOpcode.Stop)                            // Stop events do have the correct ThreadID, so keep it
             {
-                ParentThread = eventRecord->EventHeader.ThreadId;
-                if (Version >= 1)
-                    eventRecord->EventHeader.ThreadId = GetInt32At(4);
-                else
-                    eventRecord->EventHeader.ThreadId = GetInt32At(0);
+                if (Opcode == TraceEventOpcode.Start)
+                {
+                    parentProcess = eventRecord->EventHeader.ProcessId;
+                    ParentThread  = eventRecord->EventHeader.ThreadId;      // This field is transient (does not survive ETLX conversion) (we may be able to remove)
+                }
+                eventRecord->EventHeader.ThreadId = GetInt32At(4);          // Thread being started.  
+                eventRecord->EventHeader.ProcessId = GetInt32At(0);
             }
+            ((int*)DataStart)[0] = parentProcess;                           // Use offset 0 to now hold the ParentProcessID.  
+            ((int*)DataStart)[1] = ParentThread;                            // Use offset 4 to now hold the ParentThreadID.  
         }
 
         /// <summary>

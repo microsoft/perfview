@@ -1065,7 +1065,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ret.userData = userDataBuffer;
                 ret.eventRecord->UserData = ret.userData;
 
-                // we don't have extended data (we have to handle each case specially.  Related Activity ID above. 
+                // we don't have extended data (we have to handle each case specially.  Related Activity ID above)
                 ret.eventRecord->ExtendedDataCount = 0;
                 ret.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)IntPtr.Zero;
             }

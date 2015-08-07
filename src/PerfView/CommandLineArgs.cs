@@ -342,8 +342,15 @@ namespace PerfView
             {
                 // Allow stack traces to work if 'stacks' was specified.  
                 bool hasStacks = false;
+                bool hasTpl = false;
                 foreach (var provider in onlyProviders)
-                    hasStacks = hasStacks || (0 <= provider.IndexOf(":stack", StringComparison.OrdinalIgnoreCase));
+                {
+                    if (0 <= provider.IndexOf(":stack", StringComparison.OrdinalIgnoreCase))
+                        hasStacks = true;
+                    if (provider.StartsWith(".NETTasks", StringComparison.OrdinalIgnoreCase))
+                        hasTpl = true;
+                }
+
                 if (hasStacks)
                 {
                     KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad;
@@ -357,6 +364,12 @@ namespace PerfView
                     NoClrRundown = true;
                 }
                 Providers = onlyProviders;
+                if (!hasTpl)
+                {
+                    Providers = new string[onlyProviders.Length + 1];
+                    Array.Copy(onlyProviders, Providers, onlyProviders.Length);
+                    Providers[onlyProviders.Length] = ".NETTasks:0x80";     // Turn on causality tracking.  
+                }
             }
             parser.DefineOptionalQualifier("ThreadTime", ref ThreadTime, "Shortcut for turning on context switch and readyThread events");
             if (ThreadTime)
