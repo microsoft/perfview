@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Problem when perf counter names have : in them (escaping mechnanism).  
 // From Andre:  A more user-friendly message when you start PerfView and a kernel logger is already running.   
 // Plumb the HyperTHreading flag to the TraceLog report. 
 // Allow PerfView to extract the heap dump from a live image (or a dump file). 
