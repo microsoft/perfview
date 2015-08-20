@@ -350,7 +350,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int pointerSize;
         internal /*protected*/ int numberOfProcessors;
         internal /*protected*/ int cpuSpeedMHz;
-        internal /*protected*/ int? utcOffsetMinutes; 
+        internal /*protected*/ int? utcOffsetMinutes;
         internal /*protected*/ Version osVersion;
         internal /*protected*/ long _QPCFreq;
         internal /*protected*/ DateTime sessionStartTimeUTC;
@@ -783,11 +783,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// Creates and returns the value of the 'message' for the event with payload values substituted.
         /// Payload values are formatted using the given formatProvider. 
         /// </summary>
-        public virtual string GetFormattedMessage(IFormatProvider formatProvider) 
-        { 
-            return null; 
+        public virtual string GetFormattedMessage(IFormatProvider formatProvider)
+        {
+            return null;
         }
-        
+
         /// <summary>
         /// An EventIndex is a integer that is guaranteed to be unique for this event over the entire log.  Its
         /// primary purpose is to act as a key that allows side tables to be built up that allow value added
@@ -842,121 +842,121 @@ namespace Microsoft.Diagnostics.Tracing
         {
             try
             {
-            var value = PayloadValue(index);
-            
-            if (value == null)
-                return "";
+                var value = PayloadValue(index);
 
-            if (value is Address)
+                if (value == null)
+                    return "";
+
+                if (value is Address)
                     return "0x" + ((Address)value).ToString("x", formatProvider);
 
-            if (value is int)
-            {
-
-                int intValue = (int)value;
-                if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                if (value is int)
                 {
-                    return (intValue & 0xFF).ToString() + "." +
-                           ((intValue >> 8) & 0xFF).ToString() + "." +
-                           ((intValue >> 16) & 0xFF).ToString() + "." +
-                           ((intValue >> 24) & 0xFF).ToString();
-                }
+
+                    int intValue = (int)value;
+                    if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                    {
+                        return (intValue & 0xFF).ToString() + "." +
+                               ((intValue >> 8) & 0xFF).ToString() + "." +
+                               ((intValue >> 16) & 0xFF).ToString() + "." +
+                               ((intValue >> 24) & 0xFF).ToString();
+                    }
                     if (formatProvider != null)
                         return intValue.ToString(formatProvider);
-                    else 
-                return intValue.ToString("n0");
-            }
+                    else
+                        return intValue.ToString("n0");
+                }
 
-            if (value is long)
-            {
-                if (payloadNames[index] == "objectId")      // TODO this is a hack.  
-                    return "0x" + ((long)value).ToString("x");
+                if (value is long)
+                {
+                    if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                        return "0x" + ((long)value).ToString("x");
 
                     if (formatProvider != null)
                         return ((long)value).ToString(formatProvider);
                     else
-                return ((long)value).ToString("n0");
-            }
+                        return ((long)value).ToString("n0");
+                }
 
-            if (value is double)
+                if (value is double)
                 {
                     if (formatProvider != null)
                         return ((double)value).ToString(formatProvider);
                     else
-                return ((double)value).ToString("n3");
+                        return ((double)value).ToString("n3");
                 }
 
-            if (value is DateTime)
-            {
-                DateTime asDateTime = (DateTime)value;
-                string ret;
-                if (source.SessionStartTime <= asDateTime)
+                if (value is DateTime)
                 {
-                    ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                    ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
-                }
-                else
-                    ret = asDateTime.ToString();
-
-                return ret;
-            }
-
-            var asByteArray = value as byte[];
-            if (asByteArray != null)
-            {
-                StringBuilder sb = new StringBuilder();
-                if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
-                {
-                    if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                    DateTime asDateTime = (DateTime)value;
+                    string ret;
+                    if (source.SessionStartTime <= asDateTime)
                     {
-                        sb.Append(asByteArray[4].ToString()).Append('.');
-                        sb.Append(asByteArray[5].ToString()).Append('.');
-                        sb.Append(asByteArray[6].ToString()).Append('.');
-                        sb.Append(asByteArray[7].ToString()).Append(':');
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append(port);
+                        ret = asDateTime.ToString("HH:mm:ss.ffffff");
+                        ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
-                    else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
-                    {
-                        var ipV6 = new byte[16];
-                        Array.Copy(asByteArray, 8, ipV6, 0, 16);
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
-                    }
-                }
-                // If we did not find a way of pretty printing int, dump it as bytes. 
-                if (sb.Length == 0)
-                {
-                    var limit = Math.Min(asByteArray.Length, 16);
-                    for (int i = 0; i < limit; i++)
-                    {
-                        var b = asByteArray[i];
-                        sb.Append(HexDigit((b / 16)));
-                        sb.Append(HexDigit((b % 16)));
-                    }
-                    if (limit < asByteArray.Length)
-                        sb.Append("...");
-                }
-                return sb.ToString();
-            }
-            var asArray = value as System.Array;
-            if (asArray != null && asArray.Rank == 1)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append('[');
-                bool first = true;
-                foreach (var elem in asArray)
-                {
-                    if (!first)
-                        sb.Append(',');
-                    first = false;
-                    sb.Append(elem.ToString());
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
+                    else
+                        ret = asDateTime.ToString();
 
-            return value.ToString();
+                    return ret;
+                }
+
+                var asByteArray = value as byte[];
+                if (asByteArray != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
+                    {
+                        if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                        {
+                            sb.Append(asByteArray[4].ToString()).Append('.');
+                            sb.Append(asByteArray[5].ToString()).Append('.');
+                            sb.Append(asByteArray[6].ToString()).Append('.');
+                            sb.Append(asByteArray[7].ToString()).Append(':');
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append(port);
+                        }
+                        else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
+                        {
+                            var ipV6 = new byte[16];
+                            Array.Copy(asByteArray, 8, ipV6, 0, 16);
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
+                        }
+                    }
+                    // If we did not find a way of pretty printing int, dump it as bytes. 
+                    if (sb.Length == 0)
+                    {
+                        var limit = Math.Min(asByteArray.Length, 16);
+                        for (int i = 0; i < limit; i++)
+                        {
+                            var b = asByteArray[i];
+                            sb.Append(HexDigit((b / 16)));
+                            sb.Append(HexDigit((b % 16)));
+                        }
+                        if (limit < asByteArray.Length)
+                            sb.Append("...");
+                    }
+                    return sb.ToString();
+                }
+                var asArray = value as System.Array;
+                if (asArray != null && asArray.Rank == 1)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append('[');
+                    bool first = true;
+                    foreach (var elem in asArray)
+                    {
+                        if (!first)
+                            sb.Append(',');
+                        first = false;
+                        sb.Append(elem.ToString());
+                    }
+                    sb.Append(']');
+                    return sb.ToString();
+                }
+
+                return value.ToString();
             }
             catch (Exception e)
             {
@@ -1846,10 +1846,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// them.
         /// </summary>
         internal TraceEvent next;
-        internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
-        internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
         // If true we are using TaskGuid and Opcode
         // If False we are using ProviderGuid and EventId
+        internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
+        internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
+
+        internal bool containsSelfDescribingMetadata;
 
         // These are constant over the TraceEvent's lifetime (after setup) (except for the UnhandledTraceEvent
         internal TraceEventID eventID;                  // The ID you should switch on.  
@@ -2848,33 +2850,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-                anEvent.Dispatch();
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
+                    anEvent.Dispatch();
+                if (anEvent.next != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                        break;
-                    if (nextEvent.Target != null)
+                    TraceEvent nextEvent = anEvent;
+                    for (; ; )
                     {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                            break;
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        }
                     }
                 }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                    unhandledEventTemplate.PrepForCallback();
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                        unhandledEventTemplate.PrepForCallback();
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)
@@ -3232,11 +3234,17 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Use the old style exclusive if we are using old ETW APIs, or the provider does not
             // support it (This currently includes the Kernel Events)
+            // If the event is tracelogging, do not register it as classic.
             Debug.Assert(!(template.ProviderGuid == KernelTraceEventParser.ProviderGuid && template.eventID != TraceEventID.Illegal));
             if (useClassicETW || template.eventID == TraceEventID.Illegal)
             {
                 // Use classic lookup mechanism (Task Guid, Opcode)
                 template.lookupAsClassic = true;
+                Insert(template);
+            }
+            else if (template.containsSelfDescribingMetadata)
+            {
+                template.lookupAsClassic = false;
                 Insert(template);
             }
             else
