@@ -449,7 +449,7 @@ namespace Triggers
         ///      Keywords=XXXX                             // In hex, default ulong.MaxValue.  
         ///      Level=XXXX                                // 1 (Critical) - 5 (Verbose) Default = 4 (Info)
         ///      Process=ProcessNameOrID                   // restricts to a particular process
-        ///      FieldFilter=FieldName Op Value            // Allows you to filter on a particular field value OP can be < > = and ~ (which means RegEx match)
+        ///      FieldFilter=FieldName Op Value            // Allows you to filter on a particular field value OP can be &lt; &gt; = and ~ (which means RegEx match)
         ///                                                // You can repeat this and you get the logical AND operator (sorry no OR operator right now). 
         ///      BufferSizeMB=NNN                          // Size of buffer used for trigger session.  
         /// If TriggerMSec is non-zero then it measures the duration of a start-stop pair.   

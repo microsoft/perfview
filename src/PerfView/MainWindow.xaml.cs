@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Win10 kernel event support.  
 // Problem when perf counter names have : in them (escaping mechnanism).  
 // From Andre:  A more user-friendly message when you start PerfView and a kernel logger is already running.   
 // Plumb the HyperTHreading flag to the TraceLog report. 
@@ -1986,7 +1987,6 @@ namespace PerfView
         /// <summary>
         /// Indicates that 'outputFileName' should be opened after the command is completed.  
         /// </summary>
-        /// <param name="outputFileName"></param>
         public void OpenNext(string fileName)
         {
             m_openNextFileName = fileName;

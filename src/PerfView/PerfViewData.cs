@@ -978,7 +978,7 @@ namespace PerfView
             writer.WriteLine("<TR><TD Title=\"This is negative if PerfView is running in a time zone west of UTC\">UTC offset where PerfView is running</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                 TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
             
-            if (false && dataFile.UTCOffsetMinutes.HasValue)
+            if (dataFile.UTCOffsetMinutes.HasValue)
             {
                 writer.WriteLine("<TR><TD Title=\"This is negative if analysis is happening west of collection\">Delta of Local and Collection Time</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                     TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours - (dataFile.UTCOffsetMinutes.Value / 60.0));
@@ -3927,7 +3927,7 @@ namespace PerfView
             }
             else if (streamName == "Server GC")
             {
-                GCProcess.Collect(eventSource, 1, null, stackSource);
+                GCProcess.Collect(eventSource, (float) eventLog.SampleProfileInterval.TotalMilliseconds, null, stackSource);
                 return stackSource;
             }
             else throw new Exception("Unknown stream " + streamName);
@@ -6017,6 +6017,8 @@ namespace PerfView
         /// </summary>
         /// <param name="filePattern">The wildcard file pattern to match. Must not be null.</param>
         /// <param name="namePattern">The pattern by which to name scenarios. If null, defaults to "scenario $1".</param>
+        /// <param name="includePattern">If non-null, a pattern which must be matched for the scenario to be added</param>
+        /// <param name="excludePattern">If non-null, a pattern which if matched causes the scenario to be excluded</param>
         /// <param name="dict">The dictionary to which to add the scenarios found.</param>
         /// <param name="log">A log file to write log messages.</param>
         /// <param name="baseDir">
