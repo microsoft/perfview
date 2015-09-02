@@ -858,7 +858,7 @@ namespace Stats
             writer.WriteLine("<LI>Total CPU Time: {0:n0} msec</LI>", ProcessCpuMSec);
             writer.WriteLine("<LI>Total GC CPU Time: {0:n0} msec</LI>", Total.TotalGCCpuMSec);
             writer.WriteLine("<LI>Total Allocs  : {0:n3} MB</LI>", Total.TotalAllocatedMB);
-            writer.WriteLine("<LI>MSec/MB Alloc : {0:n3} msec/MB</LI>", Total.TotalGCCpuMSec / Total.TotalAllocatedMB);
+            writer.WriteLine("<LI>GC CPU MSec/MB Alloc : {0:n3} MSec/MB</LI>", Total.TotalGCCpuMSec / Total.TotalAllocatedMB);
             writer.WriteLine("<LI>Total GC Pause: {0:n1} msec</LI>", Total.TotalPauseTimeMSec);
             writer.WriteLine("<LI>% Time paused for Garbage Collection: {0:f1}%</LI>", GetGCPauseTimePercentage());
 

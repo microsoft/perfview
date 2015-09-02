@@ -242,7 +242,6 @@
     <Compile Include="memory\JavaScriptDumpGraph.cs" />
     <Compile Include="memory\JavaScriptHeapDumper.cs" />
     <Compile Include="memory\PdbScopeMemoryGraph.cs" />
-    <Compile Include="memory\ProjectNInferenceGraph.cs" />
     <Compile Include="Microsoft-Windows-NDIS-PacketCapture.cs" />
     <Compile Include="ObjectViewer\ObjectViewer.xaml.cs">
       <DependentUpon>ObjectViewer.xaml</DependentUpon>

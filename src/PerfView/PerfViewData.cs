@@ -719,7 +719,6 @@ namespace PerfView
             new XmlPerfViewFile(),
             new ClrProfilerHeapPerfViewFile(),
             new PdbScopePerfViewFile(),
-            new ProjectNInferenceLogPerfViewFile(),
             new VmmapPerfViewFile(),
             new DebuggerStackPerfViewFile(),
             new HeapDumpPerfViewFile(),
@@ -5470,50 +5469,6 @@ namespace PerfView
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
             ConfigureAsMemoryWindow(stackSourceName, stackWindow);
-        }
-    }
-
-    // TODO Because this uses CCI which we don't otherwise use, we should make this an extension (and put CCC by it).  
-    class ProjectNInferenceLogPerfViewFile : PerfViewFile
-    {
-        public override string FormatName { get { return ".NET Native Binary Size Analysis"; } }
-        public override string[] FileExtensions { get { return new string[] { ".ILCAnalysisLog.zip" }; } }
-
-        protected internal override StackSource OpenStackSourceImpl(TextWriter log)
-        {
-            try
-            {
-                // Add the extensions directory to the path of where to find DLLs. because we need Microsoft.CCI.DLL.  
-                Utilities.SupportFiles.AddManagedDllSearchPath(PerfViewExtensibility.Extensions.ExtensionsDirectory);
-
-                Graph graph = new ProjectNInferenceGraph(FilePath);
-                var ret = new MemoryGraphStackSource(graph, log);
-                return ret;
-            }
-            catch (FileNotFoundException e)
-            {
-                // Give users a better error message if CCI is not available.   
-                if (0 <= e.FileName.IndexOf("CCI", StringComparison.OrdinalIgnoreCase))
-                    throw new NotSupportedException("The Project N size analysis capability only works if the Microsoft.CCI.DLL and CCIExtensions DLL is present in the PerfViewExtensions directory.");
-                else
-                    throw;
-            }
-        }
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            stackWindow.IsMemoryWindow = true;
-
-            stackWindow.PriorityTextBox.Text = "Runtime directives->-1000000000;Reflection mapping->-100000000000;ILT$Main->1000000000";
-            stackWindow.FoldPercentTextBox.Text = "0";
-            stackWindow.FoldRegExTextBox.Items.Insert(0, "[]");
-
-            stackWindow.GroupRegExTextBox.Text = "^%!FrozenString->Frozen Strings;^%!InitData->Static Initialization Data;^%!InterfaceDispatchCell->Interface Dispatch Cells";
-            stackWindow.ExcludeRegExTextBox.Text = "^SharedLibrary!";
-
-            stackWindow.RemoveColumn("WhenColumn");
-            stackWindow.RemoveColumn("WhichColumn");
-            stackWindow.RemoveColumn("FirstColumn");
-            stackWindow.RemoveColumn("LastColumn");
         }
     }
 
