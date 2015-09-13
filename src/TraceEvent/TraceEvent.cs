@@ -1597,6 +1597,20 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal /*protected*/ int ParentThread;
 
+        /// <summary>
+        /// Because we want the ThreadID to be the ID of the CREATED thread, and the stack 
+        /// associated with the event is the parentThreadID 
+        /// </summary>
+        internal int ThreadIDforStacks()
+        {
+            if (0 <= ParentThread)
+            {
+                Debug.Assert(this is ProcessTraceData || this is ThreadTraceData);
+                return ParentThread;
+            }
+            return ThreadID;
+        }
+
 #if DEBUG
         internal bool DisallowEventIndexAccess { get; set; }
 #endif

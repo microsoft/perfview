@@ -87,7 +87,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public void AddDynamicProvider(ProviderManifest providerManifest, bool noThrowOnError = false)
         {
-            Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
+            // Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
             // Trace.WriteLine("Dynamic: Found provider " + providerManifest.Name + " Guid " + providerManifest.Guid);
 
             ProviderManifest prevManifest = null;
@@ -120,7 +120,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (newProviderCallback != null)
                 newProviderCallback(providerManifest);
 
-            Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
+            // Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
             // Trace.WriteLine("Dynamic finished registering " + providerManifest.Name);
         }
 

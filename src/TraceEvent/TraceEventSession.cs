@@ -846,26 +846,35 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if (m_MultiFileMB != 0)
                 throw new InvalidOperationException("Cannot set file name when MultiFileMB is also non-zero.");
 
-            Flush();
+            var origFileName = m_FileName;      // Remember the original name we had.  
 
+            // If we are in file mode, flush it before we close it and move on to the next file.  
+            if (origFileName != null)     
+                Flush();
+
+            // Set up the properties for the new file name 
             var propertiesBuff = stackalloc byte[PropertiesSize];
-            var origFileName = m_FileName;
             m_FileName = newName;
             var properties = GetProperties(propertiesBuff);
+
             int retCode;
             if (origFileName != null)
             {
+                // if we had a file name before, then simply do th update
                 retCode = TraceEventNativeMethods.ControlTrace(0UL, m_SessionName, properties, TraceEventNativeMethods.EVENT_TRACE_CONTROL_UPDATE);
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
             else
             {
-                m_FileName = null;          // We don't really consider this as setting the file name, it is either a flush or an error.  
-                if (m_CircularBufferMB == 0)
+                if (m_CircularBufferMB == 0)        // We are not the in memory circular buffer case.
                 {
                     // if it is a real time session currently it is illegal to make it a file based session (we may be able to relax this). 
                     throw new InvalidOperationException("Can only update the file name of a file base session.");
                 }
+
+                // For the in-memory circular buffer, this just mean flush
+                Flush();
+                m_FileName = null;          // We don't really consider this as setting the file name, it is either a flush or an error.  so put it back to null.  
             }
 
             if (this.CaptureStateOnSetFileName)

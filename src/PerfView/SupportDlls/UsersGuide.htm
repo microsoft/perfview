@@ -7698,6 +7698,21 @@
         </li>
         -->
         <li>
+            Version 1.8.2 9/13/15
+            <ul>
+                <li> /InMemoryCircularBuffer option was broken (Would throw a file not found exception in SetFileName).  Fixed this. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.1 9/3/15
+            <ul>
+                <li> Fixed issue where Debug versions were asserting that two stacks were attached to the same event
+                because kernel and user mode stacks were not being stitched together properly (mostly in rare cases 
+                where thread-starts were happening) </li>
+            </ul>
+        </li>
+
+        <li>
             Version 1.8.0 8/30/15
             <ul>
                 <li> Release to Web. </li>

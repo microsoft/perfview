@@ -1181,6 +1181,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var isKernelModeStackFragment = IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize);
                 if (isKernelModeStackFragment)
                 {
+                    // If we reach here the fragment we have is totally in the kernel, and thus might have a user mode part that we have
+                    // not seen het.  Thus we have the stackInfo remember this fragment so we can put it together later.  
                     if (stackInfo != null)
                     {
                         if (!stackInfo.LogKernelStackFragment(data.InstructionPointers, data.FrameCount, data.PointerSize, timeStampQPC, this))
@@ -1189,9 +1191,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 else
                 {
+                    // If we reach here, the fragment ends in user mode.   
                     CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(timeStampQPC,
                         data.InstructionPointers, data.FrameCount, data.PointerSize, thread, CallStackIndex.Invalid);
-                    if (!EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo) && stackInfo != null)
+
+                    var loggedUserStack = false;    // Have we logged this stack at all
+                    // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
+                    // and we use this as the 'top' of the stack for all kernel fragments on this thread.  
+                    if (!IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
+                        loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
+                    
+                    if (!loggedUserStack && stackInfo != null)
                         stackInfo.LogUserStackFragment(stackIndex, this);
                 }
             };
@@ -2276,7 +2286,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     int addressesCount = (extendedData[i].DataSize - sizeof(ulong)) / pointerSize;
 
                     TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                    TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                    TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadIDforStacks(), data.TimeStampQPC, process);
                     EventIndex eventIndex = (EventIndex)eventCount;
 
                     ulong sampleAddress;
@@ -3025,13 +3035,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             public void LogEvent(TraceEvent data, EventIndex eventIndex, TraceEventCounts countForEvent)
             {
-                int threadID = data.ThreadID;
-                // Thread an process events need to be munged slightly.  
-                if (data.ParentThread >= 0)
-                {
-                    Debug.Assert(data is ProcessTraceData || data is ThreadTraceData);
-                    threadID = data.ParentThread;
-                }
+                int threadID = data.ThreadIDforStacks();
 
                 // We should be logging in event ID order.  
                 Debug.Assert(pastEventInfo[curPastEventInfo].EventIndex == 0 || pastEventInfo[curPastEventInfo].EventIndex == EventIndex.Invalid ||
@@ -3232,7 +3236,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     break;
                 // If this assert fires, it means that we added a stack to the same event twice.   This
                 // means we screwed up which event a stack belongs to.   This can happen among other reasons
-                // because we compelete an incomplete stack before we should and when the other stack component
+                // because we complete an incomplete stack before we should and when the other stack component
                 // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.    
                 Debug.Assert(eventsToStacks[idx].EventIndex != eventIndex);
             }
@@ -8997,6 +9001,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             return log.GetCodeAddressIndexAtEvent(anEvent.InstructionPointer, anEvent);
+        }
+
+        public static CodeAddressIndex RoutineCodeAddressIndex(this ISRTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            return log.GetCodeAddressIndexAtEvent(anEvent.Routine, anEvent);
+        }
+
+        public static CodeAddressIndex RoutineCodeAddressIndex(this DPCTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            return log.GetCodeAddressIndexAtEvent(anEvent.Routine, anEvent);
         }
     }
 
