@@ -162,6 +162,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             ThreadTransfer = 0x80000000L,
             /// <summary>
+            /// .NET Debugger events
+            /// </summary>
+            Debugger = 0x100000000,
+            /// <summary>
+            /// Events intended for monitoring on an ongoing basis.  
+            /// </summary>
+            Monitoring = 0x200000000,
+            /// <summary>
+            /// Events that will dump PDBs of dynamically generated assemblies to the ETW stream.  
+            /// </summary>
+            Codesymbols = 0x400000000,
+
+            /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen 
@@ -961,6 +974,72 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, ThreadTaskGuid);
             }
         }
+        public event Action<ExceptionHandling> ExceptionCatchStart
+        {
+            add
+            {
+                RegisterTemplate(ExceptionCatchStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 250, ProviderGuid);
+            }
+        }
+        public event Action<EmptyTraceData> ExceptionCatchStop
+        {
+            add
+            {
+                RegisterTemplate(ExceptionCatchStopTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 251, ProviderGuid);
+            }
+        }
+        public event Action<ExceptionHandling> ExceptionFilterStart
+        {
+            add
+            {
+                RegisterTemplate(ExceptionFilterStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 254, ProviderGuid);
+            }
+        }
+        public event Action<EmptyTraceData> ExceptionFilterStop
+        {
+            add
+            {
+                RegisterTemplate(ExceptionFilterStopTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 255, ProviderGuid);
+            }
+        }
+        public event Action<ExceptionHandling> ExceptionFinallyStart
+        {
+            add
+            {
+                RegisterTemplate(ExceptionFinallyStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 252, ProviderGuid);
+            }
+        }
+        public event Action<EmptyTraceData> ExceptionFinallyStop
+        {
+            add
+            {
+                RegisterTemplate(ExceptionFinallyStopTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 253, ProviderGuid);
+            }
+        }
         public event Action<ExceptionTraceData> ExceptionStart
         {
             add
@@ -974,6 +1053,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 1, ExceptionTaskGuid);
             }
         }
+        public event Action<EmptyTraceData> ExceptionStop
+        {
+            add
+            {
+                RegisterTemplate(ExceptionStopTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 256, ProviderGuid);
+            }
+        }
+
         public event Action<ContentionTraceData> ContentionStart
         {
             add
@@ -1011,6 +1102,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 source.UnregisterEventTemplate(value, 82, ProviderGuid);
                 source.UnregisterEventTemplate(value, 82, ClrStackTaskGuid);
+            }
+        }
+        public event Action<CodeSymbols> CodeSymbolsStart
+        {
+            add
+            {
+                RegisterTemplate(CodeSymbolsStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 260, ProviderGuid);
             }
         }
         public event Action<AppDomainMemAllocatedTraceData> AppDomainResourceManagementMemAllocated
@@ -1497,12 +1599,46 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
+
+        static private CodeSymbols CodeSymbolsStartTemplate(Action<CodeSymbols> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new CodeSymbols(action, 260, 30, "CodeSymbols", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private ExceptionHandling ExceptionCatchStartTemplate(Action<ExceptionHandling> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ExceptionHandling(action, 250, 27, "ExceptionCatch", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private EmptyTraceData ExceptionCatchStopTemplate(Action<EmptyTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new EmptyTraceData(action, 251, 27, "ExceptionCatch", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
+        static private ExceptionHandling ExceptionFilterStartTemplate(Action<ExceptionHandling> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ExceptionHandling(action, 254, 29, "ExceptionFilter", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private EmptyTraceData ExceptionFilterStopTemplate(Action<EmptyTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new EmptyTraceData(action, 255, 29, "ExceptionFilter", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
+        static private ExceptionHandling ExceptionFinallyStartTemplate(Action<ExceptionHandling> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new ExceptionHandling(action, 252, 28, "ExceptionFinally", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+        }
+        static private EmptyTraceData ExceptionFinallyStopTemplate(Action<EmptyTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new EmptyTraceData(action, 253, 28, "ExceptionFinally", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
+        static private EmptyTraceData ExceptionStopTemplate(Action<EmptyTraceData> action)
+        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+            return new EmptyTraceData(action, 256, 7, "Exception", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
+        }
+
         static private volatile TraceEvent[] s_templates;
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[98];
+                var templates = new TraceEvent[106];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1601,6 +1737,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[95] = new GCJoinTraceData(null, 203, 1, "GC", GCTaskGuid, 203, "Join", ProviderGuid, ProviderName);
                 templates[96] = new GCPerHeapHistoryTraceData3(null, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName);
                 templates[97] = new GCGlobalHeapHistoryTraceData(null, 205, 1, "GC", GCTaskGuid, 205, "GlobalHeapHistory", ProviderGuid, ProviderName);
+
+                // New style
+                templates[98] = ExceptionCatchStartTemplate(null);
+                templates[99] = ExceptionCatchStopTemplate(null);
+                templates[100] = ExceptionFinallyStartTemplate(null);
+                templates[101] = ExceptionFinallyStopTemplate(null);
+                templates[102] = ExceptionFilterStartTemplate(null);
+                templates[103] = ExceptionFilterStopTemplate(null);
+                templates[104] = ExceptionStopTemplate(null);
+                templates[105] = CodeSymbolsStartTemplate(null);
 
                 s_templates = templates;
             }
@@ -2179,6 +2325,76 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<GCSuspendEETraceData> Action;
         #endregion
     }
+    public sealed class ExceptionHandling : TraceEvent
+    {
+        public long EntryEIP { get { return GetInt64At(0); } }
+        public long MethodID { get { return GetInt64At(8); } }
+        public string MethodName { get { return GetUnicodeStringAt(16); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal ExceptionHandling(Action<ExceptionHandling> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(16) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(16) + 2));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<ExceptionHandling>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "EntryEIP", EntryEIP);
+            XmlAttrib(sb, "MethodID", MethodID);
+            XmlAttrib(sb, "MethodName", MethodName);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "EntryEIP", "MethodID", "MethodName", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return EntryEIP;
+                case 1:
+                    return MethodID;
+                case 2:
+                    return MethodName;
+                case 3:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<ExceptionHandling> m_target;
+        #endregion
+    }
+
     public sealed class GCAllocationTickTraceData : TraceEvent
     {
         public int AllocationAmount { get { return GetInt32At(0); } }
@@ -6588,6 +6804,83 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<ClrStackWalkTraceData> Action;
         #endregion
     }
+
+    public sealed class CodeSymbols : TraceEvent
+    {
+        public long ModuleId { get { return GetInt64At(0); } }
+        public int TotalChunks { get { return GetInt16At(8); } }
+        public int ChunkNumber { get { return GetInt16At(10); } }
+        public int ChunkLength { get { return GetInt32At(12); } }
+        public byte[] Chunk { get { return GetByteArrayAt(16, ChunkLength); } }
+        public int ClrInstanceID { get { return GetInt16At(0 + (ChunkLength * 1) + 16); } }
+
+        #region Private
+        internal CodeSymbols(Action<CodeSymbols> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != 0 + (ChunkLength * 1) + 18));
+            Debug.Assert(!(Version > 0 && EventDataLength < 0 + (ChunkLength * 1) + 18));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<CodeSymbols>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ModuleId", ModuleId);
+            XmlAttrib(sb, "TotalChunks", TotalChunks);
+            XmlAttrib(sb, "ChunkNumber", ChunkNumber);
+            XmlAttrib(sb, "ChunkLength", ChunkLength);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ModuleId", "TotalChunks", "ChunkNumber", "ChunkLength", "Chunk", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ModuleId;
+                case 1:
+                    return TotalChunks;
+                case 2:
+                    return ChunkNumber;
+                case 3:
+                    return ChunkLength;
+                case 4:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<CodeSymbols> m_target;
+        #endregion
+    }
+
+
     public sealed class AppDomainMemAllocatedTraceData : TraceEvent
     {
         public long AppDomainID { get { return GetInt64At(0); } }
@@ -8534,8 +8827,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Stack = 0,
         Finalizer = 1,
         Handle = 2,
-        Other = 3,
-        Static = 4,
+        Older = 0x3,
+        SizedRef = 0x4,
+        Overflow = 0x5,
+
     }
 
     public enum GCHandleKind
