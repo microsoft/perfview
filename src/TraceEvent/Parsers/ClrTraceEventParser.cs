@@ -974,7 +974,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 12, ThreadTaskGuid);
             }
         }
-        public event Action<ExceptionHandling> ExceptionCatchStart
+        public event Action<ExceptionHandlingTraceData> ExceptionCatchStart
         {
             add
             {
@@ -996,7 +996,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 251, ProviderGuid);
             }
         }
-        public event Action<ExceptionHandling> ExceptionFilterStart
+        public event Action<ExceptionHandlingTraceData> ExceptionFilterStart
         {
             add
             {
@@ -1018,7 +1018,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 255, ProviderGuid);
             }
         }
-        public event Action<ExceptionHandling> ExceptionFinallyStart
+        public event Action<ExceptionHandlingTraceData> ExceptionFinallyStart
         {
             add
             {
@@ -1104,7 +1104,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 82, ClrStackTaskGuid);
             }
         }
-        public event Action<CodeSymbols> CodeSymbolsStart
+        public event Action<CodeSymbolsTraceData> CodeSymbolsStart
         {
             add
             {
@@ -1600,29 +1600,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         #region private
         protected override string GetProviderName() { return ProviderName; }
 
-        static private CodeSymbols CodeSymbolsStartTemplate(Action<CodeSymbols> action)
+        static private CodeSymbolsTraceData CodeSymbolsStartTemplate(Action<CodeSymbolsTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new CodeSymbols(action, 260, 30, "CodeSymbols", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+            return new CodeSymbolsTraceData(action, 260, 30, "CodeSymbols", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
-        static private ExceptionHandling ExceptionCatchStartTemplate(Action<ExceptionHandling> action)
+        static private ExceptionHandlingTraceData ExceptionCatchStartTemplate(Action<ExceptionHandlingTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ExceptionHandling(action, 250, 27, "ExceptionCatch", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+            return new ExceptionHandlingTraceData(action, 250, 27, "ExceptionCatch", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData ExceptionCatchStopTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new EmptyTraceData(action, 251, 27, "ExceptionCatch", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
-        static private ExceptionHandling ExceptionFilterStartTemplate(Action<ExceptionHandling> action)
+        static private ExceptionHandlingTraceData ExceptionFilterStartTemplate(Action<ExceptionHandlingTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ExceptionHandling(action, 254, 29, "ExceptionFilter", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+            return new ExceptionHandlingTraceData(action, 254, 29, "ExceptionFilter", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData ExceptionFilterStopTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
             return new EmptyTraceData(action, 255, 29, "ExceptionFilter", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
-        static private ExceptionHandling ExceptionFinallyStartTemplate(Action<ExceptionHandling> action)
+        static private ExceptionHandlingTraceData ExceptionFinallyStartTemplate(Action<ExceptionHandlingTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ExceptionHandling(action, 252, 28, "ExceptionFinally", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
+            return new ExceptionHandlingTraceData(action, 252, 28, "ExceptionFinally", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private EmptyTraceData ExceptionFinallyStopTemplate(Action<EmptyTraceData> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
@@ -2325,7 +2325,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<GCSuspendEETraceData> Action;
         #endregion
     }
-    public sealed class ExceptionHandling : TraceEvent
+    public sealed class ExceptionHandlingTraceData : TraceEvent
     {
         public long EntryEIP { get { return GetInt64At(0); } }
         public long MethodID { get { return GetInt64At(8); } }
@@ -2333,7 +2333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(16)); } }
 
         #region Private
-        internal ExceptionHandling(Action<ExceptionHandling> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal ExceptionHandlingTraceData(Action<ExceptionHandlingTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -2350,7 +2350,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ExceptionHandling>)value; }
+            set { m_target = (Action<ExceptionHandlingTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -2391,7 +2391,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        private event Action<ExceptionHandling> m_target;
+        private event Action<ExceptionHandlingTraceData> m_target;
         #endregion
     }
 
@@ -6805,7 +6805,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         #endregion
     }
 
-    public sealed class CodeSymbols : TraceEvent
+    public sealed class CodeSymbolsTraceData : TraceEvent
     {
         public long ModuleId { get { return GetInt64At(0); } }
         public int TotalChunks { get { return GetInt16At(8); } }
@@ -6815,7 +6815,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int ClrInstanceID { get { return GetInt16At(0 + (ChunkLength * 1) + 16); } }
 
         #region Private
-        internal CodeSymbols(Action<CodeSymbols> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal CodeSymbolsTraceData(Action<CodeSymbolsTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -6832,7 +6832,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<CodeSymbols>)value; }
+            set { m_target = (Action<CodeSymbolsTraceData>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6876,7 +6876,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        private event Action<CodeSymbols> m_target;
+        private event Action<CodeSymbolsTraceData> m_target;
         #endregion
     }
 

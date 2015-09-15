@@ -2718,7 +2718,6 @@ namespace PerfViewExtensibility
             OpenStackViewer(stacks);
         }
 
-
         /// <summary>
         /// ImageSize generates a XML report (by default inputExeName.imageSize.xml) that 
         /// breaks down the executable file 'inputExeName' by the symbols in it (fetched from
@@ -2790,6 +2789,91 @@ namespace PerfViewExtensibility
                     GuiApp.MainWindow.OpenNext(outputFileName);
             }
         }
+
+        class CodeSymbolListener
+        {
+            public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)
+            {
+                m_symbolFiles = new Dictionary<long, CodeSymbolState>();
+                m_targetSymbolCachePath = targetSymbolCachePath;
+
+                source.Clr.AddCallbackForEvents<ModuleLoadUnloadTraceData>(OnModuleLoad);
+                source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
+            }
+
+            #region private 
+            private void OnModuleLoad(ModuleLoadUnloadTraceData data)
+            {
+                Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data));
+            }
+
+            private void OnCodeSymbols(CodeSymbolsTraceData data)
+            {
+                CodeSymbolState state = Get(data.ProcessID, data.ModuleId);
+                if (state != null)
+                    state.OnCodeSymbols(data);
+            }
+
+            class CodeSymbolState
+            {
+                int m_moduleId;
+                string m_pdbName;
+                int m_chunksReadSoFar;
+                int m_totalChunks;
+                byte[][] m_chunks;  
+                private ModuleLoadUnloadTraceData data;
+
+                public CodeSymbolState(ModuleLoadUnloadTraceData data)
+                {
+                    // See Symbols/Symbolreader.cs for details on making Symbols server paths.   Here is the jist
+                    // pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
+
+                    // TODO COMPLETE
+                }
+
+                public void OnCodeSymbols(CodeSymbolsTraceData data)
+                {
+                    // TODO read in a chunk if it is out of order fail, when complete close the file.   
+                }
+            }
+
+            // hides details of how process/module IDs are looked up.  
+            CodeSymbolState Get(int processID, long moduleID)
+            {
+                CodeSymbolState ret = null;
+                m_symbolFiles.TryGetValue((((long) processID) << 48) + moduleID, out ret);
+                return ret;
+            }
+            void Put(int processID, long moduleID, CodeSymbolState value)
+            {
+                m_symbolFiles[(((long)processID) << 48) + moduleID] = value;
+            }
+
+            // Indexed by key;
+            Dictionary<long, CodeSymbolState> m_symbolFiles;
+            string m_targetSymbolCachePath;
+            #endregion
+        }
+
+        /// <summary>
+        /// Listen for the CLR CodeSymbols events and when you find them write them 
+        /// to the directory targetSymbolCachePath using standard symbol server conventions
+        /// (Name.Pdb\GUID-AGE\Name.Pdb)
+        /// 
+        /// Usage 
+        /// </summary>
+        /// <param name="targetSymbolCachePath"></param>
+        public void GetDynamicAssemblySymbols(string targetSymbolCachePath)
+        {
+            var sessionName = "PerfViewSymbolListener";
+            LogFile.WriteLine("Creating Session {0}", sessionName);
+            using (var session = new TraceEventSession(sessionName))
+            {
+                var codeSymbolListener = new CodeSymbolListener(session.Source, targetSymbolCachePath);
+                session.Source.Process();
+            }
+        }
+
 
 #if false 
         /// <summary>
