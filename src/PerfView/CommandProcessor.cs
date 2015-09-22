@@ -557,7 +557,7 @@ namespace PerfView
                             }
                             EnableUserProvider(userModeSession, ".NETTasks",
                                 TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                ulong.MaxValue, // (ulong) (TplEtwProviderTraceEventParser.Keywords.Tasktransfer | TplEtwProviderTraceEventParser.Keywords.Tasks | TplEtwProviderTraceEventParser.Keywords.Parallel), 
+                                (ulong) (TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
 
                             // TODO FIX NOW remove this ugly versioning logic 1/2015.  We should just be turning on the FrameworkEventSource.   

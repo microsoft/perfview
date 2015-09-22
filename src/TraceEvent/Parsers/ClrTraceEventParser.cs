@@ -6869,6 +6869,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 case 3:
                     return ChunkLength;
                 case 4:
+                    return Chunk;
+                case 5:
                     return ClrInstanceID;
                 default:
                     Debug.Assert(false, "Bad field index");

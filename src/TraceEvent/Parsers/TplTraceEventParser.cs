@@ -28,6 +28,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Asynccausalitysynchronouswork = 0x20,
             Taskstops = 0x40,
             TasksFlowActivityIds = 0x80,
+            Default = Tasktransfer | Tasks | Parallel | Asynccausalityoperation | Asynccausalityrelation | Asynccausalitysynchronouswork | Taskstops | TasksFlowActivityIds,
         };
 
         public TplEtwProviderTraceEventParser(TraceEventSource source) : base(source) {}
