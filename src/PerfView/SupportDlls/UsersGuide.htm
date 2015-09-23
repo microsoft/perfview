@@ -7698,6 +7698,15 @@
         </li>
         -->
         <li>
+            Version 1.8.3 9/23/15
+            <ul>
+                <li> Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
+                     useful before so that any traces I get have detailed information for debugging, but are now impacting
+                     the cost of using PerfView in production when Tasks are used heavily.
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.2 9/13/15
             <ul>
                 <li> /InMemoryCircularBuffer option was broken (Would throw a file not found exception in SetFileName).  Fixed this. </li>
