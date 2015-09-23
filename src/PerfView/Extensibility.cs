@@ -2804,7 +2804,7 @@ namespace PerfViewExtensibility
             #region private 
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
-                Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data));
+                Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
             }
 
             private void OnCodeSymbols(CodeSymbolsTraceData data)
@@ -2820,20 +2820,51 @@ namespace PerfViewExtensibility
                 string m_pdbName;
                 int m_chunksReadSoFar;
                 int m_totalChunks;
-                byte[][] m_chunks;  
-                private ModuleLoadUnloadTraceData data;
+                byte[][] m_chunks;
+                string m_pdbIndexPath;
+                MemoryStream m_stream;
+                private ModuleLoadUnloadTraceData m_moduleData;
+                string m_symbolCachePath;
 
-                public CodeSymbolState(ModuleLoadUnloadTraceData data)
+                public CodeSymbolState(ModuleLoadUnloadTraceData data, string path)
                 {
                     // See Symbols/Symbolreader.cs for details on making Symbols server paths.   Here is the jist
                     // pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
 
                     // TODO COMPLETE
+                    m_moduleData = data;
+                    m_stream = new MemoryStream();
+                    m_symbolCachePath = path;
+
+                    string pdbSimpleName = data.ModuleILFileName.Replace(".exe", ".pdb").Replace(".dll", ".pdb");
+                    if(!pdbSimpleName.EndsWith(".pdb"))
+                    {
+                        pdbSimpleName += ".pdb";
+                    }
+                    m_pdbIndexPath = pdbSimpleName + @"\" +
+                        data.ManagedPdbSignature.ToString("N") + data.ManagedPdbAge.ToString() + @"\" + pdbSimpleName;
                 }
 
                 public void OnCodeSymbols(CodeSymbolsTraceData data)
                 {
-                    // TODO read in a chunk if it is out of order fail, when complete close the file.   
+                    // TODO read in a chunk if it is out of order fail, when complete close the file.
+                    //using (StreamWriter writer = File.WriteAllBytes(m_pdbIndexPath, m_bytes))
+                    //    ((MemoryGraph)graph).DumpNormalized(writer);
+
+                    //Assumes the length of the stream does not exceed 2^32
+                    m_stream.Write(data.Chunk, 0, data.ChunkLength);
+                    if ((data.ChunkNumber + 1) == data.TotalChunks)
+                    {
+                        byte[] bytes = new byte[m_stream.Length];
+                        m_stream.Seek(0, SeekOrigin.Begin);
+                        m_stream.Read(bytes, 0, (int)m_stream.Length);
+                        string fullPath = m_symbolCachePath + @"\" + m_pdbIndexPath;
+                        if(!Directory.Exists(Path.GetDirectoryName(fullPath)))
+                        {
+                            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                        }
+                        File.WriteAllBytes(fullPath, bytes);
+                    }
                 }
             }
 
@@ -2870,6 +2901,9 @@ namespace PerfViewExtensibility
             using (var session = new TraceEventSession(sessionName))
             {
                 var codeSymbolListener = new CodeSymbolListener(session.Source, targetSymbolCachePath);
+                LogFile.WriteLine("Enabling CLR Loader and CodeSymbols events");
+                session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                    (long)(ClrTraceEventParser.Keywords.Codesymbols | ClrTraceEventParser.Keywords.Loader));
                 session.Source.Process();
             }
         }
