@@ -179,7 +179,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen 
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
-                         | ThreadTransfer | GCHeapAndTypeNames,
+                         | ThreadTransfer | GCHeapAndTypeNames | Codesymbols,
 
             /// <summary>
             /// This provides the flags commonly needed to take a heap .NET Heap snapshot with ETW.  
@@ -8882,8 +8882,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             PerfTrack = 0x20000000,
             Stack = 0x40000000,
+            /// <summary>
+            /// Dump PDBs for dynamically generated modules.  
+            /// </summary>
+            Codesymbols = 0x400000000,
 
-            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader,
+            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader + Codesymbols,
         };
 
         public ClrRundownTraceEventParser(TraceEventSource source) : base(source) { }
