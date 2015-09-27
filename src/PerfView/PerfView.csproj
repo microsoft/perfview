@@ -420,10 +420,10 @@
     <None Include="SupportDlls\Eula.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\x86\msdia120.dll">
+    <EmbeddedResource Include="..\TraceEvent\x86\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\msdia120.dll</LogicalName>
+      <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportDlls\x86\sd.exe">
       <Type>Non-Resx</Type>
@@ -447,10 +447,10 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\AMD64\msdia120.dll">
+    <EmbeddedResource Include="..\TraceEvent\AMD64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\msdia120.dll</LogicalName>
+      <LogicalName>.\AMD64\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

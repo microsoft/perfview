@@ -1750,7 +1750,7 @@ namespace Microsoft.Diagnostics.Runtime.Utilities
 
 
 /// <summary>
-/// The DiaLoader class knows how to load the msdia120.dll (the Debug Access Interface) (see docs at
+/// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
 /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
 /// Basically it just called the DllGetClassObject interface directly.
 /// 
@@ -1776,8 +1776,8 @@ internal static class DiaLoader
     /// </summary>
     public static IDiaDataSource GetDiaSourceObject()
     {
-        if (!Microsoft.Diagnostics.Runtime.Desktop.NativeMethods.LoadNative("msdia120.dll"))
-            throw new ClrDiagnosticsException("Could not load native DLL msdia120.dll HRESULT=0x" + Marshal.GetHRForLastWin32Error().ToString("x"), ClrDiagnosticsException.HR.ApplicationError);
+        if (!Microsoft.Diagnostics.Runtime.Desktop.NativeMethods.LoadNative("msdia140.dll"))
+            throw new ClrDiagnosticsException("Could not load native DLL msdia140.dll HRESULT=0x" + Marshal.GetHRForLastWin32Error().ToString("x"), ClrDiagnosticsException.HR.ApplicationError);
 
         var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
         var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
@@ -1801,7 +1801,7 @@ internal static class DiaLoader
 
     // Methods
     [return: MarshalAs(UnmanagedType.Interface)]
-    [DllImport("msdia120.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+    [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
     private static extern object DllGetClassObject(
         [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
         [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);

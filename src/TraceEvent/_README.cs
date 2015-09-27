@@ -18,7 +18,7 @@ using Utilities;
 //      * arm    
 //      * x86  
 //            Binaries present in these directories. 
-//                  msdia120.dll for unmanaged symbol resolution (used by SymbolReaderModule),
+//                  msdia140.dll for unmanaged symbol resolution (used by SymbolReaderModule),
 //                  KernelTraceControl.dll   (used by TraceEventSession)
 //
 //  * Parsers       - These contain all the TraceEventParsers shipped with the library

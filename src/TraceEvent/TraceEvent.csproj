@@ -148,10 +148,10 @@
     <Content Include="arm\KernelTraceControl.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="amd64\msdia120.dll">
+    <Content Include="amd64\msdia140.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="x86\msdia120.dll">
+    <Content Include="x86\msdia140.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="_TraceEventProgrammersGuide.docx">
