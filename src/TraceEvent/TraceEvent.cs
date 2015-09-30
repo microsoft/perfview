@@ -352,7 +352,12 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int cpuSpeedMHz;
         internal /*protected*/ int? utcOffsetMinutes;
         internal /*protected*/ Version osVersion;
+
+        // Used to convert from Query Performance Counter (QPC) units to DateTime.
         internal /*protected*/ long _QPCFreq;
+        internal /*protected*/ long _syncTimeQPC;       // An instant in time measured in QPC units (of _QPCFreq)
+        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  
+
         internal /*protected*/ DateTime sessionStartTimeUTC;
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;

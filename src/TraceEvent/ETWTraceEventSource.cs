@@ -30,7 +30,6 @@ namespace Microsoft.Diagnostics.Tracing
     /// * See also #ETWTraceEventSourceInternals
     /// * See also #ETWTraceEventSourceFields
     /// </summary>    
-
     public unsafe sealed class ETWTraceEventSource : TraceEventDispatcher, IDisposable
     {
         /// <summary>
@@ -165,6 +164,26 @@ namespace Microsoft.Diagnostics.Tracing
         /// moduleFile, not a real time stream.
         /// </summary>
         public bool CanReset { get { return (logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) == 0; } }
+
+        /// <summary>
+        /// This routine is only useful/valid for real-time sessions.  
+        /// TraceEvent.TimeStamp internally is stored using a high resolution clock called the Query Performance Counter (QPC).
+        /// This clock is INDEPENDENT of the system clock used by DateTime.   These two clocks are synchronized to within 2 msec at 
+        /// session startup but they can drift from there (typically 2msec / min == 3 seconds / day).   Thus if you have long
+        /// running real time session it becomes problematic to compare the timestamps with those in another session or something
+        /// timestamped with the system clock.   SynchronizeClock will synchronize the TraceEvent.Timestamp clock with the system
+        /// clock again.   If you do this right before you start another session, then the two sessions will be within 2 msec of
+        /// each other, and their timestamps will correlate.     Doing it periodically (e.g. hourly), will keep things reasonably close.  
+        /// 
+        /// TODO: we can achieve perfect synchronization by exposing the QPC tick sync point.   
+        /// </summary>
+        public void SynchronizeClock()
+        {
+            if (!IsRealTime)
+                throw new InvalidOperationException("SynchronizeClock is only for Real-Time Sessions");
+            _syncTimeUTC = DateTime.UtcNow;
+            _syncTimeQPC = QPCTime.GetUTCTimeAsQPC(_syncTimeUTC);
+        }
 
         /// <summary>
         /// Options that can be passed to GetModulesNeedingSymbols
@@ -467,7 +486,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             public static long GetUTCTimeAsQPC(DateTime utcTime)
             {
-                return Get()._GetUTCTimeAsQPC(utcTime);
+                QPCTime qpcTime = new QPCTime();
+                return qpcTime._GetUTCTimeAsQPC(utcTime);
             }
 
             #region private
@@ -477,13 +497,6 @@ namespace Microsoft.Diagnostics.Tracing
                 double deltaSec = (utcTime.Ticks - m_timeAsDateTimeUTC.Ticks) / 10000000.0;
                 // scale to QPC units and then add back in the base.  
                 return (long)(deltaSec * Stopwatch.Frequency) + m_timeAsQPC;
-            }
-
-            static QPCTime Get()
-            {
-                if (s_time == null)
-                    Interlocked.CompareExchange(ref s_time, new QPCTime(), null);
-                return s_time;
             }
 
             QPCTime()
@@ -512,7 +525,6 @@ namespace Microsoft.Diagnostics.Tracing
             DateTime m_timeAsDateTimeUTC;
             long m_timeAsQPC;
 
-            static QPCTime s_time;          // this is s singleton class and this is the singleton.
             #endregion
         }
 
