@@ -3415,7 +3415,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
 
                 // Heuristic.  If we have not found it yet, tack on the system drive letter if it is not 
-                // This is simmiar to what XPERF does too, but it is clear it is not perfect. 
+                // This is similar to what XPERF does too, but it is clear it is not perfect. 
                 if (kernelName.Length > 2 && kernelName[0] == '\\' && Char.IsLetterOrDigit(kernelName[1]))
                     return systemDrive + kernelName;
 
@@ -3439,7 +3439,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     string driveName = new string(curChar, 1) + @":";
                     kernelNameBuff.Length = 0;
-                    if (QueryDosDevice(driveName, kernelNameBuff, 2048) != 0)
+                    if (QueryDosDeviceW(driveName, kernelNameBuff, 2048) != 0)
                         kernelToDriveMap.Add(new KeyValuePair<string, string>(kernelNameBuff.ToString() + @"\", driveName + @"\"));
                 }
                 logicalDriveBitVector >>= 1;
@@ -3465,7 +3465,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
-        private static extern uint QueryDosDevice(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
+        private static extern uint QueryDosDeviceW(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
         [DllImport("kernel32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         private static extern int GetLogicalDrives();
 

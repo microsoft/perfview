@@ -203,7 +203,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The time when session started logging. 
         /// </summary>
-        public DateTime SessionStartTime { get { return sessionStartTimeUTC.ToLocalTime(); } }
+        public DateTime SessionStartTime
+        {
+            get
+            {
+                var ret = QPCTimeToDateTimeUTC(sessionStartTimeQPC);
+                return ret.ToLocalTime();
+            }
+        }
+
         /// <summary>
         /// The time that the session stopped logging.
         /// </summary>
@@ -356,9 +364,8 @@ namespace Microsoft.Diagnostics.Tracing
         // Used to convert from Query Performance Counter (QPC) units to DateTime.
         internal /*protected*/ long _QPCFreq;
         internal /*protected*/ long _syncTimeQPC;       // An instant in time measured in QPC units (of _QPCFreq)
-        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  
+        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  This is the only fundamental DateTime in the object. 
 
-        internal /*protected*/ DateTime sessionStartTimeUTC;
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
@@ -425,6 +432,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
             long diff = (QPCTime - sessionStartTimeQPC);
             // For real time providers, the session start time is the time when the TraceEventSource was turned on
@@ -438,6 +446,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal long RelativeMSecToQPC(double relativeMSec)
         {
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             return (long)(relativeMSec * _QPCFreq / 1000) + sessionStartTimeQPC;
         }
 
@@ -446,7 +455,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal long UTCDateTimeToQPC(DateTime time)
         {
-            long ret = (long)((time.Ticks - sessionStartTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + sessionStartTimeQPC;
+            Debug.Assert(_QPCFreq != 0);
+            long ret = (long)((time.Ticks - _syncTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + _syncTimeQPC;
             Debug.Assert((QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
@@ -459,8 +469,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (QPCTime == long.MaxValue)   // We maxvalue as a special case.  
                 return DateTime.MaxValue;
 
-            long inTicks = (long)((QPCTime - sessionStartTimeQPC) * 10000000.0 / _QPCFreq);
-            var ret = new DateTime(sessionStartTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
+            long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq);
+            var ret = new DateTime(_syncTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
             return ret;
         }
 
@@ -898,7 +909,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (source.SessionStartTime <= asDateTime)
                     {
                         ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                        ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
+                        ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
                     else
                         ret = asDateTime.ToString();
@@ -2869,33 +2880,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                    anEvent.Dispatch();
-                if (anEvent.next != null)
+            if (anEvent.Target != null)
+                anEvent.Dispatch();
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (; ; )
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (; ; )
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
+                        break;
+                    if (nextEvent.Target != null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                            break;
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
-                        }
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
                     }
                 }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                        unhandledEventTemplate.PrepForCallback();
-                    AllEvents(anEvent);
-                }
-                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                    unhandledEventTemplate.PrepForCallback();
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)

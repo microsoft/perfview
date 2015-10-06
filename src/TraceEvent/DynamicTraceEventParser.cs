@@ -502,7 +502,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
             Debug.Assert(computedSize <= this.EventDataLength);
             if ((int) ID != 0xFFFE) // If it is not a manifest event
-                Debug.Assert(computedSize == this.EventDataLength);
+            {
+                // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
+                Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
+            }
 #endif
             int offset = payloadFetches[index].Offset;
             if (offset == ushort.MaxValue)

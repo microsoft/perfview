@@ -498,6 +498,7 @@ namespace Triggers
                     if (BufferSizeMB != 0)
                         m_session.BufferSizeMB = BufferSizeMB;
 
+                    m_log.WriteLine("Additional Trigger debugging messages are logged to the ETL file as PerfView/StopTriggerDebugMessage events.");
                     using (m_source = new ETWTraceEventSource(sessionName, TraceEventSourceType.Session))
                     {
                         Dictionary<StartStopKey, StartEventData> startStopRecords = null;
@@ -873,7 +874,10 @@ namespace Triggers
 
             m_providerName = m.Groups[1].Value;
             if (m_providerName.StartsWith("*"))
-                ProviderGuid = TraceEventProviders.GetEventSourceGuidFromName(m_providerName.Substring(1));
+            {
+                m_providerName = m_providerName.Substring(1);
+                ProviderGuid = TraceEventProviders.GetEventSourceGuidFromName(m_providerName);
+            }
             else
             {
                 ProviderGuid = TraceEventProviders.GetProviderGuidByName(m_providerName);

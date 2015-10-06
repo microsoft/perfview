@@ -366,7 +366,7 @@ namespace Microsoft.Diagnostics.Tracing
                     return;
 
                 // is this the very first event? if so this could be the header event (for real time ETW)
-                if (m_source.sessionStartTimeQPC == 0)
+                if (m_source._syncTimeQPC == 0)
                     Initialize(rawData);
 
                 Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
@@ -404,16 +404,18 @@ namespace Microsoft.Diagnostics.Tracing
 
                 if (eventHeader.eventRecord->EventHeader.ProviderId != eventHeader.taskGuid || eventHeader.eventRecord->EventHeader.Opcode != 0)
                 {
-                    if (m_source.sessionStartTimeQPC == 0)
+                    if (m_source._syncTimeQPC == 0)
                     {
-                        // We did not get a if (m_source.sessionStartTimeQPC != 0)EventTraceHeaderTraceData either in the OnBeginProcessTrace callback (file based case) or the
+                        // We did not get a if (m_source.sessionStartTimeQPC != 0) EventTraceHeaderTraceData either in the OnBeginProcessTrace callback (file based case) or the
                         // first event (real time case).   This is really a problem, as we need that information, but we will go ahead and
                         // try to initialize as best we can. 
 
                         m_source.pointerSize = sizeof(IntPtr);
                         m_source.numberOfProcessors = Environment.ProcessorCount;
                         m_source._QPCFreq = Stopwatch.Frequency;
-                        m_source.sessionStartTimeUTC = DateTime.UtcNow;
+                        m_source._syncTimeUTC = DateTime.UtcNow;
+                        m_source._syncTimeQPC = rawData->EventHeader.TimeStamp;
+
                         m_source.sessionStartTimeQPC = rawData->EventHeader.TimeStamp;
                         m_source.sessionEndTimeQPC = long.MaxValue;
                     }
@@ -421,7 +423,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 m_source.m_eventsLost += eventHeader.EventsLost;
-                if (m_source.sessionStartTimeQPC != 0)
+                if (m_source._syncTimeQPC != 0)
                     return;
 
                 m_source.pointerSize = eventHeader.PointerSize;
@@ -433,7 +435,8 @@ namespace Microsoft.Diagnostics.Tracing
                 int ver = eventHeader.Version;
                 m_source.osVersion = new Version((byte)ver, (byte)(ver >> 8));
                 m_source._QPCFreq = eventHeader.PerfFreq;
-                m_source.sessionStartTimeUTC = DateTime.FromFileTimeUtc(eventHeader.StartTime100ns);
+                m_source._syncTimeUTC = DateTime.FromFileTimeUtc(eventHeader.StartTime100ns);
+                m_source._syncTimeQPC = rawData->EventHeader.TimeStamp;
                 m_source.sessionStartTimeQPC = rawData->EventHeader.TimeStamp;
 
                 if (eventHeader.EndTime100ns == 0)

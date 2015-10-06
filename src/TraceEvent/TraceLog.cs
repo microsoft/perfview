@@ -813,7 +813,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // If this is a ETL file, we also need to compute all the normal TraceLog stuff the raw stream
             this.pointerSize = rawEvents.PointerSize;
-            this.sessionStartTimeUTC = rawEvents.sessionStartTimeUTC;
+            this._syncTimeUTC = rawEvents._syncTimeUTC;
+            this._syncTimeQPC = rawEvents._syncTimeQPC;
             this._QPCFreq = rawEvents._QPCFreq;
             this.sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
             this.sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
@@ -849,8 +850,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (SessionStartTime.IsDaylightSavingTime())
                     utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
 
-                if (sessionStartTimeQPC == 0)
-                {                 // This is for the TraceLog, not just for the ETWTraceEventSource
+                if (_syncTimeQPC == 0)
+                {   // This is for the TraceLog, not just for the ETWTraceEventSource
+                    _syncTimeQPC = data.TimeStampQPC;
                     sessionStartTimeQPC += data.TimeStampQPC;
                     sessionEndTimeQPC += data.TimeStampQPC;
                 }
@@ -1408,7 +1410,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // While scanning over the stream, copy all data to the file. 
             rawEvents.AllEvents += delegate(TraceEvent data)
             {
-                Debug.Assert(sessionStartTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read ti
+                Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
                 Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
                 lastTimeStamp = data.TimeStampQPC;
@@ -2598,7 +2600,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // we only do this once.  
             deserializer.RegisterFactory(typeof(TraceLog), delegate
             {
-                Debug.Assert(SessionStartTime.Ticks == 0 && SessionEndTime.Ticks == 0);
+                Debug.Assert(sessionStartTimeQPC == 0 && sessionEndTimeQPC == 0);
                 return this;
             });
             deserializer.RegisterFactory(typeof(TraceProcess), delegate { return new TraceProcess(0, null, 0); });
@@ -2709,7 +2711,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(sessionStartTimeUTC.ToFileTimeUtc());
+            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
             serializer.Write(pointerSize);
             serializer.Write(numberOfProcessors);
             serializer.Write(cpuSpeedMHz);
@@ -2816,13 +2818,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyRawEvents.Read(deserializer, null);
 
             deserializer.Log("<Marker Name=\"sessionStartTime\"/>");
-            sessionStartTimeUTC = DateTime.FromFileTimeUtc(deserializer.ReadInt64());
+            _syncTimeUTC = DateTime.FromFileTimeUtc(deserializer.ReadInt64());
             deserializer.Read(out pointerSize);
             deserializer.Read(out numberOfProcessors);
             deserializer.Read(out cpuSpeedMHz);
             osVersion = new Version(deserializer.ReadByte(), deserializer.ReadByte(), deserializer.ReadByte(), deserializer.ReadByte());
             deserializer.Read(out _QPCFreq);
             deserializer.Read(out sessionStartTimeQPC);
+            _syncTimeQPC = sessionStartTimeQPC;
             deserializer.Read(out sessionEndTimeQPC);
             deserializer.Read(out eventsLost);
             deserializer.Read(out machineName);
