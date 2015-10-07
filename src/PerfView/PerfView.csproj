@@ -119,7 +119,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\ClrMemDiag\sigparser.cs">
+    <Compile Include="sigparser.cs">
       <Link>Utilities\sigparser.cs</Link>
     </Compile>
     <Compile Include="..\heapDump\GCHeapDump.cs">
