@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent", "..\traceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
 EndProject
@@ -37,8 +37,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "..\ETWClrProfiler\ETWClrProfilerX86.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX64", "..\ETWClrProfiler\ETWClrProfilerX64.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClrMemDiag", "..\ClrMemDiag\ClrMemDiag.csproj", "{A82126CA-23AA-41F1-8586-A5938D44D0A7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastSerialization", "..\FastSerialization\FastSerialization.csproj", "{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}"
 EndProject
@@ -204,18 +202,6 @@ Global
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|x64.ActiveCfg = Release|x64
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|x64.Build.0 = Release|x64
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|x86.ActiveCfg = Release|x64
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|Win32.ActiveCfg = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|Win32.ActiveCfg = Release|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|x64.ActiveCfg = Release|Any CPU
-		{A82126CA-23AA-41F1-8586-A5938D44D0A7}.Release|x86.ActiveCfg = Release|Any CPU
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
