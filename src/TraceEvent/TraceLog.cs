@@ -9006,6 +9006,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return log.GetCodeAddressIndexAtEvent(anEvent.InstructionPointer, anEvent);
         }
 
+        /// <summary>
+        /// For a ISRTraceData event, gets the CodeAddressIndex associated with the Routine address. 
+        /// </summary>
         public static CodeAddressIndex RoutineCodeAddressIndex(this ISRTraceData anEvent)
         {
             TraceLog log = anEvent.Source as TraceLog;
@@ -9014,6 +9017,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return log.GetCodeAddressIndexAtEvent(anEvent.Routine, anEvent);
         }
 
+        /// <summary>
+        /// For a DPCTraceData event, gets the CodeAddressIndex associated with the Routine address. 
+        /// </summary>
         public static CodeAddressIndex RoutineCodeAddressIndex(this DPCTraceData anEvent)
         {
             TraceLog log = anEvent.Source as TraceLog;
