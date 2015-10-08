@@ -93,6 +93,7 @@ namespace ClrMemory
             }
         }
         
+        [Obsolete]
         public override int TypeIndexLimit { get { return m_types.Count; } }
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
         public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
@@ -344,7 +345,7 @@ namespace ClrMemory
             }
         }
 
-        public override IEnumerable<Address> EnumerateObjects()
+        public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
         }
@@ -359,17 +360,17 @@ namespace ClrMemory
             throw new NotImplementedException();
         }
 
-        public override bool TryGetTypeHandle(ulong obj, out ulong typeHandle, out ulong componentTypeHandle)
+        public override bool TryGetMethodTable(ulong obj, out ulong typeHandle, out ulong componentTypeHandle)
         {
             throw new NotImplementedException();
         }
 
-        public override ulong GetTypeHandle(ulong obj)
+        public override ulong GetMethodTable(ulong obj)
         {
             throw new NotImplementedException();
         }
 
-        public override ClrType GetTypeByTypeHandle(ulong typeHandle, ulong componentTypeHandle)
+        public override ClrType GetTypeByMethodTable(ulong typeHandle, ulong componentTypeHandle)
         {
             throw new NotImplementedException();
         }
@@ -653,7 +654,6 @@ namespace ClrMemory
     public class ICorDebugGCHeapType : ClrType
     {
         public override string Name { get { return m_name; } }
-        public override ulong TypeHandle { get { return (ulong)m_index; } }
         public override ulong GetSize(Address objRef)
         {
             Debug.Assert(m_heap.GetObjectType(objRef) == this);         // You should be calling only on appropriate objRefs
@@ -852,7 +852,7 @@ namespace ClrMemory
         {
             // Console.WriteLine("Creating type for typeId {0:x} {1:x}", typeID.token1, typeID.token2);
             m_heap = heap;
-            m_index = heap.TypeIndexLimit;
+            m_index = heap.m_types.Count;
             m_name = "";
             m_moduleFilePath = "";
 
@@ -1105,10 +1105,12 @@ namespace ClrMemory
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<ulong> EnumerateTypeHandles()
+        public override IEnumerable<ulong> EnumerateMethodTables()
         {
             throw new NotImplementedException();
         }
+
+        public override ulong MethodTable { get { throw new NotImplementedException(); } }
 
         public override uint MetadataToken
         {

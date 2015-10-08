@@ -268,6 +268,11 @@ public class GCHeapDumper
         ClrRuntime runtime = null;
 
         m_log.WriteLine("Enumerating over {0} detected runtimes...", target.ClrVersions.Count);
+        var symbolReader = new SymbolReader(m_log, null);
+        if (symbolReader.SymbolPath.Length == 0)
+            symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
+
+        target.SymbolProvider = new SymbolProvider(symbolReader);
 
         foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
         {
@@ -286,9 +291,6 @@ public class GCHeapDumper
                 {
                     var dacInfo = currRuntime.DacInfo;
                     var dacFileName = dacInfo.FileName;
-                    var symbolReader = new SymbolReader(m_log, null);
-                    if (symbolReader.SymbolPath.Length == 0)
-                        symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
 
                     m_log.WriteLine("SymbolPath={0}", symbolReader.SymbolPath);
                     m_log.WriteLine("Looking up {0} build Time 0x{1:x} size 0x{2:x}",
@@ -298,14 +300,24 @@ public class GCHeapDumper
                     {
                         // TODO can we get rid of this?
                         var lastChance = Path.Combine(new SymbolPath().DefaultSymbolCache(), dacFileName);
-                        m_log.WriteLine("Last chance, looking at DAC dll at {0}", lastChance);
+                        m_log.WriteLine("Looking for DAC dll at {0}", lastChance);
                         if (File.Exists(lastChance))
+                        {
                             dacFilePath = lastChance;
+                        }
                         else
-                            throw new ApplicationException(
-                                "Could not find runtime support DLL " + dacInfo.FileName + " using the symbol server." +
-                                "\r\nInsure that your Symbol Path includes a Microsoft Symbol Server" +
-                                "\r\nOr copy the %WINDIR%\\Microsoft.NET\\Framework*\\V*\\mscordacwks.dll from the collection machine to " + lastChance);
+                        {
+
+                            lastChance = Path.Combine(Path.GetDirectoryName(processDumpFile), dacFileName);
+                            m_log.WriteLine("Last chance, looking for DAC dll at {0}", lastChance);
+                            if (File.Exists(lastChance))
+                                dacFilePath = lastChance;
+                            else
+                                throw new ApplicationException(
+                                    "Could not find runtime support DLL " + dacInfo.FileName + " using the symbol server." +
+                                    "\r\nInsure that your Symbol Path includes a Microsoft Symbol Server" +
+                                    "\r\nOr copy the %WINDIR%\\Microsoft.NET\\Framework*\\V*\\mscordacwks.dll from the collection machine to " + lastChance);
+                        }
                     }
                     m_log.WriteLine("Found CLR data access (DAC) DLL {0}", dacFilePath);
                     runtime = currRuntime.CreateRuntime(dacFilePath);
@@ -2255,6 +2267,40 @@ public class GCHeapDumper
         m_debugLog.WriteLine(format, args);
         m_debugLog.Flush();
 #endif
+    }
+
+    private class SymbolProvider : ISymbolProvider
+    {
+        private SymbolReader m_symbolReader;
+
+        public SymbolProvider(SymbolReader symbolReader)
+        {
+            m_symbolReader = symbolReader;
+        }
+
+        public ISymbolResolver GetSymbolResolver(string pdbName, Guid guid, int age)
+        {
+            string pdb = m_symbolReader.FindSymbolFilePath(pdbName, guid, age);
+            if (pdb == null)
+                return null;
+
+            return new SymbolResolver(m_symbolReader.OpenSymbolFile(pdb));
+        }
+    }
+
+    private class SymbolResolver : ISymbolResolver
+    {
+        private SymbolModule m_symbolModule;
+
+        public SymbolResolver(SymbolModule symbolModule)
+        {
+            m_symbolModule = symbolModule;
+        }
+
+        public string GetSymbolNameByRVA(uint rva)
+        {
+            return m_symbolModule.FindNameForRva(rva);
+        }
     }
 #if false
     private static TextWriter m_debugLog;
