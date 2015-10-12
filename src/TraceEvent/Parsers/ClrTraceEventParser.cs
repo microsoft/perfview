@@ -9,7 +9,7 @@ using Address = System.UInt64;
 
 /* This file was generated with the command */
 // traceParserGen /merge CLREtwAll.man CLRTraceEventParser.cs
-/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDatats ...) */
+/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...) */
 // The version before any hand modifications is kept as KernelTraceEventParser.base.cs, and a 3
 // way diff is done when traceParserGen is rerun.  This allows the 'by-hand' modifications to be
 // applied again if the mof or the traceParserGen transformation changes. 
