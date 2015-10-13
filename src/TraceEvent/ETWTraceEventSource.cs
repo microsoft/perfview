@@ -30,7 +30,6 @@ namespace Microsoft.Diagnostics.Tracing
     /// * See also #ETWTraceEventSourceInternals
     /// * See also #ETWTraceEventSourceFields
     /// </summary>    
-
     public unsafe sealed class ETWTraceEventSource : TraceEventDispatcher, IDisposable
     {
         /// <summary>
@@ -165,6 +164,29 @@ namespace Microsoft.Diagnostics.Tracing
         /// moduleFile, not a real time stream.
         /// </summary>
         public bool CanReset { get { return (logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) == 0; } }
+
+        /// <summary>
+        /// This routine is only useful/valid for real-time sessions.  
+        /// 
+        /// TraceEvent.TimeStamp internally is stored using a high resolution clock called the Query Performance Counter (QPC).
+        /// This clock is INDEPENDENT of the system clock used by DateTime.   These two clocks are synchronized to within 2 msec at 
+        /// session startup but they can drift from there (typically 2msec / min == 3 seconds / day).   Thus if you have long
+        /// running real time session it becomes problematic to compare the timestamps with those in another session or something
+        /// timestamped with the system clock.   SynchronizeClock will synchronize the TraceEvent.Timestamp clock with the system
+        /// clock again.   If you do this right before you start another session, then the two sessions will be within 2 msec of
+        /// each other, and their timestamps will correlate.     Doing it periodically (e.g. hourly), will keep things reasonably close.  
+        /// 
+        /// TODO: we can achieve perfect synchronization by exposing the QPC tick sync point so we could read the sync point 
+        /// from one session and set that exact sync point for another session.  
+        /// </summary>
+        public void SynchronizeClock()
+        {
+            if (!IsRealTime)
+                throw new InvalidOperationException("SynchronizeClock is only for Real-Time Sessions");
+            DateTime utcNow = DateTime.UtcNow;
+            _syncTimeQPC = QPCTime.GetUTCTimeAsQPC(utcNow);
+            _syncTimeUTC = utcNow;
+        }
 
         /// <summary>
         /// Options that can be passed to GetModulesNeedingSymbols
@@ -356,9 +378,8 @@ namespace Microsoft.Diagnostics.Tracing
                 handles[i] = handles[0];
             }
 
-            sessionStartTimeQPC = 0;                        // Will get set on first event or in real time case below 
-            sessionStartTimeUTC = DateTime.MaxValue;
-            DateTime sessionEndTimeUTC = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year.  
+            DateTime minSessionStartTimeUTC = DateTime.MaxValue;
+            DateTime maxSessionEndTimeUTC = DateTime.MinValue + new TimeSpan(1 * 365, 0, 0, 0); // TO avoid roundoff error when converting to QPC add a year.  
 
             // Open all the traces
             for (int i = 0; i < handles.Length; i++)
@@ -371,11 +392,11 @@ namespace Microsoft.Diagnostics.Tracing
                 DateTime logFileStartTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
                 DateTime logFileEndTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.EndTime);
 
-                if (logFileStartTimeUTC < sessionStartTimeUTC)
-                    sessionStartTimeUTC = logFileStartTimeUTC;
+                if (logFileStartTimeUTC < minSessionStartTimeUTC)
+                    minSessionStartTimeUTC = logFileStartTimeUTC;
                 // End time is maximum of all start times
-                if (logFileEndTimeUTC > sessionEndTimeUTC)
-                    sessionEndTimeUTC = logFileEndTimeUTC;
+                if (logFileEndTimeUTC > maxSessionEndTimeUTC)
+                    maxSessionEndTimeUTC = logFileEndTimeUTC;
 
                 // TODO do we even need log pointer size anymore?   
                 // We take the max pointer size.  
@@ -393,14 +414,23 @@ namespace Microsoft.Diagnostics.Tracing
                 DateTime nowUTC = DateTime.UtcNow;
                 long nowQPC = QPCTime.GetUTCTimeAsQPC(nowUTC);
 
-                sessionStartTimeUTC = nowUTC - new TimeSpan(10000 * 100);  // Subtract 1/10 sec to avoid negative numbers
-                sessionStartTimeQPC = nowQPC - _QPCFreq / 10;            // Subtract 1/10 sec to keep now and nowQPC in sync.  
+                _syncTimeQPC = nowQPC;
+                _syncTimeUTC = nowUTC;
+
+                sessionStartTimeQPC = nowQPC - _QPCFreq / 10;           // Subtract 1/10 sec to keep now and nowQPC in sync.  
                 sessionEndTimeQPC = long.MaxValue;                      // Represents infinity.      
             }
             else
-                sessionEndTimeQPC = this.UTCDateTimeToQPC(sessionEndTimeUTC);
+            {
+                _syncTimeUTC = minSessionStartTimeUTC;
 
-            Debug.Assert(sessionStartTimeUTC.Ticks != 0 && sessionEndTimeUTC.Ticks != 0 && SessionStartTime < SessionEndTime);
+                // UTCDateTimeToQPC is actually going to give the wrong value for these because we have
+                // not set _syncTimeQPC, but will be adjusted when we see the event Header and know _syncTypeQPC.  
+                sessionStartTimeQPC = this.UTCDateTimeToQPC(minSessionStartTimeUTC);
+                sessionEndTimeQPC = this.UTCDateTimeToQPC(maxSessionEndTimeUTC);
+            }
+
+            Debug.Assert(sessionStartTimeQPC != 0 && sessionEndTimeQPC != 0 && SessionStartTime < SessionEndTime);
             Debug.Assert(_QPCFreq != 0);
 
             if (pointerSize == 0)       // Real time does not set this (grrr). 
@@ -449,10 +479,11 @@ namespace Microsoft.Diagnostics.Tracing
             };
             kernelParser.EventTraceHeader += delegate(EventTraceHeaderTraceData data)
             {
-                if (sessionStartTimeQPC == 0)
+                if (_syncTimeQPC == 0)
                 {   // In merged files there can be more of these, we only set the QPC time on the first one 
                     // We were using a 'start location' of 0, but we want it to be the timestamp of this events, so we add this to our 
-                    // existing QPC values.  
+                    // existing QPC values.
+                    _syncTimeQPC = data.TimeStampQPC;
                     sessionStartTimeQPC += data.TimeStampQPC;
                     sessionEndTimeQPC += data.TimeStampQPC;
                 }
@@ -467,7 +498,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             public static long GetUTCTimeAsQPC(DateTime utcTime)
             {
-                return Get()._GetUTCTimeAsQPC(utcTime);
+                QPCTime qpcTime = new QPCTime();
+                return qpcTime._GetUTCTimeAsQPC(utcTime);
             }
 
             #region private
@@ -477,13 +509,6 @@ namespace Microsoft.Diagnostics.Tracing
                 double deltaSec = (utcTime.Ticks - m_timeAsDateTimeUTC.Ticks) / 10000000.0;
                 // scale to QPC units and then add back in the base.  
                 return (long)(deltaSec * Stopwatch.Frequency) + m_timeAsQPC;
-            }
-
-            static QPCTime Get()
-            {
-                if (s_time == null)
-                    Interlocked.CompareExchange(ref s_time, new QPCTime(), null);
-                return s_time;
             }
 
             QPCTime()
@@ -512,7 +537,6 @@ namespace Microsoft.Diagnostics.Tracing
             DateTime m_timeAsDateTimeUTC;
             long m_timeAsQPC;
 
-            static QPCTime s_time;          // this is s singleton class and this is the singleton.
             #endregion
         }
 

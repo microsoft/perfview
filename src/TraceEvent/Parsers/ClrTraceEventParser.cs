@@ -9,7 +9,7 @@ using Address = System.UInt64;
 
 /* This file was generated with the command */
 // traceParserGen /merge CLREtwAll.man CLRTraceEventParser.cs
-/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDatats ...) */
+/* And then modified by hand to add functionality (handle to name lookup, fixup of evenMethodLoadUnloadTraceDMOatats ...) */
 // The version before any hand modifications is kept as KernelTraceEventParser.base.cs, and a 3
 // way diff is done when traceParserGen is rerun.  This allows the 'by-hand' modifications to be
 // applied again if the mof or the traceParserGen transformation changes. 
@@ -179,7 +179,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen 
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
-                         | ThreadTransfer | GCHeapAndTypeNames,
+                         | ThreadTransfer | GCHeapAndTypeNames | Codesymbols,
 
             /// <summary>
             /// This provides the flags commonly needed to take a heap .NET Heap snapshot with ETW.  
@@ -8886,6 +8886,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             PerfTrack = 0x20000000,
             Stack = 0x40000000,
+            /// <summary>
+            /// Dump PDBs for dynamically generated modules.  
+            /// </summary>
             CodeSymbolsRundown = 0x80000000,
 
             Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader + CodeSymbolsRundown,

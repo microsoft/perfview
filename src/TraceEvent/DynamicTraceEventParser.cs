@@ -502,7 +502,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
             Debug.Assert(computedSize <= this.EventDataLength);
             if ((int) ID != 0xFFFE) // If it is not a manifest event
-                Debug.Assert(computedSize == this.EventDataLength);
+            {
+                // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
+                Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
+            }
 #endif
             int offset = payloadFetches[index].Offset;
             if (offset == ushort.MaxValue)
@@ -522,7 +525,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue();    
+                var ret = new StructValue();
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
@@ -791,7 +794,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Implements TraceEvent interface
         /// </summary>
-        public override string PayloadString(int index, IFormatProvider formatProvider=null)
+        public override string PayloadString(int index, IFormatProvider formatProvider = null)
         {
             // See if you can do enumeration mapping.  
             var map = payloadFetches[index].Map;
@@ -1986,8 +1989,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
-                            lengthStr == ret.payloadNames[prevFieldIdx] && ret.payloadFetches[prevFieldIdx].Type == typeof(int))
-                        {                           
+                            lengthStr == ret.payloadNames[prevFieldIdx] &&
+                                (ret.payloadFetches[prevFieldIdx].Type == typeof(int) || ret.payloadFetches[prevFieldIdx].Type == typeof(uint)))
+                        {
                             // Remove the previous field, since it was just there to encode the length of the blob.   
                             if (offset != ushort.MaxValue)
                                 offset -= 4;

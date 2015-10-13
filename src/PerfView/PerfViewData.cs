@@ -976,7 +976,7 @@ namespace PerfView
                 dataFile.UTCOffsetMinutes.HasValue ? (dataFile.UTCOffsetMinutes.Value / 60.0).ToString("f2") : "Unknown");
             writer.WriteLine("<TR><TD Title=\"This is negative if PerfView is running in a time zone west of UTC\">UTC offset where PerfView is running</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                 TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
-            
+
             if (dataFile.UTCOffsetMinutes.HasValue)
             {
                 writer.WriteLine("<TR><TD Title=\"This is negative if analysis is happening west of collection\">Delta of Local and Collection Time</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
@@ -3926,7 +3926,7 @@ namespace PerfView
             }
             else if (streamName == "Server GC")
             {
-                GCProcess.Collect(eventSource, (float) eventLog.SampleProfileInterval.TotalMilliseconds, null, stackSource);
+                GCProcess.Collect(eventSource, (float)eventLog.SampleProfileInterval.TotalMilliseconds, null, stackSource);
                 return stackSource;
             }
             else throw new Exception("Unknown stream " + streamName);
@@ -4781,11 +4781,8 @@ namespace PerfView
                 if (hasTpl)
                 {
                     m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
-                    if (AppLog.InternalUser)
-                    {
-                        m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
-                        m_Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
-                    }
+                    m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
+                    m_Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
                     m_Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
                 }
             }

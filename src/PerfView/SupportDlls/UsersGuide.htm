@@ -2435,6 +2435,22 @@
                             source.
                         </li>
                         <li>
+                            <strong><a id="AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a></strong> - This view 
+                            is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have 
+                            call stacks associated with them.  The only difference is at the top of the each stack (between the 
+                            process and thread frames) is a list of Start-Stop tasks (that is activities See 
+                            <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
+                            EventSource Activities </a> on how to define your own) that are current started
+                            but not stopped.
+                        </li>
+                        <li>
+                            <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
+                            is a simplification of the <a href="#AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a> view.  
+                            Like that view, it shows every event in the context of the start-stop activities that are currently
+                            active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
+                            and is useful when you don't want the extra detail. 
+                        </li>
+                        <li>
                             <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
                             is present if PerFView detects any GC heap snapshots in the ETL file.   These
                             may be either JavaScript or .NET heap snapshots.
@@ -6188,6 +6204,11 @@
             indicate that they should be used as the correlation ID.    If this key-value is not present, and the event has any
             payload fields the first field is used as the correlation ID.  If the event has no payload fields the thread ID is used.
         </li>
+        <li>
+            <strong>Verbose=true</strong> By default PerfView logs a SAMPLE of PerfView/StopTriggerDebugMessage messages into the ETW log
+            which is typically enough information to diagnose why triggering is not working properly.   However by setting
+            Verbose=true the information is more complete.
+        </li>
     </ul>
     <h5>Examples of /StopOnEtwEvent use</h5>
     <p>
@@ -7697,6 +7718,33 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.8.6 10/12/15
+            <ul>
+                <li>
+                    Integrated Lee's update of CLRMD that should make PerFView able to extract heap dumps from debugger dumps of 
+                    .NET Native processes.   
+                </li>
+                <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.5 10/6/15
+            <ul>
+                <li>
+                    Made 'Any Stacks (with StartStop Tasks)' and 'Any StartStopTree' public.   
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.3 9/23/15
+            <ul>
+                <li> Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
+                     useful before so that any traces I get have detailed information for debugging, but are now impacting
+                     the cost of using PerfView in production when Tasks are used heavily.
+                </li>
+            </ul>
+        </li>
         <li>
             Version 1.8.2 9/13/15
             <ul>

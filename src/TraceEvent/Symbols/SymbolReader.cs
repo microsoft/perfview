@@ -2357,7 +2357,7 @@ internal sealed class ComStreamWrapper : IStream
 namespace Dia2Lib
 {
     /// <summary>
-    /// The DiaLoader class knows how to load the msdia120.dll (the Debug Access Interface) (see docs at
+    /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
     /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
     /// Basically it just called the DllGetClassObject interface directly.
     /// 
@@ -2386,11 +2386,15 @@ namespace Dia2Lib
             if (!s_loadedNativeDll)
             {
                 // Insure that the native DLL we need exist.  
-                NativeDlls.LoadNative("msdia120.dll");
+                NativeDlls.LoadNative("msdia140.dll");
                 s_loadedNativeDll = true;
             }
 
-            var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
+            // This is the value it was for msdia120 and before 
+            // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
+            
+            // This is the value for msdia140.  
+            var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
             var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
 
             object comObject = null;
@@ -2411,7 +2415,7 @@ namespace Dia2Lib
 
         // Methods
         [return: MarshalAs(UnmanagedType.Interface)]
-        [DllImport("msdia120.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+        [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
         private static extern object DllGetClassObject(
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);

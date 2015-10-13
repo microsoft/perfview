@@ -84,7 +84,7 @@ namespace ClrMemory
                 Debug.Assert(IsInHeap(objRef));
                 var typeIndex = (int)FetchIntPtrAt(objRef, 0) - ICorDebugGCHeapType.TypeIndexStart;
                 if ((uint)typeIndex < (uint)m_types.Count)
-                    return GetTypeByIndex(typeIndex);
+                    return m_types[typeIndex];
 
                 // Return a bad type
                 Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the begining of an object.", objRef));
@@ -92,7 +92,8 @@ namespace ClrMemory
                 return m_types[0];
             }
         }
-        public override ClrType GetTypeByIndex(int typeIndex) { return m_types[typeIndex]; }
+        
+        [Obsolete]
         public override int TypeIndexLimit { get { return m_types.Count; } }
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
         public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
@@ -272,7 +273,7 @@ namespace ClrMemory
                     m_maxAddr = gcSegment.End;
 
                 m_totalHeapSize += gcSegment.Length;
-                if (gcSegment.Large)
+                if (gcSegment.IsLarge)
                     m_sizeByGen[3] += gcSegment.Length;
                 else
                 {
@@ -336,7 +337,15 @@ namespace ClrMemory
             get { return m_segments; }
         }
 
-        public override IEnumerable<Address> EnumerateObjects()
+        public override ClrRuntime Runtime
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
         }
@@ -347,6 +356,21 @@ namespace ClrMemory
         }
 
         public override bool ReadPointer(Address addr, out Address value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TryGetMethodTable(ulong obj, out ulong typeHandle, out ulong componentTypeHandle)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ulong GetMethodTable(ulong obj)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ClrType GetTypeByMethodTable(ulong typeHandle, ulong componentTypeHandle)
         {
             throw new NotImplementedException();
         }
@@ -407,11 +431,7 @@ namespace ClrMemory
         {
             get { return m_name; }
         }
-
-        public override string AppBase
-        {
-            get { throw new NotImplementedException(); }
-        }
+        
 
         public override string ConfigurationFile
         {
@@ -421,6 +441,22 @@ namespace ClrMemory
         public override IList<ClrModule> Modules
         {
             get { throw new NotImplementedException(); }
+        }
+
+        public override string ApplicationBase
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public override ClrRuntime Runtime
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 
@@ -598,37 +634,15 @@ namespace ClrMemory
             get { throw new NotImplementedException(); }
         }
 
+        public override IList<ClrAppDomain> AppDomains
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public override ClrType GetTypeByName(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override SourceLocation GetSourceInformation(ClrMethod method, int ilOffset)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override SourceLocation GetSourceInformation(uint mdMethodToken, int ilOffset)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool IsMatchingPdb(string pdbPath)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool IsPdbLoaded
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public override void LoadPdb(string path)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override string TryDownloadPdb(ISymbolNotification notification)
         {
             throw new NotImplementedException();
         }
@@ -640,7 +654,6 @@ namespace ClrMemory
     public class ICorDebugGCHeapType : ClrType
     {
         public override string Name { get { return m_name; } }
-        public override int Index { get { return m_index; } }
         public override ulong GetSize(Address objRef)
         {
             Debug.Assert(m_heap.GetObjectType(objRef) == this);         // You should be calling only on appropriate objRefs
@@ -764,7 +777,7 @@ namespace ClrMemory
 
         // These are only valid for Array Types
         public override bool IsArray { get { return m_isArray; } }
-        public override ClrType ArrayComponentType { get { return m_elementType; } }
+        public override ClrType ComponentType { get { return m_elementType; } }
         public override int GetArrayLength(Address objRef)
         {
             Debug.Assert(m_heap.GetObjectType(objRef) == this);
@@ -792,8 +805,8 @@ namespace ClrMemory
             var val = m_heap.FetchIntPtrAt(address, 0);
 
             CorElementType elemType = (CorElementType)ClrElementType.Unknown;
-            if (ArrayComponentType != null)
-                elemType = (CorElementType)ArrayComponentType.ElementType;
+            if (ComponentType != null)
+                elemType = (CorElementType)ComponentType.ElementType;
 
             return InnerGetValue(val, elemType);
         }
@@ -839,7 +852,7 @@ namespace ClrMemory
         {
             // Console.WriteLine("Creating type for typeId {0:x} {1:x}", typeID.token1, typeID.token2);
             m_heap = heap;
-            m_index = heap.TypeIndexLimit;
+            m_index = heap.m_types.Count;
             m_name = "";
             m_moduleFilePath = "";
 
@@ -861,15 +874,15 @@ namespace ClrMemory
                 heap.m_process5.GetArrayLayout(typeID, out m_array);
                 m_elementType = heap.GetObjectTypeFromID(m_array.componentID);
 
-                m_moduleFilePath = ArrayComponentType.Module.FileName;
+                m_moduleFilePath = ComponentType.Module.FileName;
                 if (m_typeKind == CorElementType.ELEMENT_TYPE_SZARRAY)
-                    m_name = ArrayComponentType.Name + "[]";
+                    m_name = ComponentType.Name + "[]";
                 else if (m_typeKind == CorElementType.ELEMENT_TYPE_ARRAY)
                 {
                     if (m_array.numRanks == 1)
-                        m_name = ArrayComponentType.Name + "[*]";
+                        m_name = ComponentType.Name + "[*]";
                     else
-                        m_name = ArrayComponentType.Name + "[" + new string(',', m_array.numRanks - 1) + "]";
+                        m_name = ComponentType.Name + "[" + new string(',', m_array.numRanks - 1) + "]";
 
                     Debug.Assert(m_array.firstElementOffset > m_array.rankOffset);
                 }
@@ -1091,12 +1104,19 @@ namespace ClrMemory
         {
             throw new NotImplementedException();
         }
-        #endregion
+
+        public override IEnumerable<ulong> EnumerateMethodTables()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ulong MethodTable { get { throw new NotImplementedException(); } }
 
         public override uint MetadataToken
         {
             get { throw new NotImplementedException(); }
         }
+        #endregion
     }
 
     public class ICorDebugGCHeapField : ClrInstanceField
@@ -1104,7 +1124,7 @@ namespace ClrMemory
         public override string Name { get { return m_name; } }
         public override int Offset { get { return m_offset; } } 
         public override ClrType Type { get { return m_type; } }
-        public override Address GetFieldAddress(Address objRef, bool interior)
+        public override Address GetAddress(Address objRef, bool interior)
         {
             /* TODO FIX NOW - A field could be embedded in another field.  Imagine:
              * 
@@ -1129,9 +1149,15 @@ namespace ClrMemory
              */
             return objRef + (uint)Offset;
         }
-        public override object GetFieldValue(Address objRef, bool interior)
+
+        public override object GetValue(Address objRef, bool interior)
         {
-            return Type.GetValue(GetFieldAddress(objRef, interior));
+            return Type.GetValue(GetAddress(objRef, interior));
+        }
+        
+        public override object GetValue(Address objRef, bool interior, bool convertStrings)
+        {
+            return Type.GetValue(GetAddress(objRef, interior));
         }
 
         #region private

@@ -483,6 +483,10 @@ namespace PerfView
                         {
                             LogFile.WriteLine("Turning on more CLR GC, JScript and ASP.NET Events.");
 
+                            // Turn on DotNet Telemetry
+                            EnableUserProvider(userModeSession, "DotNet",
+                                new Guid("319dc449-ada5-50f7-428e-957db6791668"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
                             // Turn on ETW logging about etw logging (so we get lost event info) ... (Really need a separate session to get the lost event Info properly). 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-EventTracing",
                                 new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
@@ -557,7 +561,7 @@ namespace PerfView
                             }
                             EnableUserProvider(userModeSession, ".NETTasks",
                                 TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                ulong.MaxValue, // (ulong) (TplEtwProviderTraceEventParser.Keywords.Tasktransfer | TplEtwProviderTraceEventParser.Keywords.Tasks | TplEtwProviderTraceEventParser.Keywords.Parallel), 
+                                (ulong) (TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
 
                             // TODO FIX NOW remove this ugly versioning logic 1/2015.  We should just be turning on the FrameworkEventSource.   

@@ -268,17 +268,22 @@ public class GCHeapDumper
         ClrRuntime runtime = null;
 
         m_log.WriteLine("Enumerating over {0} detected runtimes...", target.ClrVersions.Count);
+        var symbolReader = new SymbolReader(m_log, null);
+        if (symbolReader.SymbolPath.Length == 0)
+            symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
+
+        target.SymbolProvider = new SymbolProvider(symbolReader);
 
         foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", currRuntime.Version);
-            string dacLocation = currRuntime.TryGetDacLocation();
+            string dacLocation = target.SymbolLocator.FindBinary(currRuntime.DacInfo);
 
             try
             {
                 if (dacLocation != null)
                 {
-                    runtime = target.CreateRuntime(dacLocation);
+                    runtime = currRuntime.CreateRuntime(dacLocation);
                     break;
                 }
 #if STANDALONE_EXE
@@ -286,9 +291,6 @@ public class GCHeapDumper
                 {
                     var dacInfo = currRuntime.DacInfo;
                     var dacFileName = dacInfo.FileName;
-                    var symbolReader = new SymbolReader(m_log, null);
-                    if (symbolReader.SymbolPath.Length == 0)
-                        symbolReader.SymbolPath = SymbolPath.MicrosoftSymbolServerPath;
 
                     m_log.WriteLine("SymbolPath={0}", symbolReader.SymbolPath);
                     m_log.WriteLine("Looking up {0} build Time 0x{1:x} size 0x{2:x}",
@@ -298,17 +300,27 @@ public class GCHeapDumper
                     {
                         // TODO can we get rid of this?
                         var lastChance = Path.Combine(new SymbolPath().DefaultSymbolCache(), dacFileName);
-                        m_log.WriteLine("Last chance, looking at DAC dll at {0}", lastChance);
+                        m_log.WriteLine("Looking for DAC dll at {0}", lastChance);
                         if (File.Exists(lastChance))
+                        {
                             dacFilePath = lastChance;
+                        }
                         else
-                            throw new ApplicationException(
-                                "Could not find runtime support DLL " + dacInfo.FileName + " using the symbol server." +
-                                "\r\nInsure that your Symbol Path includes a Microsoft Symbol Server" +
-                                "\r\nOr copy the %WINDIR%\\Microsoft.NET\\Framework*\\V*\\mscordacwks.dll from the collection machine to " + lastChance);
+                        {
+
+                            lastChance = Path.Combine(Path.GetDirectoryName(processDumpFile), dacFileName);
+                            m_log.WriteLine("Last chance, looking for DAC dll at {0}", lastChance);
+                            if (File.Exists(lastChance))
+                                dacFilePath = lastChance;
+                            else
+                                throw new ApplicationException(
+                                    "Could not find runtime support DLL " + dacInfo.FileName + " using the symbol server." +
+                                    "\r\nInsure that your Symbol Path includes a Microsoft Symbol Server" +
+                                    "\r\nOr copy the %WINDIR%\\Microsoft.NET\\Framework*\\V*\\mscordacwks.dll from the collection machine to " + lastChance);
+                        }
                     }
                     m_log.WriteLine("Found CLR data access (DAC) DLL {0}", dacFilePath);
-                    runtime = target.CreateRuntime(dacFilePath);
+                    runtime = currRuntime.CreateRuntime(dacFilePath);
                     break;
                 }
 #endif
@@ -342,7 +354,7 @@ public class GCHeapDumper
             m_log.WriteLine("Continuing with less accurate GC root information.");
         }
 
-        DumpDotNetHeapData(runtime.GetHeap(m_log), ref proc, true);
+        DumpDotNetHeapData(runtime.GetHeap(), ref proc, true);
         WriteData(logLiveStats: false);
 
         var collectionMetadata = new CollectionMetadata()
@@ -855,7 +867,7 @@ public class GCHeapDumper
                 {
                     m_log.WriteLine("Enumerating over {0} detected runtimes...", target.ClrVersions.Count);
 
-                    foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
+                    foreach (ClrInfo clr in EnumerateRuntimes(target))
                     {
                         try
                         {
@@ -865,15 +877,15 @@ public class GCHeapDumper
                             else
                                 proc = GetDebuggerForLiveProcess(processID);
 
-                            m_log.WriteLine("Creating Runtime access object for runtime {0}.", currRuntime.Version);
-                            string runtimeLocation = currRuntime.TryGetDacLocation();
+                            m_log.WriteLine("Creating Runtime access object for runtime {0}.", clr.Version);
+                            string runtimeLocation = target.SymbolLocator.FindBinary(clr.DacInfo);
                             if (runtimeLocation == null)
                             {
                                 m_log.WriteLine("Could not find Dac (Data access Controller for runtime");
                                 return false;
                             }
 
-                            var runtime = target.CreateRuntime(runtimeLocation);
+                            var runtime = clr.CreateRuntime(runtimeLocation);
                             m_runTime = runtime;
                             if (runtime == null)
                             {
@@ -881,7 +893,7 @@ public class GCHeapDumper
                                 return false;
                             }
 
-                            gcHeap = runtime.GetHeap(m_log);
+                            gcHeap = runtime.GetHeap();
                             if (gcHeap == null)
                             {
                                 m_log.WriteLine("Could not create GC Heap handle for the .NET Runtime.");
@@ -1038,7 +1050,7 @@ public class GCHeapDumper
             var gcHeapDumpSegment = new GCHeapDumpSegment();
             gcHeapDumpSegment.Start = seg.Start;
             gcHeapDumpSegment.End = seg.End;
-            if (seg.Large)
+            if (seg.IsLarge)
             {
                 // Everything is Gen3 (large objects)
                 gcHeapDumpSegment.Gen0End = seg.End;
@@ -1056,7 +1068,7 @@ public class GCHeapDumper
             gcHeapDumpSegments.Add(gcHeapDumpSegment);
 
             total += seg.Length;
-            m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M LOH:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.Large);
+            m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M LOH:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.IsLarge);
         }
         m_log.WriteLine("Segment: Total {0,16} Length: {1,16:x} {2,11:n3}M", "", total, total / 1000000.0);
 
@@ -1129,7 +1141,9 @@ public class GCHeapDumper
                             var ccwTypeIndex = GetTypeIndexForName(typeName, null, 200);
                             ccwChildren.Clear();
                             ccwChildren.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object));
-                            m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
+
+                            if (comPtr != 0)
+                                m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
 
                             nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
                             nodeToAddRootTo.AddChild(ccwNode);
@@ -1164,7 +1178,7 @@ public class GCHeapDumper
             }
 
 #if DEPENDENT_HANDLE
-            var runtime = m_dotNetHeap.GetRuntime();
+            var runtime = m_dotNetHeap.Runtime;
             // Special logic to allow Dependent handles to look like nodes from source to target.  
             NodeTypeIndex typeIdxForDependentHandlePseudoNode = NodeTypeIndex.Invalid;
             // Get all the dependent handles 
@@ -2058,6 +2072,7 @@ public class GCHeapDumper
         }
     }
 #endif
+
     /// <summary>
     /// Given a type, find the graph's type index for it.  If this is the first
     /// time we have seen the type we generate a new type for it and return that
@@ -2065,7 +2080,13 @@ public class GCHeapDumper
     /// </summary>
     private NodeTypeIndex GetTypeIndexForClrType(ClrType type, int objSize)
     {
-        var idx = (int)type.Index;
+        int idx;
+        if (!m_typeTable.TryGetValue(type, out idx))
+        {
+            idx = m_typeTable.Count;
+            m_typeTable[type] = idx;
+        }
+        
         if (m_typeIdxToGraphIdx.Count <= idx)
             m_typeIdxToGraphIdx.Count = idx + (m_typeIdxToGraphIdx.Count / 2 + 32);
 
@@ -2223,6 +2244,7 @@ public class GCHeapDumper
 
     private GrowableArray<NodeIndex> m_children;
 
+    Dictionary<ClrType, int> m_typeTable = new Dictionary<ClrType, int>();
     private GrowableArray<int> m_typeIdxToGraphIdx;
 
     private Dictionary<string, NodeTypeIndex> m_graphTypeIdxForArrayType;
@@ -2245,6 +2267,40 @@ public class GCHeapDumper
         m_debugLog.WriteLine(format, args);
         m_debugLog.Flush();
 #endif
+    }
+
+    private class SymbolProvider : ISymbolProvider
+    {
+        private SymbolReader m_symbolReader;
+
+        public SymbolProvider(SymbolReader symbolReader)
+        {
+            m_symbolReader = symbolReader;
+        }
+
+        public ISymbolResolver GetSymbolResolver(string pdbName, Guid guid, int age)
+        {
+            string pdb = m_symbolReader.FindSymbolFilePath(pdbName, guid, age);
+            if (pdb == null)
+                return null;
+
+            return new SymbolResolver(m_symbolReader.OpenSymbolFile(pdb));
+        }
+    }
+
+    private class SymbolResolver : ISymbolResolver
+    {
+        private SymbolModule m_symbolModule;
+
+        public SymbolResolver(SymbolModule symbolModule)
+        {
+            m_symbolModule = symbolModule;
+        }
+
+        public string GetSymbolNameByRVA(uint rva)
+        {
+            return m_symbolModule.FindNameForRva(rva);
+        }
     }
 #if false
     private static TextWriter m_debugLog;
