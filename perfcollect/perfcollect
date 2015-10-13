@@ -1,0 +1,560 @@
+#!/bin/bash 
+
+#############################################################################################################
+# .NET Performance Data Collection Script
+#############################################################################################################
+
+#############################################################################################################
+#
+# ***** HOW TO USE THIS SCRIPT *****
+#
+# This script can be used to collect and view performance data collected with perf_event on Linux.
+# It's job is to make it simple to collect performance traces.
+#
+# How to collect a performance trace:
+# 1. Prior to starting the .NET process, set the environment variable COMPlus_PerfMapEnabled=1.
+#    This tells the runtime to emit information that enables perf_event to resolve JIT-compiled code symbols.
+# 2. Setup your system to reproduce the performance issue you'd like to capture.  Data collection can be
+#    started on already running processes.
+# 2. Run this script: sudo ./perfcollect collect samplePerfTrace
+#    This will start data collection.
+# 3. Let the repro run as long as you need to capture the performance problem.
+# 4. Hit CTRL+C to stop collection.
+#    When collection is stopped, the script will create a trace.tgz file matching the name specified on the
+#    command line.  This file will contain the trace, JIT-compiled symbol information, and all debugging
+#    symbols for binaries referenced by this trace that were available on the machine at collection time.
+#
+# How to view a performance trace:
+# 1. Run this script: ./perfcollect view samplePerfTrace.trace.tgz
+#    This will extract the trace, place and register all symbol files and JIT-compiled symbol information
+#    and start the perf_event viewer.  By default, you will be looking at a callee view - stacks are ordered
+#    top down.  For a caller or bottom up view, specify '-graphtype caller'. 
+#############################################################################################################
+
+
+######################################
+## FOR DEBUGGING ONLY
+######################################
+# set -x
+
+######################################
+## Configuration
+######################################
+
+# The location of the perf executable.
+perfcmd=/usr/bin/perf
+
+######################################
+## Collection Options
+## NOTE: These values represent the collection defaults.
+######################################
+
+# Set when we parse command line arguments to determine if we should enable specific collection options.
+collect_cpu=1
+collect_threadTime=0
+
+# Declare an array of events to collect.
+declare -a eventsToCollect
+
+######################################
+## Helper Functions
+######################################
+
+##
+# Console text color modification helpers.
+##
+RedText()
+{
+	tput setaf 1
+}
+
+GreenText()
+{
+	tput setaf 2
+}
+
+ResetText()
+{
+	tput sgr0
+}
+
+# $1 == Status message
+WriteStatus()
+{
+	GreenText
+	echo $1
+	ResetText
+}
+
+# $1 == Message.
+FatalError()
+{
+	RedText
+	echo "ERROR: $1"
+	ResetText
+	PrintUsage
+	exit 1
+}
+
+######################################
+# Prerequisite Installation
+######################################
+IsUbuntu()
+{
+	local ubuntu=0
+	if [ -f /etc/lsb-release ]
+	then
+		local flavor=`cat /etc/lsb-release | grep DISTRIB_ID`
+		if [ "$flavor" == "DISTRIB_ID=Ubuntu" ]
+		then
+			ubuntu=1
+		fi
+	fi
+        
+	echo $ubuntu
+}
+
+InstallPerf_Ubuntu()
+{
+	# Disallow non-root users.
+	if [ `whoami` != "root" ]
+	then
+		RedText
+		echo "This script must be run as root."
+		ResetText
+		exit 1
+	fi
+
+	# Install packages.
+	GreenText
+	echo "Installing perf_event packages."
+	ResetText
+	apt-get install linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r`
+}
+
+InstallPerf()
+{
+	if [ "$(IsUbuntu)" == "1" ]
+	then
+		InstallPerf_Ubuntu
+	else
+		FatalError "Auto install unsupported for this distribution.  Install linux-tools-common package manually to continue."
+	fi
+}
+
+SupportsAutoInstall()
+{
+	local supportsAutoInstall=0
+	if [ "$(IsUbuntu)" == "1" ]
+	then
+		supportsAutoInstall=1
+	fi
+	
+	echo $supportsAutoInstall
+}
+
+######################################
+# Argument Processing
+######################################
+action=''
+inputTraceName=''
+collectionPid=''
+processFilter=''
+graphType=''
+perfOpt=''
+
+ProcessArguments()
+{
+	# No arguments
+	if [ "$#" == "0" ]
+	then
+		PrintUsage
+		exit 0
+	fi
+	
+	# Not enough arguments.
+	if [ "$#" -le "1" ]
+	then
+		FatalError "Not enough arguments have been specified."
+	fi
+
+	# Set the action
+	action=$1
+	if [ "$action" != "collect" ] && [ "$action" != "view" ]
+	then
+		FatalError "Invalid action specified."
+	fi
+
+	# Set the data file.
+	inputTraceName=$2
+	if [ "$inputTraceName" == "" ]
+	then
+		FatalError "Invalid trace name specified."
+	fi
+
+	# Process remaining arguments.
+	# First copy the args into an array so that we can walk the array.
+	args=( "$@" )
+	for (( i=2; i<${#args[@]}; i++ ))
+	do
+		# Get the arg.
+		arg=${args[$i]}
+
+		# Convert the arg to lower case.
+		arg=`echo $arg | tr '[:upper:]' '[:lower:]'`
+
+		# Match the arg to a known value.
+		if [ "-pid" == "$arg" ]
+		then
+			collectionPid=${args[$i+1]}
+			i=$i+1
+		elif [ "-processfilter" == "$arg" ]
+		then
+			processFilter=${args[$i+1]}
+			i=$i+1
+		elif [ "-graphtype" == "$arg" ]
+		then
+			graphType=${args[$i+1]}
+			i=$i+1
+		elif [ "-threadtime" == "$arg" ]
+		then
+			collect_threadTime=1
+		elif [ "-perfopt" == "$arg" ]
+		then
+			perfOpt=${args[$i+1]}
+			i=$i+1
+		fi
+	done
+	
+}
+
+
+##
+# Helper that processes collected data.
+# This helper is called when the CTRL+C signal is handled.
+##
+ProcessCollectedData()
+{
+	WriteStatus "START: Archive collected data."
+	
+	# Make a new target directory.
+	local traceSuffix=".trace"
+	local traceName=$inputTraceName
+	local directoryName=$traceName$traceSuffix
+	mkdir $directoryName
+
+	# Get any perf-$pid.map files that were used by the
+	# trace and store them alongside the trace.
+	WriteStatus "START: Save perf.map files."
+	local mapFiles=`perf buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
+	for mapFile in $mapFiles
+	do
+		if [ -f $mapFile ]
+		then
+			echo "Saving $mapFile"
+			cp $mapFile .
+		else
+			RedText
+			echo "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
+			ResetText
+		fi
+	done
+	WriteStatus "END: Save perf.map files."
+
+	# Create debuginfo files (separate symbols) for all modules in the trace.
+	WriteStatus "START: Save Symbols"
+
+	# Get the list of DSOs with hits in the trace file (those that are actually used).
+	# Filter out /tmp/perf-$pid.map files as these are handled separately.
+	local dsosWithHits=`perf buildid-list --with-hits | grep -v /tmp/perf-`
+	for dso in $dsosWithHits
+	do
+		# Build up tuples of buildid and binary path.
+		local processEntry=0
+		if [ -f $dso ]
+		then
+			local pathToBinary=$dso
+			processEntry=1
+		else
+			local buildid=$dso
+			pathToBinary=''
+		fi
+
+		# Once we have a tuple for a binary path that exists, process it.
+		if [ "$processEntry" == "1" ]
+		then
+			# Get the binary name without path.
+			local binaryName=`basename $pathToBinary`
+	
+			# Build the debuginfo file name.
+			local destFileName=$binaryName.debuginfo
+
+			# Build the destination directory for the debuginfo file.
+			local currentDir=`pwd`
+			local destDir=$currentDir/debuginfo/$buildid
+
+			# Build the full path to the debuginfo file.
+			local destPath=$destDir/$destFileName
+
+			# Check to see if the DSO contains symbols, and if so, build the debuginfo file.
+			local noSymbols=`objdump -t $pathToBinary | grep "no symbols" -c`
+			if [ "$noSymbols" == "0" ]
+			then
+				echo "Generating debuginfo for $binaryName with buildid=$buildid"
+				mkdir -p $destDir
+				objcopy --only-keep-debug $pathToBinary $destPath
+			else
+				echo "Skipping $binaryName with buildid=$buildid.  No symbol information."
+			fi
+		fi
+	done
+
+	WriteStatus "END: Save Symbols"
+	
+	WriteStatus "START: Compress data."
+	
+	# Move all collected files to the new directory.
+	mv * $directoryName > /dev/null 2>&1
+
+	# Compress the data.
+	local archiveSuffix=".tgz"
+	local archiveName=$directoryName$archiveSuffix
+	tar -czvf $archiveName $directoryName 
+	#-C $tempDir $directoryName
+
+	# Move back to the original directory.
+	popd
+
+	# Move the archive.
+	mv $tempDir/$archiveName .
+	
+	WriteStatus "END: Compress data."
+
+	# Delete the temp directory.
+	rm -rf $tempDir	
+
+	WriteStatus "END: Archive collected data."
+}
+
+##
+# Handle the CTRL+C signal.
+##
+CTRLC_Handler()
+{
+	# The user must CTRL+C to stop collection in perf_event.
+	# When this happens, we catch the signal and finish our work.
+	ProcessCollectedData
+}
+
+##
+# Print usage information.
+##
+PrintUsage()
+{
+	echo "This script uses perf_event to collect and view performance traces."
+	echo "For detailed collection and viewing steps, view this script in a text editor or viewer."
+	echo ""
+	echo "./perfcollect <action> <tracename>"
+	echo "Valid Actions: collect view installperf"
+	echo ""
+	echo "collect options:"
+	echo "By default, collection includes CPU samples collected every ms."
+	echo "	-pid		  : Only collect data from the specified process id."
+	echo "	-threadtime       : Collect context switch events."
+	echo ""
+	echo "view options:"
+	echo "	-processfilter	  : Filter data by the specified process name."
+	echo "	-graphtype	  : Specify the type of graph.  Valid values are 'caller' and 'callee'.  Default is 'callee'."
+	echo ""
+	echo "installperf options:"
+	echo "	No options.  Useful for first-time setup or after kernel upgrade."
+	echo ""
+}
+
+##
+# Validate and set arguments.
+##
+
+BuildPerfRecordArgs()
+{
+	# Start with default collection arguments that record all CPUs (-a) and collect call stacks (-g)
+	collectionArgs="record -g"
+
+	# Filter to a single process if desired
+	if [ "$collectionPid" != "" ]
+	then
+		collectionArgs="$collectionArgs --pid=$collectionPid"
+	else
+		collectionArgs="$collectionArgs -a"
+	fi
+
+	# Enable CPU Collection
+	if [ $collect_cpu -eq 1 ]
+	then
+		collectionArgs="$collectionArgs -F 999"
+		eventsToCollect=( "${eventsToCollect[@]}" "cpu-clock" )
+	fi
+
+	# Enable context switches.
+	if [ $collect_threadTime -eq 1 ]
+	then
+		eventsToCollect=( "${eventsToCollect[@]}" "context-switches" )
+	fi
+
+	# Build up the set of events.
+	local eventString=""
+	local comma=","
+	for (( i=0; i<${#eventsToCollect[@]}; i++ ))
+	do
+		# Get the arg.
+		eventName=${eventsToCollect[$i]}
+
+		# Build up the comma separated list.
+		if [ "$eventString" == "" ]
+		then
+			eventString=$eventName
+		else
+			eventString="$eventString$comma$eventName"
+		fi
+
+	done
+
+	# Add the events onto the collection command line args.	
+	collectionArgs="$collectionArgs -e $eventString"
+}
+
+DoCollect()
+{
+	# Warn non-root users.
+	if [ `whoami` != "root" ]
+	then
+		RedText
+		echo "This script must be run as root."
+		ResetText
+		exit 1;
+	fi
+
+	# Build collection args.
+	# Places the resulting args in $collectionArgs
+	BuildPerfRecordArgs
+
+	# Print status and instructions on how to stop collection.
+	WriteStatus "Starting collection.  Press CTRL+C to stop collection."
+
+	# Trap CTRL+C
+	trap CTRLC_Handler SIGINT
+
+	# Create a temp directory to use for collection.
+	local tempDir=`mktemp -d`
+
+	# Switch to the directory.
+	pushd $tempDir > /dev/null
+
+	# Start perf record.
+	echo "Running cmd: $perfcmd $collectionArgs $perfOpt"
+	$perfcmd $collectionArgs
+
+	# CTRL+C handler will run after the user hits CTRL+C to stop collection.
+}
+
+# $1 == Path to directory containing trace files
+PropSymbolsAndMapFilesForView()
+{
+	# Get the current directory
+	local currentDir=`pwd`	
+
+	# Copy map files to /tmp since they aren't supported by perf buildid-cache.
+	local mapFiles=`find -name *.map`
+	for mapFile in $mapFiles
+	do
+		echo "Copying $mapFile to /tmp."
+		cp $mapFile /tmp
+	done
+
+	# Cache all debuginfo files saved with the trace in the buildid cache.
+	local debugInfoFiles=`find $currentDir -name *.debuginfo`
+	for debugInfoFile in $debugInfoFiles
+	do
+		echo "Caching $debugInfoFile in buildid cache using perf buildid-cache."
+		perf buildid-cache --add=$debugInfoFile
+	done
+}
+
+DoView()
+{
+	# Generate a temp directory to extract the trace files into.
+	local tempDir=`mktemp -d`
+	
+	# Extract the trace files.
+	tar -xzvf $inputTraceName -C $tempDir
+	
+	# Move the to temp directory.
+	pushd $tempDir
+	cd `ls`
+
+	# Prop symbols and map files.
+	PropSymbolsAndMapFilesForView `pwd`
+
+	# Choose the view
+	if [ "$graphType" == "" ]
+	then
+		graphType="callee"
+	elif [ "$graphType" != "callee" ] && [ "$graphType" != "caller"]
+	then
+		FatalError "Invalid graph type specified.  Valid values are 'callee' and 'caller'."
+	fi
+
+	# Filter to specific process names if desired.
+	if [ "$processFilter" != "" ]
+	then
+		processFilter="--comms=$processFilter"
+	fi
+	
+	# Execute the viewer.
+	perf report -g graph,0.5,$graphType $processFilter $perfOpt
+
+	# Switch back to the original directory.
+	popd
+
+	# Delete the temp directory.
+	rm -rf $tempDir
+}
+
+#####################################
+## Main Script Start
+#####################################
+
+# Install perf if requested.  Do this before all other validation.
+if [ "$1" == "installperf" ]
+then
+	InstallPerf
+	exit 0
+fi
+
+# Check for perf_event installation.
+if ! [ -f $perfcmd ]
+then
+	RedText
+	echo "Perf not installed."
+	if  [ "$(SupportsAutoInstall)" == "1" ]
+	then
+		echo "Run ./perfcollect installperf"
+		echo "or install linux-tools-common package."
+	else
+		echo "Install linux-tools-common package."
+	fi
+	ResetText
+	exit 1
+fi
+
+# Process arguments.
+ProcessArguments $@
+
+# Take the appropriate action.
+if [ "$action" == "collect" ]
+then
+	DoCollect
+elif [ "$action" == "view" ]
+then
+	DoView
+fi
