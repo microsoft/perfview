@@ -647,6 +647,13 @@ public class GCHeapDumper
         m_log.WriteLine("{0,5:n1}s: Requesting a DotNet GC", sw.Elapsed.TotalSeconds);
         session.CaptureState(ETWClrProfilerTraceEventParser.ProviderGuid,
             (long)(ETWClrProfilerTraceEventParser.Keywords.GCHeap));
+
+        m_log.WriteLine("{0,5:n1}s: Requesting .NET Native GC", sw.Elapsed.TotalSeconds);
+        session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
+            (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+
+        //session.EnableProvider(ClrTraceEventParser.NativeProviderGuid, TraceEventLevel.Verbose,
+        //    (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
     }
 #endif
 
