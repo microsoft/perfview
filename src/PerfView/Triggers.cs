@@ -988,7 +988,10 @@ namespace Triggers
         /// </summary>
         private unsafe Guid GetContextIDForEvent(TraceEvent data)
         {
-            object value;
+            // Get the value to use as the context ID.  
+
+            // If the user explicitly defines the corelation ID then us it.  
+            object value = null;
             if (StartStopID != null)
             {
                 if (StartStopID == "ActivityID")
@@ -1007,11 +1010,28 @@ namespace Triggers
                     }
                 }
             }
-            else if (0 < data.PayloadNames.Length)
-                value = data.PayloadValue(0);               // By default we choose the first argument.  
-            else
-                return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+            
+            // If the activity ID is a Activity path, then we accept that.  
+            var activityID = data.ActivityID;
+            if (StartStopActivityComputer.IsActivityPath(activityID))
+                return activityID;
 
+            if (value == null)
+            {
+                if (0 < data.PayloadNames.Length)
+                    value = data.PayloadValue(0);               // By default we choose the first argument. 
+
+                // If we did not find a value, by default use the activity ID or the thread ID 
+                if (value == null)
+                {
+                    if (activityID != Guid.Empty)
+                        return activityID;
+                    else
+                        return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+                }
+            }
+
+            // Turn the value into a GUID.  
             if (value is Guid)
                 return (Guid)value;
             else if (value is long)
