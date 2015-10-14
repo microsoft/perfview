@@ -1113,6 +1113,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 260, ProviderGuid);
+                source.UnregisterEventTemplate(value, 1, CodeSymbolsTaskGuid);
             }
         }
         public event Action<AppDomainMemAllocatedTraceData> AppDomainResourceManagementMemAllocated
@@ -1791,6 +1792,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private static Guid ThreadPoolWorkingThreadCountTaskGuid = new Guid(unchecked((int)0x1b032b96), unchecked((short)0x767c), unchecked((short)0x42e4), 0x84, 0x81, 0xcb, 0x52, 0x8a, 0x66, 0xd7, 0xbd);
         private static Guid ThreadPoolTaskGuid = new Guid(unchecked((int)0xead685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xe9);
         private static Guid ThreadTaskGuid = new Guid(unchecked((int)0x641994c5), unchecked((short)0x16f2), unchecked((short)0x4123), 0x91, 0xa7, 0xa2, 0x99, 0x9d, 0xd7, 0xbf, 0xc3);
+        private static Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
+
 
         // TODO remove if project N's Guids are harmonized with the desktop 
         private void RegisterTemplate(TraceEvent template)
@@ -6841,6 +6844,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "TotalChunks", TotalChunks);
             XmlAttrib(sb, "ChunkNumber", ChunkNumber);
             XmlAttrib(sb, "ChunkLength", ChunkLength);
+            XmlAttrib(sb, "Chunk", Chunk);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             sb.Append("/>");
             return sb;
@@ -8885,9 +8889,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// <summary>
             /// Dump PDBs for dynamically generated modules.  
             /// </summary>
-            Codesymbols = 0x400000000,
+            CodeSymbolsRundown = 0x80000000,
 
-            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader + Codesymbols,
+            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader + CodeSymbolsRundown,
         };
 
         public ClrRundownTraceEventParser(TraceEventSource source) : base(source) { }
@@ -9165,6 +9169,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 source.UnregisterEventTemplate(value, 1, RuntimeTaskGuid);
             }
         }
+        public event Action<CodeSymbolsTraceData> CodeSymbolsRundownStart
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new CodeSymbolsTraceData(value, 188, 21, "CodeSymbolsRundown", CodeSymbolsRundownTaskGuid, 1, "Start", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 188, ProviderGuid);
+                source.UnregisterEventTemplate(value, 1, CodeSymbolsRundownTaskGuid);
+            }
+        }
+
 
         #region Event ID Definitions
         private const TraceEventID ClrStackWalkEventID = (TraceEventID)0;
@@ -9186,6 +9204,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private const TraceEventID LoaderAppDomainDCStopEventID = (TraceEventID)158;
         private const TraceEventID LoaderThreadDCStopEventID = (TraceEventID)159;
         private const TraceEventID RuntimeStartEventID = (TraceEventID)187;
+        private const TraceEventID CodeSymbolsRundownStartEventID = (TraceEventID)188;
         #endregion
 
         public sealed class DCStartEndTraceData : TraceEvent
@@ -9252,7 +9271,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[21];
+                var templates = new TraceEvent[22];
                 templates[0] = new MethodILToNativeMapTraceData(null, 149, 1, "Method", MethodTaskGuid, 41, "ILToNativeMapDCStart", ProviderGuid, ProviderName);
                 templates[1] = new MethodILToNativeMapTraceData(null, 150, 1, "Method", MethodTaskGuid, 42, "ILToNativeMapDCStop", ProviderGuid, ProviderName);
                 templates[2] = new ClrStackWalkTraceData(null, 0, 11, "ClrStack", ClrStackTaskGuid, 82, "Walk", ProviderGuid, ProviderName);
@@ -9274,6 +9293,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 templates[18] = new AppDomainLoadUnloadTraceData(null, 158, 2, "Loader", LoaderTaskGuid, 44, "AppDomainDCStop", ProviderGuid, ProviderName);
                 templates[19] = new ThreadCreatedTraceData(null, 159, 2, "Loader", LoaderTaskGuid, 48, "ThreadDCStop", ProviderGuid, ProviderName);
                 templates[20] = new RuntimeInformationTraceData(null, 187, 19, "Runtime", RuntimeTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[21] = new CodeSymbolsTraceData(null, 188, 21, "CodeSymbolsRundown", CodeSymbolsRundownTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -9285,6 +9305,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private static Guid LoaderTaskGuid = new Guid(unchecked((int)0x5a54f4df), unchecked((short)0xd302), unchecked((short)0x4fee), 0xa2, 0x11, 0x6c, 0x2c, 0x0c, 0x1d, 0xcb, 0x1a);
         private static Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
         private static Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
+        private static Guid CodeSymbolsRundownTaskGuid = new Guid(unchecked((int)0x86b6c496), unchecked((short)0x0d9e), unchecked((short)0x4ba6), 0x81, 0x93, 0xca, 0x58, 0xe6, 0xe8, 0xc5, 0x15);
         #endregion
     }
 
