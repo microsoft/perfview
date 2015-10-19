@@ -533,7 +533,7 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="..\PerfView\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
