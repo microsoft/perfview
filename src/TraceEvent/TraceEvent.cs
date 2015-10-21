@@ -2114,7 +2114,9 @@ namespace Microsoft.Diagnostics.Tracing
         // TODO should have an UnRegisterParser(TraceEventParser parser) API.  
 
         /// <summary>
-        /// Indicates that this callback should be called on any unhandled event.   
+        /// Indicates that this callback should be called on any unhandled event.   The callback
+        /// returns true if the lookup should be retried after calling this (that is there is
+        /// the unhandled event was found).  
         /// </summary>
         void RegisterUnhandledEvent(Func<TraceEvent, bool> callback);
         // TODO Add an unregister API.  

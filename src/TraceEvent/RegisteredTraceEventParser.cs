@@ -1388,7 +1388,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public virtual void ToStream(Serializer serializer)
         {
-            // Calcluate the count.  
+            // Calculate the count.  
             var count = 0;
             foreach (var template in m_templates.Values)
             {

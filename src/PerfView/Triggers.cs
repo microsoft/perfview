@@ -682,9 +682,11 @@ namespace Triggers
                         m_source.Clr.All += onEvent;
 
                         m_log.WriteLine("[Enabling ETW session for monitoring requests.]");
-                        m_log.WriteLine("In Trigger session {0} enabling Provider {1} Level {2} Keywords 0x{3:x}",
-                            sessionName, ProviderGuid, ProviderLevel, ProviderKeywords);
+                        m_log.WriteLine("In Trigger session {0} enabling Provider {1} ({2}) Level {3} Keywords 0x{4:x}",
+                            sessionName, ProviderName, ProviderGuid, ProviderLevel, ProviderKeywords);
                         m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+                        LogVerbose(DateTime.Now, "Starting Provider " + ProviderName + " GUID " + ProviderGuid);
+
                         listening = true;
                         m_source.Process();
                     }

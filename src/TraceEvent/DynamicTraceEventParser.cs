@@ -45,14 +45,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 this.source.RegisterUnhandledEvent(delegate(TraceEvent unknownEvent)
                 {
                     // First look for manifests. 
-                    CheckForDynamicManifest(unknownEvent);
+                    if (CheckForDynamicManifest(unknownEvent))
+                        return true;
 
-                    // if this is not an event that came from an EventSource, then we are done.
-                    if (!state.providers.ContainsKey(unknownEvent.ProviderGuid))
-                        return false;
-
-                    // However if it is from an eventSource, it may be a Write<T> event (that uses 
-                    // the self-describing format.   In that case, try looking that up.  
+                    // It may be a Write<T> event (that uses the self-describing format.   In that case, try looking that up.  
                     DynamicTraceEventData parsedTemplate = RegisteredTraceEventParser.TryLookupWorker(unknownEvent);
                     if (parsedTemplate == null)
                         return false;
@@ -66,7 +62,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         parsedTemplate.registeredWithTraceEventSource = true;
                         return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
                     }
-                    return false;
+                    return true;    // We really should never get here, but returning true (which causes a retry) should not hurt 
                 });
             }
         }
@@ -229,7 +225,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 partialManifestsForGuid.Remove(partialManifest);
 
-                // Throw away emtpy lists or lists that are old
+                // Throw away empty lists or lists that are old
                 var nowUtc = DateTime.UtcNow;
                 if (partialManifestsForGuid.Count == 0 || partialManifestsForGuid.TrueForAll(e => (nowUtc - e.StartedUtc).TotalSeconds > 10))
                     partialManifests.Remove(data.ProviderGuid);
