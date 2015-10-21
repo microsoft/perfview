@@ -138,19 +138,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             InitializeFromFile(etlxFilePath);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Given the path to an ETW trace log file (ETL) file, create an ETLX file for the data. 
-        /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
-        /// <returns>The name of the ETLX file that was generated.</returns>
-        /// </summary>
-        [Obsolete("Use CreateFromEventTraceLogFile")]
-        public static string CreateFromSource(string etlFilePath, string etlxFilePath = null, TraceLogOptions options = null)
-        {
-            return CreateFromEventTraceLogFile(etlFilePath, etlxFilePath, options);
-        }
-#endif
-
         /// <summary>
         /// All the events in the ETLX file. The returned TraceEvents instance supports IEnumerable so it can be used 
         /// in foreach statements, but it also supports other methods to further filter the evens before enumerating over them.  
@@ -537,16 +524,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.rawEventSourceToConvert.AllEvents += onAllEvents;
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Aggressively  releases resources associated with the log. 
-        /// </summary>
-        [Obsolete("Use Dispose")]
-        public void Close()
-        {
-            Dispose();
-        }
-#endif
         /// <summary>
         /// Removes all but the last 'keepCount' entries in 'growableArray' by sliding them down. 
         /// </summary>
@@ -743,17 +720,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Opens an existing Trace Event log file (and ETLX file).  If you need to create a new log file
-        /// from other data see CreateFromETL.
-        /// </summary>
-        [Obsolete("Use CreateFromEventTraceLogFile")]
-        public static string CreateFromETL(string etlFilePath, string etlxFilePath = null, TraceLogOptions options = null)
-        {
-            return CreateFromEventTraceLogFile(etlFilePath, etlxFilePath, options);
-        }
-#endif
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // See TraceLog.ProcessExtendedData for more on our use of ExtendedData to hold a index.   
@@ -3889,26 +3855,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public double EndTimeRelativeMSec { get { return log.QPCTimeToRelMSec(endTimeQPC); } }
 
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Filter the events 
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public TraceEvents FilterByTime(long startTime100ns, long endTime100ns)
-        {
-            return FilterByTime(log.RelativeTimeMSec(startTime100ns), log.RelativeTimeMSec(endTime100ns));
-        }
-        /// <summary>
-        /// Returns a time that is guaranteed to be after the last event in the TraceEvents list.  
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public long EndTime100ns { get { return log.QPCTo100ns(endTimeQPC); } }
-        /// <summary>
-        /// Returns a time that is guaranteed  to be before the first event in the TraceEvents list.  
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public long StartTime100ns { get { return log.QPCTo100ns(startTimeQPC); } }
-#endif
 
         IEnumerator<TraceEvent> IEnumerable<TraceEvent>.GetEnumerator()
         {
@@ -4236,13 +4182,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (int i = 0; i < processes.Count; i++)
                 yield return processes[i];
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The count of the number of TraceProcess items in the trace log.  
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxProcessIndex { get { return processes.Count; } }
-#endif
         /// <summary>
         /// Given an OS process ID and a time, return the last TraceProcess that has the same process ID,
         /// and whose offset start time is less than 'timeQPC'. If 'timeQPC' is during the thread's lifetime this
@@ -4256,50 +4195,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var ret = FindProcessAndIndex(processID, timeQPC, out index);
             return ret;
         }
-
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Gets the last process (in time) that has the name 'processName' that started after 'afterTime'
-        /// (inclusive). The name of a process is the file name (not full path), without its extension. Returns
-        /// null on failure
-        /// </summary>
-        [Obsolete("Use the relative time overload")]
-        public TraceProcess LastProcessWithName(string processName, long afterTime100ns)
-        {
-            var afterTimeQPC = log.QPCTime(afterTime100ns);
-            TraceProcess ret = null;
-            for (int i = 0; i < Count; i++)
-            {
-                TraceProcess process = processes[i];
-                if (afterTimeQPC <= process.startTimeQPC &&
-                    string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
-                    ret = process;
-            }
-            return ret;
-        }
-        // TODO_DOC Second sentence incomplete. Recurs, suggest search
-        /// <summary>
-        /// Find the first process in the trace that has the process name 'processName' and whose process
-        /// start time is after the given point in time.  
-        /// <para>A process's name is the file name of the EXE without the extension.</para>
-        /// <para>Processes that began before the trace started have a start time of 0,  Thus 
-        /// specifying 0 for the time will include processes that began before the trace started.  
-        /// </para>
-        /// </summary>
-        [Obsolete("Use the relative time overload")]
-        public TraceProcess FirstProcessWithName(string processName, long afterTime100ns)
-        {
-            var afterTimeQPC = log.QPCTime(afterTime100ns);
-            for (int i = 0; i < Count; i++)
-            {
-                TraceProcess process = processes[i];
-                if (afterTimeQPC <= process.startTimeQPC &&
-                    string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
-                    return process;
-            }
-            return null;
-        }
-#endif
         /// <summary>
         /// TraceProcesses represents the entire ETL moduleFile log.   At the node level it is organized by threads.  
         /// 
@@ -4639,19 +4534,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             Log.DebugWarn(startTimeQPC <= endTimeQPC, "Process Ends before it starts! StartTime: " + StartTimeRelativeMsec.ToString("f4"), data);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time when the process started.  Returns the time the trace started if the process existed when the trace started.  
-        /// </summary>
-        [Obsolete("Use relative time overload")]
-        public long StartTime100ns { get { return log.QPCTo100ns(startTimeQPC); } }
 
-        /// <summary>
-        /// The time when the process ended.  Returns the time the traces ended if the process existed when the trace ended. 
-        /// </summary>
-        [Obsolete("Use relative time overload")]
-        public long EndTime100ns { get { return log.QPCTo100ns(endTimeQPC); } }
-#endif
         #endregion
 
         /// <summary>
@@ -5016,13 +4899,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return ret;
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The count of the number of TraceThreads in the trace log. 
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxThreadIndex { get { return threads.Count; } }
-#endif
         /// <summary>
         /// TraceThreads   represents the collection of threads in a process. 
         /// 
@@ -5141,18 +5017,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returned as the number of MSec from the beginning of the trace. 
         /// </summary>
         public double StartTimeRelativeMSec { get { return process.Log.QPCTimeToRelMSec(startTimeQPC); } }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time when the thread started.  Returns the time the trace started if the thread existed when the trace started.  
-        /// </summary>
-        [Obsolete("Uses relative time overload")]
-        public long StartTime100ns { get { return process.Log.QPCTo100ns(startTimeQPC); } }
-        /// <summary>
-        /// The time when the thread ended.  Returns the time the traces ended if the thread existed when the trace ended. 
-        /// </summary>
-        [Obsolete("Uses relative time overload")]
-        public long EndTime100ns { get { return process.Log.QPCTo100ns(endTimeQPC); } }
-#endif
         /// <summary>
         /// The time when the thread ended.  Returns the time the trace ended if the thread existed when the trace ended.  
         /// Returned as a DateTime
@@ -5430,20 +5294,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return null;
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// This function will find the module associated with 'address' at 'time100ns' however it will only
-        /// find modules that are mapped in memory (module associated with JIT compiled methods will not be found).  
-        /// </summary>
-        [Obsolete("Use RelativeMsec overload")]
-        public TraceLoadedModule GetModuleContainingAddress(Address address, long time100ns)
-        {
-            var timeQPC = Process.Log.QPCTime(time100ns);
-            int index;
-            TraceLoadedModule module = FindModuleAndIndexContainingAddress(address, timeQPC, out index);
-            return module;
-        }
-#endif
 
         // #ModuleHandlersCalledFromTraceLog
         internal TraceModuleFile ImageLoadOrUnload(ImageLoadTraceData data, bool isLoad, string dataFileName = null)
@@ -5861,20 +5711,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         #region Private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The load time is the time the LoadLibrary was done if it was loaded from a file, otherwise is the
-        /// time the CLR loaded the module.  
-        /// </summary>
-        [Obsolete("Use LoadTimeRelativeMSec")]
-        public long LoadTime100ns { get { return process.Log.QPCTo100ns(loadTimeQPC); } }
-        /// <summary>
-        /// The load time is the time the FreeLibrary was done if it was unmanaged, otherwise is the
-        /// time the CLR unloaded the module.  
-        /// </summary>
-        [Obsolete("Use UnloadTimeRelativeMSec")]
-        public long UnloadTime100ns { get { return process.Log.QPCTo100ns(unloadTimeQPC); } }
-#endif
 
         internal TraceLoadedModule(TraceProcess process, TraceModuleFile moduleFile, Address imageBase)
         {
@@ -6110,13 +5946,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of call stack indexes (all Call Stack indexes are strictly less than this).   
-        /// </summary>
-        [Obsolete("Use Count instead")]
-        public int MaxCallStackIndex { get { return callStacks.Count; } }
-#endif
         /// <summary>
         /// IEnumerable Support
         /// </summary>
@@ -6667,14 +6496,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of code address indexes (all code address indexes are strictly less than this).   
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxCodeAddressIndex { get { return codeAddresses.Count; } }
-#endif
-
         /// <summary>
         /// We expose ILToNativeMap internally so we can do diagnostics.   
         /// </summary>
@@ -7884,13 +7705,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         #region private
         internal TraceMethods(TraceCodeAddresses codeAddresses) { this.codeAddresses = codeAddresses; }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of method indexes.  All MethodIndexes are strictly less than this. 
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxMethodIndex { get { return methods.Count; } }
-#endif
 
         /// <summary>
         /// IEnumerable support
@@ -8102,15 +7916,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Each file is given an index for quick lookup.   MaxModuleFileIndex is the
-        /// maximum such index (thus you can create an array that is 1-1 with the
-        /// files easily).  
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxModuleFileIndex { get { return moduleFiles.Count; } }
-#endif
         /// <summary>
         /// Enumerate all the files that occurred in the trace log.  
         /// </summary> 
