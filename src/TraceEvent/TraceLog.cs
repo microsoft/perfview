@@ -659,7 +659,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // (we copy it out below).   To date there are only three parsers that do this.   
             // TODO add an option that allows users to add their own here.   
             var dynamicParser = source.Dynamic;
-            var registeredParser = source.Registered;
             var kernelParser = source.Kernel;
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 
@@ -697,7 +696,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // at file creation time.    
             var kernelParser = Kernel;
             var dynamicParser = Dynamic;
-            var registeredPasers = Registered;
             var clrParser = Clr;
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);

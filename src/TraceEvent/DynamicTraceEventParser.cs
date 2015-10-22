@@ -41,30 +41,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 StateObject = state = new DynamicTraceEventParserState();
                 partialManifests = new Dictionary<Guid, List<PartialManifestInfo>>();
-
-                this.source.RegisterUnhandledEvent(delegate(TraceEvent unknownEvent)
-                {
-                    // First look for manifests. 
-                    if (CheckForDynamicManifest(unknownEvent))
-                        return true;
-
-                    // It may be a Write<T> event (that uses the self-describing format.   In that case, try looking that up.  
-                    DynamicTraceEventData parsedTemplate = RegisteredTraceEventParser.TryLookupWorker(unknownEvent);
-                    if (parsedTemplate == null)
-                        return false;
-
-                    // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
-                    // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
-                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
-                    // only add the event definition once.  
-                    if (!parsedTemplate.registeredWithTraceEventSource)
-                    {
-                        parsedTemplate.registeredWithTraceEventSource = true;
-                        return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
-                    }
-                    return true;    // We really should never get here, but returning true (which causes a retry) should not hurt 
-                });
+                this.source.RegisterUnhandledEvent(CheckForDynamicManifest);
             }
+
+            // make a registeredParser to resolve self-describing events (and more).  
+            registeredParser = new RegisteredTraceEventParser(source);
+            // But cause any of its new definitions to work on my subscriptions.  
+            registeredParser.NewEventDefinition = OnNewEventDefintion;
         }
 
         /// <summary>
@@ -258,6 +241,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
+
+            // also enumerate any events from the registeredParser.  
+            registeredParser.EnumerateTemplates(eventsToObserve, callback);
         }
 
         private class PartialManifestInfo
@@ -348,6 +334,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         DynamicTraceEventParserState state;
         private Dictionary<Guid, List<PartialManifestInfo>> partialManifests;
+
+        // It is not intuitive that self-describing events (which are arguably 'dynamic') are resolved by 
+        // the RegisteredTraceEventParser.  This is even more wacky in a mixed EventSource where some events 
+        // are resolved by dynamic manifest and some are self-describing.     To avoid these issues DynamicTraceEventParsers
+        // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This 
+        // RegisteredTraceEventParser is how this gets accomplished.   
+        RegisteredTraceEventParser registeredParser;
 
         #endregion
     }

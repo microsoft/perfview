@@ -676,7 +676,7 @@ namespace Triggers
                             }
                         };
 
-                        m_source.Registered.All += onEvent;
+                        // m_source.Registered.All += onEvent;
                         m_source.Dynamic.All += onEvent;
                         m_source.Kernel.All += onEvent;
                         m_source.Clr.All += onEvent;

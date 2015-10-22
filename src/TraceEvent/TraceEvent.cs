@@ -176,6 +176,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
         /// In particular, it knows how to parse any events from a System.Diagnostics.Tracing.EventSources. 
+        /// 
+        /// Note that the DynamicTraceEventParser has subsumed the functionality of RegisteredTraceEventParser
+        /// so any registered providers are also looked up here.  
         /// </summary>
         public DynamicTraceEventParser Dynamic
         {
@@ -188,8 +191,12 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// For convenience, we provide a property returns a RegisteredTraceEventParser that knows 
-        /// how to parse all providers that are registered with the operating system.   
+        /// how to parse all providers that are registered with the operating system.
+        /// 
+        /// Because the DynamicTraceEventParser has will parse all providers that that RegisteredTraceEventParser
+        /// will parse, this function is obsolete, you should use Dynamic instead.  
         /// </summary>
+        [Obsolete("Use Dynamic instead.   DynamicTraceEventParser decodes everything that RegisteredTraceEventParser can.")]
         public RegisteredTraceEventParser Registered
         {
             get
