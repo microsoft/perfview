@@ -5,7 +5,7 @@
 #include <corprof.h>
 #include <corhlpr.h>
 
-#include <hash_map> 
+#include <unordered_map> 
 
 class ClassInfo;
 class ModuleInfo;
@@ -160,6 +160,6 @@ private   : // Fields
     int						 m_gcCount;
 
         // We want to cache the information (e.g. name, token, ...) on classes and modules.  
-    stdext::hash_map<ClassID, ClassInfo*> m_classInfo;
-    stdext::hash_map<ModuleID, ModuleInfo*> m_moduleInfo;
+    std::unordered_map<ClassID, ClassInfo*> m_classInfo;
+    std::unordered_map<ModuleID, ModuleInfo*> m_moduleInfo;
 } ;
