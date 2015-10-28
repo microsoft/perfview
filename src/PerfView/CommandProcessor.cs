@@ -974,6 +974,12 @@ namespace PerfView
                         // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
                         // Ideally this is done by the SetFileName API so we can avoid merging.  
                         var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
+
+                        // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
+                        // until the events are logged before shutting down the session.   However we only need the DCEnd events and
+                        // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
+                        // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
+                        // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
                         using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
                             kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
                     }

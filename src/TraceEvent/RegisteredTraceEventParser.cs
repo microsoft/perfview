@@ -1227,7 +1227,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (!parsedTemplate.registeredWithTraceEventSource)
                     {
                         parsedTemplate.registeredWithTraceEventSource = true;
-                        return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
+                        bool ret = OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
+
+                        // If we have subscribers, notify them as well.  
+                        var newEventDefinition = NewEventDefinition;
+                        if (newEventDefinition != null)
+                            ret |= (NewEventDefinition(parsedTemplate, false) == EventFilterResponse.AcceptEvent);
+                        return ret;
                     }
                     return false;
                 });
@@ -1240,6 +1246,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public override bool IsStatic { get { return false; } }
 
         #region private
+        internal Func<DynamicTraceEventData, bool, EventFilterResponse> NewEventDefinition;
+
         /// <summary>
         /// Override
         /// </summary>
@@ -1388,7 +1396,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public virtual void ToStream(Serializer serializer)
         {
-            // Calcluate the count.  
+            // Calculate the count.  
             var count = 0;
             foreach (var template in m_templates.Values)
             {

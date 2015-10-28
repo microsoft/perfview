@@ -176,6 +176,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
         /// In particular, it knows how to parse any events from a System.Diagnostics.Tracing.EventSources. 
+        /// 
+        /// Note that the DynamicTraceEventParser has subsumed the functionality of RegisteredTraceEventParser
+        /// so any registered providers are also looked up here.  
         /// </summary>
         public DynamicTraceEventParser Dynamic
         {
@@ -188,8 +191,12 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// For convenience, we provide a property returns a RegisteredTraceEventParser that knows 
-        /// how to parse all providers that are registered with the operating system.   
+        /// how to parse all providers that are registered with the operating system.
+        /// 
+        /// Because the DynamicTraceEventParser has will parse all providers that that RegisteredTraceEventParser
+        /// will parse, this function is obsolete, you should use Dynamic instead.  
         /// </summary>
+        [Obsolete("Use Dynamic instead.   DynamicTraceEventParser decodes everything that RegisteredTraceEventParser can.")]
         public RegisteredTraceEventParser Registered
         {
             get
@@ -375,52 +382,6 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ RegisteredTraceEventParser _Registered;
         #endregion
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The SessionStartTime is expressed as a windows file time (100ns ticks since 1601). 
-        /// </summary>
-        [Obsolete("Uses SessionStartTime (for perfect compatibility, SessionStartTime.ToFileTime())")]
-        public long SessionStartTime100ns { get { return SessionStartTime.ToFileTime(); } }
-        /// <summary>
-        /// The SessionEndTime is expressed as a windows file time (100ns ticks since 1601). 
-        /// </summary>
-        [Obsolete("Uses SessionEndTime")]
-        public long SessionEndTime100ns { get { return SessionEndTime.ToFileTime(); } }
-
-        /// <summary>
-        /// Converts from a time in MSec from the beginning of the trace to a 100ns timestamp.  
-        /// </summary>
-        [Obsolete("Use RelativeTimeMSecToDate")]
-        public long RelativeTimeMSecTo100ns(double relativeTimeMSec)
-        {
-            var offset100ns = relativeTimeMSec * 10000.0;
-            var absoluteTime = offset100ns + SessionStartTime100ns;
-            if (absoluteTime < long.MaxValue)   // TODO this is not quite right for overflow detection
-                return (long)offset100ns + SessionStartTime100ns;
-            else
-                return long.MaxValue;
-        }
-        // Time conversion operations 
-        /// <summary>
-        /// Returns a double representing the number of milliseconds 'time100ns' is from the offset of the log 
-        /// </summary>
-        /// <param name="time100ns">The time to convert to relative form</param>
-        /// <returns>number of milliseconds from the beginning of the log</returns>
-        [Obsolete]
-        internal double RelativeTimeMSec(long time100ns)
-        {
-
-            double msec = (time100ns - SessionStartTime100ns) / 10000.0;
-            if (msec < 0)
-                msec = 0;
-            return msec;
-        }
-        [Obsolete]
-        internal long QPCTime(long time100ns)
-        {
-            return RelativeMSecToQPC(RelativeTimeMSec(time100ns));
-        }
-#endif
         /// <summary>
         /// This is the high frequency tick clock on the processor (what QueryPerformanceCounter uses).  
         /// You should not need 
@@ -1651,21 +1612,6 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 return (char)('A' - 10 + digit);
         }
-
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time of the event, represented in 100ns units from the year 1601.  See also TimeDateStamp
-        /// </summary>
-        [Obsolete("Use TimeStampRelativeMSec or TimeStamp.Ticks instead")]
-        public long TimeStamp100ns
-        {
-            // [SecuritySafeCritical]
-            get
-            {
-                return TimeStamp.ToFileTime();
-            }
-        }
-#endif
         /// <summary>
         /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.   
         /// The start time for the QPC tick counter is unknown
@@ -2114,7 +2060,9 @@ namespace Microsoft.Diagnostics.Tracing
         // TODO should have an UnRegisterParser(TraceEventParser parser) API.  
 
         /// <summary>
-        /// Indicates that this callback should be called on any unhandled event.   
+        /// Indicates that this callback should be called on any unhandled event.   The callback
+        /// returns true if the lookup should be retried after calling this (that is there is
+        /// the unhandled event was found).  
         /// </summary>
         void RegisterUnhandledEvent(Func<TraceEvent, bool> callback);
         // TODO Add an unregister API.  
@@ -2186,14 +2134,6 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 AddCallbackForEvents<T>(s => eventName == s, callback: callback);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
-        /// whose eventName will pass 'eventNameFilter'.    
-        /// </summary>
-        [Obsolete("Use AddCallbackForEvents")]
-        public void AddToAllMatching<T>(Action<T> callback) where T : TraceEvent { AddCallbackForEvents<T>(callback); }
-#endif
         // subscribe to a set of events for parsers that handle a single provider.  (These are more strongly typed to provider specific payloads)
         /// <summary>
         /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 

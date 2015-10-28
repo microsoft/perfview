@@ -117,10 +117,7 @@ EXTERN_C void __stdcall TailcallMethod(FunctionID functionID)
 }
 
 #if defined(_M_IX86)
-// TODO FIX NOW use or remove.  
 // see http://msdn.microsoft.com/en-us/library/4ks26t93.aspx  for inline assembly.   Not supported on X64.   
-
-
 
 void __declspec( naked ) __stdcall EnterMethodNaked(FunctionID funcID)
 {

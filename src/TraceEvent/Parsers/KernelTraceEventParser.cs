@@ -3512,13 +3512,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public new int Version { get { return GetInt32At(4); } }
         public int ProviderVersion { get { return GetInt32At(8); } }
         public int NumberOfProcessors { get { return GetInt32At(12); } }
-#if KEEP_OBSOLETE
-        [Obsolete("Use EndTime")]
-        public
-#else
-        internal
-#endif
- long EndTime100ns { get { return GetInt64At(16); } }
+        internal long EndTime100ns { get { return GetInt64At(16); } }
         public DateTime EndTime { get { return DateTime.FromFileTime(GetInt64At(16)); } }
         public int TimerResolution { get { return GetInt32At(24); } }
         public int MaxFileSize { get { return GetInt32At(28); } }
@@ -3546,23 +3540,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
   uint32 ReservedFlags;
   uint32 BuffersLost;
 #endif
-
-#if KEEP_OBSOLETE
-        [Obsolete("Use BootTime")]
-        public 
-#else
-        internal
-#endif
- long BootTime100ns { get { return GetInt64At(HostOffset(240, 2)); } }
+        internal long BootTime100ns { get { return GetInt64At(HostOffset(240, 2)); } }
         public DateTime BootTime { get { return DateTime.FromFileTime(BootTime100ns); } }
         public long PerfFreq { get { return GetInt64At(HostOffset(248, 2)); } }
-#if KEEP_OBSOLETE
-        [Obsolete("Use StartTime")]
-        public
-#else
-        internal
-#endif
- long StartTime100ns { get { return GetInt64At(HostOffset(256, 2)); } }
+        internal long StartTime100ns { get { return GetInt64At(HostOffset(256, 2)); } }
         public DateTime StartTime { get { return DateTime.FromFileTime(HostOffset(256, 2)); } }
         public int ReservedFlags { get { return GetInt32At(HostOffset(264, 2)); } }
         public int BuffersLost { get { return GetInt32At(HostOffset(268, 2)); } }
@@ -4565,10 +4546,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     public sealed class WorkerThreadTraceData : TraceEvent
     {
         public int TThreadID { get { return GetInt32At(0); } }
-#if KEEP_OBSOLETE
-        [Obsolete("Use StartTime")]
-        public long StartTime100ns { get { return GetInt64At(4); } }
-#endif
         public DateTime StartTime { get { return DateTime.FromFileTime(GetInt64At(4)); } }
         public Address ThreadRoutine { get { return GetAddressAt(12); } }
 
@@ -5141,19 +5118,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return HighResResponseTime * 1000.0 / source.QPCFreq;
             }
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time since the I/O was initiated.  
-        /// </summary>
-        [Obsolete("Use ElapsedTimeMSec")]
-        public long ElapsedTime100ns
-        {
-            get
-            {
-                return HighResResponseTime * 10000000 / source.QPCFreq;
-            }
-        }
-#endif
         // TODO you can get service time (what XPERF gives) by taking the minimum of 
         // the Elapsed time and the time of the completion of the last Disk event.  
         #region Private
@@ -5330,19 +5294,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return HighResResponseTime * 1000.0 / source.QPCFreq;
             }
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time since the I/O was initiated.  
-        /// </summary>
-        [Obsolete("Use ElapsedTimeMSec")]
-        public long ElapsedTime100ns
-        {
-            get
-            {
-                return HighResResponseTime * 10000000 / source.QPCFreq;
-            }
-        }
-#endif
         public Address Irp { get { return GetAddressAt(16); } }
 
         #region Private
@@ -5816,10 +5767,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
         public int Index { get { if (Version >= 2) return GetInt32At(12); if (Version >= 1) return GetInt32At(HostOffset(16, 2)); return 0; } }
-#if KEEP_OBSOLETE
-        [Obsolete("Use InitialTime")]
-        public 
-#endif
         long InitialTime100ns { get { if (Version >= 2) return GetInt64At(0); return 0; } }
         public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
 
@@ -9138,10 +9085,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class ISRTraceData : TraceEvent
     {
-#if KEEP_OBSOLETE
-        [Obsolete("Use InitialTime")]
-        public 
-#endif
         long InitialTime100ns { get { return GetInt64At(0); } }
         public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
         public Address Routine { get { return GetAddressAt(8); } }
@@ -9215,10 +9158,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class DPCTraceData : TraceEvent
     {
-#if KEEP_OBSOLETE
-        [Obsolete("Use InitialTime")]
-        public 
-#endif
         long InitialTime100ns { get { return GetInt64At(0); } }
         public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
         public Address Routine { get { return GetAddressAt(8); } }
