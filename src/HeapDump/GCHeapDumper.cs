@@ -277,7 +277,7 @@ public class GCHeapDumper
         foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", currRuntime.Version);
-            string dacLocation = target.SymbolLocator.FindBinary(currRuntime.DacInfo);
+            string dacLocation = currRuntime.LocalMatchingDac ?? target.SymbolLocator.FindBinary(currRuntime.DacInfo);
 
             try
             {
