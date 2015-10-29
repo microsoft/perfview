@@ -31,7 +31,6 @@
 #    top down.  For a caller or bottom up view, specify '-graphtype caller'. 
 #############################################################################################################
 
-
 ######################################
 ## FOR DEBUGGING ONLY
 ######################################
@@ -44,6 +43,9 @@
 # The location of the perf executable.
 perfcmd=/usr/bin/perf
 
+# The location of the lttng executable.
+lttngcmd=/usr/bin/lttng
+
 ######################################
 ## Collection Options
 ## NOTE: These values represent the collection defaults.
@@ -53,8 +55,24 @@ perfcmd=/usr/bin/perf
 collect_cpu=1
 collect_threadTime=0
 
+######################################
+## Global Variables
+######################################
+
 # Declare an array of events to collect.
 declare -a eventsToCollect
+
+# Use Perf_Event
+usePerf=1
+
+# Use LTTng
+useLTTng=0
+
+# LTTng Installed
+lttngInstalled=0
+
+# Set to 1 when the CTRLC_Handler gets invoked.
+handlerInvoked=0
 
 ######################################
 ## Helper Functions
@@ -96,6 +114,18 @@ FatalError()
 	exit 1
 }
 
+EnsureRoot()
+{
+	# Warn non-root users.
+	if [ `whoami` != "root" ]
+	then
+		RedText
+		echo "This script must be run as root."
+		ResetText
+		exit 1;
+	fi
+}
+
 ######################################
 # Prerequisite Installation
 ######################################
@@ -117,13 +147,7 @@ IsUbuntu()
 InstallPerf_Ubuntu()
 {
 	# Disallow non-root users.
-	if [ `whoami` != "root" ]
-	then
-		RedText
-		echo "This script must be run as root."
-		ResetText
-		exit 1
-	fi
+	EnsureRoot
 
 	# Install packages.
 	GreenText
@@ -142,6 +166,49 @@ InstallPerf()
 	fi
 }
 
+InstallLTTng_Ubuntu()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Add the PPA feed as a repository.
+	GreenText
+	echo "LTTng can be installed using default Ubuntu packages via the Ubuntu package feeds or using the latest"
+	echo "stable package feed published by LTTng (PPA feed).  It is recommended that LTTng be installed using the PPA feed."
+	echo ""
+	ResetText
+	echo "	If you select yes, then the LTTng PPA feed will be added to your apt configuration."
+	echo "	If you select no, then LTTng will be installed from an existing feed (either default Ubuntu or PPA if previously added."
+	echo ""
+	GreenText
+	read -p "Would you like to add the LTTng PPA feed to your apt configuration? [Y/N]" resp
+	ResetText
+	if [ "$resp" == "Y" ] || [ "$resp" == "y" ]
+	then
+		GreenText
+		echo "Adding LTTng PPA feed and running apt-get update."
+		ResetText
+		apt-add-repository ppa:lttng/ppa
+		apt-get update
+	fi
+
+	# Install packages.
+	GreenText
+	echo "Installing lttng packages."
+	ResetText
+	apt-get install lttng-tools lttng-modules-dkms liblttng-ust0
+}
+
+InstallLTTng()
+{
+	if [ "$(IsUbuntu)" == "1" ]
+	then
+		InstallLTTng_Ubuntu
+	else
+		FatalError "Auto install unsupported for this distribution.  Install lttng-tools and lttng-ust-dev packages manually."
+	fi
+}
+
 SupportsAutoInstall()
 {
 	local supportsAutoInstall=0
@@ -153,6 +220,31 @@ SupportsAutoInstall()
 	echo $supportsAutoInstall
 }
 
+EnsurePrereqsInstalled()
+{
+	# If perf is not installed, then bail, as it is currently required.
+	if ! [ -f $perfcmd ]
+	then
+		RedText
+		echo "Perf not installed."
+		if  [ "$(SupportsAutoInstall)" == "1" ]
+		then
+			echo "Run ./perfcollect install-perf"
+			echo "or install linux-tools-common package."
+		else
+			echo "Install linux-tools-common package."
+		fi
+		ResetText
+		exit 1
+	fi
+
+	# If LTTng is installed, consider using it.
+	if [ -f $lttngcmd ]
+	then
+		lttngInstalled=1
+	fi
+}
+
 ######################################
 # Argument Processing
 ######################################
@@ -162,6 +254,7 @@ collectionPid=''
 processFilter=''
 graphType=''
 perfOpt=''
+viewer='perf'
 
 ProcessArguments()
 {
@@ -198,36 +291,107 @@ ProcessArguments()
 	for (( i=2; i<${#args[@]}; i++ ))
 	do
 		# Get the arg.
-		arg=${args[$i]}
+		local arg=${args[$i]}
 
 		# Convert the arg to lower case.
 		arg=`echo $arg | tr '[:upper:]' '[:lower:]'`
 
+		# Get the arg value.
+		if [ ${i+1} -lt $# ]
+		then
+			local value=${args[$i+1]}
+
+			# Convert the value to lower case.
+			value=`echo $value | tr '[:upper:]' '[:lower:]'`
+		fi
+
 		# Match the arg to a known value.
 		if [ "-pid" == "$arg" ]
 		then
-			collectionPid=${args[$i+1]}
+			collectionPid=$value
 			i=$i+1
 		elif [ "-processfilter" == "$arg" ]
 		then
-			processFilter=${args[$i+1]}
+			processFilter=$value
 			i=$i+1
 		elif [ "-graphtype" == "$arg" ]
 		then
-			graphType=${args[$i+1]}
+			graphType=$value
 			i=$i+1
 		elif [ "-threadtime" == "$arg" ]
 		then
 			collect_threadTime=1
 		elif [ "-perfopt" == "$arg" ]
 		then
-			perfOpt=${args[$i+1]}
+			perfOpt=$value
 			i=$i+1
+		elif [ "-viewer" == "$arg" ]
+		then
+			viewer=$value
+			i=$i+1
+
+			# Validate the viewer.
+			if [ "$viewer" != "perf" ] && [ "$viewer" != "lttng" ]
+			then
+				FatalError "Invalid viewer specified.  Valid values are 'perf' and 'lttng'."
+			fi
+		elif [ "-uselttng" == "$arg" ]
+		then
+			# If LTTng is installed and we've been asked to use it, then use it.
+			if [ "$lttngInstalled" == "1" ]
+			then
+				useLTTng=1
+			fi
 		fi
 	done
 	
 }
 
+
+
+##
+# LTTng collection
+##
+lttngSessionName=''
+lttngTraceDir=''
+CreateLTTngSession()
+{
+	output=`lttng create`
+	lttngSessionName=`echo $output | grep -o "Session.*created." | sed 's/\(Session \| created.\)//g'`
+	lttngTraceDir=`echo $output | grep -o "Traces.*" | sed 's/\(Traces will be written in \|\)//g'`
+}
+
+SetupLTTngSession()
+{
+	# Setup per-event context information.
+	lttng add-context --userspace --type vpid > /dev/null
+	lttng add-context --userspace --type vtid > /dev/null
+	lttng add-context --userspace --type procname > /dev/null
+
+	# All runtime events
+	# TODO:Filter events
+	lttng enable-event --userspace --tracepoint 'DotNETRuntime:*' > /dev/null
+}
+
+DestroyLTTngSession()
+{
+	lttng destroy $lttngSessionName > /dev/null
+}
+
+StartLTTngCollection()
+{
+	CreateLTTngSession
+	SetupLTTngSession
+
+	lttng start $lttngSessionName
+}
+
+StopLTTngCollection()
+{
+	lttng stop $lttngSessionName
+
+	DestroyLTTngSession
+}
 
 ##
 # Helper that processes collected data.
@@ -242,6 +406,20 @@ ProcessCollectedData()
 	local traceName=$inputTraceName
 	local directoryName=$traceName$traceSuffix
 	mkdir $directoryName
+
+	# Save LTTng trace files.
+	if [ "$useLTTng" == "1" ]
+	then
+		WriteStatus "START: Save LTTng trace files."
+
+		if [ -f $lttngTraceDir ]
+		then
+			mkdir lttngTrace
+			cp -r $lttngTraceDir lttngTrace
+		fi
+
+		WriteStatus "END: Save LTTng trace files."
+	fi
 
 	# Get any perf-$pid.map files that were used by the
 	# trace and store them alongside the trace.
@@ -320,7 +498,6 @@ ProcessCollectedData()
 	local archiveSuffix=".tgz"
 	local archiveName=$directoryName$archiveSuffix
 	tar -czvf $archiveName $directoryName 
-	#-C $tempDir $directoryName
 
 	# Move back to the original directory.
 	popd
@@ -341,7 +518,15 @@ ProcessCollectedData()
 ##
 CTRLC_Handler()
 {
-	# The user must CTRL+C to stop collection in perf_event.
+	# Mark the handler invoked.
+	handlerInvoked=1
+
+	if [ "$useLTTng" == "1" ]
+	then
+		StopLTTngCollection
+	fi
+
+	# The user must CTRL+C to stop collection.
 	# When this happens, we catch the signal and finish our work.
 	ProcessCollectedData
 }
@@ -351,23 +536,28 @@ CTRLC_Handler()
 ##
 PrintUsage()
 {
-	echo "This script uses perf_event to collect and view performance traces."
+	echo "This script uses perf_event and LTTng to collect and view performance traces for .NET applications."
 	echo "For detailed collection and viewing steps, view this script in a text editor or viewer."
 	echo ""
 	echo "./perfcollect <action> <tracename>"
-	echo "Valid Actions: collect view installperf"
+	echo "Valid Actions: collect view install-perf install-lttng"
 	echo ""
 	echo "collect options:"
 	echo "By default, collection includes CPU samples collected every ms."
 	echo "	-pid		  : Only collect data from the specified process id."
 	echo "	-threadtime       : Collect context switch events."
+	echo "	-uselttng	  : Collect .NET tracepoint data using LTTng. (Experimental, not yet documented.)"
 	echo ""
 	echo "view options:"
 	echo "	-processfilter	  : Filter data by the specified process name."
 	echo "	-graphtype	  : Specify the type of graph.  Valid values are 'caller' and 'callee'.  Default is 'callee'."
+	echo "	-viewer		  : Specify the data viewer.  Valid values are 'perf' and 'lttng'.  Default is 'perf'."
 	echo ""
-	echo "installperf options:"
-	echo "	No options.  Useful for first-time setup or after kernel upgrade."
+	echo "install-perf:"
+	echo "	Useful for first-time setup, to upgrade perf_event, or after kernel upgrade."
+	echo ""
+	echo "install-lttng:"
+	echo "	Useful for first-time setup or to upgrade LTTng."
 	echo ""
 }
 
@@ -425,14 +615,8 @@ BuildPerfRecordArgs()
 
 DoCollect()
 {
-	# Warn non-root users.
-	if [ `whoami` != "root" ]
-	then
-		RedText
-		echo "This script must be run as root."
-		ResetText
-		exit 1;
-	fi
+	# Ensure the script is run as root.
+	EnsureRoot
 
 	# Build collection args.
 	# Places the resulting args in $collectionArgs
@@ -450,11 +634,32 @@ DoCollect()
 	# Switch to the directory.
 	pushd $tempDir > /dev/null
 
-	# Start perf record.
-	echo "Running cmd: $perfcmd $collectionArgs $perfOpt"
-	$perfcmd $collectionArgs
+	# Start LTTng collection.
+	if [ "$useLTTng" == "1" ]
+	then
+		StartLTTngCollection
+	fi
 
-	# CTRL+C handler will run after the user hits CTRL+C to stop collection.
+	# Start perf record.
+	if [ "$usePerf" == "1" ]
+	then
+		echo "Running cmd: $perfcmd $collectionArgs $perfOpt"
+		$perfcmd $collectionArgs
+
+		# CTRL+C handler will run after the user hits CTRL+C to stop collection.
+	else
+		# Wait here until CTRL+C handler gets called when user types CTRL+C.
+		for (( ; ; ))
+		do
+			if [ "$handlerInvoked" == "1" ]
+			then
+				break;
+			fi
+
+			# Wait and then check to see if the handler has been invoked.
+			sleep 1
+		done
+	fi
 }
 
 # $1 == Path to directory containing trace files
@@ -492,27 +697,34 @@ DoView()
 	pushd $tempDir
 	cd `ls`
 
-	# Prop symbols and map files.
-	PropSymbolsAndMapFilesForView `pwd`
+	# Select the viewer.
+	if [ "$viewer" == "perf" ]
+	then
+		# Prop symbols and map files.
+		PropSymbolsAndMapFilesForView `pwd`
 
-	# Choose the view
-	if [ "$graphType" == "" ]
-	then
-		graphType="callee"
-	elif [ "$graphType" != "callee" ] && [ "$graphType" != "caller"]
-	then
-		FatalError "Invalid graph type specified.  Valid values are 'callee' and 'caller'."
-	fi
+		# Choose the view
+		if [ "$graphType" == "" ]
+		then
+			graphType="callee"
+		elif [ "$graphType" != "callee" ] && [ "$graphType" != "caller"]
+		then
+			FatalError "Invalid graph type specified.  Valid values are 'callee' and 'caller'."
+		fi
 
-	# Filter to specific process names if desired.
-	if [ "$processFilter" != "" ]
+		# Filter to specific process names if desired.
+		if [ "$processFilter" != "" ]
+		then
+			processFilter="--comms=$processFilter"
+		fi
+
+		# Execute the viewer.
+		perf report -g graph,0.5,$graphType $processFilter $perfOpt
+	elif [ "$viewer" == "lttng" ]
 	then
-		processFilter="--comms=$processFilter"
+		babeltrace lttngTrace/ | more
 	fi
 	
-	# Execute the viewer.
-	perf report -g graph,0.5,$graphType $processFilter $perfOpt
-
 	# Switch back to the original directory.
 	popd
 
@@ -525,27 +737,21 @@ DoView()
 #####################################
 
 # Install perf if requested.  Do this before all other validation.
-if [ "$1" == "installperf" ]
+if [ "$1" == "install-perf" ]
 then
 	InstallPerf
 	exit 0
 fi
 
-# Check for perf_event installation.
-if ! [ -f $perfcmd ]
+# Install LTTng if requested.  Do this before all other validation.
+if [ "$1" == "install-lttng" ]
 then
-	RedText
-	echo "Perf not installed."
-	if  [ "$(SupportsAutoInstall)" == "1" ]
-	then
-		echo "Run ./perfcollect installperf"
-		echo "or install linux-tools-common package."
-	else
-		echo "Install linux-tools-common package."
-	fi
-	ResetText
-	exit 1
+	InstallLTTng
+	exit 0
 fi
+
+# Ensure prerequisites are installed.
+EnsurePrereqsInstalled
 
 # Process arguments.
 ProcessArguments $@
