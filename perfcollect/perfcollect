@@ -129,6 +129,26 @@ EnsureRoot()
 ######################################
 # Prerequisite Installation
 ######################################
+IsSUSE()
+{
+	local suse=0
+	if [ -f /usr/bin/zypper ]
+	then
+		suse=1
+	fi
+
+	echo $suse
+}
+
+InstallPerf_SUSE()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Install perf.
+	zypper install perf
+}
+
 IsUbuntu()
 {
 	local ubuntu=0
@@ -161,8 +181,44 @@ InstallPerf()
 	if [ "$(IsUbuntu)" == "1" ]
 	then
 		InstallPerf_Ubuntu
+	elif [ "$(IsSUSE)" == "1" ]
+	then
+		InstallPerf_SUSE
 	else
-		FatalError "Auto install unsupported for this distribution.  Install linux-tools-common package manually to continue."
+		FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
+	fi
+}
+
+InstallLTTng_SUSE()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Package repo url
+	packageRepo="http://download.opensuse.org/repositories/devel:/tools:/lttng/openSUSE_13.2/devel:tools:lttng.repo"
+
+	# Prompt for confirmation, since we need to add a new repository.
+	GreenText
+	echo "LTTng installation requires that a new package repo be added to your zypper configuration."
+	echo "The package repo url is: $packageRepo"
+	echo ""
+	read -p "Would you like to add the LTTng package repo to your zypper configuration? [Y/N]" resp
+	ResetText
+	if [ "$resp" == "Y" ] || [ "$resp" == "y" ]
+	then
+
+		# Add package repo.
+		GreenText
+		echo "Adding LTTng repo and running zypper refresh."
+		ResetText
+		zypper addrepo $packageRepo
+		zypper refresh
+
+		# Install packages.
+		GreenText
+		echo "Installing LTTng packages."
+		ResetText
+		zypper install lttng-tools lttng-modules lttng-ust-devel
 	fi
 }
 
@@ -194,7 +250,7 @@ InstallLTTng_Ubuntu()
 
 	# Install packages.
 	GreenText
-	echo "Installing lttng packages."
+	echo "Installing LTTng packages."
 	ResetText
 	apt-get install lttng-tools lttng-modules-dkms liblttng-ust0
 }
@@ -204,15 +260,18 @@ InstallLTTng()
 	if [ "$(IsUbuntu)" == "1" ]
 	then
 		InstallLTTng_Ubuntu
+	elif [ "$(IsSUSE)" == "1" ]
+	then
+		InstallLTTng_SUSE
 	else
-		FatalError "Auto install unsupported for this distribution.  Install lttng-tools and lttng-ust-dev packages manually."
+		FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
 	fi
 }
 
 SupportsAutoInstall()
 {
 	local supportsAutoInstall=0
-	if [ "$(IsUbuntu)" == "1" ]
+	if [ "$(IsUbuntu)" == "1" ] || [ "$(IsSUSE)" == "1" ]
 	then
 		supportsAutoInstall=1
 	fi
