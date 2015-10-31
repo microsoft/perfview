@@ -359,8 +359,7 @@ namespace Microsoft.Diagnostics.Tracing
                 bytePtr += numBytes;        // Advance past the bytes.
             }
 
-            if (sb.Length == 0)
-                sb.Append('/');
+            sb.Append('/');
             return sb.ToString();
         }
 

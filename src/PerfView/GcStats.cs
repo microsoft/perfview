@@ -114,7 +114,7 @@ namespace Stats
             };
 
 #if (!CAP)
-            CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(10000);
+            CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(1000);
             source.Kernel.ThreadCSwitch += delegate(CSwitchTraceData data)
             {
                 RecentThreadSwitches.Add(new ThreadWorkSpan(data));

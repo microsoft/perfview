@@ -492,7 +492,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             // For Win8 Store Auto-NGEN images we need to use a location where the app can write the PDB file
             var outputPdbPath = pdbPath;
-            var ngenOutputDirectory = outputDirectory; 
+            var ngenOutputDirectory = outputDirectory;
 
             // Find the tempDir where we can write.  
             string tempDir = null;
@@ -1195,7 +1195,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // TODO FIX NOW, should not need to do this hand-unmangling.
-            if (ret.Contains("@"))
+            if (0 <= ret.IndexOf('@'))
             {
                 // TODO relatively inefficient.  
                 string unmangled = null;
@@ -1220,6 +1220,11 @@ namespace Microsoft.Diagnostics.Symbols
                     ret = ret.Substring(0, atIdx);
 #endif
             }
+
+            // See if this is a NGEN mangled name, which is $#Assembly#Token suffix.  If so strip it off. 
+            var dollarIdx = ret.LastIndexOf('$');
+            if (0 <= dollarIdx && dollarIdx + 2 < ret.Length && ret[dollarIdx + 1] == '#' && 0 <= ret.IndexOf('#', dollarIdx + 2))
+                ret = ret.Substring(0, dollarIdx);
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
             var mergedAssembliesMap = GetMergedAssembliesMap();
@@ -1258,8 +1263,30 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceLocation SourceLocationForRva(uint rva)
         {
+            string dummyString;
+            uint dummyToken;
+            int dummyILOffset;
+            return SourceLocationForRva(rva, out dummyString, out dummyToken, out dummyILOffset);
+        }
+
+        /// <summary>
+        /// This overload of SourceLocationForRva like the one that takes only an RVA will return a source location
+        /// if it can.   However this version has additional support for NGEN images.   In the case of NGEN images 
+        /// for .NET V4.6.1 or later), the NGEN images can't convert all the way back to a source location, but they 
+        /// can convert the RVA back to IL artifacts (ilAssemblyName, methodMetadataToken, iloffset).  THese can then
+        /// be used to look up the source line using the IL PDB.  
+        /// 
+        /// Thus if the return value from this is null, check to see if the ilAssemblyName is non-null, and if not 
+        /// you can look up the source location using that information.  
+        /// </summary>
+        public SourceLocation SourceLocationForRva(uint rva, out string ilAssemblyName, out uint methodMetadataToken, out int ilOffset)
+        {
+            ilAssemblyName = null;
+            methodMetadataToken = 0;
+            ilOffset = -1;
             m_reader.m_log.WriteLine("SourceLocationForRva: looking up RVA {0:x} ", rva);
 
+            // First fetch the line number information 'normally'.  (for the non-NGEN case).  
             uint fetchCount;
             IDiaEnumLineNumbers sourceLocs;
             m_session.findLinesByRVA(rva, 0, out sourceLocs);
@@ -1267,16 +1294,74 @@ namespace Microsoft.Diagnostics.Symbols
             sourceLocs.Next(1, out sourceLoc, out fetchCount);
             if (fetchCount == 0)
             {
+                // We have no native line number information.   See if we are an NGEN image and we can convert the RVA to an IL Offset.   
+                if (m_pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+                {
+                    m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
+                    sourceLocs.Next(1, out sourceLoc, out fetchCount);
+                    if (fetchCount == 1)
+                    {
+                       // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
+                       // from the name mangling of the method symbol, so look that up.  
+
+                        IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
+                        if (method != null)
+                        {
+                            // Check to see if the method name follows the .NET V4.6.1 conventions
+                            // of $#ASSEMBLY#TOKEN.   If so the line number we got back is not a line number at all but
+                            // an ILOffset. 
+                            string name = method.name;
+                            if (name != null)
+                            {
+                                int suffixIdx = name.LastIndexOf("$#");
+                                if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
+                                {
+                                    int tokenIdx = name.IndexOf('#', suffixIdx + 2);
+                                    if (tokenIdx < 0)
+                                    {
+                                        m_reader.m_log.WriteLine("SourceLocationForRva: Error parsing method name mangling.  No # separating token");
+                                        return null;
+                                    }
+
+                                    string tokenStr = name.Substring(tokenIdx + 1);
+                                    int token;
+                                    if (!int.TryParse(tokenStr, System.Globalization.NumberStyles.AllowHexSpecifier, null, out token))
+                                    {
+                                        m_reader.m_log.WriteLine("SourceLocationForRva: Could not parse token as a Hex number {0}", tokenStr);
+                                        return null;
+                                    }
+
+                                    // SUCCESS, return the IL information to the caller
+                                    if (tokenIdx == suffixIdx + 2)      // The assembly name is null
+                                    {
+                                        ilAssemblyName = Path.GetFileNameWithoutExtension(m_pdbPath);
+                                        // strip off the .ni
+                                        ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
+                                    }
+                                    else
+                                        ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
+                                    methodMetadataToken = (uint)token;
+                                    ilOffset = (int)sourceLoc.lineNumber;  // The line number was not really the line number but the IL offset.  
+                                    return null;                           // we don't have source information but we did return the IL information. 
+                                }
+                            }
+                        }
+                    }
+                }
                 m_reader.m_log.WriteLine("SourceLocationForRva: No lines for RVA {0:x} ", rva);
                 return null;
             }
-            var buildTimeSourcePath = sourceLoc.sourceFile.fileName;
+
+            // If we reach here we are in the non-NGEN case, we are not mapping to IL information and 
+            IDiaSourceFile diaSrcFile = sourceLoc.sourceFile;
+            var buildTimeSourcePath = diaSrcFile.fileName;
             var lineNum = (int)sourceLoc.lineNumber;
 
-            var sourceFile = new SourceFile(this, sourceLoc.sourceFile);
+            var sourceFile = new SourceFile(this, diaSrcFile);
             var sourceLocation = new SourceLocation(sourceFile, (int)sourceLoc.lineNumber);
             return sourceLocation;
         }
+
         /// <summary>
         /// Managed code is shipped as IL, so RVA to NATIVE mapping can't be placed in the PDB. Instead
         /// what is placed in the PDB is a mapping from a method's meta-data token and IL offset to source
@@ -1602,7 +1687,6 @@ namespace Microsoft.Diagnostics.Symbols
         private int m_managedPdbAge;
         private SymbolModule m_managedPdb;
         private bool m_managedPdbAttempted;
-
 
         internal SymbolReader m_reader;
         internal IDiaSession m_session;
@@ -2392,7 +2476,7 @@ namespace Dia2Lib
 
             // This is the value it was for msdia120 and before 
             // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
-            
+
             // This is the value for msdia140.  
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
             var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);

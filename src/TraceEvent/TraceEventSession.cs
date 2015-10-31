@@ -2002,7 +2002,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // Virtual Alloc
-            if ((stackCapture & KernelTraceEventParser.Keywords.VirtualAlloc) != 0)
+            if ((stackCapture & (KernelTraceEventParser.Keywords.VirtualAlloc | KernelTraceEventParser.Keywords.ReferenceSet)) != 0)
             {
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.VirtualAllocTaskGuid;
                 stackTracingIds[curID].Type = 0x62;     // Flush Init
@@ -2082,6 +2082,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.MemoryTaskGuid;
                 stackTracingIds[curID].Type = 0x82;     // PERFINFO_LOG_TYPE_PAGE_ACCESS_EX 
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.MemoryTaskGuid;
+                stackTracingIds[curID].Type = 0x83;     // PERFINFO_LOG_TYPE_REMOVEFROMWS 
                 curID++;
             }
 

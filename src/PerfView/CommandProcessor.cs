@@ -561,38 +561,23 @@ namespace PerfView
                             }
                             EnableUserProvider(userModeSession, ".NETTasks",
                                 TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                (ulong) (TplEtwProviderTraceEventParser.Keywords.Default),
+                                (ulong)(TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
 
-                            // TODO FIX NOW remove this ugly versioning logic 1/2015.  We should just be turning on the FrameworkEventSource.   
-                            var ver = Environment.Version;
-                            var frameworkSourceBad = true;
-                            if (ver.Major == 4 && ver.Minor == 0 && ver.Build == 30319 && (34209 <= ver.Revision && ver.Revision <= 37000 || ver.Revision == 0))
-                                frameworkSourceBad = false;
-                            LogFile.WriteLine("Determining if .NET Framework events should be turned on.  CLR version is {0}", ver);
-
-                            if (frameworkSourceBad)
-                            {
-                                LogFile.WriteLine("Warning: Can't confirm you are running V4.5.2. Turning off .NETFramework provider for now to avoid bug, fixed in V4.5.2");
-                                LogFile.WriteLine("Warning: Some causality reconstruction may not operate properly.");
-                            }
-                            else
-                            {
-                                EnableUserProvider(userModeSession, ".NETFramework",
-                                    FrameworkEventSourceTraceEventParser.ProviderGuid,
-                                    parsedArgs.ClrEventLevel,
-                                    (ulong)(
-                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
-                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
-                                        FrameworkEventSourceTraceEventParser.Keywords.NetClient),
-                                    stacksEnabled);
-                            }
+                            EnableUserProvider(userModeSession, ".NETFramework",
+                                FrameworkEventSourceTraceEventParser.ProviderGuid,
+                                parsedArgs.ClrEventLevel,
+                                (ulong)(
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
+                                    FrameworkEventSourceTraceEventParser.Keywords.NetClient),
+                                stacksEnabled);
 
                             // Turn on new SQL client logging 
                             EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
                                 TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"),
                                 TraceEventLevel.Informational,
-                                1, // This enableds just the client events.  
+                                1, // This enables just the client events.  
                                 stacksEnabled);
 
                             EnableUserProvider(userModeSession, "ETWCLrProfiler Diagnostics",

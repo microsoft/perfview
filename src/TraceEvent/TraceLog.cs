@@ -6398,7 +6398,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 symbolReaderModule = OpenPdbForModuleFileWithCache(reader, moduleFile);
                 if (symbolReaderModule != null)
                 {
-                    var ret = symbolReaderModule.SourceLocationForRva(methodRva);
+                    string ilAssemblyName;
+                    uint ilMetaDataToken;
+                    int ilMethodOffset;
+
+                    var ret = symbolReaderModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
+                    if (ret == null && ilAssemblyName != null)
+                    {
+                        // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
+                        // Look up the IL PDB needed and 
+
+                        // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
+                        if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
+                            SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
+                            ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                        }
+                    }
+
                     // TODO FIX NOW, deal with this rather than simply warn. 
                     if (ret == null && symbolReaderModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                     {
@@ -6998,7 +7016,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the collection machine != current machine.", moduleFile.FilePath);
                         symReader.m_log.WriteLine("PDB files cannot be unambiguously matched to the EXE.");
-                        symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not doing the merge will fix this.");
+                        symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not, doing the merge will fix this.");
                         if (!UnsafePDBMatching)
                             symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
                     }
@@ -7011,7 +7029,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
             if (symbolReaderModule != null)
             {
-                if (moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
+
+                if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
                 {
                     symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.");
                     return null;
