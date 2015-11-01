@@ -277,7 +277,7 @@ public class GCHeapDumper
         foreach (ClrInfo currRuntime in EnumerateRuntimes(target))
         {
             m_log.WriteLine("Creating Runtime access object for runtime {0}.", currRuntime.Version);
-            string dacLocation = target.SymbolLocator.FindBinary(currRuntime.DacInfo);
+            string dacLocation = currRuntime.LocalMatchingDac ?? target.SymbolLocator.FindBinary(currRuntime.DacInfo);
 
             try
             {
@@ -882,7 +882,7 @@ public class GCHeapDumper
                                 proc = GetDebuggerForLiveProcess(processID);
 
                             m_log.WriteLine("Creating Runtime access object for runtime {0}.", clr.Version);
-                            string runtimeLocation = target.SymbolLocator.FindBinary(clr.DacInfo);
+                            string runtimeLocation = clr.LocalMatchingDac ?? target.SymbolLocator.FindBinary(clr.DacInfo);
                             if (runtimeLocation == null)
                             {
                                 m_log.WriteLine("Could not find Dac (Data access Controller for runtime");
