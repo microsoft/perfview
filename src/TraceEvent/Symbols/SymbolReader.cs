@@ -506,6 +506,14 @@ namespace Microsoft.Diagnostics.Symbols
                 outputPdbPath = Path.Combine(tempDir, relPath);
                 log.WriteLine("Updating NGEN createPdb output file to {0}", outputPdbPath); // TODO FIX NOW REMOVE (for debugging)
             }
+
+            // TODO: Hack.   V4.6.1 has both these characteristics, which leads to the issue
+            //      1) NGEN CreatePDB requires the path to be in the NIC or it fails. 
+            //      2) It uses links to some NGEN images, which means that the OS may give you path that is not in the NIC.  
+            // Should be fixed by 12/2015
+            if (isV4_5Runtime)
+                InsurePathIsInNIC(log, ref ngenImageFullPath);
+
             try
             {
                 for (; ; ) // Loop for retrying without /lines 
@@ -569,6 +577,50 @@ namespace Microsoft.Diagnostics.Symbols
                 // Insure we have cleaned up any temporary files.  
                 if (tempDir != null)
                     DirectoryUtilities.Clean(tempDir);
+            }
+        }
+
+        // TODO remove after 12/2015
+        private void InsurePathIsInNIC(TextWriter log, ref string ngenImageFullPath)
+        {
+            // We only get called if we are 4.5. or beyond, so we should have AUX files if we are in the nic.  
+            string auxFilePath = ngenImageFullPath + ".aux";
+            if (File.Exists(auxFilePath))
+            {
+                log.WriteLine("Path has a AUX file in NIC: {0}", ngenImageFullPath);
+                return;
+            }
+            string ngenFileName = Path.GetFileName(ngenImageFullPath);
+            long ngenFileSize = (new FileInfo(ngenImageFullPath)).Length;
+            log.WriteLine("Path is not in NIC, trying to put it in the NIC: Size {0} {1}", ngenFileSize, ngenImageFullPath);
+
+            string windir = Environment.GetEnvironmentVariable("WinDir");
+            if (windir == null)
+                return;
+
+            string candidate = null;
+            string assemblyDir = Path.Combine(windir, "Assembly");
+            foreach (string nicBase in Directory.GetDirectories(assemblyDir, "NativeImages_v4*"))
+            {
+                foreach(string file in Directory.EnumerateFiles(nicBase, ngenFileName, SearchOption.AllDirectories))
+                {
+                    long fileLen = (new FileInfo(file)).Length;
+                    if (fileLen == ngenFileSize)
+                    {
+                        if (candidate != null)      // Ambiguity, give up.  
+                        {
+                            log.WriteLine("There is more than one file in the NIC with matching name and size! giving up.");
+                            return;
+                        }
+                        candidate = file;
+                    }
+                }
+            }
+
+            if (candidate != null)
+            {
+                ngenImageFullPath = candidate;
+                log.WriteLine("Updating path to be in NIC: {0}", ngenImageFullPath);
             }
         }
 
@@ -954,6 +1006,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
             else
             {
+                // Per-user NGEN Image Caches.   
                 m = Regex.Match(ngenImagePath, @"\\Microsoft\\CLR_v(\d+)\.\d+(_(\d\d))?\\NativeImages", RegexOptions.IgnoreCase);
                 if (m.Success)
                 {
@@ -962,6 +1015,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 else
                 {
+                    // Pre-generated native images.  
                     m = Regex.Match(ngenImagePath, @"\\Microsoft.NET\\Framework((\d\d)?)\\v(\d+).*\\NativeImages", RegexOptions.IgnoreCase);
                     if (m.Success)
                     {
@@ -1297,12 +1351,14 @@ namespace Microsoft.Diagnostics.Symbols
                 // We have no native line number information.   See if we are an NGEN image and we can convert the RVA to an IL Offset.   
                 if (m_pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                 {
+                    m_reader.m_log.WriteLine("SourceLocationForRva: did not find line info but is a NGEN image, looking for IL offsets");
                     m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
                     sourceLocs.Next(1, out sourceLoc, out fetchCount);
                     if (fetchCount == 1)
                     {
                        // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
                        // from the name mangling of the method symbol, so look that up.  
+                        m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, looking for V4.6.1 mangled names");
 
                         IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
                         if (method != null)
@@ -1313,6 +1369,7 @@ namespace Microsoft.Diagnostics.Symbols
                             string name = method.name;
                             if (name != null)
                             {
+                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with mangled name {0}", name);
                                 int suffixIdx = name.LastIndexOf("$#");
                                 if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
                                 {

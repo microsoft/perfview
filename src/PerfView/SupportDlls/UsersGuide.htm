@@ -7719,6 +7719,27 @@
         </li>
         -->
         <li>
+            Version 1.8.9 11/1/15
+            <ul>
+                <li>
+                    There is a bug in RC candidates of V4.6.1 where NGEN createPdb only works if the path of the NGEN image
+                    is in the Native Image Cache (NIC), but V4.6.1 uses hard links for NGEN images that come from the install itself.
+                    The result is that you don't get symbols for mscorlib, system, and system.core.   This adds a work-around
+                    for this (normaling all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.  
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.8 10/31/15
+            <ul>
+                <li>  Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on 
+                      a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an 
+                      impediment to getting line number information (that is access to the cooresponding IL pdb with line number
+                      information is no longer needed to create an NGEN pdb that has line number information). 
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.7 10/22/15
             <ul>
                 <li> Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
