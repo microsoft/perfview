@@ -726,7 +726,8 @@ namespace PerfView
             new ProcessDumpPerfViewFile(),
             new ScenarioSetPerfViewFile(),
             new OffProfPerfViewFile(),
-            new DiagSessionPerfViewFile()
+            new DiagSessionPerfViewFile(),
+            new LinuxPerfViewData()
         };
 
         #region private
@@ -885,6 +886,14 @@ namespace PerfView
                 if (etlDataFile != null)
                 {
                     trace = etlDataFile.GetTraceLog(worker.LogWriter);
+                }
+                else
+                {
+                    var linuxDataFile = DataFile as LinuxPerfViewData;
+                    if (linuxDataFile != null)
+                    {
+                        trace = linuxDataFile.GetTraceLog(worker.LogWriter);
+                    }
                 }
 
                 worker.StartWork("Opening " + Name, delegate()
@@ -5775,6 +5784,124 @@ namespace PerfView
 
         internal protected GCHeapDump m_gcDump;
         string m_extraTopStats;
+        #endregion
+    }
+
+    public partial class LinuxPerfViewData : PerfViewFile
+    {
+        public override string FormatName { get { return "LTTng Text"; } }
+        public override string[] FileExtensions { get { return new string[] { ".lttng.txt" }; } }
+
+        protected internal override EventSource OpenEventSourceImpl(TextWriter log)
+        {
+            return null;
+        }
+        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+        {
+            return null;
+        }
+
+        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+        {
+            // Open the file.
+            m_traceLog = GetTraceLog(worker.LogWriter);
+
+            m_Children = new List<PerfViewTreeItem>();
+            m_Children.Add(new PerfViewTraceInfo(this));
+            m_Children.Add(new PerfViewProcesses(this));
+            
+            // Enable once this file type supports the event view.
+            // m_Children.Add(new PerfViewEventSource(this));
+
+            return null;
+        }
+
+        public override void Close()
+        {
+            if (m_traceLog != null)
+            {
+                m_traceLog.Dispose();
+                m_traceLog = null;
+            }
+            base.Close();
+        }
+
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+
+        public TraceLog GetTraceLog(TextWriter log)
+        {
+            if (m_traceLog != null)
+            {
+                if (IsUpToDate)
+                    return m_traceLog;
+                m_traceLog.Dispose();
+                m_traceLog = null;
+            }
+            var dataFileName = FilePath;
+            var options = new TraceLogOptions();
+            options.ConversionLog = log;
+            if (App.CommandLineArgs.KeepAllEvents)
+                options.KeepAllEvents = true;
+            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.SkipMSec = App.CommandLineArgs.SkipMSec;
+            //options.OnLostEvents = onLostEvents;
+            options.LocalSymbolsOnly = false;
+            options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };       // Don't resolve any symbols
+
+            // But if there is a directory called EtwManifests exists, look in there instead. 
+            //var etwManifestDirPath = Path.Combine(Path.GetDirectoryName(dataFileName), "EtwManifests");
+            //if (Directory.Exists(etwManifestDirPath))
+                //options.ExplicitManifestDir = etwManifestDirPath;
+
+            //UnZipIfNecessary(ref dataFileName, log);
+
+            // If the etlx file exists, delete it so we can regenerate it.
+
+            // Generate the etlx file path / name.
+            string etlxFile = dataFileName + ".etlx";
+            if (File.Exists(etlxFile))
+            {
+                FileUtilities.ForceDelete(etlxFile);
+            }
+
+            log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
+            TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
+
+            var dataFileSize = "Unknown";
+            if (File.Exists(dataFileName))
+                dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
+
+            log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
+
+            try
+            {
+                m_traceLog = new TraceLog(etlxFile);
+
+                // Add some more parser that we would like.  
+                //new ETWClrProfilerTraceEventParser(m_traceLog);
+                //new MicrosoftWindowsNDISPacketCaptureTraceEventParser(m_traceLog);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+            m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
+            if (App.CommandLineArgs.UnsafePDBMatch)
+                m_traceLog.CodeAddresses.UnsafePDBMatching = true;
+
+            if (m_traceLog.Truncated)   // Warn about truncation.  
+            {
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                {
+                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
+                });
+            }
+            return m_traceLog;
+        }
+
+        #region Private
+        TraceLog m_traceLog;
         #endregion
     }
 

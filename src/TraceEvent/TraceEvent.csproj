@@ -88,6 +88,7 @@
     <Compile Include="Parsers\ClrTraceEventParser.cs" />
     <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
     <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
+    <Compile Include="LttngTextTraceEventSource.cs" />
     <Compile Include="Stacks\AggregateStackSource.cs" />
     <Compile Include="Stacks\FilterStacks.cs" />
     <Compile Include="Stacks\IndexMap.cs" />

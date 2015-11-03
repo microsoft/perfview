@@ -130,6 +130,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return traceLog.realTimeSource;
         }
 
+        public static string CreateFromLttngTextDataFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null)
+        {
+            // Create the etlx file path.
+            if (etlxFilePath == null)
+            {
+                etlxFilePath = filePath + ".etlx";
+            }
+
+            using (LttngTextTraceEventSource source = new LttngTextTraceEventSource(filePath))
+            {
+                if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
+                    options.OnLostEvents(false, source.EventsLost, 0);
+                CreateFromLinuxEventSources(source, etlxFilePath, null);
+            }
+
+            return etlxFilePath;
+        }
+
         /// <summary>
         /// Opens an existing Extended Trace Event log file (ETLX) file.  See also TraceLog.OpenOrCreate. 
         /// </summary>
@@ -648,6 +666,44 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (eventsToStacks.BinarySearch(eventIndex, out index, stackComparer))
                 return eventsToStacks[index].CallStackIndex;
             return CallStackIndex.Invalid;
+        }
+
+        internal static void CreateFromLinuxEventSources(LttngTextTraceEventSource source, string etlxFilePath, TraceLogOptions options)
+        {
+            if (options == null)
+            {
+                options = new TraceLogOptions();
+            }
+
+            TraceLog newLog = new TraceLog();
+            newLog.rawEventSourceToConvert = source;
+            newLog.options = options;
+
+            // Parse the header.
+            source.ParseAndCopyHeaderData(newLog);
+
+            // Get all the users data from the original source.   Note that this happens by reference, which means 
+            // that even though we have not built up the state yet (since we have not scanned the data yet), it will
+            // still work properly (by the time we look at this user data, it will be updated). 
+            foreach (string key in source.UserData.Keys)
+                newLog.UserData[key] = source.UserData[key];
+
+            // Avoid partially written files by writing to a temp and moving atomically to the final destination.  
+            string etlxTempPath = etlxFilePath + ".new";
+            try
+            {
+                //****************************************************************************************************
+                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                if (File.Exists(etlxFilePath))
+                    File.Delete(etlxFilePath);
+                File.Move(etlxTempPath, etlxFilePath);
+            }
+            finally
+            {
+                if (File.Exists(etlxTempPath))
+                    File.Delete(etlxTempPath);
+            }
         }
 
         // TODO expose this publicly?
@@ -7185,7 +7241,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
             if (symbolReaderModule != null)
             {
-                if (moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
+                if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
                 {
                     symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.");
                     return null;
