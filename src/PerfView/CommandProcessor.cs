@@ -483,6 +483,10 @@ namespace PerfView
                         {
                             LogFile.WriteLine("Turning on more CLR GC, JScript and ASP.NET Events.");
 
+                            // Turn on DotNet Telemetry
+                            EnableUserProvider(userModeSession, "DotNet",
+                                new Guid("319dc449-ada5-50f7-428e-957db6791668"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
                             // Turn on ETW logging about etw logging (so we get lost event info) ... (Really need a separate session to get the lost event Info properly). 
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-EventTracing",
                                 new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
@@ -557,38 +561,23 @@ namespace PerfView
                             }
                             EnableUserProvider(userModeSession, ".NETTasks",
                                 TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                ulong.MaxValue, // (ulong) (TplEtwProviderTraceEventParser.Keywords.Tasktransfer | TplEtwProviderTraceEventParser.Keywords.Tasks | TplEtwProviderTraceEventParser.Keywords.Parallel), 
+                                (ulong)(TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
 
-                            // TODO FIX NOW remove this ugly versioning logic 1/2015.  We should just be turning on the FrameworkEventSource.   
-                            var ver = Environment.Version;
-                            var frameworkSourceBad = true;
-                            if (ver.Major == 4 && ver.Minor == 0 && ver.Build == 30319 && (34209 <= ver.Revision && ver.Revision <= 37000 || ver.Revision == 0))
-                                frameworkSourceBad = false;
-                            LogFile.WriteLine("Determining if .NET Framework events should be turned on.  CLR version is {0}", ver);
-
-                            if (frameworkSourceBad)
-                            {
-                                LogFile.WriteLine("Warning: Can't confirm you are running V4.5.2. Turning off .NETFramework provider for now to avoid bug, fixed in V4.5.2");
-                                LogFile.WriteLine("Warning: Some causality reconstruction may not operate properly.");
-                            }
-                            else
-                            {
-                                EnableUserProvider(userModeSession, ".NETFramework",
-                                    FrameworkEventSourceTraceEventParser.ProviderGuid,
-                                    parsedArgs.ClrEventLevel,
-                                    (ulong)(
-                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
-                                        FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
-                                        FrameworkEventSourceTraceEventParser.Keywords.NetClient),
-                                    stacksEnabled);
-                            }
+                            EnableUserProvider(userModeSession, ".NETFramework",
+                                FrameworkEventSourceTraceEventParser.ProviderGuid,
+                                parsedArgs.ClrEventLevel,
+                                (ulong)(
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
+                                    FrameworkEventSourceTraceEventParser.Keywords.NetClient),
+                                stacksEnabled);
 
                             // Turn on new SQL client logging 
                             EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
                                 TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"),
                                 TraceEventLevel.Informational,
-                                1, // This enableds just the client events.  
+                                1, // This enables just the client events.  
                                 stacksEnabled);
 
                             EnableUserProvider(userModeSession, "ETWCLrProfiler Diagnostics",
@@ -970,6 +959,12 @@ namespace PerfView
                         // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
                         // Ideally this is done by the SetFileName API so we can avoid merging.  
                         var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
+
+                        // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
+                        // until the events are logged before shutting down the session.   However we only need the DCEnd events and
+                        // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
+                        // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
+                        // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
                         using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
                             kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
                     }

@@ -5,7 +5,9 @@ If you are unfamiliar with PerfView, there are [PerfView video tutorials](http:/
 
 The PerfView executable is ultimately published at the [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567). It is a standalone executable file (packaged in a ZIP archive). You can be running it in less than a minute!  
 
-The PerfView users guide is part of the application itself, however you can get the .HTM file for it in the users guide in the soruce code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm).
+The PerfView users guide is part of the application itself, however you can get the .HTM file for it in the users guide in the soruce code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm), however it is a significantly better experience if you simply download Perfview and select the Help -> User's Guide menu item.  
+
+PerfView is designed to build in Visual Studio 2013 or later.  The solution file is src/PerfView/Perfview.sln.  Opening this file in Visual file and selecting the Build -> Build Solution, will build it.   It follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in the src/PerfView/bin/<BuildType>/PerfView.exe   You need only deploy this one EXE to use it.  
 
 The code is broken in several main sections:
   * TraceEvent - Library that understands how to decode Event Tracing for Windows (ETW) which is used to actually collect the data for many investgations

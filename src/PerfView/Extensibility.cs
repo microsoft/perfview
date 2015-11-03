@@ -216,7 +216,7 @@ namespace PerfViewExtensibility
                 {
                     if (stacks.m_fileName != null)
                         filePath = stacks.m_fileName;
-                    else 
+                    else
                         filePath = stacks.Name;
                     if (string.IsNullOrWhiteSpace(filePath))
                         filePath = "X.PERFVIEW.XML";            // MAJOR HACK.
@@ -2583,7 +2583,6 @@ namespace PerfViewExtensibility
                 };
 
                 session.Source.Dynamic.All += onAnyEvent;
-                session.Source.Registered.All += onAnyEvent;
 
                 // Enable all the providers the users asked for
                 foreach (string providerName in etwProviderNames.Split(','))
@@ -2718,7 +2717,6 @@ namespace PerfViewExtensibility
             OpenStackViewer(stacks);
         }
 
-
         /// <summary>
         /// ImageSize generates a XML report (by default inputExeName.imageSize.xml) that 
         /// breaks down the executable file 'inputExeName' by the symbols in it (fetched from
@@ -2729,10 +2727,10 @@ namespace PerfViewExtensibility
         /// <param name="inputExeName">The name of the EXE (or DLL) that you wish to analyze.  If blank it will prompt for one.</param>
         /// <param name="outputFileName">The name of the report file.  Defaults to the inputExeName
         /// with a .imageSize.xml suffix.</param>
-        public void ImageSize(string inputExeName=null, string outputFileName = null)
+        public void ImageSize(string inputExeName = null, string outputFileName = null)
         {
             if (outputFileName == null)
-                outputFileName = Path.ChangeExtension(inputExeName,  ".imageSize.xml");
+                outputFileName = Path.ChangeExtension(inputExeName, ".imageSize.xml");
 
             if (string.IsNullOrWhiteSpace(inputExeName))
             {
@@ -2791,109 +2789,124 @@ namespace PerfViewExtensibility
             }
         }
 
-#if false 
-        /// <summary>
-        /// Finds all AppFabricCache requests in all the files matching 'etlFileNamePattern' (can have * wildcards)
-        /// and produces a CSV file called 'csvOutputFileName', for each such request which includes its response 
-        /// time, start time, and request ID.  
-        /// </summary>
-        /// <param name="etlFileNamePattern">The set of input ETL files to use as input</param>
-        /// <param name="csvOutputFileName">The output comma separated file (defaults to first input file .CSV)</param>
-        /// <param name="launchExcel">If true (the default) launch Excel after computing the CSV file.</param>
-        public void AppFabricCacheRequestsToCsv(string etlFileNamePattern, string csvOutputFileName = null, bool launchExcel = true)
+        class CodeSymbolListener
         {
-            TextWriter csvOutputStream = null;
-            string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
-            int unmatchedRequestCount = 0;
-            int requestCount = 0;
-
-            double maxTimeMSec = 0;
-            double maxTimeStartMsec = 0;
-            long maxTimeRequestId = 0;
-            double totalTimeMSec = 0;
-
-            LogFile.WriteLine("Processing {0} into CSV file", etlFileNamePattern);
-            foreach (var etlFileName in FileUtilities.ExpandWildcards(new string[] { etlFileNamePattern }))
+            public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)
             {
-                if (csvOutputStream == null)
+                m_symbolFiles = new Dictionary<long, CodeSymbolState>();
+                m_targetSymbolCachePath = targetSymbolCachePath;
+
+                source.Clr.AddCallbackForEvents<ModuleLoadUnloadTraceData>(OnModuleLoad);
+                source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
+            }
+
+            #region private
+            private void OnModuleLoad(ModuleLoadUnloadTraceData data)
+            {
+                Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
+            }
+
+            private void OnCodeSymbols(CodeSymbolsTraceData data)
+            {
+                CodeSymbolState state = Get(data.ProcessID, data.ModuleId);
+                if (state != null)
+                    state.OnCodeSymbols(data);
+            }
+
+            class CodeSymbolState
+            {
+                int m_moduleId;
+                string m_pdbName;
+                int m_chunksReadSoFar;
+                int m_totalChunks;
+                byte[][] m_chunks;
+                string m_pdbIndexPath;
+                MemoryStream m_stream;
+                private ModuleLoadUnloadTraceData m_moduleData;
+                string m_symbolCachePath;
+
+                public CodeSymbolState(ModuleLoadUnloadTraceData data, string path)
                 {
-                    if (csvOutputFileName == null)
-                        csvOutputFileName = PerfViewFile.ChangeExtension(etlFileName, ".csv");
-                    csvOutputStream = File.CreateText(csvOutputFileName);
-                    csvOutputStream.WriteLine("StartTimeMSec{0}RequestID{0}ResponseTimeMSec", listSeparator);
+                    // See Symbols/Symbolreader.cs for details on making Symbols server paths.   Here is the jist
+                    // pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
+
+                    // TODO COMPLETE
+                    m_moduleData = data;
+                    m_stream = new MemoryStream();
+                    m_symbolCachePath = path;
+
+                    string pdbSimpleName = data.ModuleILFileName.Replace(".exe", ".pdb").Replace(".dll", ".pdb");
+                    if (!pdbSimpleName.EndsWith(".pdb"))
+                    {
+                        pdbSimpleName += ".pdb";
+                    }
+                    m_pdbIndexPath = pdbSimpleName + @"\" +
+                        data.ManagedPdbSignature.ToString("N") + data.ManagedPdbAge.ToString() + @"\" + pdbSimpleName;
                 }
 
-                LogFile.WriteLine("Processing {0}", etlFileName);
-
-                var requestStartTimes = new Dictionary<long, double>();
-                var appFabricProviderGuid = new Guid("a77dcf21-545f-4191-b3d0-c396cf2683f2");
-                using (var etlSource = new ETWTraceEventSource(etlFileName))
+                public void OnCodeSymbols(CodeSymbolsTraceData data)
                 {
-                    etlSource.EveryEvent += delegate(TraceEvent data)
+                    // TODO read in a chunk if it is out of order fail, when complete close the file.
+                    //using (StreamWriter writer = File.WriteAllBytes(m_pdbIndexPath, m_bytes))
+                    //    ((MemoryGraph)graph).DumpNormalized(writer);
+
+                    //Assumes the length of the stream does not exceed 2^32
+                    m_stream.Write(data.Chunk, 0, data.ChunkLength);
+                    if ((data.ChunkNumber + 1) == data.TotalChunks)
                     {
-                        if (data.ProviderGuid == appFabricProviderGuid)
+                        byte[] bytes = new byte[m_stream.Length];
+                        m_stream.Seek(0, SeekOrigin.Begin);
+                        m_stream.Read(bytes, 0, (int)m_stream.Length);
+                        string fullPath = m_symbolCachePath + @"\" + m_pdbIndexPath;
+                        if (!Directory.Exists(Path.GetDirectoryName(fullPath)))
                         {
-                            if (data.ID == (TraceEventID)123)     // This is the RequestReceived
-                            {
-                                // We decode these by hand so they provider does not need to be registered.
-                                long requestID = data.GetInt64At(data.SkipUnicodeString(0));       // request ID is after string (source) 
-                                requestStartTimes[requestID] = data.TimeStampRelativeMSec;
-                            }
-                            else if (data.ID == (TraceEventID)127)    // This is the ResponseSent message
-                            {
-                                // We decode these by hand so they provider does not need to be registered.
-                                long requestID = data.GetInt64At(data.SkipUnicodeString(0));        // request ID is after string (source) 
-                                // long responseMSec = data.GetInt64At(data.SkipUnicodeString(0) + 8); // then comes the response time.  
-
-                                double startTimeRelativeMSec;
-                                if (requestStartTimes.TryGetValue(requestID, out startTimeRelativeMSec))
-                                {
-                                    var requestTimeMSec = data.TimeStampRelativeMSec - startTimeRelativeMSec;
-                                    requestStartTimes.Remove(requestID);
-                                    csvOutputStream.WriteLine("{1:f3}{0}0x{2:x}{0}{3}", listSeparator,
-                                        startTimeRelativeMSec, requestID, requestTimeMSec);
-
-                                    if (maxTimeMSec < requestTimeMSec)
-                                    {
-                                        maxTimeMSec = requestTimeMSec;
-                                        maxTimeRequestId = requestID;
-                                        maxTimeStartMsec = data.TimeStampRelativeMSec;
-                                    }
-                                    totalTimeMSec += requestTimeMSec;
-                                    requestCount++;
-                                }
-                                else
-                                    unmatchedRequestCount++;
-                            }
+                            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
                         }
-                    };
-
-                    etlSource.Process();
+                        File.WriteAllBytes(fullPath, bytes);
+                    }
                 }
             }
 
-            if (csvOutputStream == null)
-                throw new ApplicationException("ETL pattern " + etlFileNamePattern + " did not match any files.");
-
-            csvOutputStream.Close();
-            if (requestCount == 0)
-                throw new ApplicationException("No AppFabric Events found in trace.");
-
-            LogFile.WriteLine("[Processed {0} requests, Output Comma Separated File: {1}]", requestCount, csvOutputFileName);
-            LogFile.WriteLine("Average response time {0:f1} MSec", totalTimeMSec / requestCount);
-            LogFile.WriteLine("Max response time {0:f1} MSec for request 0x{1:x} that started {2:f3} Msec into trace",
-                maxTimeMSec, maxTimeRequestId, maxTimeStartMsec);
-
-            if (unmatchedRequestCount > 100)
-                LogFile.WriteLine("Warning: {0} requests had a response but no request.", unmatchedRequestCount);
-
-            if (launchExcel)
+            // hides details of how process/module IDs are looked up.  
+            CodeSymbolState Get(int processID, long moduleID)
             {
-                LogFile.WriteLine("[Launching CSV on {0}]", csvOutputFileName);
-                Command.Run(Command.Quote(csvOutputFileName), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                CodeSymbolState ret = null;
+                m_symbolFiles.TryGetValue((((long)processID) << 48) + moduleID, out ret);
+                return ret;
+            }
+            void Put(int processID, long moduleID, CodeSymbolState value)
+            {
+                m_symbolFiles[(((long)processID) << 48) + moduleID] = value;
+            }
+
+            // Indexed by key;
+            Dictionary<long, CodeSymbolState> m_symbolFiles;
+            string m_targetSymbolCachePath;
+            #endregion
+        }
+
+        /// <summary>
+        /// Listen for the CLR CodeSymbols events and when you find them write them 
+        /// to the directory targetSymbolCachePath using standard symbol server conventions
+        /// (Name.Pdb\GUID-AGE\Name.Pdb)
+        /// 
+        /// Usage 
+        /// </summary>
+        /// <param name="targetSymbolCachePath"></param>
+        public void GetDynamicAssemblySymbols(string targetSymbolCachePath)
+        {
+            var sessionName = "PerfViewSymbolListener";
+            LogFile.WriteLine("Creating Session {0}", sessionName);
+            using (var session = new TraceEventSession(sessionName))
+            {
+                var codeSymbolListener = new CodeSymbolListener(session.Source, targetSymbolCachePath);
+                LogFile.WriteLine("Enabling CLR Loader and CodeSymbols events");
+                session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                    (long)(ClrTraceEventParser.Keywords.Codesymbols | ClrTraceEventParser.Keywords.Loader));
+                session.Source.Process();
             }
         }
-#endif
+
         public void NGenImageSize(string ngenImagePath)
         {
             SymbolReader symReader = App.GetSymbolReader();
@@ -3105,58 +3118,31 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
-#if false
-        public void TestCaputureS   tate(string eventSourceName, string oldWay = null)
+#if false 
+        public void Test()
         {
-            var eventSourceGuid = TraceEventProviders.GetEventSourceGuidFromName(eventSourceName);
-            LogFile.WriteLine("Got Guid {0} from name {1}", eventSourceGuid, eventSourceName);
-            var sessionName = "MySession";
-
-            LogFile.WriteLine("Starting up session");
-            TraceEventSession session = null;
-            bool started = false;
-            // Start a thread to listen for incoming events in real time. 
-            var listenThread = new System.Threading.Thread(delegate()
+            LogFile.WriteLine("Starting Listener thread.");
+            using (var source = new ETWTraceEventSource("AppInsightsTestApp.etl"))
             {
-                LogFile.WriteLine("Starting Listener thread.");
-                using (session = new TraceEventSession(sessionName, null))
-                {
-                    session.Source.Dynamic.All += delegate(TraceEvent data) { LogFile.WriteLine(data.ToString()); };
-                    session.Source.UnhandledEvents += delegate(TraceEvent data) { LogFile.WriteLine("UNHANDLED: " + data.ToString()); };
-                    started = true;
-
-                    if (oldWay != "true")
+                source.Dynamic.AddCallbackForProviderEvents(
+                    delegate(string providerName, string eventName)
                     {
-                        LogFile.WriteLine("Trying old style EventSource Capture state command.");
-                        session.EnableProvider(eventSourceGuid, TraceEventLevel.Verbose, ulong.MaxValue, 
-                            new TraceEventProviderOptions("Command", "CaptureState"));
-                    }
-                    else
+                        Trace.WriteLine("Checking " + providerName + "  " + eventName);
+                        if (providerName.Contains("Insight") || providerName.Contains("Windows-ASPNET"))
+                            return EventFilterResponse.AcceptEvent;
+                        return EventFilterResponse.RejectProvider;
+                    },
+                    delegate(TraceEvent data)
                     {
-                        LogFile.WriteLine("Trying ETW standard capture state command.");
-                        // this is the new way
-                        session.CaptureState(eventSourceGuid);
+                        Trace.WriteLine("Testing " + data.ToString());
+                        GC.KeepAlive("");
                     }
-                    session.Source.Process();
-                }
-            });
-            listenThread.Start();
-
-            // Wait for startup
-            while (!started)
-                System.Threading.Thread.Sleep(1);
-            LogFile.WriteLine("Session Started.");
-
-            LogFile.WriteLine("Listening for 10 sec");
-            System.Threading.Thread.Sleep(10000);
-
-            // To stop listening
-            LogFile.WriteLine("Stopping listening");
-            session.Dispose();      // It is OK to displose twice.  
-
-            LogFile.WriteLine("Done");
+                    );
+                source.Process();
+            }
+            Trace.WriteLine("Done.");
         }
-#endif
+#endif 
 
         #region private
         /// <summary>

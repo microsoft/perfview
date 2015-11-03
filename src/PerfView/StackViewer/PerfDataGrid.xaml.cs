@@ -255,7 +255,7 @@ namespace PerfView
         }
         public static string GetColumnHeaderText(DataGridColumn column)
         {
-            // TODO  I woudl like get the columnHeader text not from the column name but from what is displayed in the hyperlink
+            // TODO  I would like get the columnHeader text not from the column name but from what is displayed in the hyperlink
             var header = column.Header as TextBlock;
             string ret = header.Name;
             ret = ret.Replace("Column", "");

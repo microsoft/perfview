@@ -1288,7 +1288,7 @@ namespace PerfView
             if (m_cpuStack == null)
             {
                 m_cpuStack   = new StackWindowHook(m_dataFile, m_heapInfo.ProcessID, m_statusBar, "CPU", m_parent);
-                m_allocStack = new StackWindowHook(m_dataFile, m_heapInfo.ProcessID, m_statusBar, "GC Heap Alloc", m_parent);
+                m_allocStack = new StackWindowHook(m_dataFile, m_heapInfo.ProcessID, m_statusBar, "GC Heap Alloc Ignore Free (Coarse Sampling)", m_parent);
 
                 if (m_heapInfo.HasVmAlloc)
                 {

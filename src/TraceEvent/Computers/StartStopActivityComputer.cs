@@ -106,7 +106,13 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         // Include the first argument if it is a string
                         if (0 < data.PayloadNames.Length)
-                            extraInfo = data.PayloadValue(0) as string;
+                        {
+                            try
+                            {
+                                extraInfo = data.PayloadValue(0) as string;
+                            }
+                            catch (Exception) { }
+                        }
                     }
 
                     if (goodActivityID)      // Means that activityID is set to something useful. 
@@ -353,8 +359,7 @@ namespace Microsoft.Diagnostics.Tracing
                 bytePtr += numBytes;        // Advance past the bytes.
             }
 
-            if (sb.Length == 0)
-                sb.Append('/');
+            sb.Append('/');
             return sb.ToString();
         }
 

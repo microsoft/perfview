@@ -449,7 +449,7 @@ namespace Triggers
         ///      Keywords=XXXX                             // In hex, default ulong.MaxValue.  
         ///      Level=XXXX                                // 1 (Critical) - 5 (Verbose) Default = 4 (Info)
         ///      Process=ProcessNameOrID                   // restricts to a particular process
-        ///      FieldFilter=FieldName Op Value            // Allows you to filter on a particular field value OP can be < > = and ~ (which means RegEx match)
+        ///      FieldFilter=FieldName Op Value            // Allows you to filter on a particular field value OP can be &lt; &gt; = and ~ (which means RegEx match)
         ///                                                // You can repeat this and you get the logical AND operator (sorry no OR operator right now). 
         ///      BufferSizeMB=NNN                          // Size of buffer used for trigger session.  
         /// If TriggerMSec is non-zero then it measures the duration of a start-stop pair.   
@@ -498,6 +498,7 @@ namespace Triggers
                     if (BufferSizeMB != 0)
                         m_session.BufferSizeMB = BufferSizeMB;
 
+                    m_log.WriteLine("Additional Trigger debugging messages are logged to the ETL file as PerfView/StopTriggerDebugMessage events.");
                     using (m_source = new ETWTraceEventSource(sessionName, TraceEventSourceType.Session))
                     {
                         Dictionary<StartStopKey, StartEventData> startStopRecords = null;
@@ -675,15 +676,17 @@ namespace Triggers
                             }
                         };
 
-                        m_source.Registered.All += onEvent;
+                        // m_source.Registered.All += onEvent;
                         m_source.Dynamic.All += onEvent;
                         m_source.Kernel.All += onEvent;
                         m_source.Clr.All += onEvent;
 
                         m_log.WriteLine("[Enabling ETW session for monitoring requests.]");
-                        m_log.WriteLine("In Trigger session {0} enabling Provider {1} Level {2} Keywords 0x{3:x}",
-                            sessionName, ProviderGuid, ProviderLevel, ProviderKeywords);
+                        m_log.WriteLine("In Trigger session {0} enabling Provider {1} ({2}) Level {3} Keywords 0x{4:x}",
+                            sessionName, ProviderName, ProviderGuid, ProviderLevel, ProviderKeywords);
                         m_session.EnableProvider(ProviderGuid, ProviderLevel, ProviderKeywords);
+                        LogVerbose(DateTime.Now, "Starting Provider " + ProviderName + " GUID " + ProviderGuid);
+
                         listening = true;
                         m_source.Process();
                     }
@@ -873,7 +876,10 @@ namespace Triggers
 
             m_providerName = m.Groups[1].Value;
             if (m_providerName.StartsWith("*"))
-                ProviderGuid = TraceEventProviders.GetEventSourceGuidFromName(m_providerName.Substring(1));
+            {
+                m_providerName = m_providerName.Substring(1);
+                ProviderGuid = TraceEventProviders.GetEventSourceGuidFromName(m_providerName);
+            }
             else
             {
                 ProviderGuid = TraceEventProviders.GetProviderGuidByName(m_providerName);
@@ -984,7 +990,10 @@ namespace Triggers
         /// </summary>
         private unsafe Guid GetContextIDForEvent(TraceEvent data)
         {
-            object value;
+            // Get the value to use as the context ID.  
+
+            // If the user explicitly defines the corelation ID then us it.  
+            object value = null;
             if (StartStopID != null)
             {
                 if (StartStopID == "ActivityID")
@@ -1003,11 +1012,28 @@ namespace Triggers
                     }
                 }
             }
-            else if (0 < data.PayloadNames.Length)
-                value = data.PayloadValue(0);               // By default we choose the first argument.  
-            else
-                return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+            
+            // If the activity ID is a Activity path, then we accept that.  
+            var activityID = data.ActivityID;
+            if (StartStopActivityComputer.IsActivityPath(activityID))
+                return activityID;
 
+            if (value == null)
+            {
+                if (0 < data.PayloadNames.Length)
+                    value = data.PayloadValue(0);               // By default we choose the first argument. 
+
+                // If we did not find a value, by default use the activity ID or the thread ID 
+                if (value == null)
+                {
+                    if (activityID != Guid.Empty)
+                        return activityID;
+                    else
+                        return new Guid((int)data.ThreadID, 0, (short)data.ProcessID, 0, 0, 0, 0, 0xFF, 0xFE, 0xFD, 0x03);
+                }
+            }
+
+            // Turn the value into a GUID.  
             if (value is Guid)
                 return (Guid)value;
             else if (value is long)

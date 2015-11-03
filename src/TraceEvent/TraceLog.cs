@@ -156,19 +156,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             InitializeFromFile(etlxFilePath);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Given the path to an ETW trace log file (ETL) file, create an ETLX file for the data. 
-        /// <para>If etlxFilePath is null the output name is derived from etlFilePath by changing its file extension to .ETLX.</para>
-        /// <returns>The name of the ETLX file that was generated.</returns>
-        /// </summary>
-        [Obsolete("Use CreateFromEventTraceLogFile")]
-        public static string CreateFromSource(string etlFilePath, string etlxFilePath = null, TraceLogOptions options = null)
-        {
-            return CreateFromEventTraceLogFile(etlFilePath, etlxFilePath, options);
-        }
-#endif
-
         /// <summary>
         /// All the events in the ETLX file. The returned TraceEvents instance supports IEnumerable so it can be used 
         /// in foreach statements, but it also supports other methods to further filter the evens before enumerating over them.  
@@ -555,16 +542,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.rawEventSourceToConvert.AllEvents += onAllEvents;
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Aggressively  releases resources associated with the log. 
-        /// </summary>
-        [Obsolete("Use Dispose")]
-        public void Close()
-        {
-            Dispose();
-        }
-#endif
         /// <summary>
         /// Removes all but the last 'keepCount' entries in 'growableArray' by sliding them down. 
         /// </summary>
@@ -738,7 +715,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // (we copy it out below).   To date there are only three parsers that do this.   
             // TODO add an option that allows users to add their own here.   
             var dynamicParser = source.Dynamic;
-            var registeredParser = source.Registered;
             var kernelParser = source.Kernel;
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 
@@ -776,7 +752,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // at file creation time.    
             var kernelParser = Kernel;
             var dynamicParser = Dynamic;
-            var registeredPasers = Registered;
             var clrParser = Clr;
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);
@@ -799,17 +774,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Opens an existing Trace Event log file (and ETLX file).  If you need to create a new log file
-        /// from other data see CreateFromETL.
-        /// </summary>
-        [Obsolete("Use CreateFromEventTraceLogFile")]
-        public static string CreateFromETL(string etlFilePath, string etlxFilePath = null, TraceLogOptions options = null)
-        {
-            return CreateFromEventTraceLogFile(etlFilePath, etlxFilePath, options);
-        }
-#endif
         internal override unsafe Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // See TraceLog.ProcessExtendedData for more on our use of ExtendedData to hold a index.   
@@ -869,7 +833,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // If this is a ETL file, we also need to compute all the normal TraceLog stuff the raw stream
             this.pointerSize = rawEvents.PointerSize;
-            this.sessionStartTimeUTC = rawEvents.sessionStartTimeUTC;
+            this._syncTimeUTC = rawEvents._syncTimeUTC;
+            this._syncTimeQPC = rawEvents._syncTimeQPC;
             this._QPCFreq = rawEvents._QPCFreq;
             this.sessionStartTimeQPC = rawEvents.sessionStartTimeQPC;
             this.sessionEndTimeQPC = rawEvents.sessionEndTimeQPC;
@@ -905,8 +870,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (SessionStartTime.IsDaylightSavingTime())
                     utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
 
-                if (sessionStartTimeQPC == 0)
-                {                 // This is for the TraceLog, not just for the ETWTraceEventSource
+                if (_syncTimeQPC == 0)
+                {   // This is for the TraceLog, not just for the ETWTraceEventSource
+                    _syncTimeQPC = data.TimeStampQPC;
                     sessionStartTimeQPC += data.TimeStampQPC;
                     sessionEndTimeQPC += data.TimeStampQPC;
                 }
@@ -1237,6 +1203,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var isKernelModeStackFragment = IsKernelAddress(data.InstructionPointer(data.FrameCount - 1), data.PointerSize);
                 if (isKernelModeStackFragment)
                 {
+                    // If we reach here the fragment we have is totally in the kernel, and thus might have a user mode part that we have
+                    // not seen het.  Thus we have the stackInfo remember this fragment so we can put it together later.  
                     if (stackInfo != null)
                     {
                         if (!stackInfo.LogKernelStackFragment(data.InstructionPointers, data.FrameCount, data.PointerSize, timeStampQPC, this))
@@ -1245,9 +1213,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 else
                 {
+                    // If we reach here, the fragment ends in user mode.   
                     CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(timeStampQPC,
                         data.InstructionPointers, data.FrameCount, data.PointerSize, thread, CallStackIndex.Invalid);
-                    if (!EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo) && stackInfo != null)
+
+                    var loggedUserStack = false;    // Have we logged this stack at all
+                    // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
+                    // and we use this as the 'top' of the stack for all kernel fragments on this thread.  
+                    if (!IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
+                        loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
+                    
+                    if (!loggedUserStack && stackInfo != null)
                         stackInfo.LogUserStackFragment(stackIndex, this);
                 }
             };
@@ -1454,7 +1430,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // While scanning over the stream, copy all data to the file. 
             rawEvents.AllEvents += delegate(TraceEvent data)
             {
-                Debug.Assert(sessionStartTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read ti
+                Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
                 Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
                 lastTimeStamp = data.TimeStampQPC;
@@ -2332,7 +2308,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     int addressesCount = (extendedData[i].DataSize - sizeof(ulong)) / pointerSize;
 
                     TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                    TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
+                    TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadIDforStacks(), data.TimeStampQPC, process);
                     EventIndex eventIndex = (EventIndex)eventCount;
 
                     ulong sampleAddress;
@@ -2644,7 +2620,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // we only do this once.  
             deserializer.RegisterFactory(typeof(TraceLog), delegate
             {
-                Debug.Assert(SessionStartTime.Ticks == 0 && SessionEndTime.Ticks == 0);
+                Debug.Assert(sessionStartTimeQPC == 0 && sessionEndTimeQPC == 0);
                 return this;
             });
             deserializer.RegisterFactory(typeof(TraceProcess), delegate { return new TraceProcess(0, null, 0); });
@@ -2755,7 +2731,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(sessionStartTimeUTC.ToFileTimeUtc());
+            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
             serializer.Write(pointerSize);
             serializer.Write(numberOfProcessors);
             serializer.Write(cpuSpeedMHz);
@@ -2862,13 +2838,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             lazyRawEvents.Read(deserializer, null);
 
             deserializer.Log("<Marker Name=\"sessionStartTime\"/>");
-            sessionStartTimeUTC = DateTime.FromFileTimeUtc(deserializer.ReadInt64());
+            _syncTimeUTC = DateTime.FromFileTimeUtc(deserializer.ReadInt64());
             deserializer.Read(out pointerSize);
             deserializer.Read(out numberOfProcessors);
             deserializer.Read(out cpuSpeedMHz);
             osVersion = new Version(deserializer.ReadByte(), deserializer.ReadByte(), deserializer.ReadByte(), deserializer.ReadByte());
             deserializer.Read(out _QPCFreq);
             deserializer.Read(out sessionStartTimeQPC);
+            _syncTimeQPC = sessionStartTimeQPC;
             deserializer.Read(out sessionEndTimeQPC);
             deserializer.Read(out eventsLost);
             deserializer.Read(out machineName);
@@ -3081,13 +3058,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             public void LogEvent(TraceEvent data, EventIndex eventIndex, TraceEventCounts countForEvent)
             {
-                int threadID = data.ThreadID;
-                // Thread an process events need to be munged slightly.  
-                if (data.ParentThread >= 0)
-                {
-                    Debug.Assert(data is ProcessTraceData || data is ThreadTraceData);
-                    threadID = data.ParentThread;
-                }
+                int threadID = data.ThreadIDforStacks();
 
                 // We should be logging in event ID order.  
                 Debug.Assert(pastEventInfo[curPastEventInfo].EventIndex == 0 || pastEventInfo[curPastEventInfo].EventIndex == EventIndex.Invalid ||
@@ -3288,7 +3259,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     break;
                 // If this assert fires, it means that we added a stack to the same event twice.   This
                 // means we screwed up which event a stack belongs to.   This can happen among other reasons
-                // because we compelete an incomplete stack before we should and when the other stack component
+                // because we complete an incomplete stack before we should and when the other stack component
                 // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.    
                 Debug.Assert(eventsToStacks[idx].EventIndex != eventIndex);
             }
@@ -3938,26 +3909,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public double EndTimeRelativeMSec { get { return log.QPCTimeToRelMSec(endTimeQPC); } }
 
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Filter the events 
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public TraceEvents FilterByTime(long startTime100ns, long endTime100ns)
-        {
-            return FilterByTime(log.RelativeTimeMSec(startTime100ns), log.RelativeTimeMSec(endTime100ns));
-        }
-        /// <summary>
-        /// Returns a time that is guaranteed to be after the last event in the TraceEvents list.  
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public long EndTime100ns { get { return log.QPCTo100ns(endTimeQPC); } }
-        /// <summary>
-        /// Returns a time that is guaranteed  to be before the first event in the TraceEvents list.  
-        /// </summary>
-        [Obsolete("Uses the overload using relative time, or DateTime")]
-        public long StartTime100ns { get { return log.QPCTo100ns(startTimeQPC); } }
-#endif
 
         IEnumerator<TraceEvent> IEnumerable<TraceEvent>.GetEnumerator()
         {
@@ -4285,13 +4236,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (int i = 0; i < processes.Count; i++)
                 yield return processes[i];
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The count of the number of TraceProcess items in the trace log.  
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxProcessIndex { get { return processes.Count; } }
-#endif
         /// <summary>
         /// Given an OS process ID and a time, return the last TraceProcess that has the same process ID,
         /// and whose offset start time is less than 'timeQPC'. If 'timeQPC' is during the thread's lifetime this
@@ -4305,50 +4249,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var ret = FindProcessAndIndex(processID, timeQPC, out index);
             return ret;
         }
-
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Gets the last process (in time) that has the name 'processName' that started after 'afterTime'
-        /// (inclusive). The name of a process is the file name (not full path), without its extension. Returns
-        /// null on failure
-        /// </summary>
-        [Obsolete("Use the relative time overload")]
-        public TraceProcess LastProcessWithName(string processName, long afterTime100ns)
-        {
-            var afterTimeQPC = log.QPCTime(afterTime100ns);
-            TraceProcess ret = null;
-            for (int i = 0; i < Count; i++)
-            {
-                TraceProcess process = processes[i];
-                if (afterTimeQPC <= process.startTimeQPC &&
-                    string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
-                    ret = process;
-            }
-            return ret;
-        }
-        // TODO_DOC Second sentence incomplete. Recurs, suggest search
-        /// <summary>
-        /// Find the first process in the trace that has the process name 'processName' and whose process
-        /// start time is after the given point in time.  
-        /// <para>A process's name is the file name of the EXE without the extension.</para>
-        /// <para>Processes that began before the trace started have a start time of 0,  Thus 
-        /// specifying 0 for the time will include processes that began before the trace started.  
-        /// </para>
-        /// </summary>
-        [Obsolete("Use the relative time overload")]
-        public TraceProcess FirstProcessWithName(string processName, long afterTime100ns)
-        {
-            var afterTimeQPC = log.QPCTime(afterTime100ns);
-            for (int i = 0; i < Count; i++)
-            {
-                TraceProcess process = processes[i];
-                if (afterTimeQPC <= process.startTimeQPC &&
-                    string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
-                    return process;
-            }
-            return null;
-        }
-#endif
         /// <summary>
         /// TraceProcesses represents the entire ETL moduleFile log.   At the node level it is organized by threads.  
         /// 
@@ -4688,19 +4588,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             Log.DebugWarn(startTimeQPC <= endTimeQPC, "Process Ends before it starts! StartTime: " + StartTimeRelativeMsec.ToString("f4"), data);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time when the process started.  Returns the time the trace started if the process existed when the trace started.  
-        /// </summary>
-        [Obsolete("Use relative time overload")]
-        public long StartTime100ns { get { return log.QPCTo100ns(startTimeQPC); } }
 
-        /// <summary>
-        /// The time when the process ended.  Returns the time the traces ended if the process existed when the trace ended. 
-        /// </summary>
-        [Obsolete("Use relative time overload")]
-        public long EndTime100ns { get { return log.QPCTo100ns(endTimeQPC); } }
-#endif
         #endregion
 
         /// <summary>
@@ -5065,13 +4953,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return ret;
         }
 
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The count of the number of TraceThreads in the trace log. 
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxThreadIndex { get { return threads.Count; } }
-#endif
         /// <summary>
         /// TraceThreads   represents the collection of threads in a process. 
         /// 
@@ -5190,18 +5071,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returned as the number of MSec from the beginning of the trace. 
         /// </summary>
         public double StartTimeRelativeMSec { get { return process.Log.QPCTimeToRelMSec(startTimeQPC); } }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time when the thread started.  Returns the time the trace started if the thread existed when the trace started.  
-        /// </summary>
-        [Obsolete("Uses relative time overload")]
-        public long StartTime100ns { get { return process.Log.QPCTo100ns(startTimeQPC); } }
-        /// <summary>
-        /// The time when the thread ended.  Returns the time the traces ended if the thread existed when the trace ended. 
-        /// </summary>
-        [Obsolete("Uses relative time overload")]
-        public long EndTime100ns { get { return process.Log.QPCTo100ns(endTimeQPC); } }
-#endif
         /// <summary>
         /// The time when the thread ended.  Returns the time the trace ended if the thread existed when the trace ended.  
         /// Returned as a DateTime
@@ -5479,20 +5348,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return null;
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// This function will find the module associated with 'address' at 'time100ns' however it will only
-        /// find modules that are mapped in memory (module associated with JIT compiled methods will not be found).  
-        /// </summary>
-        [Obsolete("Use RelativeMsec overload")]
-        public TraceLoadedModule GetModuleContainingAddress(Address address, long time100ns)
-        {
-            var timeQPC = Process.Log.QPCTime(time100ns);
-            int index;
-            TraceLoadedModule module = FindModuleAndIndexContainingAddress(address, timeQPC, out index);
-            return module;
-        }
-#endif
 
         // #ModuleHandlersCalledFromTraceLog
         internal TraceModuleFile ImageLoadOrUnload(ImageLoadTraceData data, bool isLoad, string dataFileName = null)
@@ -5910,20 +5765,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         #region Private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The load time is the time the LoadLibrary was done if it was loaded from a file, otherwise is the
-        /// time the CLR loaded the module.  
-        /// </summary>
-        [Obsolete("Use LoadTimeRelativeMSec")]
-        public long LoadTime100ns { get { return process.Log.QPCTo100ns(loadTimeQPC); } }
-        /// <summary>
-        /// The load time is the time the FreeLibrary was done if it was unmanaged, otherwise is the
-        /// time the CLR unloaded the module.  
-        /// </summary>
-        [Obsolete("Use UnloadTimeRelativeMSec")]
-        public long UnloadTime100ns { get { return process.Log.QPCTo100ns(unloadTimeQPC); } }
-#endif
 
         internal TraceLoadedModule(TraceProcess process, TraceModuleFile moduleFile, Address imageBase)
         {
@@ -6159,13 +6000,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of call stack indexes (all Call Stack indexes are strictly less than this).   
-        /// </summary>
-        [Obsolete("Use Count instead")]
-        public int MaxCallStackIndex { get { return callStacks.Count; } }
-#endif
         /// <summary>
         /// IEnumerable Support
         /// </summary>
@@ -6620,7 +6454,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 symbolReaderModule = OpenPdbForModuleFileWithCache(reader, moduleFile);
                 if (symbolReaderModule != null)
                 {
-                    var ret = symbolReaderModule.SourceLocationForRva(methodRva);
+                    string ilAssemblyName;
+                    uint ilMetaDataToken;
+                    int ilMethodOffset;
+
+                    var ret = symbolReaderModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
+                    if (ret == null && ilAssemblyName != null)
+                    {
+                        // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
+                        // Look up the IL PDB needed and 
+
+                        // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
+                        if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
+                            TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
+                            SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
+                            ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                        }
+                    }
+
                     // TODO FIX NOW, deal with this rather than simply warn. 
                     if (ret == null && symbolReaderModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                     {
@@ -6716,14 +6568,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of code address indexes (all code address indexes are strictly less than this).   
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxCodeAddressIndex { get { return codeAddresses.Count; } }
-#endif
-
         /// <summary>
         /// We expose ILToNativeMap internally so we can do diagnostics.   
         /// </summary>
@@ -7228,7 +7072,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the collection machine != current machine.", moduleFile.FilePath);
                         symReader.m_log.WriteLine("PDB files cannot be unambiguously matched to the EXE.");
-                        symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not doing the merge will fix this.");
+                        symReader.m_log.WriteLine("Did you merge the ETL file before transferring it off the collection machine?  If not, doing the merge will fix this.");
                         if (!UnsafePDBMatching)
                             symReader.m_log.WriteLine("The /UnsafePdbMatch option will force an ambiguous match, but this is not recommended.");
                     }
@@ -7933,13 +7777,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         #region private
         internal TraceMethods(TraceCodeAddresses codeAddresses) { this.codeAddresses = codeAddresses; }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Returns the count of method indexes.  All MethodIndexes are strictly less than this. 
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxMethodIndex { get { return methods.Count; } }
-#endif
 
         /// <summary>
         /// IEnumerable support
@@ -8151,15 +7988,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Each file is given an index for quick lookup.   MaxModuleFileIndex is the
-        /// maximum such index (thus you can create an array that is 1-1 with the
-        /// files easily).  
-        /// </summary>
-        [Obsolete("Use Count")]
-        public int MaxModuleFileIndex { get { return moduleFiles.Count; } }
-#endif
         /// <summary>
         /// Enumerate all the files that occurred in the trace log.  
         /// </summary> 
@@ -9053,6 +8881,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
             }
             return log.GetCodeAddressIndexAtEvent(anEvent.InstructionPointer, anEvent);
+        }
+
+        /// <summary>
+        /// For a ISRTraceData event, gets the CodeAddressIndex associated with the Routine address. 
+        /// </summary>
+        public static CodeAddressIndex RoutineCodeAddressIndex(this ISRTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            return log.GetCodeAddressIndexAtEvent(anEvent.Routine, anEvent);
+        }
+
+        /// <summary>
+        /// For a DPCTraceData event, gets the CodeAddressIndex associated with the Routine address. 
+        /// </summary>
+        public static CodeAddressIndex RoutineCodeAddressIndex(this DPCTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            return log.GetCodeAddressIndexAtEvent(anEvent.Routine, anEvent);
         }
     }
 

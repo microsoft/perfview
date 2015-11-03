@@ -279,8 +279,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                     if (valueDataType != ControllerCommand.SendManifest) // don't write anything to the registry for SendManifest commands
                     {
-                    SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
-                }
+                        SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
+                    }
                 }
 
                 const int MaxDesc = 7;  // This number needs to be bumped for to insure that all curDescrIdx never exceeds it below.  
@@ -846,26 +846,35 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if (m_MultiFileMB != 0)
                 throw new InvalidOperationException("Cannot set file name when MultiFileMB is also non-zero.");
 
-            Flush();
+            var origFileName = m_FileName;      // Remember the original name we had.  
 
+            // If we are in file mode, flush it before we close it and move on to the next file.  
+            if (origFileName != null)
+                Flush();
+
+            // Set up the properties for the new file name 
             var propertiesBuff = stackalloc byte[PropertiesSize];
-            var origFileName = m_FileName;
             m_FileName = newName;
             var properties = GetProperties(propertiesBuff);
+
             int retCode;
             if (origFileName != null)
             {
+                // if we had a file name before, then simply do th update
                 retCode = TraceEventNativeMethods.ControlTrace(0UL, m_SessionName, properties, TraceEventNativeMethods.EVENT_TRACE_CONTROL_UPDATE);
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
             }
             else
             {
-                m_FileName = null;          // We don't really consider this as setting the file name, it is either a flush or an error.  
-                if (m_CircularBufferMB == 0)
+                if (m_CircularBufferMB == 0)        // We are not the in memory circular buffer case.
                 {
                     // if it is a real time session currently it is illegal to make it a file based session (we may be able to relax this). 
                     throw new InvalidOperationException("Can only update the file name of a file base session.");
                 }
+
+                // For the in-memory circular buffer, this just mean flush
+                Flush();
+                m_FileName = null;          // We don't really consider this as setting the file name, it is either a flush or an error.  so put it back to null.  
             }
 
             if (this.CaptureStateOnSetFileName)
@@ -878,7 +887,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var matchAnyKeywords = kvp.Value;
 
                         CaptureState(providerGuid, matchAnyKeywords);
-        }
+                    }
                 }
             }
         }
@@ -1171,7 +1180,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Returns true if the session is logging to a circular buffer.  This may be in-memory (FileName == null)
         /// or to a file (FileName != null)
         /// </summary>
-        public bool IsCircular { get { return m_CircularBufferMB != 0;  } }
+        public bool IsCircular { get { return m_CircularBufferMB != 0; } }
         /// <summary>
         /// Returns true if the session is Real Time.  This means it is not to a file, and not circular.  
         /// </summary>
@@ -1257,7 +1266,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if ((options | TraceEventMergeOptions.Compress) != 0)
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
-                
+
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
                 if (retValue != 0 && retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
                     throw new ApplicationException("Merge operation failed return code 0x" + retValue.ToString("x"));
@@ -1993,7 +2002,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // Virtual Alloc
-            if ((stackCapture & KernelTraceEventParser.Keywords.VirtualAlloc) != 0)
+            if ((stackCapture & (KernelTraceEventParser.Keywords.VirtualAlloc | KernelTraceEventParser.Keywords.ReferenceSet)) != 0)
             {
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.VirtualAllocTaskGuid;
                 stackTracingIds[curID].Type = 0x62;     // Flush Init
@@ -2073,6 +2082,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.MemoryTaskGuid;
                 stackTracingIds[curID].Type = 0x82;     // PERFINFO_LOG_TYPE_PAGE_ACCESS_EX 
+                curID++;
+
+                stackTracingIds[curID].EventGuid = KernelTraceEventParser.MemoryTaskGuid;
+                stackTracingIds[curID].Type = 0x83;     // PERFINFO_LOG_TYPE_REMOVEFROMWS 
                 curID++;
             }
 
@@ -2328,11 +2341,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <summary>
         /// No special options 
         /// </summary>
-        None = 0,           
+        None = 0,
         /// <summary>
         /// Compress the resulting file.  
         /// </summary>
-        Compress = 1, 
+        Compress = 1,
     }
 
     /// <summary>
@@ -2474,8 +2487,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (!s_IsEtwFilteringSupported.HasValue)
                 {
                     var ret = false;
-                    // In windows 8.1 they changed GetVersion to return 6.2 (windows 8) so I have to try harder.  
-                    // This is probably a hack. 
+
+                    // For Windows Versions above windows 8, OSVersion lies and returns 6.2 (window 8) even though
+                    // the windows version is higher.  We have to try harder to figure out whether we are windows 8 or something
+                    // later.   Currently we look at the file version number of an OS DLL.  
+                    // There is probably a better way.   
                     var winDir = Environment.GetEnvironmentVariable("WinDir");
                     var kernel32 = Path.Combine(winDir, @"system32\Kernel32.dll");
                     if (File.Exists(kernel32))
@@ -2483,8 +2499,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         using (var kernel32PE = new PEFile.PEFile(kernel32))
                         {
                             var versionInfo = kernel32PE.GetFileVersionInfo();
-                            if (versionInfo != null && string.Compare("6.3", versionInfo.FileVersion) < 0)
-                                ret = true;
+                            if (versionInfo != null)
+                            {
+                                // versionInfo.FileVersion is now the real version number we want but it is a string, not a 
+                                // number.   Our tests is if version number bigger than 6.3 (as a string) or a two or more digit 
+                                // major version.   
+                                if (string.Compare("6.3", versionInfo.FileVersion) <= 0 || 2 <= versionInfo.FileVersion.IndexOf('.'))
+                                    ret = true;
+                            }
                         }
                     }
                     s_IsEtwFilteringSupported = ret;

@@ -41,34 +41,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 StateObject = state = new DynamicTraceEventParserState();
                 partialManifests = new Dictionary<Guid, List<PartialManifestInfo>>();
-
-                this.source.RegisterUnhandledEvent(delegate(TraceEvent unknownEvent)
-                {
-                    // First look for manifests. 
-                    CheckForDynamicManifest(unknownEvent);
-
-                    // if this is not an event that came from an EventSource, then we are done.
-                    if (!state.providers.ContainsKey(unknownEvent.ProviderGuid))
-                        return false;
-
-                    // However if it is from an eventSource, it may be a Write<T> event (that uses 
-                    // the self-describing format.   In that case, try looking that up.  
-                    DynamicTraceEventData parsedTemplate = RegisteredTraceEventParser.TryLookupWorker(unknownEvent);
-                    if (parsedTemplate == null)
-                        return false;
-
-                    // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
-                    // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
-                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
-                    // only add the event definition once.  
-                    if (!parsedTemplate.registeredWithTraceEventSource)
-                    {
-                        parsedTemplate.registeredWithTraceEventSource = true;
-                        return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
-                    }
-                    return false;
-                });
+                this.source.RegisterUnhandledEvent(CheckForDynamicManifest);
             }
+
+            // make a registeredParser to resolve self-describing events (and more).  
+            registeredParser = new RegisteredTraceEventParser(source);
+            // But cause any of its new definitions to work on my subscriptions.  
+            registeredParser.NewEventDefinition = OnNewEventDefintion;
         }
 
         /// <summary>
@@ -87,7 +66,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public void AddDynamicProvider(ProviderManifest providerManifest, bool noThrowOnError = false)
         {
-            Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
+            // Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
             // Trace.WriteLine("Dynamic: Found provider " + providerManifest.Name + " Guid " + providerManifest.Guid);
 
             ProviderManifest prevManifest = null;
@@ -120,7 +99,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (newProviderCallback != null)
                 newProviderCallback(providerManifest);
 
-            Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
+            // Debug.WriteLine("callback count = " + ((source is ETWTraceEventSource) ? ((ETWTraceEventSource)source).CallbackCount() : -1));
             // Trace.WriteLine("Dynamic finished registering " + providerManifest.Name);
         }
 
@@ -229,7 +208,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 partialManifestsForGuid.Remove(partialManifest);
 
-                // Throw away emtpy lists or lists that are old
+                // Throw away empty lists or lists that are old
                 var nowUtc = DateTime.UtcNow;
                 if (partialManifestsForGuid.Count == 0 || partialManifestsForGuid.TrueForAll(e => (nowUtc - e.StartedUtc).TotalSeconds > 10))
                     partialManifests.Remove(data.ProviderGuid);
@@ -262,6 +241,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
+
+            // also enumerate any events from the registeredParser.  
+            registeredParser.EnumerateTemplates(eventsToObserve, callback);
         }
 
         private class PartialManifestInfo
@@ -352,6 +334,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         DynamicTraceEventParserState state;
         private Dictionary<Guid, List<PartialManifestInfo>> partialManifests;
+
+        // It is not intuitive that self-describing events (which are arguably 'dynamic') are resolved by 
+        // the RegisteredTraceEventParser.  This is even more wacky in a mixed EventSource where some events 
+        // are resolved by dynamic manifest and some are self-describing.     To avoid these issues DynamicTraceEventParsers
+        // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This 
+        // RegisteredTraceEventParser is how this gets accomplished.   
+        RegisteredTraceEventParser registeredParser;
 
         #endregion
     }
@@ -502,7 +491,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
             Debug.Assert(computedSize <= this.EventDataLength);
             if ((int) ID != 0xFFFE) // If it is not a manifest event
-                Debug.Assert(computedSize == this.EventDataLength);
+            {
+                // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
+                Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
+            }
 #endif
             int offset = payloadFetches[index].Offset;
             if (offset == ushort.MaxValue)
@@ -522,7 +514,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
             if (classInfo != null)
             {
-                var ret = new StructValue();    
+                var ret = new StructValue();
 
                 for (int i = 0; i < classInfo.FieldFetches.Length; i++)
                 {
@@ -791,7 +783,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Implements TraceEvent interface
         /// </summary>
-        public override string PayloadString(int index, IFormatProvider formatProvider=null)
+        public override string PayloadString(int index, IFormatProvider formatProvider = null)
         {
             // See if you can do enumeration mapping.  
             var map = payloadFetches[index].Map;
@@ -1986,8 +1978,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         int prevFieldIdx = ret.payloadNames.Count - 1;
                         string lengthStr = reader.GetAttribute("length");
                         if (lengthStr != null && 0 <= prevFieldIdx &&
-                            lengthStr == ret.payloadNames[prevFieldIdx] && ret.payloadFetches[prevFieldIdx].Type == typeof(int))
-                        {                           
+                            lengthStr == ret.payloadNames[prevFieldIdx] &&
+                                (ret.payloadFetches[prevFieldIdx].Type == typeof(int) || ret.payloadFetches[prevFieldIdx].Type == typeof(uint)))
+                        {
                             // Remove the previous field, since it was just there to encode the length of the blob.   
                             if (offset != ushort.MaxValue)
                                 offset -= 4;

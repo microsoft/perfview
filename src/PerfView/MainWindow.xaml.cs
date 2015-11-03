@@ -135,6 +135,10 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Make 'DumpEvent' in the 'events' view work on a range of values.  Allow it to be dumped. as EXCEL?   
+// Provide a method of getting at things like EventIndex, DataTime, ... from the 'events' view.  
+// Win10 kernel event support.  
+// Problem when perf counter names have : in them (escaping mechnanism).  
 // From Andre:  A more user-friendly message when you start PerfView and a kernel logger is already running.   
 // Plumb the HyperTHreading flag to the TraceLog report. 
 // Allow PerfView to extract the heap dump from a live image (or a dump file). 
@@ -1985,7 +1989,6 @@ namespace PerfView
         /// <summary>
         /// Indicates that 'outputFileName' should be opened after the command is completed.  
         /// </summary>
-        /// <param name="outputFileName"></param>
         public void OpenNext(string fileName)
         {
             m_openNextFileName = fileName;

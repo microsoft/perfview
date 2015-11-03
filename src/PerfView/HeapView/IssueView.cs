@@ -215,7 +215,7 @@ namespace PerfView
 
         void OnOpenLargeAllocStacks(object sender, RoutedEventArgs e)
         {
-            StackSource stacks = m_dataFile.CreateStackSource("GC Heap Alloc", m_gcProcess.ProcessID, m_statusBar.LogWriter, true);
+            StackSource stacks = m_dataFile.CreateStackSource("GC Heap Alloc Ignore Free (Coarse Sampling)", m_gcProcess.ProcessID, m_statusBar.LogWriter, true);
 
             StackWindow stackWin = null;
 

@@ -461,41 +461,45 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// look up the string names for fields that have bitsets or enumerated values.   This is only need for the KernelTraceControl
         /// case where the map information is logged as special events and can't be looked up with TDH APIs.  
         /// </summary>
-        internal static DynamicTraceEventData TryLookupWorker(TraceEvent unknownEvent, Dictionary<MapKey, IDictionary<long, string>> mapTable=null)
+        internal static DynamicTraceEventData TryLookupWorker(TraceEvent unknownEvent, Dictionary<MapKey, IDictionary<long, string>> mapTable = null)
         {
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
-            if (unknownEvent.Channel == TraceLoggingMarker)
-            {
-                bool hasETWEventInformation = false;
-                for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
-                {
-                    var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
-                    if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH ||
-                        extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
-                    {
-                        hasETWEventInformation = true;
-                        break;
-                    }
-                }
 
-                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
-                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
-                // that happens this path where we parse the TraceLogging data explicitly will become 
-                // unreachable and can be removed.    A fair bit of code can be removed in this way. 
-                if (!hasETWEventInformation)
+            // Trace logging events are not guaranteed to be on channel 11.
+            // Trace logging events will have one of these headers.
+            bool hasETWEventInformation = false;
+            for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
+            {
+                var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
+                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH ||
+                    extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
                 {
-                    ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                    if (ret != null)
-                        return ret;
+                    hasETWEventInformation = true;
+                    break;
                 }
             }
 
+            // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
+            // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
+            // that happens this path where we parse the TraceLogging data explicitly will become 
+            // unreachable and can be removed.    A fair bit of code can be removed in this way. 
+            if (!hasETWEventInformation)
+                if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
+                {
+                    ret = CheckForTraceLoggingEventDefinition(unknownEvent);
+                    if (ret != null)
+                    {
+                        ret.containsSelfDescribingMetadata = true;
+                        return ret;
+                    }
+                }
+
             // TODO cache the buffer?, handle more types, handle structs...
-            int buffSize = 4096;
+            int buffSize = 9000;
             byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
             int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
-            if (status == 122)      // Buffer too big 
+            if (status == 122)      // Buffer too small 
             {
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
                 buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
@@ -503,7 +507,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             if (status == 0)
+            {
                 ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
+                ret.containsSelfDescribingMetadata = hasETWEventInformation;
+            }
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             return ret;
@@ -523,8 +530,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         private static unsafe DynamicTraceEventData CheckForTraceLoggingEventDefinition(TraceEvent data)
         {
-            Debug.Assert(data.Channel == TraceLoggingMarker);
-
             // Format for TraceLogging MetaData
             //
             // ProviderBlob
@@ -871,11 +876,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                     // is this dynamically sized with another field specifying the length?
                     // Is it an array? 
-                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0)
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 || propertyInfo->InType == TdhInputType.Binary)
                     {
                         // silliness where if it is a byte[] they use Length otherwise they use count.  Normalize it.  
                         var countOrCountIndex = propertyInfo->CountOrCountIndex;
-                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0)
+                        if ((propertyInfo->Flags & PROPERTY_FLAGS.ParamLength) != 0 || propertyInfo->InType == TdhInputType.Binary)
                             countOrCountIndex = propertyInfo->LengthOrLengthIndex;
 
                         ushort fixedCount = 0;
@@ -1222,7 +1227,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (!parsedTemplate.registeredWithTraceEventSource)
                     {
                         parsedTemplate.registeredWithTraceEventSource = true;
-                        return OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
+                        bool ret = OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
+
+                        // If we have subscribers, notify them as well.  
+                        var newEventDefinition = NewEventDefinition;
+                        if (newEventDefinition != null)
+                            ret |= (NewEventDefinition(parsedTemplate, false) == EventFilterResponse.AcceptEvent);
+                        return ret;
                     }
                     return false;
                 });
@@ -1235,6 +1246,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public override bool IsStatic { get { return false; } }
 
         #region private
+        internal Func<DynamicTraceEventData, bool, EventFilterResponse> NewEventDefinition;
+
         /// <summary>
         /// Override
         /// </summary>
@@ -1383,7 +1396,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public virtual void ToStream(Serializer serializer)
         {
-            // Calcluate the count.  
+            // Calculate the count.  
             var count = 0;
             foreach (var template in m_templates.Values)
             {

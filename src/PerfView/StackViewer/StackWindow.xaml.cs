@@ -1889,7 +1889,7 @@ namespace PerfView
             var m = Regex.Match(IncludeRegExTextBox.Text, @"Process[^;()]*\((\d+)\)(.*)");
             if (m.Success)
             {
-                // TODO we can do a better job here.  If we have mulitple processe specs we simply don't focus right now. 
+                // TODO we can do a better job here.  If we have multiple processes specs we simply don't focus right now. 
                 if (!m.Groups[2].Value.Contains("Process"))
                     processID = int.Parse(m.Groups[1].Value);
             }
@@ -2825,12 +2825,12 @@ namespace PerfView
             var badStrs = "";
             foreach (string cellStr in SelectedCellsStringValue())
             {
-                Match m = Regex.Match(cellStr, @"([\w.-]+)!");
+                Match m = Regex.Match(cellStr, @"([ \w.-]+)!");
                 if (m.Success)
                     moduleAction(m.Groups[1].Value);
                 else
                 {
-                    m = Regex.Match(cellStr, @"^module ([\w.-]+)");
+                    m = Regex.Match(cellStr, @"^module ([ \w.-]+)");
                     if (m.Success)
                         moduleAction(m.Groups[1].Value);
                     else

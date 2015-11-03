@@ -1335,7 +1335,6 @@
         will also make the GCDump files proportionally bigger, and unwieldy to copy.   Thus
         changing the default should be considered carefully.   Using the sampled dump is usually the better option.
     </p>
-    </p>
     <p>
         As mentioned, GCHeap collection (for .NET) collects DEAD as well as live objects.&nbsp;&nbsp;
         PerfView does this because it allows you to see the &#39;overhead&#39; of the GC
@@ -1766,9 +1765,7 @@
         quite useful to get a broad idea of how the GC heap changes over time.
     </p>
     <h4>
-        <a id="GCHeapAllocIgnoreFreeStacks">
-            <a id="GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a>
-        </a>
+        <a id="GCHeapAllocIgnoreFree(CoarseSampling)Stacks">GC Heap Alloc Ignore Free (Coarse Sampling) Stacks</a>
     </h4>
     <p>
         In addition to the information needed for a <a href="#GCStats">GC Stats Report</a>,
@@ -1805,7 +1802,7 @@
         objects are allocated.&nbsp; This is a common use of the GC Heap Alloc Stacks view.
     </p>
 
-    <h4>Net <a id="GCHeapNetMem(CoarseSampling)Stacks"><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem view)</a></a></h4>
+    <h4><a id="GCHeapNetMem(CoarseSampling)Stacks">Net </a><a id="GCHeapNetMemStacks">GC Heap Allocations Stacks (GC Heap Net Mem view)</a></h4>
     <p>
         The first choice of <a href="#InvestigatingMemoryData">
             investigating excessive memory usage
@@ -2221,8 +2218,9 @@
                             You will only get this view if you collected data with the
                             <a href="#ThreadTimeCheckbox">Thread Time</a> events.
                             See <a href="#BlockedTimeInvestigation">
-                                Blocked time investigation on more details
-                                on blocked time investigations.
+                                Blocked time investigation
+                            </a> for more details
+                            on blocked time investigations.
                         </li>
                         <li>
                             <strong><a id="BlockedTimeStacks">Blocked Time Stacks</a></strong> - Shows where
@@ -2312,8 +2310,9 @@
                             You will only get this view if you collected data with the
                             <a href="#ThreadTimeCheckbox">Thread </a>events.
                             See <a href="#BlockedTimeInvestigation">
-                                Blocked time investigation on more details
-                                on blocked time investigations.
+                                Blocked time investigation
+                            </a> for more details
+                            on blocked time investigations.
                         </li>
                         <li>
                             <strong><a id="ASP.NETThreadTime(withTasks)Stacks">ASP.NET Thread Time (with Tasks) Stacks</a></strong> -
@@ -2434,6 +2433,22 @@
                             end with a Thread-activity.  This is with the Any TaskTree will show.   This view is
                             available whenever there are events from the System.Threading.Tasks.TplEventSource event
                             source.
+                        </li>
+                        <li>
+                            <strong><a id="AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a></strong> - This view 
+                            is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have 
+                            call stacks associated with them.  The only difference is at the top of the each stack (between the 
+                            process and thread frames) is a list of Start-Stop tasks (that is activities See 
+                            <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
+                            EventSource Activities </a> on how to define your own) that are current started
+                            but not stopped.
+                        </li>
+                        <li>
+                            <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
+                            is a simplification of the <a href="#AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a> view.  
+                            Like that view, it shows every event in the context of the start-stop activities that are currently
+                            active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
+                            and is useful when you don't want the extra detail. 
                         </li>
                         <li>
                             <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
@@ -4159,18 +4174,18 @@
             where <strong>CpuCtrName</strong> is the name of the counter and <strong>RolloverCount</strong>
             is the number of such events to skip after taking a sample (thus BranchInstruction:10000
             will take a stack trace once ever 10K branch instructions.&nbsp;&nbsp;&nbsp;
-            <b>The set of CPU counters that are supported depends on the processor chip</b>.  
+            <b>The set of CPU counters that are supported depends on the processor chip</b>.
             This feature is only supported on Windows 8 and and above, and currently <strong>does NOT work in virtual machines</strong>
             or <strong>if you have hypervisor installed (that is you can host virtual machines)</strong>.   You can
-            telll if hypervisor is installed by trying to launch the hyper-V manager (type 'virtmgmt.msc' in the 'Run' dialog).  
+            telll if hypervisor is installed by trying to launch the hyper-V manager (type 'virtmgmt.msc' in the 'Run' dialog).
             If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
             and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
             do your collection and the turn it back on without losing your virtual machines (although it is a pain).
-            Hopefully this will be fixed in Win 10.  
+            Hopefully this will be fixed in Win 10.
             <p>
                 If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
                 suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
-                you are running in a VM or a machine that has Hyper-V installed (see above).  
+                you are running in a VM or a machine that has Hyper-V installed (see above).
                 You can select several of these options from
                 the drop down menu and the modify the counts if desired.&nbsp;&nbsp;  Currently there
                 is no special view for these events, they show up in the 'Any Stacks Stacks' view as the
@@ -4961,7 +4976,7 @@
         Which clearly shows that after blocking in &#39;X!LockEnter&#39; the thread was awakened
         by thread B calling &#39;X!LockExit&#39;.&nbsp;
     </p>
-    <h3><a id="UnderstandingPerfDataThreadTimeWithTasks"></a>How Tasks make Thread Time Easy (The Thread Time (with Tasks) View)</a></h3>
+    <h3><a id="UnderstandingPerfDataThreadTimeWithTasks">How Tasks make Thread Time Easy (The Thread Time (with Tasks) View)</a></h3>
     <p>
         If you have not already read the basics of <a href="#UnderstandingPerfDataThreadTime">Understanding Thread Time</a>
         you should read that now.  This section builds on those basics.
@@ -6189,6 +6204,11 @@
             indicate that they should be used as the correlation ID.    If this key-value is not present, and the event has any
             payload fields the first field is used as the correlation ID.  If the event has no payload fields the thread ID is used.
         </li>
+        <li>
+            <strong>Verbose=true</strong> By default PerfView logs a SAMPLE of PerfView/StopTriggerDebugMessage messages into the ETW log
+            which is typically enough information to diagnose why triggering is not working properly.   However by setting
+            Verbose=true the information is more complete.
+        </li>
     </ul>
     <h5>Examples of /StopOnEtwEvent use</h5>
     <p>
@@ -6263,10 +6283,10 @@
 
     <h5>Debugging Triggering Issues</h5>
     <p>
-        It is not uncommon for you to try out a /StopOnEtwEvent qualifer and find that it does not do what you want (typcially because it did not
-        trigger).   Sometimes what is in the log will help, however perfView can't place too much in the log becasue it might flood the log.  Instead
-        it emits speical PerfView StopTriggerDebugMessage events into the ETW stream so that you can look at data in the 'events' view and figure out why it is
-        not working properly.   If you have issues with Triggering you will definately want to look at these events.
+        It is not uncommon for you to try out a /StopOnEtwEvent qualifier and find that it does not do what you want (typically because it did not 
+        trigger). Sometimes what is in the log will help, however perfView can't place too much in the log becasue it might flood the log. Instead 
+        it emits special PerfView StopTriggerDebugMessage events into the ETW stream so that you can look at data in the 'events' view and figure out why it is
+        not working properly. If you have issues with Triggering you will definitely want to look at these events. 
     </p>
 
     <h5>Using Performance Counters to trigger collection start (Start Trigger qualifier)</h5>
@@ -6708,17 +6728,19 @@
     </p>
     <hr />
     <!--  ********************************** -->
-    <h2><a id="CommandLineReference">Command Line Reference</a></h2>
+    <h2>Command Line Reference</h2>
     <p>
-        rmcnte e h      HTML       th                        Vieteiac   in thebefm the eldrs     ommand Linerepiwn window (            liy     owufiodelty can get at this help bfomh (/                 PemawindnterprinrfView ets
-        el        The PerfView Commands (e.g. collect, heap dump, view, user command) as well as thetroanpOnPrfoectoonaiewdsncyCou / l   Peti C   e MB hcecoollenm   d
-        ts oroaOpteli        naviga                                                 ua.>rddnt.)        eexcuor  erStbytingri,    ).   Y    for perfect .s        n    a Help</bhelp-&iomma;c , bngenerated g to negtut thc<bhp-g&t by t it;c>
-
-            the PerfView with the /? option from the command line.
+        Most functionality that is not intimately tied to viewing is available from the
+        command line to allow for easy automation of data collection.&nbsp; At the command
+        line typing
     </p>
     <ul>
         <li>PerfView /? </li>
     </ul>
+    <p>
+        Or&nbsp; navigating to Help-&gt;Command Line Help from the main PerfView window
+        will give you more complete details.&nbsp;&nbsp;
+    </p>
     <p>
         See also <a href="#PerfViewExtensions">PerfView Extensions</a> for information on
         building extensions for PerfView.
@@ -7697,6 +7719,94 @@
         </li>
         -->
         <li>
+            Version 1.8.9 11/1/15
+            <ul>
+                <li>
+                    There is a bug in RC candidates of V4.6.1 where NGEN createPdb only works if the path of the NGEN image
+                    is in the Native Image Cache (NIC), but V4.6.1 uses hard links for NGEN images that come from the install itself.
+                    The result is that you don't get symbols for mscorlib, system, and system.core.   This adds a work-around
+                    for this (normaling all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.  
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.8 10/31/15
+            <ul>
+                <li>  Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on 
+                      a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an 
+                      impediment to getting line number information (that is access to the cooresponding IL pdb with line number
+                      information is no longer needed to create an NGEN pdb that has line number information). 
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.7 10/22/15
+            <ul>
+                <li> Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
+                     Removed the calls to RegisteredTraceEventParser.   This could break things but should not.   So far things look 
+                     OK.  
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.6 10/12/15
+            <ul>
+                <li>
+                    Integrated Lee's update of CLRMD that should make PerFView able to extract heap dumps from debugger dumps of 
+                    .NET Native processes.   
+                </li>
+                <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.5 10/6/15
+            <ul>
+                <li>
+                    Made 'Any Stacks (with StartStop Tasks)' and 'Any StartStopTree' public.   
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.3 9/23/15
+            <ul>
+                <li> Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
+                     useful before so that any traces I get have detailed information for debugging, but are now impacting
+                     the cost of using PerfView in production when Tasks are used heavily.
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.2 9/13/15
+            <ul>
+                <li> /InMemoryCircularBuffer option was broken (Would throw a file not found exception in SetFileName).  Fixed this. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.1 9/3/15
+            <ul>
+                <li> Fixed issue where Debug versions were asserting that two stacks were attached to the same event
+                because kernel and user mode stacks were not being stitched together properly (mostly in rare cases 
+                where thread-starts were happening) </li>
+            </ul>
+        </li>
+
+        <li>
+            Version 1.8.0 8/30/15
+            <ul>
+                <li> Release to Web. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.7.31 8/19/15
+            <ul>
+                <li>
+                    Update code that does merging so it works proplery on Win10.  It does not have an effect if you look
+                    at the events with PerfView, but on Win10 until this change, data collected with PerfView would not
+                    parse eventSource events propertly in WPA.
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.7.30 7/30/2015
             <ul>
                 <li> Added UTC offset of the location where data is collected to the TraceInfo display (helps in worldwide scenarios) </li>
@@ -8588,298 +8698,6 @@
                     helpful for phone scenarios where the OS ETW providers may be different on the collection and viewing
                     machines.
                 </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.28- 11/29/2013
-            <ul>
-                <li>
-                    Added support for taking Reference Set Traces to PerfView (currently PerfView does not really show
-                    this data well, but you can use WPA to view the data).   This is exposed as a 'RefSet' checkbox on
-                    the collection dialog.  You can also do /kernelEvents=default+RefSet to do it at the command line.
-                </li>
-                <li>
-                    Changed it so that the zip and merge checkboxes in the collection dialog box are persistent from
-                    different runs of perfView.  I also changed the default to be ZIPPing even in the GUI, but once you
-                    change it it will now persist.   Put in a dialog box to inform people of this.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.27- 11/26/2013
-            <ul>
-                <li>
-                    Reworked lookup of modules/methods for addresses.  It is faster than before, especially with traces
-                    with many processes in them.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.25- 11/12/2013
-            <ul>
-                <li>
-                    Add Map Files to the Virtual Reserve Stacks view
-                </li>
-                <li>Added MapFile events when you turn on 'VirtualAloc' textbox in the collection dialog box</li>
-                <li>Fixed bug with using /OnlyProviders with stacks</li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.25- 11/12/2013
-            <ul>
-                <li>
-                    Updated KernelTraceControl.dll which fixes issues associated with using PerfView to collect and WPA to view.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.24- 11/11/2013
-            <ul>
-                <li>
-                    Added support for /MonitorPerfCounter qualifier.  This allows you to cause perf counters to be logged to the
-                    ETL file on an interval (by default every 2 seconds).  You can have many of these and thus keep track of
-                    'top level stats' in your ETL data collection.   They show up in the log as a PerfVIew event called
-                    PerformanceCounterUpdate.
-                </li>
-                <li>
-                    Added the Virtual Reserve Stacks view if you collect Virtual Alloc information.  This is like the
-                    Virtual Alloc Stacks view but shows you how much memory you RESERVERED rather than what you COMMITTED.
-                    It is only useful for processes that are throwing out of memory exceptions because they have used up
-                    all the virtual address space (in a 32 bit process).
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.23- 11/5/2013
-            <ul>
-                <li>
-                    Added support for the MemInfo ETW events.  These events take a snapshot of working set statistics for every
-                    process in the system every half second (as well as system-wide stats).   A 'memInfo' checkbox has been added
-                    to the collection dialog box and support in the EventViewer for the MemInfoWS events has been added.   Thus
-                    you can get a perf-counter like trace of memory.    If you wish to use this from the command line simply
-                    specify the /Providers=Microsoft-Windows-Kernel-Memory provider
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.22- 10/31/2013
-            <ul>
-                <li>
-                    fixed problem where PDBS were not being looked up when you did not merge the ETL file (no PDB signature).
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.21- 10/16/2013
-            <ul>
-                <li>
-                    Added a 'Dump Object' command to the stack viewer right click (under Memory) that allows you to dump
-                    individual instance information for a selected node.
-                </li>
-                <li>
-                    It used to be that if there were files name .man or .manifest.xml next to an ETL file PerfVIew will load them.
-                    Now it only happens when they are in a subdirectory called 'EtwManifests'.   It was too easy for this logic to kick
-                    in before accidentally.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.20- 10/14/2013
-            <ul>
-                <li>
-                    More support (not complete) for ETW based heap dumping.  Added events for static vars RCW/CCWs
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.19- 9/25/2013
-            <ul>
-                <li>
-                    Added support for project N .NET applications.  Previously there was a hack with /Provdiers=N.  That has
-                    has been removed, and now by default all events for the CLR are cloned for project N.   THus it should
-                    'just work' without any need for special parameters.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.18- 9/18/2013
-            <ul>
-                <li>
-                    Fix a bug with native symbol lookup.  If you were having trouble getting native PDBS from a symbol server, this
-                    may fix your issue.
-                </li>
-                <li>
-                    When you select and ETL file in the main view it will now display the full path name in the status bar.
-                    This is convenient for cutting can pasting.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.17- 9/13/2013
-            <ul>
-                <li>
-                    Fixed issues with the creation or opening of ETL.ZIP files that are
-                    have more than 4GB of data in them.
-                </li>
-                <li>GCStats view now sorted by heap size.</li>
-                <li>
-                    Added a pinning at GC time view.  This shows what things were actually pinned
-                    when GCs happened (which is the only time it matters).
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.16- 8/26/2013
-            <ul>
-                <li>Updated parser to take advantage of the latest CLR events in V4.5.1.</li>
-                <li>Lots of updates to track the new TraceEvent package (which renamed things)</li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.12- 7/19/2013
-            <ul>
-                <li>Fixed a serious bug where extracting heap dumps from process dumps failed.</li>
-                <li>Fixed issue where Merging files after the collection failed.</li>
-                <li>
-                    Made DynamicTraceEventParser robust to not enough serialized data (this is important for
-                    the EventSource versioning story)
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.11- 7/12/2013
-            <ul>
-                <li>Made all scenarios start at 0 in multi-scenario traces. </li>
-                <li>Tracked the renames made in the TraceEvent library (mostly namespace changes)</li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.10- 7/2/2013
-            <ul>
-                <li>
-                    Fix bugs with respect to setting EventSourcees for V4.5.1 and using key-value pairs
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.9- 7/2/2013
-            <ul>
-                <li>
-                    Significant rework of Symbol lookup to avoid the use of
-                    dbghelp.dll and symsv.dll in TraceEvent.dll   We now
-                    only use msdia120.dll.   In theory this should have no change
-                    in user visible behavior except that cancellation
-                    of symbol lookup should actually work.   The PerfView.exe
-                    executable itself is also smaller.
-                </li>
-                <li>
-                    Removed the really old style CDB.exe based CLRProfiler GC heap dumps.
-                    This saved quite a bit of space. and
-                    that mechanism for taking heap dumps was not actively supported
-                    for a while (over a year) now..
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.8- 6/10/2013
-            <ul>
-                <li>
-                    When doing a 'goto source' we also will place in the log all the
-                    addresses in memory of the samples taken.   This allows
-                    you to actually look WITHIN a line to see what instructions are
-                    actually consuming time.   It is also useful when
-                    the source is not available.   It does require you to use a debugger
-                    or some other tool to look at the assembly code.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.7- 6/5/2013
-            <ul>
-                <li>
-                    Fixed a serious issue introduced in 1.4.6 where many kernel
-                    events would not have correct process and
-                    thread IDs (this effects the thread time view.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.6- 6/1/2013
-            <ul>
-                <li>Fixed issue where column sums were not respecting the text filter.</li>
-                <li>Update TraceEvent to support the IObservable Interface.</li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.5- 5/30/2013
-            <ul>
-                <li>
-                    Added ability to watch other Event logs than simply the
-                    Application event log on StopOnEventLogMessage (use NAME@PATTERN)
-                    see command line help for details.
-                </li>
-                <li>
-                    Added ListPublishedProviders, ListProvidersInProcess and ListProviderKeywords,
-                    user commands   These let you
-                    explore the providers that exist and understand their keywords.
-                    See Help -> UserCommand Help for more.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.3- 5/28/2013
-            <ul>
-                <li>
-                    Added the hyperlink in the 'Processes' view to open the list of processes in Excel.  Also added a hyperlink
-                    to see all loaded processes in Excel.    Added a hyperlink in the 'EventStats' view to see that information
-                    in Excel.
-                </li>
-                <li>
-                    If an ETL file has JavaScript Heap dumps inside it, these will now show up a a 'directory' node called 'GC Heap Dumps'
-                    Each child of this node will be a distinct heap dump, and when you open them you get the heap dump memory view.
-                    Thus you can look at heap dumps taken with WPR.exe
-                </li>
-                <li>Improved the Server Request view to work properly for more scenarios. </li>
-                <li>
-                    Added the 'Gen 2 Object Deaths' view when you have collected .NET SampleAlloc or .NET Alloc events.  In this
-                    view you see what died in Gen 2, which is useful when you are trying to optimized GC time.
-                </li>
-                <li>Added 'ASP.NET Just My Code' grouping that is used by default for w3wp processes.</li>
-                <li>
-                    WinBlue has changed the way you collect JavaScript heap information.   Tracked to work for both old and
-                    new mechanism.
-                </li>
-                <li>Allowed the /StopOnPerfCounter and /StopOnEtwEvent to be specified more than once.</li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.2- 5/14/2013
-            <ul>
-                <li>
-                    Updated PerfVIew so that the ETL files it creates can be used by WPR/XPERF AND  WPR/XPERF will properly parse
-                    EventSource schema information.   The actual change was to use the newest version of KernelTraceControl.dll.
-                    The newest version of this DLL has support for EventSources.   Now when an ETL file is merged, eventSource
-                    meta-data is converted into KernelTraceControl events that have the EventSource Metadata encoded in a way
-                    that WPR/XPERF will recognize and use.
-                </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4.1 - 5/7/2013
-            <ul>
-                <li>Fixed a rather serious long time bug which can cause event dispatching to fail or go into infinite loops</li>
-                <li>
-                    Fixed a serious long time bug in 'GC Heap Net Mem Stacks' (display Allocation stats taking into account
-                    objects deleted by GCs) that was causing it to produce (large) inaccurate results (it previously would
-                    believe that Gen 2 objects were being collected by Gen 1 collections.
-                </li>
-                <li>Fixed a bug where whether allocation sampling for </li>
-            </ul>
-        </li>
-        <li>
-            Version 1.4 - 4/4/2013
-            <ul>
-                <li>Release to Web</li>
             </ul>
         </li>
     </ul>

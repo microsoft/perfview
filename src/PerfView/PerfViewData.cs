@@ -719,7 +719,6 @@ namespace PerfView
             new XmlPerfViewFile(),
             new ClrProfilerHeapPerfViewFile(),
             new PdbScopePerfViewFile(),
-            new ProjectNInferenceLogPerfViewFile(),
             new VmmapPerfViewFile(),
             new DebuggerStackPerfViewFile(),
             new HeapDumpPerfViewFile(),
@@ -986,8 +985,8 @@ namespace PerfView
                 dataFile.UTCOffsetMinutes.HasValue ? (dataFile.UTCOffsetMinutes.Value / 60.0).ToString("f2") : "Unknown");
             writer.WriteLine("<TR><TD Title=\"This is negative if PerfView is running in a time zone west of UTC\">UTC offset where PerfView is running</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                 TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours);
-            
-            if (false && dataFile.UTCOffsetMinutes.HasValue)
+
+            if (dataFile.UTCOffsetMinutes.HasValue)
             {
                 writer.WriteLine("<TR><TD Title=\"This is negative if analysis is happening west of collection\">Delta of Local and Collection Time</TD><TD Align=\"Center\">{0:f2}</TD></TR>",
                     TimeZoneInfo.Local.GetUtcOffset(dataFile.SessionStartTime).TotalHours - (dataFile.UTCOffsetMinutes.Value / 60.0));
@@ -3936,7 +3935,7 @@ namespace PerfView
             }
             else if (streamName == "Server GC")
             {
-                GCProcess.Collect(eventSource, 1, null, stackSource);
+                GCProcess.Collect(eventSource, (float)eventLog.SampleProfileInterval.TotalMilliseconds, null, stackSource);
                 return stackSource;
             }
             else throw new Exception("Unknown stream " + streamName);
@@ -4791,11 +4790,8 @@ namespace PerfView
                 if (hasTpl)
                 {
                     m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
-                    if (AppLog.InternalUser)
-                    {
-                        m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
-                        m_Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
-                    }
+                    m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
+                    m_Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
                     m_Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
                 }
             }
@@ -4934,7 +4930,7 @@ namespace PerfView
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /BufferSizeMB:128 or larger to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer to avoid this in future traces.";
             }
             else
             {
@@ -5479,50 +5475,6 @@ namespace PerfView
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
             ConfigureAsMemoryWindow(stackSourceName, stackWindow);
-        }
-    }
-
-    // TODO Because this uses CCI which we don't otherwise use, we should make this an extension (and put CCC by it).  
-    class ProjectNInferenceLogPerfViewFile : PerfViewFile
-    {
-        public override string FormatName { get { return ".NET Native Binary Size Analysis"; } }
-        public override string[] FileExtensions { get { return new string[] { ".ILCAnalysisLog.zip" }; } }
-
-        protected internal override StackSource OpenStackSourceImpl(TextWriter log)
-        {
-            try
-            {
-                // Add the extensions directory to the path of where to find DLLs. because we need Microsoft.CCI.DLL.  
-                Utilities.SupportFiles.AddManagedDllSearchPath(PerfViewExtensibility.Extensions.ExtensionsDirectory);
-
-                Graph graph = new ProjectNInferenceGraph(FilePath);
-                var ret = new MemoryGraphStackSource(graph, log);
-                return ret;
-            }
-            catch (FileNotFoundException e)
-            {
-                // Give users a better error message if CCI is not available.   
-                if (0 <= e.FileName.IndexOf("CCI", StringComparison.OrdinalIgnoreCase))
-                    throw new NotSupportedException("The Project N size analysis capability only works if the Microsoft.CCI.DLL and CCIExtensions DLL is present in the PerfViewExtensions directory.");
-                else
-                    throw;
-            }
-        }
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            stackWindow.IsMemoryWindow = true;
-
-            stackWindow.PriorityTextBox.Text = "Runtime directives->-1000000000;Reflection mapping->-100000000000;ILT$Main->1000000000";
-            stackWindow.FoldPercentTextBox.Text = "0";
-            stackWindow.FoldRegExTextBox.Items.Insert(0, "[]");
-
-            stackWindow.GroupRegExTextBox.Text = "^%!FrozenString->Frozen Strings;^%!InitData->Static Initialization Data;^%!InterfaceDispatchCell->Interface Dispatch Cells";
-            stackWindow.ExcludeRegExTextBox.Text = "^SharedLibrary!";
-
-            stackWindow.RemoveColumn("WhenColumn");
-            stackWindow.RemoveColumn("WhichColumn");
-            stackWindow.RemoveColumn("FirstColumn");
-            stackWindow.RemoveColumn("LastColumn");
         }
     }
 
@@ -6144,6 +6096,8 @@ namespace PerfView
         /// </summary>
         /// <param name="filePattern">The wildcard file pattern to match. Must not be null.</param>
         /// <param name="namePattern">The pattern by which to name scenarios. If null, defaults to "scenario $1".</param>
+        /// <param name="includePattern">If non-null, a pattern which must be matched for the scenario to be added</param>
+        /// <param name="excludePattern">If non-null, a pattern which if matched causes the scenario to be excluded</param>
         /// <param name="dict">The dictionary to which to add the scenarios found.</param>
         /// <param name="log">A log file to write log messages.</param>
         /// <param name="baseDir">

@@ -176,6 +176,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
         /// In particular, it knows how to parse any events from a System.Diagnostics.Tracing.EventSources. 
+        /// 
+        /// Note that the DynamicTraceEventParser has subsumed the functionality of RegisteredTraceEventParser
+        /// so any registered providers are also looked up here.  
         /// </summary>
         public DynamicTraceEventParser Dynamic
         {
@@ -188,8 +191,12 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// For convenience, we provide a property returns a RegisteredTraceEventParser that knows 
-        /// how to parse all providers that are registered with the operating system.   
+        /// how to parse all providers that are registered with the operating system.
+        /// 
+        /// Because the DynamicTraceEventParser has will parse all providers that that RegisteredTraceEventParser
+        /// will parse, this function is obsolete, you should use Dynamic instead.  
         /// </summary>
+        [Obsolete("Use Dynamic instead.   DynamicTraceEventParser decodes everything that RegisteredTraceEventParser can.")]
         public RegisteredTraceEventParser Registered
         {
             get
@@ -203,7 +210,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// The time when session started logging. 
         /// </summary>
-        public DateTime SessionStartTime { get { return sessionStartTimeUTC.ToLocalTime(); } }
+        public DateTime SessionStartTime
+        {
+            get
+            {
+                var ret = QPCTimeToDateTimeUTC(sessionStartTimeQPC);
+                return ret.ToLocalTime();
+            }
+        }
+
         /// <summary>
         /// The time that the session stopped logging.
         /// </summary>
@@ -350,10 +365,14 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ int pointerSize;
         internal /*protected*/ int numberOfProcessors;
         internal /*protected*/ int cpuSpeedMHz;
-        internal /*protected*/ int? utcOffsetMinutes; 
+        internal /*protected*/ int? utcOffsetMinutes;
         internal /*protected*/ Version osVersion;
+
+        // Used to convert from Query Performance Counter (QPC) units to DateTime.
         internal /*protected*/ long _QPCFreq;
-        internal /*protected*/ DateTime sessionStartTimeUTC;
+        internal /*protected*/ long _syncTimeQPC;       // An instant in time measured in QPC units (of _QPCFreq)
+        internal /*protected*/ DateTime _syncTimeUTC;   // The same instant as a DateTime.  This is the only fundamental DateTime in the object. 
+
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
@@ -363,52 +382,6 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ RegisteredTraceEventParser _Registered;
         #endregion
         #region private
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The SessionStartTime is expressed as a windows file time (100ns ticks since 1601). 
-        /// </summary>
-        [Obsolete("Uses SessionStartTime (for perfect compatibility, SessionStartTime.ToFileTime())")]
-        public long SessionStartTime100ns { get { return SessionStartTime.ToFileTime(); } }
-        /// <summary>
-        /// The SessionEndTime is expressed as a windows file time (100ns ticks since 1601). 
-        /// </summary>
-        [Obsolete("Uses SessionEndTime")]
-        public long SessionEndTime100ns { get { return SessionEndTime.ToFileTime(); } }
-
-        /// <summary>
-        /// Converts from a time in MSec from the beginning of the trace to a 100ns timestamp.  
-        /// </summary>
-        [Obsolete("Use RelativeTimeMSecToDate")]
-        public long RelativeTimeMSecTo100ns(double relativeTimeMSec)
-        {
-            var offset100ns = relativeTimeMSec * 10000.0;
-            var absoluteTime = offset100ns + SessionStartTime100ns;
-            if (absoluteTime < long.MaxValue)   // TODO this is not quite right for overflow detection
-                return (long)offset100ns + SessionStartTime100ns;
-            else
-                return long.MaxValue;
-        }
-        // Time conversion operations 
-        /// <summary>
-        /// Returns a double representing the number of milliseconds 'time100ns' is from the offset of the log 
-        /// </summary>
-        /// <param name="time100ns">The time to convert to relative form</param>
-        /// <returns>number of milliseconds from the beginning of the log</returns>
-        [Obsolete]
-        internal double RelativeTimeMSec(long time100ns)
-        {
-
-            double msec = (time100ns - SessionStartTime100ns) / 10000.0;
-            if (msec < 0)
-                msec = 0;
-            return msec;
-        }
-        [Obsolete]
-        internal long QPCTime(long time100ns)
-        {
-            return RelativeMSecToQPC(RelativeTimeMSec(time100ns));
-        }
-#endif
         /// <summary>
         /// This is the high frequency tick clock on the processor (what QueryPerformanceCounter uses).  
         /// You should not need 
@@ -420,6 +393,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
             long diff = (QPCTime - sessionStartTimeQPC);
             // For real time providers, the session start time is the time when the TraceEventSource was turned on
@@ -433,6 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal long RelativeMSecToQPC(double relativeMSec)
         {
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             return (long)(relativeMSec * _QPCFreq / 1000) + sessionStartTimeQPC;
         }
 
@@ -441,7 +416,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal long UTCDateTimeToQPC(DateTime time)
         {
-            long ret = (long)((time.Ticks - sessionStartTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + sessionStartTimeQPC;
+            Debug.Assert(_QPCFreq != 0);
+            long ret = (long)((time.Ticks - _syncTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + _syncTimeQPC;
             Debug.Assert((QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
@@ -454,8 +430,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (QPCTime == long.MaxValue)   // We maxvalue as a special case.  
                 return DateTime.MaxValue;
 
-            long inTicks = (long)((QPCTime - sessionStartTimeQPC) * 10000000.0 / _QPCFreq);
-            var ret = new DateTime(sessionStartTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
+            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
+            long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq);
+            var ret = new DateTime(_syncTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
             return ret;
         }
 
@@ -783,11 +760,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// Creates and returns the value of the 'message' for the event with payload values substituted.
         /// Payload values are formatted using the given formatProvider. 
         /// </summary>
-        public virtual string GetFormattedMessage(IFormatProvider formatProvider) 
-        { 
-            return null; 
+        public virtual string GetFormattedMessage(IFormatProvider formatProvider)
+        {
+            return null;
         }
-        
+
         /// <summary>
         /// An EventIndex is a integer that is guaranteed to be unique for this event over the entire log.  Its
         /// primary purpose is to act as a key that allows side tables to be built up that allow value added
@@ -842,121 +819,121 @@ namespace Microsoft.Diagnostics.Tracing
         {
             try
             {
-            var value = PayloadValue(index);
-            
-            if (value == null)
-                return "";
+                var value = PayloadValue(index);
 
-            if (value is Address)
+                if (value == null)
+                    return "";
+
+                if (value is Address)
                     return "0x" + ((Address)value).ToString("x", formatProvider);
 
-            if (value is int)
-            {
-
-                int intValue = (int)value;
-                if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                if (value is int)
                 {
-                    return (intValue & 0xFF).ToString() + "." +
-                           ((intValue >> 8) & 0xFF).ToString() + "." +
-                           ((intValue >> 16) & 0xFF).ToString() + "." +
-                           ((intValue >> 24) & 0xFF).ToString();
-                }
+
+                    int intValue = (int)value;
+                    if (intValue != 0 && payloadNames[index] == "IPv4Address")
+                    {
+                        return (intValue & 0xFF).ToString() + "." +
+                               ((intValue >> 8) & 0xFF).ToString() + "." +
+                               ((intValue >> 16) & 0xFF).ToString() + "." +
+                               ((intValue >> 24) & 0xFF).ToString();
+                    }
                     if (formatProvider != null)
                         return intValue.ToString(formatProvider);
-                    else 
-                return intValue.ToString("n0");
-            }
+                    else
+                        return intValue.ToString("n0");
+                }
 
-            if (value is long)
-            {
-                if (payloadNames[index] == "objectId")      // TODO this is a hack.  
-                    return "0x" + ((long)value).ToString("x");
+                if (value is long)
+                {
+                    if (payloadNames[index] == "objectId")      // TODO this is a hack.  
+                        return "0x" + ((long)value).ToString("x");
 
                     if (formatProvider != null)
                         return ((long)value).ToString(formatProvider);
                     else
-                return ((long)value).ToString("n0");
-            }
+                        return ((long)value).ToString("n0");
+                }
 
-            if (value is double)
+                if (value is double)
                 {
                     if (formatProvider != null)
                         return ((double)value).ToString(formatProvider);
                     else
-                return ((double)value).ToString("n3");
+                        return ((double)value).ToString("n3");
                 }
 
-            if (value is DateTime)
-            {
-                DateTime asDateTime = (DateTime)value;
-                string ret;
-                if (source.SessionStartTime <= asDateTime)
+                if (value is DateTime)
                 {
-                    ret = asDateTime.ToString("HH:mm:ss.ffffff");
-                    ret += " (" + (asDateTime - source.sessionStartTimeUTC.ToLocalTime()).TotalMilliseconds.ToString("n3") + " MSec)";
-                }
-                else
-                    ret = asDateTime.ToString();
-
-                return ret;
-            }
-
-            var asByteArray = value as byte[];
-            if (asByteArray != null)
-            {
-                StringBuilder sb = new StringBuilder();
-                if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
-                {
-                    if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                    DateTime asDateTime = (DateTime)value;
+                    string ret;
+                    if (source.SessionStartTime <= asDateTime)
                     {
-                        sb.Append(asByteArray[4].ToString()).Append('.');
-                        sb.Append(asByteArray[5].ToString()).Append('.');
-                        sb.Append(asByteArray[6].ToString()).Append('.');
-                        sb.Append(asByteArray[7].ToString()).Append(':');
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append(port);
+                        ret = asDateTime.ToString("HH:mm:ss.ffffff");
+                        ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
-                    else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
-                    {
-                        var ipV6 = new byte[16];
-                        Array.Copy(asByteArray, 8, ipV6, 0, 16);
-                        int port = (asByteArray[2] << 8) + asByteArray[3];
-                        sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
-                    }
-                }
-                // If we did not find a way of pretty printing int, dump it as bytes. 
-                if (sb.Length == 0)
-                {
-                    var limit = Math.Min(asByteArray.Length, 16);
-                    for (int i = 0; i < limit; i++)
-                    {
-                        var b = asByteArray[i];
-                        sb.Append(HexDigit((b / 16)));
-                        sb.Append(HexDigit((b % 16)));
-                    }
-                    if (limit < asByteArray.Length)
-                        sb.Append("...");
-                }
-                return sb.ToString();
-            }
-            var asArray = value as System.Array;
-            if (asArray != null && asArray.Rank == 1)
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.Append('[');
-                bool first = true;
-                foreach (var elem in asArray)
-                {
-                    if (!first)
-                        sb.Append(',');
-                    first = false;
-                    sb.Append(elem.ToString());
-                }
-                sb.Append(']');
-                return sb.ToString();
-            }
+                    else
+                        ret = asDateTime.ToString();
 
-            return value.ToString();
+                    return ret;
+                }
+
+                var asByteArray = value as byte[];
+                if (asByteArray != null)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    if (payloadNames[index].EndsWith("Address") || payloadNames[index].EndsWith("Addr"))
+                    {
+                        if (asByteArray.Length == 16 && asByteArray[0] == 2 && asByteArray[1] == 0)         // FAMILY = 2 = IPv4
+                        {
+                            sb.Append(asByteArray[4].ToString()).Append('.');
+                            sb.Append(asByteArray[5].ToString()).Append('.');
+                            sb.Append(asByteArray[6].ToString()).Append('.');
+                            sb.Append(asByteArray[7].ToString()).Append(':');
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append(port);
+                        }
+                        else if (asByteArray.Length == 28 && asByteArray[0] == 23 && asByteArray[1] == 0)   // FAMILY = 23 = IPv6
+                        {
+                            var ipV6 = new byte[16];
+                            Array.Copy(asByteArray, 8, ipV6, 0, 16);
+                            int port = (asByteArray[2] << 8) + asByteArray[3];
+                            sb.Append('[').Append(new System.Net.IPAddress(ipV6).ToString()).Append("]:").Append(port);
+                        }
+                    }
+                    // If we did not find a way of pretty printing int, dump it as bytes. 
+                    if (sb.Length == 0)
+                    {
+                        var limit = Math.Min(asByteArray.Length, 16);
+                        for (int i = 0; i < limit; i++)
+                        {
+                            var b = asByteArray[i];
+                            sb.Append(HexDigit((b / 16)));
+                            sb.Append(HexDigit((b % 16)));
+                        }
+                        if (limit < asByteArray.Length)
+                            sb.Append("...");
+                    }
+                    return sb.ToString();
+                }
+                var asArray = value as System.Array;
+                if (asArray != null && asArray.Rank == 1)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append('[');
+                    bool first = true;
+                    foreach (var elem in asArray)
+                    {
+                        if (!first)
+                            sb.Append(',');
+                        first = false;
+                        sb.Append(elem.ToString());
+                    }
+                    sb.Append(']');
+                    return sb.ToString();
+                }
+
+                return value.ToString();
             }
             catch (Exception e)
             {
@@ -1597,6 +1574,20 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal /*protected*/ int ParentThread;
 
+        /// <summary>
+        /// Because we want the ThreadID to be the ID of the CREATED thread, and the stack 
+        /// associated with the event is the parentThreadID 
+        /// </summary>
+        internal int ThreadIDforStacks()
+        {
+            if (0 <= ParentThread)
+            {
+                Debug.Assert(this is ProcessTraceData || this is ThreadTraceData);
+                return ParentThread;
+            }
+            return ThreadID;
+        }
+
 #if DEBUG
         internal bool DisallowEventIndexAccess { get; set; }
 #endif
@@ -1621,21 +1612,6 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 return (char)('A' - 10 + digit);
         }
-
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// The time of the event, represented in 100ns units from the year 1601.  See also TimeDateStamp
-        /// </summary>
-        [Obsolete("Use TimeStampRelativeMSec or TimeStamp.Ticks instead")]
-        public long TimeStamp100ns
-        {
-            // [SecuritySafeCritical]
-            get
-            {
-                return TimeStamp.ToFileTime();
-            }
-        }
-#endif
         /// <summary>
         /// Returns the Timestamp for the event using Query Performance Counter (QPC) ticks.   
         /// The start time for the QPC tick counter is unknown
@@ -1846,10 +1822,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// them.
         /// </summary>
         internal TraceEvent next;
-        internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
-        internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
         // If true we are using TaskGuid and Opcode
         // If False we are using ProviderGuid and EventId
+        internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
+        internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
+
+        internal bool containsSelfDescribingMetadata;
 
         // These are constant over the TraceEvent's lifetime (after setup) (except for the UnhandledTraceEvent
         internal TraceEventID eventID;                  // The ID you should switch on.  
@@ -2082,7 +2060,9 @@ namespace Microsoft.Diagnostics.Tracing
         // TODO should have an UnRegisterParser(TraceEventParser parser) API.  
 
         /// <summary>
-        /// Indicates that this callback should be called on any unhandled event.   
+        /// Indicates that this callback should be called on any unhandled event.   The callback
+        /// returns true if the lookup should be retried after calling this (that is there is
+        /// the unhandled event was found).  
         /// </summary>
         void RegisterUnhandledEvent(Func<TraceEvent, bool> callback);
         // TODO Add an unregister API.  
@@ -2154,14 +2134,6 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 AddCallbackForEvents<T>(s => eventName == s, callback: callback);
         }
-#if KEEP_OBSOLETE
-        /// <summary>
-        /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
-        /// whose eventName will pass 'eventNameFilter'.    
-        /// </summary>
-        [Obsolete("Use AddCallbackForEvents")]
-        public void AddToAllMatching<T>(Action<T> callback) where T : TraceEvent { AddCallbackForEvents<T>(callback); }
-#endif
         // subscribe to a set of events for parsers that handle a single provider.  (These are more strongly typed to provider specific payloads)
         /// <summary>
         /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
@@ -3232,11 +3204,17 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Use the old style exclusive if we are using old ETW APIs, or the provider does not
             // support it (This currently includes the Kernel Events)
+            // If the event is tracelogging, do not register it as classic.
             Debug.Assert(!(template.ProviderGuid == KernelTraceEventParser.ProviderGuid && template.eventID != TraceEventID.Illegal));
             if (useClassicETW || template.eventID == TraceEventID.Illegal)
             {
                 // Use classic lookup mechanism (Task Guid, Opcode)
                 template.lookupAsClassic = true;
+                Insert(template);
+            }
+            else if (template.containsSelfDescribingMetadata)
+            {
+                template.lookupAsClassic = false;
                 Insert(template);
             }
             else
