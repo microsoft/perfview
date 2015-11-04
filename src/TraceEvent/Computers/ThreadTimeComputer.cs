@@ -10,6 +10,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 // using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
@@ -111,7 +112,9 @@ namespace Microsoft.Diagnostics.Tracing
                     var sample = m_sample;
                     sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
                     sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
-                    sample.StackIndex = m_activityComputer.GetCallStack(m_outputStackSource, data, GetTopFramesForActivityComputerCase(data, data.Thread()), trimEtwFrames:true);
+
+                    // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
+                    sample.StackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread()));
 
                     //Trace.WriteLine(string.Format("Tpl Proc {0} Thread {1} Start {2:f3}", data.ProcessName, data.ThreadID, data.TimeStampRelativeMSec));
                     //Trace.WriteLine(string.Format("activity Proc {0} Thread {1} Start {2:f3} End {3:f3}", activity.Thread.Process.Name, activity.Thread.ThreadID,
@@ -130,8 +133,6 @@ namespace Microsoft.Diagnostics.Tracing
                 tplProvider.TaskScheduledSend += OnSampledProfile;
                 tplProvider.TaskWaitSend += OnSampledProfile;
                 // These are like start.   
-                tplProvider.TaskWaitStop += OnSampledProfile;
-                tplProvider.TaskScheduledSend += OnSampledProfile;
             }
 
             if (!ExcludeReadyThread)
@@ -198,7 +199,13 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW Experimental : Include all 
             eventSource.Dynamic.All += delegate(TraceEvent data)
             {
-                // We dont' care about the TPL provider.  Too many events.  
+                // TODO decide what the correct heuristic is.  
+                // Currently I only do this for things that might be an EventSoruce (uses the name->Guid hashing)
+                // Most importantly, it excludes the high volume CLR providers.   
+                if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
+                    return;
+
+                // We don't care about the TPL provider.  Too many events.  
                 if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                     return;
 
@@ -424,7 +431,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Returns a function that figures out the top (closest to stack root) frames for an events.  Often
+        /// Returns a function that figures out the top (closest to stack root) frames for an event.  Often
         /// this returns null which means 'use the normal thread-process frames'. 
         /// </summary>
         Func<TraceThread, StackSourceCallStackIndex> GetTopFramesForActivityComputerCase(TraceEvent data, TraceThread thread)

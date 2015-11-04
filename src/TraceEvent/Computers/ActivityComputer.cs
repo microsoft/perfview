@@ -188,7 +188,7 @@ namespace Microsoft.Diagnostics.Tracing
         public TraceActivity GetThreadActivity(TraceThread thread)
         {
             int index = (int)thread.ThreadIndex;
-            var ret = m_indexToActivity[index];     // the thread ID is the activity ID. 
+            var ret = m_indexToActivity[index];     // We pre-allcoate a set of activities (one for each thread) so that the index of the activity is the same as the thread index. 
             if (ret == null)
             {
                 Debug.Assert(m_beginWaits.Count == m_indexToActivity.Count);
@@ -244,10 +244,26 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         /// <summary>
+        /// Returns a StackSource call stack associated with outputStackSource for the activity 'activity'   (that is the call stack at the 
+        /// the time this activity was first created.   This stack will have it 'top' defined by topFrames (by default just the thread and process frames)
+        /// </summary>
+        public StackSourceCallStackIndex GetCallStackForActivity(MutableTraceEventStackSource outputStackSource, TraceActivity activity, Func<TraceThread, StackSourceCallStackIndex> topFrames = null)
+        {
+            Debug.Assert(outputStackSource.TraceLog == m_eventLog);
+            m_outputSource = outputStackSource;
+
+            // Insure we have a cache
+            if (m_callStackCache == null && !NoCache)
+                m_callStackCache = new CallStackCache();
+
+            return GetCallStackWithActivityFrames(CallStackIndex.Invalid, activity, topFrames);
+        }
+
+        /// <summary>
+        /// This is not a call stack but rather the chain of ACTIVITIES (tasks), and can be formed even when call stacks   
+        /// 
         /// Returns a Stack Source stack associated with outputStackSource where each frame is a task starting with 'activity' and
         /// going back until the activity has no parent (e.g. the Thread's default activity).  
-        /// 
-        /// This is not a call stack but rather the chain of ACTIVITIES (tasks), and can be formed even when call stacks   
         /// </summary>
         public StackSourceCallStackIndex GetActivityStack(MutableTraceEventStackSource outputStackSource, TraceActivity activity)
         {
@@ -667,17 +683,24 @@ namespace Microsoft.Diagnostics.Tracing
                     m_callStackCache.CurrentActivityIndex = activity.Index;     // GetCallStackWithActivityFrames sets the current activity, set it back.  
 
                 // We also wish to trim off the top of the tail, that is 'above' (closer to root) than the transition from the threadPool Execute (Run) method. 
-                bool unbrokenStackButNoTransition;
-                CallStackIndex threadPoolTransition = FindThreadPoolTransition(baseStack, out unbrokenStackButNoTransition);
-                if (threadPoolTransition == CallStackIndex.Invalid)
+                CallStackIndex threadPoolTransition = CallStackIndex.Invalid;
+                if (baseStack != CallStackIndex.Invalid)    // If we have a stack at all.  
                 {
-                    // We did not find a transition, give up, if the stack was unbroken, then we assume the task ended.  
-                    if (unbrokenStackButNoTransition)
+                    bool unbrokenStackButNoTransition;
+                    threadPoolTransition = FindThreadPoolTransition(baseStack, out unbrokenStackButNoTransition);
+                    if (threadPoolTransition == CallStackIndex.Invalid)
                     {
-                        m_symbolReader.Log.WriteLine("Found a stack without a thread pool transition, assuming activity ends at " + m_curEvent.TimeStampRelativeMSec.ToString("n3") + " thread " + m_curEvent.ThreadID);
-                        m_threadToCurrentActivity[(int)activity.Thread.ThreadIndex] = GetThreadActivity(activity.Thread);
+                        // We did not find a transition, give up, if the stack was unbroken, then we assume the task ended.  
+                        if (unbrokenStackButNoTransition)
+                        {
+                            m_symbolReader.Log.WriteLine("Found a stack without a thread pool transition, assuming activity ends at " + m_curEvent.TimeStampRelativeMSec.ToString("n3") + " thread " + m_curEvent.ThreadID);
+                            // This sets the threads activity to the default for the thread.  This effectively stops the 
+                            // current activity  Thus when we find these context switches that tell us we are no longer
+                            // In the Thread pool, we stop whever activity was running.   
+                            m_threadToCurrentActivity[(int)activity.Thread.ThreadIndex] = GetThreadActivity(activity.Thread);
+                        }
+                        goto DontMorph;
                     }
-                    goto DontMorph;
                 }
 
                 // If baseStack is recursive with the frame we already have, do nothing.  

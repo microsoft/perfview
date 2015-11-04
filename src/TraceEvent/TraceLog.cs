@@ -695,7 +695,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // a ETLX file does not need anything outside itself to resolve any events.  All of that is done 
             // at file creation time.    
             var kernelParser = Kernel;
-            var dynamicParser = Dynamic;
             var clrParser = Clr;
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);
@@ -714,6 +713,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new ImmersiveShellTraceEventParser(newLog);
             new XamlTraceEventParser(newLog);
 #endif
+            var dynamicParser = Dynamic;
             registeringStandardParsers = false;
 
         }
@@ -810,15 +810,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.EventTraceHeader += delegate(EventTraceHeaderTraceData data)
             {
                 bootTime100ns = data.BootTime100ns;
-                utcOffsetMinutes = -data.UTCOffsetMinutes;
-                if (SessionStartTime.IsDaylightSavingTime())
-                    utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
 
                 if (_syncTimeQPC == 0)
                 {   // This is for the TraceLog, not just for the ETWTraceEventSource
                     _syncTimeQPC = data.TimeStampQPC;
                     sessionStartTimeQPC += data.TimeStampQPC;
                     sessionEndTimeQPC += data.TimeStampQPC;
+                }
+
+                if (!utcOffsetMinutes.HasValue)
+                {
+                    utcOffsetMinutes = -data.UTCOffsetMinutes;
+                    if (SessionStartTime.IsDaylightSavingTime())
+                        utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
                 }
             };
 
@@ -1111,6 +1115,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                     if (pastEventInfo.IsClrEvent(prevEventIndex))
                     {
+                        if (pastEventInfo.HasStack(prevEventIndex))
+                        {
+                            DebugWarn(false, "CLR Stack trying to be given to same event twice (can happen with lost events)", data);
+                            return;
+                        }
+                        pastEventInfo.SetHasStack(prevEventIndex);
+
                         var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                         var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
 
@@ -1135,6 +1146,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
             kernelParser.StackWalkStack += delegate(StackWalkStackTraceData data)
             {
+                if (data.TimeStampRelativeMSec > 99766.44)
+                    GC.KeepAlive("");
+
                 bookKeepingEvent = true;
                 if (processingDisabled)
                     return;
@@ -1165,10 +1179,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.  
                     if (!IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
+                    {
                         loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
+                        thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
+                    }
                     
+                    // If we have not logged the stack of the code above, then log it as a stand alone user stack.  
+                    // We don't do this for events that have already been processed by and EmitStackOnExitFromKernelQPC 
                     if (!loggedUserStack && stackInfo != null)
-                        stackInfo.LogUserStackFragment(stackIndex, this);
+                    {
+                        if (data.EventTimeStampQPC < thread.lastEmitStackOnExitFromKernelQPC)
+                            DebugWarn(false, "Warning: Trying to attach a user stack to a stack already processed by EmitStackOnExitFromKernel.  Ignoring data", data);
+                        else
+                            stackInfo.LogUserStackFragment(stackIndex, this);
+                    }
                 }
             };
 
@@ -2292,6 +2316,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             isBookkeepingEvent = true;
                             EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, callStackIndex, null);
+                            thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
                         }
                         else
                         {
@@ -3109,7 +3134,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             public PastEventInfoIndex CurrentIndex { get { return (PastEventInfoIndex)curPastEventInfo; } }
-            public bool IsClrEvent(PastEventInfoIndex index) { return pastEventInfo[(int)index].isClrEvent; }
+            public bool IsClrEvent(PastEventInfoIndex index) { return pastEventInfo[(int)index].isClrEvent; }   
+            public bool HasStack(PastEventInfoIndex index) { return pastEventInfo[(int)index].hasAStack; }
+            public void SetHasStack(PastEventInfoIndex index) { pastEventInfo[(int)index].hasAStack = true; }
             public int GetThreadID(PastEventInfoIndex index) { return pastEventInfo[(int)index].ThreadID; }
             public EventIndex GetEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].EventIndex; }
             public TraceEventCounts GetEventCounts(PastEventInfoIndex index) { return pastEventInfo[(int)index].CountForEvent; }
@@ -3136,6 +3163,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 public double TimeStampRelativeMSec(PastEventInfo pastEventInfo)
                 { return pastEventInfo.log.QPCTimeToRelMSec(QPCTime); }
 #endif
+                public bool hasAStack;
                 public bool isClrEvent;
                 public long QPCTime;
                 public int ThreadID;
@@ -3173,6 +3201,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void AddStackToEvent(EventIndex eventIndex, CallStackIndex stackIndex)
         {
+            if (eventsToStacks.Count == 18577)
+                GC.KeepAlive("");
+
             int whereToInsertIndex = eventsToStacks.Count;
             if (IsRealTime)
             {
@@ -3195,6 +3226,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
             }
+            // For non-realtime session we simply insert it at the end because we will sort by eventIndex as a 
+            // post-processing step.  see eventsToStacks.Sort in CopyRawEvents().  
 #if DEBUG
             for (int i = 1; i < 8; i++)
             {
@@ -3204,7 +3237,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // If this assert fires, it means that we added a stack to the same event twice.   This
                 // means we screwed up which event a stack belongs to.   This can happen among other reasons
                 // because we complete an incomplete stack before we should and when the other stack component
-                // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.    
+                // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.   
+                // Note many of these issues are reasonably benign, (e.g. we lose the kernel part of a stack)
+                // so don't sweat this too much.    Because the source that we do later is not stable, which
+                // of the two equal entries gets chosen will be random.  
                 Debug.Assert(eventsToStacks[idx].EventIndex != eventIndex);
             }
 #endif
@@ -5213,6 +5249,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // user mode event on leaving can use the same user mode stack.   This keeps track of this entry
         // into the kernel.   
         internal TraceLog.IncompleteStack lastEntryIntoKernel;
+        // as an extra validation after we flush all the kernel entries with EmitStackOnExitFromKernel
+        // we remember the QPC timestamp when we did this.  Any user mode stacks that are trying to 
+        // associated themselves with events before this time should be ignored.   
+        internal long lastEmitStackOnExitFromKernelQPC;
         #endregion
     }
 

@@ -419,6 +419,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                 sessionStartTimeQPC = nowQPC - _QPCFreq / 10;           // Subtract 1/10 sec to keep now and nowQPC in sync.  
                 sessionEndTimeQPC = long.MaxValue;                      // Represents infinity.      
+
+                Debug.Assert(SessionStartTime < SessionEndTime);
             }
             else
             {
@@ -429,10 +431,7 @@ namespace Microsoft.Diagnostics.Tracing
                 sessionStartTimeQPC = this.UTCDateTimeToQPC(minSessionStartTimeUTC);
                 sessionEndTimeQPC = this.UTCDateTimeToQPC(maxSessionEndTimeUTC);
             }
-
-            Debug.Assert(sessionStartTimeQPC != 0 && sessionEndTimeQPC != 0 && SessionStartTime < SessionEndTime);
             Debug.Assert(_QPCFreq != 0);
-
             if (pointerSize == 0)       // Real time does not set this (grrr). 
             {
                 pointerSize = sizeof(IntPtr);

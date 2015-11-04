@@ -418,7 +418,11 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(_QPCFreq != 0);
             long ret = (long)((time.Ticks - _syncTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + _syncTimeQPC;
-            Debug.Assert((QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
+
+            // The sessionEndTimeQPC == 0  effectively means 'called during trace startup' and we use it here to disable the 
+            // assert.   During that time we get a wrong QPC we only use this to initialize sessionStartTimeQPC and 
+            // sessionEndTimeQPC and we fix these up when we see the first event (see kernelParser.EventTraceHeader += handler).  
+            Debug.Assert(sessionEndTimeQPC == 0 || (QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
 
@@ -427,10 +431,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal DateTime QPCTimeToDateTimeUTC(long QPCTime)
         {
-            if (QPCTime == long.MaxValue)   // We maxvalue as a special case.  
+            if (QPCTime == long.MaxValue)   // We treat maxvalue as a special case.  
                 return DateTime.MaxValue;
 
-            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
+            // We expect all the time variables used to compute this to be set.   
+            Debug.Assert(_syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq);
             var ret = new DateTime(_syncTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
             return ret;
@@ -2517,7 +2522,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-#if DEBUG   // Assert the template did NOT exist before.
+#if false   // Assert the template did NOT exist before.
                 if (cur.m_callback != null)
                 {
                     for (int i = 0; i < cur.m_activeSubscriptions.Count; i++)

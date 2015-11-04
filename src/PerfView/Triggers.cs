@@ -677,9 +677,9 @@ namespace Triggers
                         };
 
                         // m_source.Registered.All += onEvent;
-                        m_source.Dynamic.All += onEvent;
                         m_source.Kernel.All += onEvent;
                         m_source.Clr.All += onEvent;
+                        m_source.Dynamic.All += onEvent;
 
                         m_log.WriteLine("[Enabling ETW session for monitoring requests.]");
                         m_log.WriteLine("In Trigger session {0} enabling Provider {1} ({2}) Level {3} Keywords 0x{4:x}",

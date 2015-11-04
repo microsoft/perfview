@@ -8,6 +8,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
 using System.Collections.Generic;
@@ -37,6 +38,11 @@ namespace Microsoft.Diagnostics.Tracing
             var dynamicParser = source.Dynamic;
             dynamicParser.All += delegate(TraceEvent data)
             {
+                // TODO decide what the correct heuristic is.  
+                // Currently I only do this for things that might be an EventSoruce 
+                if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
+                    return;
+
                 TraceEventOpcode opcode = data.Opcode;
                 TraceEventTask task = data.Task;
                 StartStopActivity creator = null;
@@ -130,7 +136,6 @@ namespace Microsoft.Diagnostics.Tracing
 
                         if (opcode == TraceEventOpcode.Start)
                         {
-                            Debug.Assert(!m_activeActivitiesByActivityId.ContainsKey(activityID));
                             if (creator == null)
                             {
                                 m_activeActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);

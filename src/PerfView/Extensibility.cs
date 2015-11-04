@@ -2556,6 +2556,11 @@ namespace PerfViewExtensibility
                 // Add callbacks for any EventSource Events to print them to the Text window
                 Action<TraceEvent> onAnyEvent = delegate(TraceEvent data)
                 {
+                    // TODO decide what the correct heuristic is.  
+                    // Currently I only do this for things that might be an EventSoruce 
+                    if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
+                        return;
+
                     String str = data.TimeStamp.ToString("HH:mm:ss.fff ");
                     str += data.EventName;
                     str += "\\" + data.ProviderName + " ";

@@ -2616,6 +2616,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             c = (short)((c & 0x0FFF) | 0x5000);   // Set high 4 bits of octet 7 to 5, as per RFC 4122
             Guid guid = new Guid(a, b, c, hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+            Debug.Assert(TraceEventProviders.MaybeAnEventSource(guid));
             return guid;
         }
         /// <summary>
