@@ -1146,9 +1146,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
             kernelParser.StackWalkStack += delegate(StackWalkStackTraceData data)
             {
-                if (data.TimeStampRelativeMSec > 99766.44)
-                    GC.KeepAlive("");
-
                 bookKeepingEvent = true;
                 if (processingDisabled)
                     return;
@@ -3201,9 +3198,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal void AddStackToEvent(EventIndex eventIndex, CallStackIndex stackIndex)
         {
-            if (eventsToStacks.Count == 18577)
-                GC.KeepAlive("");
-
             int whereToInsertIndex = eventsToStacks.Count;
             if (IsRealTime)
             {

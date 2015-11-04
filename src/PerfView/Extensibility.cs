@@ -3140,7 +3140,6 @@ namespace PerfViewExtensibility
                     delegate(TraceEvent data)
                     {
                         Trace.WriteLine("Testing " + data.ToString());
-                        GC.KeepAlive("");
                     }
                     );
                 source.Process();

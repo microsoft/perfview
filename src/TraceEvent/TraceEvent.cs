@@ -2522,7 +2522,10 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-#if false   // Assert the template did NOT exist before.
+                 
+            }
+            {
+#if DEBUG   // Assert the template did NOT exist before.
                 if (cur.m_callback != null)
                 {
                     for (int i = 0; i < cur.m_activeSubscriptions.Count; i++)
