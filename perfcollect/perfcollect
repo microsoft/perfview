@@ -483,7 +483,7 @@ ProcessCollectedData()
 	# Get any perf-$pid.map files that were used by the
 	# trace and store them alongside the trace.
 	WriteStatus "START: Save perf.map files."
-	local mapFiles=`perf buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
+	local mapFiles=`$perfcmd buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
 	for mapFile in $mapFiles
 	do
 		if [ -f $mapFile ]
@@ -503,7 +503,7 @@ ProcessCollectedData()
 
 	# Get the list of DSOs with hits in the trace file (those that are actually used).
 	# Filter out /tmp/perf-$pid.map files as these are handled separately.
-	local dsosWithHits=`perf buildid-list --with-hits | grep -v /tmp/perf-`
+	local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf-`
 	for dso in $dsosWithHits
 	do
 		# Build up tuples of buildid and binary path.
@@ -740,7 +740,7 @@ PropSymbolsAndMapFilesForView()
 	for debugInfoFile in $debugInfoFiles
 	do
 		echo "Caching $debugInfoFile in buildid cache using perf buildid-cache."
-		perf buildid-cache --add=$debugInfoFile
+		$perfcmd buildid-cache --add=$debugInfoFile
 	done
 }
 
@@ -778,7 +778,7 @@ DoView()
 		fi
 
 		# Execute the viewer.
-		perf report -g graph,0.5,$graphType $processFilter $perfOpt
+		$perfcmd report -g graph,0.5,$graphType $processFilter $perfOpt
 	elif [ "$viewer" == "lttng" ]
 	then
 		babeltrace lttngTrace/ | more
