@@ -91,6 +91,11 @@ GreenText()
 	tput setaf 2
 }
 
+BlueText()
+{
+	tput setaf 6
+}
+
 ResetText()
 {
 	tput sgr0
@@ -99,7 +104,7 @@ ResetText()
 # $1 == Status message
 WriteStatus()
 {
-	GreenText
+	BlueText
 	echo $1
 	ResetText
 }
@@ -170,7 +175,7 @@ InstallPerf_Ubuntu()
 	EnsureRoot
 
 	# Install packages.
-	GreenText
+	BlueText
 	echo "Installing perf_event packages."
 	ResetText
 	apt-get install linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r`
@@ -198,7 +203,7 @@ InstallLTTng_SUSE()
 	packageRepo="http://download.opensuse.org/repositories/devel:/tools:/lttng/openSUSE_13.2/devel:tools:lttng.repo"
 
 	# Prompt for confirmation, since we need to add a new repository.
-	GreenText
+	BlueText
 	echo "LTTng installation requires that a new package repo be added to your zypper configuration."
 	echo "The package repo url is: $packageRepo"
 	echo ""
@@ -208,14 +213,14 @@ InstallLTTng_SUSE()
 	then
 
 		# Add package repo.
-		GreenText
+		BlueText
 		echo "Adding LTTng repo and running zypper refresh."
 		ResetText
 		zypper addrepo $packageRepo
 		zypper refresh
 
 		# Install packages.
-		GreenText
+		BlueText
 		echo "Installing LTTng packages."
 		ResetText
 		zypper install lttng-tools lttng-modules lttng-ust-devel
@@ -228,7 +233,7 @@ InstallLTTng_Ubuntu()
 	EnsureRoot
 
 	# Add the PPA feed as a repository.
-	GreenText
+	BlueText
 	echo "LTTng can be installed using default Ubuntu packages via the Ubuntu package feeds or using the latest"
 	echo "stable package feed published by LTTng (PPA feed).  It is recommended that LTTng be installed using the PPA feed."
 	echo ""
@@ -236,12 +241,12 @@ InstallLTTng_Ubuntu()
 	echo "	If you select yes, then the LTTng PPA feed will be added to your apt configuration."
 	echo "	If you select no, then LTTng will be installed from an existing feed (either default Ubuntu or PPA if previously added."
 	echo ""
-	GreenText
+	BlueText
 	read -p "Would you like to add the LTTng PPA feed to your apt configuration? [Y/N]" resp
 	ResetText
 	if [ "$resp" == "Y" ] || [ "$resp" == "y" ]
 	then
-		GreenText
+		BlueText
 		echo "Adding LTTng PPA feed and running apt-get update."
 		ResetText
 		apt-add-repository ppa:lttng/ppa
@@ -249,7 +254,7 @@ InstallLTTng_Ubuntu()
 	fi
 
 	# Install packages.
-	GreenText
+	BlueText
 	echo "Installing LTTng packages."
 	ResetText
 	apt-get install lttng-tools lttng-modules-dkms liblttng-ust0
