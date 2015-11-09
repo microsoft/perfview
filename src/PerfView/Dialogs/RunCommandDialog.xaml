@@ -291,7 +291,11 @@
                     </TextBlock>
                     <CheckBox Grid.Row="0" Grid.Column="7" Name="DotNetCallsCheckBox" VerticalAlignment="Center" />
 
-                    <CheckBox Grid.Row="0" Grid.Column="9" Name="Unused5" Visibility="Hidden" VerticalAlignment="Center" />
+                    <TextBlock Grid.Row="0" Grid.Column="8" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2" 
+                               ToolTip="Log information about successful and failed inlining attempts." >
+                    <Hyperlink Command="Help" CommandParameter="DotNetCallsCheckBox">JIT Inlining:</Hyperlink>
+                    </TextBlock>
+                    <CheckBox Grid.Row="0" Grid.Column="9" Name="JITInliningCheckBox" VerticalAlignment="Center" />
                     
                     <CheckBox Grid.Row="0" Grid.Column="11" Name="Unused1" Visibility="Hidden"  VerticalAlignment="Center"/>
 

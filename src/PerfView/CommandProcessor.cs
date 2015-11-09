@@ -2254,6 +2254,8 @@ namespace PerfView
                 cmdLineArgs += " /DotNetCalls";
             if (parsedArgs.DotNetCallsSampled)
                 cmdLineArgs += " /DotNetCallsSampled";
+            if (parsedArgs.JITInlining)
+                cmdLineArgs += " /JITInlining";
             if (parsedArgs.OSHeapExe != null)
                 cmdLineArgs += " /OSHeapExe:" + Command.Quote(parsedArgs.OSHeapExe);
             if (parsedArgs.OSHeapProcess != 0)
