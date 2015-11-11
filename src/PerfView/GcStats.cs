@@ -891,12 +891,18 @@ namespace Stats
             writer.WriteLine("<LI><A HREF=\"#Events_{0}\">Individual GC Events</A> </LI>", ProcessID);
             writer.WriteLine("<UL><LI> <A HREF=\"command:excel/{0}\">View in Excel</A></LI></UL>", ProcessID);
             writer.WriteLine("<LI> <A HREF=\"command:excel/perGeneration/{0}\">Per Generation GC Events in Excel</A></LI>", ProcessID);
+            if (m_detailedGCInfo)
+                writer.WriteLine("<LI> <A HREF=\"command:xml/{0}\">Raw Data XML file (for debugging)</A></LI>", ProcessID);
             if (FinalizedObjects.Count > 0)
             {
                 writer.WriteLine("<LI><A HREF=\"#Finalization_{0}\">Finalized Objects</A> </LI>", ProcessID);
+                writer.WriteLine("<UL><LI> <A HREF=\"command:excelFinalization/{0}\">View in Excel</A></LI></UL>", ProcessID);
+                writer.WriteLine("<UL><LI> <A HREF=\"{0}#UnderstandingFinalization\">Finalization Perf Users Guide</A></LI></UL>", usersGuideFile);
             }
-            if (m_detailedGCInfo)
-                writer.WriteLine("<LI> <A HREF=\"command:xml/{0}\">Raw Data XML file (for debugging)</A></LI>", ProcessID);
+            else
+            {
+                writer.WriteLine("<LI><I>No finalized object counts available. No objects were finalized and/or the Finalizers option was not selected.</I></LI>");
+            }
             writer.WriteLine("</UL>");
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
@@ -1012,15 +1018,22 @@ namespace Stats
 
             if (FinalizedObjects.Count > 0)
             {
+                const int MaxResultsToShow = 20;
+                int resultsToShow = Math.Min(FinalizedObjects.Count, MaxResultsToShow);
                 writer.WriteLine("<HR/>");
                 writer.WriteLine("<H4><A Name=\"Finalization_{0}\">Finalized Object Counts for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
                 writer.WriteLine("<Center><Table Border=\"1\">");
                 writer.WriteLine("<TR><TH>Type</TH><TH>Count</TH></TR>");
-                foreach (var finalized in FinalizedObjects.OrderByDescending(f => f.Value))
+                foreach (var finalized in FinalizedObjects.OrderByDescending(f => f.Value).Take(resultsToShow))
                 {
                     writer.WriteLine("<TR><TD Align=\"Center\">{0}</TD><TD Align=\"Center\">{1}</TD><TR>", finalized.Key, finalized.Value);
                 }
                 writer.WriteLine("</Table></Center>");
+                if (resultsToShow < FinalizedObjects.Count)
+                {
+                    writer.WriteLine("<P><I>Only showing {0} of {1} rows.</I></P>", resultsToShow, FinalizedObjects.Count);
+                }
+                writer.WriteLine("<P><A HREF=\"command:excelFinalization/{0}\">View the full list</A> in Excel.<P>", ProcessID);
             }
 
             writer.WriteLine("<HR/><HR/><BR/><BR/>");
@@ -1469,6 +1482,19 @@ namespace Stats
                                    listSeparator,
                                    _event.GetPauseTimePercentageSinceLastGC(),
                                    _event._SuspendDurationMSec);
+                }
+            }
+        }
+
+        public void ToCsvFinalization(string filePath)
+        {
+            string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
+            using (var writer = File.CreateText(filePath))
+            {
+                writer.WriteLine("Type{0}Count", listSeparator);
+                foreach (var finalized in FinalizedObjects.OrderByDescending(f => f.Value))
+                {
+                    writer.WriteLine("{0}{1}{2}", finalized.Key.Replace(listSeparator, ""), listSeparator, finalized.Value);
                 }
             }
         }

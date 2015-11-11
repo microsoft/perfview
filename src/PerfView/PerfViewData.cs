@@ -1929,6 +1929,23 @@ namespace PerfView
                     return "Opening CSV " + csvFile;
                 }
             }
+            else if (command.StartsWith("excelFinalization/"))
+            {
+                var processId = int.Parse(command.Substring(18));
+                GCProcess gcProc;
+                if (m_gcStats.TryGetByID(processId, out gcProc))
+                {
+                    var csvFile = CacheFiles.FindFile(FilePath, ".gcStats.Finalization." + processId.ToString() + ".csv");
+                    if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                    {
+                        gcProc.ToCsvFinalization(csvFile);
+                    }
+                    Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                    return "Opening CSV " + csvFile;
+                }
+            }
             else if (command.StartsWith("xml/"))
             {
                 var processId = int.Parse(command.Substring(4));
