@@ -35,6 +35,20 @@ namespace Microsoft.Diagnostics.Tracing
             m_activeActivitiesByActivityId = new Dictionary<Guid, StartStopActivity>();
             m_taskComputer = taskComputer;
 
+            // Whenever a new Activity is created, propagate the start-stop activity from the creator
+            // to the created task.  
+            taskComputer.Create += delegate(TraceActivity activity, TraceEvent data)
+            {
+                TraceActivity creator = activity.Creator;
+                if (creator == null)
+                    return;
+
+                StartStopActivity startStopActivity = m_traceActivityToStartStopActivity.Get((int)creator.Index);
+                if (startStopActivity == null)
+                    return;
+                m_traceActivityToStartStopActivity.Set((int)activity.Index, startStopActivity);
+            };
+
             var dynamicParser = source.Dynamic;
             dynamicParser.All += delegate(TraceEvent data)
             {
@@ -65,6 +79,11 @@ namespace Microsoft.Diagnostics.Tracing
                     string extraInfo = null;
                     Guid activityID = data.ActivityID;
                     bool goodActivityID = StartStopActivityComputer.IsActivityPath(activityID);
+
+                    // MicrosoftWindowsASPNetProvider does not use ActivityPaths but is OK, opt it in.  
+                    if (!goodActivityID && data.ProviderGuid == MicrosoftWindowsASPNetProvider)
+                        goodActivityID = true;
+
                     string taskName = null;
 
                     // handle special event we know about 
@@ -165,7 +184,7 @@ namespace Microsoft.Diagnostics.Tracing
                         }
                         else
                         {
-                            Debug.Assert(data.opcode == TraceEventOpcode.Stop);
+                            Debug.Assert(opcode == TraceEventOpcode.Stop);
                             // Find the corresponding start event.  
                             if (m_activeActivities.TryGetValue(key, out activity))
                             {
@@ -204,29 +223,14 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Search up the stack of tasks, seeing if we have a start-stop activity. 
             TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(thread);
-            StartStopActivity ret = null;
-            while (curTaskActivity != null)
-            {
-                int taskIndex = (int)curTaskActivity.Index;
-                ret = m_traceActivityToStartStopActivity.Get(taskIndex);
+            if (curTaskActivity == null)
+                return null;
 
-                // Check if the StartStop activity is still active (duration == 0).   If so return it, otherwise 
-                // keep searching up the chain until you find an active activity 
-                // TODO Review this.  
-                while (ret != null)
-                {
-                    if (!ret.IsStopped)
-                    {
-                        // Trace.WriteLine(string.Format("CURRENT STOP-START RETURNING in Task {0} Got {1}", curTaskActivity.Index, ret == null ? "NULL" : ret.Name));
-                        return ret;
-                    }
-                    // Trace.WriteLine(string.Format("CURRENT STOP-START LOOKING in Task {0} Got {1}", curTaskActivity.Index, ret == null ? "NULL" : ret.Name));
-                    // Trace.WriteLine(string.Format("CURRENT STOP-START Task is stopped, Looking at parent"));
-                    ret = ret.Creator;
-                }
-                curTaskActivity = curTaskActivity.Creator;
-            }
-            return null;
+            int taskIndex = (int)curTaskActivity.Index;
+            var ret = m_traceActivityToStartStopActivity.Get(taskIndex);
+            if (ret != null && ret.IsStopped)       // If the activity is stopped, then don't return it.  
+                return null;
+            return ret;
         }
 
         /// <summary>
@@ -268,7 +272,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// with 'false' that indicates the state update has happened.   Starts are only called AFTER (and thus with 'false')
         /// </summary>
         public Action<StartStopActivity, bool> OnStartOrStop;
-
 
         /// <summary>
         /// Returns true if 'guid' follow the EventSouce style activity IDs. 
@@ -369,6 +372,8 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         #region private
+        static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
+
         /// <summary>
         /// The encoding for a list of numbers used to make Activity  Guids.   Basically
         /// we operate on nibbles (which are nice because they show up as hex digits).  The
@@ -400,12 +405,12 @@ namespace Microsoft.Diagnostics.Tracing
             // If we are not exactly on the StopEvent then do the deferred stop before doing any processing.  
             if (m_deferredStop != null && (force || m_deferredStop.StopEventIndex != m_source.CurrentEventIndex))
             {
-                var activity = m_deferredStop;
-                m_traceActivityToStartStopActivity.Set(activity.taskIndex, activity.Creator);
-                m_activeActivities.Remove(activity.key);
-                m_activeActivitiesByActivityId.Remove(activity.ActivityID);
+                var startStopActivity = m_deferredStop;
+                m_traceActivityToStartStopActivity.Set(startStopActivity.taskIndex, startStopActivity.Creator);
+                m_activeActivities.Remove(startStopActivity.key);
+                m_activeActivitiesByActivityId.Remove(startStopActivity.ActivityID);
 
-                activity.key = null;      // This also marks the activity as truly stopped.  
+                startStopActivity.key = null;      // This also marks the activity as truly stopped.  
                 m_deferredStop = null;
 
 #if false        // TODO FIX NOW remove after debugging complete. 
@@ -420,7 +425,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // Issue callback if requested AFTER state update
                 var onStartStop = OnStartOrStop;
                 if (onStartStop != null)
-                    onStartStop(activity, false);
+                    onStartStop(startStopActivity, false);
             }
         }
         StartStopActivity m_deferredStop;
@@ -428,7 +433,7 @@ namespace Microsoft.Diagnostics.Tracing
         ActivityComputer m_taskComputer;                                            // I need to be able to get the current Activity
         GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;        // Maps a trace activity to a start stop activity. 
         Dictionary<StartStopKey, StartStopActivity> m_activeActivities;             // Lookup activities by start-stop key.   
-        Dictionary<Guid, StartStopActivity> m_activeActivitiesByActivityId;           // Lookup activities by their Activity ID.  
+        Dictionary<Guid, StartStopActivity> m_activeActivitiesByActivityId;         // Lookup activities by their Activity ID.  
         #endregion
     }
 
@@ -537,7 +542,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal StartStopActivity(TraceEvent startEvent, string taskName, ref Guid activityID, StartStopActivity creator, string extraInfo = null)
         {
-            Debug.Assert(startEvent.Opcode == TraceEventOpcode.Start);
             ProcessID = startEvent.ProcessID;
             ActivityID = activityID;
             StartTimeRelativeMSec = startEvent.TimeStampRelativeMSec;

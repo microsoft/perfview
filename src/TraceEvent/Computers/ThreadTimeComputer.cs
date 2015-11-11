@@ -132,7 +132,7 @@ namespace Microsoft.Diagnostics.Tracing
                 tplProvider.AwaitTaskContinuationScheduled += OnSampledProfile;
                 tplProvider.TaskScheduledSend += OnSampledProfile;
                 tplProvider.TaskWaitSend += OnSampledProfile;
-                // These are like start.   
+                tplProvider.TaskWaitStop += OnTaskUnblock;  // Log the activity stack even if you don't have a stack. 
             }
 
             if (!ExcludeReadyThread)
@@ -339,6 +339,26 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 Debug.WriteLine("Warning, no thread at " + data.TimeStampRelativeMSec.ToString("f3"));
         }
+
+        // THis is for the TaskWaitEnd.  We want to have a stack event if 'data' does not have one, we lose the fact that
+        // ANYTHING happened on this thread.   Thus we log the stack of the activity so that data does not need a stack.  
+        private void OnTaskUnblock(TraceEvent data)
+        {
+            if (m_activityComputer == null)
+                return;
+
+            TraceThread thread = data.Thread();
+            if (thread != null)
+            {
+                TraceActivity activity = m_activityComputer.GetCurrentActivity(thread);
+
+                StackSourceCallStackIndex stackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread()));
+                m_threadState[(int)thread.ThreadIndex].LogCPUStack(data.TimeStampRelativeMSec, stackIndex, thread, this, false);
+            }
+            else
+                Debug.WriteLine("Warning, no thread at " + data.TimeStampRelativeMSec.ToString("f3"));
+        }
+
         private void OnThreadStart(ThreadTraceData data)
         {
             TraceThread thread = data.Thread();

@@ -256,6 +256,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_callStackCache == null && !NoCache)
                 m_callStackCache = new CallStackCache();
 
+            m_curEvent = null;
             return GetCallStackWithActivityFrames(CallStackIndex.Invalid, activity, topFrames);
         }
 
@@ -457,13 +458,17 @@ namespace Microsoft.Diagnostics.Tracing
             // If we can't find the activity we drop the event
             if (activity == null)
             {
-                m_symbolReader.Log.WriteLine("Warning: An activity was started that was not scheduled at {0:n3}  in process {1} which started at {2:n3}",
-                    data.TimeStampRelativeMSec, thread.Process.Name, thread.Process.StartTimeRelativeMsec);
+                var kind = GetTypeFromRawID(rawActivityId);
+                if (kind != IDType.Timer)        // Because timers might be set long ago (and be recurring), don't bother warning (although we do drop it...)
+                    m_symbolReader.Log.WriteLine("Warning: An activity was started that was not scheduled at {0:n3}  in process {1} of kind {2}",
+                        data.TimeStampRelativeMSec, thread.Process.Name, kind);
                 return;
             }
             if (activity.prevActivityOnThread != null)
             {
-                m_symbolReader.Log.WriteLine("Error: Starting an activity twice! {0:n3} ", data.TimeStampRelativeMSec);
+                // IO ThreadPool allows multiple dequeues.  
+                if (GetTypeFromRawID(rawActivityId) != IDType.IOThreadPool)
+                    m_symbolReader.Log.WriteLine("Error: Starting an activity twice! {0:n3} ", data.TimeStampRelativeMSec);
                 return;
             }
 
@@ -512,7 +517,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (start != null)
                 start(activity, data);
 
-            // Synchrous waitEnds auto-complete.  
+            // Synchronous waitEnds auto-complete.  
             if (activity.kind == TraceActivities.ActivityKind.TaskWaitSynchronous)
                 OnStop(data, activity, thread);
         }
@@ -601,21 +606,26 @@ namespace Microsoft.Diagnostics.Tracing
         private static Address GetTPLRawID(TraceEvent data, int taskID, IDType idType)
         {
             Debug.Assert(idType == IDType.TplContinuation || idType == IDType.TplScheduledTask);
-            uint highBits = (((uint)data.ProcessID) << 8) + ((uint)idType);
+            uint highBits = (((uint)data.ProcessID) << 8) + (((uint)idType) << 28);
             // TODO FIX NOW add appDomain ID
             return (((Address)highBits) << 32) + (uint)taskID;
         }
 
         private static Address GetTimerRawID(TraceEvent data, GCReferenceID gcReference)
         {
-            uint highBits = (((uint)data.ProcessID) << 8) + ((uint)IDType.Timer);
+            uint highBits = (((uint)data.ProcessID) << 8) + (((uint)IDType.Timer) << 28);
             return (((Address)highBits) << 32) + (uint)gcReference;
         }
 
         private static Address GetClrIORawID(TraceEvent data, Address nativeOverlapped)
         {
-            uint highBits = (((uint)data.ProcessID) << 8) + ((uint)IDType.IOThreadPool);
+            uint highBits = (((uint)data.ProcessID) << 8) + (((uint)IDType.IOThreadPool) << 28);
             return (((Address)highBits) << 32) + nativeOverlapped;          // TODO this is NOT absolutely guaranteed not to collide.   
+        }
+
+        private static IDType GetTypeFromRawID(Address rawID)
+        {
+            return (IDType)(0xF & (rawID >> (60)));
         }
 
 #if false 
@@ -693,10 +703,14 @@ namespace Microsoft.Diagnostics.Tracing
                         // We did not find a transition, give up, if the stack was unbroken, then we assume the task ended.  
                         if (unbrokenStackButNoTransition)
                         {
-                            m_symbolReader.Log.WriteLine("Found a stack without a thread pool transition, assuming activity ends at " + m_curEvent.TimeStampRelativeMSec.ToString("n3") + " thread " + m_curEvent.ThreadID);
+                            if (m_curEvent != null)
+                                m_symbolReader.Log.WriteLine("Found a stack without a thread pool transition, assuming activity ends at " + m_curEvent.TimeStampRelativeMSec.ToString("n3") + " thread " + m_curEvent.ThreadID);
+                            else
+                                m_symbolReader.Log.WriteLine("Found a stack without a thread pool transition");
+
                             // This sets the threads activity to the default for the thread.  This effectively stops the 
                             // current activity  Thus when we find these context switches that tell us we are no longer
-                            // In the Thread pool, we stop whever activity was running.   
+                            // In the Thread pool, we stop whatever activity was running.   
                             m_threadToCurrentActivity[(int)activity.Thread.ThreadIndex] = GetThreadActivity(activity.Thread);
                         }
                         goto DontMorph;

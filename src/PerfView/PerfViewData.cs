@@ -4697,8 +4697,10 @@ namespace PerfView
                 if (hasReadyThreadStacks)
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
                 if (hasTplStacks)
+                {
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
-
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Tasks)"));
+                }
             }
 
             if (hasCSwitchStacks && AppLog.InternalUser)
@@ -4803,8 +4805,6 @@ namespace PerfView
                 }
             }
 
-            if (hasCSwitchStacks && hasTplStacks && AppLog.InternalUser)
-                m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Tasks)"));
 
             if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
             {
