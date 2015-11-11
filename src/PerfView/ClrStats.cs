@@ -451,6 +451,10 @@ namespace Stats
                 writer.WriteLine("<LI><A HREF=\"#Inlining_{0}\">Inlining Decisions</A></LI>", ProcessID);
                 writer.WriteLine("<UL><LI> <A HREF=\"command:excelInlining/{0}\">View in Excel</A></LI></UL>", ProcessID);
             }
+            else
+            {
+                writer.WriteLine("<LI><I>No JIT Inlining data available.  Consider enabling the JITInlining option.</I></LI>", ProcessID);
+            }
             writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingJITPerf\">JIT Perf Users Guide</A></LI>", usersGuideFile);
             writer.WriteLine("</UL>");
 
