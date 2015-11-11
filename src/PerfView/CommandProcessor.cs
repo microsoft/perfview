@@ -541,7 +541,7 @@ namespace PerfView
                                 TraceEventLevel.Verbose, ulong.MaxValue);
 
                             EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Informational,
+                                parsedArgs.Finalizers ? TraceEventLevel.Verbose : TraceEventLevel.Informational,
                                 (ulong)(
                                     ClrPrivateTraceEventParser.Keywords.GC |
                                     ClrPrivateTraceEventParser.Keywords.Binding |
@@ -2265,6 +2265,8 @@ namespace PerfView
 
             if (parsedArgs.DumpHeap)
                 cmdLineArgs += " /DumpHeap";
+            if (parsedArgs.Finalizers)
+                cmdLineArgs += " /Finalizers";
 
             if (parsedArgs.GCOnly)
                 cmdLineArgs += " /GCOnly";
