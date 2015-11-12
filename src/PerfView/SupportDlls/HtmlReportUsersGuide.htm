@@ -1,4 +1,4 @@
-<html>
+﻿<html>
 <head>
     <title>Understand Perf Reports</title>
     <meta charset="UTF-8">
@@ -31,6 +31,32 @@
         If these pause times are larger than 100ms or so, it can impact the user 
         experience.&nbsp;&nbsp; The GC statistics will track the maximum and average 
         pause time to allow you to confirm that this bad GC behavior is not happening.&nbsp;&nbsp;&nbsp; </p>
+    <hr />
+    <h3>
+        <a id="UnderstandingFinalization">Understanding Finalization Performance Data</a>
+    </h3>
+    <p>
+        By enabling the Finalizers option, PerfView causes the Runtime to log an event
+        every time a managed object is finalized, meaning that its finalizer (denoted in C#
+        with the ~ syntax) is executed.  For a detailed look at the costs involved in
+        finalization, see this <a href="http://blogs.msdn.com/b/cbrumme/archive/2004/02/20/77460.aspx">blog post</a>.
+    </p>
+    <p>
+        PerfView is unable to determine the stack that allocated a finalizable object,
+        but it is able to accurately report each type of object that had a finalizer executed
+        along with the number of instances of that type that were finalized.  This data is shown
+        on the GC Stats report in the Finalized Object Counts table.
+    </p>
+    <p>
+        In an ideal application implementation, all finalizable objects would be cleaned up deterministically
+        via an object's IDisposable.Dispose implementation, which should suppress the finalization
+        of the object.  Not deterministically disposing of finalizable objects can lead to degredation
+        of both the reliability and performance of the app.  You can examine the counts reported
+        in the Finalized Object Counts table to determine whether any types have significant numbers
+        of instances being left for finalization.  Based on that, you can examine code that creates instances
+        of these types and determine why those instances are being left for non-deterministic cleanup
+        rather than being cleaned up deterministically with Dispose.
+    </p>
     <hr />
     <h3>
         <a id="UnderstandingJITPerf">Understanding Just In Time 
