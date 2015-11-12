@@ -130,7 +130,7 @@ namespace PerfView
                     m_needsComputers = false;
                     foreach (string column in ColumnsToDisplay)
                     {
-                        if (column == "*" || column == "TaskIndex" || column == "StartStopActvity" || column == "TaskCreationMSec")
+                        if (column == "*" || column == "ActivityIndex" || column == "StartStopActvity" || column == "TaskCreationMSec")
                         {
                             m_needsComputers = true;
                             break;
@@ -396,7 +396,7 @@ namespace PerfView
                         columnsForSelectedEvents[fieldName] = fieldName;
                 }
             }
-            columnsForSelectedEvents["TaskIndex"] = "TaskIndex";
+            columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
             columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
             columnsForSelectedEvents["TaskCreationMSec"] = "TaskCreationMSec";
             columnsForSelectedEvents["ThreadID"] = "ThreadID";
@@ -504,7 +504,7 @@ namespace PerfView
                             string id = activity.ID;
                             if (Math.Abs(activity.StartTimeRelativeMSec - m_timeStampRelativeMSec) < .0005)
                                 id = "^" + id;              // Indicates it is at the start of the task. 
-                            AddField("TaskIndex", id, columnOrder, restString);
+                            AddField("ActivityIndex", id, columnOrder, restString);
                             if (activity.Creator != null)
                                 AddField("TaskCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
                         }

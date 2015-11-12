@@ -406,7 +406,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_deferredStop != null && (force || m_deferredStop.StopEventIndex != m_source.CurrentEventIndex))
             {
                 var startStopActivity = m_deferredStop;
-                m_traceActivityToStartStopActivity.Set(startStopActivity.taskIndex, startStopActivity.Creator);
+                m_traceActivityToStartStopActivity.Set(startStopActivity.activityIndex, startStopActivity.Creator);
                 m_activeActivities.Remove(startStopActivity.key);
                 m_activeActivitiesByActivityId.Remove(startStopActivity.ActivityID);
 
@@ -560,12 +560,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// We don't update the state for the stop at the time of the stop, but at the next call to any of the StartStopActivityComputer APIs.  
         /// </summary>
-        internal void RememberStop(EventIndex stopEventIndex, double stopTimeRelativeMSec, StartStopKey key, int taskIndex)
+        internal void RememberStop(EventIndex stopEventIndex, double stopTimeRelativeMSec, StartStopKey key, int activityIndex)
         {
             if (DurationMSec == 0)
             {
                 this.key = key;
-                this.taskIndex = taskIndex;
+                this.activityIndex = activityIndex;
                 this.StopEventIndex = stopEventIndex;
                 this.DurationMSec = stopTimeRelativeMSec - StartTimeRelativeMSec;
             }
@@ -577,7 +577,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // these are used to implement deferred stops.  
         internal StartStopKey key;      // The key that links up the start and stop for this activity. 
-        internal int taskIndex;         // the index for the task that was active at the time of the stop.  
+        internal int activityIndex;         // the index for the task that was active at the time of the stop.  
         #endregion
     };
 
