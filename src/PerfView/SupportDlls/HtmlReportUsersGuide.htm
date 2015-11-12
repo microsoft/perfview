@@ -62,7 +62,7 @@
         <a id="UnderstandingJITPerf">Understanding Just In Time 
         Compiler Performance Data</a></h3>
     <p>
-        PerfMonitior tracks detailed information of what methods 
+        PerfView tracks detailed information of what methods 
         were Just In Time compiled.&nbsp;&nbsp; This data is mostly useful for 
         optimizing startup (because that is when most methods get JIT compiled).&nbsp; 
         If large numbers of methods are being compiled it can noticeably affect startup 
@@ -72,6 +72,18 @@
         <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">NGen 
         Tool</a> can be used to precompile the code, and thus eliminate most of this 
         overhead at startup.&nbsp; </p>
+    <p>
+        As an additional option enabled with the JITInlining feature, PerfView can track
+        all of the decisions made by the JIT about whether to inline or not at every call site.  
+        For very hot paths, the overhead of invoking methods has the potential to add measurable 
+        cost, and it's typical for developers to attempt to streamline their code as much as possible,
+        with the intent that small methods and properties will be inlined in order to avoid these overheads.
+        The information provided by PerfView and the JIT can be valuable in understanding when and where 
+        such attempts fail, with the JIT providing the reason it chose not to inline a particular call site,
+        e.g. the callee had exception handling that prevented inlining, the callee was too big,
+        the callee was explicitly annotated to prevent inlining, etc.  Such information can then be used
+        by the developer to tweak their code in pursuit of a faster outcome.
+    </p>
     <hr />
      <h3>
         <a id="UnderstandingBackgroundJIT">Understanding Background JIT compilation</a></h3>

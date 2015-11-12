@@ -2005,6 +2005,22 @@ namespace PerfView
                     return "Opening CSV " + csvFile;
                 }
             }
+            else if (command.StartsWith("excelInlining/"))
+            {
+                var rest = command.Substring(14);
+                var processId = int.Parse(rest);
+                JitProcess jitProc;
+                if (m_jitStats.TryGetByID(processId, out jitProc))
+                {
+                    var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
+                    if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        jitProc.ToInliningCsv(csvFile);
+                    Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                    return "Opening CSV " + csvFile;
+                }
+            }
             else if (command.StartsWith("excelBackgroundDiag/"))
             {
                 var rest = command.Substring(20);

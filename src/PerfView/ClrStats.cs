@@ -328,6 +328,26 @@ namespace Stats
                 }
             };
 
+            source.Clr.MethodInliningSucceeded += delegate (MethodJitInliningSucceededTraceData data)
+            {
+                perProc[data].inliningSuccesses.Add(new InliningSuccessResult
+                {
+                    MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
+                    Inliner = data.InlinerNamespace + "." + data.InlinerName,
+                    Inlinee = data.InlineeName
+                });
+            };
+            source.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData data)
+            {
+                perProc[data].inliningFailures.Add(new InliningFailureResult
+                {
+                    MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
+                    Inliner = data.InlinerNamespace + "." + data.InlinerName,
+                    Inlinee = data.InlineeName,
+                    Reason = data.FailReason
+                });
+            };
+
             source.Process();
             foreach (JitProcess jitProcess in perProc)
             {
@@ -370,6 +390,7 @@ namespace Stats
         public virtual void ToHtml(TextWriter writer, string fileName)
         {
             var usersGuideFile = ClrStatsUsersGuide.WriteUsersGuide(fileName);
+            bool hasInliningEvents = inliningSuccesses.Count > 0 || inliningFailures.Count > 0;
 
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">JIT Stats for for Process {1,5}: {2}</font><A></H3>", ProcessID, ProcessID, ProcessName);
             writer.WriteLine("<UL>");
@@ -425,6 +446,15 @@ namespace Stats
             writer.WriteLine("<LI><A HREF=\"#Events_{0}\">Individual JIT Events</A></LI>", ProcessID);
 
             writer.WriteLine("<UL><LI> <A HREF=\"command:excel/{0}\">View in Excel</A></LI></UL>", ProcessID);
+            if (hasInliningEvents)
+            {
+                writer.WriteLine("<LI><A HREF=\"#Inlining_{0}\">Inlining Decisions</A></LI>", ProcessID);
+                writer.WriteLine("<UL><LI> <A HREF=\"command:excelInlining/{0}\">View in Excel</A></LI></UL>", ProcessID);
+            }
+            else
+            {
+                writer.WriteLine("<LI><I>No JIT Inlining data available.  Consider enabling the JITInlining option.</I></LI>", ProcessID);
+            }
             writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingJITPerf\">JIT Perf Users Guide</A></LI>", usersGuideFile);
             writer.WriteLine("</UL>");
 
@@ -514,8 +544,36 @@ namespace Stats
             }
             writer.WriteLine("</Table>");
             writer.WriteLine("</Center>");
+
+            if (hasInliningEvents)
+            {
+                writer.WriteLine("<HR/>");
+                writer.WriteLine("<A Name=\"Inlining_{0}\">", ProcessID);
+                writer.WriteLine("<H4>Successful Inlinings for Process {0,5}: {1}<A></H4>", ProcessID, ProcessName);
+                writer.WriteLine("<Center>");
+                writer.WriteLine("<Table Border=\"1\">");
+                writer.Write("<TR><TH>Method Begin Compiled</TH><TH>Inliner</TH><TH>Inlinee</TH></TR>");
+                foreach (InliningSuccessResult success in inliningSuccesses)
+                {
+                    writer.Write("<TR><TD>{0}</TD><TD>{1}</TD><TD>{2}</TD></TR>", success.MethodBeingCompiled, success.Inliner, success.Inlinee);
+                }
+                writer.WriteLine("</Table>");
+                writer.WriteLine("</Center>");
+                writer.WriteLine("<H4>Failed Inlinings for Process {0,5}: {1}<A></H4>", ProcessID, ProcessName);
+                writer.WriteLine("<Center>");
+                writer.WriteLine("<Table Border=\"1\">");
+                writer.Write("<TR><TH>Method Begin Compiled</TH><TH>Inliner</TH><TH>Inlinee</TH><TH>Failure Reason</TH></TR>");
+                foreach (InliningFailureResult failure in inliningFailures)
+                {
+                    writer.Write("<TR><TD>{0}</TD><TD>{1}</TD><TD>{2}</TD><TD>{3}</TD></TR>", failure.MethodBeingCompiled, failure.Inliner, failure.Inlinee, failure.Reason);
+                }
+                writer.WriteLine("</Table>");
+                writer.WriteLine("</Center>");
+            }
+
             writer.WriteLine("<HR/><HR/><BR/><BR/>");
         }
+
         public void ToCsv(string filePath)
         {
             var listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
@@ -529,6 +587,31 @@ namespace Stats
                     writer.WriteLine("{1:f3}{0}{2:f3}{0}{3}{0}{4}{0}{5}{0}{6}{0}{7}{0}{8}{0}{9}{0}{10}", listSeparator,
                         _event.StartTimeMSec, _event.JitTimeMSec, _event.ThreadID, _event.ILSize,
                         _event.NativeSize, csvMethodName, (_event.IsBackGround ? "BG" : "JIT"), _event.ModuleILPath, _event.DistanceAhead, _event.BlockedReason);
+                }
+            }
+        }
+
+        public void ToInliningCsv(string filePath)
+        {
+            var listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
+            using (var writer = File.CreateText(filePath))
+            {
+                writer.WriteLine("MethodBeginCompiled{0}Inliner{0}Inlinee{0}FailureReason", listSeparator);
+                foreach (var ev in inliningSuccesses)
+                {
+                    writer.WriteLine("{1}{0}{2}{0}{3}{0}{4}", listSeparator,
+                        ev.MethodBeingCompiled.Replace(listSeparator, ""),
+                        ev.Inliner.Replace(listSeparator, ""),
+                        ev.Inlinee.Replace(listSeparator, ""),
+                        "<success>");
+                }
+                foreach (var ev in inliningFailures)
+                {
+                    writer.WriteLine("{1}{0}{2}{0}{3}{0}{4}", listSeparator,
+                        ev.MethodBeingCompiled.Replace(listSeparator, ""),
+                        ev.Inliner.Replace(listSeparator, ""),
+                        ev.Inlinee.Replace(listSeparator, ""),
+                        ev.Reason.Replace(listSeparator, ""));
                 }
             }
         }
@@ -752,6 +835,24 @@ namespace Stats
         HashSet<string> recordedModules = new HashSet<string>();
         internal Dictionary<long, string> moduleNamesFromID = new Dictionary<long, string>();
         SortedDictionary<string, JitInfo> moduleStats;
+
+        List<InliningSuccessResult> inliningSuccesses = new List<InliningSuccessResult>();
+        List<InliningFailureResult> inliningFailures = new List<InliningFailureResult>();
+
+        private struct InliningSuccessResult
+        {
+            public string MethodBeingCompiled;
+            public string Inliner;
+            public string Inlinee;
+        }
+
+        private struct InliningFailureResult
+        {
+            public string MethodBeingCompiled;
+            public string Inliner;
+            public string Inlinee;
+            public string Reason;
+        }
         #endregion
 
         #region IComparable<JitProcess> Members

@@ -3939,6 +3939,20 @@
             </p>
         </li>
         <li>
+            The <strong><a id="JITInliningCheckBox">JIT Inlining Checkbox</a></strong> - Causes
+            an event to be captured for every inlining decision made by the JIT.  The results are
+            available as two tables in the JIT Stats report, one showing all of the successfully
+            inlined call sites and one showing all of the failed inlining call sites (where the JIT
+            decided not to inline).  Each table shows the method being compiled, the caller, and the
+            callee; the failed table also shows the reason provided by the JIT for why inlining
+            wasn't performed. For fine-tuning performance of hot paths, this information can be very
+            valuable in understanding where functions you expected to be inlined aren't being inlined,
+            allowing you to then examine why and potentially tweak your code accordingly (such as by
+            separating out a fast path into its own method that's more likely to be inlined, by using
+            [MethodImpl(MethodImplOptions.AggressiveInlining)], etc.). This feature can also be 
+            activated with the /JITInlining command line option.
+        </li>
+        <li>
             The <strong><a id="NetCaptureCheckBox">Net Capture Checkbox</a></strong> This option
             turns on Microsoft-Window-NDIS-PacketCapture events using in the 'netsh trace' command
             built into windows.   The full payload of every packet will be logged to the ETL file.
