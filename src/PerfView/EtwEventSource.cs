@@ -404,6 +404,7 @@ namespace PerfView
             // columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
             columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
             columnsForSelectedEvents["HasStack"] = "HasStack";
+            columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
             columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
             columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
             return columnsForSelectedEvents.Keys;
@@ -459,6 +460,10 @@ namespace PerfView
                 var hasStack = data.CallStackIndex() != CallStackIndex.Invalid;
                 if (hasStack)
                     AddField("HasStack", hasStack.ToString(), columnOrder, restString);
+
+                var asCSwitch = data as CSwitchTraceData;
+                if (asCSwitch != null)
+                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString);
 
                 AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
 

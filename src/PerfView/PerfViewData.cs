@@ -3242,6 +3242,7 @@ namespace PerfView
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
                 }
 
+                StackSourceFrameIndex blockingFrame = stackSource.Interner.FrameIntern("Event Kernel/Thread/BLOCKING CSwitch");
                 StackSourceFrameIndex cswitchEventFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/Thread/CSwitch");
                 StackSourceFrameIndex readyThreadEventFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/Dispatcher/ReadyThread");
                 StackSourceFrameIndex sampledProfileFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/PerfInfo/Sample");
@@ -3287,6 +3288,19 @@ namespace PerfView
                     var asCSwitch = data as CSwitchTraceData;
                     if (asCSwitch != null)
                     {
+                        if (activityComputer == null)  // Just a plain old any-stacks
+                        {
+                            var callStackIdx = asCSwitch.BlockingStack();
+                            if (callStackIdx != CallStackIndex.Invalid)
+                            {
+                                // Make an entry for the blocking stacks as well.  
+                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                sample.Metric = 1;
+                                stackSource.AddSample(sample);
+                            }
+                        }
+
 
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);

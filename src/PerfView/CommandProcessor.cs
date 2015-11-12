@@ -2765,7 +2765,10 @@ namespace PerfView
                             providerStr = providerStr + ":" + matchAnyKeywordsStr;
                             goto RETRY;
                         }
-                        matchAnyKeywords = ParseKeywords(matchAnyKeywordsStr, providerStr);
+                        if (matchAnyKeywordsStr == "*")
+                            matchAnyKeywords = ulong.MaxValue;
+                        else 
+                            matchAnyKeywords = ParseKeywords(matchAnyKeywordsStr, providerStr);
                     }
 
                     // handle level 
@@ -2788,7 +2791,7 @@ namespace PerfView
                             }
                         }
 
-                        m = Regex.Match(rest, @"^([^:]*)(:(.*))?$");
+                        m = Regex.Match(rest, @"^([^:=]*)(:(.*))?$");
                         if (m.Success)
                         {
                             var stackStr = m.Groups[1].Value;
