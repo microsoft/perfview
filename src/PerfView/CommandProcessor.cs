@@ -2766,13 +2766,9 @@ namespace PerfView
                             goto RETRY;
                         }
                         if (matchAnyKeywordsStr == "*")
-                        {
-                            matchAnyKeywords = unlong.MaxValue;
-                        }
+                            matchAnyKeywords = ulong.MaxValue;
                         else
-                        {
-                        matchAnyKeywords = ParseKeywords(matchAnyKeywordsStr, providerStr);
-                    }
+                            matchAnyKeywords = ParseKeywords(matchAnyKeywordsStr, providerStr);
                     }
 
                     // handle level 
