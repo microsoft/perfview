@@ -3939,6 +3939,20 @@
             </p>
         </li>
         <li>
+            The <strong><a id="JITInliningCheckBox">JIT Inlining Checkbox</a></strong> - Causes
+            an event to be captured for every inlining decision made by the JIT.  The results are
+            available as two tables in the JIT Stats report, one showing all of the successfully
+            inlined call sites and one showing all of the failed inlining call sites (where the JIT
+            decided not to inline).  Each table shows the method being compiled, the caller, and the
+            callee; the failed table also shows the reason provided by the JIT for why inlining
+            wasn't performed. For fine-tuning performance of hot paths, this information can be very
+            valuable in understanding where functions you expected to be inlined aren't being inlined,
+            allowing you to then examine why and potentially tweak your code accordingly (such as by
+            separating out a fast path into its own method that's more likely to be inlined, by using
+            [MethodImpl(MethodImplOptions.AggressiveInlining)], etc.). This feature can also be 
+            activated with the /JITInlining command line option.
+        </li>
+        <li>
             The <strong><a id="NetCaptureCheckBox">Net Capture Checkbox</a></strong> This option
             turns on Microsoft-Window-NDIS-PacketCapture events using in the 'netsh trace' command
             built into windows.   The full payload of every packet will be logged to the ETL file.
@@ -4000,7 +4014,19 @@
             be useful tracking down non-deterministic &#39;stress&#39; bugs.&nbsp;&nbsp; You
             can also turn these events on by specifying the &#39;ClrStress&#39; provider in
             the Additional Providers textbox.&nbsp;&nbsp;&nbsp;
-            The option /Providers=ClrStress can achive this at the command line.
+            The option /Providers=ClrStress can achive this at the command line.           
+        </li>
+        <li>
+            The <strong><a id="FinalizersCheckBox">Finalizers Checkbox</a></strong> - Turns on
+            .NET events that fire whenever an object is finalized, and tracks how many instances
+            of each finalizable object have their finalizers invoked.  The resulting counts are
+            shown on the <a href="#GCStats">GC Stats Report</a>.  This option can be useful in
+            tracking down reliability problems related to non-deterministic resource cleanup, helping
+            to identify objects that are being left for finalization rather than being disposed of
+            deterministically.  Not disposing of finalizable objects can also have a performance impact
+            on applications, as finalizable objects always survive at least one garbage collection, and
+            as a single finalization thread is responsible for processing all finalizers serially.  The 
+            /Finalizers command line option achieves the same effect.    
         </li>
 
         <li>

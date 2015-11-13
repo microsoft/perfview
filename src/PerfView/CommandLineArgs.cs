@@ -117,6 +117,7 @@ namespace PerfView
         public bool DotNetAllocSampled;     // Turn on .NET Allocation profiling, but only sampled (in a smart way)
         public bool DotNetCalls;            // Turn on logging of every .NET call
         public bool DotNetCallsSampled;     // Sampling of .NET calls.  
+        public bool JITInlining;            // Turn on logging of successful and failed JIT inlining
         public int OSHeapProcess;           // Turn on OS Heap tracing for the process with the given process ID.
         public string OSHeapExe;            // Turn on OS heap tracing for any process with the given EXE
 
@@ -178,6 +179,7 @@ namespace PerfView
         public double SkipMSec;
         public bool ForceNgenRundown;
         public bool DumpHeap;
+        public bool Finalizers;
 
         // Collect options
         public bool NoGui;
@@ -408,6 +410,7 @@ namespace PerfView
             }
 
             parser.DefineOptionalQualifier("DumpHeap", ref DumpHeap, "Capture a heap snapshot on profile stop");
+            parser.DefineOptionalQualifier("Finalizers", ref Finalizers, "Track the number of objects of each type finalized.");
             parser.DefineOptionalQualifier("ClrEventLevel", ref ClrEventLevel, "The verbosity for CLR events");
             parser.DefineOptionalQualifier("ClrEvents", ref ClrEvents,
                 "A comma separated list of .NET CLR events to turn on.  See Users guide for details.");
@@ -418,6 +421,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DotNetAllocSampled", ref DotNetAllocSampled, "Turns on per-allocation .NET profiling, sampling types in a smart way to keep overhead low.");
             parser.DefineOptionalQualifier("DotNetCalls", ref DotNetCalls, "Turns on per-call .NET profiling.");
             parser.DefineOptionalQualifier("DotNetCallsSampled", ref DotNetCallsSampled, "Turns on per-call .NET profiling, sampling types in a smart way to keep overhead low.");
+            parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
 
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");

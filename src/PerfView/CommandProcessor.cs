@@ -541,7 +541,7 @@ namespace PerfView
                                 TraceEventLevel.Verbose, ulong.MaxValue);
 
                             EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Informational,
+                                parsedArgs.Finalizers ? TraceEventLevel.Verbose : TraceEventLevel.Informational,
                                 (ulong)(
                                     ClrPrivateTraceEventParser.Keywords.GC |
                                     ClrPrivateTraceEventParser.Keywords.Binding |
@@ -2254,6 +2254,8 @@ namespace PerfView
                 cmdLineArgs += " /DotNetCalls";
             if (parsedArgs.DotNetCallsSampled)
                 cmdLineArgs += " /DotNetCallsSampled";
+            if (parsedArgs.JITInlining)
+                cmdLineArgs += " /JITInlining";
             if (parsedArgs.OSHeapExe != null)
                 cmdLineArgs += " /OSHeapExe:" + Command.Quote(parsedArgs.OSHeapExe);
             if (parsedArgs.OSHeapProcess != 0)
@@ -2265,6 +2267,8 @@ namespace PerfView
 
             if (parsedArgs.DumpHeap)
                 cmdLineArgs += " /DumpHeap";
+            if (parsedArgs.Finalizers)
+                cmdLineArgs += " /Finalizers";
 
             if (parsedArgs.GCOnly)
                 cmdLineArgs += " /GCOnly";
