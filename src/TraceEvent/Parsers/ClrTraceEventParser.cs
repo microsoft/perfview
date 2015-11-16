@@ -4774,7 +4774,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         LastJoin = 0,
         Join = 1,
-        Restart = 2
+        Restart = 2,
+        FirstJoin = 3
     }
 
     public enum GcJoinTime : int
@@ -4783,18 +4784,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         End = 1
     }
 
+    public enum GcJoinID : int
+    {
+        Restart = -1,
+        Invalid = ~(int)0xff
+    }
+
     public sealed class GCJoinTraceData : TraceEvent
     {
         public int Heap { get { return GetInt32At(0); } }
         public GcJoinTime JoinTime { get { return (GcJoinTime)GetInt32At(4); } }
         public GcJoinType JoinType { get { return (GcJoinType)GetInt32At(8); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(12); return 0; } }
-        public int GCID { get { if (Version >= 2) return GetInt32At(14); return 0; } }
-
-        public bool HasGCID()
-        {
-            return (Version >= 2);
-        }
+        public int GCID { get { if (Version >= 2) return GetInt32At(14); return (int)(GcJoinID.Invalid); } }
 
         #region Private
         internal GCJoinTraceData(Action<GCJoinTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -4824,6 +4826,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "JoinTime", JoinTime);
             XmlAttrib(sb, "JoinType", JoinType);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "ID", GCID);
             sb.Append("/>");
             return sb;
         }
@@ -4833,7 +4836,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Heap", "JoinTime", "JoinType", "ClrInstanceID" };
+                {
+                    payloadNames = new string[] { "Heap", "JoinTime", "JoinType", "ClrInstanceID", "ID" };
+                }
                 return payloadNames;
             }
         }
@@ -4850,6 +4855,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return JoinType;
                 case 3:
                     return ClrInstanceID;
+                case 4:
+                    return GCID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;

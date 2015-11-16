@@ -2956,6 +2956,29 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
+        /// Outputs some detailed Server GC analysis to a file.
+        /// </summary>
+        public void ServerGCReport(string etlFile)
+        {
+            if (PerfView.AppLog.InternalUser)
+            {
+                ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
+                TraceLog source = TraceLog.OpenOrConvert(etlFile);
+
+                var gcStats = Stats.GCProcess.Collect(source.Events.GetSource(), 1, null, null, true, source);
+
+                var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
+                using (var output = File.CreateText(outputFileName))
+                {
+                    LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
+                    gcStats.ToHtml(output, outputFileName, "GCStats", null);
+                }
+                if (!App.CommandLineArgs.NoGui)
+                    OpenHtmlReport(outputFileName, "GCStats report");
+            }
+        }
+
+        /// <summary>
         /// Computes the JITStats HTML report for etlFile.  
         /// </summary>
         public void JITStats(string etlFile)

@@ -755,16 +755,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return thread.ThreadID;
         }
 
-        private void AddServerGCThread(int threadID, long timeStamp)
+        private void AddMarkThread(int threadID, long timeStamp, int heapNum)
         {
             var thread = Threads.GetThread(threadID, timeStamp);
             if (thread == null)
                 return;
             if (thread.threadInfo != null)
                 return;
-            thread.process.numMarkTheadsInGC++;
-            if (thread.process.isServerGC)
-                thread.threadInfo = ".NET Server GC Thread";
+
+            if (thread.process.shouldCheckIsServerGC)
+                thread.process.markThreadsInGC.Add(threadID, heapNum);
         }
         /// <summary>
         /// SetupCallbacks installs all the needed callbacks for TraceLog Processing (stacks, process, thread, summaries etc)
@@ -1248,7 +1248,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var process = Processes.GetProcess(data.ProcessID, data.TimeStampQPC);
                 if (process == null)
                     return;
-                process.numMarkTheadsInGC = 0;
+
+                if ((process.markThreadsInGC.Count == 0) && (process.shouldCheckIsServerGC == false))
+                    process.shouldCheckIsServerGC = true;
 
                 // TODO this is a hack. can be removed when we fix V4.5.1 to not emit two events.    
                 // If in the process we see a version 2 event, then strip out 
@@ -1270,18 +1272,31 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var process = Processes.GetProcess(data.ProcessID, data.TimeStampQPC);
                 if (process == null)
                     return;
-                if (!process.isServerGC && process.numMarkTheadsInGC > 1)
+
+                if (process.markThreadsInGC.Count > 0)
+                    process.shouldCheckIsServerGC = false;
+
+                if (!process.isServerGC && (process.markThreadsInGC.Count > 1))
+                {
                     process.isServerGC = true;
+                    foreach (var thread in process.Threads)
+                    {
+                        if (process.markThreadsInGC.ContainsKey(thread.ThreadID))
+                        {
+                            thread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[thread.ThreadID] + ")";
+                        }
+                    }
+                }
             };
 #if !NUGET
             rawEvents.Clr.GCMarkWithType += delegate(GCMarkWithTypeTraceData data)
             {
                 if (data.Type == (int)MarkRootType.MarkHandles)
-                    AddServerGCThread(data.ThreadID, data.TimeStampQPC);
+                    AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
             clrPrivate.GCMarkHandles += delegate(GCMarkTraceData data)
             {
-                AddServerGCThread(data.ThreadID, data.TimeStampQPC);
+                AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
 #endif
 
@@ -4708,7 +4723,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal bool anyThreads;
 
         internal bool isServerGC;
-        internal byte numMarkTheadsInGC;   // Used during collection to determine if we are server GC or not. 
+        // We only set this in the GCStart event because we want to make sure we are seeing a complete GC.
+        // After we have seen a complete GC we set this to FALSE.
+        internal bool shouldCheckIsServerGC = false;
+        internal Dictionary<int, int> markThreadsInGC = new Dictionary<int, int>(); // Used during collection to determine if we are server GC or not. 
 
         private TraceLoadedModules loadedModules;
 

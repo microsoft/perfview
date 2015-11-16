@@ -910,7 +910,7 @@ namespace PerfView
             m_processLookup = new ProcessLookup<GCProcess>();
 
             // Process all events into GCProcess lookup dictionary
-            GCProcess.Collect(source, sampleInterval100ns, m_processLookup);
+            GCProcess.Collect(source, sampleInterval100ns, m_processLookup, null, false, m_traceLog);
 
             // Get the process we want
             return m_processLookup.TryGetByID(procID, out m_gcProcess);
