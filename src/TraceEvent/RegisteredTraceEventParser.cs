@@ -1258,6 +1258,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
         /// <summary>
+        /// Returns true if the RegisteredTraceEventParser would return 'template' in EnumerateTemplates
+        /// </summary>
+        internal bool HasDefinitionForTemplate(TraceEvent template)
+        {
+            if (m_state == null)
+                m_state = (ExternalTraceEventParserState)StateObject;
+            if (m_state != null)
+                return m_state.m_templates.ContainsKey(template);
+            return false;
+        }
+
+        /// <summary>
         /// override
         /// </summary>
         protected internal override void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback)

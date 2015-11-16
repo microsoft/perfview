@@ -21,6 +21,18 @@ using Address = System.UInt64;
 
 // #Introduction
 // 
+// Note that TraceEvent lives in a Nuget package.   See 
+// http://blogs.msdn.com/b/vancem/archive/2014/03/15/walk-through-getting-started-with-etw-traceevent-nuget-samples-package.aspx
+// and 
+//  http://blogs.msdn.com/b/vancem/archive/2013/08/15/traceevent-etw-library-published-as-a-nuget-package.aspx
+// 
+// For more details.  In particular the second blog post will contain the TraceEventProgrammersGuide.docx, which has
+// more background.
+//
+// Finally if you are intersted in creating your own TraceEventParsers for your ETW provider, inside Microsoft you can access
+// the TraceParserGen tool at http://toolbox/TraceParserGen.   There is also a copy available externally at http://1drv.ms/1Rxk2iD 
+// in the TraceParserGen.zip file and the TraceParserGen.src.zip file.   
+//
 // The the heart of the ETW reader are two important classes.
 // 
 //     * TraceEventSource which is an abstract represents the stream of events as a whole. Thus it
@@ -2530,7 +2542,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     for (int i = 0; i < cur.m_activeSubscriptions.Count; i++)
                     {
-                        var activeSubscription = cur.m_activeSubscriptions[i];
+                        var activeSubscription = cur.m_activeSubscriptions[i];                        
                         Debug.Assert(!activeSubscription.Matches(templateWithCallback));
                     }
                 }

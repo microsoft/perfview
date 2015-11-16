@@ -1354,7 +1354,7 @@ public class RefGraph
     internal NodeListIndex[] m_refsForNodes;
 
     /// <summary>
-    /// If the number of children for a node is > 1 then we need to store the data somwere.  m_links is array
+    /// If the number of children for a node is > 1 then we need to store the data somewhere.  m_links is array
     /// of linked list cells that hold the overflow case.  
     /// </summary>
     internal GrowableArray<RefElem> m_links;      // The rest of the list.  

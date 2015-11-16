@@ -237,11 +237,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (response != EventFilterResponse.AcceptEvent)
                             return response;
                     }
-                    callback(template);
+
+                    // We should only return a particular template at most once.   
+                    // However registredParser can overlap with dynamicParser 
+                    // (this can happen if the ETL was merged and has KernelTraceControler events for the provider
+                    // or someone registers an EventSource with the OS).     
+                    // Since we will Enumerate all the events the registeredParser knows
+                    // about below, we filter out any duplicates here. 
+                    if (!registeredParser.HasDefinitionForTemplate(template))
+                        callback(template);
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
-
             // also enumerate any events from the registeredParser.  
             registeredParser.EnumerateTemplates(eventsToObserve, callback);
         }
