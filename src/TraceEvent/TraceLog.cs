@@ -1175,6 +1175,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(timeStampQPC,
                         data.InstructionPointers, data.FrameCount, data.PointerSize, thread, CallStackIndex.Invalid);
 
+                    var lastEmitStackOnExitFromKernelQPC = thread.lastEmitStackOnExitFromKernelQPC;
                     var loggedUserStack = false;    // Have we logged this stack at all
                     // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.  
@@ -1188,7 +1189,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // We don't do this for events that have already been processed by and EmitStackOnExitFromKernelQPC 
                     if (!loggedUserStack && stackInfo != null)
                     {
-                        if (data.EventTimeStampQPC < thread.lastEmitStackOnExitFromKernelQPC)
+                        if (data.EventTimeStampQPC < lastEmitStackOnExitFromKernelQPC)
                             DebugWarn(false, "Warning: Trying to attach a user stack to a stack already processed by EmitStackOnExitFromKernel.  Ignoring data", data);
                         else
                             stackInfo.LogUserStackFragment(stackIndex, this);
@@ -2959,7 +2960,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 55; }
+            get { return 56; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3088,6 +3089,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
  || data.ProviderGuid == ClrPrivateTraceEventParser.ProviderGuid
 #endif
 );
+                pastEventInfo[curPastEventInfo].hasAStack = false;
+                pastEventInfo[curPastEventInfo].isCSwitch = false;
                 // Remember the eventIndex of where the current thread blocks.  
                 CSwitchTraceData asCSwitch = data as CSwitchTraceData;
                 if (asCSwitch != null)
@@ -3339,9 +3342,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
-        private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the que
+        private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
         // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
-        private Timer realTimeFlushTimer;                           // Insures the queue gets flushed even if there are no incomming events.  
+        private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         #endregion
     }
 

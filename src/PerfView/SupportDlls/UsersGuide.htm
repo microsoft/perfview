@@ -2435,20 +2435,21 @@
                             source.
                         </li>
                         <li>
-                            <strong><a id="AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a></strong> - This view 
-                            is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have 
-                            call stacks associated with them.  The only difference is at the top of the each stack (between the 
-                            process and thread frames) is a list of Start-Stop tasks (that is activities See 
+                            <strong><a id="AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a></strong> - This view
+                            is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have
+                            call stacks associated with them.  The only difference is at the top of the each stack (between the
+                            process and thread frames) is a list of Start-Stop tasks (that is activities See
                             <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
-                            EventSource Activities </a> on how to define your own) that are current started
+                                EventSource Activities
+                            </a> on how to define your own) that are current started
                             but not stopped.
                         </li>
                         <li>
                             <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
-                            is a simplification of the <a href="#AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a> view.  
+                            is a simplification of the <a href="#AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a> view.
                             Like that view, it shows every event in the context of the start-stop activities that are currently
                             active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
-                            and is useful when you don't want the extra detail. 
+                            and is useful when you don't want the extra detail.
                         </li>
                         <li>
                             <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
@@ -3949,7 +3950,7 @@
             valuable in understanding where functions you expected to be inlined aren't being inlined,
             allowing you to then examine why and potentially tweak your code accordingly (such as by
             separating out a fast path into its own method that's more likely to be inlined, by using
-            [MethodImpl(MethodImplOptions.AggressiveInlining)], etc.). This feature can also be 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)], etc.). This feature can also be
             activated with the /JITInlining command line option.
         </li>
         <li>
@@ -4014,7 +4015,7 @@
             be useful tracking down non-deterministic &#39;stress&#39; bugs.&nbsp;&nbsp; You
             can also turn these events on by specifying the &#39;ClrStress&#39; provider in
             the Additional Providers textbox.&nbsp;&nbsp;&nbsp;
-            The option /Providers=ClrStress can achive this at the command line.           
+            The option /Providers=ClrStress can achive this at the command line.
         </li>
         <li>
             The <strong><a id="FinalizersCheckBox">Finalizers Checkbox</a></strong> - Turns on
@@ -4025,8 +4026,8 @@
             to identify objects that are being left for finalization rather than being disposed of
             deterministically.  Not disposing of finalizable objects can also have a performance impact
             on applications, as finalizable objects always survive at least one garbage collection, and
-            as a single finalization thread is responsible for processing all finalizers serially.  The 
-            /Finalizers command line option achieves the same effect.    
+            as a single finalization thread is responsible for processing all finalizers serially.  The
+            /Finalizers command line option achieves the same effect.
         </li>
 
         <li>
@@ -4139,7 +4140,7 @@
             - By default, when CPU sampling is turned on, the system takes a sample once a millisecond
             per CPU. This number changes this default. It can be fractional but the system does
             enforce a minimum time (typically .125 MSec).   This can be set from the command
-            line with the /CPUSampleMSec:XXX option.  
+            line with the /CPUSampleMSec:XXX option.
         </li>
         <li>
             The <strong><a id="RundownCheckBox">.NET Symbol Collection Checkbox </a></strong>
@@ -6310,10 +6311,10 @@
 
     <h5>Debugging Triggering Issues</h5>
     <p>
-        It is not uncommon for you to try out a /StopOnEtwEvent qualifier and find that it does not do what you want (typically because it did not 
-        trigger). Sometimes what is in the log will help, however perfView can't place too much in the log becasue it might flood the log. Instead 
+        It is not uncommon for you to try out a /StopOnEtwEvent qualifier and find that it does not do what you want (typically because it did not
+        trigger). Sometimes what is in the log will help, however perfView can't place too much in the log becasue it might flood the log. Instead
         it emits special PerfView StopTriggerDebugMessage events into the ETW stream so that you can look at data in the 'events' view and figure out why it is
-        not working properly. If you have issues with Triggering you will definitely want to look at these events. 
+        not working properly. If you have issues with Triggering you will definitely want to look at these events.
     </p>
 
     <h5>Using Performance Counters to trigger collection start (Start Trigger qualifier)</h5>
@@ -7746,38 +7747,50 @@
         </li>
         -->
         <li>
-            Version 1.8.10 11/12/15
+            Version 1.8.11 11/16/15
             <ul>
-                <li> Significant improvement in how activity tracking works.  Hopefully the stacks associated with 'with Tasks' views
-                    will be better.   
+                <li>
+                    Fix excessive warnings when converting ETL files.   Might also fix some StartStop Activity issues.   
                 </li>
             </ul>
+        <li>
+            Version 1.8.10 11/12/15
+            <ul>
+                <li>
+                    Significant improvement in how activity tracking works.  Hopefully the stacks associated with 'with Tasks' views
+                    will be better.
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.9 11/1/15
             <ul>
                 <li>
                     There is a bug in RC candidates of V4.6.1 where NGEN createPdb only works if the path of the NGEN image
                     is in the Native Image Cache (NIC), but V4.6.1 uses hard links for NGEN images that come from the install itself.
                     The result is that you don't get symbols for mscorlib, system, and system.core.   This adds a work-around
-                    for this (normaling all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.  
+                    for this (normaling all paths to the NIC path before calling NGEN CreatePdb), until the runtime is fixed.
                 </li>
             </ul>
         </li>
         <li>
             Version 1.8.8 10/31/15
             <ul>
-                <li>  Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on 
-                      a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an 
-                      impediment to getting line number information (that is access to the cooresponding IL pdb with line number
-                      information is no longer needed to create an NGEN pdb that has line number information). 
+                <li>
+                    Added support for .NET V4.6.2 convention for NGEN PDB line numbers.   This means that if data is collected on
+                    a V4.6.2 then the lack of access IL PDBS are not available at data collection time is not longer an
+                    impediment to getting line number information (that is access to the cooresponding IL pdb with line number
+                    information is no longer needed to create an NGEN pdb that has line number information).
                 </li>
             </ul>
         </li>
         <li>
             Version 1.8.7 10/22/15
             <ul>
-                <li> Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
-                     Removed the calls to RegisteredTraceEventParser.   This could break things but should not.   So far things look 
-                     OK.  
+                <li>
+                    Integrated changes that allow DyanamicTraceEventParser to do everything that RegisteredTraceEventParser can do.
+                    Removed the calls to RegisteredTraceEventParser.   This could break things but should not.   So far things look
+                    OK.
                 </li>
             </ul>
         </li>
@@ -7785,8 +7798,8 @@
             Version 1.8.6 10/12/15
             <ul>
                 <li>
-                    Integrated Lee's update of CLRMD that should make PerFView able to extract heap dumps from debugger dumps of 
-                    .NET Native processes.   
+                    Integrated Lee's update of CLRMD that should make PerFView able to extract heap dumps from debugger dumps of
+                    .NET Native processes.
                 </li>
                 <li>Added the DotNet (Telemetry) event ETW provider by default. </li>
             </ul>
@@ -7795,16 +7808,17 @@
             Version 1.8.5 10/6/15
             <ul>
                 <li>
-                    Made 'Any Stacks (with StartStop Tasks)' and 'Any StartStopTree' public.   
+                    Made 'Any Stacks (with StartStop Tasks)' and 'Any StartStopTree' public.
                 </li>
             </ul>
         </li>
         <li>
             Version 1.8.3 9/23/15
             <ul>
-                <li> Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
-                     useful before so that any traces I get have detailed information for debugging, but are now impacting
-                     the cost of using PerfView in production when Tasks are used heavily.
+                <li>
+                    Turned off System.Threading.Tasks.Task events that are verbose and only needed for debugging.  This was
+                    useful before so that any traces I get have detailed information for debugging, but are now impacting
+                    the cost of using PerfView in production when Tasks are used heavily.
                 </li>
             </ul>
         </li>
@@ -7817,9 +7831,11 @@
         <li>
             Version 1.8.1 9/3/15
             <ul>
-                <li> Fixed issue where Debug versions were asserting that two stacks were attached to the same event
-                because kernel and user mode stacks were not being stitched together properly (mostly in rare cases 
-                where thread-starts were happening) </li>
+                <li>
+                    Fixed issue where Debug versions were asserting that two stacks were attached to the same event
+                    because kernel and user mode stacks were not being stitched together properly (mostly in rare cases
+                    where thread-starts were happening)
+                </li>
             </ul>
         </li>
 
