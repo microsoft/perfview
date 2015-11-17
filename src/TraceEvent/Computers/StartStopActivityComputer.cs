@@ -228,8 +228,14 @@ namespace Microsoft.Diagnostics.Tracing
 
             int taskIndex = (int)curTaskActivity.Index;
             var ret = m_traceActivityToStartStopActivity.Get(taskIndex);
-            if (ret != null && ret.IsStopped)       // If the activity is stopped, then don't return it.  
-                return null;
+
+            // If the activity is stopped, then don't return it, return its parent.   
+            while (ret != null)
+            {
+                if (!ret.IsStopped)
+                    return ret;
+                ret = ret.Creator;
+            }
             return ret;
         }
 

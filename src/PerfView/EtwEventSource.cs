@@ -130,7 +130,7 @@ namespace PerfView
                     m_needsComputers = false;
                     foreach (string column in ColumnsToDisplay)
                     {
-                        if (column == "*" || column == "ActivityIndex" || column == "StartStopActvity" || column == "TaskCreationMSec")
+                        if (column == "*" || column == "ActivityIndex" || column == "StartStopActvity" || column == "ActivityCreationMSec")
                         {
                             m_needsComputers = true;
                             break;
@@ -398,7 +398,7 @@ namespace PerfView
             }
             columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
             columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
-            columnsForSelectedEvents["TaskCreationMSec"] = "TaskCreationMSec";
+            columnsForSelectedEvents["ActivityCreationMSec"] = "ActivityCreationMSec";
             columnsForSelectedEvents["ThreadID"] = "ThreadID";
             columnsForSelectedEvents["ActivityID"] = "ActivityID";
             // columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
@@ -498,7 +498,7 @@ namespace PerfView
                     TraceThread thread = data.Thread();
                     if (thread != null)
                     {
-                        var activity = source.m_activityComputer.GetCurrentActivity(thread);
+                        TraceActivity activity = source.m_activityComputer.GetCurrentActivity(thread);
                         if (activity != null)
                         {
                             string id = activity.ID;
@@ -506,7 +506,7 @@ namespace PerfView
                                 id = "^" + id;              // Indicates it is at the start of the task. 
                             AddField("ActivityIndex", id, columnOrder, restString);
                             if (activity.Creator != null)
-                                AddField("TaskCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
+                                AddField("ActivityCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
                         }
 
                         var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread);

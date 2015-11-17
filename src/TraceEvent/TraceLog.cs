@@ -1773,7 +1773,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (m_orphanedStacks < 1000)
                 {
                     // We don't warn if the time is too close to the start of the file.  
-                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100, "Could not find event with QPC time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4"), stackEvent);
+                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100, "Stack refers to event with time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4") + " MSec that could not be found", stackEvent);
                     if (m_orphanedStacks == 999)
                         DebugWarn(true, "Last message about missing events.", stackEvent);
                 }
