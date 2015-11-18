@@ -41,7 +41,11 @@ namespace Microsoft.Diagnostics.Tracing
             m_symbolReader = reader;
             // m_perActivityStackIndexMaps = new Dictionary<CallStackIndex, StackSourceCallStackIndex>[eventLog.Activities.Count + 1];
             m_threadToCurrentActivity = new TraceActivity[m_eventLog.Threads.Count];
+
+            // Every thread starts out needing auto-start.  Thus the thread activity is really only 
             m_threadNeedsToAutoStart = new bool[m_eventLog.Threads.Count];
+            for (int i = 0; i < m_threadNeedsToAutoStart.Length; i++)
+                m_threadNeedsToAutoStart[i] = true;
 
             m_rawIDToActivity = new Dictionary<Address, TraceActivity>(64);
 
@@ -134,34 +138,14 @@ namespace Microsoft.Diagnostics.Tracing
             // waiting for the 'next thing'.  
             m_source.Kernel.ThreadCSwitch += delegate(CSwitchTraceData data)
             {
+                AutoRestartIfNecessary(data);
+
                 // Any time we are blocking (when the thread is switching out) 
                 TraceThread thread = m_eventLog.Threads.GetThread(data.OldThreadID, data.TimeStampRelativeMSec);
                 if (thread == null)
                     return;
 
-                // We only care about threads that have active activities on them.  
                 int threadIndex = (int)thread.ThreadIndex;
-                if (m_threadNeedsToAutoStart[threadIndex])
-                {
-                    m_threadNeedsToAutoStart[threadIndex] = false;
-
-                    // TODO: ideally we just call OnCreated, and OnStarted.   Note today we don't do callbacks.   Is that OK? 
-
-                    // Create a new activity 
-                    TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
-                        data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
-
-                    m_indexToActivity.Add(autoStartActivity);
-                    m_beginWaits.Add(null);
-
-                    // Start it 
-                    autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
-                    m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
-                    autoStartActivity.startTimeQPC = data.TimeStampQPC;
-                    autoStartActivity.thread = thread;
-                    return;
-                }
-
                 if (m_threadToCurrentActivity.Length <= threadIndex)
                     return;
 
@@ -173,11 +157,47 @@ namespace Microsoft.Diagnostics.Tracing
                 // is not running anymore.   
                 if (IsThreadParkedInThreadPool(data.BlockingStack()))
                 {
-                    OnStop(data, activity, thread);
+                    while (activity != null)
+                    {
+                        OnStop(data, activity, thread);
+                        activity = activity.prevActivityOnThread;
+                    }
+
                     // We will make a new activity from the current one then next time we wake up.  
                     m_threadNeedsToAutoStart[threadIndex] = true;
                 }
             };
+
+        }
+
+        // When we stop because we notice we are in the threadpool, then we need to auto-start it
+        // when it wakes up.  This does that logic. 
+        private void AutoRestartIfNecessary(CSwitchTraceData data)
+        {
+            var thread = data.Thread();
+            if (thread == null)
+                return;
+
+            int threadIndex = (int)thread.ThreadIndex;
+            if (m_threadNeedsToAutoStart[threadIndex])
+            {
+                m_threadNeedsToAutoStart[threadIndex] = false;
+
+                // TODO: ideally we just call OnCreated, and OnStarted.   Note today we don't do callbacks.   Is that OK? 
+
+                // Create a new activity 
+                TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
+                    data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
+
+                m_indexToActivity.Add(autoStartActivity);
+                m_beginWaits.Add(null);
+
+                // Start it 
+                autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
+                m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
+                autoStartActivity.startTimeQPC = data.TimeStampQPC;
+                autoStartActivity.thread = thread;
+            }
         }
 
         /// <summary>
@@ -1124,7 +1144,7 @@ namespace Microsoft.Diagnostics.Tracing
             return GetActivityForThread(ref m_ActivityMap[(int)thread.ThreadIndex], timeStampRelativeMSec, thread);
         }
 
-        #region private
+    #region private
 
         private void InsertActivityForThread(ref GrowableArray<ActivityEntry> threadTable, TraceActivity activity)
         {
