@@ -50,6 +50,7 @@ namespace Microsoft.Diagnostics.Tracing
             };
 
             var dynamicParser = source.Dynamic;
+            var threadToLastAspNetGuid = new Guid[m_source.TraceLog.Threads.Count];     // Only need to fix up ASPNet activity ids.  
             dynamicParser.All += delegate(TraceEvent data)
             {
                 // TODO decide what the correct heuristic is.  
@@ -60,6 +61,8 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceEventOpcode opcode = data.Opcode;
                 TraceEventTask task = data.Task;
                 StartStopActivity creator = null;
+                StartStopKey extraKey = null;
+
 
                 // We process some events specially because the are important and don't follow the normal ActivityPath conventions.  
                 if (opcode == TraceEventOpcode.Info && data.ProviderGuid == AdoNetProvider)
@@ -68,6 +71,15 @@ namespace Microsoft.Diagnostics.Tracing
                         opcode = TraceEventOpcode.Start;
                     else if (data.ID == (TraceEventID)2)   // EndExecute
                         opcode = TraceEventOpcode.Stop;
+                }
+                // In V4.6 the activity ID for Microsoft-Windows-ASPNET/Request/Start is improperly set, but we can fix it by 
+                // looking at the 'send' event that happens just before it.  
+                else if (data.Opcode == (TraceEventOpcode)9 && data.ProviderGuid == MicrosoftWindowsASPNetProvider)
+                {
+                    TraceThread thread = data.Thread();
+                    if (thread != null)
+                        threadToLastAspNetGuid[(int)thread.ThreadIndex] = data.RelatedActivityID;
+                    return;
                 }
 
                 if (opcode == TraceEventOpcode.Start || opcode == TraceEventOpcode.Stop)
@@ -79,10 +91,6 @@ namespace Microsoft.Diagnostics.Tracing
                     string extraInfo = null;
                     Guid activityID = data.ActivityID;
                     bool goodActivityID = StartStopActivityComputer.IsActivityPath(activityID);
-
-                    // MicrosoftWindowsASPNetProvider does not use ActivityPaths but is OK, opt it in.  
-                    if (!goodActivityID && data.ProviderGuid == MicrosoftWindowsASPNetProvider)
-                        goodActivityID = true;
 
                     string taskName = null;
 
@@ -127,6 +135,34 @@ namespace Microsoft.Diagnostics.Tracing
                             }
                         }
                     }
+                    else if (data.ProviderGuid == MicrosoftWindowsASPNetProvider)
+                    {
+                        // MicrosoftWindowsASPNetProvider does not use ActivityPaths but is OK, opt it in.  
+                        if (opcode == TraceEventOpcode.Start)
+                        {
+                            extraInfo = (string)data.PayloadValue(1);           // This is the FullUrl field.  
+                            if (goodActivityID)         // V4.6 incorrectly opts this into activity paths (which don't work for stop).  Fix it to not do this. 
+                            {
+                                // Also be able to lookup by the incorrect key was well.   (Sometimes stop uses one sometimes the other). 
+#if NEW_4_7_ASPNET // the false branch is temporary as in .NET V4.7 it will no longer work.   The 'true' branch will work on V4.7 but will loose the activity paths.  
+                                extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityID);
+                                var activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
+                                if (activityFix != Guid.Empty)
+                                    activityID = activityFix;
+                                else
+                                    Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
+#else 
+                                var activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
+                                if (activityFix != Guid.Empty)
+                                    extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityFix);
+                                else
+                                    Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
+#endif
+                            }
+                        }
+                        threadToLastAspNetGuid[(int)thread.ThreadIndex] = Guid.Empty;
+                        goodActivityID = true;
+                    }
                     else
                     {
                         // Include the first argument if it is a string
@@ -137,6 +173,8 @@ namespace Microsoft.Diagnostics.Tracing
                                 extraInfo = data.PayloadValue(0) as string;
                             }
                             catch (Exception) { }
+                            if (extraInfo != null)
+                                extraInfo = data.payloadNames[0] + "=" + extraInfo;
                         }
                     }
 
@@ -157,9 +195,12 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             if (creator == null)
                             {
+                                if (data.RelatedActivityID != Guid.Empty)
+                                {
                                 m_activeActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);
                                 if (creator == null)
                                     Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
+                                }
                             }
 
                             if (taskName == null)
@@ -168,6 +209,8 @@ namespace Microsoft.Diagnostics.Tracing
                             // Create the new activity.  
                             activity = new StartStopActivity(data, taskName, ref activityID, creator, extraInfo);
                             m_activeActivities[key] = activity;                         // So we can correlate stops with this start.  
+                            if (extraKey != null)
+                                m_activeActivities[extraKey] = activity;                // TODO we leak these.   
 
                             // Remember that this task is doing this activity.          // So we can transfer this activity to any subsequent events on this Task/Thread.  
                             m_activeActivitiesByActivityId[activityID] = activity;      // So we can look it up (for children's related Activity IDs)
@@ -215,7 +258,7 @@ namespace Microsoft.Diagnostics.Tracing
             };
         }
         /// <summary>
-        /// The server request that we currently processing
+        /// The current start-stop activity on the given thread.   
         /// </summary>
         public StartStopActivity GetCurrentStartStopActivity(TraceThread thread)
         {
@@ -244,11 +287,34 @@ namespace Microsoft.Diagnostics.Tracing
         /// (At this point of the current event for the computer).   The stack starts with a frame for the process of the thread, then 
         /// has all the start-stop activity frames, then a frame representing 'topThread' which may not be the same as 'thread' since
         /// 'topThread' is the thread that spawned the first task, not the currently executing thread.  
+        /// 
+        /// Normally this stack is for the current time, but if 'getAtCreationTime' is true, it will compute the
+        /// stack at the time that the current activity was CREATED rather than the current time.  This works 
+        /// better for await time
         /// </summary>
-        public StackSourceCallStackIndex GetCurrentStartStopActivityStack(MutableTraceEventStackSource outputStackSource, TraceThread curThread, TraceThread topThread)
+        public StackSourceCallStackIndex GetCurrentStartStopActivityStack(MutableTraceEventStackSource outputStackSource, TraceThread curThread, TraceThread topThread, bool getAtCreationTime = false)
         {
+            StartStopActivity startStop = null;
+            // Best effort to get the activity as it exists at creation time of the current activity (AWAIT).    
+            if (getAtCreationTime)
+            {
+                TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(curThread);
+                if (curTaskActivity != null)
+                {
+                    startStop = m_traceActivityToStartStopActivity[(int)curTaskActivity.Index];
+                    if (startStop != null)
+                    {
+                        // Check to make sure that the start-stop stopped AFTER the activity was created.   
+                        if (startStop.IsStopped && startStop.StartTimeRelativeMSec + startStop.DurationMSec < curTaskActivity.CreationTimeRelativeMSec)
+                            startStop = null;
+                    }
+                }
+            }
+            if (startStop == null)
+                startStop = GetCurrentStartStopActivity(curThread);
+
             // Get the process, and activity frames. 
-            StackSourceCallStackIndex stackIdx = GetStartStopActivityStack(outputStackSource, GetCurrentStartStopActivity(curThread), topThread.Process);
+            StackSourceCallStackIndex stackIdx = GetStartStopActivityStack(outputStackSource, startStop, topThread.Process);
 
             // Add the thread.  
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(topThread.VerboseThreadName), stackIdx);
@@ -263,7 +329,7 @@ namespace Microsoft.Diagnostics.Tracing
             StackSourceCallStackIndex stackIdx = outputStackSource.GetCallStackForProcess(process);
 
             // Add Pseudo frame for whether it is an activity or not 
-            string firstFrameName = curActivity == null  ? "(Non-Activities)" : "(Activities)";
+            string firstFrameName = curActivity == null ? "(Non-Activities)" : "(Activities)";
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(firstFrameName), stackIdx);
 
             if (curActivity != null)
@@ -457,10 +523,16 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 string activityString = StartStopActivityComputer.ActivityPathString(ActivityID);
-                if (activityString.Length > 18 && activityString.EndsWith("07-08090a0b0c0d"))   // used by some HtpRequest and SQLCommand.  
+                if (!activityString.StartsWith("//"))
                 {
-                    activityString = (Creator != null) ? Creator.Name : "//";
-                    activityString = activityString + "#" + myChildID.ToString();             // Make up a pseudo-ActivityPath for this (use # instead of /)
+                    if (activityString.EndsWith("-08090a0b0c0d"))   // We make up fake activity ids (see StartStopActivityComputer ctor) for HttpRequest and SQL Command)
+                    {
+                        // We recognize HttpReqeust SQLCommand and try to preserve an activity-path like experience.  
+                        var parent = (Creator != null) ? Creator.Name : "//";
+                        activityString = parent + "#" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
+                    }
+                    else
+                        activityString = "@" + activityString;                          // Simply use the GUID as the marker.  
                 }
                 if (ExtraInfo == null)
                     return TaskName + "(" + activityString + ")";
@@ -517,12 +589,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// The duration of activity in MSec (diff between stop and start)
         /// </summary>
         public double DurationMSec { get; private set; }
-
         /// <summary>
         /// This activity has completed (the Stop event has been received).  Thus Duration is valid.
         /// </summary>
         public bool IsStopped { get { return DurationMSec != 0 && key == null; } }
-
         /// <summary>
         /// Returns a stack on the outputStackSource which has a frame for each activity that
         /// caused this activity, as well as the root of the given 'rootStack' (often a stack representing the process).    

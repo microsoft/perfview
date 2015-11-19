@@ -58,12 +58,13 @@ namespace Microsoft.Diagnostics.Tracing
             tplParser.TaskScheduledSend += delegate(TaskScheduledArgs data)
             {
                 // TODO we are protecting ourselves against a task being scheduled twice (we ignore the second one).   
-                // This does happen when you do AwaitTaskContinuationScheduled and then you do a TaskScheduled later.   
+                // This does happen when you do AwaitTaskContinuationScheduled and then you do a TaskScheduled later.
                 var rawScheduledActivityId = GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask);
-                if (!m_rawIDToActivity.ContainsKey(rawScheduledActivityId))
+                TraceActivity activity;
+                if (!m_rawIDToActivity.TryGetValue(rawScheduledActivityId, out activity))
                     OnCreated(data, rawScheduledActivityId, TraceActivity.ActivityKind.TaskScheduled);
                 else
-                    Log.DebugWarn(false, "Two scheduled events on the same Task", data);
+                    Log.DebugWarn(activity.kind == TraceActivity.ActivityKind.AwaitTaskScheduled, "Two scheduled events on the same Task", data);
             };
             tplParser.TaskExecuteStart += delegate(TaskStartedArgs data) { OnStart(data, GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask)); };
             tplParser.TaskExecuteStop += delegate(TaskCompletedArgs data)
@@ -317,8 +318,6 @@ namespace Microsoft.Diagnostics.Tracing
                 ret = new TraceActivity((ActivityIndex)index, null, EventIndex.Invalid, CallStackIndex.Invalid,
                                                         thread.startTimeQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Initial);
                 m_indexToActivity[index] = ret;
-
-                ret.startTimeQPC = thread.startTimeQPC;
                 ret.endTimeQPC = thread.endTimeQPC;
                 ret.thread = thread;
             }
@@ -703,7 +702,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (activity.endTimeQPC == 0)
                 activity.endTimeQPC = data.TimeStampQPC;
             else
-                Log.DebugWarn(false, "Activity " + activity.Name + " stopping when already stopped!", data);
+                Log.DebugWarn(activity.IsThreadActivity, "Activity " + activity.Name + " stopping when already stopped!", data);
 
             // Remove it from the map if it is not multi-trigger (we are done with it).  
             if (!activity.MultiTrigger)

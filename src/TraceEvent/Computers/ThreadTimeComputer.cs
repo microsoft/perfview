@@ -114,7 +114,7 @@ namespace Microsoft.Diagnostics.Tracing
                     sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
 
                     // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
-                    sample.StackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread()));
+                    sample.StackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread(), true));
 
                     //Trace.WriteLine(string.Format("Tpl Proc {0} Thread {1} Start {2:f3}", data.ProcessName, data.ThreadID, data.TimeStampRelativeMSec));
                     //Trace.WriteLine(string.Format("activity Proc {0} Thread {1} Start {2:f3} End {3:f3}", activity.Thread.Process.Name, activity.Thread.ThreadID,
@@ -453,8 +453,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Returns a function that figures out the top (closest to stack root) frames for an event.  Often
         /// this returns null which means 'use the normal thread-process frames'. 
+        /// Normally this stack is for the current time, but if 'getAtCreationTime' is true, it will compute the
+        /// stack at the time that the current activity was CREATED rather than the current time.  This works 
+        /// better for await time.  
         /// </summary>
-        Func<TraceThread, StackSourceCallStackIndex> GetTopFramesForActivityComputerCase(TraceEvent data, TraceThread thread)
+        Func<TraceThread, StackSourceCallStackIndex> GetTopFramesForActivityComputerCase(TraceEvent data, TraceThread thread, bool getAtCreationTime = false)
         {
             Debug.Assert(m_activityComputer != null);
             if (GroupByAspNetRequest)
@@ -463,7 +466,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return (topThread => GetAspNetFromProcessFrameThroughThreadFrameStack(aspNetGuid, data, topThread));
             }
             else if (GroupByStartStopActivity)
-                return (topThread => m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, topThread));
+                return (topThread => m_startStopActivities.GetCurrentStartStopActivityStack(m_outputStackSource, thread, topThread, getAtCreationTime));
             return null;
         }
 
