@@ -1977,7 +1977,7 @@ namespace PerfView
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             var source = dataFile.Events.GetSource();
-            m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
+            m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds, null, null, false, dataFile);
             m_gcStats.ToHtml(writer, fileName, "GCStats", null, true);
         }
 

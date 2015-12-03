@@ -39,10 +39,15 @@ namespace Stats
     // GCJoin from the private provider
     // We may only have events at the informational level, not verbose level.
     //
+    // TODO: right now we make the assumption that for Server GC, heap is the 
+    // same as the processor number - this is true except for processes that 
+    // hard affinitize to only some of the processors on the machine.
     class GCProcess : ProcessLookupContract, IComparable<GCProcess>
     {
-        public static ProcessLookup<GCProcess> Collect(TraceEventDispatcher source, float sampleIntervalMSec, ProcessLookup<GCProcess> perProc = null, MutableTraceEventStackSource stackSource = null)
+        public static ProcessLookup<GCProcess> Collect(TraceEventDispatcher source, float sampleIntervalMSec, ProcessLookup<GCProcess> perProc = null, MutableTraceEventStackSource stackSource = null, bool _doServerGCReport = false, TraceLog traceLog = null)
         {
+            doServerGCReport = _doServerGCReport;
+
             if (perProc == null)
             {
                 perProc = new ProcessLookup<GCProcess>();
@@ -122,9 +127,10 @@ namespace Stats
                 if (stats != null)
                 {
                     stats.ThreadId2Priority[data.NewThreadID] = data.NewThreadPriority;
-                    if(stats.IsServerGCThread(data.ThreadID) > -1)
+                    int heapIndex = stats.IsServerGCThread(data.ThreadID);
+                    if ((heapIndex > -1) && !(stats.ServerGcHeap2ThreadId.ContainsKey(heapIndex)))
                     {
-                        stats.ServerGcHeap2ThreadId[data.ProcessorNumber] = data.ThreadID;
+                        stats.ServerGcHeap2ThreadId[heapIndex] = data.ThreadID;
                     }
                 }
 
@@ -176,9 +182,11 @@ namespace Stats
                 var stats = perProc.TryGet(data);
                 if (stats != null)
                 {
-                    if (stats.IsServerGCThread(data.ThreadID) > -1)
+                    int heapIndex = stats.IsServerGCThread(data.ThreadID);
+
+                    if ((heapIndex > -1) && !(stats.ServerGcHeap2ThreadId.ContainsKey(heapIndex)))
                     {
-                        stats.ServerGcHeap2ThreadId[data.ProcessorNumber] = data.ThreadID;
+                        stats.ServerGcHeap2ThreadId[heapIndex] = data.ThreadID;
                     }
 
                     var cpuIncrement = sampleIntervalMSec;
@@ -191,7 +199,6 @@ namespace Stats
                         bool isThreadDoingGC = false;
                         if ((_event.Type != GCType.BackgroundGC) && (stats.isServerGCUsed == 1))
                         {
-                            int heapIndex = stats.IsServerGCThread(data.ThreadID);
                             if (heapIndex != -1)
                             {
                                 _event.AddServerGCThreadTime(heapIndex, cpuIncrement);
@@ -236,6 +243,44 @@ namespace Stats
                 }
 
                 stats.suspendTimeRelativeMSec = data.TimeStampRelativeMSec;
+
+                if ((traceLog != null) && !stats.gotThreadInfo)
+                {
+                    stats.gotThreadInfo = true;
+                    TraceProcess traceProc = traceLog.Processes.GetProcess(stats.ProcessID, data.TimeStampRelativeMSec);
+                    if (traceProc != null)
+                    {
+                        foreach (var procThread in traceProc.Threads)
+                        {
+                            if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.Contains(".NET Server GC Thread")))
+                            {
+                                stats.isServerGCUsed = 1;
+                                break;
+                            }
+                        }
+                        
+                        if (stats.isServerGCUsed == 1)
+                        {
+                            stats.heapCount = 0;
+                            stats.serverGCThreads = new Dictionary<int, int>(2);
+
+                            foreach (var procThread in traceProc.Threads)
+                            {
+                                if ((procThread.ThreadInfo != null) && (procThread.ThreadInfo.StartsWith(".NET Server GC Thread")))
+                                {
+                                    stats.heapCount++;
+
+                                    int startIndex = procThread.ThreadInfo.IndexOf('(');
+                                    int endIndex = procThread.ThreadInfo.IndexOf(')');
+                                    string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
+                                    int heapNum = int.Parse(heapNumString);
+                                    stats.serverGCThreads.Add(procThread.ThreadID, heapNum);
+                                    stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
+                                }
+                            }
+                        }
+                    }
+                }
             };
 
             // In 2.0 we didn't have this event.
@@ -453,6 +498,16 @@ namespace Stats
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessPerHeapHistory(data);
+            };
+
+            source.Clr.GCJoin += delegate(GCJoinTraceData data)
+            {
+                GCProcess gcProcess = perProc[data];
+                GCEvent _event = gcProcess.GetCurrentGC();
+                if (_event != null)
+                {
+                    _event.AddGcJoin(data);
+                }
             };
 
             // See if the source knows about the CLR Private provider, if it does, then 
@@ -844,6 +899,7 @@ namespace Stats
         public int Bitness = -1;
         public Dictionary<int, int> ThreadId2Priority = new Dictionary<int, int>();
         public Dictionary<int, int> ServerGcHeap2ThreadId= new Dictionary<int, int>();
+        public static bool doServerGCReport = false;
         public Dictionary<string, long> FinalizedObjects = new Dictionary<string, long>();
 
         public string CommandLine { get; set; }
@@ -1011,11 +1067,12 @@ namespace Stats
             PrintEventTable(writer, Math.Max(0, events.Count - 1000));
             PrintEventCondemnedReasonsTable(writer, Math.Max(0, events.Count - 1000));
 
+#if (!CAP)
             if (PerfView.AppLog.InternalUser)
             {
                 RenderServerGcConcurrencyGraphs(writer);
             }
-
+#endif
             if (FinalizedObjects.Count > 0)
             {
                 const int MaxResultsToShow = 20;
@@ -1045,6 +1102,7 @@ namespace Stats
                 return false;
 
             int gcGraphsToRender = 10;
+
             var serverGCs = events
                             .Where(gc => gc.Type != GCType.BackgroundGC && gc.HasServerGcThreadingInfo)
                             .OrderByDescending(gc => gc.GCDurationMSec + gc._SuspendDurationMSec)
@@ -1052,6 +1110,12 @@ namespace Stats
 
             if (serverGCs.Length == 0)
                 return false;
+
+            if (doServerGCReport)
+            {
+                string name = "SGCStats-" + ProcessName + "-" + ProcessID + ".txt";
+                serverGCActivityStatsFile = new StreamWriter(name, false);
+            }
 
             writer.WriteLine("<h3>Longest Server GCs. (CPU time by heap)</h3>");
             RenderServerGcLegend(writer);
@@ -1066,6 +1130,9 @@ namespace Stats
                     gcGraphsToRender--;
                 }
             }
+
+            if (serverGCActivityStatsFile != null)
+                serverGCActivityStatsFile.Close();
             return true;
         }
 
@@ -1774,15 +1841,33 @@ namespace Stats
         // GC we are firing the GCEnd/GCHeaps events and Global/Perheap events in the reversed order.
         // This is so that the Global/Perheap events can still be attributed to the right BGC.
         GCEvent lastCompletedGC = null;
+
         // We don't necessarily have the GCSettings event (only fired at the beginning if we attach)
         // So we have to detect whether we are running server GC or not.
         // Till we get our first GlobalHeapHistory event which indicates whether we use server GC 
         // or not this remains -1.
         public int isServerGCUsed = -1;
+        public bool gotThreadInfo = false;
         public int heapCount = -1;
         // This is the server GC threads. It's built up in the 2nd server GC we see. 
         Dictionary<int, int> serverGCThreads = null;
+        public StreamWriter serverGCActivityStatsFile = null;
 
+        internal void LogServerGCAnalysis(string format, params Object[] args)
+        {
+            if (serverGCActivityStatsFile != null)
+            {
+                serverGCActivityStatsFile.WriteLine(format, args);
+            }
+        }
+
+        internal void LogServerGCAnalysis(string msg)
+        {
+            if (serverGCActivityStatsFile != null)
+            {
+                serverGCActivityStatsFile.WriteLine(msg);
+            }
+        }
 
         internal bool m_detailedGCInfo;
         int IsServerGCThread(int threadID)
@@ -2087,6 +2172,13 @@ namespace Stats
                 return false;
         }
 
+        // Server history per heap. This is for CSwitch/CPU sample/Join events.
+        // Each server GC thread goes through this flow during each GC
+        // 1) runs server GC code
+        // 2) joins with other GC threads
+        // 3) restarts
+        // 4) goes back to 1).
+        // We call 1 through 3 an activity. There are as many activities as there are joins.
         public class ServerGcHistory
         {
             public int HeapId;
@@ -2095,6 +2187,9 @@ namespace Stats
             public int GcWorkingThreadPriority;
             public GrowableArray<GcWorkSpan> SwitchSpans;
             public GrowableArray<GcWorkSpan> SampleSpans;
+            ServerGCThreadStateInfo[] activityStats;
+            double lastGCSpanEndTime;
+            double gcReadyTime; // When GC thread is ready to run.
 
             //list of times in msc starting from GC start when GCJoin events were fired for this heap
             private GrowableArray<GcJoin> GcJoins;
@@ -2127,14 +2222,52 @@ namespace Stats
                 public double AbsoluteTimestampMsc;
                 public GcJoinType Type;
                 public GcJoinTime Time;
+                public int JoinID;
             }
 
+            internal enum ServerGCThreadState
+            {
+                // This is when GC thread needs to run to do GC work. We care the most about
+                // other threads running during this state.
+                SGCState_Ready = 0,
+                // GC thread doesn't need the CPU so other threads can run and don't count as
+                // interference to the GC thread.
+                SGCState_WaitInJoin = 1,
+                // This is when GC needs to do work on a single thread. Other threads running
+                // in this state is also important.
+                SGCState_SingleThreaded = 2,
+                // For the last joined thread, this is how long it took between restart start and end.
+                // For other threads, this is when restart start is fired and when this join actually
+                // ended. This usually should be really short and interference is also important.
+                SGCState_WaitingInRestart = 3,
+                SGCState_Max = 4,
+            }
 
+            internal class OtherThreadInfo
+            {
+                public string processName;
+                public double runningTime;
+
+                public OtherThreadInfo(string name, double time)
+                {
+                    processName = name;
+                    runningTime = time;
+                }
+            }
+
+            internal class ServerGCThreadStateInfo
+            {
+                public double gcThreadRunningTime;
+                // Process ID and running time in that process.
+                // The process ID could be the current process, but not the GC thread.
+                public Dictionary<int, OtherThreadInfo> otherThreadsRunningTime;
+            }
 
             public void AddSampleEvent(ThreadWorkSpan sample)
             {
                 GcWorkSpan lastSpan = SampleSpans.Count > 0 ? SampleSpans[SampleSpans.Count - 1] : null;
-                if (lastSpan != null && lastSpan.ThreadId == sample.ThreadId && lastSpan.ProcessId == sample.ProcessId)
+                if (lastSpan != null && lastSpan.ThreadId == sample.ThreadId && lastSpan.ProcessId == sample.ProcessId && 
+                    ((ulong)sample.AbsoluteTimestampMsc == (ulong)(lastSpan.AbsoluteTimestampMsc + lastSpan.DurationMsc)))
                 {
                     lastSpan.DurationMsc++;
                 }
@@ -2184,15 +2317,20 @@ namespace Stats
                 }
             }
 
+            // A note about the join events - the restart events have no heap number associated so 
+            // we add them to every heap with the ProcessorNumber so we know which heap/processor it was 
+            // fired on.
+            // Also for these restart events, the id field is always -1.
             internal void AddJoin(GCJoinTraceData data)
             {
                 GcJoins.Add(new GcJoin
                 {
-                    Heap = data.ProcessorNumber, //data.Heap is not reliable for reset events, so we use ProcessorNumber
+                    Heap = data.ProcessorNumber,
                     AbsoluteTimestampMsc = data.TimeStampRelativeMSec,
                     RelativeTimestampMsc = data.TimeStampRelativeMSec - Parent.PauseStartRelativeMSec,
                     Type = data.JoinType,
                     Time = data.JoinTime,
+                    JoinID = data.GCID,
                 });
             }
 
@@ -2217,6 +2355,13 @@ namespace Stats
                     {WorkSpanType.LowPriThread, "rgb(0,100,220)"}, 
                 };
 
+            private static string[] SGCThreadStateDesc = new string[(int)ServerGCThreadState.SGCState_Max]
+            {
+                "GC thread needs to run - non GC threads running on this CPU means GC runs slower",
+                "GC thread is waiting to synchronize with other threads - non GC threads running does not affect GC",
+                "GC thread needs to run single threaded work - non GC threads running on this CPU means GC runs slower", 
+                "GC thread is waiting to restart - non GC threads running on this CPU means GC runs slower",
+            };
 
             internal void RenderGraph(TextWriter writer, int scale)
             {
@@ -2229,7 +2374,8 @@ namespace Stats
                     writer.WriteLine(string.Format("<rect x='{0}' y='32' width='1' height='4' style='fill:black;' />", scale * i));
                 }
 
-                if (SwitchSpans.Count > 0)
+                // Server GC report isn't implemented for CSwitch yet.
+                if ((SwitchSpans.Count > 0) && !GCProcess.doServerGCReport)
                 {
                     RenderSwitches(writer, scale);
                 }
@@ -2289,6 +2435,94 @@ namespace Stats
                 writer.WriteLine("</svg>");
             }
 
+            private void UpdateActivityThreadTime(GcWorkSpan span, ServerGCThreadStateInfo info, double threadTime, ServerGCThreadState currentThreadState)
+            {
+                Parent.Parent.LogServerGCAnalysis("TIME: {0, 20} - {1}: {2:n3}ms (span: {3:n3} ms -> {4:n3} ms({5:n3}))",
+                    currentThreadState, span.ProcessName,
+                    threadTime,
+                    span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc), span.DurationMsc);
+
+                if (span.Type == WorkSpanType.GcThread)
+                    info.gcThreadRunningTime += threadTime;
+                else
+                {
+                    if (info.otherThreadsRunningTime.ContainsKey(span.ProcessId))
+                    {
+                        OtherThreadInfo other = info.otherThreadsRunningTime[span.ProcessId];
+                        if (!other.processName.Contains(span.ProcessName))
+                            other.processName += ";" + span.ProcessName;
+                        other.runningTime += threadTime;
+                    }
+                    else
+                    {
+                        info.otherThreadsRunningTime.Add(span.ProcessId, new OtherThreadInfo(span.ProcessName, threadTime));
+                    }
+                }
+
+                if ((currentThreadState != ServerGCThreadState.SGCState_WaitInJoin) &&
+                    (span.ThreadId != GcWorkingThreadId) &&
+                    (threadTime > 5))
+                {
+                    Parent.Parent.LogServerGCAnalysis("Long interference of {0:n3} ms detected on thread {1}({2}:{3}) ({4:n3} ms -> {5:n3} ms)",
+                        threadTime, span.ThreadId, span.ProcessName, span.ProcessId, span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc));
+                }
+                if ((Parent.Parent.ProcessID == 9140) &&
+                    (currentThreadState != ServerGCThreadState.SGCState_WaitInJoin) &&
+                    (span.ThreadId == GcWorkingThreadId) &&
+                    // If the reason is not one of UserRequest, QuantumEnd or YieldExecution, we need to pay attention.
+                    ((span.WaitReason != 6) || (span.WaitReason != 30) || (span.WaitReason != 33)))
+                {
+                    Parent.Parent.LogServerGCAnalysis("S: {0, 30} - {1:n3} ms -> {2:n3} ms({3:n3}) (WR: {4}), pri: {5}",
+                        currentThreadState, span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc), threadTime,
+                        span.WaitReason, span.Priority);
+                    Parent.Parent.LogServerGCAnalysis("S: {8} - {0:n3} ms from thread {1}({2}:{3})(WR: {4}), pri: {5} ({6:n3} ms -> {7:n3} ms)",
+                        threadTime, span.ThreadId, span.ProcessName, span.ProcessId, span.WaitReason, span.Priority, span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc),
+                        currentThreadState);
+                }
+            }
+
+            private ServerGCThreadState UpdateCurrentThreadState(GcJoin join, ServerGCThreadState oldState)
+            {
+                ServerGCThreadState newThreadState = oldState;
+                switch (join.Time)
+                {
+                    case GcJoinTime.Start:
+                        if ((join.Type == GcJoinType.LastJoin) || (join.Type == GcJoinType.FirstJoin))
+                            newThreadState = ServerGCThreadState.SGCState_SingleThreaded;
+                        else if (join.Type == GcJoinType.Restart)
+                            newThreadState = ServerGCThreadState.SGCState_WaitingInRestart;
+                        else
+                            newThreadState = ServerGCThreadState.SGCState_WaitInJoin;
+                        break;
+                    case GcJoinTime.End:
+                        if (join.Heap == HeapId)
+                            newThreadState = ServerGCThreadState.SGCState_Ready;
+                        break;
+                    default:
+                        break;
+                }
+
+                Parent.Parent.LogServerGCAnalysis("S: {0}->{1} {2:n3} - heap: {3}, time: {4}, type: {5}, id: {6}",
+                    oldState, newThreadState,
+                    join.AbsoluteTimestampMsc,
+                    join.Heap, join.Time, join.Type, join.JoinID);
+
+                return newThreadState;
+            }
+
+            // This is for verbose logging within a span (CSwitch or CPU sample).
+            private void LogJoinInSpan(int currentJoinEventIndex, ServerGCThreadState state)
+            {
+                if ((GcJoins.Count > 0) && (currentJoinEventIndex < GcJoins.Count))
+                {
+                    Parent.Parent.LogServerGCAnalysis("{0:n3}: Heap{1}: Join {2}: type: {3}, time: {4} [S={5}]",
+                        GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc,
+                        GcJoins[currentJoinEventIndex].Heap,
+                        currentJoinEventIndex,
+                        GcJoins[currentJoinEventIndex].Type, GcJoins[currentJoinEventIndex].Time, state);
+                }
+            }
+
             private void RenderSwitches(TextWriter writer, int scale)
             {
                 double lastTimestamp = 0;
@@ -2325,11 +2559,100 @@ namespace Stats
 
             private void RenderSamples(TextWriter writer, int scale)
             {
+                if (GcJoins.Count > 0)
+                {
+                    activityStats = new ServerGCThreadStateInfo[(int)ServerGCThreadState.SGCState_Max];
+                    for (int i = 0; i < activityStats.Length; i++)
+                    {
+                        activityStats[i] = new ServerGCThreadStateInfo();
+                        activityStats[i].otherThreadsRunningTime = new Dictionary<int, OtherThreadInfo>();
+                    }
+                }
+
+                int currentJoinEventIndex = 0;
+                ServerGCThreadState currentThreadState = ServerGCThreadState.SGCState_Ready;
+                ServerGCThreadState lastThreadState = currentThreadState;
+                gcReadyTime = Parent.PauseStartRelativeMSec;
+                lastGCSpanEndTime = gcReadyTime;
+
+                Parent.Parent.LogServerGCAnalysis("GC#{0}, gen{1}, {2:n3} ms -> {3:n3} ms",
+                    Parent.GCNumber, Parent.GCGeneration, Parent.PauseStartRelativeMSec, (Parent.PauseStartRelativeMSec + Parent.PauseDurationMSec));
+                Parent.Parent.LogServerGCAnalysis("GC thread ready to run at {0:n3}ms", gcReadyTime);
+
                 foreach (var span in SampleSpans)
                 {
                     //filtering out workspans that ended before GC actually started
                     if (span.AbsoluteTimestampMsc + span.DurationMsc >= Parent.PauseStartRelativeMSec)
                     {
+                        //Parent.Parent.LogServerGCAnalysis("CPU: {0:n1}->{1:n1}({2:n1}ms) from Process: {3}, thread {4}",
+                        //    span.AbsoluteTimestampMsc, (span.AbsoluteTimestampMsc + span.DurationMsc),
+                        //    span.DurationMsc,
+                        //    span.ProcessName, span.ThreadId);
+
+                        if ((GcJoins.Count > 0) && (currentJoinEventIndex < GcJoins.Count))
+                        {
+                            if (span.AbsoluteTimestampMsc > GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc)
+                            {
+                                while ((currentJoinEventIndex < GcJoins.Count) && 
+                                       (GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc < span.AbsoluteTimestampMsc))
+                                {
+                                    currentThreadState = UpdateCurrentThreadState(GcJoins[currentJoinEventIndex], currentThreadState);
+                                    //LogJoinInSpan(currentJoinEventIndex, currentThreadState);
+                                    currentJoinEventIndex++;
+                                }
+                            }
+
+                            double spanEndTime = span.AbsoluteTimestampMsc + span.DurationMsc;
+
+                            // We straddle a join event, update state and attribute the thread time. Note there can be multiple joins
+                            // in this sample.
+                            if ((currentJoinEventIndex < GcJoins.Count) && (spanEndTime > GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc))
+                            {
+                                double lastStateEndTime = ((span.AbsoluteTimestampMsc < Parent.PauseStartRelativeMSec) ?
+                                                           Parent.PauseStartRelativeMSec : span.AbsoluteTimestampMsc);
+
+                                while ((currentJoinEventIndex < GcJoins.Count) &&
+                                       (GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc < spanEndTime))
+                                {
+                                    double currentStateDuration = GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc - lastStateEndTime;
+                                    UpdateActivityThreadTime(span, activityStats[(int)currentThreadState], currentStateDuration, currentThreadState);
+
+                                    currentThreadState = UpdateCurrentThreadState(GcJoins[currentJoinEventIndex], currentThreadState);
+                                    //LogJoinInSpan(currentJoinEventIndex, currentThreadState);
+                                    lastStateEndTime = GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc;
+                                    currentJoinEventIndex++;
+                                }
+
+                                // Attribute the last part of the sample.
+                                UpdateActivityThreadTime(span, activityStats[(int)currentThreadState], (spanEndTime - lastStateEndTime), currentThreadState);
+                            }
+                            else
+                            {
+                                double duration = ((span.AbsoluteTimestampMsc < Parent.PauseStartRelativeMSec) ?
+                                                   (span.AbsoluteTimestampMsc + span.DurationMsc - Parent.PauseStartRelativeMSec) :
+                                                   span.DurationMsc);
+
+                                UpdateActivityThreadTime(span, activityStats[(int)currentThreadState], duration, currentThreadState);
+                            }
+                        }
+
+                        if (currentThreadState != lastThreadState)
+                        {
+                            if (lastThreadState == ServerGCThreadState.SGCState_WaitInJoin)
+                            {
+                                //Parent.Parent.LogServerGCAnalysis("last S: {0}, this S: {1}, GC thread ready to run at {2:n3}ms",
+                                //    lastThreadState, currentThreadState, GcJoins[currentJoinEventIndex - 1].AbsoluteTimestampMsc);
+                                gcReadyTime = GcJoins[currentJoinEventIndex - 1].AbsoluteTimestampMsc;
+                            }
+                            lastThreadState = currentThreadState;
+                        }
+
+                        if (span.ThreadId == GcWorkingThreadId)
+                        {
+                            lastGCSpanEndTime = span.AbsoluteTimestampMsc + span.DurationMsc;
+                            //Parent.Parent.LogServerGCAnalysis("Updating last GC span end time to {0:n3}ms", lastGCSpanEndTime);
+                        }
+
                         string color = Type2Color[span.Type];
                         int width = scale * (int)span.DurationMsc;
                         int x = scale * (int)(span.RelativeTimestampMsc);
@@ -2343,6 +2666,36 @@ namespace Stats
                         writer.WriteLine(string.Format("<title>{0} (PID: {1} TIP: {2} Priority: {3} Timestamp:{4:0.00} Duration: {4}ms WR:{5})</title>",
                             span.ProcessName, span.ProcessId, span.ThreadId, span.Priority, span.AbsoluteTimestampMsc, (int)span.DurationMsc, span.WaitReason));
                         writer.WriteLine("</rect>");
+                    }
+                }
+
+                if (GcJoins.Count > 0)
+                {
+                    for (int i = 0; i < (int)ServerGCThreadState.SGCState_Max; i++)
+                    {
+                        ServerGCThreadStateInfo info = activityStats[i];
+                        Parent.Parent.LogServerGCAnalysis("---------[State - {0}]", SGCThreadStateDesc[i]);
+                        Parent.Parent.LogServerGCAnalysis("[S{0}] GC: {1:n3} ms", i, info.gcThreadRunningTime);
+                        var otherThreads = from pair in info.otherThreadsRunningTime
+                                           orderby pair.Value.runningTime descending
+                                           select pair;
+
+                        // This is the time from non GC threads.
+                        double interferenceTime = 0;
+
+                        foreach (KeyValuePair<int, OtherThreadInfo> item in otherThreads)
+                        {
+                            // If it's less than 1ms we don't bother to print it.
+                            //if (item.Value.runningTime > 1)
+                                Parent.Parent.LogServerGCAnalysis("Process {0,8}({1,10}): {2:n3} ms", item.Key, item.Value.processName, item.Value.runningTime);
+                            interferenceTime += item.Value.runningTime;
+                        }
+
+                        if ((i != (int)ServerGCThreadState.SGCState_WaitInJoin) && ((interferenceTime + info.gcThreadRunningTime) > 0.0))
+                        {
+                            Parent.Parent.LogServerGCAnalysis("[S{0}] Other threads took away {1:n2}% CPU from GC running time {2:n3}",
+                                (ServerGCThreadState)i, (int)((interferenceTime * 100.0) / (interferenceTime + info.gcThreadRunningTime)), info.gcThreadRunningTime);
+                        }
                     }
                 }
             }
@@ -2455,7 +2808,6 @@ namespace Stats
                 foreach (var heap in ServerGcHeapHistories)
                     heap.AddJoin(data);
             }
-
         }
 
         public double GetTotalGCTime()
@@ -2908,6 +3260,7 @@ namespace Stats
         {
             if (PerHeapHistories == null)
                 return double.NaN;
+
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
                 ret += PerHeapGenData[HeapIndex][(int)gen].Fragmentation / 1000000.0;
@@ -3606,6 +3959,7 @@ namespace Stats
                     writer.WriteLine("<table><tr>");
                     writer.WriteLine("<td style='min-width:200px'>Heap #" + heap.HeapId + " Gc Thread Id: " + heap.GcWorkingThreadId + "</td>");
                     writer.WriteLine("<td>");
+                    Parent.LogServerGCAnalysis("--------------[HEAP {0}]--------------", heap.HeapId);
                     heap.RenderGraph(writer, scale);
                     writer.WriteLine("</td></tr></table>");
                     hasData = true;
