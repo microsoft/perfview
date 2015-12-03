@@ -218,7 +218,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         type = typeof(int);
                                         // By making map non-null we indicate that this is a enum, but we don't add any enum
                                         // mappings, which makes it print as Hex.  Thus we are just saying 'print as hex'  
-                                        map = new SortedList<long, string>(0);
+                                        map = new SortedDictionary<long, string>();
                                     }
                                     else if (typeStr == "Double")
                                         type = typeof(double);
@@ -274,7 +274,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 // If it has a !x qualifer after it change th map so it will be decoded as hex.  
                                 if (match.Groups[2].Value == "x" && 0 <= argNum && argNum < template.payloadFetches.Length &&
                                     template.payloadFetches[argNum].Map == null)
-                                    template.payloadFetches[argNum].Map = new SortedList<long, string>(0);
+                                    template.payloadFetches[argNum].Map = new SortedDictionary<long, string>();
 
                                 return "%" + (argNum + 1).ToString();
                             });

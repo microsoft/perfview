@@ -42,7 +42,7 @@ namespace Microsoft.Diagnostics.Utilities
             {
                 yield return stream.ReadLine();
             }
-            stream.Close();
+            stream.Dispose();
         }
 
         /// <summary>

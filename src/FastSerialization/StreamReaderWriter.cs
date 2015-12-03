@@ -610,7 +610,7 @@ namespace FastSerialization
         protected override void Dispose(bool disposing)
         {
             if (disposing)
-                inputStream.Close();
+                inputStream.Dispose();
             base.Dispose(disposing);
         }
 
@@ -942,7 +942,7 @@ namespace FastSerialization
             if (disposing)
             {
                 Flush();
-                outputStream.Close();
+                outputStream.Dispose();
             }
             base.Dispose(disposing);
         }

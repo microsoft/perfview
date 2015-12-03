@@ -1355,7 +1355,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // TODO review. 
                 if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
                 {
-                    Console.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
+                    Debug.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
                     break;
                 }
 #endif
@@ -2871,8 +2871,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
-                Console.WriteLine("Exception: " + e.Message);
+                Debug.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
+                Debug.WriteLine("Exception: " + e.Message);
             }
 #endif
         }
@@ -2951,7 +2951,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!entry->inUse)
                     break;
 
-                // Console.Write("Collision " + *asGuid + " opcode " + opcode + " and " + templatesInfo[hash].providerGuid + " opcode " + templatesInfo[hash].opcode);
+                // Trace.Write("Collision " + *asGuid + " opcode " + opcode + " and " + templatesInfo[hash].providerGuid + " opcode " + templatesInfo[hash].opcode);
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
             }
             unhandledEventTemplate.eventRecord = eventRecord;

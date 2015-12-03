@@ -801,7 +801,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return "";
 
                 long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
-                if (map is SortedList<long, string>)
+                if (map is SortedDictionary<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
                     // It is a bitmap, compute the bits from the bitmap.  
@@ -1289,7 +1289,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var map = Map;
                 if (map != null)
                 {
-                    var asSortedList = map as SortedList<long, string>;
+                    var asSortedList = map as SortedDictionary<long, string>;
                     if (asSortedList != null)
                         serializer.Write((byte)1);
                     else
@@ -1339,7 +1339,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     IDictionary<long, string> map = null;
                     int mapCount = deserializer.ReadInt();
                     if (fetchType == 1)
-                        map = new SortedList<long, string>(mapCount);
+                        map = new SortedDictionary<long, string>();
                     else
                         map = new Dictionary<long, string>(mapCount);
 
@@ -1802,10 +1802,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     tasks[reader.GetAttribute("name")] = info;
                                 } break;
                             case "valueMap":
-                                map = new Dictionary<long, string>();    // value maps use dictionaries
+                                map = new Dictionary<long, string>();           // value maps use dictionaries
                                 goto DoMap;
                             case "bitMap":
-                                map = new SortedList<long, string>();    // Bitmaps stored as sorted lists
+                                map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
                             DoMap:
                                 string name = reader.GetAttribute("name");

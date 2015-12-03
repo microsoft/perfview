@@ -609,7 +609,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
                 else if (ThreadRunning)
                 {
-                    Debug.WriteLine("Unblocking unblocked thread at {0:f3}", timeRelativeMSec);
+                    Debug.WriteLine("Unblocking unblocked thread at " + timeRelativeMSec.ToString("f3"));
                     Debug.Assert(false);
                 }
                 ProcessorNumberWhereAwakened = (ushort)processorNumber;

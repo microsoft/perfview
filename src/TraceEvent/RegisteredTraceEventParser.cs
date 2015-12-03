@@ -947,7 +947,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret; ;
             }
 
-            // Parses a EVENT_MAP_INFO into a Dicontary for a Value map or a SortedList for a Bitmap
+            // Parses a EVENT_MAP_INFO into a Dictionary for a Value map or a SortedDictionary for a Bitmap
             // returns null if it does not know how to parse it.  
             internal unsafe static IDictionary<long, string> ParseMap(EVENT_MAP_INFO* enumInfo, byte* enumBuffer)
             {
@@ -962,7 +962,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
                         map = new Dictionary<long, string>();
                     else
-                        map = new SortedList<long, string>();
+                        map = new SortedDictionary<long, string>();
 
                     EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
                     for (int k = 0; k < enumInfo->EntryCount; k++)
