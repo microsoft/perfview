@@ -45,7 +45,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // make a registeredParser to resolve self-describing events (and more).  
-            registeredParser = new RegisteredTraceEventParser(source);
+            registeredParser = new RegisteredTraceEventParser(source, true);
             // But cause any of its new definitions to work on my subscriptions.  
             registeredParser.NewEventDefinition = OnNewEventDefintion;
         }

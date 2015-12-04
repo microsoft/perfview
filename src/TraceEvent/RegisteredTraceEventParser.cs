@@ -23,8 +23,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Create a new RegisteredTraceEventParser and attach it to the given TraceEventSource
         /// </summary>
-        public RegisteredTraceEventParser(TraceEventSource source)
-            : base(source) { }
+        public RegisteredTraceEventParser(TraceEventSource source, bool dontRegister = false)
+            : base(source, dontRegister) { }
 
         /// <summary>
         /// Given a provider name that has been registered with the operating system, get
@@ -1163,8 +1163,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Create a new ExternalTraceEventParser and attach it to the given TraceEventSource
         /// </summary>
-        protected unsafe ExternalTraceEventParser(TraceEventSource source)
-            : base(source)
+        protected unsafe ExternalTraceEventParser(TraceEventSource source, bool dontRegister = false)
+            : base(source, dontRegister)
         {
             m_state = (ExternalTraceEventParserState)StateObject;
             if (m_state == null)

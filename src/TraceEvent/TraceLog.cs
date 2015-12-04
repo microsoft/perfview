@@ -2975,7 +2975,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 56; }
+            get { return 57; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -4033,10 +4033,31 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 TraceEventNativeMethods.EVENT_RECORD* ptr = (TraceEventNativeMethods.EVENT_RECORD*)reader.GetPointer(TraceLog.headerSize);
                 TraceEvent ret = lookup.Lookup(ptr);
 
-                // We use the first item in the linked list in 'ret'.   This should always be the 'best' way of decoding
-                // (that it is a static template if that exists, otherwise a DynamicTraceEvent).   This is because we
-                // only add DynamicTraceEvents lazily and thus only when traversing the list of events.  Static templates
-                // should have been registered before any traversing happens and thus will be first.  
+                // We have to choose a 'canonical' template to return.   You could imagine that it does not matter
+                // as the information would be identical but that is not guaranteed.   In particular the registered 
+                // parser is often different than a hand-created one.  Thus constancy is important.    We basically
+                // pick the first template that was registered with a null target (Which are the default ones that
+                // are registered to TraceLog).  If there are none of those we fall back the first one.  This insures
+                // we always pick the same one if there true callbacks (GetSource()) registered as well. 
+                if (ret.Target != null)    
+                {
+                    TraceEvent canonical = ret;
+                    for(;;)
+                    {
+                        canonical = canonical.next;
+                        if (canonical == null)
+                            break;
+                        if (canonical.Target == null)
+                        {
+                            // Make the canonical one the one we use, so we initialize it to the correct data.  
+                            canonical.eventRecord = ret.eventRecord;
+                            canonical.userData = ret.userData;
+                            canonical.eventIndex = ret.eventIndex;
+                            ret = canonical;
+                            break;
+                        }
+                    }
+                }
 
                 // This first check is just a perf optimization so in the common case we don't to
                 // the extra logic 

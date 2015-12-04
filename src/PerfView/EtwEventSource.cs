@@ -123,11 +123,11 @@ namespace PerfView
                 var startStopRecords = new Dictionary<StartStopKey, double>(10);
 
                 // Figure out if you need m_activityComputer or not 
-                if (ColumnsToDisplay == null || ColumnsToDisplay.Count == 0)
-                    m_needsComputers = true;
-                else
+                // Because it is moderately expensive, and not typically used, we only include the activity stuff 
+                // when you explicitly ask for it 
+                m_needsComputers = false;
+                if (ColumnsToDisplay != null)
                 {
-                    m_needsComputers = false;
                     foreach (string column in ColumnsToDisplay)
                     {
                         if (column == "*" || column == "ActivityIndex" || column == "StartStopActvity" || column == "ActivityCreationMSec")

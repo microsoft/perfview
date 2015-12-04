@@ -29,7 +29,7 @@ using Address = System.UInt64;
 // For more details.  In particular the second blog post will contain the TraceEventProgrammersGuide.docx, which has
 // more background.
 //
-// Finally if you are intersted in creating your own TraceEventParsers for your ETW provider, inside Microsoft you can access
+// Finally if you are interested in creating your own TraceEventParsers for your ETW provider, inside Microsoft you can access
 // the TraceParserGen tool at http://toolbox/TraceParserGen.   There is also a copy available externally at http://1drv.ms/1Rxk2iD 
 // in the TraceParserGen.zip file and the TraceParserGen.src.zip file.   
 //
@@ -1843,7 +1843,6 @@ namespace Microsoft.Diagnostics.Tracing
         // If False we are using ProviderGuid and EventId
         internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
         internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
-
         internal bool containsSelfDescribingMetadata;
 
         // These are constant over the TraceEvent's lifetime (after setup) (except for the UnhandledTraceEvent
@@ -2407,15 +2406,16 @@ namespace Microsoft.Diagnostics.Tracing
 
         #region protected
         /// <summary>
-        /// All TraceEventParsers invoke this constructor. 
+        /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source. 
         /// </summary>
-        protected TraceEventParser(TraceEventSource source)
+        protected TraceEventParser(TraceEventSource source, bool dontRegister=false)
         {
             Debug.Assert(source != null);
             this.source = source;
             this.stateKey = @"parsers\" + this.GetType().FullName;
 
-            this.source.RegisterParser(this);
+            if (!dontRegister)
+                this.source.RegisterParser(this);
         }
 
         /// <summary>
