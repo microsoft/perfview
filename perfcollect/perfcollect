@@ -20,12 +20,12 @@
 #    This will start data collection.
 # 3. Let the repro run as long as you need to capture the performance problem.
 # 4. Hit CTRL+C to stop collection.
-#    When collection is stopped, the script will create a trace.tgz file matching the name specified on the
+#    When collection is stopped, the script will create a trace.zip file matching the name specified on the
 #    command line.  This file will contain the trace, JIT-compiled symbol information, and all debugging
 #    symbols for binaries referenced by this trace that were available on the machine at collection time.
 #
 # How to view a performance trace:
-# 1. Run this script: ./perfcollect view samplePerfTrace.trace.tgz
+# 1. Run this script: ./perfcollect view samplePerfTrace.trace.zip
 #    This will extract the trace, place and register all symbol files and JIT-compiled symbol information
 #    and start the perf_event viewer.  By default, you will be looking at a callee view - stacks are ordered
 #    top down.  For a caller or bottom up view, specify '-graphtype caller'. 
@@ -559,9 +559,9 @@ ProcessCollectedData()
 	mv * $directoryName > /dev/null 2>&1
 
 	# Compress the data.
-	local archiveSuffix=".tgz"
+	local archiveSuffix=".zip"
 	local archiveName=$directoryName$archiveSuffix
-	tar -czvf $archiveName $directoryName 
+	zip -r $archiveName $directoryName
 
 	# Move back to the original directory.
 	popd
@@ -755,7 +755,7 @@ DoView()
 	local tempDir=`mktemp -d`
 	
 	# Extract the trace files.
-	tar -xzvf $inputTraceName -C $tempDir
+	unzip $inputTraceName -d $tempDir
 	
 	# Move the to temp directory.
 	pushd $tempDir
