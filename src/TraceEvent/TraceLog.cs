@@ -8409,8 +8409,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (truncatedRawId == 0xFFFFFFFF)
                 {
                     if (kind == ActivityKind.Implied)
-                        return "Implied_" + Index.ToString();
-                    return "ThreadIdx_" + Index.ToString();
+                        return "Implied/TID=" + Thread.ThreadID;
+                    return "Thread/TID=" + Thread.ThreadID;
                 }
                 string rawIdString = (truncatedRawId < 0x1000000) ? truncatedRawId.ToString() : ("0x" + truncatedRawId.ToString("x"));
                 return "C=" + CreationTimeRelativeMSec.ToString("f3") + "/S=" + StartTimeRelativeMSec.ToString("f3") + "/R=" + rawIdString;
