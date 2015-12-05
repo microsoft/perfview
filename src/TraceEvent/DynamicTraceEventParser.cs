@@ -609,7 +609,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (isAnsi)
                             return GetFixedAnsiStringAt(size, offset);
                         else
-                            return GetFixedUnicodeStringAt(size / 2, offset);
+                            return GetFixedUnicodeStringAt(size, offset);
                     }
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
@@ -991,7 +991,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return offset + GetInt32At(offset - 4);
                 else if ((size & ~IS_ANSI) == SIZE16_PRECEEDS)
                     return offset + (ushort)GetInt16At(offset - 2);
-                else if ((size & ~IS_ANSI) == SIZE16_PREFIX)
+                else if (size == SIZE16_PREFIX)
+                    return offset + (ushort)(GetInt16At(offset)*2 + 2);
+                else if (size == (SIZE16_PREFIX | IS_ANSI))
                     return offset + (ushort)(GetInt16At(offset) + 2);
                 else
                     return ushort.MaxValue;     // Something sure to fail 
@@ -1037,9 +1039,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // SIZE32_PRECEEDS | IS_ANSI == MaxValue - 2
         internal const ushort SIZE32_PRECEEDS = ushort.MaxValue - 3;   // binary, BYTE Count is a 32 bit int directly before
         // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 4
-        internal const ushort SIZE16_PRECEEDS = ushort.MaxValue - 5;   // string, BYTE Count is a 16 bit uint directly before this offset
+        internal const ushort SIZE16_PRECEEDS = ushort.MaxValue - 5;   // binary, BYTE Count is a 16 bit uint directly before this offset
         // SIZE16_PREFIX | IS_ANSI == MaxValue - 6
-        internal const ushort SIZE16_PREFIX = ushort.MaxValue - 7;     // string/binary, BYTE Count is a 16 bit uint at this offset followed by data
+        internal const ushort SIZE16_PREFIX = ushort.MaxValue - 7;     // binary it is a BYTES, strings it is a CHAR count.  Count is a 16 bit uint at this offset followed by data
         // SIZE16_PREFIX | IS_ANSI == MaxValue - 8
         internal const ushort SIZE32_PREFIX = ushort.MaxValue - 9;     // binary BYTE Count is a 32 bit int at this offset followed by data. 
         // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 10

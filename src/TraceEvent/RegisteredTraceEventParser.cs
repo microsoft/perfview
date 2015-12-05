@@ -808,9 +808,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     // Remove anything that does not look like an ID (.e.g space)
                     propertyName = Regex.Replace(propertyName, "[^A-Za-z0-9_]", "");
 
-                    // If it is an array, the field offset starts over at 0.  (since each element has a different offset from the beginning)
+                    // If it is an array, the field offset starts over at 0 because they are 
+                    // describing the ELMEMENT not the array and thus each element starts at 0
+                    // Strings do NOT describe the element and thus don't get this treatment. 
                     var arrayFieldOffset = fieldOffset;
-                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0)
+                    if ((propertyInfo->Flags & (PROPERTY_FLAGS.ParamCount | PROPERTY_FLAGS.ParamLength)) != 0 &&
+                        propertyInfo->InType != TdhInputType.UnicodeString && propertyInfo->InType != TdhInputType.AnsiString)
                         fieldOffset = 0;
 
                     // Is this a nested struct?
@@ -921,9 +924,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
-                        propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
-                        propertyFetch.Size = arraySize;
+                        // Strings are treated specially (we don't treat them as an array of chars.
+                        // They don't need an arrayFetch but DO need set the size and offset appropriately
+                        if (propertyFetch.Type != typeof(string))
+                        {
+                            Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
+                            propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
+                            propertyFetch.Size = arraySize;
+                        }
+                        else
+                        {
+                            propertyFetch.Size = arraySize;
+                            propertyFetch.Offset = arrayFieldOffset;
+                        }
+
                         fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
                     }
 
