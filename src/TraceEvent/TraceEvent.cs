@@ -2408,7 +2408,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source. 
         /// </summary>
-        protected TraceEventParser(TraceEventSource source, bool dontRegister=false)
+        protected TraceEventParser(TraceEventSource source, bool dontRegister = false)
         {
             Debug.Assert(source != null);
             this.source = source;
@@ -2534,7 +2534,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-                 
+
             }
             {
 #if DEBUG   // Assert the template did NOT exist before.
@@ -3144,10 +3144,27 @@ namespace Microsoft.Diagnostics.Tracing
                         // in that case templates[hash] == null and we don't go down this branch.  
                         Debug.Assert(template.next == null);
 
-                        // Goto the end of the list (preserve order of adding events).
-                        while (curTemplate.next != null)
-                            curTemplate = curTemplate.next;
-                        curTemplate.next = template;
+                        // Normally goto the end of the list (callbacks happen
+                        // in the order of registration).
+                        if (template.Target != null)
+                        {
+                            while (curTemplate.next != null)
+                                curTemplate = curTemplate.next;
+                            curTemplate.next = template;
+                        }
+                        else
+                        {
+                            // However the template is null, this is the 'canonical' template 
+                            // and should be first (so that adding callbacks does not change the
+                            // canonical template)  There is no point in having more than one
+                            // so ignore it if there already was one, but otherwise put it in 
+                            // the front of the list 
+                            if (curTemplate.Target != null)
+                            {
+                                template.next = curTemplate;
+                                templates[hash] = template;
+                            }
+                        }
                     }
                     else
                         templates[hash] = template;

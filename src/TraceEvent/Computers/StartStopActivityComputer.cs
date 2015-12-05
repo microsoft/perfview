@@ -526,13 +526,9 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!activityString.StartsWith("//"))
                 {
                     if (activityString.EndsWith("-08090a0b0c0d"))   // We make up fake activity ids (see StartStopActivityComputer ctor) for HttpRequest and SQL Command)
-                    {
-                        // We recognize HttpReqeust SQLCommand and try to preserve an activity-path like experience.  
-                        var parent = (Creator != null) ? Creator.Name : "//";
-                        activityString = parent + "#" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
-                    }
+                        activityString = "SQL" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
                     else
-                        activityString = "@" + activityString;                          // Simply use the GUID as the marker.  
+                        activityString = "@" + activityString;                    // Simply use the GUID as the marker.  
                 }
                 if (ExtraInfo == null)
                     return TaskName + "(" + activityString + ")";

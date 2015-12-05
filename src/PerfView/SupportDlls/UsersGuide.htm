@@ -7747,7 +7747,7 @@
         </li>
         -->
         <li>
-            Version 1.8.14 12/4/15
+            Version 1.8.15 12/4/15
             <ul>
                 <li>
                     Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
@@ -7755,6 +7755,10 @@
                     instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced 
                     relatively recently.  
                 </li>
+                <li>Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
+                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.   
+                    StartStopActivity shows you the name of the start-stop activity that
+                    is logged the event.</li>
             </ul>
         <li>
 <li>

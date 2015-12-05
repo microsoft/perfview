@@ -130,7 +130,7 @@ namespace PerfView
                 {
                     foreach (string column in ColumnsToDisplay)
                     {
-                        if (column == "*" || column == "ActivityIndex" || column == "StartStopActvity" || column == "ActivityCreationMSec")
+                        if (column == "*" || column == "ActivityInfo" || column == "StartStopActvity")
                         {
                             m_needsComputers = true;
                             break;
@@ -396,12 +396,10 @@ namespace PerfView
                         columnsForSelectedEvents[fieldName] = fieldName;
                 }
             }
-            columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
+            columnsForSelectedEvents["ActivityInfo"] = "ActivityInfo";
             columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
-            columnsForSelectedEvents["ActivityCreationMSec"] = "ActivityCreationMSec";
             columnsForSelectedEvents["ThreadID"] = "ThreadID";
             columnsForSelectedEvents["ActivityID"] = "ActivityID";
-            // columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
             columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
             columnsForSelectedEvents["HasStack"] = "HasStack";
             columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
@@ -504,10 +502,8 @@ namespace PerfView
                             string id = activity.ID;
                             if (Math.Abs(activity.StartTimeRelativeMSec - m_timeStampRelativeMSec) < .0005)
                                 id = "^" + id;              // Indicates it is at the start of the task. 
-                            AddField("ActivityIndex", id, columnOrder, restString);
-                            if (activity.Creator != null)
-                                AddField("ActivityCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
-                        }
+                            AddField("ActivityInfo", id, columnOrder, restString);
+                         }
 
                         var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread);
                         if (startStopActivity != null)
