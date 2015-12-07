@@ -3252,7 +3252,7 @@ namespace PerfView
                         }
                         else if (isAnyStartStopTreeNoCallStack)
                         {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
                         }
                         else
                         {
@@ -3297,7 +3297,7 @@ namespace PerfView
                         }
                         else if (isAnyStartStopTreeNoCallStack)
                         {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
                         }
                         else
                         {

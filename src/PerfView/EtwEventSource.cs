@@ -505,9 +505,15 @@ namespace PerfView
                             AddField("ActivityInfo", id, columnOrder, restString);
                          }
 
-                        var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread);
+                        var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread, data);
                         if (startStopActivity != null)
-                            AddField("StartStopActivity", startStopActivity.Name, columnOrder, restString);
+                        {
+                            string name = startStopActivity.Name;
+                            string parentName = "$";
+                            if (startStopActivity.Creator != null)
+                                parentName = startStopActivity.Creator.Name;
+                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString);
+                        }
                     }
                 }
 

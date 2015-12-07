@@ -103,7 +103,7 @@ namespace Microsoft.Diagnostics.Tracing
                             long id = (long)data.PayloadValue(0);
                             // TODO as of 2/2015 there was a bug where the ActivityPath logic was getting this ID wrong, so we get to from the thread. 
                             // relatedActivityID = activityID;
-                            creator = GetCurrentStartStopActivity(thread);
+                            creator = GetCurrentStartStopActivity(thread, data);
                             activityID = new Guid((int)id, (short)(id >> 32), (short)(id >> 48), 6, 7, 8, 9, 10, 11, 12, 13);   // Tail 6,7,8,9,10,11,12,13 means GetResponse
                             goodActivityID = true;
                             taskName = "Http" + data.TaskName;
@@ -122,7 +122,7 @@ namespace Microsoft.Diagnostics.Tracing
                             Debug.Assert(data.payloadNames[0] == "objectId");
                             // TODO as of 2/2015 there was a bug where the ActivityPath logic was getting this ID wrong, so we get to from the thread. 
                             // relatedActivityID = activityID;
-                            creator = GetCurrentStartStopActivity(thread);
+                            creator = GetCurrentStartStopActivity(thread, data);
                             activityID = new Guid((int)data.PayloadValue(0), 1234, 5, 7, 7, 8, 9, 10, 11, 12, 13);  // Tail 7,7,8,9,10,11,12,13 means SQL 
                             goodActivityID = true;
                             taskName = "SQLCommand";
@@ -144,20 +144,12 @@ namespace Microsoft.Diagnostics.Tracing
                             if (goodActivityID)         // V4.6 incorrectly opts this into activity paths (which don't work for stop).  Fix it to not do this. 
                             {
                                 // Also be able to lookup by the incorrect key was well.   (Sometimes stop uses one sometimes the other). 
-#if NEW_4_7_ASPNET // the false branch is temporary as in .NET V4.7 it will no longer work.   The 'true' branch will work on V4.7 but will loose the activity paths.  
                                 extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityID);
                                 var activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
                                 if (activityFix != Guid.Empty)
                                     activityID = activityFix;
                                 else
                                     Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
-#else 
-                                var activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
-                                if (activityFix != Guid.Empty)
-                                    extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityFix);
-                                else
-                                    Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
-#endif
                             }
                         }
                         threadToLastAspNetGuid[(int)thread.ThreadIndex] = Guid.Empty;
@@ -259,8 +251,11 @@ namespace Microsoft.Diagnostics.Tracing
         }
         /// <summary>
         /// The current start-stop activity on the given thread.   
+        /// If present 'context' is used to look up the current activityID and try to use that to repair missing Starts.  
+        /// Basically if we can't figure out what StartStop activity the thread from just the threadID we can use 
+        /// the activityID to find it.  
         /// </summary>
-        public StartStopActivity GetCurrentStartStopActivity(TraceThread thread)
+        public StartStopActivity GetCurrentStartStopActivity(TraceThread thread, TraceEvent context=null)
         {
             DoStopIfNecessary(false);        // Do any deferred stops. 
 
@@ -271,6 +266,13 @@ namespace Microsoft.Diagnostics.Tracing
 
             int taskIndex = (int)curTaskActivity.Index;
             var ret = m_traceActivityToStartStopActivity.Get(taskIndex);
+
+            if (ret == null && context != null)
+            {
+                Guid activityID = context.ActivityID;
+                if (activityID != Guid.Empty)
+                    m_activeActivitiesByActivityId.TryGetValue(activityID, out ret);
+            }
 
             // If the activity is stopped, then don't return it, return its parent.   
             while (ret != null)
@@ -311,7 +313,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
             if (startStop == null)
-                startStop = GetCurrentStartStopActivity(curThread);
+                startStop = GetCurrentStartStopActivity(curThread); 
 
             // Get the process, and activity frames. 
             StackSourceCallStackIndex stackIdx = GetStartStopActivityStack(outputStackSource, startStop, topThread.Process);
@@ -526,7 +528,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!activityString.StartsWith("//"))
                 {
                     if (activityString.EndsWith("-08090a0b0c0d"))   // We make up fake activity ids (see StartStopActivityComputer ctor) for HttpRequest and SQL Command)
-                        activityString = "SQL" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
+                        activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
                     else
                         activityString = "@" + activityString;                    // Simply use the GUID as the marker.  
                 }

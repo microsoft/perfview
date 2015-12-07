@@ -2212,7 +2212,7 @@ namespace Microsoft.Diagnostics.Tracing
             var enumSet = new SortedDictionary<string, string>();
 
             // Make sure that we have all the event we should have 
-            EnumerateTemplates(null, delegate(TraceEvent template)
+            EnumerateTemplates(null, delegate (TraceEvent template)
             {
                 // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
                 // we'll "special case" project N templates and ignore them...
@@ -2274,7 +2274,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 #endif
             // Convert the eventNameFilter to the more generic filter that take a provider name as well.   
-            Func<string, string, EventFilterResponse> eventsToObserve = delegate(string pName, string eName)
+            Func<string, string, EventFilterResponse> eventsToObserve = delegate (string pName, string eName)
             {
                 if (pName != GetProviderName())
                     return EventFilterResponse.RejectProvider;
@@ -2290,7 +2290,7 @@ namespace Microsoft.Diagnostics.Tracing
             var newSubscription = new SubscriptionRequest(eventsToObserve, callback, subscriptionId);
             m_subscriptionRequests.Add(newSubscription);
             var templateState = StateObject;
-            EnumerateTemplates(eventsToObserve, delegate(TraceEvent template)
+            EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
             {
                 if (template is T)
                     Subscribe(newSubscription, template, templateState, false);
@@ -2309,7 +2309,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(providerName != null);
             AddCallbackForProviderEvents(
-                delegate(string pName, string eName)
+                delegate (string pName, string eName)
                 {
                     if (pName != providerName)
                         return EventFilterResponse.RejectProvider;
@@ -2364,7 +2364,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_subscriptionRequests.Add(newSubscription);
 
             var templateState = StateObject;
-            EnumerateTemplates(eventsToObserve, delegate(TraceEvent template)
+            EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
             {
                 Subscribe(newSubscription, template, templateState, false);
             });
@@ -2534,15 +2534,12 @@ namespace Microsoft.Diagnostics.Tracing
             }
             else
             {
-
-            }
-            {
 #if DEBUG   // Assert the template did NOT exist before.
                 if (cur.m_callback != null)
                 {
                     for (int i = 0; i < cur.m_activeSubscriptions.Count; i++)
                     {
-                        var activeSubscription = cur.m_activeSubscriptions[i];                        
+                        var activeSubscription = cur.m_activeSubscriptions[i];
                         Debug.Assert(!activeSubscription.Matches(templateWithCallback));
                     }
                 }
@@ -2840,33 +2837,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-                anEvent.Dispatch();
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (; ; )
+                if (anEvent.Target != null)
+                    anEvent.Dispatch();
+                if (anEvent.next != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                        break;
-                    if (nextEvent.Target != null)
+                    TraceEvent nextEvent = anEvent;
+                    for (;;)
                     {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                            break;
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        }
                     }
                 }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                    unhandledEventTemplate.PrepForCallback();
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                        unhandledEventTemplate.PrepForCallback();
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)
@@ -2884,7 +2881,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-        RetryLookup:
+            RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -2906,7 +2903,7 @@ namespace Microsoft.Diagnostics.Tracing
             // inlined, and is replicated in TraceEventDispatcher.Insert
             int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -2997,7 +2994,7 @@ namespace Microsoft.Diagnostics.Tracing
             ushort eventID = (ushort)eventID_;
             int* guidPtr = (int*)&guid;
             int hash = (*guidPtr + ((ushort)eventID) * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3128,7 +3125,7 @@ namespace Microsoft.Diagnostics.Tracing
             int* guidPtr = (int*)&eventGuid;
             int hash = (*guidPtr + (int)eventID * 9) & templatesLengthMask;
             TemplateEntry* entry;
-            for (; ; )
+            for (;;)
             {
                 entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3293,7 +3290,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int* guidPtr = (int*)&providerGuid;
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3803,7 +3800,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static IObservable<TraceEvent> Observe(this TraceEventParser parser, string providerName, string eventName)
         {
-            return parser.Observe(delegate(string pName, string eName)
+            return parser.Observe(delegate (string pName, string eName)
             {
                 if (pName != providerName)
                     return EventFilterResponse.RejectProvider;
@@ -3871,7 +3868,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Implement IObservable<T>
             public IDisposable Subscribe(IObserver<T> observer)
             {
-                return new TraceEventSubscription(delegate(T data) { observer.OnNext((T)data.Clone()); }, observer.OnCompleted, this);
+                return new TraceEventSubscription(delegate (T data) { observer.OnNext((T)data.Clone()); }, observer.OnCompleted, this);
             }
 
             #region private

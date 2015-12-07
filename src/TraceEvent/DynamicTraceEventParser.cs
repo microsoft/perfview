@@ -81,7 +81,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Register the new definitions. 
-            providerManifest.ParseProviderEvents(delegate(DynamicTraceEventData template)
+            providerManifest.ParseProviderEvents(delegate (DynamicTraceEventData template)
             {
                 return OnNewEventDefintion(template, prevManifest != null);
             }, noThrowOnError);
@@ -91,7 +91,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // Register the manifest event with myself so that I continue to get updated manifests.  
             // TODO we are 'leaking' these today.  Clean them up on Dispose.  
-            var callback = new DynamicManifestTraceEventData(delegate(TraceEvent data) { CheckForDynamicManifest(data); }, providerManifest);
+            var callback = new DynamicManifestTraceEventData(delegate (TraceEvent data) { CheckForDynamicManifest(data); }, providerManifest);
             source.RegisterEventTemplate(callback);
 
             // Raise the event that says we found a new provider.   
@@ -229,7 +229,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             foreach (var provider in state.providers.Values)
             {
-                provider.ParseProviderEvents(delegate(DynamicTraceEventData template)
+                provider.ParseProviderEvents(delegate (DynamicTraceEventData template)
                 {
                     if (eventsToObserve != null)
                     {
@@ -333,7 +333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 provider.ISDynamic = true;
                 return provider;
 
-            Fail:
+                Fail:
                 Chunks = null;
                 return null;
             }
@@ -497,7 +497,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Confirm that the serialization 'adds up'
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
             Debug.Assert(computedSize <= this.EventDataLength);
-            if ((int) ID != 0xFFFE) // If it is not a manifest event
+            if ((int)ID != 0xFFFE) // If it is not a manifest event
             {
                 // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
                 Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
@@ -873,7 +873,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
-            return Regex.Replace(MessageFormat, @"%(\d+)", delegate(Match m)
+            return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
             {
                 int index = int.Parse(m.Groups[1].Value) - 1;
 
@@ -992,7 +992,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 else if ((size & ~IS_ANSI) == SIZE16_PRECEEDS)
                     return offset + (ushort)GetInt16At(offset - 2);
                 else if (size == SIZE16_PREFIX)
-                    return offset + (ushort)(GetInt16At(offset)*2 + 2);
+                    return offset + (ushort)(GetInt16At(offset) * 2 + 2);
                 else if (size == (SIZE16_PREFIX | IS_ANSI))
                     return offset + (ushort)(GetInt16At(offset) + 2);
                 else
@@ -1780,7 +1780,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                     // This will be looked up in the string table in a second pass.  
                                     eventTemplate.MessageFormat = reader.GetAttribute("message");
-                                } break;
+                                }
+                                break;
                             case "template":
                                 {
                                     string templateName = reader.GetAttribute("tid");
@@ -1789,7 +1790,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         templates[templateName] = ComputeFieldInfo(template, maps);
                                     }
-                                } break;
+                                }
+                                break;
                             case "opcode":
                                 // TODO use message for opcode if it is available so it is localized.  
                                 opcodes[reader.GetAttribute("name")] = int.Parse(reader.GetAttribute("value"));
@@ -1802,14 +1804,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (guidString != null)
                                         info.guid = new Guid(guidString);
                                     tasks[reader.GetAttribute("name")] = info;
-                                } break;
+                                }
+                                break;
                             case "valueMap":
                                 map = new Dictionary<long, string>();           // value maps use dictionaries
                                 goto DoMap;
                             case "bitMap":
                                 map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
-                            DoMap:
+                                DoMap:
                                 string name = reader.GetAttribute("name");
                                 using (var mapValues = reader.ReadSubtree())
                                 {
@@ -1846,7 +1849,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             alreadyReadMyCulture = true;
                                         cultureBeingRead = reader.GetAttribute("culture");
                                     }
-                                } break;
+                                }
+                                break;
                             case "string":
                                 if (!alreadyReadMyCulture)
                                     strings[reader.GetAttribute("id")] = reader.GetAttribute("value");
@@ -1924,7 +1928,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 error = e;
             }
 
-        THROW:
+            THROW:
             if (!noThrowOnError && error != null)
                 throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
         }

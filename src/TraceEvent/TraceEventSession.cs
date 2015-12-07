@@ -1723,9 +1723,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             // TODO FIX NOW.  there are races associated with this.  
             List<TraceEventNativeMethods.TRACE_ENABLE_INFO> infos = TraceEventProviders.SessionInfosForProvider(providerGuid, 0);
-            for (int i = 47; ; --i)
+            for (int i = 44; ; i++)
             {
-                if (i < 44)
+                if (i > 47)
                     throw new NotSupportedException("Error enabling provider " + providerGuid + ": Exceeded the maximum of 4 sessions can simultaneously use provider key-value arguments on a single provider simultaneously");
 
                 long bit = ((long)1) << i;

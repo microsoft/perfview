@@ -24,7 +24,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// Create a new RegisteredTraceEventParser and attach it to the given TraceEventSource
         /// </summary>
         public RegisteredTraceEventParser(TraceEventSource source, bool dontRegister = false)
-            : base(source, dontRegister) { }
+            : base(source, dontRegister)
+        { }
 
         /// <summary>
         /// Given a provider name that has been registered with the operating system, get
@@ -93,7 +94,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 eventRecord.EventHeader.Version = ver;
                 int count;
                 int status;
-                for (; ; )
+                for (;;)
                 {
                     int dummy;
                     status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out dummy, out count, buffer, ref buffSize);
@@ -691,7 +692,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 payloadFetchesRet = payloadFetches.ToArray();
                 return true;
 
-            Fail:
+                Fail:
                 payloadNamesRet = new string[0];
                 payloadFetchesRet = new DynamicTraceEventData.PayloadFetch[0];
                 return false;
@@ -865,7 +866,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 var mapKey = new MapKey(eventInfo->ProviderGuid, mapName);
 
                                 // Set the map to be a lazyMap, which is a Func that returns a map.  
-                                Func<IDictionary<long, string>> lazyMap = delegate()
+                                Func<IDictionary<long, string>> lazyMap = delegate ()
                                 {
                                     IDictionary<long, string> map = null;
                                     if (this.mapTable != null)
@@ -956,7 +957,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     }
                 }
 
-            Exit:
+                Exit:
                 var ret = new DynamicTraceEventData.PayloadFetchClassInfo() { FieldNames = fieldNames.ToArray(), FieldFetches = fieldFetches.ToArray() };
                 return ret; ;
             }
@@ -1189,7 +1190,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #if !DOTNET_V35
                 var symbolSource = new SymbolTraceEventParser(source);
 
-                symbolSource.MetaDataEventInfo += delegate(EmptyTraceData data)
+                symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
                 {
                     DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
 
@@ -1201,7 +1202,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 };
 
                 // Try to parse bitmap and value map information.  
-                symbolSource.MetaDataEventMapInfo += delegate(EmptyTraceData data)
+                symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
                 {
                     try
                     {
@@ -1220,7 +1221,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 #endif
 
-                this.source.RegisterUnhandledEvent(delegate(TraceEvent unknown)
+                this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
                     // See if we already have this definition 
                     DynamicTraceEventData parsedTemplate = null;
