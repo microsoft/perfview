@@ -144,10 +144,15 @@ namespace Microsoft.Diagnostics.Tracing
                             if (goodActivityID)         // V4.6 incorrectly opts this into activity paths (which don't work for stop).  Fix it to not do this. 
                             {
                                 // Also be able to lookup by the incorrect key was well.   (Sometimes stop uses one sometimes the other). 
-                                extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityID);
-                                var activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
+                                Guid activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
                                 if (activityFix != Guid.Empty)
-                                    activityID = activityFix;
+                                {
+                                    if (activityID != activityFix)  // Only have to produce the extra key when they mismatch (thus on V4.7 we don't).  
+                                    {
+                                        activityID = activityFix;
+                                        extraKey = new StartStopKey(data.ProviderGuid, task, data.ProcessID, activityID);
+                                    }
+                                }
                                 else
                                     Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
                             }
@@ -303,7 +308,7 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(curThread);
                 if (curTaskActivity != null)
                 {
-                    startStop = m_traceActivityToStartStopActivity[(int)curTaskActivity.Index];
+                    startStop = m_traceActivityToStartStopActivity.Get((int)curTaskActivity.Index);
                     if (startStop != null)
                     {
                         // Check to make sure that the start-stop stopped AFTER the activity was created.   
@@ -497,7 +502,7 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
 
                 // Issue callback if requested AFTER state update
-                var onStartStop = OnStartOrStop;
+                var onStartStop = OnStartOrStop;    
                 if (onStartStop != null)
                     onStartStop(startStopActivity, false);
             }
