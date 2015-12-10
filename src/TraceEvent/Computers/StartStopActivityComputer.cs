@@ -37,7 +37,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Whenever a new Activity is created, propagate the start-stop activity from the creator
             // to the created task.  
-            taskComputer.Create += delegate(TraceActivity activity, TraceEvent data)
+            taskComputer.Create += delegate (TraceActivity activity, TraceEvent data)
             {
                 TraceActivity creator = activity.Creator;
                 if (creator == null)
@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var dynamicParser = source.Dynamic;
             var threadToLastAspNetGuid = new Guid[m_source.TraceLog.Threads.Count];     // Only need to fix up ASPNet activity ids.  
-            dynamicParser.All += delegate(TraceEvent data)
+            dynamicParser.All += delegate (TraceEvent data)
             {
                 // TODO decide what the correct heuristic is.  
                 // Currently I only do this for things that might be an EventSoruce 
@@ -143,6 +143,13 @@ namespace Microsoft.Diagnostics.Tracing
                             extraInfo = (string)data.PayloadValue(1);           // This is the FullUrl field.  
                             if (goodActivityID)         // V4.6 incorrectly opts this into activity paths (which don't work for stop).  Fix it to not do this. 
                             {
+                                // TODO: Remove after 3/2016. Will not support activity paths generated from V4.6.
+                                if (StartStopActivityComputer.IsActivityPath(activityID))
+                                {
+                                    // If the activityID is PATH, add it into extraInfo field
+                                    extraInfo = StartStopActivityComputer.ActivityPathString(activityID) + "," + extraInfo;
+                                }
+
                                 // Also be able to lookup by the incorrect key was well.   (Sometimes stop uses one sometimes the other). 
                                 Guid activityFix = threadToLastAspNetGuid[(int)thread.ThreadIndex];
                                 if (activityFix != Guid.Empty)
@@ -194,9 +201,9 @@ namespace Microsoft.Diagnostics.Tracing
                             {
                                 if (data.RelatedActivityID != Guid.Empty)
                                 {
-                                m_activeActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);
-                                if (creator == null)
-                                    Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
+                                    m_activeActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);
+                                    if (creator == null)
+                                        Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
                                 }
                             }
 
@@ -260,7 +267,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Basically if we can't figure out what StartStop activity the thread from just the threadID we can use 
         /// the activityID to find it.  
         /// </summary>
-        public StartStopActivity GetCurrentStartStopActivity(TraceThread thread, TraceEvent context=null)
+        public StartStopActivity GetCurrentStartStopActivity(TraceThread thread, TraceEvent context = null)
         {
             DoStopIfNecessary(false);        // Do any deferred stops. 
 
@@ -318,7 +325,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
             if (startStop == null)
-                startStop = GetCurrentStartStopActivity(curThread); 
+                startStop = GetCurrentStartStopActivity(curThread);
 
             // Get the process, and activity frames. 
             StackSourceCallStackIndex stackIdx = GetStartStopActivityStack(outputStackSource, startStop, topThread.Process);
@@ -379,7 +386,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-            NextNibble:
+                NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                     break;
                 if (nibble <= (uint)NumberListCodes.LastImmediateValue)
@@ -502,7 +509,7 @@ namespace Microsoft.Diagnostics.Tracing
 #endif
 
                 // Issue callback if requested AFTER state update
-                var onStartStop = OnStartOrStop;    
+                var onStartStop = OnStartOrStop;
                 if (onStartStop != null)
                     onStartStop(startStopActivity, false);
             }
@@ -533,9 +540,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!activityString.StartsWith("//"))
                 {
                     if (activityString.EndsWith("-08090a0b0c0d"))   // We make up fake activity ids (see StartStopActivityComputer ctor) for HttpRequest and SQL Command)
-                        activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.  
-                    else
-                        activityString = "@" + activityString;                    // Simply use the GUID as the marker.  
+                        activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.
                 }
                 if (ExtraInfo == null)
                     return TaskName + "(" + activityString + ")";
