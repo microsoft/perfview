@@ -521,6 +521,12 @@ namespace Stats
 
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4><A Name=\"Events_{0}\">Individual JIT Events for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
+
+            // We limit the number of JIT events we ut on the page because it makes the user exerience really bad (browsers crash)
+            const int maxEvents = 1000;
+            if (events.Count >= maxEvents)
+                writer.WriteLine("<p><Font color=\"red\">Warning: Truncating JIT events to " + maxEvents + ".  Use 'View in Excel' link above to look all of them</font></p>");
+
             writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
             writer.Write("<TR><TH>Start (msec)</TH><TH>JitTime</BR>msec</TH><TH>IL Size</TH><TH>Native Size</TH><TH>Method Name</TH>" +
@@ -530,6 +536,7 @@ namespace Stats
                 writer.Write("<TH Title=\"How far ahead of the method usage was relative to the background JIT operation.\">Distance Ahead</TH><TH Title=\"Why the method was not JITTed in the background.\">Background JIT Blocking Reason</TH>");
             }
             writer.WriteLine("</TR>");
+            int eventCount = 0;
             foreach (JitEvent _event in events)
             {
                 writer.Write("<TR><TD Align=\"Center\">{0:n3}</TD><TD Align=\"Center\">{1:n1}</TD><TD Align=\"Center\">{2:n0}</TD><TD Align=\"Center\">{3:n0}</TD><TD Align=Left>{4}</TD><TD Align=\"Center\">{5}</TD><TD Align=\"Center\">{6}</TD>",
@@ -541,6 +548,9 @@ namespace Stats
                         _event.DistanceAhead, _event.IsBackGround ? "Not blocked" : _event.BlockedReason);
                 }
                 writer.WriteLine("</TR>");
+                eventCount++;
+                if (eventCount >= maxEvents)
+                    break;
             }
             writer.WriteLine("</Table>");
             writer.WriteLine("</Center>");
