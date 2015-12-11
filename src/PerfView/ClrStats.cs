@@ -702,8 +702,8 @@ namespace Stats
                 _event = stats.LogJitStart(data, methodName, 0, moduleID, methodID);
                 if (stats.isClr4)
                 {
-                    Console.WriteLine("Warning: MethodComplete at {0:n3} process {1} thread {2} without JIT Start, assuming 0 JIT time",
-                        data.TimeStampRelativeMSec, data.ProcessName, data.ThreadID);
+                    // Debug.WriteLine("Warning: MethodComplete at {0:n3} process {1} thread {2} without JIT Start, assuming 0 JIT time",
+                    //    data.TimeStampRelativeMSec, data.ProcessName, data.ThreadID);
                 }
                 else if (!stats.warnedUser)
                 {
