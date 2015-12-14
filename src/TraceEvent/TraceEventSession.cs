@@ -761,7 +761,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 ResetWindowsHeapTracingFlags(noThrow);
 #endif
 
-                if (hr != TraceEventNativeMethods.ERROR_WMI_INSTANCE_NOT_FOUND)     // Instance name not found.  This means we did not start
+                if (hr != 0 && hr != TraceEventNativeMethods.ERROR_WMI_INSTANCE_NOT_FOUND)     // Instance name not found.  This means we did not start
                 {
                     if (!noThrow)
                         Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
@@ -2639,7 +2639,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public static bool MaybeAnEventSource(Guid providerGuid)
         {
             byte octet7 = providerGuid.ToByteArray()[7];
-            return (octet7 & 0xF0) == 0x50;
+            if ((octet7 & 0xF0) == 0x50)
+                return true;
+            // FrameworkEventSource predated the Guid selection convention that most eventSources use.  
+            // Opt it in explicity 
+            if (providerGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                return true;
+            return false;
         }
 
         // Enumerating PUBLISHED providers (that is providers with manifests registered with wevtutil) 

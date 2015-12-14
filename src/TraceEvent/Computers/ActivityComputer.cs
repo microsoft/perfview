@@ -222,20 +222,20 @@ namespace Microsoft.Diagnostics.Tracing
                 // If NGEN images are on the path, you are not parked 
                 var filePath = moduleFile.FilePath;
 
-                // If you are outside 
+                // If you are outside OS code or CLR code.  We err on the side of returning false.  
+                // There are a number of cases (coreclr, desktop)   
                 if (filePath.Length < 1)
                     return false;
 
-                // If it is not in the system directory, it needs to be the CLR.dll 
+                // To be parked, EVERY Frame has to be in the OS or CLR.dll.  
+                // First we check if they are in the in the system (which is either \windows\System32 or \windows\SysWow64)
                 var startIdx = (filePath[0] == '\\') ? 0 : 2;       // WE allow there to be no drive latter
-                if (String.Compare(filePath, startIdx, "\\Windows\\", 0, 9, StringComparison.OrdinalIgnoreCase) != 0)
+                if (String.Compare(filePath, startIdx, @"\windows\sys", 0, 12, StringComparison.OrdinalIgnoreCase) != 0)
                 {
-                    if (moduleFile.Name.IndexOf("clr") < 0)
-                        return false;
+                    // However we DO allow CLR (or CoreCLR) to be there, which we allow to be anywhere.  
+                    if (!moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
+                        return false;       // Otherwise it is not parked (which includes everything in the GAC, NIC, mscorlib ... and user code elsewhere)
                 }
-
-                if (filePath.EndsWith("mscorlib.dll") || filePath.EndsWith("mscorlib.ni.dll"))
-                    return false;
 
                 // Parking does not take more than 30 frames.  (this is generous)
                 count++;
@@ -671,7 +671,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (cur == null)
                 {
-                    m_symbolReader.Log.WriteLine("Warning: stopping an activity that was not started at {0:n:3}", data.TimeStampRelativeMSec);
+                    m_symbolReader.Log.WriteLine("Warning: stopping an activity that was not started at {0:n3}", data.TimeStampRelativeMSec);
                     m_threadToCurrentActivity[(int)thread.ThreadIndex] = null;      // setting to null means the set to thread activity.  
                     break;
                 }

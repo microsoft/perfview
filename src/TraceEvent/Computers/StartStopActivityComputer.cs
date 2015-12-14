@@ -539,7 +539,9 @@ namespace Microsoft.Diagnostics.Tracing
                 string activityString = StartStopActivityComputer.ActivityPathString(ActivityID);
                 if (!activityString.StartsWith("//"))
                 {
-                    if (activityString.EndsWith("-08090a0b0c0d"))   // We make up fake activity ids (see StartStopActivityComputer ctor) for HttpRequest and SQL Command)
+                    if (activityString.EndsWith("0607-08090a0b0c0d"))   // Http Command)
+                        activityString = "HTTP/Id=" + activityString.Substring(0, 8); // The first bytes are the ID that links the start and stop.
+                    if (activityString.EndsWith("0707-08090a0b0c0d"))   // SQL Command)
                         activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.
                 }
                 if (ExtraInfo == null)

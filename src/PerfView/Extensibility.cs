@@ -1328,15 +1328,21 @@ namespace PerfViewExtensibility
             // Find all the ones that are in user extension dlls.  
             foreach (var extensionDllPath in GetExtensionDlls())
             {
-                var assembly = Assembly.LoadFrom(extensionDllPath);
-                var commandType = assembly.GetType("Commands");
-                if (commandType != null)
+                try
                 {
-                    methods = commandType.GetMethods(
-                        BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                    foreach (var method in methods)
-                        ret.Add(method);
+                    var assembly = Assembly.LoadFrom(extensionDllPath);
+                    var commandType = assembly.GetType("Commands");
+                    if (commandType != null)
+                    {
+                        methods = commandType.GetMethods(
+                            BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                        foreach (var method in methods)
+                            ret.Add(method);
+                    }
                 }
+                catch (Exception) {
+                    App.CommandProcessor.LogFile.WriteLine("Dll " + extensionDllPath + "could not be loaded, assuming it has no user commands");
+                }     
             }
 
             return ret;
