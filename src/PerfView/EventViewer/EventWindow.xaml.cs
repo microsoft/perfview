@@ -57,7 +57,7 @@ namespace PerfView
             ParentWindow = parent;
             InitializeComponent();
             Title = DataSource.Title;
-            Grid.CopyingRowClipboardContent += delegate(object sender, DataGridRowClipboardEventArgs e)
+            Grid.CopyingRowClipboardContent += delegate (object sender, DataGridRowClipboardEventArgs e)
             {
                 for (int i = 0; i < e.ClipboardRowContent.Count; i++)
                 {
@@ -102,7 +102,7 @@ namespace PerfView
                     e.ClipboardRowContent[i] = new DataGridClipboardCellContent(clipboardContent.Item, clipboardContent.Column, morphedContent);
                 }
             };
-            Closing += delegate(object sender, CancelEventArgs e)
+            Closing += delegate (object sender, CancelEventArgs e)
             {
                 if (StatusBar.IsWorking)
                 {
@@ -171,7 +171,7 @@ namespace PerfView
                     csvFile.WriteLine();
 
                     // Write out events 
-                    m_source.ForEach(delegate(EventRecord _event)
+                    m_source.ForEach(delegate (EventRecord _event)
                     {
                         // We have exceeded MaxRet, skip it.  
                         if (_event.EventName == null)
@@ -206,7 +206,7 @@ namespace PerfView
                 {
                     // Write out column header
                     xmlFile.WriteLine("<Events>");
-                    m_source.ForEach(delegate(EventRecord _event)
+                    m_source.ForEach(delegate (EventRecord _event)
                     {
                         // We have exceeded MaxRet, skip it.  
                         if (_event.EventName == null)
@@ -273,7 +273,7 @@ namespace PerfView
         }
         private void DoOpenParent(object sender, RoutedEventArgs e)
         {
-            for (; ; )
+            for (;;)
             {
                 try
                 {
@@ -392,7 +392,7 @@ namespace PerfView
 
                 // TODO FIX NOW: this should call a routine that does the opening of the stack view 
                 // (m_lookedUpCachedSymbolsForETLData should not be needed ...)
-                StatusBar.StartWork("Reading " + DataSource.Name, delegate()
+                StatusBar.StartWork("Reading " + DataSource.Name, delegate ()
                 {
                     // This is where the work gets done.  
 
@@ -428,7 +428,7 @@ namespace PerfView
                         }
                         StatusBar.Log("Quick Done looking up symbols from PDB cache.");
                     }
-                    StatusBar.EndWork(delegate()
+                    StatusBar.EndWork(delegate ()
                     {
                         App.CommandProcessor.NoExitOnElevate = true;        // Don't exit because we might have state 
 
@@ -556,10 +556,10 @@ namespace PerfView
                 return;
             }
 
-            StatusBar.StartWork("Saving file", delegate()
+            StatusBar.StartWork("Saving file", delegate ()
             {
                 SaveDataToCsvFile(saveDialog.FileName);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     StatusBar.Log("Saved data to file " + saveDialog.FileName + ".");
                 });
@@ -584,10 +584,10 @@ namespace PerfView
                 StatusBar.Log("Save xml file canceled.");
                 return;
             }
-            StatusBar.StartWork("Saving file", delegate()
+            StatusBar.StartWork("Saving file", delegate ()
             {
                 SaveDataToXmlFile(saveDialog.FileName);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     StatusBar.Log("Saved data to file " + saveDialog.FileName + ".");
                 });
@@ -595,7 +595,7 @@ namespace PerfView
         }
         private void DoOpenInExcel(object sender, ExecutedRoutedEventArgs e)
         {
-            StatusBar.StartWork("Opening in SpreadSheet.", delegate()
+            StatusBar.StartWork("Opening in SpreadSheet.", delegate ()
             {
                 var csvFile = CacheFiles.FindFile(DataSource.FilePath, ".excel.csv");
                 if (File.Exists(csvFile))
@@ -613,7 +613,7 @@ namespace PerfView
 
                 SaveDataToCsvFile(csvFile);
                 Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     StatusBar.Log("CSV launched.");
                 });
@@ -770,7 +770,7 @@ namespace PerfView
             if (list == null || list.Count == 0)
                 return false;
 
-            for (; ; )
+            for (;;)
             {
                 if (startingNewSearch)
                     startingNewSearch = false;
@@ -899,7 +899,7 @@ namespace PerfView
             Grid.RowBackground = new SolidColorBrush(Color.FromArgb(255, 200, 200, 200));
             Histogram.Text = "";
 
-            StatusBar.StartWork("Scanning Events", delegate()
+            StatusBar.StartWork("Scanning Events", delegate ()
             {
                 const int numBuckets = 100;
                 m_buckets = new float[numBuckets];
@@ -908,7 +908,7 @@ namespace PerfView
                 var lastBucketNum = -1;
                 var eventCount = 0;
 
-                m_source.ForEach(delegate(EventRecord event_)
+                m_source.ForEach(delegate (EventRecord event_)
                 {
                     eventCount++;
                     if (event_.EventName != null)
@@ -928,7 +928,7 @@ namespace PerfView
                     // When we move on to a new bucket, update the Histogram string.   
                     if (lastBucketNum < bucketNum)
                     {
-                        Dispatcher.BeginInvoke((Action)delegate()
+                        Dispatcher.BeginInvoke((Action)delegate ()
                         {
                             Histogram.Text = Microsoft.Diagnostics.Tracing.Stacks.HistogramController.HistogramString(
                                 m_buckets, maxBucketCount, bucketNum + 1);
@@ -940,7 +940,7 @@ namespace PerfView
 
                 // Compute the final histogram string
                 var histString = Microsoft.Diagnostics.Tracing.Stacks.HistogramController.HistogramString(m_buckets, maxBucketCount);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     if (events.Count == m_source.MaxRet)
                         StatusBar.Log("WARNING, returned the maximum " + events.Count + " records.");
@@ -978,7 +978,7 @@ namespace PerfView
                     sb.AppendLine("]");
                     StatusBar.Log(sb.ToString());
                 });
-            }, delegate()       // This is the finally clause.  Happens even on exceptions and cancelations.  
+            }, delegate ()       // This is the finally clause.  Happens even on exceptions and cancelations.  
             {
                 Grid.Background = Brushes.White;
                 Grid.RowBackground = Brushes.White;
@@ -1044,29 +1044,30 @@ namespace PerfView
             else
                 return content.PadRight(maxString);
         }
-        public static string GetCellStringValue(DataGridCellInfo cell)
+        public string GetCellStringValue(DataGridCellInfo cell)
         {
             var record = cell.Item as EventRecord;
             if (record != null)
             {
-                var name = cell.Column.Header as string;
-                if (name == "Event Name")
+                if (cell.Column == EventNameColumn)
                     return record.EventName;
-                else if (name == "Time MSec")
-                    return record.TimeStampRelatveMSec.ToString("n3");
-                else if (name == "Process Name")
+                if (cell.Column == ProcessNameColumn)
                     return record.ProcessName;
-                else if (name == "Data")
-                    return record.Rest;
+                if (cell.Column == TimeMSecColumn)
+                    return record.TimeStampRelatveMSec.ToString("n3");
+                for (int i = 0; i < m_userDefinedColumns.Count; i++)
+                {
+                    if (cell.Column == m_userDefinedColumns[i])
+                        return record.DisplayFields[i];
+                }
             }
-            return GetCellStringValue(cell.Column.GetCellContent(cell.Item));
-        }
-        public static string GetCellStringValue(FrameworkElement contents)
-        {
+            // Fallback see if we can scrape it from the GUI object.  
+            FrameworkElement contents = cell.Column.GetCellContent(cell.Item);
             if (contents == null)
                 return "";
             return Helpers.GetText(contents);
         }
+
         public static string GetColumnHeaderText(DataGridColumn column)
         {
             return column.Header as string;
@@ -1149,25 +1150,23 @@ namespace PerfView
                 double second = 0;
                 bool firstCell = true;
 
-
-                foreach (var cell in cells)
+                foreach (DataGridCellInfo cell in cells)
                 {
-                    var content = cell.Column.GetCellContent(cell.Item);
-                    var asTextBlock = content as TextBlock;
-                    if (asTextBlock != null)
+                    string cellStringValue = GetCellStringValue(cell);
+                    if (cellStringValue != null)
                     {
                         double num;
 
                         bool parseSuccessful = false;
-                        if (asTextBlock.Text.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                        if (cellStringValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
                         {
                             long asLong = 0;
-                            parseSuccessful = long.TryParse(asTextBlock.Text.Substring(2), NumberStyles.AllowHexSpecifier | NumberStyles.AllowTrailingWhite, null, out asLong);
+                            parseSuccessful = long.TryParse(cellStringValue.Substring(2), NumberStyles.AllowHexSpecifier | NumberStyles.AllowTrailingWhite, null, out asLong);
                             num = asLong;
                             seenHexValue = true;
                         }
                         else
-                            parseSuccessful = double.TryParse(asTextBlock.Text, out num);
+                            parseSuccessful = double.TryParse(cellStringValue, out num);
 
                         if (parseSuccessful)
                         {
@@ -1264,6 +1263,7 @@ namespace PerfView
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.IncludeHeader;
             m_maxColumnInSelection = null;
         }
+
         /// <summary>
         /// This needs to be separate routine so that the event_ local variable is a copy of the one that was passed
         /// </summary>
@@ -1278,7 +1278,7 @@ namespace PerfView
                 System.Threading.Thread.Sleep(1);
             }
 
-            Dispatcher.BeginInvoke((Action)delegate()
+            Dispatcher.BeginInvoke((Action)delegate ()
             {
                 events.Add(event_);
             });
