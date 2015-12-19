@@ -53,14 +53,14 @@ namespace Stats
                 perProc = new ProcessLookup<GCProcess>();
             }
 
-            source.Kernel.AddCallbackForEvents<ProcessCtrTraceData>(delegate(ProcessCtrTraceData data)
+            source.Kernel.AddCallbackForEvents<ProcessCtrTraceData>(delegate (ProcessCtrTraceData data)
             {
                 var stats = perProc[data];
                 stats.PeakVirtualMB = ((double)data.PeakVirtualSize) / 1000000.0;
                 stats.PeakWorkingSetMB = ((double)data.PeakWorkingSetSize) / 1000000.0;
             });
 
-            Action<RuntimeInformationTraceData> doAtRuntimeStart = delegate(RuntimeInformationTraceData data)
+            Action<RuntimeInformationTraceData> doAtRuntimeStart = delegate (RuntimeInformationTraceData data)
             {
                 var stats = perProc[data];
                 stats.RuntimeVersion = "V " + data.VMMajorVersion.ToString() + "." + data.VMMinorVersion + "." + data.VMBuildNumber
@@ -76,7 +76,7 @@ namespace Stats
             clrRundown.RuntimeStart += doAtRuntimeStart;
             source.Clr.RuntimeStart += doAtRuntimeStart;
 
-            source.Kernel.ProcessStartGroup += delegate(ProcessTraceData data)
+            source.Kernel.ProcessStartGroup += delegate (ProcessTraceData data)
             {
                 var stats = perProc[data];
 
@@ -103,7 +103,7 @@ namespace Stats
                     stats.CommandLine = commandLine;
             };
 
-            source.Kernel.ProcessEndGroup += delegate(ProcessTraceData data)
+            source.Kernel.ProcessEndGroup += delegate (ProcessTraceData data)
             {
                 var stats = perProc[data];
 
@@ -120,7 +120,7 @@ namespace Stats
 
 #if (!CAP)
             CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(1000);
-            source.Kernel.ThreadCSwitch += delegate(CSwitchTraceData data)
+            source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
             {
                 RecentThreadSwitches.Add(new ThreadWorkSpan(data));
                 var stats = perProc.TryGet(data);
@@ -150,7 +150,7 @@ namespace Stats
 
             CircularBuffer<ThreadWorkSpan> RecentCpuSamples = new CircularBuffer<ThreadWorkSpan>(1000);
             StackSourceSample sample = new StackSourceSample(stackSource);
-            source.Kernel.PerfInfoSample += delegate(SampledProfileTraceData data)
+            source.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
                 RecentCpuSamples.Add(new ThreadWorkSpan(data));
                 GCProcess processWithGc = null;
@@ -226,7 +226,7 @@ namespace Stats
                 }
             };
 #endif
-            source.Clr.GCSuspendEEStart += delegate(GCSuspendEETraceData data)
+            source.Clr.GCSuspendEEStart += delegate (GCSuspendEETraceData data)
             {
                 var stats = perProc[data];
                 switch (data.Reason)
@@ -258,7 +258,7 @@ namespace Stats
                                 break;
                             }
                         }
-                        
+
                         if (stats.isServerGCUsed == 1)
                         {
                             stats.heapCount = 0;
@@ -284,7 +284,7 @@ namespace Stats
             };
 
             // In 2.0 we didn't have this event.
-            source.Clr.GCSuspendEEStop += delegate(GCNoUserDataTraceData data)
+            source.Clr.GCSuspendEEStop += delegate (GCNoUserDataTraceData data)
             {
                 GCProcess stats = perProc[data];
 
@@ -296,7 +296,7 @@ namespace Stats
                 stats.suspendEndTimeRelativeMSec = data.TimeStampRelativeMSec;
             };
 
-            source.Clr.GCRestartEEStop += delegate(GCNoUserDataTraceData data)
+            source.Clr.GCRestartEEStop += delegate (GCNoUserDataTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -344,7 +344,7 @@ namespace Stats
                 stats.suspendThreadIDGC = -1;
             };
 
-            source.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData data)
+            source.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
             {
                 GCProcess stats = perProc[data];
 
@@ -367,7 +367,7 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCStart += delegate(GCStartTraceData data)
+            source.Clr.GCStart += delegate (GCStartTraceData data)
             {
                 GCProcess stats = perProc[data];
 
@@ -434,7 +434,7 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCPinObjectAtGCTime += delegate(PinObjectAtGCTimeTraceData data)
+            source.Clr.GCPinObjectAtGCTime += delegate (PinObjectAtGCTimeTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -453,7 +453,7 @@ namespace Stats
 
             // Some builds have this as a public event, and some have it as a private event.
             // All will move to the private event, so we'll remove this code afterwards.
-            source.Clr.GCPinPlugAtGCTime += delegate(PinPlugAtGCTimeTraceData data)
+            source.Clr.GCPinPlugAtGCTime += delegate (PinPlugAtGCTimeTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -465,7 +465,7 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCMarkWithType += delegate(GCMarkWithTypeTraceData data)
+            source.Clr.GCMarkWithType += delegate (GCMarkWithTypeTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.AddServerGCThreadFromMark(data.ThreadID, data.HeapNum);
@@ -488,19 +488,19 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCGlobalHeapHistory += delegate(GCGlobalHeapHistoryTraceData data)
+            source.Clr.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessGlobalHistory(data);
             };
 
-            source.Clr.GCPerHeapHistory += delegate(GCPerHeapHistoryTraceData3 data)
+            source.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 data)
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessPerHeapHistory(data);
             };
 
-            source.Clr.GCJoin += delegate(GCJoinTraceData data)
+            source.Clr.GCJoin += delegate (GCJoinTraceData data)
             {
                 GCProcess gcProcess = perProc[data];
                 GCEvent _event = gcProcess.GetCurrentGC();
@@ -513,7 +513,7 @@ namespace Stats
             // See if the source knows about the CLR Private provider, if it does, then 
             var gcPrivate = new ClrPrivateTraceEventParser(source);
 
-            gcPrivate.GCPinPlugAtGCTime += delegate(PinPlugAtGCTimeTraceData data)
+            gcPrivate.GCPinPlugAtGCTime += delegate (PinPlugAtGCTimeTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -527,7 +527,7 @@ namespace Stats
 
             // Sometimes at the end of a trace I see only some mark events are included in the trace and they
             // are not in order, so need to anticipate that scenario.
-            gcPrivate.GCMarkStackRoots += delegate(GCMarkTraceData data)
+            gcPrivate.GCMarkStackRoots += delegate (GCMarkTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.AddServerGCThreadFromMark(data.ThreadID, data.HeapNum);
@@ -549,7 +549,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCMarkFinalizeQueueRoots += delegate(GCMarkTraceData data)
+            gcPrivate.GCMarkFinalizeQueueRoots += delegate (GCMarkTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -563,7 +563,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCMarkHandles += delegate(GCMarkTraceData data)
+            gcPrivate.GCMarkHandles += delegate (GCMarkTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -577,7 +577,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCMarkCards += delegate(GCMarkTraceData data)
+            gcPrivate.GCMarkCards += delegate (GCMarkTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -591,19 +591,19 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCGlobalHeapHistory += delegate(GCGlobalHeapHistoryTraceData data)
+            gcPrivate.GCGlobalHeapHistory += delegate (GCGlobalHeapHistoryTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessGlobalHistory(data);
             };
 
-            gcPrivate.GCPerHeapHistory += delegate(GCPerHeapHistoryTraceData data)
+            gcPrivate.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessPerHeapHistory(data);
             };
 
-            gcPrivate.GCBGCStart += delegate(GCNoUserDataTraceData data)
+            gcPrivate.GCBGCStart += delegate (GCNoUserDataTraceData data)
             {
                 GCProcess stats = perProc[data];
                 if (stats.currentBGC != null)
@@ -616,7 +616,7 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCStop += delegate(GCEndTraceData data)
+            source.Clr.GCStop += delegate (GCEndTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -629,7 +629,7 @@ namespace Stats
                 }
             };
 
-            source.Clr.GCHeapStats += delegate(GCHeapStatsTraceData data)
+            source.Clr.GCHeapStats += delegate (GCHeapStatsTraceData data)
             {
                 GCProcess stats = perProc[data];
                 GCEvent _event = stats.GetCurrentGC();
@@ -679,7 +679,7 @@ namespace Stats
                 stats.lastRestartEndTimeRelativeMSec = data.TimeStampRelativeMSec;
             };
 
-            source.Clr.GCTerminateConcurrentThread += delegate(GCTerminateConcurrentThreadTraceData data)
+            source.Clr.GCTerminateConcurrentThread += delegate (GCTerminateConcurrentThreadTraceData data)
             {
                 GCProcess stats = perProc[data];
                 if (stats.backgroundGCThreads != null)
@@ -688,7 +688,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCBGCAllocWaitStart += delegate(BGCAllocWaitTraceData data)
+            gcPrivate.GCBGCAllocWaitStart += delegate (BGCAllocWaitTraceData data)
             {
                 GCProcess stats = perProc[data];
                 Debug.Assert(stats.currentBGC != null);
@@ -699,7 +699,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCBGCAllocWaitStop += delegate(BGCAllocWaitTraceData data)
+            gcPrivate.GCBGCAllocWaitStop += delegate (BGCAllocWaitTraceData data)
             {
                 GCProcess stats = perProc[data];
 
@@ -711,7 +711,7 @@ namespace Stats
                 }
             };
 
-            gcPrivate.GCJoin += delegate(GCJoinTraceData data)
+            gcPrivate.GCJoin += delegate (GCJoinTraceData data)
             {
                 GCProcess gcProcess = perProc[data];
                 GCEvent _event = gcProcess.GetCurrentGC();
@@ -725,9 +725,9 @@ namespace Stats
             {
                 GCProcess gcProcess = perProc[data];
                 long finalizationCount;
-                gcProcess.FinalizedObjects[data.TypeName] = 
-                    gcProcess.FinalizedObjects.TryGetValue(data.TypeName, out finalizationCount) ? 
-                        finalizationCount + 1 : 
+                gcProcess.FinalizedObjects[data.TypeName] =
+                    gcProcess.FinalizedObjects.TryGetValue(data.TypeName, out finalizationCount) ?
+                        finalizationCount + 1 :
                         1;
             };
 
@@ -851,7 +851,7 @@ namespace Stats
         public float ProcessCpuMSec;     // Total CPU time used in process (approximate)
         public float GCCpuMSec;          // CPU time used in the GC (approximate)
         public int NumberOfHeaps = 1;
-        
+
         // Of all the CPU, how much as a percentage is spent in the GC. 
         public float PercentTimeInGC { get { return GCCpuMSec * 100 / ProcessCpuMSec; } }
 
@@ -898,7 +898,7 @@ namespace Stats
         public string RuntimeVersion;
         public int Bitness = -1;
         public Dictionary<int, int> ThreadId2Priority = new Dictionary<int, int>();
-        public Dictionary<int, int> ServerGcHeap2ThreadId= new Dictionary<int, int>();
+        public Dictionary<int, int> ServerGcHeap2ThreadId = new Dictionary<int, int>();
         public static bool doServerGCReport = false;
         public Dictionary<string, long> FinalizedObjects = new Dictionary<string, long>();
 
@@ -1052,7 +1052,7 @@ namespace Stats
 
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4><A Name=\"Events_Pause_{0}\">Pause &gt; 200 Msec GC Events for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
-            PrintEventTable(writer, 0, delegate(GCEvent _event) { return _event.PauseDurationMSec > 200; });
+            PrintEventTable(writer, 0, delegate (GCEvent _event) { return _event.PauseDurationMSec > 200; });
 
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4><A Name=\"LOH_allocation_Pause_{0}\">LOH Allocation Pause (due to background GC) &gt; 200 Msec for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
@@ -1060,7 +1060,7 @@ namespace Stats
 
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4><A Name=\"Events_Gen2_{0}\">Gen 2 for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
-            PrintEventTable(writer, 0, delegate(GCEvent _event) { return _event.GCGeneration > 1; });
+            PrintEventTable(writer, 0, delegate (GCEvent _event) { return _event.GCGeneration > 1; });
 
             writer.WriteLine("<HR/>");
             writer.WriteLine("<H4><A Name=\"Events_{0}\">All GC Events for Process {1,5}: {2}<A></H4>", ProcessID, ProcessID, ProcessName);
@@ -1668,7 +1668,7 @@ namespace Stats
             {
                 if (lastCompletedGC != null)
                 {
-                    Debug.Assert(lastCompletedGC.Type == GCType.BackgroundGC); 
+                    Debug.Assert(lastCompletedGC.Type == GCType.BackgroundGC);
                     _event = lastCompletedGC;
                 }
             }
@@ -2033,7 +2033,7 @@ namespace Stats
         public ThreadWorkSpan(CSwitchTraceData switchData)
         {
             ProcessName = switchData.NewProcessName;
-            ThreadId= switchData.NewThreadID;
+            ThreadId = switchData.NewThreadID;
             ProcessId = switchData.NewProcessID;
             ProcessorNumber = switchData.ProcessorNumber;
             AbsoluteTimestampMsc = switchData.TimeStampRelativeMSec;
@@ -2210,7 +2210,7 @@ namespace Stats
                 public double RelativeTimestampMsc;
 
                 public GcWorkSpan(ThreadWorkSpan span)
-                    :base(span)
+                    : base(span)
                 {
                 }
             }
@@ -2266,7 +2266,7 @@ namespace Stats
             public void AddSampleEvent(ThreadWorkSpan sample)
             {
                 GcWorkSpan lastSpan = SampleSpans.Count > 0 ? SampleSpans[SampleSpans.Count - 1] : null;
-                if (lastSpan != null && lastSpan.ThreadId == sample.ThreadId && lastSpan.ProcessId == sample.ProcessId && 
+                if (lastSpan != null && lastSpan.ThreadId == sample.ThreadId && lastSpan.ProcessId == sample.ProcessId &&
                     ((ulong)sample.AbsoluteTimestampMsc == (ulong)(lastSpan.AbsoluteTimestampMsc + lastSpan.DurationMsc)))
                 {
                     lastSpan.DurationMsc++;
@@ -2294,7 +2294,7 @@ namespace Stats
                 if (lastSpan != null)
                 {
                     //updating duration of the last one, based on a timestamp from the new one
-                    lastSpan.DurationMsc = switchData.AbsoluteTimestampMsc- lastSpan.AbsoluteTimestampMsc;
+                    lastSpan.DurationMsc = switchData.AbsoluteTimestampMsc - lastSpan.AbsoluteTimestampMsc;
 
                     //updating wait readon of the last one
                     lastSpan.WaitReason = switchData.WaitReason;
@@ -2303,7 +2303,7 @@ namespace Stats
                 SwitchSpans.Add(new GcWorkSpan(switchData)
                 {
                     Type = GetSpanType(switchData),
-                    RelativeTimestampMsc = switchData.AbsoluteTimestampMsc- TimeBaseMsc,
+                    RelativeTimestampMsc = switchData.AbsoluteTimestampMsc - TimeBaseMsc,
                     Priority = switchData.Priority
                 });
             }
@@ -2347,19 +2347,19 @@ namespace Stats
                     return WorkSpanType.LowPriThread;
             }
 
-            private static Dictionary<WorkSpanType, string> Type2Color = new Dictionary<WorkSpanType, string>() 
-                { 
-                    {WorkSpanType.GcThread, "rgb(0,200,0)"}, 
-                    {WorkSpanType.RivalThread, "rgb(250,20,20)"}, 
-                    {WorkSpanType.Idle, "rgb(0,0,220)"}, 
-                    {WorkSpanType.LowPriThread, "rgb(0,100,220)"}, 
+            private static Dictionary<WorkSpanType, string> Type2Color = new Dictionary<WorkSpanType, string>()
+                {
+                    {WorkSpanType.GcThread, "rgb(0,200,0)"},
+                    {WorkSpanType.RivalThread, "rgb(250,20,20)"},
+                    {WorkSpanType.Idle, "rgb(0,0,220)"},
+                    {WorkSpanType.LowPriThread, "rgb(0,100,220)"},
                 };
 
             private static string[] SGCThreadStateDesc = new string[(int)ServerGCThreadState.SGCState_Max]
             {
                 "GC thread needs to run - non GC threads running on this CPU means GC runs slower",
                 "GC thread is waiting to synchronize with other threads - non GC threads running does not affect GC",
-                "GC thread needs to run single threaded work - non GC threads running on this CPU means GC runs slower", 
+                "GC thread needs to run single threaded work - non GC threads running on this CPU means GC runs slower",
                 "GC thread is waiting to restart - non GC threads running on this CPU means GC runs slower",
             };
 
@@ -2593,7 +2593,7 @@ namespace Stats
                         {
                             if (span.AbsoluteTimestampMsc > GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc)
                             {
-                                while ((currentJoinEventIndex < GcJoins.Count) && 
+                                while ((currentJoinEventIndex < GcJoins.Count) &&
                                        (GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc < span.AbsoluteTimestampMsc))
                                 {
                                     currentThreadState = UpdateCurrentThreadState(GcJoins[currentJoinEventIndex], currentThreadState);
@@ -2687,7 +2687,7 @@ namespace Stats
                         {
                             // If it's less than 1ms we don't bother to print it.
                             //if (item.Value.runningTime > 1)
-                                Parent.Parent.LogServerGCAnalysis("Process {0,8}({1,10}): {2:n3} ms", item.Key, item.Value.processName, item.Value.runningTime);
+                            Parent.Parent.LogServerGCAnalysis("Process {0,8}({1,10}): {2:n3} ms", item.Key, item.Value.processName, item.Value.runningTime);
                             interferenceTime += item.Value.runningTime;
                         }
 
@@ -2784,7 +2784,15 @@ namespace Stats
         public void AddServerGCThreadTime(int heapIndex, float cpuMSec)
         {
             if (GCCpuServerGCThreads != null)
+            {
+                if (heapIndex >= GCCpuServerGCThreads.Length)
+                {
+                    var old = GCCpuServerGCThreads;
+                    GCCpuServerGCThreads = new float[heapIndex + 1];
+                    Array.Copy(old, GCCpuServerGCThreads, old.Length);
+                }
                 GCCpuServerGCThreads[heapIndex] += cpuMSec;
+            }
         }
 
         public void AddServerGcThreadSwitch(ThreadWorkSpan cswitch)
@@ -2885,7 +2893,7 @@ namespace Stats
                 pauseTimePercentage = (PauseDurationMSec * 100) / (totalTime);
             }
 
-            Debug.Assert(pauseTimePercentage <= 100); 
+            Debug.Assert(pauseTimePercentage <= 100);
             return pauseTimePercentage;
         }
 
@@ -3329,7 +3337,7 @@ namespace Stats
                     GCPerHeapHistoryTraceData3 hist = (GCPerHeapHistoryTraceData3)PerHeapHistories[HeapIndex];
                     Allocated += hist.FreeListAllocated;
                     FreeListConsumed += hist.FreeListAllocated + hist.FreeListRejected;
-                }                
+                }
                 return true;
             }
 
@@ -3896,7 +3904,7 @@ namespace Stats
             public double[] MarkTimes;
             public long[] MarkPromoted;
 
-            public MarkInfo(bool initPromoted=true)
+            public MarkInfo(bool initPromoted = true)
             {
                 MarkTimes = new double[(int)MarkRootType.MarkMax];
                 if (initPromoted)
@@ -4024,8 +4032,8 @@ namespace Stats
 
             if (PerHeapHistories != null)
             {
-                writer.WriteLine("      <PerHeapHistories Count=\"{0}\" MemoryLoad=\"{1}\">", 
-                                 PerHeapHistories.Count, 
+                writer.WriteLine("      <PerHeapHistories Count=\"{0}\" MemoryLoad=\"{1}\">",
+                                 PerHeapHistories.Count,
                                  (GlobalHeapHistory.HasMemoryPressure() ? GlobalHeapHistory.MemoryPressure : PerHeapHistories[0].MemoryPressure));
                 int HeapNum = 0;
                 foreach (var perHeapHistory in PerHeapHistories)
