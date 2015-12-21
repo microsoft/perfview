@@ -783,7 +783,7 @@ DoView()
 		fi
 
 		# Execute the viewer.
-		$perfcmd report -g graph,0.5,$graphType $processFilter $perfOpt
+		$perfcmd report -n -g graph,0.5,$graphType $processFilter $perfOpt
 	elif [ "$viewer" == "lttng" ]
 	then
 		babeltrace lttngTrace/ | more
