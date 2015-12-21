@@ -1058,7 +1058,13 @@ namespace PerfView
                 for (int i = 0; i < m_userDefinedColumns.Count; i++)
                 {
                     if (cell.Column == m_userDefinedColumns[i])
-                        return record.DisplayFields[i];
+                    {
+                        var value = record.DisplayFields[i];
+                        if (value == null)
+                            value = "";
+                        return value;
+
+                    }
                 }
             }
             // Fallback see if we can scrape it from the GUI object.  
@@ -1153,7 +1159,7 @@ namespace PerfView
                 foreach (DataGridCellInfo cell in cells)
                 {
                     string cellStringValue = GetCellStringValue(cell);
-                    if (cellStringValue != null)
+                    if (0 < cellStringValue.Length)
                     {
                         double num;
 
@@ -1223,8 +1229,9 @@ namespace PerfView
                 {
                     // We have only one cell copy its contents to the status box
                     var cellStr = GetCellStringValue(cells[0]);
+
                     var cellAsHexDec = cellStr;
-                    if (cellStr.Length != 0)
+                    if (cellStr != null && cellStr.Length != 0)
                     {
                         long asNum;
                         if (cellStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) && long.TryParse(cellStr.Substring(2), NumberStyles.HexNumber, null, out asNum))

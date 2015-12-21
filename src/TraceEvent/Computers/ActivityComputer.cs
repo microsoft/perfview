@@ -171,87 +171,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         }
 
-        // When we stop because we notice we are in the threadpool, then we need to auto-start it
-        // when it wakes up.  This does that logic. 
-        private void AutoRestartIfNecessary(CSwitchTraceData data)
-        {
-            var thread = data.Thread();
-            if (thread == null)
-                return;
-
-            int threadIndex = (int)thread.ThreadIndex;
-            if (m_threadNeedsToAutoStart[threadIndex])
-            {
-                m_threadNeedsToAutoStart[threadIndex] = false;
-
-                // TODO: ideally we just call OnCreated, and OnStarted.   Note today we don't do callbacks.   Is that OK? 
-
-                // Create a new activity 
-                TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
-                    data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
-
-                m_indexToActivity.Add(autoStartActivity);
-                m_beginWaits.Add(null);
-
-                // Start it 
-                autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
-                m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
-                autoStartActivity.startTimeQPC = data.TimeStampQPC;
-                autoStartActivity.thread = thread;
-            }
-        }
-
-        /// <summary>
-        /// Returns true if the call stack is in the thread pool parked (not running user code)  
-        /// This means that the thread CAN'T be running an active activity and we can kill it.  
-        /// </summary>
-        private bool IsThreadParkedInThreadPool(CallStackIndex callStackIndex)
-        {
-            // Empty stacks are not parked in the thread pool.  
-            if (callStackIndex == CallStackIndex.Invalid)
-                return false;
-
-            int count = 0;
-            for (; ; )
-            {
-                CodeAddressIndex codeAddressIndex = m_eventLog.CallStacks.CodeAddressIndex(callStackIndex);
-                TraceModuleFile moduleFile = m_eventLog.CodeAddresses.ModuleFile(codeAddressIndex);
-                if (moduleFile == null)
-                    return false;
-
-                // If NGEN images are on the path, you are not parked 
-                var filePath = moduleFile.FilePath;
-
-                // If you are outside OS code or CLR code.  We err on the side of returning false.  
-                // There are a number of cases (coreclr, desktop)   
-                if (filePath.Length < 1)
-                    return false;
-
-                // To be parked, EVERY Frame has to be in the OS or CLR.dll.  
-                // First we check if they are in the in the system (which is either \windows\System32 or \windows\SysWow64)
-                var startIdx = (filePath[0] == '\\') ? 0 : 2;       // WE allow there to be no drive latter
-                if (String.Compare(filePath, startIdx, @"\windows\sys", 0, 12, StringComparison.OrdinalIgnoreCase) != 0)
-                {
-                    // However we DO allow CLR (or CoreCLR) to be there, which we allow to be anywhere.  
-                    if (!moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
-                        return false;       // Otherwise it is not parked (which includes everything in the GAC, NIC, mscorlib ... and user code elsewhere)
-                }
-
-                // Parking does not take more than 30 frames.  (this is generous)
-                count++;
-                if (count > 30)
-                    return false;
-
-                callStackIndex = m_eventLog.CallStacks.Caller(callStackIndex);
-                if (callStackIndex == CallStackIndex.Invalid)
-                {
-                    // We have to avoid broken frames.   Thus the top most frame must be in nt.dll
-                    var ret = (moduleFile.FilePath.EndsWith("ntdll.dll", StringComparison.OrdinalIgnoreCase));
-                    return ret;
-                }
-            }
-        }
-
         /* properties of the computer itself */
         /// <summary>
         /// Returns the TraceLog that is associated with the computer (at construction time)
@@ -417,6 +336,86 @@ namespace Microsoft.Diagnostics.Tracing
         public bool NoCache;
 
         #region Private
+        // When we stop because we notice we are in the threadpool, then we need to auto-start it
+        // when it wakes up.  This does that logic. 
+        private void AutoRestartIfNecessary(CSwitchTraceData data)
+        {
+            var thread = data.Thread();
+            if (thread == null)
+                return;
+
+            int threadIndex = (int)thread.ThreadIndex;
+            if (m_threadNeedsToAutoStart[threadIndex])
+            {
+                m_threadNeedsToAutoStart[threadIndex] = false;
+
+                // TODO: ideally we just call OnCreated, and OnStarted.   Note today we don't do callbacks.   Is that OK? 
+
+                // Create a new activity 
+                TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
+                    data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
+
+                m_indexToActivity.Add(autoStartActivity);
+                m_beginWaits.Add(null);
+
+                // Start it 
+                autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
+                m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
+                autoStartActivity.startTimeQPC = data.TimeStampQPC;
+                autoStartActivity.thread = thread;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the call stack is in the thread pool parked (not running user code)  
+        /// This means that the thread CAN'T be running an active activity and we can kill it.  
+        /// </summary>
+        private bool IsThreadParkedInThreadPool(CallStackIndex callStackIndex)
+        {
+            // Empty stacks are not parked in the thread pool.  
+            if (callStackIndex == CallStackIndex.Invalid)
+                return false;
+
+            int count = 0;
+            for (;;)
+            {
+                CodeAddressIndex codeAddressIndex = m_eventLog.CallStacks.CodeAddressIndex(callStackIndex);
+                TraceModuleFile moduleFile = m_eventLog.CodeAddresses.ModuleFile(codeAddressIndex);
+                if (moduleFile == null)
+                    return false;
+
+                // If NGEN images are on the path, you are not parked 
+                var filePath = moduleFile.FilePath;
+
+                // If you are outside OS code or CLR code.  We err on the side of returning false.  
+                // There are a number of cases (coreclr, desktop)   
+                if (filePath.Length < 1)
+                    return false;
+
+                // To be parked, EVERY Frame has to be in the OS or CLR.dll.  
+                // First we check if they are in the in the system (which is either \windows\System32 or \windows\SysWow64)
+                var startIdx = (filePath[0] == '\\') ? 0 : 2;       // WE allow there to be no drive latter
+                if (String.Compare(filePath, startIdx, @"\windows\sys", 0, 12, StringComparison.OrdinalIgnoreCase) != 0)
+                {
+                    // However we DO allow CLR (or CoreCLR) to be there, which we allow to be anywhere.  
+                    if (!moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
+                        return false;       // Otherwise it is not parked (which includes everything in the GAC, NIC, mscorlib ... and user code elsewhere)
+                }
+
+                // Parking does not take more than 30 frames.  (this is generous)
+                count++;
+                if (count > 30)
+                    return false;
+
+                callStackIndex = m_eventLog.CallStacks.Caller(callStackIndex);
+                if (callStackIndex == CallStackIndex.Invalid)
+                {
+                    // We have to avoid broken frames.   Thus the top most frame must be in nt.dll
+                    var ret = (moduleFile.FilePath.EndsWith("ntdll.dll", StringComparison.OrdinalIgnoreCase));
+                    return ret;
+                }
+            }
+        }
 
         /// <summary>
         /// This cache remembers Activity * CallStackIndex pairs and the result.  
