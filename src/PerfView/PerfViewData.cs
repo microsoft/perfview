@@ -4450,7 +4450,7 @@ namespace PerfView
         {
             ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
 
-            if (stackSourceName.Contains("(with Tasks)"))
+            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Tasks)"))
             {
                 var taskFoldPatBase = "ntoskrnl!%ServiceCopyEnd;mscorlib%!System.Runtime.CompilerServices.Async%MethodBuilder";
                 var taskFoldPat = taskFoldPatBase + ";^STARTING TASK";
@@ -4461,7 +4461,9 @@ namespace PerfView
                 if (taskFoldPat.StartsWith(stackWindow.FoldRegExTextBox.Text))
                     stackWindow.FoldRegExTextBox.Text = taskFoldPat;
 
-                var excludePat = "!System.Threading.Tasks.Task.Wait";
+                stackWindow.GroupRegExTextBox.Items.Insert(0, @"[Nuget] System.%!=>OTHER;Microsoft.%!=>OTHER;mscorlib%=>OTHER;v4.0.30319%\%!=>OTHER;system32\*!=>OTHER;syswow64\*!=>OTHER");
+
+                var excludePat = "LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage * RunApp";
                 stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }

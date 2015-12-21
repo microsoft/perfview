@@ -7110,7 +7110,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (moduleFile.PdbSignature == Guid.Empty && !isCurrentMachine)
                 {
                     if (log.PointerSize == 8 && moduleFile.FilePath.IndexOf(@"\windows\System32", StringComparison.OrdinalIgnoreCase) >= 0)
-                        symReader.m_log.WriteLine("WARNINGing: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?");
+                        symReader.m_log.WriteLine("WARNING: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?");
                     else
                     {
                         symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the collection machine != current machine.", moduleFile.FilePath);
