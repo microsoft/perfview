@@ -63,7 +63,6 @@ namespace Microsoft.Diagnostics.Tracing
                 StartStopActivity creator = null;
                 StartStopKey extraKey = null;
 
-
                 // We process some events specially because the are important and don't follow the normal ActivityPath conventions.  
                 if (opcode == TraceEventOpcode.Info && data.ProviderGuid == AdoNetProvider)
                 {
@@ -137,6 +136,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                     else if (data.ProviderGuid == MicrosoftWindowsASPNetProvider)
                     {
+                        taskName = "RecHttp" + data.TaskName;
                         // MicrosoftWindowsASPNetProvider does not use ActivityPaths but is OK, opt it in.  
                         if (opcode == TraceEventOpcode.Start)
                         {
@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // Because we want the stop to logically be 'after' the actual stop event (so that the stop looks like
                         // it is part of the start-stop activity we defer it until the next event.   If there is already
                         // a deferral, we can certainly do that one now.  
-                        DoStopIfNecessary(false);
+                        DoStopIfNecessary();
 
                         if (opcode == TraceEventOpcode.Start)
                         {
@@ -269,7 +269,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public StartStopActivity GetCurrentStartStopActivity(TraceThread thread, TraceEvent context = null)
         {
-            DoStopIfNecessary(false);        // Do any deferred stops. 
+            DoStopIfNecessary();        // Do any deferred stops. 
 
             // Search up the stack of tasks, seeing if we have a start-stop activity. 
             TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(thread);
@@ -277,8 +277,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return null;
 
             int taskIndex = (int)curTaskActivity.Index;
-            var ret = m_traceActivityToStartStopActivity.Get(taskIndex);
-
+            StartStopActivity ret = m_traceActivityToStartStopActivity.Get(taskIndex);
+            
             if (ret == null && context != null)
             {
                 Guid activityID = context.ActivityID;
@@ -486,10 +486,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// We don't do a stop all processing associated with the stop event is done.  Thus if we are not 'on'
         /// the stop event, then you can do any deferred processing.  
         /// </summary>
-        public void DoStopIfNecessary(bool force = true)
+        private void DoStopIfNecessary()
         {
             // If we are not exactly on the StopEvent then do the deferred stop before doing any processing.  
-            if (m_deferredStop != null && (force || m_deferredStop.StopEventIndex != m_source.CurrentEventIndex))
+            if (m_deferredStop != null && m_deferredStop.StopEventIndex != m_source.CurrentEventIndex)
             {
                 var startStopActivity = m_deferredStop;
                 m_traceActivityToStartStopActivity.Set(startStopActivity.activityIndex, startStopActivity.Creator);
@@ -498,15 +498,6 @@ namespace Microsoft.Diagnostics.Tracing
 
                 startStopActivity.key = null;      // This also marks the activity as truly stopped.  
                 m_deferredStop = null;
-
-#if false        // TODO FIX NOW remove after debugging complete. 
-                var data = m_source.TraceLog.GetEvent(m_source.CurrentEventIndex);
-                activity = activity.Creator;
-                var thread = data.Thread();
-
-                Trace.WriteLine(string.Format("{0,10:n3}: Thread {1} NumActive {2} Task {3}\r\n    EXECUTING-STOP {4}",
-                    data.TimeStampRelativeMSec, thread != null ? thread.ThreadID : -1, m_activeActivities.Count, activity, activity != null ? activity.ActivityPathString : ""));
-#endif
 
                 // Issue callback if requested AFTER state update
                 var onStartStop = OnStartOrStop;
@@ -517,7 +508,7 @@ namespace Microsoft.Diagnostics.Tracing
         StartStopActivity m_deferredStop;
         TraceLogEventSource m_source;
         ActivityComputer m_taskComputer;                                            // I need to be able to get the current Activity
-        GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;        // Maps a trace activity to a start stop activity. 
+        GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;        // Maps a trace activity to a start stop activity at the current time. 
         Dictionary<StartStopKey, StartStopActivity> m_activeActivities;             // Lookup activities by start-stop key.   
         Dictionary<Guid, StartStopActivity> m_activeActivitiesByActivityId;         // Lookup activities by their Activity ID.  
         #endregion

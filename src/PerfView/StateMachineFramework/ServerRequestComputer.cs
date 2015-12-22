@@ -167,6 +167,9 @@ namespace PerfView
             WCFParser.MessageReceivedByTransport += MessageReceivedByTransport;
             WCFParser.WebHostRequestStop += WebHostRequestStop;
             WCFParser.DecrementBusyCount += WebHostRequestStop;
+            WCFParser.ServiceActivationStart += SetWCFRequestForThread;
+            WCFParser.ServiceHostFactoryCreationStart += SetWCFRequestForThread;
+            WCFParser.ServiceHostStarted += SetWCFRequestForThread;
             WCFParser.OperationInvoked += SetWCFRequestForThread;
             WCFParser.OperationCompleted += SetWCFRequestForThread;
             WCFParser.HttpMessageReceiveStart += SetWCFRequestForThread;
@@ -493,7 +496,7 @@ namespace PerfView
         /* WCF SERVER  */
         /// <summary>
         /// Gets a WCF request for the request with ID 'requestKey'.  Also marks 'thread' as pointing to this request.   
-        /// If 'aspNetRequestId' is non-empty it attemps to make a new request with that ASP.NET request.  This can
+        /// If 'aspNetRequestId' is non-empty it attempts to make a new request with that ASP.NET request.  This can
         /// fail, in which case null is returned.  
         /// </summary>
         private WCFServerRequest GetOrCreateWCFServerRequest(RequestKey requestKey, TraceThread thread, Guid aspNetRequestId)

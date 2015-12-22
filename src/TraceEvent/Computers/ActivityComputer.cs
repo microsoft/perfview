@@ -42,7 +42,7 @@ namespace Microsoft.Diagnostics.Tracing
             // m_perActivityStackIndexMaps = new Dictionary<CallStackIndex, StackSourceCallStackIndex>[eventLog.Activities.Count + 1];
             m_threadToCurrentActivity = new TraceActivity[m_eventLog.Threads.Count];
 
-            // Every thread starts out needing auto-start.  Thus the thread activity is really only 
+            // Every thread starts out needing auto-start.  Thus the thread activity is really only for the first time.  
             m_threadNeedsToAutoStart = new bool[m_eventLog.Threads.Count];
             for (int i = 0; i < m_threadNeedsToAutoStart.Length; i++)
                 m_threadNeedsToAutoStart[i] = true;
@@ -55,7 +55,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             TplEtwProviderTraceEventParser tplParser = new TplEtwProviderTraceEventParser(m_source);
             // Normal Tasks. 
-            tplParser.TaskScheduledSend += delegate(TaskScheduledArgs data)
+            tplParser.TaskScheduledSend += delegate (TaskScheduledArgs data)
             {
                 // TODO we are protecting ourselves against a task being scheduled twice (we ignore the second one).   
                 // This does happen when you do AwaitTaskContinuationScheduled and then you do a TaskScheduled later.
@@ -66,8 +66,8 @@ namespace Microsoft.Diagnostics.Tracing
                 else
                     Log.DebugWarn(activity.kind == TraceActivity.ActivityKind.AwaitTaskScheduled, "Two scheduled events on the same Task", data);
             };
-            tplParser.TaskExecuteStart += delegate(TaskStartedArgs data) { OnStart(data, GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask)); };
-            tplParser.TaskExecuteStop += delegate(TaskCompletedArgs data)
+            tplParser.TaskExecuteStart += delegate (TaskStartedArgs data) { OnStart(data, GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask)); };
+            tplParser.TaskExecuteStop += delegate (TaskCompletedArgs data)
             {
                 TraceActivity activity;
                 m_rawIDToActivity.TryGetValue(GetTPLRawID(data, data.TaskID, IDType.TplScheduledTask), out activity);
@@ -86,11 +86,11 @@ namespace Microsoft.Diagnostics.Tracing
             };
 
             // Async support.    ContinueationScheduled are not like beginWait and endWait pairs, so they use the IsScheduled ID.  
-            tplParser.AwaitTaskContinuationScheduled += delegate(AwaitTaskContinuationScheduledArgs data)
+            tplParser.AwaitTaskContinuationScheduled += delegate (AwaitTaskContinuationScheduledArgs data)
             {
                 OnCreated(data, GetTPLRawID(data, data.ContinuationId, IDType.TplScheduledTask), TraceActivity.ActivityKind.AwaitTaskScheduled);
             };
-            tplParser.TaskWaitSend += delegate(TaskWaitSendArgs data)
+            tplParser.TaskWaitSend += delegate (TaskWaitSendArgs data)
             {
                 TraceActivity createdActivity = OnCreated(data, GetTPLRawID(data, data.TaskID, IDType.TplContinuation),
                     data.Behavior == TaskWaitBehavior.Synchronous ? TraceActivity.ActivityKind.TaskWaitSynchronous : TraceActivity.ActivityKind.TaskWait);
@@ -104,32 +104,32 @@ namespace Microsoft.Diagnostics.Tracing
                 m_beginWaits[idx].Add(createdActivity);
             };
             // A WaitEnd is like TaskStart (you are starting the next continuation). 
-            tplParser.TaskWaitStop += delegate(TaskWaitStopArgs data) { OnStart(data, GetTPLRawID(data, data.TaskID, IDType.TplContinuation), true); };
+            tplParser.TaskWaitStop += delegate (TaskWaitStopArgs data) { OnStart(data, GetTPLRawID(data, data.TaskID, IDType.TplContinuation), true); };
 
             // Support for .NET Timer class 
             var fxParser = new FrameworkEventSourceTraceEventParser(m_source);
-            fxParser.ThreadTransferSend += delegate(ThreadTransferSendArgs data)
+            fxParser.ThreadTransferSend += delegate (ThreadTransferSendArgs data)
             {
 
                 Address id = GetTimerRawID(data, m_gcReferenceComputer.GetReferenceForGCAddress(data.id));
                 OnCreated(data, id, ToActivityKind(data.kind));
             };
-            fxParser.ThreadTransferReceive += delegate(ThreadTransferReceiveArgs data)
+            fxParser.ThreadTransferReceive += delegate (ThreadTransferReceiveArgs data)
             {
                 Address id = GetTimerRawID(data, m_gcReferenceComputer.GetReferenceForGCAddress(data.id));
                 OnStart(data, id);
             };
 
             // .NET Network thread pool support 
-            m_source.Clr.ThreadPoolIOEnqueue += delegate(ThreadPoolIOWorkEnqueueTraceData data)
+            m_source.Clr.ThreadPoolIOEnqueue += delegate (ThreadPoolIOWorkEnqueueTraceData data)
             {
                 OnCreated(data, GetClrIORawID(data, data.NativeOverlapped), TraceActivity.ActivityKind.ClrIOThreadPool);
             };
-            m_source.Clr.ThreadPoolIOPack += delegate(ThreadPoolIOWorkTraceData data)
+            m_source.Clr.ThreadPoolIOPack += delegate (ThreadPoolIOWorkTraceData data)
             {
                 OnCreated(data, GetClrIORawID(data, data.NativeOverlapped), TraceActivity.ActivityKind.ClrIOThreadPool);
             };
-            m_source.Clr.ThreadPoolIODequeue += delegate(ThreadPoolIOWorkTraceData data)
+            m_source.Clr.ThreadPoolIODequeue += delegate (ThreadPoolIOWorkTraceData data)
             {
                 OnStart(data, GetClrIORawID(data, data.NativeOverlapped));
             };
@@ -137,7 +137,7 @@ namespace Microsoft.Diagnostics.Tracing
             // This should not be needed if the thread pool provided proper events.  Basically we want to know
             // when a activity must have ended because we are blocking in the thread pool where we park threads
             // waiting for the 'next thing'.  
-            m_source.Kernel.ThreadCSwitch += delegate(CSwitchTraceData data)
+            m_source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
             {
                 AutoRestartIfNecessary(data);
 
@@ -156,7 +156,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // If the thread is parked in the thread pool then we know that we should stop this activity (since it clearly 
                 // is not running anymore.   
-                if (IsThreadParkedInThreadPool(data.BlockingStack()))
+                if (IsThreadParkedInClrThreadPool(data.BlockingStack()))
                 {
                     while (activity != null)
                     {
@@ -168,7 +168,6 @@ namespace Microsoft.Diagnostics.Tracing
                     m_threadNeedsToAutoStart[threadIndex] = true;
                 }
             };
-
         }
 
         /* properties of the computer itself */
@@ -370,13 +369,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// Returns true if the call stack is in the thread pool parked (not running user code)  
         /// This means that the thread CAN'T be running an active activity and we can kill it.  
         /// </summary>
-        private bool IsThreadParkedInThreadPool(CallStackIndex callStackIndex)
+        private bool IsThreadParkedInClrThreadPool(CallStackIndex callStackIndex)
         {
             // Empty stacks are not parked in the thread pool.  
             if (callStackIndex == CallStackIndex.Invalid)
                 return false;
 
             int count = 0;
+            string prevFilePath = null;
+            bool seenClr = false;
             for (;;)
             {
                 CodeAddressIndex codeAddressIndex = m_eventLog.CallStacks.CodeAddressIndex(callStackIndex);
@@ -398,9 +399,19 @@ namespace Microsoft.Diagnostics.Tracing
                 if (String.Compare(filePath, startIdx, @"\windows\sys", 0, 12, StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     // However we DO allow CLR (or CoreCLR) to be there, which we allow to be anywhere.  
-                    if (!moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
+                    // If we directly transition from the CLR to the kernel we assume it is an APC and not
+                    // a parking wait and return false.   If you don't do this ThreadPoolEnqueue events get
+                    // stopped before they get going.  
+                    if (moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
+                    {
+                        seenClr = true;
+                        if (prevFilePath.EndsWith("ntoskrnl.exe", StringComparison.OrdinalIgnoreCase))
+                            return false;
+                    }
+                    else
                         return false;       // Otherwise it is not parked (which includes everything in the GAC, NIC, mscorlib ... and user code elsewhere)
                 }
+                prevFilePath = filePath;
 
                 // Parking does not take more than 30 frames.  (this is generous)
                 count++;
@@ -410,6 +421,23 @@ namespace Microsoft.Diagnostics.Tracing
                 callStackIndex = m_eventLog.CallStacks.Caller(callStackIndex);
                 if (callStackIndex == CallStackIndex.Invalid)
                 {
+                    // We only return true if we have seen the CLR module.   I have seen stacks
+                    // where you only see allocation in the WOW DLLs.   I don't know how this happens
+                    // but this protects against it.  If we don't do this the ThreadPoolEnqueue events 
+                    // don't work (becuase they get terminated prematurely by this stack.  
+                    // +ntdll!_LdrpInitialize       
+                    //| +wow64!Wow64LdrpInitialize       
+                    //| +wow64!RunCpuSimulation         
+                    //| +wow64cpu!ServiceNoTurbo          
+                    //| +wow64!Wow64SystemServiceEx      
+                    //| +wow64!whNtOpenKeyEx           
+                    //| +wow64!Wow64NtOpenKey       
+                    //| +ntdll!RtlFreeHeap          
+                    //| +ntdll!RtlpFreeHeap        
+                    //| +ntoskrnl!KiDpcInterrupt    
+                    if (!seenClr)
+                        return false;
+
                     // We have to avoid broken frames.   Thus the top most frame must be in nt.dll
                     var ret = (moduleFile.FilePath.EndsWith("ntdll.dll", StringComparison.OrdinalIgnoreCase));
                     return ret;
@@ -535,7 +563,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(m_beginWaits.Count == m_indexToActivity.Count);
             // TODO FIX NOW think about the timers case.  
-            Debug.Assert(!m_rawIDToActivity.ContainsKey(rawScheduledActivityId) || 
+            Debug.Assert(!m_rawIDToActivity.ContainsKey(rawScheduledActivityId) ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.FxTimer ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.ClrIOThreadPool);
 
@@ -666,7 +694,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Stop all activities that are on the stack until we get to this one.   
             var cur = m_threadToCurrentActivity[(int)thread.ThreadIndex];
-            for (; ; )
+            for (;;)
             {
                 if (cur == null)
                 {
@@ -842,7 +870,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return SpliceStack(baseStack, threadPoolTransition, fullCreationStack);
             }
 
-        DontMorph:
+            DontMorph:
             StackSourceCallStackIndex rootFrames;
             if (topFrames != null)
                 rootFrames = topFrames(activity.Thread);
@@ -899,7 +927,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             CallStackIndex newStacks = startStack;
             StackSourceCallStackIndex existingStacks = baseStack;
-            for (; ; )
+            for (;;)
             {
                 if (newStacks == CallStackIndex.Invalid)
                     return StackSourceFrameIndex.Invalid;
@@ -1007,7 +1035,7 @@ namespace Microsoft.Diagnostics.Tracing
             var frameName = m_outputSource.GetFrameName(taskMarkerFrame, true);
             Debug.Assert(frameName.StartsWith("STARTING TASK on Thread"));
             var curSearchIdx = 22;      // Skips the STARTING TASK ...
-            for (; ; )
+            for (;;)
             {
                 var index = frameName.IndexOf(newTaskID, curSearchIdx);
                 if (index < 0)
@@ -1167,7 +1195,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         GrowableArray<ActivityEntry>[] m_ActivityMap;
         ActivityComputer m_computer;
-        #endregion
+    #endregion
     }
 #endif
 }
