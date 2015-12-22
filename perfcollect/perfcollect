@@ -56,6 +56,559 @@ collect_cpu=1
 collect_threadTime=0
 
 ######################################
+## .NET Event Categories
+######################################
+
+# Separate GCCollectOnly list because our LTTng implementation doesn't set tracepoint verbosity.
+# Once tracepoint verbosity is set, we can set verbosity and collapse this wtih DotNETRuntime_GCKeyword.
+declare -a DotNETRuntime_GCKeyword_GCCollectOnly=(
+	DotNETRuntime:GCStart
+	DotNETRuntime:GCStart_V1
+	DotNETRuntime:GCStart_V2
+	DotNETRuntime:GCEnd
+	DotNETRuntime:GCEnd_V1
+	DotNETRuntime:GCRestartEEEnd
+	DotNETRuntime:GCRestartEEEnd_V1
+	DotNETRuntime:GCHeapStats
+	DotNETRuntime:GCHeapStats_V1
+	DotNETRuntime:GCCreateSegment
+	DotNETRuntime:GCCreateSegment_V1
+	DotNETRuntime:GCFreeSegment
+	DotNETRuntime:GCFreeSegment_V1
+	DotNETRuntime:GCRestartEEBegin
+	DotNETRuntime:GCRestartEEBegin_V1
+	DotNETRuntime:GCSuspendEEEnd
+	DotNETRuntime:GCSuspendEEEnd_V1
+	DotNETRuntime:GCSuspendEEBegin
+	DotNETRuntime:GCSuspendEEBegin_V1
+	DotNETRuntime:GCCreateConcurrentThread
+	DotNETRuntime:GCTerminateConcurrentThread
+	DotNETRuntime:GCFinalizersEnd
+	DotNETRuntime:GCFinalizersEnd_V1
+	DotNETRuntime:GCFinalizersBegin
+	DotNETRuntime:GCFinalizersBegin_V1
+	DotNETRuntime:GCMarkStackRoots
+	DotNETRuntime:GCMarkFinalizeQueueRoots
+	DotNETRuntime:GCMarkHandles
+	DotNETRuntime:GCMarkOlderGenerationRoots
+	DotNETRuntime:FinalizeObject
+	DotNETRuntime:PinObjectAtGCTime
+	DotNETRuntime:GCTriggered
+	DotNETRuntime:IncreaseMemoryPressure
+	DotNETRuntime:DecreaseMemoryPressure
+	DotNETRuntime:GCMarkWithType
+	DotNETRuntime:GCJoin_V2
+	DotNETRuntime:GCPerHeapHistory_V3
+	DotNETRuntime:GCGlobalHeapHistory_V2
+	DotNETRuntime:GCCreateConcurrentThread_V1
+	DotNETRuntime:GCTerminateConcurrentThread_V1
+)
+
+
+declare -a DotNETRuntime_GCKeyword=(
+	DotNETRuntime:GCStart
+	DotNETRuntime:GCStart_V1
+	DotNETRuntime:GCStart_V2
+	DotNETRuntime:GCEnd
+	DotNETRuntime:GCEnd_V1
+	DotNETRuntime:GCRestartEEEnd
+	DotNETRuntime:GCRestartEEEnd_V1
+	DotNETRuntime:GCHeapStats
+	DotNETRuntime:GCHeapStats_V1
+	DotNETRuntime:GCCreateSegment
+	DotNETRuntime:GCCreateSegment_V1
+	DotNETRuntime:GCFreeSegment
+	DotNETRuntime:GCFreeSegment_V1
+	DotNETRuntime:GCRestartEEBegin
+	DotNETRuntime:GCRestartEEBegin_V1
+	DotNETRuntime:GCSuspendEEEnd
+	DotNETRuntime:GCSuspendEEEnd_V1
+	DotNETRuntime:GCSuspendEEBegin
+	DotNETRuntime:GCSuspendEEBegin_V1
+	DotNETRuntime:GCAllocationTick
+	DotNETRuntime:GCAllocationTick_V1
+	DotNETRuntime:GCAllocationTick_V2
+	DotNETRuntime:GCAllocationTick_V3
+	DotNETRuntime:GCCreateConcurrentThread
+	DotNETRuntime:GCTerminateConcurrentThread
+	DotNETRuntime:GCFinalizersEnd
+	DotNETRuntime:GCFinalizersEnd_V1
+	DotNETRuntime:GCFinalizersBegin
+	DotNETRuntime:GCFinalizersBegin_V1
+	DotNETRuntime:GCMarkStackRoots
+	DotNETRuntime:GCMarkFinalizeQueueRoots
+	DotNETRuntime:GCMarkHandles
+	DotNETRuntime:GCMarkOlderGenerationRoots
+	DotNETRuntime:FinalizeObject
+	DotNETRuntime:PinObjectAtGCTime
+	DotNETRuntime:GCTriggered
+	DotNETRuntime:IncreaseMemoryPressure
+	DotNETRuntime:DecreaseMemoryPressure
+	DotNETRuntime:GCMarkWithType
+	DotNETRuntime:GCJoin_V2
+	DotNETRuntime:GCPerHeapHistory_V3
+	DotNETRuntime:GCGlobalHeapHistory_V2
+	DotNETRuntime:GCCreateConcurrentThread_V1
+	DotNETRuntime:GCTerminateConcurrentThread_V1
+)
+
+declare -a DotNETRuntime_TypeKeyword=(
+	DotNETRuntime:BulkType
+)
+
+declare -a DotNETRuntime_GCHeapDumpKeyword=(
+	DotNETRuntime:GCBulkRootEdge
+	DotNETRuntime:GCBulkRootConditionalWeakTableElementEdge
+	DotNETRuntime:GCBulkNode
+	DotNETRuntime:GCBulkEdge
+	DotNETRuntime:GCBulkRootCCW
+	DotNETRuntime:GCBulkRCW
+	DotNETRuntime:GCBulkRootStaticVar
+)
+
+declare -a DotNETRuntime_GCSampledObjectAllocationHighKeyword=(
+	DotNETRuntime:GCSampledObjectAllocationHigh
+)
+
+declare -a DotNETRuntime_GCHeapSurvivalAndMovementKeyword=(
+	DotNETRuntime:GCBulkSurvivingObjectRanges
+	DotNETRuntime:GCBulkMovedObjectRanges
+	DotNETRuntime:GCGenerationRange
+)
+
+declare -a DotNETRuntime_GCHandleKeyword=(
+	DotNETRuntime:SetGCHandle
+	DotNETRuntime:DestroyGCHandle
+)
+
+declare -a DotNETRuntime_GCSampledObjectAllocationLowKeyword=(
+	DotNETRuntime:GCSampledObjectAllocationLow
+)
+
+declare -a DotNETRuntime_ThreadingKeyword=(
+	DotNETRuntime:WorkerThreadCreate
+	DotNETRuntime:WorkerThreadTerminate
+	DotNETRuntime:WorkerThreadRetire
+	DotNETRuntime:WorkerThreadUnretire
+	DotNETRuntime:IOThreadCreate
+	DotNETRuntime:IOThreadCreate_V1
+	DotNETRuntime:IOThreadTerminate
+	DotNETRuntime:IOThreadTerminate_V1
+	DotNETRuntime:IOThreadRetire
+	DotNETRuntime:IOThreadRetire_V1
+	DotNETRuntime:IOThreadUnretire
+	DotNETRuntime:IOThreadUnretire_V1
+	DotNETRuntime:ThreadpoolSuspensionSuspendThread
+	DotNETRuntime:ThreadpoolSuspensionResumeThread
+	DotNETRuntime:ThreadPoolWorkerThreadStart
+	DotNETRuntime:ThreadPoolWorkerThreadStop
+	DotNETRuntime:ThreadPoolWorkerThreadRetirementStart
+	DotNETRuntime:ThreadPoolWorkerThreadRetirementStop
+	DotNETRuntime:ThreadPoolWorkerThreadAdjustmentSample
+	DotNETRuntime:ThreadPoolWorkerThreadAdjustmentAdjustment
+	DotNETRuntime:ThreadPoolWorkerThreadAdjustmentStats
+	DotNETRuntime:ThreadPoolWorkerThreadWait
+	DotNETRuntime:ThreadPoolWorkingThreadCount
+	DotNETRuntime:ThreadPoolIOPack
+	DotNETRuntime:GCCreateConcurrentThread_V1
+	DotNETRuntime:GCTerminateConcurrentThread_V1
+)
+
+declare -a DotNETRuntime_ThreadingKeyword_ThreadTransferKeyword=(
+	DotNETRuntime:ThreadPoolEnqueue
+	DotNETRuntime:ThreadPoolDequeue
+	DotNETRuntime:ThreadPoolIOEnqueue
+	DotNETRuntime:ThreadPoolIODequeue
+	DotNETRuntime:ThreadCreating
+	DotNETRuntime:ThreadRunning
+)
+
+declare -a DotNETRuntime_NoKeyword=(
+	DotNETRuntime:ExceptionThrown
+	DotNETRuntime:Contention
+	DotNETRuntime:RuntimeInformationStart
+	DotNETRuntime:EventSource
+)
+
+declare -a DotNETRuntime_ExceptionKeyword=(
+	DotNETRuntime:ExceptionThrown_V1
+	DotNETRuntime:ExceptionCatchStart
+	DotNETRuntime:ExceptionCatchStop
+	DotNETRuntime:ExceptionFinallyStart
+	DotNETRuntime:ExceptionFinallyStop
+	DotNETRuntime:ExceptionFilterStart
+	DotNETRuntime:ExceptionFilterStop
+	DotNETRuntime:ExceptionThrownStop
+)
+
+declare -a DotNETRuntime_ContentionKeyword=(
+	DotNETRuntime:ContentionStart_V1
+	DotNETRuntime:ContentionStop
+)
+
+declare -a DotNETRuntime_StackKeyword=(
+	DotNETRuntime:CLRStackWalk
+)
+
+declare -a DotNETRuntime_AppDomainResourceManagementKeyword=(
+	DotNETRuntime:AppDomainMemAllocated
+	DotNETRuntime:AppDomainMemSurvived
+)
+
+declare -a DotNETRuntime_AppDomainResourceManagementKeyword_ThreadingKeyword=(
+	DotNETRuntime:ThreadCreated
+	DotNETRuntime:ThreadTerminated
+	DotNETRuntime:ThreadDomainEnter
+)
+
+declare -a DotNETRuntime_InteropKeyword=(
+	DotNETRuntime:ILStubGenerated
+	DotNETRuntime:ILStubCacheHit
+)
+
+declare -a DotNETRuntime_JitKeyword_NGenKeyword=(
+	DotNETRuntime:DCStartCompleteV2
+	DotNETRuntime:DCEndCompleteV2
+	DotNETRuntime:MethodDCStartV2
+	DotNETRuntime:MethodDCEndV2
+	DotNETRuntime:MethodDCStartVerboseV2
+	DotNETRuntime:MethodDCEndVerboseV2
+	DotNETRuntime:MethodLoad
+	DotNETRuntime:MethodLoad_V1
+	DotNETRuntime:MethodLoad_V2
+	DotNETRuntime:MethodUnload
+	DotNETRuntime:MethodUnload_V1
+	DotNETRuntime:MethodUnload_V2
+	DotNETRuntime:MethodLoadVerbose
+	DotNETRuntime:MethodLoadVerbose_V1
+	DotNETRuntime:MethodLoadVerbose_V2
+	DotNETRuntime:MethodUnloadVerbose
+	DotNETRuntime:MethodUnloadVerbose_V1
+	DotNETRuntime:MethodUnloadVerbose_V2
+)
+
+declare -a DotNETRuntime_JitKeyword=(
+	DotNETRuntime:MethodJittingStarted
+	DotNETRuntime:MethodJittingStarted_V1
+)
+
+declare -a DotNETRuntime_JitTracingKeyword=(
+	DotNETRuntime:MethodJitInliningSucceeded
+	DotNETRuntime:MethodJitInliningFailed
+	DotNETRuntime:MethodJitTailCallSucceeded
+	DotNETRuntime:MethodJitTailCallFailed
+)
+
+declare -a DotNETRuntime_JittedMethodILToNativeMapKeyword=(
+	DotNETRuntime:MethodILToNativeMap
+)
+
+declare -a DotNETRuntime_LoaderKeyword=(
+	DotNETRuntime:ModuleDCStartV2
+	DotNETRuntime:ModuleDCEndV2
+	DotNETRuntime:DomainModuleLoad
+	DotNETRuntime:DomainModuleLoad_V1
+	DotNETRuntime:ModuleLoad
+	DotNETRuntime:ModuleUnload
+	DotNETRuntime:AssemblyLoad
+	DotNETRuntime:AssemblyLoad_V1
+	DotNETRuntime:AssemblyUnload
+	DotNETRuntime:AssemblyUnload_V1
+	DotNETRuntime:AppDomainLoad
+	DotNETRuntime:AppDomainLoad_V1
+	DotNETRuntime:AppDomainUnload
+	DotNETRuntime:AppDomainUnload_V1
+)
+
+declare -a DotNETRuntime_LoaderKeyword=(
+	DotNETRuntime:ModuleLoad_V1
+	DotNETRuntime:ModuleLoad_V2
+	DotNETRuntime:ModuleUnload_V1
+	DotNETRuntime:ModuleUnload_V2
+)
+
+declare -a DotNETRuntime_SecurityKeyword=(
+	DotNETRuntime:StrongNameVerificationStart
+	DotNETRuntime:StrongNameVerificationStart_V1
+	DotNETRuntime:StrongNameVerificationStop
+	DotNETRuntime:StrongNameVerificationStop_V1
+	DotNETRuntime:AuthenticodeVerificationStart
+	DotNETRuntime:AuthenticodeVerificationStart_V1
+	DotNETRuntime:AuthenticodeVerificationStop
+	DotNETRuntime:AuthenticodeVerificationStop_V1
+)
+
+declare -a DotNETRuntime_DebuggerKeyword=(
+	DotNETRuntime:DebugIPCEventStart
+	DotNETRuntime:DebugIPCEventEnd
+	DotNETRuntime:DebugExceptionProcessingStart
+	DotNETRuntime:DebugExceptionProcessingEnd
+)
+
+declare -a DotNETRuntime_CodeSymbolsKeyword=(
+	DotNETRuntime:CodeSymbols
+)
+
+# Separate GCCollectOnly list because our LTTng implementation doesn't set tracepoint verbosity.
+# Once tracepoint verbosity is set, we can set verbosity and collapse this wtih DotNETRuntimePrivate_GCPrivateKeyword.
+declare -a DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly=(
+	DotNETRuntimePrivate:GCDecision
+	DotNETRuntimePrivate:GCDecision_V1
+	DotNETRuntimePrivate:GCSettings
+	DotNETRuntimePrivate:GCSettings_V1
+	DotNETRuntimePrivate:GCPerHeapHistory
+	DotNETRuntimePrivate:GCPerHeapHistory_V1
+	DotNETRuntimePrivate:GCGlobalHeapHistory
+	DotNETRuntimePrivate:GCGlobalHeapHistory_V1
+	DotNETRuntimePrivate:PrvGCMarkStackRoots
+	DotNETRuntimePrivate:PrvGCMarkStackRoots_V1
+	DotNETRuntimePrivate:PrvGCMarkFinalizeQueueRoots
+	DotNETRuntimePrivate:PrvGCMarkFinalizeQueueRoots_V1
+	DotNETRuntimePrivate:PrvGCMarkHandles
+	DotNETRuntimePrivate:PrvGCMarkHandles_V1
+	DotNETRuntimePrivate:PrvGCMarkCards
+	DotNETRuntimePrivate:PrvGCMarkCards_V1
+	DotNETRuntimePrivate:BGCBegin
+	DotNETRuntimePrivate:BGC1stNonConEnd
+	DotNETRuntimePrivate:BGC1stConEnd
+	DotNETRuntimePrivate:BGC2ndNonConBegin
+	DotNETRuntimePrivate:BGC2ndNonConEnd
+	DotNETRuntimePrivate:BGC2ndConBegin
+	DotNETRuntimePrivate:BGC2ndConEnd
+	DotNETRuntimePrivate:BGCPlanEnd
+	DotNETRuntimePrivate:BGCSweepEnd
+	DotNETRuntimePrivate:BGCDrainMark
+	DotNETRuntimePrivate:BGCRevisit
+	DotNETRuntimePrivate:BGCOverflow
+	DotNETRuntimePrivate:BGCAllocWaitBegin
+	DotNETRuntimePrivate:BGCAllocWaitEnd
+	DotNETRuntimePrivate:GCFullNotify
+	DotNETRuntimePrivate:GCFullNotify_V1
+	DotNETRuntimePrivate:PrvFinalizeObject
+	DotNETRuntimePrivate:PinPlugAtGCTime
+)
+
+declare -a DotNETRuntimePrivate_GCPrivateKeyword=(
+	DotNETRuntimePrivate:GCDecision
+	DotNETRuntimePrivate:GCDecision_V1
+	DotNETRuntimePrivate:GCSettings
+	DotNETRuntimePrivate:GCSettings_V1
+	DotNETRuntimePrivate:GCOptimized
+	DotNETRuntimePrivate:GCOptimized_V1
+	DotNETRuntimePrivate:GCPerHeapHistory
+	DotNETRuntimePrivate:GCPerHeapHistory_V1
+	DotNETRuntimePrivate:GCGlobalHeapHistory
+	DotNETRuntimePrivate:GCGlobalHeapHistory_V1
+	DotNETRuntimePrivate:GCJoin
+	DotNETRuntimePrivate:GCJoin_V1
+	DotNETRuntimePrivate:PrvGCMarkStackRoots
+	DotNETRuntimePrivate:PrvGCMarkStackRoots_V1
+	DotNETRuntimePrivate:PrvGCMarkFinalizeQueueRoots
+	DotNETRuntimePrivate:PrvGCMarkFinalizeQueueRoots_V1
+	DotNETRuntimePrivate:PrvGCMarkHandles
+	DotNETRuntimePrivate:PrvGCMarkHandles_V1
+	DotNETRuntimePrivate:PrvGCMarkCards
+	DotNETRuntimePrivate:PrvGCMarkCards_V1
+	DotNETRuntimePrivate:BGCBegin
+	DotNETRuntimePrivate:BGC1stNonConEnd
+	DotNETRuntimePrivate:BGC1stConEnd
+	DotNETRuntimePrivate:BGC2ndNonConBegin
+	DotNETRuntimePrivate:BGC2ndNonConEnd
+	DotNETRuntimePrivate:BGC2ndConBegin
+	DotNETRuntimePrivate:BGC2ndConEnd
+	DotNETRuntimePrivate:BGCPlanEnd
+	DotNETRuntimePrivate:BGCSweepEnd
+	DotNETRuntimePrivate:BGCDrainMark
+	DotNETRuntimePrivate:BGCRevisit
+	DotNETRuntimePrivate:BGCOverflow
+	DotNETRuntimePrivate:BGCAllocWaitBegin
+	DotNETRuntimePrivate:BGCAllocWaitEnd
+	DotNETRuntimePrivate:GCFullNotify
+	DotNETRuntimePrivate:GCFullNotify_V1
+	DotNETRuntimePrivate:PrvFinalizeObject
+	DotNETRuntimePrivate:PinPlugAtGCTime
+)
+
+declare -a DotNETRuntimePrivate_StartupKeyword=(
+	DotNETRuntimePrivate:EEStartupStart
+	DotNETRuntimePrivate:EEStartupStart_V1
+	DotNETRuntimePrivate:EEStartupEnd
+	DotNETRuntimePrivate:EEStartupEnd_V1
+	DotNETRuntimePrivate:EEConfigSetup
+	DotNETRuntimePrivate:EEConfigSetup_V1
+	DotNETRuntimePrivate:EEConfigSetupEnd
+	DotNETRuntimePrivate:EEConfigSetupEnd_V1
+	DotNETRuntimePrivate:LdSysBases
+	DotNETRuntimePrivate:LdSysBases_V1
+	DotNETRuntimePrivate:LdSysBasesEnd
+	DotNETRuntimePrivate:LdSysBasesEnd_V1
+	DotNETRuntimePrivate:ExecExe
+	DotNETRuntimePrivate:ExecExe_V1
+	DotNETRuntimePrivate:ExecExeEnd
+	DotNETRuntimePrivate:ExecExeEnd_V1
+	DotNETRuntimePrivate:Main
+	DotNETRuntimePrivate:Main_V1
+	DotNETRuntimePrivate:MainEnd
+	DotNETRuntimePrivate:MainEnd_V1
+	DotNETRuntimePrivate:ApplyPolicyStart
+	DotNETRuntimePrivate:ApplyPolicyStart_V1
+	DotNETRuntimePrivate:ApplyPolicyEnd
+	DotNETRuntimePrivate:ApplyPolicyEnd_V1
+	DotNETRuntimePrivate:LdLibShFolder
+	DotNETRuntimePrivate:LdLibShFolder_V1
+	DotNETRuntimePrivate:LdLibShFolderEnd
+	DotNETRuntimePrivate:LdLibShFolderEnd_V1
+	DotNETRuntimePrivate:PrestubWorker
+	DotNETRuntimePrivate:PrestubWorker_V1
+	DotNETRuntimePrivate:PrestubWorkerEnd
+	DotNETRuntimePrivate:PrestubWorkerEnd_V1
+	DotNETRuntimePrivate:GetInstallationStart
+	DotNETRuntimePrivate:GetInstallationStart_V1
+	DotNETRuntimePrivate:GetInstallationEnd
+	DotNETRuntimePrivate:GetInstallationEnd_V1
+	DotNETRuntimePrivate:OpenHModule
+	DotNETRuntimePrivate:OpenHModule_V1
+	DotNETRuntimePrivate:OpenHModuleEnd
+	DotNETRuntimePrivate:OpenHModuleEnd_V1
+	DotNETRuntimePrivate:ExplicitBindStart
+	DotNETRuntimePrivate:ExplicitBindStart_V1
+	DotNETRuntimePrivate:ExplicitBindEnd
+	DotNETRuntimePrivate:ExplicitBindEnd_V1
+	DotNETRuntimePrivate:ParseXml
+	DotNETRuntimePrivate:ParseXml_V1
+	DotNETRuntimePrivate:ParseXmlEnd
+	DotNETRuntimePrivate:ParseXmlEnd_V1
+	DotNETRuntimePrivate:InitDefaultDomain
+	DotNETRuntimePrivate:InitDefaultDomain_V1
+	DotNETRuntimePrivate:InitDefaultDomainEnd
+	DotNETRuntimePrivate:InitDefaultDomainEnd_V1
+	DotNETRuntimePrivate:InitSecurity
+	DotNETRuntimePrivate:InitSecurity_V1
+	DotNETRuntimePrivate:InitSecurityEnd
+	DotNETRuntimePrivate:InitSecurityEnd_V1
+	DotNETRuntimePrivate:AllowBindingRedirs
+	DotNETRuntimePrivate:AllowBindingRedirs_V1
+	DotNETRuntimePrivate:AllowBindingRedirsEnd
+	DotNETRuntimePrivate:AllowBindingRedirsEnd_V1
+	DotNETRuntimePrivate:EEConfigSync
+	DotNETRuntimePrivate:EEConfigSync_V1
+	DotNETRuntimePrivate:EEConfigSyncEnd
+	DotNETRuntimePrivate:EEConfigSyncEnd_V1
+	DotNETRuntimePrivate:FusionBinding
+	DotNETRuntimePrivate:FusionBinding_V1
+	DotNETRuntimePrivate:FusionBindingEnd
+	DotNETRuntimePrivate:FusionBindingEnd_V1
+	DotNETRuntimePrivate:LoaderCatchCall
+	DotNETRuntimePrivate:LoaderCatchCall_V1
+	DotNETRuntimePrivate:LoaderCatchCallEnd
+	DotNETRuntimePrivate:LoaderCatchCallEnd_V1
+	DotNETRuntimePrivate:FusionInit
+	DotNETRuntimePrivate:FusionInit_V1
+	DotNETRuntimePrivate:FusionInitEnd
+	DotNETRuntimePrivate:FusionInitEnd_V1
+	DotNETRuntimePrivate:FusionAppCtx
+	DotNETRuntimePrivate:FusionAppCtx_V1
+	DotNETRuntimePrivate:FusionAppCtxEnd
+	DotNETRuntimePrivate:FusionAppCtxEnd_V1
+	DotNETRuntimePrivate:Fusion2EE
+	DotNETRuntimePrivate:Fusion2EE_V1
+	DotNETRuntimePrivate:Fusion2EEEnd
+	DotNETRuntimePrivate:Fusion2EEEnd_V1
+	DotNETRuntimePrivate:SecurityCatchCall
+	DotNETRuntimePrivate:SecurityCatchCall_V1
+	DotNETRuntimePrivate:SecurityCatchCallEnd
+	DotNETRuntimePrivate:SecurityCatchCallEnd_V1
+)
+
+declare -a DotNETRuntimePrivate_StackKeyword=(
+	DotNETRuntimePrivate:CLRStackWalkPrivate
+)
+
+declare -a DotNETRuntimePrivate_PerfTrackPrivateKeyword=(
+	DotNETRuntimePrivate:ModuleRangeLoadPrivate
+)
+
+declare -a DotNETRuntimePrivate_BindingKeyword=(
+	DotNETRuntimePrivate:BindingPolicyPhaseStart
+	DotNETRuntimePrivate:BindingPolicyPhaseEnd
+	DotNETRuntimePrivate:BindingNgenPhaseStart
+	DotNETRuntimePrivate:BindingNgenPhaseEnd
+	DotNETRuntimePrivate:BindingLookupAndProbingPhaseStart
+	DotNETRuntimePrivate:BindingLookupAndProbingPhaseEnd
+	DotNETRuntimePrivate:LoaderPhaseStart
+	DotNETRuntimePrivate:LoaderPhaseEnd
+	DotNETRuntimePrivate:BindingPhaseStart
+	DotNETRuntimePrivate:BindingPhaseEnd
+	DotNETRuntimePrivate:BindingDownloadPhaseStart
+	DotNETRuntimePrivate:BindingDownloadPhaseEnd
+	DotNETRuntimePrivate:LoaderAssemblyInitPhaseStart
+	DotNETRuntimePrivate:LoaderAssemblyInitPhaseEnd
+	DotNETRuntimePrivate:LoaderMappingPhaseStart
+	DotNETRuntimePrivate:LoaderMappingPhaseEnd
+	DotNETRuntimePrivate:LoaderDeliverEventsPhaseStart
+	DotNETRuntimePrivate:LoaderDeliverEventsPhaseEnd
+	DotNETRuntimePrivate:FusionMessageEvent
+	DotNETRuntimePrivate:FusionErrorCodeEvent
+)
+
+declare -a DotNETRuntimePrivate_SecurityPrivateKeyword=(
+	DotNETRuntimePrivate:EvidenceGenerated
+	DotNETRuntimePrivate:ModuleTransparencyComputationStart
+	DotNETRuntimePrivate:ModuleTransparencyComputationEnd
+	DotNETRuntimePrivate:TypeTransparencyComputationStart
+	DotNETRuntimePrivate:TypeTransparencyComputationEnd
+	DotNETRuntimePrivate:MethodTransparencyComputationStart
+	DotNETRuntimePrivate:MethodTransparencyComputationEnd
+	DotNETRuntimePrivate:FieldTransparencyComputationStart
+	DotNETRuntimePrivate:FieldTransparencyComputationEnd
+	DotNETRuntimePrivate:TokenTransparencyComputationStart
+	DotNETRuntimePrivate:TokenTransparencyComputationEnd
+)
+
+declare -a DotNETRuntimePrivate_PrivateFusionKeyword=(
+	DotNETRuntimePrivate:NgenBindEvent
+)
+
+declare -a DotNETRuntimePrivate_NoKeyword=(
+	DotNETRuntimePrivate:FailFast
+)
+
+declare -a DotNETRuntimePrivate_InteropPrivateKeyword=(
+	DotNETRuntimePrivate:CCWRefCountChange
+)
+
+declare -a DotNETRuntimePrivate_GCHandlePrivateKeyword=(
+	DotNETRuntimePrivate:PrvSetGCHandle
+	DotNETRuntimePrivate:PrvDestroyGCHandle
+)
+
+declare -a DotNETRuntimePrivate_LoaderHeapPrivateKeyword=(
+	DotNETRuntimePrivate:AllocRequest
+)
+
+declare -a DotNETRuntimePrivate_MulticoreJitPrivateKeyword=(
+	DotNETRuntimePrivate:MulticoreJit
+	DotNETRuntimePrivate:MulticoreJitMethodCodeReturned
+)
+
+declare -a DotNETRuntimePrivate_DynamicTypeUsageKeyword=(
+	DotNETRuntimePrivate:IInspectableRuntimeClassName
+	DotNETRuntimePrivate:WinRTUnbox
+	DotNETRuntimePrivate:CreateRCW
+	DotNETRuntimePrivate:RCWVariance
+	DotNETRuntimePrivate:RCWIEnumerableCasting
+	DotNETRuntimePrivate:CreateCCW
+	DotNETRuntimePrivate:CCWVariance
+	DotNETRuntimePrivate:ObjectVariantMarshallingToNative
+	DotNETRuntimePrivate:GetTypeFromGUID
+	DotNETRuntimePrivate:GetTypeFromProgID
+	DotNETRuntimePrivate:ConvertToCallbackEtw
+	DotNETRuntimePrivate:BeginCreateManagedReference
+	DotNETRuntimePrivate:EndCreateManagedReference
+	DotNETRuntimePrivate:ObjectVariantMarshallingToManaged
+)
+
+######################################
 ## Global Variables
 ######################################
 
@@ -319,6 +872,8 @@ processFilter=''
 graphType=''
 perfOpt=''
 viewer='perf'
+gcCollectOnly=''
+gcOnly=''
 
 ProcessArguments()
 {
@@ -406,6 +961,12 @@ ProcessArguments()
 			then
 				useLTTng=1
 			fi
+		elif [ "-gccollectonly" == "$arg" ]
+		then
+			gcCollectOnly=1
+		elif [ "-gconly" == "$arg" ]
+		then
+			gcOnly=1
 		fi
 	done
 	
@@ -432,9 +993,25 @@ SetupLTTngSession()
 	lttng add-context --userspace --type vtid > /dev/null
 	lttng add-context --userspace --type procname > /dev/null
 
-	# All runtime events
-	# TODO:Filter events
-	lttng enable-event --userspace --tracepoint 'DotNETRuntime:*' > /dev/null
+	if [ "$gcCollectOnly" == "1" ]
+	then
+		EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
+		EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
+		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
+	elif [ "$gcOnly" == "1" ]
+	then
+		EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
+		EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword[@]}
+		EnableLTTngEvents ${DotNETRuntime_GCHeapSurvivalAndMovementKeyword[@]}
+		EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
+		EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
+		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
+	else
+		# Enable All runtime events
+		# TODO:Filter events
+		lttng enable-event --userspace --tracepoint 'DotNETRuntime:*' > /dev/null
+		lttng enable-event --userspace --tracepoint 'DotNETRuntimePrivate:*' > /dev/null
+	fi
 }
 
 DestroyLTTngSession()
@@ -457,6 +1034,17 @@ StopLTTngCollection()
 	DestroyLTTngSession
 }
 
+# $@ == event names to be enabled
+EnableLTTngEvents()
+{
+	args=( "$@" )
+	for (( i=0; i<${#args[@]}; i++ ))
+	do
+		cmd="lttng enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
+		$cmd
+	done
+}
+
 ##
 # Helper that processes collected data.
 # This helper is called when the CTRL+C signal is handled.
@@ -476,7 +1064,7 @@ ProcessCollectedData()
 	then
 		WriteStatus "START: Save LTTng trace files."
 
-		if [ -f $lttngTraceDir ]
+		if [ -d $lttngTraceDir ]
 		then
 			mkdir lttngTrace
 			cp -r $lttngTraceDir lttngTrace
