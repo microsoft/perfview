@@ -866,6 +866,9 @@ namespace PerfView
                 // Use the same configuration as the base window.  
                 DataSource.DataFile.ConfigureStackWindow("", stackWindow);
             }
+
+            stackWindow.GuiState = GuiState;
+
             stackWindow.Show();
 
             stackWindow.StatusBar.StartWork("Computing " + dataFile.Name, delegate()
@@ -1895,7 +1898,7 @@ namespace PerfView
             }
 
             //create the list of module names to look up
-            var moduleNames = new List<string>();
+            var moduleNames = new HashSet<string>();
             var success = DoForSelectedModules(delegate(string moduleName)
             {
                 moduleNames.Add(moduleName);
@@ -3166,12 +3169,11 @@ namespace PerfView
                 bool firstCell = true;
                 foreach (var cell in cells)
                 {
-                    var content = cell.Column.GetCellContent(cell.Item);
-                    var asTextBlock = content as TextBlock;
-                    if (asTextBlock != null)
+                    var content = PerfDataGrid.GetCellStringValue(cell);
+                    if (content != null)
                     {
                         double num;
-                        if (double.TryParse(asTextBlock.Text, out num))
+                        if (double.TryParse(content, out num))
                         {
                             if (count == 0)
                                 first = num;
