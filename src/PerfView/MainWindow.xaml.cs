@@ -1097,20 +1097,11 @@ namespace PerfView
             InitializeFeedback();
         }
         public PerfViewDirectory CurrentDirectory { get { return m_CurrentDirectory; } }
-        private static string UnquoteIfNecessary(string path) // If that path is quoted (i.e. the user right clicked on the file and chose Copy As Path), remove the quotes.
-        {
-            if (!path.StartsWith("\"") || path.EndsWith("\"") || path.Length <= 2)
-            {
-                return path;
-            }
-            return path.Substring(1, path.Length - 2);
-        }
         /// <summary>
         /// Set the left pane to the specified directory.  If it is a file name, then that file name is opened
         /// </summary>
         public void OpenPath(string path, bool force = false)
         {
-            path = UnquoteIfNecessary(path);
             if (System.IO.Directory.Exists(path))
             {
                 var fullPath = App.MakeUniversalIfPossible(Path.GetFullPath(path));
