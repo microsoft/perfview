@@ -104,7 +104,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 string providerName = null;
                 Guid providerGuid = Guid.Empty;
                 Match m;
-                for (; ; )
+                for (;;)
                 {
                     var line = tmfData.ReadLine();
                     if (line == null)
@@ -126,7 +126,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 {
                                     using (var mofFile = File.OpenText(mofFilePath))
                                     {
-                                        for (; ; )
+                                        for (;;)
                                         {
                                             var mofLine = mofFile.ReadLine();
                                             if (mofLine == null)
@@ -167,7 +167,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (formatStr.Contains("%!"))
                             {
                                 var tail = m.Groups[5].Value;
-                                for (; ; )
+                                for (;;)
                                 {
                                     var m1 = Regex.Match(formatStr, @"%!(\w+)!");
                                     if (!m1.Success)
@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                             parameterTypes.Clear();
 
-                            for (; ; )
+                            for (;;)
                             {
                                 line = tmfData.ReadLine();
                                 if (line == null)
@@ -267,7 +267,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             formatStr = formatStr.Replace("%0", "");    // TODO What is this?  Why is it here?  
-                            formatStr = Regex.Replace(formatStr, @"%(\d+)!(\w?)\w*!", delegate(Match match)
+                            formatStr = Regex.Replace(formatStr, @"%(\d+)!(\w?)\w*!", delegate (Match match)
                             {
                                 var argNum = int.Parse(match.Groups[1].Value) - 10;     // 0 first arg ...
 

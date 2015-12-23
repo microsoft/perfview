@@ -2837,33 +2837,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                    anEvent.Dispatch();
-                if (anEvent.next != null)
+            if (anEvent.Target != null)
+                anEvent.Dispatch();
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (;;)
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (;;)
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
+                        break;
+                    if (nextEvent.Target != null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                            break;
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
-                        }
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
                     }
                 }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                        unhandledEventTemplate.PrepForCallback();
-                    AllEvents(anEvent);
-                }
-                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                    unhandledEventTemplate.PrepForCallback();
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)

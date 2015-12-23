@@ -27,7 +27,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is a shortcut for  ETWReloggerTraceEventSource(inputFileName, TraceEventSourceType.MergeAll, outputFileStream)
         /// </summary>
         public ETWReloggerTraceEventSource(string inputFileName, string outputFileName)
-            : this(inputFileName, TraceEventSourceType.MergeAll, outputFileName) { }
+            : this(inputFileName, TraceEventSourceType.MergeAll, outputFileName)
+        { }
 
         /// <summary>
         /// Create an ETWReloggerTraceEventSource that can takes its input from a variety of sources (either a single file,

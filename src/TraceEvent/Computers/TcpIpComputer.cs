@@ -31,27 +31,27 @@ namespace Microsoft.Diagnostics.Tracing
             m_source = source;
 
             var tcpParser = new MicrosoftWindowsTCPIPTraceEventParser(m_source);
-            tcpParser.TcpRequestConnect += delegate(TcpRequestConnectArgs data)
+            tcpParser.TcpRequestConnect += delegate (TcpRequestConnectArgs data)
             {
             };
 
-            tcpParser.TcpRequestConnect += delegate(TcpRequestConnectArgs data)
+            tcpParser.TcpRequestConnect += delegate (TcpRequestConnectArgs data)
             {
             };
 
-            tcpParser.TcpDeliveryIndicated += delegate(TcpDisconnectTcbInjectFailedArgs data)
+            tcpParser.TcpDeliveryIndicated += delegate (TcpDisconnectTcbInjectFailedArgs data)
             {
             };
 
-            tcpParser.TcpDataTransferReceive += delegate(TcpDataTransferReceiveArgs data)
+            tcpParser.TcpDataTransferReceive += delegate (TcpDataTransferReceiveArgs data)
             {
             };
 
-            tcpParser.TcpSendPosted += delegate(TcpSendPostedArgs data)
+            tcpParser.TcpSendPosted += delegate (TcpSendPostedArgs data)
             {
             };
 
-            tcpParser.TcpCloseTcbRequest += delegate(TcpAccpetListenerRouteLookupFailureArgs args)
+            tcpParser.TcpCloseTcbRequest += delegate (TcpAccpetListenerRouteLookupFailureArgs args)
             {
             };
 

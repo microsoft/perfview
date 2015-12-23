@@ -2731,7 +2731,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             int buffSize = 256;     // An initial guess that probably works most of the time.  
             byte* buffer;
-            for (; ; )
+            for (;;)
             {
                 var space = stackalloc byte[buffSize];
                 buffer = space;
@@ -2862,7 +2862,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL();
                     var profileSource = (TraceEventNativeMethods.PROFILE_SOURCE_INFO*)buffer;
-                    for (; ; )
+                    for (;;)
                     {
                         char* namePtr = (char*)&profileSource[1];       // points off the end of the array;
 

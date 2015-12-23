@@ -38,16 +38,16 @@ namespace Microsoft.Diagnostics.Tracing
         /// <param name="source"></param>
         public GCReferenceComputer(TraceEventDispatcher source)
         {
-            source.Clr.GCBulkMovedObjectRanges += delegate(GCBulkMovedObjectRangesTraceData data)
+            source.Clr.GCBulkMovedObjectRanges += delegate (GCBulkMovedObjectRangesTraceData data)
             {
             };
-            source.Clr.GCBulkSurvivingObjectRanges += delegate(GCBulkSurvivingObjectRangesTraceData data)
+            source.Clr.GCBulkSurvivingObjectRanges += delegate (GCBulkSurvivingObjectRangesTraceData data)
             {
             };
-            source.Clr.GCStart += delegate(GCStartTraceData data)
+            source.Clr.GCStart += delegate (GCStartTraceData data)
             {
             };
-            source.Clr.GCGenerationRange += delegate(GCGenerationRangeTraceData data)
+            source.Clr.GCGenerationRange += delegate (GCGenerationRangeTraceData data)
             {
             };
 
