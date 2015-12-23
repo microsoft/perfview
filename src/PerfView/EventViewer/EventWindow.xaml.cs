@@ -355,7 +355,7 @@ namespace PerfView
                 var selectedCells = Grid.SelectedCells;
                 if (selectedCells.Count == 1 || selectedCells.Count == 2)
                 {
-                    string start = PerfView.StackWindow.GetCellStringValue(selectedCells[0]);
+                    string start = GetCellStringValue(selectedCells[0]);
                     double parsedStart;
                     if (!double.TryParse(start, out parsedStart))
                     {
@@ -372,7 +372,7 @@ namespace PerfView
                         endTimeRelativeMSec = parsedStart;
                         if (selectedCells.Count == 2)
                         {
-                            string end = PerfView.StackWindow.GetCellStringValue(selectedCells[1]);
+                            string end = GetCellStringValue(selectedCells[1]);
                             if (!double.TryParse(end, out endTimeRelativeMSec))
                             {
                                 StatusBar.LogError("Could not parse " + end + " as a number.");
@@ -452,7 +452,7 @@ namespace PerfView
             if (selectedCells.Count != 1)
                 throw new ApplicationException("No cells selected.");
 
-            ProcessFilterTextBox.Text = PerfView.StackWindow.GetCellStringValue(selectedCells[0]); ;
+            ProcessFilterTextBox.Text = GetCellStringValue(selectedCells[0]);
             Update();
         }
         private void DoRangeFilter(object sender, ExecutedRoutedEventArgs e)
@@ -478,8 +478,8 @@ namespace PerfView
                 StatusBar.LogError("You must select two cells to set the range.");
                 return;
             }
-            StartTextBox.Text = PerfView.StackWindow.GetCellStringValue(selectedCells[0]);
-            EndTextBox.Text = PerfView.StackWindow.GetCellStringValue(selectedCells[1]);
+            StartTextBox.Text = GetCellStringValue(selectedCells[0]);
+            EndTextBox.Text = GetCellStringValue(selectedCells[1]);
             Update();
         }
         private void DoEventTypesKey(object sender, KeyEventArgs e)
@@ -687,8 +687,8 @@ namespace PerfView
             {
                 double min = 0;
                 double max = 0;
-                if (double.TryParse(PerfView.StackWindow.GetCellStringValue(cells[0]), out min) &&
-                    double.TryParse(PerfView.StackWindow.GetCellStringValue(cells[cells.Count - 1]), out max))
+                if (double.TryParse(GetCellStringValue(cells[0]), out min) &&
+                    double.TryParse(GetCellStringValue(cells[cells.Count - 1]), out max))
                 {
                     // Swap them if necessary.  
                     if (max < min)
