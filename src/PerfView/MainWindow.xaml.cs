@@ -1102,6 +1102,16 @@ namespace PerfView
         /// </summary>
         public void OpenPath(string path, bool force = false)
         {
+            // If someone holds down shift, right clicks on a file and selects "Copy as path" it will
+            // contain a starting and ending quote (e.g. "e:\trace.etl" as apposed to e:\trace.etl). If
+            // they then paste this into the MainWindow's directory HistoryComboBox without removing 
+            // the quotes and press enter, an exception will be thrown here. Remove these quotes so 
+            // it doesn't need to be manually done.
+            if (path.StartsWith("\"") && path.EndsWith("\"") && path.Length >= 2)
+            {
+                path = path.Substring(1, path.Length - 2);
+            }
+
             if (System.IO.Directory.Exists(path))
             {
                 var fullPath = App.MakeUniversalIfPossible(Path.GetFullPath(path));
