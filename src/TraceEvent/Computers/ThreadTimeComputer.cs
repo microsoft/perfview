@@ -93,13 +93,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_networkFrameIndex = outputStackSource.Interner.FrameIntern("NETWORK_TIME (probably)");
 
             TraceLogEventSource eventSource = m_eventLog.Events.GetSource();        // TODO: We don't restrict to a range because we don't start up accurately.
-            eventSource.Kernel.ThreadCSwitch += OnThreadCSwitch;
-            eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(OnDiskIO);
-            eventSource.Kernel.AddCallbackForEvents<DiskIOInitTraceData>(OnDiskIOInit);
-            eventSource.Kernel.ThreadStart += OnThreadStart;
-            eventSource.Kernel.ThreadStop += OnThreadEnd;
-            eventSource.Kernel.TcpIpRecv += OnTcIpRecv;
-            eventSource.Kernel.MemoryHardFault += OnHardFault;
 
             if (GroupByStartStopActivity)
                 UseTasks = true;
@@ -107,7 +100,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (UseTasks)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
-                m_activityComputer.AwaitUnblocks += delegate(TraceActivity activity, TraceEvent data)
+                m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
                 {
                     var sample = m_sample;
                     sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
@@ -124,15 +117,31 @@ namespace Microsoft.Diagnostics.Tracing
                     sample.StackIndex = m_outputStackSource.Interner.CallStackIntern(awaitFrame, sample.StackIndex);
 
                     m_outputStackSource.AddSample(sample);
+
+                    // If we are createing 'UNKNOWN_ASYNC nodes, make sure that AWAIT_TIME does not overlap with UNKNOWN_ASYNC time
+                    if (m_threadToStartStopActivity != null)
+                    {
+                        var startStopActivity = m_startStopActivities.GetStartStopActivityForActivity(activity);
+                        if (startStopActivity != null)
+                        {
+                            while (startStopActivity.Creator != null)
+                                startStopActivity = startStopActivity.Creator;
+
+                            if (0 <= m_unknownTimeStartMsec.Get((int)startStopActivity.Index))
+                                m_unknownTimeStartMsec.Set((int)startStopActivity.Index, data.TimeStampRelativeMSec);
+                        }
+                    }
                 };
 
                 // We can provide a bit of extra value (and it is useful for debugging) if we immediately log a CPU 
-                // sample when we schedule or start a task.  That we we get the very instant 
+                // sample when we schedule or start a task.  That we we get the very instant it starts.  
                 var tplProvider = new TplEtwProviderTraceEventParser(eventSource);
                 tplProvider.AwaitTaskContinuationScheduled += OnSampledProfile;
                 tplProvider.TaskScheduledSend += OnSampledProfile;
+                tplProvider.TaskExecuteStart += OnSampledProfile;
                 tplProvider.TaskWaitSend += OnSampledProfile;
                 tplProvider.TaskWaitStop += OnTaskUnblock;  // Log the activity stack even if you don't have a stack. 
+
             }
 
             if (!ExcludeReadyThread)
@@ -142,14 +151,64 @@ namespace Microsoft.Diagnostics.Tracing
                 eventSource.Kernel.PerfInfoSample += OnSampledProfile;
 
             if (GroupByStartStopActivity)
+            {
                 m_startStopActivities = new StartStopActivityComputer(eventSource, m_activityComputer);
+
+                // Maps thread Indexes to the start-stop activity that they are executing.  
+                m_threadToStartStopActivity = new StartStopActivity[m_eventLog.Threads.Count];
+
+                /*********  Start Unknown Async State machine for StartStop activities ******/
+                // The delegates below along with the AddUnkownAsyncDurationIfNeeded have one purpose:
+                // To inject UNKNOWN_ASYNC stacks when there is an active start-stop activity that is
+                // 'missing' time.   It has the effect of insuring that Start-Stop tasks always have
+                // a metric that is not unrealistically small.  
+                m_activityComputer.Start += delegate (TraceActivity activity, TraceEvent data)
+                {
+                    StartStopActivity newStartStopActivityForThread = m_startStopActivities.GetCurrentStartStopActivity(activity.Thread, data);
+                    UpdateThreadToWorkOnStartStopActivity(activity.Thread, newStartStopActivityForThread, data);
+                };
+
+                m_activityComputer.AfterStop += delegate (TraceActivity activity, TraceEvent data, TraceThread thread)
+                {
+                    StartStopActivity newStartStopActivityForThread = m_startStopActivities.GetCurrentStartStopActivity(thread, data);
+                    UpdateThreadToWorkOnStartStopActivity(thread, newStartStopActivityForThread, data);
+                };
+
+                m_startStopActivities.Start += delegate (StartStopActivity startStopActivity, TraceEvent data)
+                {
+                    // We only care about the top-most activities.   fast out otehrwise.   
+                    if (startStopActivity.Creator != null)
+                        return;
+
+                    // Then we have a refcount of exactly one
+                    Debug.Assert(data.Opcode == TraceEventOpcode.Start);
+                    Debug.Assert(m_unknownTimeStartMsec.Get((int)startStopActivity.Index) >= 0);    // There was nothing running before.  
+
+                    m_unknownTimeStartMsec.Set((int)startStopActivity.Index, -1);       // Set it so just we are running.  
+                    m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] = startStopActivity;
+                };
+                m_startStopActivities.Stop += delegate (StartStopActivity startStopActivity, TraceEvent data)
+                {
+                    // We only care about the top-most activities.   fast out otehrwise.   
+                    if (startStopActivity.Creator != null)
+                        return;
+
+                    double unknownStartTime = m_unknownTimeStartMsec.Get((int)startStopActivity.Index);
+                    if (0 < unknownStartTime)
+                        AddUnkownAsyncDurationIfNeeded(startStopActivity, unknownStartTime, data);
+
+                    m_unknownTimeStartMsec.Set((int)startStopActivity.Index, 0);
+                    Debug.Assert(m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] == startStopActivity);
+                    m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] = null;
+                };
+            }
 
             if (GroupByAspNetRequest)
             {
                 m_aspNetRequestInfo = new Dictionary<Guid, AspNetRequestInfo>();
 
                 var aspNet = new AspNetTraceEventParser(eventSource);
-                aspNet.AspNetReqStart += delegate(AspNetStartTraceData data)
+                aspNet.AspNetReqStart += delegate (AspNetStartTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
@@ -157,14 +216,14 @@ namespace Microsoft.Diagnostics.Tracing
                     var url = data.Method + "('" + data.Path + "', '" + data.QueryString + "')";
                     TransferAspNetRequestToThread(data.ContextId, thread.ThreadIndex, url);
                 };
-                aspNet.AspNetReqStop += delegate(AspNetStopTraceData data)
+                aspNet.AspNetReqStop += delegate (AspNetStopTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
                         return;
                     TransferAspNetRequestToThread(data.ContextId, ThreadIndex.Invalid);
                 };
-#if false 
+#if false
                     aspNet.AspNetReqEndHandler += delegate(AspNetEndHandlerTraceData data)
                     {
                         var thread = data.Thread();
@@ -173,21 +232,21 @@ namespace Microsoft.Diagnostics.Tracing
                         m_threadState[(int)thread.ThreadIndex].LogThreadRunninAspNetRequest(Guid.Empty);
                     };
 #endif
-                aspNet.AspNetReqStartHandler += delegate(AspNetStartHandlerTraceData data)
+                aspNet.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
                         return;
                     TransferAspNetRequestToThread(data.ContextId, thread.ThreadIndex);
                 };
-                aspNet.AspNetReqPipelineModuleEnter += delegate(AspNetPipelineModuleEnterTraceData data)
+                aspNet.AspNetReqPipelineModuleEnter += delegate (AspNetPipelineModuleEnterTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
                         return;
                     TransferAspNetRequestToThread(data.ContextId, thread.ThreadIndex);
                 };
-                aspNet.AspNetReqGetAppDomainEnter += delegate(AspNetGetAppDomainEnterTraceData data)
+                aspNet.AspNetReqGetAppDomainEnter += delegate (AspNetGetAppDomainEnterTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
@@ -197,7 +256,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             // TODO FIX NOW Experimental : Include all 
-            eventSource.Dynamic.All += delegate(TraceEvent data)
+            eventSource.Dynamic.All += delegate (TraceEvent data)
             {
                 // TODO decide what the correct heuristic is.  
                 // Currently I only do this for things that might be an EventSoruce (uses the name->Guid hashing)
@@ -237,7 +296,16 @@ namespace Microsoft.Diagnostics.Tracing
 
                 m_threadState[(int)thread.ThreadIndex].LogCPUStack(data.TimeStampRelativeMSec, stackIndex, thread, this, false);
             };
-            
+
+            // Add my own callbacks.  
+            eventSource.Kernel.ThreadCSwitch += OnThreadCSwitch;
+            eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(OnDiskIO);
+            eventSource.Kernel.AddCallbackForEvents<DiskIOInitTraceData>(OnDiskIOInit);
+            eventSource.Kernel.ThreadStart += OnThreadStart;
+            eventSource.Kernel.ThreadStop += OnThreadEnd;
+            eventSource.Kernel.TcpIpRecv += OnTcIpRecv;
+            eventSource.Kernel.MemoryHardFault += OnHardFault;
+
             eventSource.Process();
 
             var endSessionRelativeMSec = m_eventLog.SessionDuration.TotalMilliseconds;
@@ -274,7 +342,88 @@ namespace Microsoft.Diagnostics.Tracing
             m_threadState = null;
         }
 
-        #region private 
+        #region private
+
+        /// <summary>
+        /// Updates it so that 'thread' is now working on newStartStop, which can be null which means that it is not working on any 
+        /// start-stop task. 
+        /// </summary>
+        private void UpdateThreadToWorkOnStartStopActivity(TraceThread thread, StartStopActivity newStartStop, TraceEvent data)
+        {
+            // Make the new-start stop activity be the top most one.   This is all we need and is more robust in the case
+            // of unusual state transitions (e.g. lost events non-nested start-stops ...).  Ref-counting is very fragile
+            // after all...
+            if (newStartStop != null)
+            {
+                while (newStartStop.Creator != null)
+                    newStartStop = newStartStop.Creator;
+            }
+
+            StartStopActivity oldStartStop = m_threadToStartStopActivity[(int)thread.ThreadIndex];
+            Debug.Assert(oldStartStop == null || oldStartStop.Creator == null);
+            if (oldStartStop == newStartStop)       // No change, nothing to do, quick exit.  
+                return;
+
+            // Decrement the start-stop which lost its thread. 
+            if (oldStartStop != null)           
+            {
+                double unknownStartTimeMSec = m_unknownTimeStartMsec.Get((int)oldStartStop.Index);
+                Debug.Assert(unknownStartTimeMSec < 0);
+                if (unknownStartTimeMSec < 0)
+                {
+                    unknownStartTimeMSec++;     //We represent the ref count as a negative number, here we are decrementing the ref count
+                    if (unknownStartTimeMSec == 0)
+                        unknownStartTimeMSec = data.TimeStampRelativeMSec;      // Remember when we dropped to zero.  
+
+                    m_unknownTimeStartMsec.Set((int)oldStartStop.Index, unknownStartTimeMSec);
+                }
+            }
+            m_threadToStartStopActivity[(int)thread.ThreadIndex] = newStartStop;
+
+            // Increment refcount on the new startStop activity 
+            if (newStartStop != null)
+            {
+                double unknownStartTimeMSec = m_unknownTimeStartMsec.Get((int)newStartStop.Index);
+                // If we were off before (a positive number) then log the unknown time.  
+                if (0 < unknownStartTimeMSec)
+                {
+                    AddUnkownAsyncDurationIfNeeded(newStartStop, unknownStartTimeMSec, data);
+                    unknownStartTimeMSec = 0;
+                }
+                --unknownStartTimeMSec;     //We represent the ref count as a negative number, here we are incrementing the ref count
+                m_unknownTimeStartMsec.Set((int)newStartStop.Index, unknownStartTimeMSec);
+            }
+        }
+
+        private void AddUnkownAsyncDurationIfNeeded(StartStopActivity startStopActivity, double unknownStartTimeMSec, TraceEvent data)
+        {
+            Debug.Assert(0 < unknownStartTimeMSec);
+            Debug.Assert(unknownStartTimeMSec <= data.TimeStampRelativeMSec);
+
+            if (startStopActivity.IsStopped)
+                return;
+
+            // We dont bother with times that are too small, we consider 1msec the threshold  
+            double delta = data.TimeStampRelativeMSec - unknownStartTimeMSec;
+            if (delta < 1)
+                return;
+
+            // We don't long unknown unless we are the deepest child.   
+            if (startStopActivity.LiveChildCount > 0)
+                return;
+
+            // Add a sample with the amount of unknown duration.  
+            var sample = m_sample;
+            sample.Metric = (float)delta;
+            sample.TimeRelativeMSec = unknownStartTimeMSec;
+
+            StackSourceCallStackIndex stackIndex = m_startStopActivities.GetStartStopActivityStack(m_outputStackSource, startStopActivity, data.Process());
+            StackSourceFrameIndex unknownAsyncFrame = m_outputStackSource.Interner.FrameIntern("UNKNOWN_ASYNC");
+            stackIndex = m_outputStackSource.Interner.CallStackIntern(unknownAsyncFrame, stackIndex);
+            sample.StackIndex = stackIndex;
+            m_outputStackSource.AddSample(sample);
+        }
+
         // Callbacks for the main state machine that logs blocked or CPU usage per thread.   
         private void OnThreadCSwitch(CSwitchTraceData data)
         {
@@ -751,7 +900,8 @@ namespace Microsoft.Diagnostics.Tracing
             // If we block in the thread pool we assume that the ASP.NET Request is complete.  
             if (aspNetRequestGuid != Guid.Empty)
             {
-                if (IsCSwitchBlockedInThreadPool(data))
+                CSwitchTraceData asCSwitch = data as CSwitchTraceData;
+                if (asCSwitch != null && ActivityComputer.IsThreadParkedInClrThreadPool(m_eventLog, asCSwitch.BlockingStack()))
                 {
                     m_symbolReader.Log.WriteLine("GetCallStackIndex CSWITCH in threadpool EXCLUDE at {0:n3} Thread {1}", data.TimeStampRelativeMSec, data.ThreadID);
                     aspNetRequestGuid = Guid.Empty;
@@ -840,41 +990,6 @@ namespace Microsoft.Diagnostics.Tracing
                 m_aspNetRequestInfo.Remove(aspNetGuid);
         }
 
-        // TODO FIX NOW this is cloned.  Remove the clone.  
-        internal static bool IsCSwitchBlockedInThreadPool(TraceEvent data)
-        {
-            if (!(data is CSwitchTraceData))
-                return false;
-
-            var callStack = data.CallStackIndex();
-            if (callStack == CallStackIndex.Invalid)
-                return false;
-
-            // Does the CSWITCH stack only contain thread pool modules.  In which case we assume we blocked in the thread pool.  
-            var traceLog = (TraceLog)data.Source;
-            var callStacks = traceLog.CallStacks;
-            var codeAddresses = traceLog.CodeAddresses;
-            while (callStack != CallStackIndex.Invalid)
-            {
-                var codeAddrIdx = callStacks.CodeAddressIndex(callStack);
-                var module = codeAddresses.ModuleFile(codeAddrIdx);
-                if (module == null)
-                    return false;
-
-                var moduleName = module.Name;
-                if (!moduleName.StartsWith("wow", StringComparison.OrdinalIgnoreCase) &&
-                    !moduleName.StartsWith("kernel", StringComparison.OrdinalIgnoreCase) &&
-                    string.Compare(moduleName, "ntoskrnl", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "ntdll", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "w3tp", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "clr", StringComparison.OrdinalIgnoreCase) != 0 &&
-                    string.Compare(moduleName, "mscorwks", StringComparison.OrdinalIgnoreCase) != 0)
-                    return false;
-                callStack = callStacks.Caller(callStack);
-            }
-            return true;
-        }
-
         // TODO FIX NOW put this somewhere better. 
         /// <summary>
         /// Generate a stack that from the root looks like 'stackIndex followed by 'READIED BY TID(XXXX)' 
@@ -939,8 +1054,19 @@ namespace Microsoft.Diagnostics.Tracing
             public ActivityIndex ActivityIndex; // The activity that is currently processing this request.  
         }
         Dictionary<Guid, AspNetRequestInfo> m_aspNetRequestInfo;
+        /// <summary>
+        /// This is actually only the top most start-stop activity.  If an activity is nested, it does
+        /// not show up here.  It is only used to create UNKNONW_ASYNC nodes.  
+        /// </summary>
         StartStopActivityComputer m_startStopActivities;
-
+        /// <summary>
+        /// Used to create UNKNOWN frames for start-stop activities.   This is indexed by StartStopActivityIndex.
+        /// and for each start-stop activity indicates when unknown time starts.   However if that activity still
+        /// has known activities associated with it then the number will be negative, and its value is the 
+        /// ref-count of activities known activities (thus when it falls to 0, it we set it to the start of unknown time. 
+        /// </summary>
+        GrowableArray<double> m_unknownTimeStartMsec;
+        StartStopActivity[] m_threadToStartStopActivity;
 
         ThreadState[] m_threadState;            // This maps thread (indexes) to what we know about the thread
         /// <summary>
@@ -995,7 +1121,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public TraceLog Log { get { return m_eventLog; } }
 
-        /* Callbacks on certain interesting events */ 
+        /* Callbacks on certain interesting events */
         //public event Action<TraceThread, double, TraceEvent> OnGetCpu;
 
         //public event Action<TraceThread, double, TraceEvent> OnBlock;

@@ -3313,9 +3313,10 @@ namespace PerfView
                     {
                         // Normal case, get the calls stack of frame names.  
                         var callStackIdx = data.CallStackIndex();
-                        if (callStackIdx == CallStackIndex.Invalid)
-                            return;
-                        stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        if (callStackIdx != CallStackIndex.Invalid)
+                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        else
+                            stackIndex = StackSourceCallStackIndex.Invalid;
                     }
 
                     var asCSwitch = data as CSwitchTraceData;
@@ -3334,12 +3335,17 @@ namespace PerfView
                             }
                         }
 
-
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                        if (stackIndex != StackSourceCallStackIndex.Invalid)
+                        {
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
+                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                        }
                         goto ADD_SAMPLE;
                     }
+
+                    if (stackIndex == StackSourceCallStackIndex.Invalid)
+                        return;
 
                     var asSampledProfile = data as SampledProfileTraceData;
                     if (asSampledProfile != null)

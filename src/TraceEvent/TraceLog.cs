@@ -1807,8 +1807,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     TraceProcess process = Processes.GetOrCreateProcess(stackEvent.ProcessID, stackEvent.TimeStampQPC);
                     TraceThread thread = Threads.GetOrCreateThread(stackEvent.ThreadID, stackEvent.TimeStampQPC, process);
 
-                    stackInfo = AllocateIncompleteStack(eventIndex, thread);
-                    stackInfo.IsCSwitch = pastEventInfo.IsCSwitch(pastEventIndex);
+                    stackInfo = AllocateIncompleteStack(eventIndex, thread, pastEventInfo.GetBlockingEventIndex(pastEventIndex));
                     pastEventInfo.SetEventStackInfo(pastEventIndex, stackInfo);     // Remember that we have info about this event.  
                     pastEventInfo.GetEventCounts(pastEventIndex).m_stackCount++;
                 }
@@ -1954,7 +1953,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        private IncompleteStack AllocateIncompleteStack(EventIndex eventIndex, TraceThread thread)
+        private IncompleteStack AllocateIncompleteStack(EventIndex eventIndex, TraceThread thread, EventIndex blockingEventIndex)
         {
             Debug.Assert(eventIndex != EventIndex.Invalid);
             var ret = freeEventStackInfos;
@@ -1965,7 +1964,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 freeEventStackInfos = ret.NextEventWithKernelKey;
                 ret.Clear();
             }
-            ret.Initialize(eventIndex, thread);
+            ret.Initialize(eventIndex, thread, blockingEventIndex);
             return ret;
         }
         private void FreeIncompleteStack(IncompleteStack toFree)
@@ -1992,6 +1991,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal class IncompleteStack
         {
+            /// <summary>
+            /// Clear clears entires that typically don't get set when we only have 1 frame fragment
+            /// We can recycle the entries without setting these in that case.   
+            /// </summary>
             public void Clear()
             {
                 Debug.Assert(IsDead);
@@ -2002,20 +2005,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 UserModeStackKey = 0;
                 PrevKernelEventOnSameThread = null;
                 WaitingToLeaveKernel = false;
-                IsCSwitch = false;
             }
-            public void Initialize(EventIndex eventIndex, TraceThread thread)
+
+            /// <summary>
+            /// Clear all entries that can potentially change every time.
+            /// </summary>
+            public void Initialize(EventIndex eventIndex, TraceThread thread, EventIndex blockingEventIndex)
             {
                 Debug.Assert(IsDead);
                 UserModeStackIndex = CallStackIndex.Invalid;
                 EventIndex = eventIndex;
                 Thread = thread;
+                BlockingEventIndex = blockingEventIndex;
                 Debug.Assert(PrevKernelEventOnSameThread == null);
                 Debug.Assert(!WaitingToLeaveKernel);
                 Debug.Assert(NextEventWithKernelKey == null);
                 Debug.Assert(NextEventWithUserKey == null);
                 Debug.Assert(!IsDead);
-                Debug.Assert(!IsCSwitch);
             }
 
             /// <summary>
@@ -2147,10 +2153,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         Debug.Assert(UserModeStackIndex >= 0);
 
                         if (UserModeStackIndex >= 0)
-                        {    // Failsafe if the assert fails, drop the stack since it is just the thread and process anyway.  
+                        {
+                            // Failsafe if the assert fails, drop the stack since it is just the thread and process anyway.  
                             eventLog.AddStackToEvent(EventIndex, UserModeStackIndex);
-                            if (IsCSwitch && Thread.lastBlockingCSwitchEventIndex != Tracing.EventIndex.Invalid)
-                                eventLog.cswitchBlockingEventsToStacks.Add(new EventsToStackIndex(Thread.lastBlockingCSwitchEventIndex, UserModeStackIndex));
+                            if (BlockingEventIndex != Tracing.EventIndex.Invalid)
+                                eventLog.cswitchBlockingEventsToStacks.Add(new EventsToStackIndex(BlockingEventIndex, UserModeStackIndex));
 
                             // Trace.WriteLine("Writing Stack " + UserModeStackIndex + " for Event " + EventIndex);
                         }
@@ -2195,6 +2202,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Stuff about the event itself.  
             internal EventIndex EventIndex { get; private set; } // We remember the event index for this stack mostly so we can know when this entry is 
+
+            /// <summary>
+            /// We track the stacks for when CSwitches block, this is the CSWITCH event where that blocking happened.  
+            /// </summary>
+            internal EventIndex BlockingEventIndex { get; set; }
+
             // invalid because it has been reused for another event.   
             internal TraceThread Thread { get; private set; }    // Needed to compute very top of call stack. 
 
@@ -2210,7 +2223,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // accumulate this list until we hit the user mode stack at which point we flush it.  
             internal IncompleteStack PrevKernelEventOnSameThread;
             internal bool WaitingToLeaveKernel;                      // if true if some list on some thread contains this entry.     
-            internal bool IsCSwitch;
 
             // If the kernel data comes in before the user stack (a common case), we can't create a stack index
             // (because we don't know the thread-end of the stack), so we simply remember it. 
@@ -2320,7 +2332,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         // If this is a kernel event, we have to defer making the stack (it is incomplete).  
                         // Make a new IncompleteStack to track that (unlike other stack events we don't need to go looking for it.  
-                        IncompleteStack stackInfo = AllocateIncompleteStack(eventIndex, thread);
+                        IncompleteStack stackInfo = AllocateIncompleteStack(eventIndex, thread, EventIndex.Invalid);    // Blocking stack can be invalid because CSWitches don't use this path.  
                         Debug.Assert(!(data is CSwitchTraceData));        // CSwtiches don't use this form of call stacks.  When they do set setackInfo.IsCSwitch.  
 
                         // Remember the kernel frames 
@@ -3105,14 +3117,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
 );
                 pastEventInfo[curPastEventInfo].hasAStack = false;
-                pastEventInfo[curPastEventInfo].isCSwitch = false;
+                pastEventInfo[curPastEventInfo].BlockingEventIndex = EventIndex.Invalid;
                 // Remember the eventIndex of where the current thread blocks.  
                 CSwitchTraceData asCSwitch = data as CSwitchTraceData;
                 if (asCSwitch != null)
                 {
-                    pastEventInfo[curPastEventInfo].isCSwitch = true;
-                    TraceThread thread = log.Threads.GetOrCreateThread(asCSwitch.OldThreadID, asCSwitch.TimeStampQPC, null);
-                    thread.lastBlockingCSwitchEventIndex = eventIndex;
+                    TraceThread newThread = log.Threads.GetOrCreateThread(asCSwitch.ThreadID, asCSwitch.TimeStampQPC, null);
+                    pastEventInfo[curPastEventInfo].BlockingEventIndex = newThread.lastBlockingCSwitchEventIndex;
+
+                    TraceThread oldThread = log.Threads.GetOrCreateThread(asCSwitch.OldThreadID, asCSwitch.TimeStampQPC, null);
+                    oldThread.lastBlockingCSwitchEventIndex = eventIndex;
                 }
                 curPastEventInfo = (curPastEventInfo + 1) & (historySize - 1);
             }
@@ -3207,11 +3221,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             public PastEventInfoIndex CurrentIndex { get { return (PastEventInfoIndex)curPastEventInfo; } }
             public bool IsClrEvent(PastEventInfoIndex index) { return pastEventInfo[(int)index].isClrEvent; }
-            public bool IsCSwitch(PastEventInfoIndex index) { return pastEventInfo[(int)index].isCSwitch; }
             public bool HasStack(PastEventInfoIndex index) { return pastEventInfo[(int)index].hasAStack; }
             public void SetHasStack(PastEventInfoIndex index) { pastEventInfo[(int)index].hasAStack = true; }
             public int GetThreadID(PastEventInfoIndex index) { return pastEventInfo[(int)index].ThreadID; }
             public EventIndex GetEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].EventIndex; }
+            public EventIndex GetBlockingEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].BlockingEventIndex; }
             public TraceEventCounts GetEventCounts(PastEventInfoIndex index) { return pastEventInfo[(int)index].CountForEvent; }
             public long GetQPCTime(PastEventInfoIndex index) { return pastEventInfo[(int)index].QPCTime; }
             public IncompleteStack GetEventStackInfo(PastEventInfoIndex index)
@@ -3238,12 +3252,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #endif
                 public bool hasAStack;
                 public bool isClrEvent;
-                public bool isCSwitch;
                 public long QPCTime;
                 public int ThreadID;
 
                 public IncompleteStack EventStackInfo;   // If this event actually had a stack, this holds info about it.  
                 public EventIndex EventIndex;            // This can be EventIndex.Invalid for events that are going to be removed from the stream.  
+                public EventIndex BlockingEventIndex;    // This is non-Invalid for CSwitches and repsrensets the other thread the blocked.  
                 public TraceEventCounts CountForEvent;
             }
 
@@ -5239,7 +5253,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.threadIndex = threadIndex;
             this.process = process;
             this.endTimeQPC = long.MaxValue;
-
+            this.lastBlockingCSwitchEventIndex = EventIndex.Invalid;
         }
 
 

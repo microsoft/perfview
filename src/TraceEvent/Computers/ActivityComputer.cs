@@ -156,7 +156,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // If the thread is parked in the thread pool then we know that we should stop this activity (since it clearly 
                 // is not running anymore.   
-                if (IsThreadParkedInClrThreadPool(data.BlockingStack()))
+                if (IsThreadParkedInClrThreadPool(m_eventLog, data.BlockingStack()))
                 {
                     while (activity != null)
                     {
@@ -182,15 +182,24 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public event Action<TraceActivity, TraceEvent> Create;
         /// <summary>
-        /// First when an activity starts to run (using a thread).  
+        /// First when an activity starts to run (using a thread).  It fires after the start has logically happened.  
+        /// so you are logically in the started activity.  
         /// </summary>
         public event Action<TraceActivity, TraceEvent> Start;
         /// <summary>
         /// Fires when the activity ends (no longer using a thread).  It fires just BEFORE the task actually dies 
         /// (that is you ask the activity of the event being passed to 'Stop' it will still give the passed
-        /// activity as the answer).  
+        /// activity as the answer).   The first TraceActivity is the activity that was stopped, the second
+        /// is the activity that exists afer the stop completes.  
         /// </summary>
         public event Action<TraceActivity, TraceEvent> Stop;
+        /// <summary>
+        /// Like OnStop but gets called AFTER the stop has completed (thus the current thread's activity has been updated)
+        /// The activity may be null, which indicates a failure to look up the activity being stopped (and thus the
+        /// thread's activity will be set to null).  
+        /// </summary>
+        public event Action<TraceActivity, TraceEvent, TraceThread> AfterStop;
+
         /// <summary>
         /// AwaitUnblocks is a specialized form of the 'Start' event that fires when a task starts because
         /// an AWAIT has ended.   The start event also fires on awaits end and comes AFTER the AwaitUnblocks
@@ -348,11 +357,16 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 m_threadNeedsToAutoStart[threadIndex] = false;
 
-                // TODO: ideally we just call OnCreated, and OnStarted.   Note today we don't do callbacks.   Is that OK? 
+                // TODO: ideally we just call OnCreated, and OnStarted. 
+                // Can't remember why I did not do this... 
 
                 // Create a new activity 
                 TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
                     data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
+
+                var create = Create;
+                if (create != null)
+                    create(autoStartActivity, data);
 
                 m_indexToActivity.Add(autoStartActivity);
                 m_beginWaits.Add(null);
@@ -362,6 +376,10 @@ namespace Microsoft.Diagnostics.Tracing
                 m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
                 autoStartActivity.startTimeQPC = data.TimeStampQPC;
                 autoStartActivity.thread = thread;
+
+                var start = Start;
+                if (start != null)
+                    start(autoStartActivity, data);
             }
         }
 
@@ -369,7 +387,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Returns true if the call stack is in the thread pool parked (not running user code)  
         /// This means that the thread CAN'T be running an active activity and we can kill it.  
         /// </summary>
-        private bool IsThreadParkedInClrThreadPool(CallStackIndex callStackIndex)
+        internal static bool IsThreadParkedInClrThreadPool(TraceLog eventLog, CallStackIndex callStackIndex)
         {
             // Empty stacks are not parked in the thread pool.  
             if (callStackIndex == CallStackIndex.Invalid)
@@ -380,8 +398,8 @@ namespace Microsoft.Diagnostics.Tracing
             bool seenClr = false;
             for (;;)
             {
-                CodeAddressIndex codeAddressIndex = m_eventLog.CallStacks.CodeAddressIndex(callStackIndex);
-                TraceModuleFile moduleFile = m_eventLog.CodeAddresses.ModuleFile(codeAddressIndex);
+                CodeAddressIndex codeAddressIndex = eventLog.CallStacks.CodeAddressIndex(callStackIndex);
+                TraceModuleFile moduleFile = eventLog.CodeAddresses.ModuleFile(codeAddressIndex);
                 if (moduleFile == null)
                     return false;
 
@@ -418,7 +436,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (count > 30)
                     return false;
 
-                callStackIndex = m_eventLog.CallStacks.Caller(callStackIndex);
+                callStackIndex = eventLog.CallStacks.Caller(callStackIndex);
                 if (callStackIndex == CallStackIndex.Invalid)
                 {
                     // We only return true if we have seen the CLR module.   I have seen stacks
@@ -723,6 +741,10 @@ namespace Microsoft.Diagnostics.Tracing
                     cur = cur.prevActivityOnThread;
             }
 
+            var afterStop = AfterStop;
+            if (afterStop != null)
+                afterStop(activity, data, thread);
+
             // If we don't have an activity we can't do more.  
             if (activity == null)
                 return;
@@ -737,7 +759,6 @@ namespace Microsoft.Diagnostics.Tracing
             if (!activity.MultiTrigger)
                 m_rawIDToActivity.Remove(activity.rawID);
         }
-
         enum IDType
         {
             None = 0,

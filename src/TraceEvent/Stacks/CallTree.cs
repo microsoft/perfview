@@ -330,7 +330,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // The sample ends at the end of its metric, however we trucate at the end of the range.  
 
                 // The Math.Abs is a bit of a hack.  The problem is that that sample does not
-                // represent time for a DIFF (becasuse we negated it) but I rely on the fact 
+                // represent time for a DIFF (because we negated it) but I rely on the fact 
                 // that we only negate it so I can undo it 
                 sampleEndTime += Math.Abs(sample.Metric);
                 if (TimeHistogramController != null && sampleEndTime > TimeHistogramController.End)

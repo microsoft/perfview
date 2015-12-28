@@ -188,7 +188,7 @@ namespace Microsoft.Diagnostics.Tracing
                         StartStopActivity activity = null;
 
                         TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(thread);
-                        int taskIndex = (int)curTaskActivity.Index;
+                        ActivityIndex taskIndex = curTaskActivity.Index;
 
                         // Because we want the stop to logically be 'after' the actual stop event (so that the stop looks like
                         // it is part of the start-stop activity we defer it until the next event.   If there is already
@@ -211,23 +211,25 @@ namespace Microsoft.Diagnostics.Tracing
                                 taskName = data.TaskName;
 
                             // Create the new activity.  
-                            activity = new StartStopActivity(data, taskName, ref activityID, creator, extraInfo);
+                            activity = new StartStopActivity(data, taskName, ref activityID, creator, m_nextIndex++, extraInfo);
+                            if (creator != null)
+                                creator.LiveChildCount++;
                             m_activeActivities[key] = activity;                         // So we can correlate stops with this start.  
                             if (extraKey != null)
                                 m_activeActivities[extraKey] = activity;                // TODO we leak these.   
 
                             // Remember that this task is doing this activity.          // So we can transfer this activity to any subsequent events on this Task/Thread.  
                             m_activeActivitiesByActivityId[activityID] = activity;      // So we can look it up (for children's related Activity IDs)
-                            m_traceActivityToStartStopActivity.Set(taskIndex, activity);
+                            m_traceActivityToStartStopActivity.Set((int)taskIndex, activity);
 
                             // TODO FIX NOW remove.  
                             // Trace.WriteLine(string.Format("\r\n{0,10:n3}: Thread {1} NumActive {2} Task {3}\r\n    START {4}",
                             //     data.TimeStampRelativeMSec, thread.ThreadID, m_activeActivities.Count, curTaskActivity, activity.ActivityPathString));
 
                             // Issue callback if requested AFTER state update
-                            var onStartStop = OnStartOrStop;
-                            if (onStartStop != null)
-                                onStartStop(activity, false);
+                            var onStartAfter = Start;
+                            if (onStartAfter != null)
+                                onStartAfter(activity, data);
                         }
                         else
                         {
@@ -244,9 +246,9 @@ namespace Microsoft.Diagnostics.Tracing
                                 //    data.TimeStampRelativeMSec, thread.ThreadID, m_activeActivities.Count, curTaskActivity, activity.ActivityPathString));
 
                                 // Issue callback if requested AFTER state update
-                                var onStartStop = OnStartOrStop;
-                                if (onStartStop != null)
-                                    onStartStop(activity, true);
+                                var onStartBefore = Stop;
+                                if (onStartBefore != null)
+                                    onStartBefore(activity, data);
                             }
                             else
                             {
@@ -278,13 +280,33 @@ namespace Microsoft.Diagnostics.Tracing
 
             int taskIndex = (int)curTaskActivity.Index;
             StartStopActivity ret = m_traceActivityToStartStopActivity.Get(taskIndex);
-            
+
             if (ret == null && context != null)
             {
                 Guid activityID = context.ActivityID;
                 if (activityID != Guid.Empty)
                     m_activeActivitiesByActivityId.TryGetValue(activityID, out ret);
             }
+
+            // If the activity is stopped, then don't return it, return its parent.   
+            while (ret != null)
+            {
+                if (!ret.IsStopped)
+                    return ret;
+                ret = ret.Creator;
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Gets the current Start-Stop activity for a given TraceActivity.  
+        /// </summary>
+        /// <param name="curActivity"></param>
+        /// <returns></returns>
+        public StartStopActivity GetStartStopActivityForActivity(TraceActivity curActivity)
+        {
+            int taskIndex = (int)curActivity.Index;
+            StartStopActivity ret = m_traceActivityToStartStopActivity.Get(taskIndex);
 
             // If the activity is stopped, then don't return it, return its parent.   
             while (ret != null)
@@ -351,13 +373,18 @@ namespace Microsoft.Diagnostics.Tracing
             return stackIdx;
         }
 
+        // Events 
         /// <summary>
-        /// If non-null is called when a start or stop happens.   It is called AFTER state update for both starts and stops.  
-        /// Note that the 'stop' is actually called twice,   First with a 'true' passed to the Action as the second argument 
-        /// (think of it as 'before state update') which indicate that we are BEFORE the stop has been processed and later 
-        /// with 'false' that indicates the state update has happened.   Starts are only called AFTER (and thus with 'false')
+        /// If set, called AFTER a Start-Stop activity starts, called with the activity and the event that caused the start. 
         /// </summary>
-        public Action<StartStopActivity, bool> OnStartOrStop;
+        public Action<StartStopActivity, TraceEvent> Start;
+        /// <summary>
+        /// If set, called BEFORE a Start-Stop activity stops, called with the activity and the event that caused the start. 
+        /// </summary>
+        public Action<StartStopActivity, TraceEvent> Stop;
+        
+        // TODO decide if we need this...
+        // public Action<StartStopActivity> AfterStop;
 
         /// <summary>
         /// Returns true if 'guid' follow the EventSouce style activity IDs. 
@@ -492,17 +519,19 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_deferredStop != null && m_deferredStop.StopEventIndex != m_source.CurrentEventIndex)
             {
                 var startStopActivity = m_deferredStop;
-                m_traceActivityToStartStopActivity.Set(startStopActivity.activityIndex, startStopActivity.Creator);
+                m_traceActivityToStartStopActivity.Set((int) startStopActivity.activityIndex, startStopActivity.Creator);
                 m_activeActivities.Remove(startStopActivity.key);
                 m_activeActivitiesByActivityId.Remove(startStopActivity.ActivityID);
 
+                var creator = startStopActivity.Creator;
+                if (creator != null)
+                {
+                    --creator.LiveChildCount;
+                    Debug.Assert(0 <= creator.LiveChildCount);
+                }
+
                 startStopActivity.key = null;      // This also marks the activity as truly stopped.  
                 m_deferredStop = null;
-
-                // Issue callback if requested AFTER state update
-                var onStartStop = OnStartOrStop;
-                if (onStartStop != null)
-                    onStartStop(startStopActivity, false);
             }
         }
         StartStopActivity m_deferredStop;
@@ -511,7 +540,20 @@ namespace Microsoft.Diagnostics.Tracing
         GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;        // Maps a trace activity to a start stop activity at the current time. 
         Dictionary<StartStopKey, StartStopActivity> m_activeActivities;             // Lookup activities by start-stop key.   
         Dictionary<Guid, StartStopActivity> m_activeActivitiesByActivityId;         // Lookup activities by their Activity ID.  
+        int m_nextIndex;
         #endregion
+    }
+
+    /// <summary>
+    /// An dense number that defines the identity of a StartStopActivity.  Used to create side arrays 
+    /// for StartStopActivity info.  
+    /// </summary>
+    public enum StartStopActivityIndex
+    {
+        /// <summary>
+        /// An illegal index, sutable for a sentinal.  
+        /// </summary>
+        Illegal = -1,
     }
 
     /// <summary>
@@ -520,6 +562,10 @@ namespace Microsoft.Diagnostics.Tracing
     [Obsolete("Not Obsolete but experimental.  This may change in future releases.")]
     public class StartStopActivity
     {
+        /// <summary>
+        /// The index (small dense numbers suitabilty for array indexing) for this activity. 
+        /// </summary>
+        public StartStopActivityIndex Index { get; private set; }
         /// <summary>
         /// The name of the activity (The Task name for the start-stop event as well as the activity ID)
         /// </summary>
@@ -535,10 +581,15 @@ namespace Microsoft.Diagnostics.Tracing
                     if (activityString.EndsWith("0707-08090a0b0c0d"))   // SQL Command)
                         activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.
                 }
+
+                string ret;
                 if (ExtraInfo == null)
-                    return TaskName + "(" + activityString + ")";
+                    ret = TaskName + "(" + activityString + ")";
                 else
-                    return TaskName + "(" + activityString + "," + ExtraInfo + ")";
+                    ret = TaskName + "(" + activityString + "," + ExtraInfo + ")";
+
+                ret += ("/LC=" + LiveChildCount);
+                return ret;
             }
         }
         /// <summary>
@@ -608,6 +659,11 @@ namespace Microsoft.Diagnostics.Tracing
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activity " + Name), stackIdx);
             return stackIdx;
         }
+
+        /// <summary>
+        /// returns the number of children that are alive.  
+        /// </summary>
+        public int LiveChildCount { get; internal set; }
         #region private
         /// <summary>
         /// override.   Gives the name and start time.  
@@ -617,7 +673,7 @@ namespace Microsoft.Diagnostics.Tracing
             return "StartStopActivity(" + Name + ", Start=" + StartTimeRelativeMSec.ToString("n3") + ")";
         }
 
-        internal StartStopActivity(TraceEvent startEvent, string taskName, ref Guid activityID, StartStopActivity creator, string extraInfo = null)
+        internal StartStopActivity(TraceEvent startEvent, string taskName, ref Guid activityID, StartStopActivity creator, int index, string extraInfo = null)
         {
             ProcessID = startEvent.ProcessID;
             ActivityID = activityID;
@@ -626,6 +682,7 @@ namespace Microsoft.Diagnostics.Tracing
             TaskName = taskName;
             Creator = creator;
             ExtraInfo = extraInfo;
+            Index = (StartStopActivityIndex)index;
 
             // generate a ID that makes this unique among all children of the creator. 
             if (creator == null)
@@ -637,7 +694,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// We don't update the state for the stop at the time of the stop, but at the next call to any of the StartStopActivityComputer APIs.  
         /// </summary>
-        internal void RememberStop(EventIndex stopEventIndex, double stopTimeRelativeMSec, StartStopKey key, int activityIndex)
+        internal void RememberStop(EventIndex stopEventIndex, double stopTimeRelativeMSec, StartStopKey key, ActivityIndex activityIndex)
         {
             if (DurationMSec == 0)
             {
@@ -653,8 +710,8 @@ namespace Microsoft.Diagnostics.Tracing
         private int nextChildID;
 
         // these are used to implement deferred stops.  
-        internal StartStopKey key;      // The key that links up the start and stop for this activity. 
-        internal int activityIndex;         // the index for the task that was active at the time of the stop.  
+        internal StartStopKey key;                // The key that links up the start and stop for this activity. 
+        internal ActivityIndex activityIndex;     // the index for the task that was active at the time of the stop.  
         #endregion
     };
 
