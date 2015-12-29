@@ -134,6 +134,16 @@ namespace Microsoft.Diagnostics.Tracing
                 OnStart(data, GetClrIORawID(data, data.NativeOverlapped));
             };
 
+            m_source.Clr.ThreadPoolEnqueue += delegate (ThreadPoolWorkTraceData data)
+            {
+                OnCreated(data, GetClrRawID(data, data.WorkID), TraceActivity.ActivityKind.ClrThreadPool);
+            };
+
+            m_source.Clr.ThreadPoolDequeue += delegate (ThreadPoolWorkTraceData data)
+            {
+                OnStart(data, GetClrRawID(data, data.WorkID));
+            };
+
             // This should not be needed if the thread pool provided proper events.  Basically we want to know
             // when a activity must have ended because we are blocking in the thread pool where we park threads
             // waiting for the 'next thing'.  
@@ -156,7 +166,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // If the thread is parked in the thread pool then we know that we should stop this activity (since it clearly 
                 // is not running anymore.   
-                if (IsThreadParkedInClrThreadPool(m_eventLog, data.BlockingStack()))
+                if (IsThreadParkedInThreadPool(m_eventLog, data.BlockingStack()))
                 {
                     while (activity != null)
                     {
@@ -387,7 +397,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Returns true if the call stack is in the thread pool parked (not running user code)  
         /// This means that the thread CAN'T be running an active activity and we can kill it.  
         /// </summary>
-        internal static bool IsThreadParkedInClrThreadPool(TraceLog eventLog, CallStackIndex callStackIndex)
+        internal static bool IsThreadParkedInThreadPool(TraceLog eventLog, CallStackIndex callStackIndex)
         {
             // Empty stacks are not parked in the thread pool.  
             if (callStackIndex == CallStackIndex.Invalid)
@@ -395,7 +405,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int count = 0;
             string prevFilePath = null;
-            bool seenClr = false;
+            bool seenThreadPoolDll = false;
             for (;;)
             {
                 CodeAddressIndex codeAddressIndex = eventLog.CallStacks.CodeAddressIndex(callStackIndex);
@@ -420,14 +430,20 @@ namespace Microsoft.Diagnostics.Tracing
                     // If we directly transition from the CLR to the kernel we assume it is an APC and not
                     // a parking wait and return false.   If you don't do this ThreadPoolEnqueue events get
                     // stopped before they get going.  
-                    if (moduleFile.Name.EndsWith("clr", StringComparison.OrdinalIgnoreCase))
+                    if (filePath.EndsWith("clr.dll", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith("mscorwks.dll", StringComparison.OrdinalIgnoreCase))
                     {
-                        seenClr = true;
+                        seenThreadPoolDll = true;
                         if (prevFilePath.EndsWith("ntoskrnl.exe", StringComparison.OrdinalIgnoreCase))
                             return false;
                     }
-                    else
+                    else if (!filePath.EndsWith("webengine4.dll", StringComparison.OrdinalIgnoreCase))
                         return false;       // Otherwise it is not parked (which includes everything in the GAC, NIC, mscorlib ... and user code elsewhere)
+                }
+                else
+                {
+                    // We consider the w3tp to be a thread pool DLL as well.  
+                    if (filePath.EndsWith("w3tp.dll", StringComparison.OrdinalIgnoreCase))
+                        seenThreadPoolDll = true;
                 }
                 prevFilePath = filePath;
 
@@ -453,7 +469,7 @@ namespace Microsoft.Diagnostics.Tracing
                     //| +ntdll!RtlFreeHeap          
                     //| +ntdll!RtlpFreeHeap        
                     //| +ntoskrnl!KiDpcInterrupt    
-                    if (!seenClr)
+                    if (!seenThreadPoolDll)
                         return false;
 
                     // We have to avoid broken frames.   Thus the top most frame must be in nt.dll
@@ -766,6 +782,7 @@ namespace Microsoft.Diagnostics.Tracing
             TplScheduledTask = 2,
             Timer = 3,
             IOThreadPool = 4,
+            ThreadPool = 5,
         }
 
         /// <summary>
@@ -792,6 +809,12 @@ namespace Microsoft.Diagnostics.Tracing
         {
             uint highBits = (((uint)data.ProcessID) << 8) + (((uint)IDType.IOThreadPool) << 28);
             return (((Address)highBits) << 32) + nativeOverlapped;          // TODO this is NOT absolutely guaranteed not to collide.   
+        }
+
+        private static Address GetClrRawID(TraceEvent data, Address workId)
+        {
+            uint highBits = (((uint)data.ProcessID) << 8) + (((uint)IDType.ThreadPool) << 28);
+            return (((Address)highBits) << 32) + workId;          // TODO this is NOT absolutely guaranteed not to collide.   
         }
 
         private static IDType GetTypeFromRawID(Address rawID)
@@ -1151,7 +1174,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // When you AWAIT a task, you actually make a task per frame.   Since these always overlap in time 
         // You only want only one of to have AWAIT time.  We choose the first WaitBegin for this.  
-        GrowableArray<List<TraceActivity>> m_beginWaits;                // Maps activity to all WaitBegin on that activity.  (used for AwaitUnblock)
+        GrowableArray<List<TraceActivity>> m_beginWaits;                // Maps activity index to all WaitBegin on that activity.  (used for AwaitUnblock)
 
         private TraceEventDispatcher m_source;
         private TraceLog m_eventLog;

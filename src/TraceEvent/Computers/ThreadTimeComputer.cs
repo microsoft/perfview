@@ -264,6 +264,13 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
                     return;
 
+                //  We don't want most of the FrameworkEventSource events either.  
+                if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                {
+                    if (!((TraceEventID)140 <= data.ID && data.ID <= (TraceEventID)143))    // These are the GetResponce and GetResestStream events  
+                        return;
+                }
+
                 // We don't care about the TPL provider.  Too many events.  
                 if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
                     return;
@@ -901,7 +908,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (aspNetRequestGuid != Guid.Empty)
             {
                 CSwitchTraceData asCSwitch = data as CSwitchTraceData;
-                if (asCSwitch != null && ActivityComputer.IsThreadParkedInClrThreadPool(m_eventLog, asCSwitch.BlockingStack()))
+                if (asCSwitch != null && ActivityComputer.IsThreadParkedInThreadPool(m_eventLog, asCSwitch.BlockingStack()))
                 {
                     m_symbolReader.Log.WriteLine("GetCallStackIndex CSWITCH in threadpool EXCLUDE at {0:n3} Thread {1}", data.TimeStampRelativeMSec, data.ThreadID);
                     aspNetRequestGuid = Guid.Empty;

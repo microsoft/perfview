@@ -130,7 +130,7 @@ namespace PerfView
                 {
                     foreach (string column in ColumnsToDisplay)
                     {
-                        if (column == "*" || column == "ActivityInfo" || column == "StartStopActvity")
+                        if (column == "*" || column == "ActivityInfo" || column == "StartStopActivity")
                         {
                             m_needsComputers = true;
                             break;
