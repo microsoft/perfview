@@ -118,19 +118,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                     m_outputStackSource.AddSample(sample);
 
-                    // If we are createing 'UNKNOWN_ASYNC nodes, make sure that AWAIT_TIME does not overlap with UNKNOWN_ASYNC time
                     if (m_threadToStartStopActivity != null)
-                    {
-                        var startStopActivity = m_startStopActivities.GetStartStopActivityForActivity(activity);
-                        if (startStopActivity != null)
-                        {
-                            while (startStopActivity.Creator != null)
-                                startStopActivity = startStopActivity.Creator;
-
-                            if (0 <= m_unknownTimeStartMsec.Get((int)startStopActivity.Index))
-                                m_unknownTimeStartMsec.Set((int)startStopActivity.Index, data.TimeStampRelativeMSec);
-                        }
-                    }
+                        UpdateStartStopActivityOnAwaitComplete(activity, data);
                 };
 
                 // We can provide a bit of extra value (and it is useful for debugging) if we immediately log a CPU 
@@ -196,6 +185,15 @@ namespace Microsoft.Diagnostics.Tracing
                     double unknownStartTime = m_unknownTimeStartMsec.Get((int)startStopActivity.Index);
                     if (0 < unknownStartTime)
                         AddUnkownAsyncDurationIfNeeded(startStopActivity, unknownStartTime, data);
+
+                    // Actually emit all the async unknown events.  
+                    List<StackSourceSample> samples = m_startStopActivityToAsyncUnknownSamples.Get((int)startStopActivity.Index);
+                    if (samples != null)
+                    {
+                        foreach (var sample in samples)
+                            m_outputStackSource.AddSample(sample);
+                        m_startStopActivityToAsyncUnknownSamples.Set((int)startStopActivity.Index, null);
+                    }
 
                     m_unknownTimeStartMsec.Set((int)startStopActivity.Index, 0);
                     Debug.Assert(m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] == startStopActivity);
@@ -350,6 +348,40 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         #region private
+        private void UpdateStartStopActivityOnAwaitComplete(TraceActivity activity, TraceEvent data)
+        {
+            // If we are createing 'UNKNOWN_ASYNC nodes, make sure that AWAIT_TIME does not overlap with UNKNOWN_ASYNC time
+
+            var startStopActivity = m_startStopActivities.GetStartStopActivityForActivity(activity);
+            if (startStopActivity == null)
+                return;
+
+            while (startStopActivity.Creator != null)
+                startStopActivity = startStopActivity.Creator;
+
+            // If the await finishes before the ASYNC_UNKNOWN, simply adust the time.  
+            if (0 <= m_unknownTimeStartMsec.Get((int)startStopActivity.Index))
+                m_unknownTimeStartMsec.Set((int)startStopActivity.Index, data.TimeStampRelativeMSec);
+
+            // It is possible that the ASYNC_UNKOWN has already completed.  In that case, remove overlapping ones
+            List<StackSourceSample> async_unknownSamples = m_startStopActivityToAsyncUnknownSamples.Get((int)startStopActivity.Index);
+            if (async_unknownSamples != null)
+            {
+                int removeStart = async_unknownSamples.Count;
+                while (0 < removeStart)
+                {
+                    int probe = removeStart - 1;
+                    var sample = async_unknownSamples[probe];
+                    if (activity.CreationTimeRelativeMSec <= sample.TimeRelativeMSec + sample.Metric) // There is overlap
+                        removeStart = probe;
+                    else
+                        break;
+                }
+                int removeCount = async_unknownSamples.Count - removeStart;
+                if (removeCount > 0)
+                    async_unknownSamples.RemoveRange(removeStart, removeCount);
+            }
+        }
 
         /// <summary>
         /// Updates it so that 'thread' is now working on newStartStop, which can be null which means that it is not working on any 
@@ -372,7 +404,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
 
             // Decrement the start-stop which lost its thread. 
-            if (oldStartStop != null)           
+            if (oldStartStop != null)
             {
                 double unknownStartTimeMSec = m_unknownTimeStartMsec.Get((int)oldStartStop.Index);
                 Debug.Assert(unknownStartTimeMSec < 0);
@@ -420,7 +452,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
 
             // Add a sample with the amount of unknown duration.  
-            var sample = m_sample;
+            var sample = new StackSourceSample(m_outputStackSource);
             sample.Metric = (float)delta;
             sample.TimeRelativeMSec = unknownStartTimeMSec;
 
@@ -428,7 +460,17 @@ namespace Microsoft.Diagnostics.Tracing
             StackSourceFrameIndex unknownAsyncFrame = m_outputStackSource.Interner.FrameIntern("UNKNOWN_ASYNC");
             stackIndex = m_outputStackSource.Interner.CallStackIntern(unknownAsyncFrame, stackIndex);
             sample.StackIndex = stackIndex;
-            m_outputStackSource.AddSample(sample);
+
+            // We can't add the samples right now because AWAIT nodes might overlap and we have to take these back. 
+            // The add the to this list so that they can be trimmed at that time if needed. 
+
+            List<StackSourceSample> list = m_startStopActivityToAsyncUnknownSamples.Get((int)startStopActivity.Index);
+            if (list == null)
+            {
+                list = new List<StackSourceSample>();
+                m_startStopActivityToAsyncUnknownSamples.Set((int)startStopActivity.Index, list);
+            }
+            list.Add(sample);
         }
 
         // Callbacks for the main state machine that logs blocked or CPU usage per thread.   
@@ -1074,6 +1116,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         GrowableArray<double> m_unknownTimeStartMsec;
         StartStopActivity[] m_threadToStartStopActivity;
+        GrowableArray<List<StackSourceSample>> m_startStopActivityToAsyncUnknownSamples;    // Maps an start-stop index to the list of ASYNC_UNKNOWN nodes.  
 
         ThreadState[] m_threadState;            // This maps thread (indexes) to what we know about the thread
         /// <summary>
