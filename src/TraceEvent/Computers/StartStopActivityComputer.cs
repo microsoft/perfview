@@ -19,8 +19,10 @@ using Address = System.UInt64;
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
-    /// Calculates start-stop activities (computes duration), if they use activity paths, we can compute 
-    /// causality and hook that up as well.  
+    /// Calculates start-stop activities (computes duration),  It uses the 'standard' mechanism of using 
+    /// ActivityIDs to corelate the start and stop (and any other events between the start and stop, 
+    /// and use the RelatedActivityID on START events to indicate the creator of the activity, so you can
+    /// form nested start-stop activities.   
     /// </summary>
     public class StartStopActivityComputer
     {
@@ -32,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing
             taskComputer.NoCache = true;            // Can't cache start-stops (at the moment)
             m_source = source;
             m_activeActivities = new Dictionary<StartStopKey, StartStopActivity>();
-            m_activeActivitiesByActivityId = new Dictionary<Guid, StartStopActivity>();
+            m_activeStartStopActivitiesByActivityId = new Dictionary<Guid, StartStopActivity>();
             m_taskComputer = taskComputer;
 
             // Whenever a new Activity is created, propagate the start-stop activity from the creator
@@ -57,12 +59,12 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 StartStopKey key = new StartStopKey(data.ProviderGuid, ((TraceEventTask)1), data.ProcessID, data.ContextId);
 
-                // if the related activity does not work, try using the context ID as the creator 
+                // if the related activity is not present, try using the context ID as the creator ID to look up.   
                 // these events reuse the IIS which means first stop kills everything.   As it turns out
                 // IIS stops before ASP (also incorrect) but it mostly is benign...  
                 StartStopActivity creator = null;
                 if (data.RelatedActivityID == Guid.Empty)
-                    m_activeActivitiesByActivityId.TryGetValue(data.ContextId, out creator);
+                    m_activeStartStopActivitiesByActivityId.TryGetValue(data.ContextId, out creator);
 
                 OnStart(key, data.Path, data, null, creator);
             };
@@ -71,6 +73,21 @@ namespace Microsoft.Diagnostics.Tracing
                 StartStopKey key = new StartStopKey(data.ProviderGuid, ((TraceEventTask)1), data.ProcessID, data.ContextId);
                 OnStop(key, data);
             };
+
+#if false       // TODO FIX NOW use or remove  
+            aspNetParser.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
+            {
+                SetThreadToStartStop(data.ContextId, data);
+            };
+            aspNetParser.AspNetReqPipelineModuleEnter += delegate (AspNetPipelineModuleEnterTraceData data)
+            {
+                SetThreadToStartStop(data.ContextId, data);
+            };
+            aspNetParser.AspNetReqGetAppDomainEnter += delegate (AspNetGetAppDomainEnterTraceData data)
+            {
+                SetThreadToStartStop(data.ContextId, data);
+            };
+#endif 
 
             dynamicParser.All += delegate (TraceEvent data)
             {
@@ -166,7 +183,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Guid activityID = context.ActivityID;
                 if (activityID != Guid.Empty)
-                    m_activeActivitiesByActivityId.TryGetValue(activityID, out ret);
+                    m_activeStartStopActivitiesByActivityId.TryGetValue(activityID, out ret);
             }
 
             // If the activity is stopped, then don't return it, return its parent.   
@@ -365,7 +382,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
 
-        #region private
+#region private
         static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
         static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
 
@@ -516,7 +533,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (data.RelatedActivityID != Guid.Empty)
                 {
-                    m_activeActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);
+                    m_activeStartStopActivitiesByActivityId.TryGetValue(data.RelatedActivityID, out creator);
                     if (creator == null)
                         Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
                 }
@@ -532,7 +549,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_activeActivities[key] = activity;                              // So we can correlate stops with this start.   
 
             // Remember that this task is doing this activity.              // So we can transfer this activity to any subsequent events on this Task/Thread.  
-            m_activeActivitiesByActivityId[key.StartStopId] = activity;     // So we can look it up (for children's related Activity IDs)
+            m_activeStartStopActivitiesByActivityId[key.StartStopId] = activity;     // So we can look it up (for children's related Activity IDs)
             m_traceActivityToStartStopActivity.Set((int)taskIndex, activity);
 
             // Issue callback if requested AFTER state update
@@ -540,6 +557,43 @@ namespace Microsoft.Diagnostics.Tracing
             if (onStartAfter != null)
                 onStartAfter(activity, data);
         }
+
+#if false
+        void SetThreadToStartStop(Guid startStopActivityID, TraceEvent data)
+        {
+            // Because we want the stop to logically be 'after' the actual stop event (so that the stop looks like
+            // it is part of the start-stop activity we defer it until the next event.   If there is already
+            // a deferral, we can certainly do that one now.  
+            DoStopIfNecessary();
+
+            // Policy, right now we don't let this auto-start events we simply give up if we can't find a 
+            // active start-stop activity.  
+            StartStopActivity startStopActivity;
+            if (!m_activeStartStopActivitiesByActivityId.TryGetValue(startStopActivityID, out startStopActivity))
+                return;
+
+            TraceThread thread = data.Thread();
+            if (thread == null)
+                return;
+            TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(thread);
+            ActivityIndex taskIndex = curTaskActivity.Index;
+
+            StartStopActivity activity;
+            // Find the corresponding start event.  
+            if (m_activeActivities.TryGetValue(key, out activity))
+            {
+                // We defer the stop until the NEXT event (so that stops look like they are IN the activity). 
+                // So here we just capture what is needed to do this later (basically on the next event).  
+                activity.RememberStop(data.EventIndex, data.TimeStampRelativeMSec, key, taskIndex);
+                m_deferredStop = activity;      // Remember this one for deferral.  
+
+                // Issue callback if requested AFTER state update
+                var onStartBefore = Stop;
+                if (onStartBefore != null)
+                    onStartBefore(activity, data);
+            }
+    }
+#endif
 
         private void OnStop(StartStopKey key, TraceEvent data)
         {
@@ -588,7 +642,6 @@ namespace Microsoft.Diagnostics.Tracing
             End = 0x0,             // ends the list.   No valid value has this prefix.   
             LastImmediateValue = 0xA,
             PrefixCode = 0xB,
-
             MultiByte1 = 0xC,   // 1 byte follows.  If this Nibble is in the high bits, it the high bits of the number are stored in the low nibble.   
                                 // commented out because the code does not explicitly reference the names (but they are logically defined).  
                                 // MultiByte2 = 0xD,   // 2 bytes follow (we don't bother with the nibble optimzation
@@ -610,7 +663,7 @@ namespace Microsoft.Diagnostics.Tracing
                 var startStopActivity = m_deferredStop;
                 m_traceActivityToStartStopActivity.Set((int)startStopActivity.activityIndex, startStopActivity.Creator);
                 m_activeActivities.Remove(startStopActivity.key);
-                m_activeActivitiesByActivityId.Remove(startStopActivity.ActivityID);
+                m_activeStartStopActivitiesByActivityId.Remove(startStopActivity.ActivityID);
 
                 var creator = startStopActivity.Creator;
                 if (creator != null)
@@ -625,12 +678,13 @@ namespace Microsoft.Diagnostics.Tracing
         }
         StartStopActivity m_deferredStop;
         TraceLogEventSource m_source;
-        ActivityComputer m_taskComputer;                                            // I need to be able to get the current Activity
-        GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;        // Maps a trace activity to a start stop activity at the current time. 
-        Dictionary<StartStopKey, StartStopActivity> m_activeActivities;             // Lookup activities by start-stop key.   
-        Dictionary<Guid, StartStopActivity> m_activeActivitiesByActivityId;         // Lookup activities by their Activity ID.  
+        ActivityComputer m_taskComputer;                                             // I need to be able to get the current Activity
+        GrowableArray<StartStopActivity> m_traceActivityToStartStopActivity;         // Maps a trace activity to a start stop activity at the current time. 
+        Dictionary<StartStopKey, StartStopActivity> m_activeActivities;              // Lookup activities by start-stop key.   
+        // TODO consolidate m_activeActivities m_activeActivitiesm_activeActivities and m_activeStartStopActivitiesByActivityId   
+        Dictionary<Guid, StartStopActivity> m_activeStartStopActivitiesByActivityId; // Lookup activities by their Activity ID, needed to find creator from RelativeActivityID.  
         int m_nextIndex;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -746,12 +800,11 @@ namespace Microsoft.Diagnostics.Tracing
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activity " + Name), stackIdx);
             return stackIdx;
         }
-
         /// <summary>
         /// returns the number of children that are alive.  
         /// </summary>
         public int LiveChildCount { get; internal set; }
-        #region private
+#region private
         /// <summary>
         /// override.   Gives the name and start time.  
         /// </summary>
@@ -799,10 +852,10 @@ namespace Microsoft.Diagnostics.Tracing
         // these are used to implement deferred stops.  
         internal StartStopKey key;                // The key that links up the start and stop for this activity. 
         internal ActivityIndex activityIndex;     // the index for the task that was active at the time of the stop.  
-        #endregion
+#endregion
     };
 
-    #region private classes
+#region private classes
     /// <summary>
     /// The key used to correlate start and stop events;
     /// </summary>
@@ -837,5 +890,5 @@ namespace Microsoft.Diagnostics.Tracing
             return "<Key  Task=\"" + ((int)task) + "\" ActivityId=\"" + StartStopId + "\" Provider=\"" + Provider + "\" Process=\"" + ProcessId + "\">";
         }
     }
-    #endregion
+#endregion
 }
