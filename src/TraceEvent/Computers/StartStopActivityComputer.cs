@@ -6,8 +6,10 @@
 // using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System;
@@ -55,7 +57,19 @@ namespace Microsoft.Diagnostics.Tracing
             // don't care about V4.6 runtimes (since it is fixed in V4.6.2 and beyond). 
             // It basicaly remembers the related activity ID of the last RequestSend event on
             // each thread, which we use to fix the activity ID of the RequestStart event 
-            Guid[] threadToLastAspNetGuid = new Guid[m_source.TraceLog.Threads.Count];     
+            KeyValuePair<Guid, Guid>[] threadToLastAspNetGuids = new KeyValuePair<Guid, Guid>[m_source.TraceLog.Threads.Count];
+
+#if false // TODO FIX NOW use or remove 
+            // Sadly, the Microsoft-Windows-HttpService HTTP_OPCODE_DELIVER event gets logged in
+            // the kernel, so you don't know what process or thread is going to be get the request
+            // We hack around this by looking for a nearby ReadyTHread or CSwitch event.  These
+            // variables remember the information needed to transfer these to cswitch in the 
+            // correct process.  
+            // remembers the last deliver event.  Note that 
+            string lastHttpServiceUrl = null;
+            Guid lastHttpServiceActivityID = new Guid();
+            int lastHttpServiceActivityThreadId = 0;
+#endif
 
             var dynamicParser = source.Dynamic;
             dynamicParser.All += delegate (TraceEvent data)
@@ -73,6 +87,24 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (data.ID == (TraceEventID)2)
                         OnStop(data);
                 }
+#if false // TODO FIX NOW use or remove 
+                else if (data.Task == (TraceEventTask)1 && data.ProviderGuid == MicrosoftWindowsHttpService)
+                {
+                    if (data.ID == (TraceEventID) 3) // HTTP_TASK_REQUEST/ 
+                    {
+                        Debug.Assert(data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_DELIVER");
+                        string extraStartInfo = data.PayloadByName("Url") as string;
+                        Guid activity = data.ActivityID;
+                        int threadID = data.ThreadID;
+                    }
+                    if (data.ID == (TraceEventID)12 || data.ID == (TraceEventID)8) // HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_SEND  HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_RESPONSE
+                    {
+                        Debug.Assert(data.ID != (TraceEventID)12 || data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_SEND");
+                        Debug.Assert(data.ID != (TraceEventID)8 || data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_RESPONSE");
+                        OnStop(data);
+                    }
+                }
+#endif 
 
                 // TODO decide what the correct heuristic for deciding what start-stop events are interesting.  
                 // Currently I only do this for things that might be an EventSource 
@@ -90,7 +122,7 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         TraceThread thread = data.Thread();
                         if (thread != null)
-                            threadToLastAspNetGuid[(int)thread.ThreadIndex] = data.RelatedActivityID;
+                            threadToLastAspNetGuids[(int)thread.ThreadIndex] = new KeyValuePair<Guid, Guid>(data.ActivityID, data.RelatedActivityID);
                     }
                     // These providers are weird in that they don't event do start and stop opcodes.  This is unfortunate.  
                     else if (data.Opcode == TraceEventOpcode.Info && data.ProviderGuid == AdoNetProvider)
@@ -103,7 +135,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
                     FixAndProcessFrameworkEvents(data);
                 else if (data.ProviderGuid == MicrosoftWindowsASPNetProvider)
-                    FixAndProcessWindowsASP(data, threadToLastAspNetGuid);
+                    FixAndProcessWindowsASP(data, threadToLastAspNetGuids);
                 else // Normal case EventSource Start-Stop events that follow proper conventions.  
                 {
                     // We currently only handle Start-Stops that use the ActivityPath convention
@@ -120,7 +152,7 @@ namespace Microsoft.Diagnostics.Tracing
                                 try { extraStartInfo = data.PayloadValue(0) as string; }
                                 catch (Exception) { }
                                 if (extraStartInfo != null)
-                                    extraStartInfo = data.payloadNames[0] + "=" + extraStartInfo;
+                                    extraStartInfo = "/" + data.payloadNames[0] + "=" + extraStartInfo;
                             }
                             OnStart(data, extraStartInfo);
                         }
@@ -134,6 +166,22 @@ namespace Microsoft.Diagnostics.Tracing
                         Trace.WriteLine("Skipping start at  " + data.TimeStampRelativeMSec.ToString("n3") + " name = " + data.EventName);
                 }
             };
+
+#if TODO_FIX_NOW
+            // We monitor ReadyThread to make HttpService events more useful (see nodes above on lastHttpServiceUrl)
+            m_source.Kernel.DispatcherReadyThread += delegate (DispatcherReadyThreadTraceData data)
+            {
+                if (lastHttpServiceUrl == null)
+                    return;
+
+            };
+
+            m_source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
+            {
+                if (lastHttpServiceUrl == null)
+                    return;
+            };
+#endif
 
             var aspNetParser = new AspNetTraceEventParser(m_source);
             aspNetParser.AspNetReqStart += delegate (AspNetStartTraceData data)
@@ -153,7 +201,6 @@ namespace Microsoft.Diagnostics.Tracing
                 Guid activityId = data.ContextId;
                 OnStop(data, &activityId);
             };
-
             // There are other ASP.NET events that have context information and this is useful
             aspNetParser.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
             {
@@ -166,6 +213,178 @@ namespace Microsoft.Diagnostics.Tracing
             aspNetParser.AspNetReqGetAppDomainEnter += delegate (AspNetGetAppDomainEnterTraceData data)
             {
                 SetThreadToStartStopActivity(data, data.ContextId);
+            };
+
+            // These are probably not important, but they may help.  
+            aspNetParser.AspNetReqRoleManagerBegin += delegate (AspNetRoleManagerBeginTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqRoleManagerGetUserRoles += delegate (AspNetRoleManagerGetUserRolesTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqRoleManagerEnd += delegate (AspNetRoleManagerEndTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqMapHandlerEnter += delegate (AspNetMapHandlerEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqMapHandlerLeave += delegate (AspNetMapHandlerLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqHttpHandlerEnter += delegate (AspNetHttpHandlerEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqHttpHandlerLeave += delegate (AspNetHttpHandlerLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPagePreInitEnter += delegate (AspNetPagePreInitEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPagePreInitLeave += delegate (AspNetPagePreInitLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageInitEnter += delegate (AspNetPageInitEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageInitLeave += delegate (AspNetPageInitLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageLoadEnter += delegate (AspNetPageLoadEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageLoadLeave += delegate (AspNetPageLoadLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPagePreRenderEnter += delegate (AspNetPagePreRenderEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPagePreRenderLeave += delegate (AspNetPagePreRenderLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageSaveViewstateEnter += delegate (AspNetPageSaveViewstateEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageSaveViewstateLeave += delegate (AspNetPageSaveViewstateLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageRenderEnter += delegate (AspNetPageRenderEnterTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+            aspNetParser.AspNetReqPageRenderLeave += delegate (AspNetPageRenderLeaveTraceData data)
+            {
+                SetThreadToStartStopActivity(data, data.ContextId);
+            };
+
+            var WCFParser = new ApplicationServerTraceEventParser(m_source);
+
+            WCFParser.WebHostRequestStart += delegate (Multidata69TemplateATraceData data)
+            {
+                OnStart(data, data.VirtualPath);
+            };
+            WCFParser.WebHostRequestStop += delegate (OneStringsTemplateATraceData data)
+            {
+                OnStop(data);
+            };
+
+            // Microsoft-Windows-Application Server-Applications/TransportReceive/Stop
+            WCFParser.MessageReceivedByTransport += delegate (Multidata29TemplateHATraceData data)
+            {
+                // This actually looks like a Stop opcode, but it is really a start because
+                // it has a RelatedActivityID   
+                OnStart(data, data.ListenAddress);
+            };
+
+            WCFParser.OperationInvoked += delegate (Multidata24TemplateHATraceData data)
+            {
+                // The creator uses the same ID as myself.  
+                OnStart(data, data.MethodName, null, null, GetActiveStartStopActivityTable(data.ActivityID, data.ProcessID));
+            };
+            WCFParser.OperationCompleted += delegate (Multidata28TemplateHATraceData data)
+            {
+                OnStop(data);
+            };
+
+            WCFParser.ServiceActivationStart += SetThreadToStartStopActivity;
+            WCFParser.ServiceHostFactoryCreationStart += SetThreadToStartStopActivity;
+            WCFParser.ServiceHostStarted += SetThreadToStartStopActivity;
+            WCFParser.HttpMessageReceiveStart += SetThreadToStartStopActivity;
+            WCFParser.HttpContextBeforeProcessAuthentication += SetThreadToStartStopActivity;
+            WCFParser.TokenValidationStarted += SetThreadToStartStopActivity;
+            WCFParser.MessageReadByEncoder += SetThreadToStartStopActivity;
+            WCFParser.HttpResponseReceiveStart += SetThreadToStartStopActivity;
+            WCFParser.SocketReadStop += SetThreadToStartStopActivity;
+            WCFParser.SocketAsyncReadStop += SetThreadToStartStopActivity;
+            WCFParser.SignatureVerificationStart += SetThreadToStartStopActivity;
+            WCFParser.SignatureVerificationSuccess += SetThreadToStartStopActivity;
+            WCFParser.ChannelReceiveStop += SetThreadToStartStopActivity;
+            WCFParser.DispatchMessageStart += SetThreadToStartStopActivity;
+            WCFParser.IncrementBusyCount += SetThreadToStartStopActivity;
+            WCFParser.DispatchMessageBeforeAuthorization += SetThreadToStartStopActivity;
+            WCFParser.ActionItemScheduled += SetThreadToStartStopActivity;
+            WCFParser.GetServiceInstanceStart += SetThreadToStartStopActivity;
+            WCFParser.GetServiceInstanceStop += SetThreadToStartStopActivity;
+            WCFParser.ActionItemCallbackInvoked += SetThreadToStartStopActivity;
+            WCFParser.ChannelReceiveStart += SetThreadToStartStopActivity;
+            WCFParser.OutgoingMessageSecured += SetThreadToStartStopActivity;
+            WCFParser.SocketWriteStart += SetThreadToStartStopActivity;
+            WCFParser.SocketAsyncWriteStart += SetThreadToStartStopActivity;
+            WCFParser.BinaryMessageEncodingStart += SetThreadToStartStopActivity;
+            WCFParser.MtomMessageEncodingStart += SetThreadToStartStopActivity;
+            WCFParser.TextMessageEncodingStart += SetThreadToStartStopActivity;
+            WCFParser.BinaryMessageDecodingStart += SetThreadToStartStopActivity;
+            WCFParser.MtomMessageDecodingStart += SetThreadToStartStopActivity;
+            WCFParser.TextMessageDecodingStart += SetThreadToStartStopActivity;
+            WCFParser.StreamedMessageWrittenByEncoder += SetThreadToStartStopActivity;
+            WCFParser.MessageWrittenAsynchronouslyByEncoder += SetThreadToStartStopActivity;
+            WCFParser.BufferedAsyncWriteStop += SetThreadToStartStopActivity;
+            WCFParser.HttpPipelineProcessResponseStop += SetThreadToStartStopActivity;
+            WCFParser.WebSocketAsyncWriteStop += SetThreadToStartStopActivity;
+            WCFParser.MessageSentByTransport += SetThreadToStartStopActivity;
+            WCFParser.HttpSendStop += SetThreadToStartStopActivity;
+            WCFParser.DispatchMessageStop += SetThreadToStartStopActivity;
+            WCFParser.DispatchSuccessful += SetThreadToStartStopActivity;
+
+            // Server-side quota information.
+            WCFParser.MaxReceivedMessageSizeExceeded += SetThreadToStartStopActivity;
+            WCFParser.MaxPendingConnectionsExceeded += SetThreadToStartStopActivity;
+            WCFParser.ReaderQuotaExceeded += SetThreadToStartStopActivity;
+            WCFParser.NegotiateTokenAuthenticatorStateCacheExceeded += SetThreadToStartStopActivity;
+            WCFParser.NegotiateTokenAuthenticatorStateCacheRatio += SetThreadToStartStopActivity;
+            WCFParser.SecuritySessionRatio += SetThreadToStartStopActivity;
+            WCFParser.PendingConnectionsRatio += SetThreadToStartStopActivity;
+            WCFParser.ConcurrentCallsRatio += SetThreadToStartStopActivity;
+            WCFParser.ConcurrentSessionsRatio += SetThreadToStartStopActivity;
+            WCFParser.ConcurrentInstancesRatio += SetThreadToStartStopActivity;
+            WCFParser.PendingAcceptsAtZero += SetThreadToStartStopActivity;
+
+            // WCF client operations.
+            // TODO FIX NOW, I have never run these!  Get some data to test against.  
+            WCFParser.ClientOperationPrepared += delegate (Multidata22TemplateHATraceData data)
+            {
+                string extraInformation = "/Action=" + data.ServiceAction  + "/URL=" + data.Destination;
+                OnStart(data, extraInformation, null, null, GetActiveStartStopActivityTable(data.ActivityID, data.ProcessID), "ClientOperation");
+            };
+            WCFParser.ServiceChannelCallStop += delegate (Multidata22TemplateHATraceData data)
+            {
+                OnStop(data);
             };
         }
         /// <summary>
@@ -388,13 +607,15 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
 
-        #region private
+#region private
         private static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
         private static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
-        private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");     
+        private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
+        private static readonly Guid MicrosoftWindowsHttpService = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
+
 
         // The main start and stop logic.  
-        unsafe private void OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null)
+        unsafe private StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null)
         {
             // Because we want the stop to logically be 'after' the actual stop event (so that the stop looks like
             // it is part of the start-stop activity we defer it until the next event.   If there is already
@@ -405,7 +626,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 thread = data.Thread();
                 if (thread == null)
-                    return;
+                    return null;
             }
             TraceActivity curTaskActivity = m_taskComputer.GetCurrentActivity(thread);
             ActivityIndex taskIndex = curTaskActivity.Index;
@@ -441,6 +662,11 @@ namespace Microsoft.Diagnostics.Tracing
             var onStartAfter = Start;
             if (onStartAfter != null)
                 onStartAfter(activity, data);
+            return activity;
+        }
+        void SetThreadToStartStopActivity(TraceEvent data)
+        {
+            SetThreadToStartStopActivity(data, data.ActivityID);
         }
 
         void SetThreadToStartStopActivity(TraceEvent data, Guid activityId)
@@ -464,7 +690,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (previousStartStopActivity == null)
                     m_traceActivityToStartStopActivity.Set((int)taskIndex, startStopActivity);
                 else if (previousStartStopActivity != startStopActivity)
-                    Trace.WriteLine("Warning: Thread " + data.ThreadID + " at " + data.TimeStampRelativeMSec.ToString("n3") + 
+                    Trace.WriteLine("Warning: Thread " + data.ThreadID + " at " + data.TimeStampRelativeMSec.ToString("n3") +
                         " wants to overwrite activity started at " + previousStartStopActivity.StartTimeRelativeMSec.ToString("n3"));
             }
         }
@@ -494,7 +720,7 @@ namespace Microsoft.Diagnostics.Tracing
                 activity.RememberStop(data.EventIndex, data.TimeStampRelativeMSec, taskIndex);
                 m_deferredStop = activity;      // Remember this one for deferral.  
 
-                // Issue callback if requested AFTER state update
+                // Issue callback if requested, this is before state update since we have deferred the stop.  
                 var onStartBefore = Stop;
                 if (onStartBefore != null)
                     onStartBefore(activity, data);
@@ -520,9 +746,8 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_deferredStop != null && m_deferredStop.StopEventIndex != m_source.CurrentEventIndex)
             {
                 var startStopActivity = m_deferredStop;
-                m_traceActivityToStartStopActivity.Set((int)startStopActivity.activityIndex, startStopActivity.Creator);
-                RemoveActiveStartStopActitityTable(startStopActivity.ActivityID, startStopActivity.ProcessID);
 
+                bool killCreator = false;
                 var creator = startStopActivity.Creator;
                 if (creator != null)
                 {
@@ -530,7 +755,26 @@ namespace Microsoft.Diagnostics.Tracing
                     Debug.Assert(0 <= creator.LiveChildCount);
                 }
 
-                startStopActivity.activityIndex = ActivityIndex.Invalid;    // This also marks the activity as truly stopped.  
+                while (creator != null && creator.IsStopped)
+                    creator = creator.Creator;
+                m_traceActivityToStartStopActivity.Set((int)startStopActivity.activityIndex, creator);
+
+                // If the creator shares the same activity ID, then set the activity ID to the creator, 
+                // otherwise we can remove it.  
+                if (creator != null && creator.ActivityID == startStopActivity.ActivityID && creator.ProcessID == startStopActivity.ProcessID)
+                    SetActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID, creator);
+                else
+                    RemoveActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID);
+
+                // If we are supposed to auto-stop our creator, go ahead and do that.  
+                if (startStopActivity.Creator != null && startStopActivity.Creator.killIfChildDies && !startStopActivity.Creator.IsStopped)    // Some activities die when their child dies.  
+                {
+                    startStopActivity.Creator.RememberStop(startStopActivity.StopEventIndex, startStopActivity.StartTimeRelativeMSec + startStopActivity.DurationMSec, startStopActivity.activityIndex);
+                    m_deferredStop = startStopActivity.Creator;
+                    startStopActivity.activityIndex = ActivityIndex.Invalid;    // This also marks the activity as truly stopped.  
+                    DoStopIfNecessary();
+                }
+                startStopActivity.activityIndex = ActivityIndex.Invalid;        // This also marks the activity as truly stopped.  
                 m_deferredStop = null;
             }
         }
@@ -601,7 +845,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// fix ASP.NET receiving events  
         /// </summary>
-        void FixAndProcessWindowsASP(TraceEvent data, Guid[] threadToLastAspNetGuid)
+        void FixAndProcessWindowsASP(TraceEvent data, KeyValuePair<Guid, Guid>[] threadToLastAspNetGuids)
         {
             Debug.Assert(data.ProviderGuid == MicrosoftWindowsASPNetProvider);
             Debug.Assert(data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.Stop);
@@ -611,7 +855,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
             if (data.Opcode == TraceEventOpcode.Start)
             {
-                string taskName = "RecHttp" + data.TaskName;
+                string taskName = "RecASP" + data.TaskName;
                 string extraStartInfo = (string)data.PayloadValue(1);        // This is the URL
 
                 Guid activityID = data.ActivityID;
@@ -623,23 +867,37 @@ namespace Microsoft.Diagnostics.Tracing
                 Guid unfixedActivityID = Guid.Empty;
                 if (StartStopActivityComputer.IsActivityPath(activityID))
                 {
-                    unfixedActivityID = threadToLastAspNetGuid[(int)thread.ThreadIndex];
-                    if (unfixedActivityID != Guid.Empty)
+                    Guid fixedActivityID = threadToLastAspNetGuids[(int)thread.ThreadIndex].Value;     // This is RelatedActivityID field of the Send event. 
+                    if (fixedActivityID != Guid.Empty)
                     {
-                        if (unfixedActivityID != activityID)
+                        if (fixedActivityID != activityID)
                         {
                             // Also add the old activity path to the extraStartInfo, which is needed ServiceProfiler versioning between the monitor and the detailed file.  
                             extraStartInfo = StartStopActivityComputer.ActivityPathString(activityID) + "," + extraStartInfo;
-                            activityID = unfixedActivityID;       // Make the fixed key the 'offiical' one.
+                            unfixedActivityID = activityID;     // remember this one as well so we can look up by it as well.   
+                            activityID = fixedActivityID;       // Make the fixed key the 'offiical' one.
                         }
-                        else
-                            unfixedActivityID = Guid.Empty;
                     }
                     else
                         Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Could not find ASP.NET Send event to fix Start event");
                 }
 
-                OnStart(data, extraStartInfo, &activityID, thread, null, taskName);
+                StartStopActivity creator = null;
+                Guid relatedActivityId = data.RelatedActivityID;
+                if (relatedActivityId == Guid.Empty)
+                    relatedActivityId = threadToLastAspNetGuids[(int)thread.ThreadIndex].Key;     // This is the ActivityID of the Send Event.  
+                if (relatedActivityId != Guid.Empty)
+                    creator = GetActiveStartStopActivityTable(relatedActivityId, data.ProcessID);
+
+                if (creator == null)        // If we don't have a creator for the ASP.NET event, make one since WCF and others are children of it and we want to see that 
+                {
+                    // We create another 
+                    creator = OnStart(data, extraStartInfo, &relatedActivityId, thread, null, "RecHttp");
+                    Debug.Assert(creator.Creator == null);  // will try to use the relatedActivityId field but we know that that was empty
+                    creator.killIfChildDies = true;         // Mark that we should clean up
+                }
+
+                OnStart(data, extraStartInfo, &activityID, thread, creator, taskName);
 
                 // in V4.6 the Stop may use the fixed or unfixed ID, so put both IDs into the lookup table.  
                 // Note that this leaks table entries, but this 
@@ -651,7 +909,7 @@ namespace Microsoft.Diagnostics.Tracing
                 Debug.Assert(data.Opcode == TraceEventOpcode.Stop);
                 OnStop(data);
             }
-            threadToLastAspNetGuid[(int)thread.ThreadIndex] = Guid.Empty;
+            threadToLastAspNetGuids[(int)thread.ThreadIndex] = new KeyValuePair<Guid, Guid>();
         }
 
         // Code for looking up start-stop events by their activity ID and process ID
@@ -675,7 +933,7 @@ namespace Microsoft.Diagnostics.Tracing
             asLongs[1] += processID;    // add in the process ID.       Note that this does not guarentee non-collision we may wish to do better.  
             m_activeStartStopActivities[activityID] = newValue;
         }
-        unsafe void RemoveActiveStartStopActitityTable(Guid activityID, int processID)
+        unsafe void RemoveActiveStartStopActivityTable(Guid activityID, int processID)
         {
             long* asLongs = (long*)&activityID;
             asLongs[1] += processID;    // add in the process ID.       Note that this does not guarentee non-collision we may wish to do better.  
@@ -708,7 +966,7 @@ namespace Microsoft.Diagnostics.Tracing
         Dictionary<StartStopKey, StartStopActivity> m_activeStartStopActivities;     // Lookup activities by activityID&ProcessID (we call the start-stop key) at the current time
         int m_nextIndex;                                                             // Used to create unique indexes for StartStopActivity.Index.  
         StartStopActivity m_deferredStop;                                            // We defer doing the stop action until the next event.  This is what remembers to do this.  
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -827,7 +1085,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// returns the number of children that are alive.  
         /// </summary>
         public int LiveChildCount { get; internal set; }
-        #region private
+#region private
         /// <summary>
         /// override.   Gives the name and start time.  
         /// </summary>
@@ -873,7 +1131,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         // these are used to implement deferred stops.  
         internal ActivityIndex activityIndex;     // the index for the task that was active at the time of the stop.  
-        #endregion
+        internal bool killIfChildDies;            // Used by ASP.NET events in some cases. 
+#endregion
     };
 
 }
