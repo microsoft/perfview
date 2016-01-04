@@ -19,6 +19,7 @@ using System.Text;
 using Address = System.UInt64;
 using StartStopKey = System.Guid;   // The start-stop key is unique in the trace.  We incorperate the process as well as activity ID to achieve this.
 
+// TODO this leaks if stops are missing.  
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
@@ -309,7 +310,17 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 // This actually looks like a Stop opcode, but it is really a start because
                 // it has a RelatedActivityID   
-                OnStart(data, data.ListenAddress);
+                OnStart(data, data.ListenAddress, null, null, null, "OperationDispatch");
+            };
+
+            // These Stop the Starts.  We don't want leaks in the common case.   
+            WCFParser.DispatchFailed += delegate (Multidata38TemplateHATraceData data)
+            {
+                OnStop(data);
+            };
+            WCFParser.DispatchSuccessful += delegate (Multidata38TemplateHATraceData data)
+            {
+                OnStop(data);
             };
 
             WCFParser.OperationInvoked += delegate (Multidata24TemplateHATraceData data)
@@ -379,7 +390,7 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW, I have never run these!  Get some data to test against.  
             WCFParser.ClientOperationPrepared += delegate (Multidata22TemplateHATraceData data)
             {
-                string extraInformation = "/Action=" + data.ServiceAction  + "/URL=" + data.Destination;
+                string extraInformation = "/Action=" + data.ServiceAction + "/URL=" + data.Destination;
                 OnStart(data, extraInformation, null, null, GetActiveStartStopActivityTable(data.ActivityID, data.ProcessID), "ClientOperation");
             };
             WCFParser.ServiceChannelCallStop += delegate (Multidata22TemplateHATraceData data)
@@ -607,7 +618,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
 
-#region private
+        #region private
         private static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
         private static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
@@ -747,7 +758,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var startStopActivity = m_deferredStop;
 
-                bool killCreator = false;
                 var creator = startStopActivity.Creator;
                 if (creator != null)
                 {
@@ -765,6 +775,9 @@ namespace Microsoft.Diagnostics.Tracing
                     SetActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID, creator);
                 else
                     RemoveActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID);
+
+                if (startStopActivity.unfixedActivityID != Guid.Empty)
+                    RemoveActiveStartStopActivityTable(startStopActivity.unfixedActivityID, startStopActivity.ProcessID);
 
                 // If we are supposed to auto-stop our creator, go ahead and do that.  
                 if (startStopActivity.Creator != null && startStopActivity.Creator.killIfChildDies && !startStopActivity.Creator.IsStopped)    // Some activities die when their child dies.  
@@ -897,12 +910,14 @@ namespace Microsoft.Diagnostics.Tracing
                     creator.killIfChildDies = true;         // Mark that we should clean up
                 }
 
-                OnStart(data, extraStartInfo, &activityID, thread, creator, taskName);
+                StartStopActivity startedActivity = OnStart(data, extraStartInfo, &activityID, thread, creator, taskName);
 
                 // in V4.6 the Stop may use the fixed or unfixed ID, so put both IDs into the lookup table.  
-                // Note that this leaks table entries, but this 
                 if (unfixedActivityID != Guid.Empty)
-                    SetActiveStartStopActivityTable(unfixedActivityID, data.ProcessID, GetActiveStartStopActivityTable(activityID, data.ProcessID));
+                {
+                    SetActiveStartStopActivityTable(unfixedActivityID, data.ProcessID, startedActivity);
+                    startedActivity.unfixedActivityID = unfixedActivityID;      // So we don't leak these entries.  
+                }
             }
             else
             {
@@ -966,7 +981,7 @@ namespace Microsoft.Diagnostics.Tracing
         Dictionary<StartStopKey, StartStopActivity> m_activeStartStopActivities;     // Lookup activities by activityID&ProcessID (we call the start-stop key) at the current time
         int m_nextIndex;                                                             // Used to create unique indexes for StartStopActivity.Index.  
         StartStopActivity m_deferredStop;                                            // We defer doing the stop action until the next event.  This is what remembers to do this.  
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1019,7 +1034,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public string ExtraInfo { get; private set; }
         /// <summary>
-        /// The Task name (the name prefix that is common to both the start and stop event
+        /// The Task name (the name prefix that is common to both the start and stop event)
         /// </summary>
         public string TaskName { get; private set; }
         /// <summary>
@@ -1085,7 +1100,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// returns the number of children that are alive.  
         /// </summary>
         public int LiveChildCount { get; internal set; }
-#region private
+        #region private
         /// <summary>
         /// override.   Gives the name and start time.  
         /// </summary>
@@ -1132,7 +1147,9 @@ namespace Microsoft.Diagnostics.Tracing
         // these are used to implement deferred stops.  
         internal ActivityIndex activityIndex;     // the index for the task that was active at the time of the stop.  
         internal bool killIfChildDies;            // Used by ASP.NET events in some cases. 
-#endregion
+
+        internal Guid unfixedActivityID;          // This can be removed when we don't care about V4.6 runtimes.  
+        #endregion
     };
 
 }
