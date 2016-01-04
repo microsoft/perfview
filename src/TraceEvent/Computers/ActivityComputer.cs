@@ -599,7 +599,8 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW think about the timers case.  
             Debug.Assert(!m_rawIDToActivity.ContainsKey(rawScheduledActivityId) ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.FxTimer ||
-                m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.ClrIOThreadPool);
+                m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.ClrIOThreadPool ||
+                m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.FxAsyncIO);
 
             TraceThread thread = data.Thread();
             if (thread == null)

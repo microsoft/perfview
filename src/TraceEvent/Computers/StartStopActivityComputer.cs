@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // using Microsoft.Diagnostics.Tracing.Parsers;
+#define HTTP_SERVICE_EVENTS
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.ApplicationServer;
@@ -59,19 +60,20 @@ namespace Microsoft.Diagnostics.Tracing
             // It basicaly remembers the related activity ID of the last RequestSend event on
             // each thread, which we use to fix the activity ID of the RequestStart event 
             KeyValuePair<Guid, Guid>[] threadToLastAspNetGuids = new KeyValuePair<Guid, Guid>[m_source.TraceLog.Threads.Count];
-
-#if false // TODO FIX NOW use or remove 
+#if HTTP_SERVICE_EVENTS
             // Sadly, the Microsoft-Windows-HttpService HTTP_OPCODE_DELIVER event gets logged in
             // the kernel, so you don't know what process or thread is going to be get the request
             // We hack around this by looking for a nearby ReadyTHread or CSwitch event.  These
             // variables remember the information needed to transfer these to cswitch in the 
             // correct process.  
-            // remembers the last deliver event.  Note that 
-            string lastHttpServiceUrl = null;
-            Guid lastHttpServiceActivityID = new Guid();
-            int lastHttpServiceActivityThreadId = 0;
-#endif
+            // remembers the last deliver event. 
+            string lastHttpServiceDeliverUrl = null;
+            Guid lastHttpServiceDeliverActivityID = new Guid();
+            int lastHttpServiceReceiveRequestThreadId = 0;
+            int lastHttpServiceReceiveRequestTargetProcessId = 0;
 
+            Dictionary<long, int> mapConnectionToTargetProcess = new Dictionary<long, int>();
+#endif 
             var dynamicParser = source.Dynamic;
             dynamicParser.All += delegate (TraceEvent data)
             {
@@ -88,25 +90,47 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (data.ID == (TraceEventID)2)
                         OnStop(data);
                 }
-#if false // TODO FIX NOW use or remove 
+#if HTTP_SERVICE_EVENTS
                 else if (data.Task == (TraceEventTask)1 && data.ProviderGuid == MicrosoftWindowsHttpService)
                 {
-                    if (data.ID == (TraceEventID) 3) // HTTP_TASK_REQUEST/ 
+                    if (data.ID == (TraceEventID)1)  // HTTP_TASK_REQUEST / HTTP_OPCODE_RECEIVE_REQUEST
+                    {
+                        Debug.Assert(data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_RECEIVE_REQUEST");
+                        lastHttpServiceReceiveRequestTargetProcessId = 0;
+                        lastHttpServiceReceiveRequestThreadId = data.ThreadID;
+                        object connectionID = data.PayloadByName("ConnectionId");
+                        if (connectionID != null && connectionID is long)
+                            mapConnectionToTargetProcess.TryGetValue((long)connectionID, out lastHttpServiceReceiveRequestTargetProcessId);
+                    }
+                    else if (data.ID == (TraceEventID)3) // HTTP_TASK_REQUEST/HTTP_OPCODE_DELIVER 
                     {
                         Debug.Assert(data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_DELIVER");
-                        string extraStartInfo = data.PayloadByName("Url") as string;
-                        Guid activity = data.ActivityID;
-                        int threadID = data.ThreadID;
+                        if (lastHttpServiceReceiveRequestThreadId == data.ThreadID && lastHttpServiceReceiveRequestTargetProcessId != 0)
+                        {   
+                            lastHttpServiceDeliverUrl = data.PayloadByName("Url") as string;
+                            lastHttpServiceDeliverActivityID = data.ActivityID;
+                        }
+                        else
+                        {
+                            lastHttpServiceDeliverUrl = null;
+                            lastHttpServiceReceiveRequestTargetProcessId = 0;
+                        }
+                        lastHttpServiceReceiveRequestThreadId = 0;
                     }
-                    if (data.ID == (TraceEventID)12 || data.ID == (TraceEventID)8) // HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_SEND  HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_RESPONSE
+                    else if (data.ID == (TraceEventID)12 || data.ID == (TraceEventID)8) // HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_SEND  HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_RESPONSE
                     {
+                        if (data.ID == (TraceEventID)8)
+                        {
+                            object connectionID = data.PayloadByName("ConnectionId");
+                            if (connectionID != null && connectionID is long)
+                                mapConnectionToTargetProcess[(long)connectionID] = data.ProcessID;
+                        }
                         Debug.Assert(data.ID != (TraceEventID)12 || data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_SEND");
                         Debug.Assert(data.ID != (TraceEventID)8 || data.EventName == "HTTP_TASK_REQUEST/HTTP_OPCODE_FAST_RESPONSE");
                         OnStop(data);
                     }
                 }
-#endif 
-
+#endif
                 // TODO decide what the correct heuristic for deciding what start-stop events are interesting.  
                 // Currently I only do this for things that might be an EventSource 
                 if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
@@ -168,7 +192,8 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             };
 
-#if TODO_FIX_NOW
+#if HTTP_SERVICE_EVENTS
+#if TODO_FIX_NOW // FIX NOW Use or remove. 
             // We monitor ReadyThread to make HttpService events more useful (see nodes above on lastHttpServiceUrl)
             m_source.Kernel.DispatcherReadyThread += delegate (DispatcherReadyThreadTraceData data)
             {
@@ -176,14 +201,25 @@ namespace Microsoft.Diagnostics.Tracing
                     return;
 
             };
+#endif
 
             m_source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
             {
-                if (lastHttpServiceUrl == null)
+                // This code is to transfer information from the Microsoft-Windows-HttpService HTTP_TASK_REQUEST/HTTP_OPCODE_DELIVER
+                // event (that happens in the System process, not the target, and move it to the context switch that wakes up
+                // in order to service the event. 
+                if (lastHttpServiceDeliverUrl == null)
                     return;
+                if (data.ProcessID != lastHttpServiceReceiveRequestTargetProcessId)
+                    return;
+                // Test Stack
+
+                Guid activityID = lastHttpServiceDeliverActivityID;
+                OnStart(data, "url=" + lastHttpServiceDeliverUrl, &activityID, null, null, "HttpServiceRec");
+                lastHttpServiceDeliverUrl = null;
+                lastHttpServiceDeliverActivityID = Guid.Empty;
             };
 #endif
-
             var aspNetParser = new AspNetTraceEventParser(m_source);
             aspNetParser.AspNetReqStart += delegate (AspNetStartTraceData data)
             {
@@ -618,7 +654,7 @@ namespace Microsoft.Diagnostics.Tracing
             return sb.ToString();
         }
 
-        #region private
+#region private
         private static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
         private static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
@@ -981,7 +1017,7 @@ namespace Microsoft.Diagnostics.Tracing
         Dictionary<StartStopKey, StartStopActivity> m_activeStartStopActivities;     // Lookup activities by activityID&ProcessID (we call the start-stop key) at the current time
         int m_nextIndex;                                                             // Used to create unique indexes for StartStopActivity.Index.  
         StartStopActivity m_deferredStop;                                            // We defer doing the stop action until the next event.  This is what remembers to do this.  
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1100,7 +1136,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// returns the number of children that are alive.  
         /// </summary>
         public int LiveChildCount { get; internal set; }
-        #region private
+#region private
         /// <summary>
         /// override.   Gives the name and start time.  
         /// </summary>
@@ -1149,7 +1185,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal bool killIfChildDies;            // Used by ASP.NET events in some cases. 
 
         internal Guid unfixedActivityID;          // This can be removed when we don't care about V4.6 runtimes.  
-        #endregion
+#endregion
     };
 
 }
