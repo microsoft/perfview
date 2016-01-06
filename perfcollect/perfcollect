@@ -874,6 +874,7 @@ perfOpt=''
 viewer='perf'
 gcCollectOnly=''
 gcOnly=''
+events=''
 
 ProcessArguments()
 {
@@ -967,6 +968,16 @@ ProcessArguments()
 		elif [ "-gconly" == "$arg" ]
 		then
 			gcOnly=1
+		elif [ "-events" == "$arg" ]
+		then
+			# If LTTng is installed and we've been asked to use it, then use it.
+			if [ "$lttngInstalled" == "1" ]
+			then
+				useLTTng=1
+			fi
+
+			events=$value
+			i=$i+1
 		fi
 	done
 	
@@ -1007,10 +1018,16 @@ SetupLTTngSession()
 		EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
 	else
+		if [ "$events" == "" ]
+		then
 		# Enable All runtime events
 		# TODO:Filter events
 		lttng enable-event --userspace --tracepoint 'DotNETRuntime:*' > /dev/null
 		lttng enable-event --userspace --tracepoint 'DotNETRuntimePrivate:*' > /dev/null
+		elif [ "$events" == "threading" ]
+		then
+			EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
+		fi
 	fi
 }
 
