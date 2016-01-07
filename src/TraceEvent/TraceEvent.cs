@@ -884,13 +884,13 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     DateTime asDateTime = (DateTime)value;
                     string ret;
-                    if (source.SessionStartTime <= asDateTime)
+                    if (formatProvider == null && source.SessionStartTime <= asDateTime)
                     {
                         ret = asDateTime.ToString("HH:mm:ss.ffffff");
                         ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
                     else
-                        ret = asDateTime.ToString();
+                        ret = asDateTime.ToString(formatProvider);
 
                     return ret;
                 }

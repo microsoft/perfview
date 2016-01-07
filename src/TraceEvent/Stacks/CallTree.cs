@@ -85,9 +85,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public CallTreeNodeIndex NodeIndexLimit
         {
-            get 
+            get
             {
-                return (CallTreeNodeIndex) m_nextNodeIndex;
+                return (CallTreeNodeIndex)m_nextNodeIndex;
             }
         }
 
@@ -157,7 +157,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void SortInclusiveMetricDecending()
         {
-            Sort(delegate(CallTreeNode x, CallTreeNode y)
+            Sort(delegate (CallTreeNode x, CallTreeNode y)
             {
                 int ret = Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric));
                 if (ret != 0)
@@ -453,7 +453,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// this call tree node (unlike the ID, which more like the name of the frame of the node), so you
         /// can have many nodes with the same name, but only one with the same index.    See CallTree.GetNodeIndexLimit.
         /// </summary>
-        public CallTreeNodeIndex Index { get { return m_index;  } }
+        public CallTreeNodeIndex Index { get { return m_index; } }
 
         /// <summary>
         /// Create a CallTreeNodeBase (a CallTreeNode without children) which is a copy of another one.  
@@ -638,7 +638,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             int count = 0;
             var excludeChildrenID = GetExcludeChildID();
 
-            GetTrees(delegate(CallTreeNode node)
+            GetTrees(delegate (CallTreeNode node)
             {
                 count += GetSamplesForTreeNode(node, exclusive, callback, excludeChildrenID);
             });
@@ -853,7 +853,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         internal double m_firstTimeRelativeMSec;
         internal double m_lastTimeRelativeMSec;
 
-        CallTreeNodeIndex m_index; 
+        CallTreeNodeIndex m_index;
 
         internal GrowableArray<StackSourceSampleIndex> m_samples;       // The actual samples.  
         internal Histogram m_inclusiveMetricByTime;                     // histogram by time. Can be null if no histogram is needed.
@@ -1079,13 +1079,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             var asAgg = this as AggregateCallTreeNode;
             var dir = IsCalleeTree ? RefDirection.From : RefDirection.To;
             var sampleSet = new Dictionary<StackSourceSampleIndex, int>();
-            this.GetSamples(true, delegate(StackSourceSampleIndex sampleIndex)
+            this.GetSamples(true, delegate (StackSourceSampleIndex sampleIndex)
             {
                 sampleSet[sampleIndex] = 0; // Value is currently irrelevant.   This just adds it to the set.  
                 return true;
             });
 
-            this.GetSamples(true, delegate(StackSourceSampleIndex sampleIndex)
+            this.GetSamples(true, delegate (StackSourceSampleIndex sampleIndex)
             {
                 // TODO FIX NOW too subtle!  This tracing back up the stack is tricky.  
                 if (!IsCalleeTree && asAgg != null)
@@ -1104,7 +1104,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     // so we can simply cast.   TODO FIX NOW decide how to not break the abstraction.  
                     sampleIndex = (StackSourceSampleIndex)samplePath;
                 }
-                source.GetReferences(sampleIndex, dir, delegate(StackSourceSampleIndex childIndex)
+                source.GetReferences(sampleIndex, dir, delegate (StackSourceSampleIndex childIndex)
                 {
                     // Ignore samples to myself.  
                     if (sampleSet.ContainsKey(childIndex))
@@ -1143,7 +1143,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (val != null)
                     ret.Add(val);
             }
-            ret.Sort(delegate(CallTreeNode x, CallTreeNode y)
+            ret.Sort(delegate (CallTreeNode x, CallTreeNode y)
             {
                 var cmp = x.m_minDepth - y.m_minDepth;
                 if (cmp != 0)
@@ -1260,7 +1260,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                             calleeLookups = m_callTree.m_calleeLookups = new ConcurrentDictionary<CallTreeNode, ConcurrentDictionary<StackSourceFrameIndex, CallTreeNode>>();
 
                         // Find the lookup table for this particular node (we don't expect many nodes to have this so we have a side table to look them up)
-                        calleeLookup = calleeLookups.GetOrAdd(this, delegate(CallTreeNode nodeToAddToCache)
+                        calleeLookup = calleeLookups.GetOrAdd(this, delegate (CallTreeNode nodeToAddToCache)
                             {
                                 // Make up a new table for this node.  
                                 var newCalleeLookup = new ConcurrentDictionary<StackSourceFrameIndex, CallTreeNode>();
@@ -1278,7 +1278,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     }
                     else
                     {
-                        for (int i = m_callees.Count; 0 < i; )
+                        for (int i = m_callees.Count; 0 < i;)
                         {
                             --i;
                             callee = m_callees[i];
@@ -1299,7 +1299,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 // If this node had large fanout also add it to that lookup table.  
                 if (calleeLookup != null)
-                { 
+                {
                     calleeLookup[callee.m_id] = callee;
                     Debug.Assert(calleeLookup.Count == m_callees.Count);
                 }
@@ -1673,7 +1673,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             var ret = new AggregateCallTreeNode(node, null, 0);
 
-            node.GetTrees(delegate(CallTreeNode tree)
+            node.GetTrees(delegate (CallTreeNode tree)
             {
                 ret.m_trees.Add(tree);
             });
@@ -1688,7 +1688,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             var ret = new AggregateCallTreeNode(node, null, -1);
 
-            node.GetTrees(delegate(CallTreeNode tree)
+            node.GetTrees(delegate (CallTreeNode tree)
             {
                 ret.m_trees.Add(tree);
             });

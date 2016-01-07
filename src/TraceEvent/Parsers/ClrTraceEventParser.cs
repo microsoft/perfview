@@ -177,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
-            Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen 
+            Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
                          | ThreadTransfer | GCHeapAndTypeNames | Codesymbols,
 
@@ -4626,7 +4626,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 {
                     return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(7));
                 }
-                    
+
                 return -1;
             }
         }
@@ -5365,7 +5365,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     m_valueSize = 44;
                     // Project N rounds up on 64 bit It did go out for build in 4/2014 but soon we won't care.  
                     if (EventDataLength == (Count * 48) + 6)
-                    {  
+                    {
                         Debug.Assert(PointerSize == 8);
                         m_valueSize = 48;
                     }
@@ -6337,13 +6337,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NativeOverlapped", NativeOverlapped);
-             XmlAttribHex(sb, "Overlapped", Overlapped);
-             XmlAttrib(sb, "MultiDequeues", MultiDequeues);
-             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NativeOverlapped", NativeOverlapped);
+            XmlAttribHex(sb, "Overlapped", Overlapped);
+            XmlAttrib(sb, "MultiDequeues", MultiDequeues);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8312,14 +8312,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
         public RuntimeSku Sku { get { return (RuntimeSku)GetInt16At(2); } }
-        public int BclMajorVersion { get { return (ushort) GetInt16At(4); } }
+        public int BclMajorVersion { get { return (ushort)GetInt16At(4); } }
         public int BclMinorVersion { get { return (ushort)GetInt16At(6); } }
-        public int BclBuildNumber { get { return (ushort) GetInt16At(8); } }
-        public int BclQfeNumber { get { return (ushort) GetInt16At(10); } }
-        public int VMMajorVersion { get { return (ushort) GetInt16At(12); } }
-        public int VMMinorVersion { get { return (ushort) GetInt16At(14); } }
-        public int VMBuildNumber { get { return (ushort) GetInt16At(16); } }
-        public int VMQfeNumber { get { return (ushort) GetInt16At(18); } }
+        public int BclBuildNumber { get { return (ushort)GetInt16At(8); } }
+        public int BclQfeNumber { get { return (ushort)GetInt16At(10); } }
+        public int VMMajorVersion { get { return (ushort)GetInt16At(12); } }
+        public int VMMinorVersion { get { return (ushort)GetInt16At(14); } }
+        public int VMBuildNumber { get { return (ushort)GetInt16At(16); } }
+        public int VMQfeNumber { get { return (ushort)GetInt16At(18); } }
         public StartupFlags StartupFlags { get { return (StartupFlags)GetInt32At(20); } }
         public StartupMode StartupMode { get { return (StartupMode)GetByteAt(24); } }
         public string CommandLine { get { return GetUnicodeStringAt(25); } }

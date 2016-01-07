@@ -257,7 +257,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 state.callBacksSet |= ParserTrackingOptions.RegistryNameToObject;
                 // logic to initialize state
-                AddCallbackForEvents(delegate(RegistryTraceData data)
+                AddCallbackForEvents(delegate (RegistryTraceData data)
                 {
                     var isRundown = (data.Opcode == (TraceEventOpcode)22);        // RegistryRundown
                     if (RegistryTraceData.NameIsKeyName(data.Opcode))
@@ -268,7 +268,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 state.callBacksSet |= ParserTrackingOptions.FileNameToObject;
 
-                AddCallbackForEvents<FileIONameTraceData>(delegate(FileIONameTraceData data)
+                AddCallbackForEvents<FileIONameTraceData>(delegate (FileIONameTraceData data)
                 {
                     // TODO this does now work for DCStarts.  Do DCStarts event exist?  
                     var isRundown = (data.Opcode == (TraceEventOpcode)36) || (data.Opcode == (TraceEventOpcode)35);        // 36=FileIOFileRundown 35=FileIODelete
@@ -279,7 +279,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #if !DOTNET_V35
                 // Because we may not have proper startup rundown, we also remember not only the FileKey but 
                 // also the fileObject (which is per-open file not per fileName).   
-                FileIOCreate += delegate(FileIOCreateTraceData data)
+                FileIOCreate += delegate (FileIOCreateTraceData data)
                 {
                     state.fileIDToName.Add(data.FileObject, data.TimeStampQPC, data.FileName);
                 };
@@ -287,14 +287,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (source.IsRealTime)
                 {
                     // Keep the table under control
-                    Action<FileIONameTraceData> onNameDeath = delegate(FileIONameTraceData data)
+                    Action<FileIONameTraceData> onNameDeath = delegate (FileIONameTraceData data)
                     {
                         state.fileIDToName.Remove(data.FileKey);
                     };
                     FileIOFileDelete += onNameDeath;
                     FileIOFileRundown += onNameDeath;
 
-                    FileIOCleanup += delegate(FileIOSimpleOpTraceData data)
+                    FileIOCleanup += delegate (FileIOSimpleOpTraceData data)
                     {
                         // Keep the table under control remove unneeded entries.  
                         state.fileIDToName.Remove(data.FileObject);
@@ -306,12 +306,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 state.callBacksSet |= ParserTrackingOptions.ObjectNameToObject;
                 // logic to initialize state
-                AddCallbackForEvents(delegate(ObjectNameTraceData data)
+                AddCallbackForEvents(delegate (ObjectNameTraceData data)
                 {
                     state.fileIDToName.Add(data.Object, data.TimeStampQPC, data.ObjectName, true);
                 });
 
-                AddCallbackForEvents(delegate(ObjectTypeNameTraceData data)
+                AddCallbackForEvents(delegate (ObjectTypeNameTraceData data)
                 {
                     if (state._objectTypeToName == null)
                         state._objectTypeToName = new Dictionary<int, string>(50);
@@ -321,13 +321,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if ((tracking & ParserTrackingOptions.ThreadToProcess) != 0 && (state.callBacksSet & ParserTrackingOptions.ThreadToProcess) == 0)
             {
                 state.callBacksSet |= ParserTrackingOptions.ThreadToProcess;
-                ThreadStartGroup += delegate(ThreadTraceData data)
+                ThreadStartGroup += delegate (ThreadTraceData data)
                 {
                     Debug.Assert(data.ThreadID >= 0);
                     Debug.Assert(data.ProcessID >= 0);
                     state.threadIDtoProcessID.Add((Address)data.ThreadID, 0, data.ProcessID);
                 };
-                ThreadEndGroup += delegate(ThreadTraceData data)
+                ThreadEndGroup += delegate (ThreadTraceData data)
                 {
                     // Do we have thread start information for this thread?
                     int processID;
@@ -346,12 +346,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if ((tracking & ParserTrackingOptions.DiskIOServiceTime) != 0 && (state.callBacksSet & ParserTrackingOptions.DiskIOServiceTime) == 0)
             {
                 state.callBacksSet |= ParserTrackingOptions.DiskIOServiceTime;
-                AddCallbackForEvents(delegate(DiskIOTraceData data)
+                AddCallbackForEvents(delegate (DiskIOTraceData data)
                 {
                     state.diskEventTimeStamp.Add(new KernelTraceEventParserState.DiskIOTime(data.DiskNumber, data.TimeStampRelativeMSec));
                 });
 
-                DiskIOFlushBuffers += delegate(DiskIOFlushBuffersTraceData data)
+                DiskIOFlushBuffers += delegate (DiskIOFlushBuffersTraceData data)
                 {
                     state.diskEventTimeStamp.Add(new KernelTraceEventParserState.DiskIOTime(data.DiskNumber, data.TimeStampRelativeMSec));
                 };
@@ -360,11 +360,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if ((tracking & ParserTrackingOptions.DiskIOServiceTime) != 0 && (state.callBacksSet & ParserTrackingOptions.VolumeMapping) == 0)
             {
                 state.callBacksSet |= ParserTrackingOptions.VolumeMapping;
-                SysConfigVolumeMapping += delegate(VolumeMappingTraceData data)
+                SysConfigVolumeMapping += delegate (VolumeMappingTraceData data)
                 {
                     state.driveMapping.AddMapping(data.NtPath, data.DosPath);
                 };
-                SysConfigSystemPaths += delegate(SystemPathsTraceData data)
+                SysConfigSystemPaths += delegate (SystemPathsTraceData data)
                 {
                     var windows = data.SystemWindowsDirectory;
                     state.driveMapping.AddSystemDrive(windows);
@@ -3863,8 +3863,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ProcessID", "ParentID", "ImageFileName", "PageDirectoryBase", 
-                        "Flags", "SessionID", "ExitStatus", "UniqueProcessKey", "CommandLine", 
+                    payloadNames = new string[] { "ProcessID", "ParentID", "ImageFileName", "PageDirectoryBase",
+                        "Flags", "SessionID", "ExitStatus", "UniqueProcessKey", "CommandLine",
                         "PackageFullName", "ApplicationID" };
                 return payloadNames;
             }
@@ -4162,7 +4162,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 if (Opcode == TraceEventOpcode.Start)
                 {
                     parentProcess = eventRecord->EventHeader.ProcessId;
-                    ParentThread  = eventRecord->EventHeader.ThreadId;      // This field is transient (does not survive ETLX conversion) (we may be able to remove)
+                    ParentThread = eventRecord->EventHeader.ThreadId;      // This field is transient (does not survive ETLX conversion) (we may be able to remove)
                 }
                 eventRecord->EventHeader.ThreadId = GetInt32At(4);          // Thread being started.  
                 eventRecord->EventHeader.ProcessId = GetInt32At(0);
@@ -4258,10 +4258,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OldThreadID", "OldProcessID", "OldProcessName", 
+                    payloadNames = new string[] { "OldThreadID", "OldProcessID", "OldProcessName",
                         "NewThreadID", "NewProcessID", "NewProcessName", "ProcessorNumber",
-                        "NewThreadPriority", "OldThreadPriority", "NewThreadQuantum", "OldThreadQuantum", 
-                        "OldThreadWaitReason", "OldThreadWaitMode", "OldThreadState", "OldThreadWaitIdealProcessor", 
+                        "NewThreadPriority", "OldThreadPriority", "NewThreadQuantum", "OldThreadQuantum",
+                        "OldThreadWaitReason", "OldThreadWaitMode", "OldThreadState", "OldThreadWaitIdealProcessor",
                         "NewThreadWaitTime" };
                 return payloadNames;
             }

@@ -289,7 +289,7 @@ namespace Diagnostics.Tracing.StackSources
         /// </summary>
         public override void ForEach(Action<StackSourceSample> callback)
         {
-            Action<StackSourceSample> filter = delegate(StackSourceSample sample)
+            Action<StackSourceSample> filter = delegate (StackSourceSample sample)
             {
                 // We always have at least the thread and process, unless we got a bad process 
                 // Debug.Assert(sample.StackIndex != StackSourceCallStackIndex.Invalid);

@@ -516,7 +516,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             try
             {
-                for (; ; ) // Loop for retrying without /lines 
+                for (;;) // Loop for retrying without /lines 
                 {
                     if (!string.IsNullOrEmpty(privateRuntimeVerString))
                     {
@@ -602,7 +602,7 @@ namespace Microsoft.Diagnostics.Symbols
             string assemblyDir = Path.Combine(windir, "Assembly");
             foreach (string nicBase in Directory.GetDirectories(assemblyDir, "NativeImages_v4*"))
             {
-                foreach(string file in Directory.EnumerateFiles(nicBase, ngenFileName, SearchOption.AllDirectories))
+                foreach (string file in Directory.EnumerateFiles(nicBase, ngenFileName, SearchOption.AllDirectories))
                 {
                     long fileLen = (new FileInfo(file)).Length;
                     if (fileLen == ngenFileSize)
@@ -813,7 +813,7 @@ namespace Microsoft.Diagnostics.Symbols
                 using (Stream toStream = File.Create(copyToFileName))
                 {
                     byte[] buffer = new byte[8192];
-                    for (; ; )
+                    for (;;)
                     {
                         int count = fromStream.Read(buffer, 0, buffer.Length);
                         if (count == 0)
@@ -1286,7 +1286,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 bool prefixMatchFound = false;
                 Regex prefixMatch = new Regex(@"\$(\d+)_");
-                ret = prefixMatch.Replace(ret, delegate(Match m)
+                ret = prefixMatch.Replace(ret, delegate (Match m)
                 {
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
@@ -1356,8 +1356,8 @@ namespace Microsoft.Diagnostics.Symbols
                     sourceLocs.Next(1, out sourceLoc, out fetchCount);
                     if (fetchCount == 1)
                     {
-                       // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
-                       // from the name mangling of the method symbol, so look that up.  
+                        // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
+                        // from the name mangling of the method symbol, so look that up.  
                         m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, looking for V4.6.1 mangled names");
 
                         IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
@@ -1468,7 +1468,7 @@ namespace Microsoft.Diagnostics.Symbols
             int lineNum;
             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
             // and take the next valid line
-            for (; ; )
+            for (;;)
             {
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
@@ -1825,7 +1825,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             uint fetchCount;
             var ret = new List<Symbol>();
-            for (; ; )
+            for (;;)
             {
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
@@ -1974,7 +1974,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var curIdx = 0;
-            for (; ; )
+            for (;;)
             {
                 var sepIdx = BuildTimeFilePath.IndexOf('\\', curIdx);
                 if (sepIdx < 0)
@@ -2059,7 +2059,7 @@ namespace Microsoft.Diagnostics.Symbols
             var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var cacheDir = m_symbolModule.m_reader.SourceCacheDirectory;
             vars.Add("targ", cacheDir);
-            for (; ; )
+            for (;;)
             {
                 var line = reader.ReadLine();
                 if (line == null)
@@ -2141,24 +2141,24 @@ namespace Microsoft.Diagnostics.Symbols
                                 else
 #endif
                                     if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var tfExe = Command.FindOnPath("tf.exe");
+                                    if (tfExe == null)
                                     {
-                                        var tfExe = Command.FindOnPath("tf.exe");
+                                        tfExe = FindTfExe();
                                         if (tfExe == null)
                                         {
-                                            tfExe = FindTfExe();
-                                            if (tfExe == null)
-                                            {
-                                                log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
-                                                return null;
-                                            }
-                                            addToPath = Path.GetDirectoryName(tfExe);
+                                            log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
+                                            return null;
                                         }
+                                        addToPath = Path.GetDirectoryName(tfExe);
                                     }
-                                    else
-                                    {
-                                        log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
-                                        return null;
-                                    }
+                                }
+                                else
+                                {
+                                    log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
+                                    return null;
+                                }
                                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                                 fetchCmdStr = "cmd /c " + fetchCmdStr;
                                 var options = new CommandOptions().AddOutputStream(log).AddNoThrow();
@@ -2249,20 +2249,20 @@ namespace Microsoft.Diagnostics.Symbols
             if (0 <= result.IndexOf('%'))
             {
                 // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms680641(v=vs.85).aspx for details on the %fn* variables 
-                result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate (Match m)
                 {
                     return SourceServerFetchVar(SourceServerEvaluate(m.Groups[1].Value, vars), vars);
                 });
-                result = Regex.Replace(result, @"%fnbksl%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnbksl%\((.*?)\)", delegate (Match m)
                 {
                     return SourceServerEvaluate(m.Groups[1].Value, vars).Replace('/', '\\');
                 });
-                result = Regex.Replace(result, @"%fnfile%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnfile%\((.*?)\)", delegate (Match m)
                 {
                     return Path.GetFileName(SourceServerEvaluate(m.Groups[1].Value, vars));
                 });
                 // Normal variable substitution
-                result = Regex.Replace(result, @"%(\w+)%", delegate(Match m)
+                result = Regex.Replace(result, @"%(\w+)%", delegate (Match m)
                 {
                     return SourceServerFetchVar(m.Groups[1].Value, vars);
                 });

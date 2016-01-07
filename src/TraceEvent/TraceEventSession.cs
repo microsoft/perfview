@@ -60,7 +60,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="options">Additional flags that influence behavior.  Note that the 'Create' option is implied for file mode sessions. </param>
         public TraceEventSession(string sessionName, string fileName, TraceEventSessionOptions options = TraceEventSessionOptions.Create)
         {
-            this.EnableProviderTimeoutMSec = 0;         // Don't wait for provider before returning.
+            this.EnableProviderTimeoutMSec = 0;         // Currently by default it is async (TODO change to 10000? by default)
             this.m_BufferSizeMB = Math.Max(64, System.Environment.ProcessorCount * 2);       // The default size.  
             this.m_BufferQuantumKB = 64;
             this.m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
@@ -86,7 +86,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// to an existing session. </param>
         public TraceEventSession(string sessionName, TraceEventSessionOptions options = TraceEventSessionOptions.Create)
         {
-            this.EnableProviderTimeoutMSec = 0; // Don't wait for provider before returning. 
+            this.EnableProviderTimeoutMSec = 0;         // Currently by default it is async (TODO change to 10000? by default)
             this.m_SessionId = -1;
             this.m_BufferQuantumKB = 64;
             this.m_CpuSampleIntervalMSec = 1.0F;
@@ -395,7 +395,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
                             eventControlCode, (byte)providerLevel,
-                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);     // Operate synchronously 10 second timeout.  
+                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -706,7 +706,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
                             m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);            // 10 second timeout
+                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);         
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -947,8 +947,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);         // 10 second timeout.  
-
+                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);     
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
@@ -968,10 +967,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // These properties can be set both before and after a provider has been enabled in the session.  
 
         /// <summary>
-        /// When you issue a EnableProvider command, on windows 8 and above it can be done synchronously (that is you know that because 
+        /// When you issue a EnableProvider command, on windows 7 and above it can be done synchronously (that is you know that because 
         /// the EnableProvider returned that the provider actually got the command).   However synchronous behavior means that
         /// you may wait forever.   This is the time EnableProvider waits until it gives up.   Setting this
-        /// to 0 means asynchronous (fire and forget).   This is the default (fire and forget) Before windows 8 EnableProvider is always asynchronous.  
+        /// to 0 means asynchronous (fire and forget).   The default is 10000 (wait 10 seconds) 
+        /// Before windows 7 EnableProvider is always asynchronous.  
         /// </summary>
         public int EnableProviderTimeoutMSec { get; set; }
         /// <summary>

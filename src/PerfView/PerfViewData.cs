@@ -4976,7 +4976,7 @@ namespace PerfView
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer    to avoid this in future traces.";
             }
             else
             {
