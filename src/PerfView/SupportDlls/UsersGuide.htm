@@ -7747,25 +7747,52 @@
         </li>
         -->
         <li>
+            Version 1.8.19 1/7/16
+            <ul>
+                <li>
+                    Significantly improved the Thread Time with Start-Stop Activities.  THe goal here is
+                    that this view replaces the ASP.NET and Service Request view, and we are probably most of
+                    the way there now.   I need to validate this more and then probably obsolete the other views.
+                </li>
+            </ul>
+        <li>
             Version 1.8.15 12/4/15
             <ul>
                 <li>
                     Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
-                    (They appear in the left pane, but you never see them in the right pane even though there are 
-                    instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced 
-                    relatively recently.  
+                    (They appear in the left pane, but you never see them in the right pane even though there are
+                    instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
+                    relatively recently.
                 </li>
-                <li>Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
-                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.   
+                <li>
+                    Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
+                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
                     StartStopActivity shows you the name of the start-stop activity that
-                    is logged the event.</li>
+                    is logged the event.
+                </li>
             </ul>
         <li>
-<li>
+            Version 1.8.15 12/4/15
+            <ul>
+                <li>
+                    Fixed a fairly serious bug associated with the Events Viewer where you don't see some CLR events
+                    (They appear in the left pane, but you never see them in the right pane even though there are
+                    instances of them in the file).   Note that version 1.8.0 does not have this bug, it was introduced
+                    relatively recently.
+                </li>
+                <li>
+                    Added ActivityInfo and StartStopActivity fields to Events View.   ActivityInfo will show you the
+                    creation and start time (and the raw ID) of the System.Threading.Tasks.Task that logged  the event.
+                    StartStopActivity shows you the name of the start-stop activity that
+                    is logged the event.
+                </li>
+            </ul>
+        <li>
+        <li>
             Version 1.8.11 11/16/15
             <ul>
                 <li>
-                    Fix excessive warnings when converting ETL files.   Might also fix some StartStop Activity issues.   
+                    Fix excessive warnings when converting ETL files.   Might also fix some StartStop Activity issues.
                 </li>
             </ul>
         <li>
@@ -7775,10 +7802,14 @@
                     Significant improvement in how activity tracking works.  Hopefully the stacks associated with 'with Tasks' views
                     will be better.
                 </li>
-                <li> Added JIT Inlining feature that enables viewing all successful and failed inlining attempts, including the 
-                    JIT-supplied reason for why inlining wasn't performed in the failure cases.</li>
-                <li> Added finalization feature that tracks finalized objects and provides a table of each type with a finalized object
-                    and the associated number of times an object of that type was finalized.</li>
+                <li>
+                    Added JIT Inlining feature that enables viewing all successful and failed inlining attempts, including the
+                    JIT-supplied reason for why inlining wasn't performed in the failure cases.
+                </li>
+                <li>
+                    Added finalization feature that tracks finalized objects and provides a table of each type with a finalized object
+                    and the associated number of times an object of that type was finalized.
+                </li>
             </ul>
         </li>
         <li>
