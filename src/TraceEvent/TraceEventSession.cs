@@ -1264,7 +1264,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.EVENT_METADATA |
                     TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.VOLUME_MAPPING;
 
-                if ((options | TraceEventMergeOptions.Compress) != 0)
+                if ((options & TraceEventMergeOptions.Compress) != 0)
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
 
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
