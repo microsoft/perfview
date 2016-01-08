@@ -7,7 +7,11 @@ The PerfView executable is ultimately published at the [PerfView download Site](
 
 The PerfView users guide is part of the application itself, however you can get the .HTM file for it in the users guide in the soruce code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm), however it is a significantly better experience if you simply download Perfview and select the Help -> User's Guide menu item.  
 
-PerfView is designed to build in Visual Studio 2013 or later.  The solution file is src/PerfView/Perfview.sln.  Opening this file in Visual file and selecting the Build -> Build Solution, will build it.   It follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in the src/PerfView/bin/<BuildType>/PerfView.exe   You need only deploy this one EXE to use it.  
+#How to Build PerfView 
+PerfView is designed to build in Visual Studio 2013 or later.  
+
+  * The solution file is src/PerfView/Perfview.sln.  Opening this file in Visual file and selecting the Build -> Build Solution, will build it.   It follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in the src/PerfView/bin/<BuildType>/PerfView.exe   You need only deploy this one EXE to use it.  
+  * The solution consists of 11 projects, representing support DLLs are the main EXE.   To run PerfVIew in the debugger (F5) you need to make sure that the 'Startup Project' is set to the 'PerfVIew' project so that it launches the main EXE.   If the PerfView project is not bold, right click on the PerfView project in the 'Solution  Explorer (on right) and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.   (it is annoying that this is not part of the .sln file...).  
 
 The code is broken in several main sections:
   * TraceEvent - Library that understands how to decode Event Tracing for Windows (ETW) which is used to actually collect the data for many investgations
