@@ -1104,7 +1104,15 @@ namespace Microsoft.Diagnostics.Tracing
             string[] payloadNames = PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
-                XmlAttrib(sb, payloadNames[i], PayloadString(i, formatProvider));
+                string payloadName = payloadNames[i];
+
+                // XML does not allow you to repeat attributes, so we need change the name if that happens.   
+                // Note that this is not perfect, but avoids the likley cases
+                if (payloadName == "ProviderName" || payloadName == "FormattedMessage" || payloadName == "MSec" ||
+                    payloadName == "PID" || payloadName == "PName" || payloadName == "TID" || payloadName == "ActivityID")
+                    payloadName = "_" + payloadName;
+
+                XmlAttrib(sb, payloadName, PayloadString(i, formatProvider));
             }
             sb.Append("/>");
             return sb;
@@ -1116,7 +1124,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public string Dump(bool includePrettyPrint = false, bool truncateDump = false)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(); 
             Prefix(sb);
             sb.AppendLine().Append(" ");
             XmlAttrib(sb, "TimeStamp", TimeStamp.ToString("MM/dd/yy HH:mm:ss.ffffff"));
