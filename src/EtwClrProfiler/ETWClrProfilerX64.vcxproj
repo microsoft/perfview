@@ -47,7 +47,6 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(VisualStudioVersion)'=='14.0'">
     <PlatformToolset>v140</PlatformToolset>
     <PlatformToolsetVersion>v140</PlatformToolsetVersion>
