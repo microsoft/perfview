@@ -1099,6 +1099,10 @@ ProcessCollectedData()
 		if [ -f $mapFile ]
 		then
 			echo "Saving $mapFile"
+
+			# Change permissions on the file before saving, as perf will need to access the file later
+			# in this script when running perf script.
+			chown root $mapFile
 			cp $mapFile .
 		else
 			RedText
@@ -1157,6 +1161,15 @@ ProcessCollectedData()
 	done
 
 	WriteStatus "END: Save Symbols"
+
+	WriteStatus "START: Export perf trace."
+
+	# Merge sched_stat and sched_switch events.
+	mergedFile="perf.data.merged"
+	$perfcmd inject -v -s -i perf.data -o $mergedFile
+	$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.dump
+
+	WriteStatus "END: Export perf trace."
 	
 	WriteStatus "START: Compress data."
 	
@@ -1257,7 +1270,7 @@ BuildPerfRecordArgs()
 	# Enable context switches.
 	if [ $collect_threadTime -eq 1 ]
 	then
-		eventsToCollect=( "${eventsToCollect[@]}" "context-switches" )
+		eventsToCollect=( "${eventsToCollect[@]}" "sched:sched_stat_sleep" "sched:sched_switch" "sched:sched_process_exit" )
 	fi
 
 	# Build up the set of events.
