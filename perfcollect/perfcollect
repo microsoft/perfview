@@ -1165,9 +1165,16 @@ ProcessCollectedData()
 	WriteStatus "START: Export perf trace."
 
 	# Merge sched_stat and sched_switch events.
+	outputDumpFile="perf.data.dump"
 	mergedFile="perf.data.merged"
 	$perfcmd inject -v -s -i perf.data -o $mergedFile
-	$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.dump
+	$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+
+	# If the dump file is zero length, try to collect without the period field, which was added recently.
+	if [ ! -s $outputDumpFile ]
+	then
+		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile
+	fi
 
 	WriteStatus "END: Export perf trace."
 	
