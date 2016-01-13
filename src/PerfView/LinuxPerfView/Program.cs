@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using LinuxPerfView.LinuxTraceEvent;
+using LinuxEvent.LinuxTraceEvent;
 
-namespace LinuxPerfView
+namespace LinuxEvent
 {
 	public class Program
 	{
@@ -21,10 +21,10 @@ namespace LinuxPerfView
 		{
 			XmlWriterSettings settings = new XmlWriterSettings();
 			settings.Indent = true;
-			settings.IndentChars = "    ";
+			settings.IndentChars = " ";
 			//settings.NewLineOnAttributes = true;
 
-			using (XmlWriter writer = XmlWriter.Create(@"C:\Users\t-lufern\Desktop\Luca\dev\test.xml", settings))
+			using (XmlWriter writer = XmlWriter.Create(@"C:\Users\t-lufern\Documents\data.perfView.xml", settings))
 			{
 				writer.WriteStartElement("StackWindow");
 				writer.WriteStartElement("StackSource");
@@ -32,9 +32,6 @@ namespace LinuxPerfView
 				// Frames
 				WriteElementCount(writer, "Frames", parser.FrameID, delegate (int i)
 				{
-					// Frames start at 1 not at 0 for now...
-					if (i == 0) return;
-
 					writer.WriteStartElement("Frame");
 					writer.WriteAttributeString("ID", i.ToString());
 					writer.WriteString(parser.IDToFrame[i]);

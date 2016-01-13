@@ -6,12 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 using Validation;
 
-namespace LinuxPerfView.LinuxTraceEvent
+namespace LinuxEvent.LinuxTraceEvent
 {
 	internal class PerfScriptTraceEventParser
 	{
 
-		internal int FrameID = 1;
+		internal int FrameID = 0;
 		internal int StackID = 0;
 		internal int SampleID = 0;
 
@@ -92,18 +92,22 @@ namespace LinuxPerfView.LinuxTraceEvent
 			int topStackID = this.StackID;
 
 			string line;
+			int previousFrame = -1;
 			while ((line = this.source.ReadLine()).Length != 0)
 			{
+
+				string address = line;
+
 				int frameID;
-				this.FrameToID.TryGetValue(line, out frameID);
-				if (frameID == 0)
+				if (!this.FrameToID.TryGetValue(address, out frameID))
 				{
 					frameID = this.FrameID++;
-					this.FrameToID.Add(line, frameID);
-					this.IDToFrame.Add(frameID, line);
+					this.FrameToID.Add(address, frameID);
+					this.IDToFrame.Add(frameID, address);
 				}
 
-				this.Stacks.Add(this.StackID++, new KeyValuePair<int, int>(frameID, 0));
+				this.Stacks.Add(this.StackID++, new KeyValuePair<int, int>(frameID, previousFrame));
+				previousFrame = frameID;
 			}
 
 			int sampleID = this.SampleID++;
