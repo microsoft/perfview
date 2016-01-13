@@ -474,7 +474,7 @@ namespace Stats
                         "<b>Background JIT compilation events are not being collected.</b>   If you are interested in seeing the operation of Background JIT\r\n" +
                         "Enabled the 'Background JIT' checkbox in the 'Advanced' section of the collection dialog when collecting the data." +
                         "See <A HREF=\"{0}#UnderstandingBackgroundJIT\">Guide to Background JIT</A> for more." +
-                        "</P>");
+                        "</P>", usersGuideFile);
                 }
             }
 

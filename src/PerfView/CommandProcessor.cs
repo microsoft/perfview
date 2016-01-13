@@ -966,7 +966,10 @@ namespace PerfView
                         // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
                         // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
                         using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
+                        {
+                            kernelRundownSession.BufferSizeMB = 256;    // Try to avoid lost events.  
                             kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
+                        }
                     }
                     kernelSession.Stop();
                 }

@@ -2562,34 +2562,36 @@ namespace PerfViewExtensibility
                 // Add callbacks for any EventSource Events to print them to the Text window
                 Action<TraceEvent> onAnyEvent = delegate(TraceEvent data)
                 {
-                    // TODO decide what the correct heuristic is.  
-                    // Currently I only do this for things that might be an EventSoruce 
-                    if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
-                        return;
-
-                    String str = data.TimeStamp.ToString("HH:mm:ss.fff ");
-                    str += data.EventName;
-                    str += "\\" + data.ProviderName + " ";
-                    for (int i = 0; i < data.PayloadNames.Length; i++)
+                    try
                     {
-                        var payload = data.PayloadNames[i];
-                        if (i != 0)
-                            str += ",";
-                        str += String.Format("{0}=\"{1}\"", payload, data.PayloadByName(payload));
-                    }
-
-                    if (App.CommandLineArgs.NoGui)
-                        App.CommandProcessor.LogFile.WriteLine("{0}", str);
-                    else
-                    {
-                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                        String str = data.TimeStamp.ToString("HH:mm:ss.fff ");
+                        str += data.EventName;
+                        str += "\\" + data.ProviderName + " ";
+                        for (int i = 0; i < data.PayloadNames.Length; i++)
                         {
+                            var payload = data.PayloadNames[i];
+                            if (i != 0)
+                                str += ",";
+                            str += String.Format("{0}=\"{1}\"", payload, data.PayloadByName(payload));
+                        }
+
+                        if (App.CommandLineArgs.NoGui)
+                            App.CommandProcessor.LogFile.WriteLine("{0}", str);
+                        else
+                        {
+                            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                            {
                             // This should be null because the BeginInvoke above came before this 
                             // and both are constrained to run in the same thread, so this has to
                             // be after it (and thus it is initialized).  
                             Debug.Assert(listenTextEditorWriter != null);
-                            listenTextEditorWriter.WriteLine("{0}", str);
-                        });
+                                listenTextEditorWriter.WriteLine("{0}", str);
+                            });
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        App.CommandProcessor.LogFile.WriteLine("Error: Exception during event processing of event {0}: {1}", data.EventName, e.Message);
                     }
                 };
 
