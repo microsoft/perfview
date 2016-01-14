@@ -54,7 +54,7 @@ namespace LinuxEvent
 					writer.WriteStartElement("Sample");
 					writer.WriteAttributeString("ID", i.ToString());
 					writer.WriteAttributeString("Time", string.Format("{0:0.000}", parser.Samples[i].Value));
-					writer.WriteAttributeString("SampleID", parser.Samples[i].Key.ToString());
+					writer.WriteAttributeString("StackID", parser.Samples[i].Key.ToString());
 					writer.WriteEndElement();
 
 				});

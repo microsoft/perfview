@@ -8,6 +8,7 @@ using Validation;
 
 namespace LinuxEvent.LinuxTraceEvent
 {
+
 	internal class PerfScriptTraceEventParser
 	{
 
@@ -89,31 +90,36 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private int GetSampleForEvent(double time)
 		{
-			int topStackID = this.StackID;
-
-			string line;
-			int previousFrame = -1;
-			while ((line = this.source.ReadLine()).Length != 0)
-			{
-
-				string address = line;
-
-				int frameID;
-				if (!this.FrameToID.TryGetValue(address, out frameID))
-				{
-					frameID = this.FrameID++;
-					this.FrameToID.Add(address, frameID);
-					this.IDToFrame.Add(frameID, address);
-				}
-
-				this.Stacks.Add(this.StackID++, new KeyValuePair<int, int>(frameID, previousFrame));
-				previousFrame = frameID;
-			}
+			int startStack = this.StackID;
+			this.DoStackTrace(0, startStack);
 
 			int sampleID = this.SampleID++;
-			this.Samples.Add(sampleID, new KeyValuePair<int, double>(topStackID, time));
-
+			this.Samples.Add(sampleID, new KeyValuePair<int, double>(this.StackID - 1, time));
 			return sampleID;
+		}
+
+		private int DoStackTrace(int offset, int currentStack)
+		{
+			string line;
+			if ((line = this.source.ReadLine()).Length == 0) return offset - 1;
+
+			int frameID;
+			string address = line.Trim();
+			if (!this.FrameToID.TryGetValue(address, out frameID))
+			{
+				frameID = this.FrameID++;
+				this.FrameToID.Add(address, frameID);
+				this.IDToFrame.Add(frameID, address);
+			}
+
+			int startID = this.DoStackTrace(offset + 1, currentStack);
+
+			int stackID = this.StackID++;
+			int deltaStack = startID - (offset + 1);
+
+			this.Stacks.Add(stackID, new KeyValuePair<int, int>(frameID, deltaStack  == -1 ? deltaStack : deltaStack + currentStack));
+
+			return startID;
 		}
 
 
