@@ -12,19 +12,19 @@ namespace LinuxEvent
 	{
 		public static void Main(string[] args)
 		{
-			PerfScriptTraceEventParser parser = new PerfScriptTraceEventParser(@"C:\Users\t-lufern\Desktop\Luca\dev\perf.data.dump");
+			PerfScriptTraceEventParser parser = new PerfScriptTraceEventParser(args[0]);
 			parser.Parse();
-			Program.TranslateToPerfViewXml(parser);
+			Program.TranslateToPerfViewXml(args[0], parser);
 		}
 
-		private static void TranslateToPerfViewXml(PerfScriptTraceEventParser parser)
+		private static void TranslateToPerfViewXml(string filename, PerfScriptTraceEventParser parser)
 		{
 			XmlWriterSettings settings = new XmlWriterSettings();
 			settings.Indent = true;
 			settings.IndentChars = " ";
 			//settings.NewLineOnAttributes = true;
 
-			using (XmlWriter writer = XmlWriter.Create(@"C:\Users\t-lufern\Documents\data.perfView.xml", settings))
+			using (XmlWriter writer = XmlWriter.Create(filename+ ".perfView.xml", settings))
 			{
 				writer.WriteStartElement("StackWindow");
 				writer.WriteStartElement("StackSource");

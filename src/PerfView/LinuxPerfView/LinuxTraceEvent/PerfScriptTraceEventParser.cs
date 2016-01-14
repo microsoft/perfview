@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClrProfiler;
 using Validation;
 
 namespace LinuxEvent.LinuxTraceEvent
@@ -32,7 +33,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.Samples = new Dictionary<int, KeyValuePair<int, double>>();
 
 			this.events = new List<LinuxEvent>();
-			this.source = File.OpenText(sourcePath);
+			this.source = new FastStream(sourcePath);
 			this.Parse();
 		}
 
@@ -49,7 +50,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			string line = string.Empty;
 
-			while (this.source.Peek() != -1)
+			while (!this.source.EndOfStream)
 			{
 
 				while ((line = this.source.ReadLine()).Length == 0) ;
@@ -122,9 +123,22 @@ namespace LinuxEvent.LinuxTraceEvent
 			return startID;
 		}
 
-
-
-		private TextReader source;
+		private FastStream source;
 		private List<LinuxEvent> events;
+	}
+
+	internal static class FastStreamExtension
+	{
+		internal static string ReadLine(this FastStream stream)
+		{
+			StringBuilder sb = new StringBuilder();
+			char next;
+			while ((next = (char)stream.ReadChar()) != '\n' && !stream.EndOfStream)
+			{
+				sb.Append(next);
+			}
+
+			return sb.ToString();
+		}
 	}
 }
