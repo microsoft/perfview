@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClrProfiler;
 using Validation;
@@ -34,58 +35,96 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			this.events = new List<LinuxEvent>();
 			this.source = new FastStream(sourcePath);
-			this.Parse();
 		}
 
-		internal void Parse()
+		internal void Parse(string regexFilter)
 		{
-			foreach (LinuxEvent linuxEvent in this.NextEvent())
+			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
+			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
 			{
-				this.events.Add(linuxEvent);
+				if (linuxEvent != null)
+				{
+					this.events.Add(linuxEvent);
+				}
 			}
 		}
 
-		private IEnumerable<LinuxEvent> NextEvent()
+		private IEnumerable<LinuxEvent> NextEvent(Regex regex)
 		{
 
 			string line = string.Empty;
 
-			while (!this.source.EndOfStream)
+			while (true)
 			{
-
-				while ((line = this.source.ReadLine()).Length == 0) ;
-
-				string[] fullHeader = line.Split(' ', '/');
-
-				List<string> header = new List<string>();
-
-				foreach (string s in fullHeader)
+				if (this.source.EndOfStream)
 				{
-					if (s.Length != 0)
-					{
-						header.Add(s);
-					}
+					break;
 				}
 
-				string comm = header[0];
+				StringBuilder sb = new StringBuilder();
 
-				int pid;
-				int.TryParse(header[1], out pid);
+				this.source.SkipWhiteSpace();
 
-				int tid;
-				int.TryParse(header[2], out tid);
+				// comm
+				this.source.ReadAsciiStringUpTo(' ', sb);
+				string comm = sb.ToString();
+				sb.Clear();
 
-				int cpu;
-				int.TryParse(header[3].Substring(1, header[3].Length - 2), out cpu);
+				// pid
+				this.source.SkipWhiteSpace();
+				int pid = this.source.ReadInt();
+				this.source.MoveNext();
 
+				//tid
+				int tid = this.source.ReadInt();
+
+				// cpu
+				this.source.SkipWhiteSpace();
+				this.source.MoveNext();
+				int cpu = this.source.ReadInt();
+				this.source.MoveNext();
+
+				// time
+				this.source.SkipWhiteSpace();
+				this.source.ReadAsciiStringUpTo(':', sb);
 				double time;
-				double.TryParse(header[4].Substring(0, header[4].Length - 2), out time);
+				double.TryParse(sb.ToString(), out time);
+				sb.Clear();
 
-				string eventName = header[5];
+				// time-attri
+				this.source.MoveNext();
+				this.source.SkipWhiteSpace();
+				int timeProp = this.source.ReadInt(); // for now we just move past it...
 
-				int id = this.GetSampleForEvent(time);
+				// event name
+				this.source.SkipWhiteSpace();
+				this.source.ReadAsciiStringUpTo(':', sb);
+				string eventName = sb.ToString();
+				sb.Clear();
 
-				yield return new LinuxEvent(comm, tid, pid, time, cpu, eventName, id);//, stackTrace);
+				// event props
+				this.source.ReadAsciiStringUpTo('\n', sb);
+				string eventProp = sb.ToString();
+				sb.Clear();
+
+				if (regex != null && !regex.IsMatch(eventName))
+				{
+					while (true)
+					{
+						this.source.MoveNext();
+						if ((this.source.Current == '\n' && this.source.Peek(1) == '\n') || this.source.EndOfStream)
+						{
+							break;
+						}
+					}
+
+					yield return null;
+				}
+				else
+				{
+					int id = this.GetSampleForEvent(time);
+					yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
+				}
 			}
 		}
 
@@ -118,7 +157,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			int stackID = this.StackID++;
 			int deltaStack = startID - (offset + 1);
 
-			this.Stacks.Add(stackID, new KeyValuePair<int, int>(frameID, deltaStack  == -1 ? deltaStack : deltaStack + currentStack));
+			this.Stacks.Add(stackID, new KeyValuePair<int, int>(frameID, deltaStack == -1 ? deltaStack : deltaStack + currentStack));
 
 			return startID;
 		}
@@ -132,8 +171,9 @@ namespace LinuxEvent.LinuxTraceEvent
 		internal static string ReadLine(this FastStream stream)
 		{
 			StringBuilder sb = new StringBuilder();
+			//sb.Append((char)stream.Current);
 			char next;
-			while ((next = (char)stream.ReadChar()) != '\n' && !stream.EndOfStream)
+			while (((next = (char)stream.ReadChar()) != '\n' && next != '\0') && !stream.EndOfStream)
 			{
 				sb.Append(next);
 			}
