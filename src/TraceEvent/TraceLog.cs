@@ -6519,15 +6519,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     if (ret == null && ilAssemblyName != null)
                     {
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
-                        // Look up the IL PDB needed and 
+                        // Look up the IL PDB needed
 
-                        // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
-                        if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (moduleFile.ManagedModule != null)
                         {
-                            TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                            SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
-                            ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                            // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
+                            if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
+                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
+                                ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                            }
                         }
+                        else
+                            reader.m_log.WriteLine("GetSourceLine: Could not find managed module for NGEN image {0}", moduleFile.FilePath);
+
                     }
 
                     // TODO FIX NOW, deal with this rather than simply warn. 
