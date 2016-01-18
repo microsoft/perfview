@@ -7747,10 +7747,42 @@
         </li>
         -->
         <li>
+            Version 1.8.21 1/18/16
+            <ul>
+                <li>
+                    Extended perfView.xml file format so that it can more easily consume 'ad hoc' creation of stacks.
+                    It still accepts the 'interned' scheme where you give IDs to each frame and stack and use those
+                    to create samples, but now you can specify the samples inline with the sample like this
+                    <ul>
+                        <li> &lt;StackWindow&gt; &lt;StackSource&gt; &lt;Samples&gt; </li>
+                        <li>
+                            &lt;Sample Time="10"&gt;
+                            <ul>
+                                <li>Executing Func for Sample 1</li>
+                                <li>Calling Func</li>
+                                <li>Main</li>
+                            </ul>
+                        <li>
+                            &lt;Sample Time="20"&gt;
+                            <ul>
+                                <li>Executing Func for Sample 1</li>
+                                <li>Calling Func</li>
+                                <li>Main</li>
+                            </ul>
+                        </li>
+                        <li> &lt;/Samples&gt; &lt;/StackSource&gt; &lt;/StackWindow&gt; </li>
+                    </ul>
+                    While this format is inefficient (you repeat many strings in many stacks), it is sometimes 
+                    convinient, and it is easy enough to support.   There are more details which I will blog about in 
+                    the near future.  
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.20 1/13/16
             <ul>
                 <li>
-                   Improved the robustness of the UserCommand 'Listen' command in the face of bad events.  
+                    Improved the robustness of the UserCommand 'Listen' command in the face of bad events.
                 </li>
             </ul>
         </li>
