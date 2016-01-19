@@ -239,6 +239,18 @@ namespace LinuxEvent.LinuxTraceEvent
 				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];	
 			}
 
+			if (actualModule[0] == '/' && actualModule.Length > 1)
+			{
+				for (int i = actualModule.Length - 1; i >= 0; i--)
+				{
+					if (actualModule[i] == '/')
+					{
+						actualModule = actualModule.Substring(i + 1);
+						break;
+					}
+				}
+			}
+
 			return new FrameInfo(address, actualModule, actualSymbol);
 		}
 
