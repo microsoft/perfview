@@ -12,7 +12,7 @@ namespace LinuxPerfView.Shared
 		internal static long ConcatIntegers(int left, int right)
 		{
 			Requires.Argument(right >= 0, nameof(right), "Must be positive");
-			return int.Parse(string.Format("{0}{1}", left, right));
+			return long.Parse(string.Format("{0}{1}", left, right));
 		}
 	}
 }

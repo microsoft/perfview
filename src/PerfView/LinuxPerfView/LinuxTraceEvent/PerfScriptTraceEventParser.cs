@@ -175,7 +175,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			StringBuilder sb = new StringBuilder();
 
 			this.source.SkipWhiteSpace();
-			this.source.ReadAsciiStringUpTo('\n', sb);
+			this.source.ReadAsciiStringUpTo(' ', sb);
 			string address = sb.ToString();
 			sb.Clear();
 
@@ -185,11 +185,12 @@ namespace LinuxEvent.LinuxTraceEvent
 			{
 				frameID = this.FrameID++;
 				this.FrameToID.Add(address, frameID);
-				this.IDToFrame.Add(frameID, new FrameInfo(address, "module", "symbol")); // this.ReadFrameInfo(address));
+				this.IDToFrame.Add(frameID, this.ReadFrameInfo(address));
 			}
 			else
 			{
 				this.source.SkipUpTo('\n'); // Skip until the end of the line...
+				//this.source.MoveNext();
 			}
 
 			FrameStack caller = this.DoStackTrace();
@@ -212,49 +213,55 @@ namespace LinuxEvent.LinuxTraceEvent
 		private FrameInfo ReadFrameInfo(string address)
 		{
 			this.source.SkipWhiteSpace();
+			var mp = this.source.MarkPosition();
 
 			StringBuilder sb = new StringBuilder();
 
-			var mp = this.source.MarkPosition();
-
 			this.source.ReadAsciiStringUpToLastOnLine('(', sb);
-			string symbol = sb.ToString();
+			string assumedSymbol = sb.ToString();
 			sb.Clear();
 
 			this.source.ReadAsciiStringUpTo('\n', sb);
-			this.source.SkipWhiteSpace();
-			string module = sb.ToString();
+			// this.source.SkipWhiteSpace();
+			string assumedModule = sb.ToString();
 			sb.Clear();
 
-			this.RemoveOutterBrackets(module);
+			assumedModule = this.RemoveOutterBrackets(assumedModule.Trim());
 
-			if (module.EndsWith(".map"))
+			string actualModule = assumedModule;
+			string actualSymbol = this.RemoveOutterBrackets(assumedSymbol.Trim());
+
+			if (assumedModule.EndsWith(".map"))
 			{
-				string[] moduleAndSymbol = this.GetModuleAndSymbol(symbol).Trim().Split(' ');
-				module = moduleAndSymbol[0];
-				symbol = moduleAndSymbol[moduleAndSymbol.Length - 1];
-			}
-			else
-			{
-				this.RemoveOutterBrackets(symbol);
+				string[] moduleSymbol = this.GetModuleAndSymbol(assumedSymbol, assumedModule);
+				actualModule = this.RemoveOutterBrackets(moduleSymbol[0]);
+				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];	
 			}
 
-			return new FrameInfo(address, module, symbol);
+			return new FrameInfo(address, actualModule, actualSymbol);
 		}
 
-		private string GetModuleAndSymbol(string symbol)
+		private string[] GetModuleAndSymbol(string assumedModule, string assumedSymbol)
 		{
-			int start_position = 0;
-			for (int i = symbol.Length - 1; i >= 0; i--)
+			string[] splits = assumedModule.Split(' ');
+
+			for (int i = 0; i < splits.Length; i++)
 			{
-				if (symbol[i] == '[')
+				string module = splits[i].Trim();
+				if (module.Length > 0 && module[0] == '[' && module[module.Length - 1] == ']')
 				{
-					start_position = i;
-					break;
+					string symbol = "";
+					for (int j = i + 1; j < splits.Length; j++)
+					{
+						symbol += splits[j] + ' ';
+					}
+
+					return new string[2] { module, symbol.Trim() };
 				}
 			}
 
-			return symbol.Substring(start_position);
+			// This is suppose to safely recover if for some reason the .map sequence doesn't have a noticeable module
+			return new string[2] { assumedModule, assumedSymbol };
 		}
 
 		private string RemoveOutterBrackets(string s)
@@ -341,7 +348,7 @@ namespace LinuxEvent.LinuxTraceEvent
 					mp = stream.MarkPosition();
 				}
 
-				buffer.Append(stream.Current);
+				buffer.Append((char)stream.Current);
 				stream.MoveNext();
 			}
 
