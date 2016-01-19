@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClrProfiler;
+using LinuxPerfView.Shared;
 using Validation;
 
 namespace LinuxEvent.LinuxTraceEvent
@@ -20,8 +21,9 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		// Optimized later to only have arrays of each of these types...
 		internal Dictionary<string, int> FrameToID; // Given a frame, the ID, used for frame look up
-		internal Dictionary<int, string> IDToFrame; // Given an ID, the frame, used for exporting to XML
-		internal Dictionary<int, KeyValuePair<int, int>> Stacks; // Stack ID -> Frame ID / Caller ID
+		private Dictionary<int, FrameInfo> IDToFrame; // Given an ID, the frame, used for exporting to XML
+		private Dictionary<int, FrameStack> Stacks; // Stack ID -> Frame ID / Caller ID
+		private Dictionary<long, FrameStack> FrameStacks;
 		internal Dictionary<int, KeyValuePair<int, double>> Samples; // Sample ID -> Stack ID / Time
 
 		internal PerfScriptTraceEventParser(string sourcePath)
@@ -29,8 +31,10 @@ namespace LinuxEvent.LinuxTraceEvent
 			Requires.NotNull(sourcePath, nameof(sourcePath));
 
 			this.FrameToID = new Dictionary<string, int>();
-			this.IDToFrame = new Dictionary<int, string>();
-			this.Stacks = new Dictionary<int, KeyValuePair<int, int>>();
+			this.IDToFrame = new Dictionary<int, FrameInfo>();
+			this.Stacks = new Dictionary<int, FrameStack>();
+			this.Stacks.Add(-1, new FrameStack(-1, -1, null));
+			this.FrameStacks = new Dictionary<long, FrameStack>();
 			this.Samples = new Dictionary<int, KeyValuePair<int, double>>();
 
 			this.events = new List<LinuxEvent>();
@@ -49,6 +53,21 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 		}
 
+		internal string GetFrameAt(int i)
+		{
+			return this.IDToFrame[i].Module + "!" + this.IDToFrame[i].Symbol;
+		}
+
+		internal int GetCallerAtStack(int i)
+		{
+			return this.Stacks[i].Caller.ID;
+		}
+
+		internal int GetFrameAtStack(int i)
+		{
+			return this.Stacks[i].FrameID;
+		}
+
 		private IEnumerable<LinuxEvent> NextEvent(Regex regex)
 		{
 
@@ -56,6 +75,9 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			while (true)
 			{
+
+				this.source.SkipWhiteSpace();
+
 				if (this.source.EndOfStream)
 				{
 					break;
@@ -63,10 +85,8 @@ namespace LinuxEvent.LinuxTraceEvent
 
 				StringBuilder sb = new StringBuilder();
 
-				this.source.SkipWhiteSpace();
-
 				// comm
-				this.source.ReadAsciiStringUpTo(' ', sb);
+				this.source.ReadAsciiStringUpToWhiteSpace(sb);
 				string comm = sb.ToString();
 				sb.Clear();
 
@@ -87,8 +107,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				// time
 				this.source.SkipWhiteSpace();
 				this.source.ReadAsciiStringUpTo(':', sb);
-				double time;
-				double.TryParse(sb.ToString(), out time);
+				double time = double.Parse(sb.ToString());
 				sb.Clear();
 
 				// time-attri
@@ -101,13 +120,18 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.source.ReadAsciiStringUpTo(':', sb);
 				string eventName = sb.ToString();
 				sb.Clear();
+				this.source.MoveNext();
 
 				// event props
 				this.source.ReadAsciiStringUpTo('\n', sb);
 				string eventProp = sb.ToString();
 				sb.Clear();
+				this.source.MoveNext();
 
-				if (regex != null && !regex.IsMatch(eventName))
+				int id = this.ReadStackTraceForEvent(time);
+				yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
+
+				/*if (regex != null && !regex.IsMatch(eventName))
 				{
 					while (true)
 					{
@@ -124,46 +148,157 @@ namespace LinuxEvent.LinuxTraceEvent
 				{
 					int id = this.GetSampleForEvent(time);
 					yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
-				}
+				}*/
 			}
 		}
 
-		private int GetSampleForEvent(double time)
+		private int ReadStackTraceForEvent(double time)
 		{
 			int startStack = this.StackID;
-			this.DoStackTrace(0, startStack);
+			this.DoStackTrace();
 
 			int sampleID = this.SampleID++;
 			this.Samples.Add(sampleID, new KeyValuePair<int, double>(this.StackID - 1, time));
 			return sampleID;
 		}
 
-		private int DoStackTrace(int offset, int currentStack)
+		private FrameStack DoStackTrace()
 		{
-			string line;
-			if ((line = this.source.ReadLine()).Length == 0) return offset - 1;
+			if ((this.source.Current == '\n' &&
+				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0') ||
+				 this.source.EndOfStream))
+			{
+				this.source.MoveNext();
+				return Stacks[-1]; // Returns the null caller
+			}
+
+			StringBuilder sb = new StringBuilder();
+
+			this.source.SkipWhiteSpace();
+			this.source.ReadAsciiStringUpTo('\n', sb);
+			string address = sb.ToString();
+			sb.Clear();
 
 			int frameID;
-			string address = line.Trim();
+
 			if (!this.FrameToID.TryGetValue(address, out frameID))
 			{
 				frameID = this.FrameID++;
 				this.FrameToID.Add(address, frameID);
-				this.IDToFrame.Add(frameID, address);
+				this.IDToFrame.Add(frameID, new FrameInfo(address, "module", "symbol")); // this.ReadFrameInfo(address));
+			}
+			else
+			{
+				this.source.SkipUpTo('\n'); // Skip until the end of the line...
 			}
 
-			int startID = this.DoStackTrace(offset + 1, currentStack);
+			FrameStack caller = this.DoStackTrace();
 
-			int stackID = this.StackID++;
-			int deltaStack = startID - (offset + 1);
+			long framestackid = Utils.ConcatIntegers(caller.ID, frameID);
+			FrameStack framestack;
+			if (!FrameStacks.TryGetValue(framestackid, out framestack))
+			{
+				framestack = new FrameStack(this.StackID++, frameID, Stacks[caller.ID]);
+				this.FrameStacks.Add(framestackid, framestack);
+				this.Stacks.Add(framestack.ID, framestack);
+			}
 
-			this.Stacks.Add(stackID, new KeyValuePair<int, int>(frameID, deltaStack == -1 ? deltaStack : deltaStack + currentStack));
-
-			return startID;
+			return framestack;
 		}
 
 		private FastStream source;
 		private List<LinuxEvent> events;
+
+		private FrameInfo ReadFrameInfo(string address)
+		{
+			this.source.SkipWhiteSpace();
+
+			StringBuilder sb = new StringBuilder();
+
+			var mp = this.source.MarkPosition();
+
+			this.source.ReadAsciiStringUpToLastOnLine('(', sb);
+			string symbol = sb.ToString();
+			sb.Clear();
+
+			this.source.ReadAsciiStringUpTo('\n', sb);
+			this.source.SkipWhiteSpace();
+			string module = sb.ToString();
+			sb.Clear();
+
+			this.RemoveOutterBrackets(module);
+
+			if (module.EndsWith(".map"))
+			{
+				string[] moduleAndSymbol = this.GetModuleAndSymbol(symbol).Trim().Split(' ');
+				module = moduleAndSymbol[0];
+				symbol = moduleAndSymbol[moduleAndSymbol.Length - 1];
+			}
+			else
+			{
+				this.RemoveOutterBrackets(symbol);
+			}
+
+			return new FrameInfo(address, module, symbol);
+		}
+
+		private string GetModuleAndSymbol(string symbol)
+		{
+			int start_position = 0;
+			for (int i = symbol.Length - 1; i >= 0; i--)
+			{
+				if (symbol[i] == '[')
+				{
+					start_position = i;
+					break;
+				}
+			}
+
+			return symbol.Substring(start_position);
+		}
+
+		private string RemoveOutterBrackets(string s)
+		{
+			if (s.Length < 1)
+			{
+				return s;
+			}
+			while ((s[0] == '(' && s[s.Length - 1] == ')')
+				|| (s[0] == '[' && s[s.Length - 1] == ']'))
+			{
+				s = s.Substring(1, s.Length - 2);
+			}
+
+			return s;
+		}
+
+		private class FrameInfo
+		{
+			internal string Address { get; }
+			internal string Module { get; }
+			internal string Symbol { get; }
+
+			internal FrameInfo(string address, string module, string symbol)
+			{
+				this.Address = address;
+				this.Module = module;
+				this.Symbol = symbol;
+			}
+		}
+
+		private class FrameStack
+		{
+			internal int ID { get; }
+			internal int FrameID { get; }
+			internal FrameStack Caller { get; }
+
+			internal FrameStack(int id, int frameid, FrameStack caller)
+			{
+				this.ID = id;
+				this.FrameID = frameid;
+				this.Caller = caller;
+			}
+		}
 	}
 
 	internal static class FastStreamExtension
@@ -171,7 +306,6 @@ namespace LinuxEvent.LinuxTraceEvent
 		internal static string ReadLine(this FastStream stream)
 		{
 			StringBuilder sb = new StringBuilder();
-			//sb.Append((char)stream.Current);
 			char next;
 			while (((next = (char)stream.ReadChar()) != '\n' && next != '\0') && !stream.EndOfStream)
 			{
@@ -179,6 +313,51 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 
 			return sb.ToString();
+		}
+
+		internal static void ReadBytesUpTo(this FastStream stream, char c, byte[] bytes, out int length)
+		{
+			int numbytes = 0;
+			while (stream.Current != c && numbytes < bytes.Length)
+			{
+				bytes[numbytes++] = stream.Current;
+				stream.MoveNext();
+			}
+
+			length = numbytes;
+		}
+
+		internal static void ReadAsciiStringUpToLastOnLine(this FastStream stream, char c, StringBuilder sb)
+		{
+			StringBuilder buffer = new StringBuilder();
+			FastStream.MarkedPosition mp = stream.MarkPosition();
+
+			while (stream.Current != '\n' && !stream.EndOfStream)
+			{
+				if (stream.Current == c)
+				{
+					sb.Append(buffer);
+					buffer.Clear();
+					mp = stream.MarkPosition();
+				}
+
+				buffer.Append(stream.Current);
+				stream.MoveNext();
+			}
+
+			stream.RestoreToMark(mp);
+		}
+
+		internal static void ReadAsciiStringUpToWhiteSpace(this FastStream stream, StringBuilder sb)
+		{
+			while (!char.IsWhiteSpace((char)stream.Current))
+			{
+				sb.Append((char)stream.Current);
+				if (!stream.MoveNext())
+				{
+					break;
+				}
+			}
 		}
 	}
 }

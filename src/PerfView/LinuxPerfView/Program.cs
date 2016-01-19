@@ -24,7 +24,7 @@ namespace LinuxEvent
 			settings.IndentChars = " ";
 			//settings.NewLineOnAttributes = true;
 
-			using (XmlWriter writer = XmlWriter.Create(filename+ ".perfView.xml", settings))
+			using (XmlWriter writer = XmlWriter.Create(filename + ".perfView.xml", settings))
 			{
 				writer.WriteStartElement("StackWindow");
 				writer.WriteStartElement("StackSource");
@@ -34,7 +34,7 @@ namespace LinuxEvent
 				{
 					writer.WriteStartElement("Frame");
 					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteString(parser.IDToFrame[i]);
+					writer.WriteString(parser.GetFrameAt(i));
 					writer.WriteEndElement();
 				});
 
@@ -43,8 +43,8 @@ namespace LinuxEvent
 				{
 					writer.WriteStartElement("Stack");
 					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteAttributeString("CallerID", parser.Stacks[i].Value.ToString());
-					writer.WriteAttributeString("FrameID", parser.Stacks[i].Key.ToString());
+					writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
+					writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
 					writer.WriteEndElement();
 				});
 
@@ -65,7 +65,7 @@ namespace LinuxEvent
 				writer.Flush();
 			}
 		}
-		
+
 		private static void WriteElementCount(XmlWriter writer, string section, int count, Action<int> perElement)
 		{
 			writer.WriteStartElement(section);
@@ -77,6 +77,6 @@ namespace LinuxEvent
 			}
 
 			writer.WriteEndElement();
-		} 
+		}
 	}
 }
