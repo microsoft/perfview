@@ -128,15 +128,17 @@ namespace LinuxEvent.LinuxTraceEvent
 				sb.Clear();
 				this.source.MoveNext();
 
-				int id = this.ReadStackTraceForEvent(time);
-				yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
+				// int id = this.ReadStackTraceForEvent(time);
+				// yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
 
-				/*if (regex != null && !regex.IsMatch(eventName))
+				if (regex != null && !regex.IsMatch(eventName))
 				{
 					while (true)
 					{
 						this.source.MoveNext();
-						if ((this.source.Current == '\n' && this.source.Peek(1) == '\n') || this.source.EndOfStream)
+						if ((this.source.Current == '\n' &&
+							(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == 0)) ||
+							 this.source.EndOfStream)
 						{
 							break;
 						}
@@ -146,9 +148,9 @@ namespace LinuxEvent.LinuxTraceEvent
 				}
 				else
 				{
-					int id = this.GetSampleForEvent(time);
+					int id = this.ReadStackTraceForEvent(time);
 					yield return new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, id);
-				}*/
+				}
 			}
 		}
 
@@ -189,8 +191,8 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 			else
 			{
-				this.source.SkipUpTo('\n'); // Skip until the end of the line...
-				//this.source.MoveNext();
+				// We don't care about this frame since we already have it stashed
+				this.source.SkipUpTo('\n');
 			}
 
 			FrameStack caller = this.DoStackTrace();
@@ -222,7 +224,6 @@ namespace LinuxEvent.LinuxTraceEvent
 			sb.Clear();
 
 			this.source.ReadAsciiStringUpTo('\n', sb);
-			// this.source.SkipWhiteSpace();
 			string assumedModule = sb.ToString();
 			sb.Clear();
 
