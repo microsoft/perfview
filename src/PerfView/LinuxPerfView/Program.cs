@@ -29,7 +29,7 @@ namespace LinuxEvent
 				writer.WriteStartElement("StackSource");
 
 				// Frames
-				WriteElementCount(writer, "Frames", parser.FrameID, delegate (int i)
+				WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
 				{
 					writer.WriteStartElement("Frame");
 					writer.WriteAttributeString("ID", i.ToString());
@@ -38,7 +38,7 @@ namespace LinuxEvent
 				});
 
 				// Stacks
-				WriteElementCount(writer, "Stacks", parser.StackID, delegate (int i)
+				WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
 				{
 					writer.WriteStartElement("Stack");
 					writer.WriteAttributeString("ID", i.ToString());
@@ -48,7 +48,7 @@ namespace LinuxEvent
 				});
 
 				// Samples
-				WriteElementCount(writer, "Samples", parser.SampleID, delegate (int i)
+				WriteElementCount(writer, "Samples", parser.SampleCount, delegate (int i)
 				{
 					writer.WriteStartElement("Sample");
 					writer.WriteAttributeString("ID", i.ToString());
