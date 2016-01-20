@@ -13,7 +13,7 @@ namespace LinuxEvent
 		public static void Main(string[] args)
 		{
 			PerfScriptTraceEventParser parser = new PerfScriptTraceEventParser(args[0]);
-			parser.Parse(regexFilter: args.Length > 1 ? args[1] : null);
+			parser.Parse(regexFilter: (args.Length > 1 ? args[1] : null), maxSamples: (args.Length > 2 ? int.Parse(args[2]) : 50000));
 			Program.TranslateToPerfViewXml(args[0], parser);
 		}
 
@@ -22,7 +22,6 @@ namespace LinuxEvent
 			XmlWriterSettings settings = new XmlWriterSettings();
 			settings.Indent = true;
 			settings.IndentChars = " ";
-			//settings.NewLineOnAttributes = true;
 
 			using (XmlWriter writer = XmlWriter.Create(filename + ".perfView.xml", settings))
 			{
@@ -53,8 +52,8 @@ namespace LinuxEvent
 				{
 					writer.WriteStartElement("Sample");
 					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteAttributeString("Time", string.Format("{0:0.000}", parser.Samples[i].Value));
-					writer.WriteAttributeString("StackID", parser.Samples[i].Key.ToString());
+					writer.WriteAttributeString("Time", string.Format("{0:0.000}", parser.GetTimeAtSample(i)));
+					writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
 					writer.WriteEndElement();
 
 				});

@@ -21,27 +21,27 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		// Optimized later to only have arrays of each of these types...
 		internal Dictionary<string, int> FrameToID; // Given a frame, the ID, used for frame look up
-		private Dictionary<int, FrameInfo> IDToFrame; // Given an ID, the frame, used for exporting to XML
+		private List<FrameInfo> IDToFrame; // Given an ID, the frame, used for exporting to XML
 		private Dictionary<int, FrameStack> Stacks; // Stack ID -> Frame ID / Caller ID
 		private Dictionary<long, FrameStack> FrameStacks;
-		internal Dictionary<int, KeyValuePair<int, double>> Samples; // Sample ID -> Stack ID / Time
+		private List<SampleInfo> Samples; // Sample ID -> Stack ID / Time
 
 		internal PerfScriptTraceEventParser(string sourcePath)
 		{
 			Requires.NotNull(sourcePath, nameof(sourcePath));
 
 			this.FrameToID = new Dictionary<string, int>();
-			this.IDToFrame = new Dictionary<int, FrameInfo>();
+			this.IDToFrame = new List<FrameInfo>();
 			this.Stacks = new Dictionary<int, FrameStack>();
 			this.Stacks.Add(-1, new FrameStack(-1, -1, null));
 			this.FrameStacks = new Dictionary<long, FrameStack>();
-			this.Samples = new Dictionary<int, KeyValuePair<int, double>>();
+			this.Samples = new List<SampleInfo>();
 
 			this.events = new List<LinuxEvent>();
 			this.source = new FastStream(sourcePath);
 		}
 
-		internal void Parse(string regexFilter)
+		internal void Parse(string regexFilter, int maxSamples)
 		{
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
@@ -49,6 +49,11 @@ namespace LinuxEvent.LinuxTraceEvent
 				if (linuxEvent != null)
 				{
 					this.events.Add(linuxEvent);
+				}
+
+				if (this.SampleID > maxSamples)
+				{
+					break;
 				}
 			}
 		}
@@ -66,6 +71,16 @@ namespace LinuxEvent.LinuxTraceEvent
 		internal int GetFrameAtStack(int i)
 		{
 			return this.Stacks[i].FrameID;
+		}
+
+		internal int GetStackAtSample(int i)
+		{
+			return this.Samples[i].TopStackID;
+		}
+
+		internal double GetTimeAtSample(int i)
+		{
+			return this.Samples[i].Time;
 		}
 
 		private IEnumerable<LinuxEvent> NextEvent(Regex regex)
@@ -160,7 +175,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.DoStackTrace();
 
 			int sampleID = this.SampleID++;
-			this.Samples.Add(sampleID, new KeyValuePair<int, double>(this.StackID - 1, time));
+			this.Samples.Add(new SampleInfo(this.StackID - 1, time));
 			return sampleID;
 		}
 
@@ -187,7 +202,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			{
 				frameID = this.FrameID++;
 				this.FrameToID.Add(address, frameID);
-				this.IDToFrame.Add(frameID, this.ReadFrameInfo(address));
+				this.IDToFrame.Add(this.ReadFrameInfo(address));
 			}
 			else
 			{
@@ -292,7 +307,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			return s;
 		}
 
-		private class FrameInfo
+		private struct FrameInfo
 		{
 			internal string Address { get; }
 			internal string Module { get; }
@@ -303,6 +318,18 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.Address = address;
 				this.Module = module;
 				this.Symbol = symbol;
+			}
+		}
+
+		private struct SampleInfo
+		{
+			internal int TopStackID { get; }
+			internal double Time { get; }
+
+			internal SampleInfo(int framestackid, double time)
+			{
+				this.TopStackID = framestackid;
+				this.Time = time;
 			}
 		}
 
