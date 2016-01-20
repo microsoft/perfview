@@ -81,7 +81,7 @@ namespace LinuxEvent.LinuxTraceEvent
 		/// <returns>An integer for the caller ID</returns>
 		internal int GetCallerAtStack(int i)
 		{
-			return this.Stacks[i].Caller.ID;
+			return this.Stacks[i].Caller.StackID;
 		}
 
 		/// <summary>
@@ -217,6 +217,10 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.source.MoveNext();
 
 				int frameCount;
+				int stackCount;
+
+				// TODO: I need to modularize this region somehow so I don't repeat so much code...
+				#region Repeatition
 
 				// We are at the end of the physical stack trace on sample on the trace, but we need to add two
 				//   extra stacks for convenience and display purposes
@@ -224,37 +228,40 @@ namespace LinuxEvent.LinuxTraceEvent
 				if (!this.Processes.TryGetValue(linuxEvent.ProcessID, out processNode))
 				{
 					frameCount = this.FrameCount++;
+					stackCount = this.StackCount++;
 
 					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.EventName);
 
 					this.IDFrame.Add(frameInfo);
 					this.FrameID.Add(frameInfo.DisplayName, frameCount);
 
-					processNode = new ProcessNode(linuxEvent.ProcessID, linuxEvent.EventName, frameCount, this.Stacks[-1]);
+					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, this.Stacks[-1]);
 					this.Processes.Add(linuxEvent.ProcessID, processNode);
 					
-					this.Stacks.Add(this.StackCount++, processNode);
+					this.Stacks.Add(stackCount, processNode);
 				}
 
-				// This might not be needed, but this is to make sure that when we look up the thread, we know
+				// The making of this ID might not be needed, but this is to make sure that when we look up the thread, we know
 				//   it belongs to a specific process
-				long processThreadID = Utils.ConcatIntegers(processNode.ID, linuxEvent.ThreadID);
+				long processThreadID = Utils.ConcatIntegers(processNode.StackID, linuxEvent.ThreadID);
 
 				ThreadNode threadNode;
 				if (!this.Threads.TryGetValue(processThreadID, out threadNode))
 				{
 					frameCount = this.FrameCount++;
+					stackCount = this.StackCount++;
 
 					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ThreadID, "Thread");
 
 					this.IDFrame.Add(frameInfo);
 					this.FrameID.Add(frameInfo.DisplayName, frameCount);
 
-					threadNode = new ThreadNode(linuxEvent.ThreadID, frameCount, processNode);
+					threadNode = new ThreadNode(stackCount, linuxEvent.ThreadID, frameCount, processNode);
 					this.Threads.Add(processThreadID, threadNode);
 
-					this.Stacks.Add(this.StackCount++, threadNode);
+					this.Stacks.Add(stackCount, threadNode);
 				}
+				#endregion;
 
 				return threadNode; // Returns the "thread" stack for the next node to connect
 			}
@@ -281,14 +288,14 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 
 			StackNode caller = this.DoStackTrace(linuxEvent);
-			long framestackid = Utils.ConcatIntegers(caller.ID, frameID);
+			long frameStackID = Utils.ConcatIntegers(caller.StackID, frameID);
 
 			FrameStack framestack;
-			if (!FrameStacks.TryGetValue(framestackid, out framestack))
+			if (!FrameStacks.TryGetValue(frameStackID, out framestack))
 			{
 				framestack = new FrameStack(this.StackCount++, frameID, caller);
-				this.FrameStacks.Add(framestackid, framestack);
-				this.Stacks.Add(framestack.ID, framestack);
+				this.FrameStacks.Add(frameStackID, framestack);
+				this.Stacks.Add(framestack.StackID, framestack);
 			}
 
 			return framestack;
@@ -434,11 +441,13 @@ namespace LinuxEvent.LinuxTraceEvent
 		private class ProcessNode : StackNode
 		{
 			internal string Name { get; }
+			internal int ID { get; }
 
-			internal ProcessNode(int id, string name, int frameID, StackNode invalidNode) :
-				base(StackKind.Process, id, frameID, invalidNode)
+			internal ProcessNode(int stackID, int id, string name, int frameID, StackNode invalidNode) :
+				base(StackKind.Process, stackID, frameID, invalidNode)
 			{
 				this.Name = name;
+				this.ID = id;
 			}
 		}
 
@@ -450,15 +459,18 @@ namespace LinuxEvent.LinuxTraceEvent
 			/// </summary>
 			internal ProcessNode Process { get; }
 
-			internal ThreadNode(int id, int frameID, ProcessNode process) : base(StackKind.Thread, id, frameID, process)
+			internal int ID { get; }
+
+			internal ThreadNode(int stackID, int id, int frameID, ProcessNode process) : base(StackKind.Thread, stackID, frameID, process)
 			{
 				this.Process = process;
+				this.ID = id;
 			}
 		}
 
 		private abstract class StackNode
 		{
-			internal int ID { get; }
+			internal int StackID { get; }
 			internal StackKind Kind { get; }
 			/// <summary>
 			/// Returns the next node on the stack
@@ -469,7 +481,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			internal StackNode(StackKind kind, int id, int frameID, StackNode caller)
 			{
-				this.ID = id;
+				this.StackID = id;
 				this.Kind = kind;
 				this.FrameID = frameID;
 				this.Caller = caller;
