@@ -38,6 +38,9 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private double CurrentTime { get; set; }
 
+		private bool startTimeSet = false;
+		private double StartTime { get; set; }
+
 		private bool TrackBlockedTime { get; set; }
 
 		internal PerfScriptTraceEventParser(string sourcePath)
@@ -106,6 +109,8 @@ namespace LinuxEvent.LinuxTraceEvent
 					break;
 				}
 			}
+
+			this.FlushBlockedThreads();
 		}
 
 		/// <summary>
@@ -170,7 +175,6 @@ namespace LinuxEvent.LinuxTraceEvent
 
 				if (this.source.EndOfStream)
 				{
-					this.FlushBlockedThreads();
 					break;
 				}
 
@@ -207,6 +211,11 @@ namespace LinuxEvent.LinuxTraceEvent
 				double time = double.Parse(sb.ToString());
 				sb.Clear();
 				this.CurrentTime = time;
+				if (!this.startTimeSet)
+				{
+					this.startTimeSet = true;
+					this.StartTime = time;
+				}
 
 				// Time Property
 				this.source.MoveNext();
@@ -257,7 +266,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				double period;
 				if (!this.ThreadTimes.TryGetValue(tid, out previousTime))
 				{
-					period = 0;
+					period = this.StartTime;
 				}
 				else
 				{
