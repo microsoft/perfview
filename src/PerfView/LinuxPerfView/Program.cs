@@ -13,7 +13,10 @@ namespace LinuxEvent
 		public static void Main(string[] args)
 		{
 			PerfScriptTraceEventParser parser = new PerfScriptTraceEventParser(args[0]);
-			parser.Parse(regexFilter: (args.Length > 1 ? args[1] : null), maxSamples: (args.Length > 2 ? int.Parse(args[2]) : 50000));
+			parser.Parse(
+				regexFilter: (args.Length > 1 ? args[1] : null),
+				maxSamples: (args.Length > 2 ? int.Parse(args[2]) : 50000),
+				blockedTime: true);
 			Program.TranslateToPerfViewXml(args[0], parser);
 		}
 

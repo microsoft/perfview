@@ -84,6 +84,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Shared\FastStreamExtension.cs" />
     <Compile Include="LinuxTraceEvent\LinuxEvent.cs" />
     <Compile Include="LinuxTraceEvent\PerfScriptProfilerSources.cs" />
     <Compile Include="LinuxTraceEvent\PerfScriptTraceEventParser.cs" />

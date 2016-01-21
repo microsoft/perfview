@@ -26,8 +26,10 @@ namespace LinuxEvent.LinuxTraceEvent
 		private Dictionary<long, FrameStack> FrameStacks;
 		private List<SampleInfo> Samples;
 
-		private Dictionary<int, ProcessNode> Processes;
-		private Dictionary<long, ThreadNode> Threads;
+		private Dictionary<int, ProcessNode> ProcessNodes;
+		private Dictionary<long, ThreadNode> ThreadNodes;
+
+		private Dictionary<int, ThreadInfo> ThreadStates;
 
 		internal PerfScriptTraceEventParser(string sourcePath)
 		{
@@ -43,11 +45,13 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.events = new List<LinuxEvent>();
 			this.source = new FastStream(sourcePath);
 
-			this.Processes = new Dictionary<int, ProcessNode>();
-			this.Threads = new Dictionary<long, ThreadNode>();
+			this.ProcessNodes = new Dictionary<int, ProcessNode>();
+			this.ThreadNodes = new Dictionary<long, ThreadNode>();
+
+			this.ThreadStates = new Dictionary<int, ThreadInfo>();
 		}
 
-		internal void Parse(string regexFilter, int maxSamples)
+		internal void Parse(string regexFilter, int maxSamples, bool blockedTime)
 		{
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
@@ -129,11 +133,17 @@ namespace LinuxEvent.LinuxTraceEvent
 					break;
 				}
 
+				EventKind eventKind = EventKind.General;
+
 				StringBuilder sb = new StringBuilder();
 
 				// comm
 				this.source.ReadAsciiStringUpToWhiteSpace(sb);
 				string comm = sb.ToString();
+				if (comm.Length > 0 && comm[0] == 0)
+				{
+					comm = comm.Substring(1, comm.Length - 1);
+				}
 				sb.Clear();
 
 				// pid
@@ -169,9 +179,29 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.source.MoveNext();
 
 				// event details
+
+				// I mark a position because this might be a schedule switch
+				var markedPosition = this.source.MarkPosition();
 				this.source.ReadAsciiStringUpTo('\n', sb);
 				string eventDetails = sb.ToString();
 				sb.Clear();
+
+				ScheduleSwitch scheduleSwitch = null;
+
+				if (eventDetails.Length >= ScheduledEvent.Name.Length &&
+					eventDetails.Substring(0, ScheduledEvent.Name.Length) == ScheduledEvent.Name)
+				{
+					// Since it's a schedule switch, it's easier to read the details through the stream rather than through
+					//   string manipulation, so I move back
+					this.source.RestoreToMark(markedPosition);
+
+					eventKind = EventKind.Scheduled;
+					scheduleSwitch = this.ReadScheduleSwitch();
+
+					this.source.SkipUpTo('\n');
+				}
+
+				// In any case, we end up reading up to a new line symbol, so we need to move past it.
 				this.source.MoveNext();
 
 				if (regex != null && !regex.IsMatch(eventName))
@@ -191,12 +221,77 @@ namespace LinuxEvent.LinuxTraceEvent
 				}
 				else
 				{
-					LinuxEvent linuxEvent =
-						new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, this.SampleCount++);
+					LinuxEvent linuxEvent;
+					switch (eventKind)
+					{
+						case EventKind.Scheduled:
+							{
+								linuxEvent =
+									new ScheduledEvent(comm, tid, pid, time, timeProp, cpu,
+									eventName, eventDetails, this.SampleCount++, scheduleSwitch);
+								break;
+							}
+						default:
+							{
+								linuxEvent =
+									new LinuxEvent(comm, tid, pid, time, timeProp, cpu,
+									eventName, eventDetails, this.SampleCount++);
+								break;
+							}
+					}
+
 					this.ReadStackTraceForEvent(linuxEvent);
 					yield return linuxEvent;
 				}
 			}
+		}
+
+		private ScheduleSwitch ReadScheduleSwitch()
+		{
+			StringBuilder sb = new StringBuilder();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			this.source.ReadAsciiStringUpTo(' ', sb);
+			string prevComm = sb.ToString();
+			sb.Clear();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			int prevTid = this.source.ReadInt();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			int prevPrio = this.source.ReadInt();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			char prevState = (char)this.source.Current;
+
+			this.source.MoveNext();
+			this.source.SkipUpTo('n'); // this is to bypass the ==>
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			this.source.ReadAsciiStringUpTo(' ', sb);
+			string nextComm = sb.ToString();
+			sb.Clear();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			int nextTid = this.source.ReadInt();
+
+			this.source.SkipUpTo('=');
+			this.source.MoveNext();
+
+			int nextPrio = this.source.ReadInt();
+
+			return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
 		}
 
 		private void ReadStackTraceForEvent(LinuxEvent linuxEvent)
@@ -225,19 +320,19 @@ namespace LinuxEvent.LinuxTraceEvent
 				// We are at the end of the physical stack trace on sample on the trace, but we need to add two
 				//   extra stacks for convenience and display purposes
 				ProcessNode processNode;
-				if (!this.Processes.TryGetValue(linuxEvent.ProcessID, out processNode))
+				if (!this.ProcessNodes.TryGetValue(linuxEvent.ProcessID, out processNode))
 				{
 					frameCount = this.FrameCount++;
 					stackCount = this.StackCount++;
 
-					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.EventName);
+					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.Command);
 
 					this.IDFrame.Add(frameInfo);
 					this.FrameID.Add(frameInfo.DisplayName, frameCount);
 
 					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, this.Stacks[-1]);
-					this.Processes.Add(linuxEvent.ProcessID, processNode);
-					
+					this.ProcessNodes.Add(linuxEvent.ProcessID, processNode);
+
 					this.Stacks.Add(stackCount, processNode);
 				}
 
@@ -246,7 +341,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				long processThreadID = Utils.ConcatIntegers(processNode.StackID, linuxEvent.ThreadID);
 
 				ThreadNode threadNode;
-				if (!this.Threads.TryGetValue(processThreadID, out threadNode))
+				if (!this.ThreadNodes.TryGetValue(processThreadID, out threadNode))
 				{
 					frameCount = this.FrameCount++;
 					stackCount = this.StackCount++;
@@ -257,7 +352,7 @@ namespace LinuxEvent.LinuxTraceEvent
 					this.FrameID.Add(frameInfo.DisplayName, frameCount);
 
 					threadNode = new ThreadNode(stackCount, linuxEvent.ThreadID, frameCount, processNode);
-					this.Threads.Add(processThreadID, threadNode);
+					this.ThreadNodes.Add(processThreadID, threadNode);
 
 					this.Stacks.Add(stackCount, threadNode);
 				}
@@ -384,6 +479,19 @@ namespace LinuxEvent.LinuxTraceEvent
 			return s;
 		}
 
+		private struct SampleInfo
+		{
+			internal int TopStackID { get; }
+			internal double Time { get; }
+
+			internal SampleInfo(int framestackid, double time)
+			{
+				this.TopStackID = framestackid;
+				this.Time = time;
+			}
+		}
+
+		#region FrameInfos
 		private struct StackFrame : FrameInfo
 		{
 			internal string Address { get; }
@@ -418,17 +526,9 @@ namespace LinuxEvent.LinuxTraceEvent
 			string DisplayName { get; }
 		}
 
-		private struct SampleInfo
-		{
-			internal int TopStackID { get; }
-			internal double Time { get; }
+		#endregion
 
-			internal SampleInfo(int framestackid, double time)
-			{
-				this.TopStackID = framestackid;
-				this.Time = time;
-			}
-		}
+		#region StackNodes
 
 		private class FrameStack : StackNode
 		{
@@ -494,65 +594,58 @@ namespace LinuxEvent.LinuxTraceEvent
 			Process,
 			Thread,
 		}
-	}
 
-	internal static class FastStreamExtension
-	{
-		internal static string ReadLine(this FastStream stream)
+		#endregion
+
+		private enum EventKind
 		{
-			StringBuilder sb = new StringBuilder();
-			char next;
-			while (((next = (char)stream.ReadChar()) != '\n' && next != '\0') && !stream.EndOfStream)
-			{
-				sb.Append(next);
-			}
-
-			return sb.ToString();
+			General,
+			Scheduled,
+			CPU,
 		}
 
-		internal static void ReadBytesUpTo(this FastStream stream, char c, byte[] bytes, out int length)
+		private enum ThreadState
 		{
-			int numbytes = 0;
-			while (stream.Current != c && numbytes < bytes.Length)
-			{
-				bytes[numbytes++] = stream.Current;
-				stream.MoveNext();
-			}
-
-			length = numbytes;
+			Blocked,
+			Unblocked,
 		}
 
-		internal static void ReadAsciiStringUpToLastOnLine(this FastStream stream, char c, StringBuilder sb)
+		private class ThreadInfo
 		{
-			StringBuilder buffer = new StringBuilder();
-			FastStream.MarkedPosition mp = stream.MarkPosition();
 
-			while (stream.Current != '\n' && !stream.EndOfStream)
+			internal int ID { get; }
+			internal ThreadState State { get; private set; }
+
+			internal double TimeStart { get; }
+
+			private double? timeEnd;
+			internal double TimeEnd
 			{
-				if (stream.Current == c)
+				get
 				{
-					sb.Append(buffer);
-					buffer.Clear();
-					mp = stream.MarkPosition();
-				}
-
-				buffer.Append((char)stream.Current);
-				stream.MoveNext();
-			}
-
-			stream.RestoreToMark(mp);
-		}
-
-		internal static void ReadAsciiStringUpToWhiteSpace(this FastStream stream, StringBuilder sb)
-		{
-			while (!char.IsWhiteSpace((char)stream.Current))
-			{
-				sb.Append((char)stream.Current);
-				if (!stream.MoveNext())
-				{
-					break;
+					return timeEnd == null ? -1 : (double)timeEnd;
 				}
 			}
+			internal double Period
+			{
+				get
+				{
+					return timeEnd == null ? -1 : this.TimeEnd - this.TimeStart;
+				}
+			}
+
+			internal ThreadInfo(int threadID)
+			{
+				this.ID = threadID;
+				this.State = ThreadState.Blocked;
+			}
+
+			internal void Unblock(double time)
+			{
+				this.timeEnd = time;
+				this.State = ThreadState.Unblocked;
+			}
 		}
+
 	}
 }
