@@ -32,6 +32,7 @@ namespace LinuxEvent.LinuxTraceEvent
 		private Dictionary<int, ThreadInfo> BlockedThreads;
 		private Dictionary<int, double> ThreadTimes;
 		private List<ThreadInfo> OmittedThreads;
+		private Dictionary<int, int> CPUThreadID;
 
 		private StackNode BlockedNode { get; set; }
 		private StackNode CPUNode { get; set; }
@@ -41,11 +42,13 @@ namespace LinuxEvent.LinuxTraceEvent
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
 
-		private bool TrackBlockedTime { get; set; }
+		private bool TrackBlockedTime { get; }
 
-		internal PerfScriptTraceEventParser(string sourcePath)
+		internal PerfScriptTraceEventParser(string sourcePath, bool analyzeBlockedTime)
 		{
 			Requires.NotNull(sourcePath, nameof(sourcePath));
+
+			this.TrackBlockedTime = analyzeBlockedTime;
 
 			this.FrameID = new Dictionary<string, int>();
 			this.IDFrame = new List<FrameInfo>();
@@ -60,9 +63,14 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.ProcessNodes = new Dictionary<int, ProcessNode>();
 			this.ThreadNodes = new Dictionary<long, ThreadNode>();
 
-			this.BlockedThreads = new Dictionary<int, ThreadInfo>();
-			this.OmittedThreads = new List<ThreadInfo>();
-			this.ThreadTimes = new Dictionary<int, double>();
+			if (this.TrackBlockedTime)
+			{
+				this.BlockedThreads = new Dictionary<int, ThreadInfo>();
+				this.OmittedThreads = new List<ThreadInfo>();
+				this.ThreadTimes = new Dictionary<int, double>();
+				this.CPUThreadID = new Dictionary<int, int>();
+				this.AddCPUAndBlockedFrames();
+			}
 		}
 
 		private void AddCPUAndBlockedFrames()
@@ -87,15 +95,8 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.Stacks.Add(stackCount, CPUNode);
 		}
 
-		internal void Parse(string regexFilter, int maxSamples, bool blockedTime)
+		internal void Parse(string regexFilter, int maxSamples)
 		{
-			this.TrackBlockedTime = blockedTime;
-
-			if (this.TrackBlockedTime)
-			{
-				this.AddCPUAndBlockedFrames();
-			}
-
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
 			{
@@ -253,7 +254,28 @@ namespace LinuxEvent.LinuxTraceEvent
 
 					if (this.TrackBlockedTime)
 					{
+						// The processor for this thing is not being used now...
+						this.CPUThreadID[cpu] = -1;
 						this.AnalyzeBlockedTime(scheduleSwitch, time);
+					}
+				}
+				else
+				{
+					if (this.TrackBlockedTime)
+					{
+						// Check if CPU was being used by something else
+						int threadID;
+						if (this.CPUThreadID.TryGetValue(cpu, out threadID) && threadID != -1 && threadID != tid)
+						{
+							ThreadInfo threadInfo;
+							if (this.BlockedThreads.TryGetValue(threadID, out threadInfo))
+							{
+								threadInfo.Unblock(time);
+								this.OmitUnblockedThread(threadInfo.ID);
+							}
+						}
+
+						this.CPUThreadID[cpu] = tid;
 					}
 				}
 
@@ -320,7 +342,8 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private void FlushBlockedThreads()
 		{
-			foreach (int key in this.BlockedThreads.Keys)
+			List<int> keys = this.BlockedThreads.Keys.ToList();
+			foreach (int key in keys)
 			{
 				ThreadInfo threadInfo = this.BlockedThreads[key];
 				threadInfo.Unblock(this.CurrentTime);
