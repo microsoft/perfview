@@ -341,13 +341,12 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			// Check if a thread has been blocked, if it has been blocked we unblock it, push out of the dictionary and
 			//   re-add a new one because (we assume) the thread can't be "double" blocked
-			if (this.BlockedThreads.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
+			if (!this.BlockedThreads.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
 			{
-				threadInfo.Unblock(time);
-				this.OmitUnblockedThread(threadInfo.ID);
+				this.BlockedThreads.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
 			}
 
-			this.BlockedThreads.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
+			
 		}
 
 		private void OmitUnblockedThread(int threadID)
