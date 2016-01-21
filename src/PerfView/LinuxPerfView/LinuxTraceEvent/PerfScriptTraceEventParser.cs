@@ -29,9 +29,14 @@ namespace LinuxEvent.LinuxTraceEvent
 		private Dictionary<int, ProcessNode> ProcessNodes;
 		private Dictionary<long, ThreadNode> ThreadNodes;
 
-		private Dictionary<int, ThreadInfo> ThreadStates;
+		private Dictionary<int, ThreadInfo> BlockedThreads;
 		private Dictionary<int, double> ThreadTimes;
 		private List<ThreadInfo> OmittedThreads;
+
+		private StackNode BlockedNode { get; set; }
+		private StackNode CPUNode { get; set; }
+
+		private double CurrentTime { get; set; }
 
 		private bool TrackBlockedTime { get; set; }
 
@@ -52,14 +57,41 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.ProcessNodes = new Dictionary<int, ProcessNode>();
 			this.ThreadNodes = new Dictionary<long, ThreadNode>();
 
-			this.ThreadStates = new Dictionary<int, ThreadInfo>();
+			this.BlockedThreads = new Dictionary<int, ThreadInfo>();
 			this.OmittedThreads = new List<ThreadInfo>();
 			this.ThreadTimes = new Dictionary<int, double>();
+		}
+
+		private void AddCPUAndBlockedFrames()
+		{
+			int frameCount = this.FrameCount++;
+			int stackCount = this.StackCount++;
+
+			this.FrameID.Add("Blocked", frameCount);
+			this.IDFrame.Add(new BlockedCPUFrame(frameCount, "Blocked"));
+
+			this.BlockedNode = new BlockedCPUNode(StackKind.Blocked, stackCount, frameCount, this.Stacks[-1]);
+			this.Stacks.Add(stackCount, BlockedNode);
+
+
+			frameCount = this.FrameCount++;
+			stackCount = this.StackCount++;
+
+			this.FrameID.Add("CPU", frameCount);
+			this.IDFrame.Add(new BlockedCPUFrame(frameCount, "CPU"));
+
+			this.CPUNode = new BlockedCPUNode(StackKind.CPU, stackCount, frameCount, this.Stacks[-1]);
+			this.Stacks.Add(stackCount, CPUNode);
 		}
 
 		internal void Parse(string regexFilter, int maxSamples, bool blockedTime)
 		{
 			this.TrackBlockedTime = blockedTime;
+
+			if (this.TrackBlockedTime)
+			{
+				this.AddCPUAndBlockedFrames();
+			}
 
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
@@ -138,6 +170,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 				if (this.source.EndOfStream)
 				{
+					this.FlushBlockedThreads();
 					break;
 				}
 
@@ -173,6 +206,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.source.ReadAsciiStringUpTo(':', sb);
 				double time = double.Parse(sb.ToString());
 				sb.Clear();
+				this.CurrentTime = time;
 
 				// Time Property
 				this.source.MoveNext();
@@ -275,12 +309,22 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 		}
 
+		private void FlushBlockedThreads()
+		{
+			foreach (int key in this.BlockedThreads.Keys)
+			{
+				ThreadInfo threadInfo = this.BlockedThreads[key];
+				threadInfo.Unblock(this.CurrentTime);
+				this.OmitUnblockedThread(threadInfo.ID);
+			}
+		}
+
 		private void AnalyzeBlockedTime(ScheduleSwitch scheduleSwitch, double time)
 		{
 			// Check if a thread has been unblocked, here if a thread has been unblocked but we
 			//   haven't seen it blocked, we'll just skip it and count threads like it as CPU (for now) TODO
 			ThreadInfo threadInfo;
-			if (this.ThreadStates.TryGetValue(scheduleSwitch.NextThreadID, out threadInfo))
+			if (this.BlockedThreads.TryGetValue(scheduleSwitch.NextThreadID, out threadInfo))
 			{
 				threadInfo.Unblock(time);
 				this.OmitUnblockedThread(threadInfo.ID);
@@ -288,21 +332,21 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			// Check if a thread has been blocked, if it has been blocked we unblock it, push out of the dictionary and
 			//   re-add a new one because (we assume) the thread can't be "double" blocked
-			if (this.ThreadStates.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
+			if (this.BlockedThreads.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
 			{
 				threadInfo.Unblock(time);
 				this.OmitUnblockedThread(threadInfo.ID);
 			}
 
-			this.ThreadStates.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
+			this.BlockedThreads.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
 		}
 
 		private void OmitUnblockedThread(int threadID)
 		{
 			// If for some reason the thread ID is not in the dictionary, then something clearly went wrong
 			//   so I'll let this method throw an exception
-			this.OmittedThreads.Add(this.ThreadStates[threadID]);
-			this.ThreadStates.Remove(threadID);
+			this.OmittedThreads.Add(this.BlockedThreads[threadID]);
+			this.BlockedThreads.Remove(threadID);
 		}
 
 		private ScheduleSwitch ReadScheduleSwitch()
@@ -359,6 +403,22 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.Samples.Add(new SampleInfo(this.StackCount - 1, linuxEvent.Time));
 		}
 
+		private StackNode GetTopCaller(int threadID)
+		{
+			if (!this.TrackBlockedTime)
+			{
+				return this.Stacks[-1];
+			}
+
+			ThreadInfo threadInfo;
+			if (this.BlockedThreads.TryGetValue(threadID, out threadInfo))
+			{
+				return BlockedNode;
+			}
+
+			return CPUNode;
+		}
+
 		private StackNode DoStackTrace(LinuxEvent linuxEvent)
 		{
 
@@ -388,7 +448,9 @@ namespace LinuxEvent.LinuxTraceEvent
 					this.IDFrame.Add(frameInfo);
 					this.FrameID.Add(frameInfo.DisplayName, frameCount);
 
-					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, this.Stacks[-1]);
+					StackNode topCaller = this.GetTopCaller(linuxEvent.ThreadID);
+
+					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, topCaller);
 					this.ProcessNodes.Add(linuxEvent.ProcessID, processNode);
 
 					this.Stacks.Add(stackCount, processNode);
@@ -579,6 +641,19 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 		}
 
+		private struct BlockedCPUFrame : FrameInfo
+		{
+			internal string Kind { get; }
+			internal int ID { get; }
+			public string DisplayName { get { return this.Kind; } }
+
+			internal BlockedCPUFrame(int id, string kind)
+			{
+				this.ID = id;
+				this.Kind = kind;
+			}
+		}
+
 		private interface FrameInfo
 		{
 			string DisplayName { get; }
@@ -592,6 +667,14 @@ namespace LinuxEvent.LinuxTraceEvent
 		{
 			internal FrameStack(int id, int frameID, StackNode caller) :
 				base(StackKind.FrameStack, id, frameID, caller)
+			{
+			}
+		}
+
+		private class BlockedCPUNode : StackNode
+		{
+			internal BlockedCPUNode(StackKind kind, int id, int frameID, StackNode caller) :
+				base(kind, id, frameID, caller)
 			{
 			}
 		}
@@ -651,6 +734,8 @@ namespace LinuxEvent.LinuxTraceEvent
 			FrameStack,
 			Process,
 			Thread,
+			Blocked,
+			CPU,
 		}
 
 		#endregion
