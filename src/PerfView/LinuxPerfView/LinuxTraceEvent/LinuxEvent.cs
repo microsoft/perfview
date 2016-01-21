@@ -14,9 +14,9 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		internal ScheduledEvent(
 			string comm, int tid, int pid,
-			double time, int timeProp, int cpu,
+			double time, double period, int timeProp, int cpu,
 			string eventName, string eventProp, int sampleID, ScheduleSwitch schedSwitch) :
-			base(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, sampleID)
+			base(comm, tid, pid, time, period, timeProp, cpu, eventName, eventProp, sampleID)
 		{
 			this.Switch = schedSwitch;
 		}
@@ -50,6 +50,7 @@ namespace LinuxEvent.LinuxTraceEvent
 		internal int ThreadID { get; }
 		internal int ProcessID { get; }
 		internal double Time { get; }
+		internal double Period { get; }
 		internal int TimeProperty { get; }
 		internal int Cpu { get; }
 		internal string EventName { get; }
@@ -58,13 +59,14 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		internal LinuxEvent(
 			string comm, int tid, int pid,
-			double time, int timeProp, int cpu,
+			double time, double period, int timeProp, int cpu,
 			string eventName, string eventProp, int sampleID)
 		{
 			this.Command = comm;
 			this.ThreadID = tid;
 			this.ProcessID = pid;
 			this.Time = time;
+			this.Period = period;
 			this.TimeProperty = timeProp;
 			this.Cpu = cpu;
 			this.EventName = eventName;

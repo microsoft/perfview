@@ -30,6 +30,10 @@ namespace LinuxEvent.LinuxTraceEvent
 		private Dictionary<long, ThreadNode> ThreadNodes;
 
 		private Dictionary<int, ThreadInfo> ThreadStates;
+		private Dictionary<int, double> ThreadTimes;
+		private List<ThreadInfo> OmittedThreads;
+
+		private bool TrackBlockedTime { get; set; }
 
 		internal PerfScriptTraceEventParser(string sourcePath)
 		{
@@ -49,10 +53,14 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.ThreadNodes = new Dictionary<long, ThreadNode>();
 
 			this.ThreadStates = new Dictionary<int, ThreadInfo>();
+			this.OmittedThreads = new List<ThreadInfo>();
+			this.ThreadTimes = new Dictionary<int, double>();
 		}
 
 		internal void Parse(string regexFilter, int maxSamples, bool blockedTime)
 		{
+			this.TrackBlockedTime = blockedTime;
+
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
 			{
@@ -146,41 +154,40 @@ namespace LinuxEvent.LinuxTraceEvent
 				}
 				sb.Clear();
 
-				// pid
+				// Process ID
 				this.source.SkipWhiteSpace();
 				int pid = this.source.ReadInt();
 				this.source.MoveNext();
 
-				//tid
+				// Thread ID
 				int tid = this.source.ReadInt();
 
-				// cpu
+				// CPU
 				this.source.SkipWhiteSpace();
 				this.source.MoveNext();
 				int cpu = this.source.ReadInt();
 				this.source.MoveNext();
 
-				// time
+				// Time
 				this.source.SkipWhiteSpace();
 				this.source.ReadAsciiStringUpTo(':', sb);
 				double time = double.Parse(sb.ToString());
 				sb.Clear();
 
-				// time-attri
+				// Time Property
 				this.source.MoveNext();
 				this.source.SkipWhiteSpace();
 				int timeProp = this.source.ReadInt(); // for now we just move past it...
 
-				// event name
+				// Event Name
 				this.source.SkipWhiteSpace();
 				this.source.ReadAsciiStringUpTo(':', sb);
 				string eventName = sb.ToString();
 				sb.Clear();
 				this.source.MoveNext();
 
-				// event details
-
-				// I mark a position because this might be a schedule switch
+				// Event Properties
+				// I mark a position here because I need to check what type of event this is without screwing up the stream
 				var markedPosition = this.source.MarkPosition();
 				this.source.ReadAsciiStringUpTo('\n', sb);
 				string eventDetails = sb.ToString();
@@ -199,11 +206,33 @@ namespace LinuxEvent.LinuxTraceEvent
 					scheduleSwitch = this.ReadScheduleSwitch();
 
 					this.source.SkipUpTo('\n');
+
+
+					if (this.TrackBlockedTime)
+					{
+						this.AnalyzeBlockedTime(scheduleSwitch, time);
+					}
 				}
 
 				// In any case, we end up reading up to a new line symbol, so we need to move past it.
 				this.source.MoveNext();
 
+
+				// Period Between last thread sample
+				double previousTime;
+				double period;
+				if (!this.ThreadTimes.TryGetValue(tid, out previousTime))
+				{
+					period = 0;
+				}
+				else
+				{
+					period = time - previousTime;
+				}
+				this.ThreadTimes[tid] = time;
+
+
+				// Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
 				if (regex != null && !regex.IsMatch(eventName))
 				{
 					while (true)
@@ -227,14 +256,14 @@ namespace LinuxEvent.LinuxTraceEvent
 						case EventKind.Scheduled:
 							{
 								linuxEvent =
-									new ScheduledEvent(comm, tid, pid, time, timeProp, cpu,
+									new ScheduledEvent(comm, tid, pid, time, period, timeProp, cpu,
 									eventName, eventDetails, this.SampleCount++, scheduleSwitch);
 								break;
 							}
 						default:
 							{
 								linuxEvent =
-									new LinuxEvent(comm, tid, pid, time, timeProp, cpu,
+									new LinuxEvent(comm, tid, pid, time, period, timeProp, cpu,
 									eventName, eventDetails, this.SampleCount++);
 								break;
 							}
@@ -244,6 +273,36 @@ namespace LinuxEvent.LinuxTraceEvent
 					yield return linuxEvent;
 				}
 			}
+		}
+
+		private void AnalyzeBlockedTime(ScheduleSwitch scheduleSwitch, double time)
+		{
+			// Check if a thread has been unblocked, here if a thread has been unblocked but we
+			//   haven't seen it blocked, we'll just skip it and count threads like it as CPU (for now) TODO
+			ThreadInfo threadInfo;
+			if (this.ThreadStates.TryGetValue(scheduleSwitch.NextThreadID, out threadInfo))
+			{
+				threadInfo.Unblock(time);
+				this.OmitUnblockedThread(threadInfo.ID);
+			}
+
+			// Check if a thread has been blocked, if it has been blocked we unblock it, push out of the dictionary and
+			//   re-add a new one because (we assume) the thread can't be "double" blocked
+			if (this.ThreadStates.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
+			{
+				threadInfo.Unblock(time);
+				this.OmitUnblockedThread(threadInfo.ID);
+			}
+
+			this.ThreadStates.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
+		}
+
+		private void OmitUnblockedThread(int threadID)
+		{
+			// If for some reason the thread ID is not in the dictionary, then something clearly went wrong
+			//   so I'll let this method throw an exception
+			this.OmittedThreads.Add(this.ThreadStates[threadID]);
+			this.ThreadStates.Remove(threadID);
 		}
 
 		private ScheduleSwitch ReadScheduleSwitch()
@@ -296,7 +355,6 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private void ReadStackTraceForEvent(LinuxEvent linuxEvent)
 		{
-			int startStack = this.StackCount;
 			this.DoStackTrace(linuxEvent);
 			this.Samples.Add(new SampleInfo(this.StackCount - 1, linuxEvent.Time));
 		}
