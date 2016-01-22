@@ -106,7 +106,7 @@ namespace LinuxEvent.LinuxTraceEvent
 		/// </summary>
 		/// <param name="i">The ID that holds the time in question.</param>
 		/// <returns>A double representing the time since execution in milliseconds.</returns>
-		public double GetTimeAtSample(int i)
+		public double GetTimeInSecondsAtSample(int i)
 		{
 			return this.Samples[i].Time;
 		}
