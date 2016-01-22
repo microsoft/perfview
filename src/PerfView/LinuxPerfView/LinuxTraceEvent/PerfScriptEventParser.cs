@@ -146,7 +146,6 @@ namespace LinuxEvent.LinuxTraceEvent
 		private int frameCount = 0;
 		private int stackCount = 0;
 		private int sampleCount = 0;
-
 		#endregion
 
 		#region Important Methods
@@ -478,17 +477,27 @@ namespace LinuxEvent.LinuxTraceEvent
 			string address = sb.ToString();
 			sb.Clear();
 
+			var beforeSignature = this.source.MarkPosition();
+
 			int frameID;
 
-			if (!this.FrameID.TryGetValue(address, out frameID))
+			this.source.MoveNext();
+			this.source.ReadAsciiStringUpTo('\n', sb);
+			string signature = sb.ToString();
+			sb.Clear();
+
+			if (!this.FrameID.TryGetValue(signature, out frameID))
 			{
+				// If the frame signature is not in the dictionary, we need to go back 
+				//   and actually parse it.
+				this.source.RestoreToMark(beforeSignature);
 				frameID = this.frameCount++;
-				this.FrameID.Add(address, frameID);
+				this.FrameID.Add(signature, frameID);
 				this.IDFrame.Add(this.ReadFrameInfo(address));
 			}
 			else
 			{
-				// We don't care about this frame since we already have it stashed
+				// We don't care about this frame since we already have it cached
 				this.source.SkipUpTo('\n');
 			}
 
@@ -505,7 +514,6 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			return framestack;
 		}
-
 		#endregion
 
 		#region Helpers
@@ -680,11 +688,9 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			return s;
 		}
-
 		#endregion
 
 		#region Classes
-
 		private enum EventKind
 		{
 			General,
@@ -751,11 +757,9 @@ namespace LinuxEvent.LinuxTraceEvent
 		{
 			string DisplayName { get; }
 		}
-
 		#endregion
 
 		#region StackNodes
-
 		private class FrameStack : StackNode
 		{
 			internal FrameStack(int id, int frameID, StackNode caller) :
@@ -826,7 +830,6 @@ namespace LinuxEvent.LinuxTraceEvent
 			Blocked,
 			CPU,
 		}
-
 		#endregion
 
 		#region BlockTime
@@ -873,9 +876,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.State = ThreadState.Unblocked;
 			}
 		}
-
 		#endregion
-
 		#endregion
 
 		#endregion
