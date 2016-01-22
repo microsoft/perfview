@@ -34,9 +34,15 @@ namespace LinuxEvent.LinuxTraceEvent
 		/// </summary>
 		/// <param name="regexFilter">Filters the samples through the event name.</param>
 		/// <param name="maxSamples">Truncates the number of samples.</param>
-		public void Parse(string regexFilter, int maxSamples)
+		public void Parse(string regexFilter, int maxSamples, bool testing=false)
 		{
 			this.Initialize();
+
+			if (testing)
+			{
+				this.source.MoveNext();
+				this.source.MoveNext();
+			}
 
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
@@ -165,11 +171,12 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.ProcessNodes = new Dictionary<int, ProcessNode>();
 			this.ThreadNodes = new Dictionary<long, ThreadNode>();
 
+			this.ThreadTimes = new Dictionary<int, double>();
+
 			if (this.TrackBlockedTime)
 			{
 				this.BlockedThreads = new Dictionary<int, ThreadInfo>();
 				this.OmittedThreads = new List<ThreadInfo>();
-				this.ThreadTimes = new Dictionary<int, double>();
 				this.CPUThreadID = new Dictionary<int, int>();
 				this.AddCPUAndBlockedFrames();
 			}
@@ -483,7 +490,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 			this.source.MoveNext();
 			this.source.ReadAsciiStringUpTo('\n', sb);
-			string signature = sb.ToString();
+			string signature = sb.ToString().Trim();
 			sb.Clear();
 
 			if (!this.FrameID.TryGetValue(signature, out frameID))
@@ -535,6 +542,8 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private void FlushBlockedThreads()
 		{
+			if (!this.TrackBlockedTime) return;
+
 			List<int> keys = this.BlockedThreads.Keys.ToList();
 			foreach (int key in keys)
 			{
