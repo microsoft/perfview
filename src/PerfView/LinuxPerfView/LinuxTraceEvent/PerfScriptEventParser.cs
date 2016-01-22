@@ -14,18 +14,26 @@ namespace LinuxEvent.LinuxTraceEvent
 
 	public class PerfScriptEventParser
 	{
+		/// <summary>
+		/// Gets the total number of frames parsed.
+		/// </summary>
 		public int FrameCount { get { return this.frameCount; } }
+
+		/// <summary>
+		/// Gets the total number of stacks created.
+		/// </summary>
 		public int StackCount { get { return this.stackCount; } }
+
+		/// <summary>
+		/// Gets the total number of samples created.
+		/// </summary>
 		public int SampleCount { get { return this.sampleCount; } }
 
-		public PerfScriptEventParser(string sourcePath, bool analyzeBlockedTime)
-		{
-			Requires.NotNull(sourcePath, nameof(sourcePath));
-
-			this.SourcePath = sourcePath;
-			this.TrackBlockedTime = analyzeBlockedTime;
-		}
-
+		/// <summary>
+		/// Creates a stream reader to parse the given source file into interning stacks.
+		/// </summary>
+		/// <param name="regexFilter">Filters the samples through the event name.</param>
+		/// <param name="maxSamples">Truncates the number of samples.</param>
 		public void Parse(string regexFilter, int maxSamples)
 		{
 			this.Initialize();
@@ -48,53 +56,61 @@ namespace LinuxEvent.LinuxTraceEvent
 		}
 
 		/// <summary>
-		/// Gets the string representation of the frame
+		/// Gets the string representation of the frame.
 		/// </summary>
-		/// <param name="i">The location of the frame in the array</param>
-		/// <returns>A string representing the frame in the form {module}!{symbol}</returns>
+		/// <param name="i">The location of the frame in the array.</param>
+		/// <returns>A string representing the frame in the form {module}!{symbol}.</returns>
 		public string GetFrameAt(int i)
 		{
 			return this.IDFrame[i].DisplayName;
 		}
 
 		/// <summary>
-		/// Gets the caller's ID at the given stack ID
+		/// Gets the caller's ID at the given stack ID.
 		/// </summary>
-		/// <param name="i">The stack ID where the caller ID in question is</param>
-		/// <returns>An integer for the caller ID</returns>
+		/// <param name="i">The stack ID where the caller ID in question is.</param>
+		/// <returns>An integer for the caller ID.</returns>
 		public int GetCallerAtStack(int i)
 		{
 			return this.Stacks[i].Caller.StackID;
 		}
 
 		/// <summary>
-		/// Gets the frame ID for the stack at the given ID
+		/// Gets the frame ID for the stack at the given ID.
 		/// </summary>
-		/// <param name="i">The ID of the stack with the frame ID in question</param>
-		/// <returns>The ID of the frame on the stack</returns>
+		/// <param name="i">The ID of the stack with the frame ID in question.</param>
+		/// <returns>The ID of the frame on the stack.</returns>
 		public int GetFrameAtStack(int i)
 		{
 			return this.Stacks[i].FrameID;
 		}
 
 		/// <summary>
-		/// Gets the stack at the given sample ID
+		/// Gets the stack at the given sample ID.
 		/// </summary>
-		/// <param name="i">The ID that holds the stack in question</param>
-		/// <returns>The stack ID on the sample</returns>
+		/// <param name="i">The ID that holds the stack in question.</param>
+		/// <returns>The stack ID on the sample.</returns>
 		public int GetStackAtSample(int i)
 		{
 			return this.Samples[i].TopStackID;
 		}
 
 		/// <summary>
-		/// Gets the time at the given sample ID
+		/// Gets the time at the given sample ID.
 		/// </summary>
-		/// <param name="i">The ID that holds the time in question</param>
-		/// <returns>A double representing the time since execution in milliseconds</returns>
+		/// <param name="i">The ID that holds the time in question.</param>
+		/// <returns>A double representing the time since execution in milliseconds.</returns>
 		public double GetTimeAtSample(int i)
 		{
 			return this.Samples[i].Time;
+		}
+
+		public PerfScriptEventParser(string sourcePath, bool analyzeBlockedTime)
+		{
+			Requires.NotNull(sourcePath, nameof(sourcePath));
+
+			this.SourcePath = sourcePath;
+			this.TrackBlockedTime = analyzeBlockedTime;
 		}
 
 		#region Private
