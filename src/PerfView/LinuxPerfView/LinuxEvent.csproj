@@ -86,8 +86,7 @@
   <ItemGroup>
     <Compile Include="Shared\FastStreamExtension.cs" />
     <Compile Include="LinuxTraceEvent\LinuxEvent.cs" />
-    <Compile Include="LinuxTraceEvent\PerfScriptProfilerSources.cs" />
-    <Compile Include="LinuxTraceEvent\PerfScriptTraceEventParser.cs" />
+    <Compile Include="LinuxTraceEvent\PerfScriptEventParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\Utils.cs" />

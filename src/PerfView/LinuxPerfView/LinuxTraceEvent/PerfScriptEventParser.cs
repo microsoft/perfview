@@ -12,12 +12,96 @@ using Validation;
 namespace LinuxEvent.LinuxTraceEvent
 {
 
-	internal class PerfScriptTraceEventParser
+	public class PerfScriptEventParser
 	{
+		public int FrameCount { get { return this.frameCount; } }
+		public int StackCount { get { return this.stackCount; } }
+		public int SampleCount { get { return this.sampleCount; } }
 
-		internal int FrameCount = 0;
-		internal int StackCount = 0;
-		internal int SampleCount = 0;
+		public PerfScriptEventParser(string sourcePath, bool analyzeBlockedTime)
+		{
+			Requires.NotNull(sourcePath, nameof(sourcePath));
+
+			this.SourcePath = sourcePath;
+			this.TrackBlockedTime = analyzeBlockedTime;
+		}
+
+		public void Parse(string regexFilter, int maxSamples)
+		{
+			this.Initialize();
+
+			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
+			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
+			{
+				if (linuxEvent != null)
+				{
+					this.events.Add(linuxEvent);
+				}
+
+				if (this.sampleCount > maxSamples)
+				{
+					break;
+				}
+			}
+
+			this.FlushBlockedThreads();
+		}
+
+		/// <summary>
+		/// Gets the string representation of the frame
+		/// </summary>
+		/// <param name="i">The location of the frame in the array</param>
+		/// <returns>A string representing the frame in the form {module}!{symbol}</returns>
+		public string GetFrameAt(int i)
+		{
+			return this.IDFrame[i].DisplayName;
+		}
+
+		/// <summary>
+		/// Gets the caller's ID at the given stack ID
+		/// </summary>
+		/// <param name="i">The stack ID where the caller ID in question is</param>
+		/// <returns>An integer for the caller ID</returns>
+		public int GetCallerAtStack(int i)
+		{
+			return this.Stacks[i].Caller.StackID;
+		}
+
+		/// <summary>
+		/// Gets the frame ID for the stack at the given ID
+		/// </summary>
+		/// <param name="i">The ID of the stack with the frame ID in question</param>
+		/// <returns>The ID of the frame on the stack</returns>
+		public int GetFrameAtStack(int i)
+		{
+			return this.Stacks[i].FrameID;
+		}
+
+		/// <summary>
+		/// Gets the stack at the given sample ID
+		/// </summary>
+		/// <param name="i">The ID that holds the stack in question</param>
+		/// <returns>The stack ID on the sample</returns>
+		public int GetStackAtSample(int i)
+		{
+			return this.Samples[i].TopStackID;
+		}
+
+		/// <summary>
+		/// Gets the time at the given sample ID
+		/// </summary>
+		/// <param name="i">The ID that holds the time in question</param>
+		/// <returns>A double representing the time since execution in milliseconds</returns>
+		public double GetTimeAtSample(int i)
+		{
+			return this.Samples[i].Time;
+		}
+
+		#region Private
+
+		#region Fields
+		private FastStream source;
+		private List<LinuxEvent> events;
 
 		// Optimized later to only have arrays of each of these types...
 		private Dictionary<string, int> FrameID;
@@ -38,17 +122,21 @@ namespace LinuxEvent.LinuxTraceEvent
 		private StackNode CPUNode { get; set; }
 
 		private double CurrentTime { get; set; }
-
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
-
 		private bool TrackBlockedTime { get; }
 
-		internal PerfScriptTraceEventParser(string sourcePath, bool analyzeBlockedTime)
-		{
-			Requires.NotNull(sourcePath, nameof(sourcePath));
+		private string SourcePath { get; }
+		private int frameCount = 0;
+		private int stackCount = 0;
+		private int sampleCount = 0;
 
-			this.TrackBlockedTime = analyzeBlockedTime;
+		#endregion
+
+		#region Important Methods
+		private void Initialize()
+		{
+			this.source = new FastStream(this.SourcePath);
 
 			this.FrameID = new Dictionary<string, int>();
 			this.IDFrame = new List<FrameInfo>();
@@ -58,7 +146,6 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.Samples = new List<SampleInfo>();
 
 			this.events = new List<LinuxEvent>();
-			this.source = new FastStream(sourcePath);
 
 			this.ProcessNodes = new Dictionary<int, ProcessNode>();
 			this.ThreadNodes = new Dictionary<long, ThreadNode>();
@@ -75,8 +162,8 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private void AddCPUAndBlockedFrames()
 		{
-			int frameCount = this.FrameCount++;
-			int stackCount = this.StackCount++;
+			int frameCount = this.frameCount++;
+			int stackCount = this.stackCount++;
 
 			this.FrameID.Add("Blocked", frameCount);
 			this.IDFrame.Add(new BlockedCPUFrame(frameCount, "Blocked"));
@@ -85,83 +172,14 @@ namespace LinuxEvent.LinuxTraceEvent
 			this.Stacks.Add(stackCount, BlockedNode);
 
 
-			frameCount = this.FrameCount++;
-			stackCount = this.StackCount++;
+			frameCount = this.frameCount++;
+			stackCount = this.stackCount++;
 
 			this.FrameID.Add("CPU", frameCount);
 			this.IDFrame.Add(new BlockedCPUFrame(frameCount, "CPU"));
 
 			this.CPUNode = new BlockedCPUNode(StackKind.CPU, stackCount, frameCount, this.Stacks[-1]);
 			this.Stacks.Add(stackCount, CPUNode);
-		}
-
-		internal void Parse(string regexFilter, int maxSamples)
-		{
-			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
-			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
-			{
-				if (linuxEvent != null)
-				{
-					this.events.Add(linuxEvent);
-				}
-
-				if (this.SampleCount > maxSamples)
-				{
-					break;
-				}
-			}
-
-			this.FlushBlockedThreads();
-		}
-
-		/// <summary>
-		/// Gets the string representation of the frame
-		/// </summary>
-		/// <param name="i">The location of the frame in the array</param>
-		/// <returns>A string representing the frame in the form {module}!{symbol}</returns>
-		internal string GetFrameAt(int i)
-		{
-			return this.IDFrame[i].DisplayName;
-		}
-
-		/// <summary>
-		/// Gets the caller's ID at the given stack ID
-		/// </summary>
-		/// <param name="i">The stack ID where the caller ID in question is</param>
-		/// <returns>An integer for the caller ID</returns>
-		internal int GetCallerAtStack(int i)
-		{
-			return this.Stacks[i].Caller.StackID;
-		}
-
-		/// <summary>
-		/// Gets the frame ID for the stack at the given ID
-		/// </summary>
-		/// <param name="i">The ID of the stack with the frame ID in question</param>
-		/// <returns>The ID of the frame on the stack</returns>
-		internal int GetFrameAtStack(int i)
-		{
-			return this.Stacks[i].FrameID;
-		}
-
-		/// <summary>
-		/// Gets the stack at the given sample ID
-		/// </summary>
-		/// <param name="i">The ID that holds the stack in question</param>
-		/// <returns>The stack ID on the sample</returns>
-		internal int GetStackAtSample(int i)
-		{
-			return this.Samples[i].TopStackID;
-		}
-
-		/// <summary>
-		/// Gets the time at the given sample ID
-		/// </summary>
-		/// <param name="i">The ID that holds the time in question</param>
-		/// <returns>A double representing the time since execution in milliseconds</returns>
-		internal double GetTimeAtSample(int i)
-		{
-			return this.Samples[i].Time;
 		}
 
 		private IEnumerable<LinuxEvent> NextEvent(Regex regex)
@@ -322,14 +340,14 @@ namespace LinuxEvent.LinuxTraceEvent
 							{
 								linuxEvent =
 									new ScheduledEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, this.SampleCount++, scheduleSwitch);
+									eventName, eventDetails, this.sampleCount++, scheduleSwitch);
 								break;
 							}
 						default:
 							{
 								linuxEvent =
 									new LinuxEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, this.SampleCount++);
+									eventName, eventDetails, this.sampleCount++);
 								break;
 							}
 					}
@@ -337,17 +355,6 @@ namespace LinuxEvent.LinuxTraceEvent
 					this.ReadStackTraceForEvent(linuxEvent);
 					yield return linuxEvent;
 				}
-			}
-		}
-
-		private void FlushBlockedThreads()
-		{
-			List<int> keys = this.BlockedThreads.Keys.ToList();
-			foreach (int key in keys)
-			{
-				ThreadInfo threadInfo = this.BlockedThreads[key];
-				threadInfo.Unblock(this.CurrentTime);
-				this.OmitUnblockedThread(threadInfo.ID);
 			}
 		}
 
@@ -366,10 +373,10 @@ namespace LinuxEvent.LinuxTraceEvent
 			//   we just throw it away
 			if (!this.BlockedThreads.TryGetValue(scheduleSwitch.PreviousThreadID, out threadInfo))
 			{
-				this.BlockedThreads.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID));
+				this.BlockedThreads.Add(scheduleSwitch.PreviousThreadID, new ThreadInfo(scheduleSwitch.PreviousThreadID, time));
 			}
 
-			
+
 		}
 
 		private void OmitUnblockedThread(int threadID)
@@ -378,6 +385,198 @@ namespace LinuxEvent.LinuxTraceEvent
 			//   so I'll let this method throw an exception
 			this.OmittedThreads.Add(this.BlockedThreads[threadID]);
 			this.BlockedThreads.Remove(threadID);
+		}
+
+		private void ReadStackTraceForEvent(LinuxEvent linuxEvent)
+		{
+			this.DoStackTrace(linuxEvent);
+			this.Samples.Add(new SampleInfo(this.stackCount - 1, linuxEvent.Time));
+		}
+
+		private StackNode DoStackTrace(LinuxEvent linuxEvent)
+		{
+
+			// This is the base case for the stack trace, when there are no more "real" frames (i.e. an empty line)
+			if ((this.source.Current == '\n' &&
+				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0') ||
+				 this.source.EndOfStream))
+			{
+				this.source.MoveNext();
+
+				int frameCount;
+				int stackCount;
+
+				// TODO: I need to modularize this region somehow so I don't repeat so much code...
+				#region Repeatition
+
+				// We are at the end of the physical stack trace on sample on the trace, but we need to add two
+				//   extra stacks for convenience and display purposes
+				ProcessNode processNode;
+				if (!this.ProcessNodes.TryGetValue(linuxEvent.ProcessID, out processNode))
+				{
+					frameCount = this.frameCount++;
+					stackCount = this.stackCount++;
+
+					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.Command);
+
+					this.IDFrame.Add(frameInfo);
+					this.FrameID.Add(frameInfo.DisplayName, frameCount);
+
+					StackNode topCaller = this.GetDeepestCaller(linuxEvent.ThreadID);
+
+					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, topCaller);
+					this.ProcessNodes.Add(linuxEvent.ProcessID, processNode);
+
+					this.Stacks.Add(stackCount, processNode);
+				}
+
+				// The making of this ID might not be needed, but this is to make sure that when we look up the thread, we know
+				//   it belongs to a specific process
+				long processThreadID = Utils.ConcatIntegers(processNode.StackID, linuxEvent.ThreadID);
+
+				ThreadNode threadNode;
+				if (!this.ThreadNodes.TryGetValue(processThreadID, out threadNode))
+				{
+					frameCount = this.frameCount++;
+					stackCount = this.stackCount++;
+
+					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ThreadID, "Thread");
+
+					this.IDFrame.Add(frameInfo);
+					this.FrameID.Add(frameInfo.DisplayName, frameCount);
+
+					threadNode = new ThreadNode(stackCount, linuxEvent.ThreadID, frameCount, processNode);
+					this.ThreadNodes.Add(processThreadID, threadNode);
+
+					this.Stacks.Add(stackCount, threadNode);
+				}
+				#endregion;
+
+				return threadNode; // Returns the "thread" stack for the next node to connect
+			}
+
+			StringBuilder sb = new StringBuilder();
+
+			this.source.SkipWhiteSpace();
+			this.source.ReadAsciiStringUpTo(' ', sb);
+			string address = sb.ToString();
+			sb.Clear();
+
+			int frameID;
+
+			if (!this.FrameID.TryGetValue(address, out frameID))
+			{
+				frameID = this.frameCount++;
+				this.FrameID.Add(address, frameID);
+				this.IDFrame.Add(this.ReadFrameInfo(address));
+			}
+			else
+			{
+				// We don't care about this frame since we already have it stashed
+				this.source.SkipUpTo('\n');
+			}
+
+			StackNode caller = this.DoStackTrace(linuxEvent);
+			long frameStackID = Utils.ConcatIntegers(caller.StackID, frameID);
+
+			FrameStack framestack;
+			if (!FrameStacks.TryGetValue(frameStackID, out framestack))
+			{
+				framestack = new FrameStack(this.stackCount++, frameID, caller);
+				this.FrameStacks.Add(frameStackID, framestack);
+				this.Stacks.Add(framestack.StackID, framestack);
+			}
+
+			return framestack;
+		}
+
+		#endregion
+
+		#region Helpers
+		private StackNode GetDeepestCaller(int threadID)
+		{
+			if (!this.TrackBlockedTime)
+			{
+				return this.Stacks[-1];
+			}
+
+			ThreadInfo threadInfo;
+			if (this.BlockedThreads.TryGetValue(threadID, out threadInfo))
+			{
+				return BlockedNode;
+			}
+
+			return CPUNode;
+		}
+
+		private void FlushBlockedThreads()
+		{
+			List<int> keys = this.BlockedThreads.Keys.ToList();
+			foreach (int key in keys)
+			{
+				ThreadInfo threadInfo = this.BlockedThreads[key];
+				threadInfo.Unblock(this.CurrentTime);
+				this.OmitUnblockedThread(threadInfo.ID);
+			}
+
+			this.OmittedThreads.Sort(new Comparison<ThreadInfo>(
+				delegate (ThreadInfo t1, ThreadInfo t2)
+				{
+					if (t1.TimeStart > t2.TimeStart)
+					{
+						return 1;
+					}
+					else if (t1.TimeStart < t2.TimeStart)
+					{
+						return -1;
+					}
+
+					return 0;
+				}));
+
+			return;
+		}
+
+		private StackFrame ReadFrameInfo(string address)
+		{
+			this.source.SkipWhiteSpace();
+			var mp = this.source.MarkPosition();
+
+			StringBuilder sb = new StringBuilder();
+
+			this.source.ReadAsciiStringUpToLastOnLine('(', sb);
+			string assumedSymbol = sb.ToString();
+			sb.Clear();
+
+			this.source.ReadAsciiStringUpTo('\n', sb);
+			string assumedModule = sb.ToString();
+			sb.Clear();
+
+			assumedModule = this.RemoveOutterBrackets(assumedModule.Trim());
+
+			string actualModule = assumedModule;
+			string actualSymbol = this.RemoveOutterBrackets(assumedSymbol.Trim());
+
+			if (assumedModule.EndsWith(".map"))
+			{
+				string[] moduleSymbol = this.GetModuleAndSymbol(assumedSymbol, assumedModule);
+				actualModule = this.RemoveOutterBrackets(moduleSymbol[0]);
+				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
+			}
+
+			if (actualModule[0] == '/' && actualModule.Length > 1)
+			{
+				for (int i = actualModule.Length - 1; i >= 0; i--)
+				{
+					if (actualModule[i] == '/')
+					{
+						actualModule = actualModule.Substring(i + 1);
+						break;
+					}
+				}
+			}
+
+			return new StackFrame(address, actualModule, actualSymbol);
 		}
 
 		private ScheduleSwitch ReadScheduleSwitch()
@@ -428,170 +627,6 @@ namespace LinuxEvent.LinuxTraceEvent
 			return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
 		}
 
-		private void ReadStackTraceForEvent(LinuxEvent linuxEvent)
-		{
-			this.DoStackTrace(linuxEvent);
-			this.Samples.Add(new SampleInfo(this.StackCount - 1, linuxEvent.Time));
-		}
-
-		private StackNode GetTopCaller(int threadID)
-		{
-			if (!this.TrackBlockedTime)
-			{
-				return this.Stacks[-1];
-			}
-
-			ThreadInfo threadInfo;
-			if (this.BlockedThreads.TryGetValue(threadID, out threadInfo))
-			{
-				return BlockedNode;
-			}
-
-			return CPUNode;
-		}
-
-		private StackNode DoStackTrace(LinuxEvent linuxEvent)
-		{
-
-			// This is the base case for the stack trace, when there are no more "real" frames (i.e. an empty line)
-			if ((this.source.Current == '\n' &&
-				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0') ||
-				 this.source.EndOfStream))
-			{
-				this.source.MoveNext();
-
-				int frameCount;
-				int stackCount;
-
-				// TODO: I need to modularize this region somehow so I don't repeat so much code...
-				#region Repeatition
-
-				// We are at the end of the physical stack trace on sample on the trace, but we need to add two
-				//   extra stacks for convenience and display purposes
-				ProcessNode processNode;
-				if (!this.ProcessNodes.TryGetValue(linuxEvent.ProcessID, out processNode))
-				{
-					frameCount = this.FrameCount++;
-					stackCount = this.StackCount++;
-
-					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.Command);
-
-					this.IDFrame.Add(frameInfo);
-					this.FrameID.Add(frameInfo.DisplayName, frameCount);
-
-					StackNode topCaller = this.GetTopCaller(linuxEvent.ThreadID);
-
-					processNode = new ProcessNode(stackCount, linuxEvent.ProcessID, linuxEvent.EventName, frameCount, topCaller);
-					this.ProcessNodes.Add(linuxEvent.ProcessID, processNode);
-
-					this.Stacks.Add(stackCount, processNode);
-				}
-
-				// The making of this ID might not be needed, but this is to make sure that when we look up the thread, we know
-				//   it belongs to a specific process
-				long processThreadID = Utils.ConcatIntegers(processNode.StackID, linuxEvent.ThreadID);
-
-				ThreadNode threadNode;
-				if (!this.ThreadNodes.TryGetValue(processThreadID, out threadNode))
-				{
-					frameCount = this.FrameCount++;
-					stackCount = this.StackCount++;
-
-					FrameInfo frameInfo = new ProcessThreadFrame(linuxEvent.ThreadID, "Thread");
-
-					this.IDFrame.Add(frameInfo);
-					this.FrameID.Add(frameInfo.DisplayName, frameCount);
-
-					threadNode = new ThreadNode(stackCount, linuxEvent.ThreadID, frameCount, processNode);
-					this.ThreadNodes.Add(processThreadID, threadNode);
-
-					this.Stacks.Add(stackCount, threadNode);
-				}
-				#endregion;
-
-				return threadNode; // Returns the "thread" stack for the next node to connect
-			}
-
-			StringBuilder sb = new StringBuilder();
-
-			this.source.SkipWhiteSpace();
-			this.source.ReadAsciiStringUpTo(' ', sb);
-			string address = sb.ToString();
-			sb.Clear();
-
-			int frameID;
-
-			if (!this.FrameID.TryGetValue(address, out frameID))
-			{
-				frameID = this.FrameCount++;
-				this.FrameID.Add(address, frameID);
-				this.IDFrame.Add(this.ReadFrameInfo(address));
-			}
-			else
-			{
-				// We don't care about this frame since we already have it stashed
-				this.source.SkipUpTo('\n');
-			}
-
-			StackNode caller = this.DoStackTrace(linuxEvent);
-			long frameStackID = Utils.ConcatIntegers(caller.StackID, frameID);
-
-			FrameStack framestack;
-			if (!FrameStacks.TryGetValue(frameStackID, out framestack))
-			{
-				framestack = new FrameStack(this.StackCount++, frameID, caller);
-				this.FrameStacks.Add(frameStackID, framestack);
-				this.Stacks.Add(framestack.StackID, framestack);
-			}
-
-			return framestack;
-		}
-
-		private FastStream source;
-		private List<LinuxEvent> events;
-
-		private StackFrame ReadFrameInfo(string address)
-		{
-			this.source.SkipWhiteSpace();
-			var mp = this.source.MarkPosition();
-
-			StringBuilder sb = new StringBuilder();
-
-			this.source.ReadAsciiStringUpToLastOnLine('(', sb);
-			string assumedSymbol = sb.ToString();
-			sb.Clear();
-
-			this.source.ReadAsciiStringUpTo('\n', sb);
-			string assumedModule = sb.ToString();
-			sb.Clear();
-
-			assumedModule = this.RemoveOutterBrackets(assumedModule.Trim());
-
-			string actualModule = assumedModule;
-			string actualSymbol = this.RemoveOutterBrackets(assumedSymbol.Trim());
-
-			if (assumedModule.EndsWith(".map"))
-			{
-				string[] moduleSymbol = this.GetModuleAndSymbol(assumedSymbol, assumedModule);
-				actualModule = this.RemoveOutterBrackets(moduleSymbol[0]);
-				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
-			}
-
-			if (actualModule[0] == '/' && actualModule.Length > 1)
-			{
-				for (int i = actualModule.Length - 1; i >= 0; i--)
-				{
-					if (actualModule[i] == '/')
-					{
-						actualModule = actualModule.Substring(i + 1);
-						break;
-					}
-				}
-			}
-
-			return new StackFrame(address, actualModule, actualSymbol);
-		}
-
 		private string[] GetModuleAndSymbol(string assumedModule, string assumedSymbol)
 		{
 			string[] splits = assumedModule.Split(' ');
@@ -628,6 +663,17 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 
 			return s;
+		}
+
+		#endregion
+
+		#region Classes
+
+		private enum EventKind
+		{
+			General,
+			Scheduled,
+			CPU,
 		}
 
 		private struct SampleInfo
@@ -725,10 +771,6 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private class ThreadNode : StackNode
 		{
-			/// <summary>
-			/// Returns the same thing as Next but is automatically a ProcessStack
-			/// instead of a StackNode
-			/// </summary>
 			internal ProcessNode Process { get; }
 
 			internal int ID { get; }
@@ -771,13 +813,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		#endregion
 
-		private enum EventKind
-		{
-			General,
-			Scheduled,
-			CPU,
-		}
-
+		#region BlockTime
 		private enum ThreadState
 		{
 			Blocked,
@@ -808,9 +844,10 @@ namespace LinuxEvent.LinuxTraceEvent
 				}
 			}
 
-			internal ThreadInfo(int threadID)
+			internal ThreadInfo(int threadID, double timeStart)
 			{
 				this.ID = threadID;
+				this.TimeStart = timeStart;
 				this.State = ThreadState.Blocked;
 			}
 
@@ -820,6 +857,12 @@ namespace LinuxEvent.LinuxTraceEvent
 				this.State = ThreadState.Unblocked;
 			}
 		}
+
+		#endregion
+
+		#endregion
+
+		#endregion
 
 	}
 }

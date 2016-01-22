@@ -12,14 +12,14 @@ namespace LinuxEvent
 	{
 		public static void Main(string[] args)
 		{
-			PerfScriptTraceEventParser parser = new PerfScriptTraceEventParser(args[0], true);
+			PerfScriptEventParser parser = new PerfScriptEventParser(args[0], true);
 			parser.Parse(
 				regexFilter: (args.Length > 1 ? args[1] : null),
 				maxSamples: (args.Length > 2 ? int.Parse(args[2]) : 50000));
 			Program.TranslateToPerfViewXml(args[0], parser);
 		}
 
-		private static void TranslateToPerfViewXml(string filename, PerfScriptTraceEventParser parser)
+		private static void TranslateToPerfViewXml(string filename, PerfScriptEventParser parser)
 		{
 			XmlWriterSettings settings = new XmlWriterSettings();
 			settings.Indent = true;
