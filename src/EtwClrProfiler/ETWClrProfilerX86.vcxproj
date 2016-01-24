@@ -118,7 +118,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>.\ETWClrProfiler.def</ModuleDefinitionFile>
       <AdditionalDependencies>advapi32.lib;corguids.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <EntryPointSymbol>DllMain</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
