@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LinuxEvent.Tests
+namespace LinuxTracing.Tests
 {
 	public static class Constants
 	{

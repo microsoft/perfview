@@ -6,10 +6,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClrProfiler;
-using LinuxPerfView.Shared;
+using LinuxTracing.Shared;
 using Validation;
 
-namespace LinuxEvent.LinuxTraceEvent
+namespace LinuxTracing.LinuxTraceEvent
 {
 
 	public class PerfScriptEventParser
@@ -126,6 +126,11 @@ namespace LinuxEvent.LinuxTraceEvent
 			}
 
 			return totalBlockedTime;
+		}
+
+		public LinuxEvent GetLinuxEventAt(int i)
+		{
+			return this.events[i];
 		}
 
 		public PerfScriptEventParser(string sourcePath, bool analyzeBlockedTime)

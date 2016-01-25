@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Validation;
 
-namespace LinuxPerfView.Shared
+namespace LinuxTracing.Shared
 {
 	internal static class Utils
 	{

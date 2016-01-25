@@ -38,9 +38,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "..\Etw
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX64", "..\EtwClrProfiler\ETWClrProfilerX64.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxEvent", "LinuxPerfView\LinuxEvent.csproj", "{83A5532A-FB42-4F6F-905A-BCED8F3F5B74}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxTracing", "LinuxPerfView\LinuxTracing.csproj", "{83A5532A-FB42-4F6F-905A-BCED8F3F5B74}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxEvent.Tests", "..\LinuxEvent.Tests\LinuxEvent.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxTracing.Tests", "..\LinuxEvent.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

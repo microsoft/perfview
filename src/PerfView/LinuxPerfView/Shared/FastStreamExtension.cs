@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ClrProfiler;
 
-namespace LinuxPerfView.Shared
+namespace LinuxTracing.Shared
 {
 	internal static class FastStreamExtension
 	{

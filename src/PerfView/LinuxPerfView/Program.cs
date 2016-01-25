@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using LinuxEvent.LinuxTraceEvent;
+using LinuxTracing.LinuxTraceEvent;
 
-namespace LinuxEvent
+namespace LinuxTracing.Tests
 {
 	public class Program
 	{

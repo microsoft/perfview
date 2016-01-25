@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LinuxEvent.LinuxTraceEvent
+namespace LinuxTracing.LinuxTraceEvent
 {
-	internal class ScheduledEvent : LinuxEvent
+	public class ScheduledEvent : LinuxEvent
 	{
-		internal static readonly string Name = "sched_switch";
+		public static readonly string Name = "sched_switch";
 
-		internal ScheduleSwitch Switch { get; }
+		public ScheduleSwitch Switch { get; }
 
-		internal ScheduledEvent(
+		public ScheduledEvent(
 			string comm, int tid, int pid,
 			double time, double period, int timeProp, int cpu,
 			string eventName, string eventProp, int sampleID, ScheduleSwitch schedSwitch) :
@@ -22,17 +22,17 @@ namespace LinuxEvent.LinuxTraceEvent
 		}
 	}
 
-	internal class ScheduleSwitch
+	public class ScheduleSwitch
 	{
-		internal string PreviousCommand { get; }
-		internal int PreviousThreadID { get; }
-		internal int PreviousPriority { get; }
-		internal char PreviousState { get; }
-		internal string NextCommand { get; }
-		internal int NextThreadID { get; }
-		internal int NextPriority { get; }
+		public string PreviousCommand { get; }
+		public int PreviousThreadID { get; }
+		public int PreviousPriority { get; }
+		public char PreviousState { get; }
+		public string NextCommand { get; }
+		public int NextThreadID { get; }
+		public int NextPriority { get; }
 
-		internal ScheduleSwitch(string prevComm, int prevTid, int prevPrio, char prevState, string nextComm, int nextTid, int nextPrio)
+		public ScheduleSwitch(string prevComm, int prevTid, int prevPrio, char prevState, string nextComm, int nextTid, int nextPrio)
 		{
 			this.PreviousCommand = prevComm;
 			this.PreviousThreadID = prevTid;
@@ -44,20 +44,20 @@ namespace LinuxEvent.LinuxTraceEvent
 		}
 	}
 
-	internal class LinuxEvent
+	public class LinuxEvent
 	{
-		internal string Command { get; }
-		internal int ThreadID { get; }
-		internal int ProcessID { get; }
-		internal double Time { get; }
-		internal double Period { get; }
-		internal int TimeProperty { get; }
-		internal int Cpu { get; }
-		internal string EventName { get; }
-		internal string EventProperty { get; }
-		internal int SampleID { get; }
+		public string Command { get; }
+		public int ThreadID { get; }
+		public int ProcessID { get; }
+		public double Time { get; }
+		public double Period { get; }
+		public int TimeProperty { get; }
+		public int Cpu { get; }
+		public string EventName { get; }
+		public string EventProperty { get; }
+		public int SampleID { get; }
 
-		internal LinuxEvent(
+		public LinuxEvent(
 			string comm, int tid, int pid,
 			double time, double period, int timeProp, int cpu,
 			string eventName, string eventProp, int sampleID)

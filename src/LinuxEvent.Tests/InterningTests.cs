@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using LinuxEvent.LinuxTraceEvent;
+using LinuxTracing.LinuxTraceEvent;
 
-namespace LinuxEvent.Tests
+namespace LinuxTracing.Tests
 {
 	public class InterningTests
 	{

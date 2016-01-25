@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LinuxEvent.LinuxTraceEvent;
+using LinuxTracing.LinuxTraceEvent;
 using Xunit;
 
-namespace LinuxEvent.Tests
+namespace LinuxTracing.Tests
 {
 	/// <summary>
 	/// Completed Context Switch - Starts with a thread that blocked through a sched_switch event and ends with the same
