@@ -1,8 +1,8 @@
 ﻿comm1	0/0		[000] 0.0:			1 sched:sched_switch: prev_comm=comm1 prev_pid=0 prev_prio=0 prev_state=S ==> next_comm=comm2 next_pid=1 next_prio=1
-	address symbol module
+	address symbol (module)
 
 comm2	1/1		[000] 1.0:			1 cpu_clock:
-	address symbol module
+	address symbol (module)
 
 comm3	1/1		[000] 2.0:			1 cpu_clock:
-	address symbol module
+	address symbol (module)

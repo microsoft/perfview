@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="BlockedTimeTests.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="EventParseTests.cs" />
     <Compile Include="InterningTests.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
