@@ -42,6 +42,8 @@ namespace LinuxEvent.LinuxTraceEvent
 			{
 				this.source.MoveNext();
 				this.source.MoveNext();
+				this.source.MoveNext();
+				this.source.MoveNext();
 			}
 
 			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
@@ -396,7 +398,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 		private void AnalyzeBlockedTime(ScheduleSwitch scheduleSwitch, double time)
 		{
-			// Check if a thread has been unblocked, here if a thread has been unblocked but we
+			// Check if a thread has been unblocked. If a thread has been unblocked but we
 			//   haven't seen it blocked, we'll just skip it and count threads like it as CPU (for now) TODO
 			ThreadInfo threadInfo;
 			if (this.BlockedThreads.TryGetValue(scheduleSwitch.NextThreadID, out threadInfo))
@@ -439,6 +441,7 @@ namespace LinuxEvent.LinuxTraceEvent
 			{
 				this.source.MoveNext();
 
+				// Get the frame for the process...
 				int processFrameID;
 				if (!this.FrameID.TryGetValue(linuxEvent.Command, out processFrameID))
 				{
@@ -449,6 +452,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 				StackNode deepestCaller = this.GetDeepestCaller(linuxEvent.ThreadID);
 
+				// Get the Process/CPU|Blocked|NULL FrameStack
 				long processFrameStackID = Utils.ConcatIntegers(deepestCaller.StackID, processFrameID);
 				FrameStack processFrameStack;
 				if (!this.FrameStacks.TryGetValue(processFrameStackID, out processFrameStack))
@@ -459,6 +463,7 @@ namespace LinuxEvent.LinuxTraceEvent
 						new ProcessNode(processFrameStack.StackID, linuxEvent.ProcessID, linuxEvent.Command, processFrameID, deepestCaller));
 				}
 
+				// Get the threadID
 				int threadFrameID;
 				if (!this.FrameID.TryGetValue(linuxEvent.Command + linuxEvent.ThreadID.ToString(), out threadFrameID))
 				{
@@ -471,6 +476,7 @@ namespace LinuxEvent.LinuxTraceEvent
 
 				long threadFrameStackID = Utils.ConcatIntegers(processFrameStack.StackID, threadFrameID);
 
+				// Get the FrameStack for the ProcessThread
 				FrameStack threadFrameStack;
 				if (!this.FrameStacks.TryGetValue(threadFrameStackID, out threadFrameStack))
 				{
@@ -481,7 +487,7 @@ namespace LinuxEvent.LinuxTraceEvent
 						(ProcessNode)this.Stacks[processFrameStack.StackID]));
 				}
 
-
+				// Finally return the valid stack
 				return this.Stacks[threadFrameStack.StackID];
 
 			}
