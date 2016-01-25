@@ -61,5 +61,12 @@ namespace LinuxEvent.Tests
 			string path = Constants.GetPerfDumpPath("notimeblocked_induced");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 2.0);
 		}
+
+		[Fact]
+		public void MixedBlocked()
+		{
+			string path = Constants.GetPerfDumpPath("mixed_switches");
+			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 8.0);
+		}
 	}
 }
