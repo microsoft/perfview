@@ -447,7 +447,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				{
 					processFrameID = this.FrameCount++;
 					this.FrameID.Add(linuxEvent.Command, processFrameID);
-					this.IDFrame.Add(new ProcessThreadFrame(processFrameID, linuxEvent.Command));
+					this.IDFrame.Add(new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.Command));
 				}
 
 				StackNode deepestCaller = this.GetDeepestCaller(linuxEvent.ThreadID);
@@ -469,8 +469,7 @@ namespace LinuxEvent.LinuxTraceEvent
 				{
 					threadFrameID = this.FrameCount++;
 					this.FrameID.Add(linuxEvent.Command + linuxEvent.ThreadID.ToString(), threadFrameID);
-					this.IDFrame.Add(new ProcessThreadFrame(threadFrameID,
-						string.Format("Thread ({0})", linuxEvent.ThreadID.ToString())));
+					this.IDFrame.Add(new ProcessThreadFrame(linuxEvent.ThreadID, "Thread"));
 				}
 
 
