@@ -1,0 +1,5 @@
+﻿comm1	0/0		[000] 0.0:			1 sched:sched_switch: prev_comm=comm1 prev_pid=0 prev_prio=0 prev_state=S ==> next_comm=comm2 next_pid=1 next_prio=1
+	address symbol module
+
+comm2	1/1		[001] 1.0:			1 sched:sched_switch: prev_comm=comm2 prev_pid=1 prev_prio=0 prev_state=S ==> next_comm=comm1 next_pid=0 next_prio=1
+	address symbol module
