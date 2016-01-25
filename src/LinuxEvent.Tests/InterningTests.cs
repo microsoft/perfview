@@ -13,9 +13,9 @@ namespace LinuxEvent.Tests
 		private void InterningStackCountTest(string source, int expectedStackCount)
 		{
 			PerfScriptEventParser parser = new PerfScriptEventParser(source, false);
-			parser.Parse(null, 100);
+			parser.Parse(null, 100, testing: true);
 
-			Assert.Equal(parser.StackCount, expectedStackCount);
+			Assert.Equal(expectedStackCount, parser.StackCount);
 		}
 
 		[Fact]
