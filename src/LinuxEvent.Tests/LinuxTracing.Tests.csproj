@@ -75,7 +75,7 @@
     <None Include="Sources\mixed_switches.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Sources\onegeneric.perf.data - Copy.dump">
+    <None Include="Sources\onegeneric.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Sources\one_incomplete_switch.perf.data.dump">

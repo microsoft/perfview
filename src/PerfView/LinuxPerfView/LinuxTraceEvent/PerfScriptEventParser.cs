@@ -297,7 +297,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				// I mark a position here because I need to check what type of event this is without screwing up the stream
 				var markedPosition = this.source.MarkPosition();
 				this.source.ReadAsciiStringUpTo('\n', sb);
-				string eventDetails = sb.ToString();
+				string eventDetails = sb.ToString().Trim();
 				sb.Clear();
 
 				ScheduleSwitch scheduleSwitch = null;
