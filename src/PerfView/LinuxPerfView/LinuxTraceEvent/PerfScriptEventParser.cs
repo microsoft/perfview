@@ -32,9 +32,9 @@ namespace LinuxTracing.LinuxTraceEvent
 		/// <summary>
 		/// Creates a stream reader to parse the given source file into interning stacks.
 		/// </summary>
-		/// <param name="regexFilter">Filters the samples through the event name.</param>
+		/// <param name="pattern">Filters the samples through the event name.</param>
 		/// <param name="maxSamples">Truncates the number of samples.</param>
-		public void Parse(string regexFilter, int maxSamples, bool testing = false)
+		public void Parse(string pattern, int maxSamples, bool testing = false)
 		{
 			this.Initialize();
 
@@ -46,7 +46,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				this.source.MoveNext();
 			}
 
-			Regex rgx = regexFilter == null ? null : new Regex(regexFilter);
+			Regex rgx = pattern == null ? null : new Regex(pattern);
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
 			{
 				if (linuxEvent != null)

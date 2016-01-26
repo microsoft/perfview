@@ -12,10 +12,34 @@ namespace LinuxTracing.Tests
 	{
 		public static void Main(string[] args)
 		{
-			PerfScriptEventParser parser = new PerfScriptEventParser(args[0], true);
+			string pattern = null;
+			int maxSamples = 50000;
+			bool doBlockedTime = false;
+
+			for (int i = 0; i < args.Length; i++)
+			{
+				if (args[i].Length > 2)
+				{
+					string part = args[i].Substring(0, 2);
+					if (part == "-p")
+					{
+						pattern = args[i].Substring(3);
+					}
+					else if (part == "-m")
+					{
+						maxSamples = int.Parse(args[i].Substring(3));
+					}
+					else if (args[i] == "--threadtime")
+					{
+						doBlockedTime = true;
+					}
+				}
+			}
+
+			PerfScriptEventParser parser = new PerfScriptEventParser(args[0], doBlockedTime);
 			parser.Parse(
-				regexFilter: (args.Length > 1 ? args[1] : null),
-				maxSamples: (args.Length > 2 ? int.Parse(args[2]) : 50000));
+				pattern: pattern,
+				maxSamples: maxSamples);
 			Program.TranslateToPerfViewXml(args[0], parser);
 		}
 
