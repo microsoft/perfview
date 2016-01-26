@@ -154,9 +154,6 @@ namespace LinuxTracing.LinuxTraceEvent
 		private Dictionary<long, FrameStack> FrameStacks;
 		private List<SampleInfo> Samples;
 
-		private Dictionary<int, ProcessNode> ProcessNodes;
-		private Dictionary<long, ThreadNode> ThreadNodes;
-
 		private Dictionary<int, ThreadInfo> BlockedThreads;
 		private Dictionary<int, double> ThreadTimes;
 		private List<ThreadInfo> OmittedThreads;
@@ -190,9 +187,6 @@ namespace LinuxTracing.LinuxTraceEvent
 			this.Samples = new List<SampleInfo>();
 
 			this.events = new List<LinuxEvent>();
-
-			this.ProcessNodes = new Dictionary<int, ProcessNode>();
-			this.ThreadNodes = new Dictionary<long, ThreadNode>();
 
 			this.ThreadTimes = new Dictionary<int, double>();
 

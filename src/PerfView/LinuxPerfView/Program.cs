@@ -16,7 +16,7 @@ namespace LinuxTracing.Tests
 			int maxSamples = 50000;
 			bool doBlockedTime = false;
 
-			for (int i = 0; i < args.Length; i++)
+			for (int i = 1; args.Length > 1 && i < args.Length; i++)
 			{
 				if (args[i].Length > 2)
 				{
