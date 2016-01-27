@@ -7,15 +7,24 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClrProfiler;
-using LinuxPerfView.Shared;
 using LinuxTracing.Shared;
 using Validation;
 
 namespace LinuxTracing.LinuxTraceEvent
 {
 
-	public class PerfScriptEventParser
+	public class PerfScriptEventParser : IDisposable
 	{
+		public string SourceFileName { get; private set; }
+		public string OutputName
+		{
+			get
+			{
+				return string.Format("{0}.perfView.xml", 
+					Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(this.SourceFileName)));
+			}
+		}
+
 		/// <summary>
 		/// Gets the total number of frames parsed.
 		/// </summary>
@@ -170,6 +179,8 @@ namespace LinuxTracing.LinuxTraceEvent
 		private bool TrackBlockedTime { get; }
 
 		private string SourcePath { get; }
+
+		private ZipArchive Archive { get; set; }
 		#endregion
 
 		#region Important Methods
@@ -206,22 +217,20 @@ namespace LinuxTracing.LinuxTraceEvent
 			Requires.NotNull(source, nameof(source));
 
 			FastStream stream = null;
+			this.SourceFileName = Path.GetFileName(source);
 
 			if (source.EndsWith(".zip"))
 			{
-				//using (ZipArchive archive = ZipFile.OpenRead(source))
-				//{
-				var archive = ZipFile.OpenRead(source);
-				foreach (ZipArchiveEntry entry in archive.Entries)
+				this.Archive = ZipFile.OpenRead(source);
+				foreach (ZipArchiveEntry entry in this.Archive.Entries)
 				{
 					if (entry.FullName.EndsWith(".dump"))
 					{
-						// entry.ExtractToFile("./" + entry.FullName);
-						// stream = new FastStream("./" + entry.FullName);
+						stream = new FastStream(entry.Open());
+						this.SourceFileName = entry.FullName;
 						break;
 					}
 				}
-				//}
 			}
 			else
 			{
@@ -650,17 +659,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
 			}
 
-			if (actualModule[0] == '/' && actualModule.Length > 1)
-			{
-				for (int i = actualModule.Length - 1; i >= 0; i--)
-				{
-					if (actualModule[i] == '/')
-					{
-						actualModule = actualModule.Substring(i + 1);
-						break;
-					}
-				}
-			}
+			actualModule = Path.GetFileName(actualModule);
 
 			return new StackFrame(address, actualModule, actualSymbol);
 		}
@@ -940,8 +939,12 @@ namespace LinuxTracing.LinuxTraceEvent
 		}
 		#endregion
 		#endregion
-
 		#endregion
+
+		public void Dispose()
+		{
+			this.Archive?.Dispose();
+		}
 
 	}
 }

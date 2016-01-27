@@ -7,8 +7,8 @@
     <ProjectGuid>{83A5532A-FB42-4F6F-905A-BCED8F3F5B74}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>LinuxPerfView</RootNamespace>
-    <AssemblyName>LinuxPerfView</AssemblyName>
+    <RootNamespace>LinuxTracing</RootNamespace>
+    <AssemblyName>LinuxTracing</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

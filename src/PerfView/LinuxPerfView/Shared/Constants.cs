@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LinuxPerfView.Shared
+namespace LinuxTracing.Shared
 {
 	public static class Constants
 	{

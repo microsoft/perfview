@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using LinuxTracing.LinuxTraceEvent;
 
-namespace LinuxTracing.Tests
+namespace LinuxTracing
 {
 	public class Program
 	{
@@ -49,7 +50,9 @@ namespace LinuxTracing.Tests
 			settings.Indent = true;
 			settings.IndentChars = " ";
 
-			using (XmlWriter writer = XmlWriter.Create(filename + ".perfView.xml", settings))
+			string outputFile = string.Format(@"{0}\{1}", Path.GetDirectoryName(filename), parser.OutputName);
+
+			using (XmlWriter writer = XmlWriter.Create(outputFile, settings))
 			{
 				writer.WriteStartElement("StackWindow");
 				writer.WriteStartElement("StackSource");

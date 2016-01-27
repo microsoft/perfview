@@ -110,8 +110,8 @@ namespace LinuxTracing.Tests
 			string path = Constants.GetPerfDumpPath("one_complete_switch");
 			this.DoStackTraceTest(path, blockedTime: true, callerStacks: new List<List<string>>
 			{
-				new List<string> { "module!symbol", "Thread (0)", "comm1 (0)", "Blocked" },
-				new List<string> { "module!symbol", "Thread (1)", "comm2 (1)", "Blocked" }
+				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1 (0)"},
+				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2 (1)"}
 			});
 		}
 
