@@ -2713,19 +2713,19 @@ namespace PerfView
             ByNameDataGrid.Grid.CanUserSortColumns = true;
             var columns = ByNameDataGrid.Grid.Columns;
 
-            Debug.Assert(((TextBlock)columns[1].Header).Name == "IncPercentColumn");
-            Debug.Assert(((TextBlock)columns[2].Header).Name == "IncColumn");
-            Debug.Assert(((TextBlock)columns[3].Header).Name == "IncAvgColumn");
-            Debug.Assert(((TextBlock)columns[4].Header).Name == "IncCountColumn");
-            Debug.Assert(((TextBlock)columns[5].Header).Name == "ExcPercentColumn");
-            Debug.Assert(((TextBlock)columns[6].Header).Name == "ExcColumn");
-            Debug.Assert(((TextBlock)columns[7].Header).Name == "ExcCountColumn");
-            Debug.Assert(((TextBlock)columns[8].Header).Name == "FoldColumn");
-            Debug.Assert(((TextBlock)columns[9].Header).Name == "FoldCountColumn");
 
-            columns.Move(5, 1);             // move exc% first
-            columns.Move(6, 2);             // move exc second
-            columns.Move(7, 3);             // move exc count third
+            // Put the exlusive columns first if they are not already there.  
+            var col = ByNameDataGrid.GetColumnIndex("ExcPercentColumn");
+            if (0 <= col && col != 1)
+                ByNameDataGrid.Grid.Columns.Move(col, 1);
+
+            col = ByNameDataGrid.GetColumnIndex("ExcColumn");
+            if (0 <= col && col != 2)
+                ByNameDataGrid.Grid.Columns.Move(col, 2);
+
+            col = ByNameDataGrid.GetColumnIndex("ExcCountColumn");
+            if (0 <= col && col != 3)
+                ByNameDataGrid.Grid.Columns.Move(col, 3);
 
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
