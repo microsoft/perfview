@@ -371,6 +371,18 @@ namespace PerfView
                     File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
                 }
 
+                // The KernelTraceControl that works for Win10 and above does not work properly form older OSes
+                // The symptom is that when collecting data, it does not properly merge files and you don't get
+                // the KernelTraceControl events for PDBs and thus symbol lookup does not work.  
+                var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+                if (version < 62)
+                {
+                    var kernelTraceControlDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
+                    var src = Path.Combine(kernelTraceControlDir, "KernelTraceControl.Win61.dll");
+                    var dest = Path.Combine(kernelTraceControlDir, "KernelTraceControl.dll");
+                    FileUtilities.ForceCopy(src, dest);
+                }
+
                 SetPermissionsForWin8Apps();
             }
             return unpacked;
@@ -687,7 +699,7 @@ namespace PerfView
 
             if (!AppLog.InternalUser && !App.CommandLineArgs.TrustPdbs)
             {
-                ret.SecurityCheck = delegate(string pdbFile)
+                ret.SecurityCheck = delegate (string pdbFile)
                 {
                     var result = MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
                         "Security Check", MessageBoxButton.YesNo);
@@ -765,7 +777,7 @@ namespace PerfView
                 // We are not on the GUI thread, we have to do BeginInvoke to get there.  
 
                 // TODO this is a bit of a hack.  I really want the 'current' StackWindow 
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     try
                     {
@@ -855,7 +867,7 @@ namespace PerfView
             s_threadToInterrupt = Thread.CurrentThread;
 
             // Set up a Ctrl-C (Control-C) hander.  
-            Console.CancelKeyPress += new ConsoleCancelEventHandler(delegate(object sender, ConsoleCancelEventArgs e)
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(delegate (object sender, ConsoleCancelEventArgs e)
             {
                 if (Interlocked.CompareExchange(ref s_controlCPressed, 1, 0) == 0)
                 {
@@ -1142,5 +1154,3 @@ namespace PerfView
         #endregion
     }
 }
-
-
