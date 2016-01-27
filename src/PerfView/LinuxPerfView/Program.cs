@@ -84,11 +84,109 @@ namespace LinuxTracing.Tests
 
 				});
 
-				// End
+
 				writer.WriteEndElement();
+
+
+				// Write window state
+				Program.WriteCommonWindowState(writer);
+
+
+				// End
 				writer.WriteEndElement();
 				writer.Flush();
 			}
+		}
+
+		private static void WriteCommonWindowState(XmlWriter writer)
+		{
+			writer.WriteStartElement("StackWindowGuiState");
+
+			writer.WriteStartElement("FilterGuiState");
+
+			writer.WriteStartElement("Scenarios");
+			writer.WriteEndElement();
+
+
+			writer.WriteStartElement("GroupRegEx");
+
+			writer.WriteStartElement("Value");
+			writer.WriteString(@"[Just My App]           \ver.2016-01-04.14.32.31.276\%!-&gt;;!=&gt;OTHER");
+			writer.WriteEndElement();
+
+
+
+			writer.WriteStartElement("History");
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[Just My App]           \ver.2016 - 01 - 04.14.32.31.276\% !-&gt; ;!= &gt; OTHER");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[no grouping]");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group CLR/OS entries] \Temporary ASP.NET Files\-&gt;;v4.0.30319\%!=&gt;CLR;v2.0.50727\%!=&gt;CLR;mscoree=&gt;CLR;\mscorlib.*!=&gt;LIB;\System.*!=&gt;LIB;Presentation%=&gt;WPF;WindowsBase%=&gt;WPF;system32\*!=&gt;OS;syswow64\*!=&gt;OS;{%}!=&gt; module $1");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group modules]           {%}!-&gt;module $1");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group module entries]  {%}!=&gt;module $1");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group full path module entries]  {*}!=&gt;module $1");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group class entries]     {%!*}.%(=&gt;class $1;{%!*}::=&gt;class $1");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("string");
+			writer.WriteString(@"[group classes]            {%!*}.%(-&gt;class $1;{%!*}::-&gt;class $1");
+			writer.WriteEndElement();
+
+			writer.WriteEndElement();
+
+			writer.WriteEndElement();
+
+
+			writer.WriteStartElement("FoldPercent");
+			writer.WriteStartElement("Value");
+			writer.WriteString("1");
+			writer.WriteEndElement();
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("FoldRegEx");
+			writer.WriteStartElement("Value");
+			writer.WriteString("ntoskrnl!%ServiceCopyEnd");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("History");
+			writer.WriteStartElement("string");
+			writer.WriteString("ntoskrnl!%ServiceCopyEnd");
+			writer.WriteEndElement();
+			writer.WriteEndElement();
+
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("ExcludeRegEx");
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("TypePriority");
+			writer.WriteEndElement();
+
+			writer.WriteEndElement();
+
+			writer.WriteStartElement("Notes");
+			writer.WriteString("Notes typed here will be saved when the view is saved. F2 will hide/unhide.");
+			writer.WriteEndElement();
+
+			writer.WriteEndElement();
 		}
 
 		private static void WriteElementCount(XmlWriter writer, string section, int count, Action<int> perElement)

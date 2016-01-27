@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -174,7 +175,7 @@ namespace LinuxTracing.LinuxTraceEvent
 		#region Important Methods
 		private void Initialize()
 		{
-			this.source = new FastStream(this.SourcePath);
+			this.source = this.GetFastStream(this.SourcePath); // new FastStream(this.SourcePath);
 
 			this.FrameCount = 0;
 			this.StackCount = 0;
@@ -198,6 +199,38 @@ namespace LinuxTracing.LinuxTraceEvent
 				this.CPUThreadID = new Dictionary<int, int>();
 				this.AddCPUAndBlockedFrames();
 			}
+		}
+
+		private FastStream GetFastStream(string source)
+		{
+			Requires.NotNull(source, nameof(source));
+
+			FastStream stream = null;
+
+			if (source.EndsWith(".zip"))
+			{
+				//using (ZipArchive archive = ZipFile.OpenRead(source))
+				//{
+				var archive = ZipFile.OpenRead(source);
+				foreach (ZipArchiveEntry entry in archive.Entries)
+				{
+					if (entry.FullName.EndsWith(".dump"))
+					{
+						// entry.ExtractToFile("./" + entry.FullName);
+						// stream = new FastStream("./" + entry.FullName);
+						break;
+					}
+				}
+				//}
+			}
+			else
+			{
+				stream = new FastStream(source);
+			}
+
+			if (stream == null) throw new InvalidProgramException("Can't find .dump in source");
+
+			return stream;
 		}
 
 		private void AddCPUAndBlockedFrames()
@@ -258,12 +291,13 @@ namespace LinuxTracing.LinuxTraceEvent
 				this.source.ReadAsciiStringUpTo(':', sb);
 				double time = double.Parse(sb.ToString());
 				sb.Clear();
-				this.CurrentTime = time;
 				if (!this.startTimeSet)
 				{
 					this.startTimeSet = true;
 					this.StartTime = time;
 				}
+				this.CurrentTime = time - this.StartTime;
+				time = this.CurrentTime;
 
 				// Time Property
 				this.source.MoveNext();
@@ -510,7 +544,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				}
 				else
 				{
-					// We don't care about this frame since we already have it cached
+					// If we found the frame, we don't care about this specific instance since we already have it cached
 					this.source.SkipUpTo('\n');
 				}
 			}
