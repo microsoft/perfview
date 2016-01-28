@@ -373,7 +373,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				}
 
 				// In any case, we end up reading up to a new line symbol, so we need to move past it.
-				this.source.MoveNext();
+				// this.source.MoveNext();
 
 
 				// Period Between last thread sample
@@ -473,8 +473,8 @@ namespace LinuxTracing.LinuxTraceEvent
 
 			// This is the base case for the stack trace, when there are no more "real" frames (i.e. an empty line)
 			if ((this.source.Current == '\n' &&
-				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0') ||
-				 this.source.EndOfStream))
+				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0')) ||
+				 this.source.EndOfStream)
 			{
 				this.source.MoveNext();
 

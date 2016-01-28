@@ -111,8 +111,20 @@ namespace LinuxTracing.Tests
 			this.DoStackTraceTest(path, blockedTime: true, callerStacks: new List<List<string>>
 			{
 				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1 (0)"},
-				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2 (1)"}
+				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2 (1)"},
 			});
+		}
+
+		[Fact]
+		public void EmptyStackFrames()
+		{
+			string path = Constants.GetPerfDumpPath("no_stack_frames");
+			this.DoStackTraceTest(path, blockedTime: false,
+				callerStacks: new List<List<string>>
+				{
+					new List<string> { "Thread (0)", "comm (0)" },
+					new List<string> { "module!symbol", "Thread (0)", "comm (0)" },
+				});
 		}
 
 		[Fact]
