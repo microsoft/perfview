@@ -5741,12 +5741,13 @@ namespace PerfView
 
     public partial class LinuxPerfViewData : PerfViewFile
     {
-        public override string FormatName { get { return "LTTng Text"; } }
-        public override string[] FileExtensions { get { return new string[] { ".lttng.txt" }; } }
+        public override string FormatName { get { return "LTTng"; } }
+        public override string[] FileExtensions { get { return new string[] { ".lttng.zip" }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
-            return null;
+            var traceLog = GetTraceLog(log);
+            return new ETWEventSource(traceLog);
         }
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
@@ -5763,7 +5764,7 @@ namespace PerfView
             m_Children.Add(new PerfViewProcesses(this));
             
             // Enable once this file type supports the event view.
-            // m_Children.Add(new PerfViewEventSource(this));
+             m_Children.Add(new PerfViewEventSource(this));
 
             return null;
         }

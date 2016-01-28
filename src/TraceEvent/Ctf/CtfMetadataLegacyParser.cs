@@ -9,8 +9,9 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-    class CtfMetadataLegacyParser : CtfMetadataParser
+    class CtfMetadataLegacyParser : CtfMetadataParser, IDisposable
     {
+        static Regex s_align = new Regex(@"align\( *(\d+) *\)");
         static Regex s_integer = new Regex(@"integer (\{[^}]*\}) (\w+)");
         static Regex s_variable = new Regex(@"((\w+ +)+) *(\w+)");
         static Regex s_variant = new Regex(@"variant +< *(\w+) *>");
@@ -21,11 +22,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         static CtfString s_string = new CtfString();
 
-        private string _filename;
+        private Stream _stream;
 
         public CtfMetadataLegacyParser(string filename)
         {
-            _filename = filename;
+            _stream = File.OpenRead(filename);
+        }
+
+        public CtfMetadataLegacyParser(Stream stream)
+        {
+            _stream = stream;
         }
         
         public override IEnumerable<CtfMetadataDeclaration> Parse()
@@ -62,11 +68,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 case "typealias":
                     directive = CtfDeclarationTypes.TypeAlias;
-
-                    int idx = metadata.IndexOf("typealias") + 10;
+                    
                     int closeBrace = FindCloseBrace(metadata, open) + 1;
+                    
+                    CtfPropertyBag bag = GetPropertyBag(metadata, open, closeBrace);
 
-                    CtfMetadataType t = ParseOneType(metadata, idx, out idx);
+                    CtfMetadataType t = null;
+                    switch (directiveElements[1])
+                    {
+                        case "integer":
+                            t = new CtfInteger(bag);
+                            break;
+
+                        default:
+                            throw new IOException();
+                    }
 
                     int colonEquals = metadata.IndexOf(":=", closeBrace) + 2;
 
@@ -110,7 +126,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             while (metadata[curr++] != ';')
                 ;
-
+            
             int nameStart = metadata.IndexOf(":=", close);
 
 
@@ -126,8 +142,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             end = curr;
             if (directive == CtfDeclarationTypes.Struct)
             {
+
+                CtfPropertyBag bag = null;
+                Match match = s_align.Match(metadata, close, end - close);
+                if (match.Success)
+                {
+                    bag = new CtfPropertyBag();
+                    bag.AddValue("align", match.Groups[1].ToString());
+                }
+
                 CtfField[] fields = ParseStructFields(metadata, open, close).ToArray();
-                return new CtfMetadataDeclaration(directive, fields, name, metadata.Substring(index, curr - index));
+                return new CtfMetadataDeclaration(directive, bag, fields, name, metadata.Substring(index, curr - index));
             }
             else
             {
@@ -194,7 +219,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 CtfField[] fields = ParseStructFields(statement, open, close).ToArray();
 
-                type = new CtfStruct(fields);
+                type = new CtfStruct(null, fields);
                 index = close + 1;
             }
             else if ((match = s_float.Match(statement)).Success)
@@ -279,7 +304,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 Debug.Assert(match.Success);
             }
-
         }
         
         private CtfPropertyBag GetPropertyBag(string str)
@@ -321,7 +345,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     else
                     {
                         CtfField[] fields = ParseStructFields(statement, open, close).ToArray();
-                        result.AddValue(name, new CtfStruct(fields));
+                        result.AddValue(name, new CtfStruct(null, fields));
                     }
                 }
                 else
@@ -372,41 +396,38 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             byte[] headerBufer = new byte[Marshal.SizeOf(typeof(MetadataPacketHeader))];
             byte[] buffer = null;
 
-            using (FileStream _stream = File.OpenRead(_filename))
+            StringBuilder sb = new StringBuilder();
+            while (true)
             {
-                _stream.Seek(0, SeekOrigin.Begin);
-                StringBuilder sb = new StringBuilder();
-                while (true)
-                {
-                    if (_stream.Read(headerBufer, 0, headerBufer.Length) != headerBufer.Length)
-                        break;
+                if (_stream.Read(headerBufer, 0, headerBufer.Length) != headerBufer.Length)
+                    break;
 
-                    MetadataPacketHeader header;
-                    fixed (byte* ptr = headerBufer)
-                        header = *((MetadataPacketHeader*)ptr);
+                MetadataPacketHeader header;
+                fixed (byte* ptr = headerBufer)
+                    header = *((MetadataPacketHeader*)ptr);
 
-                    if (header.Magic != 0x75d11d57)
-                        throw new IOException();
+                if (header.Magic != 0x75d11d57)
+                    throw new IOException();
 
-                    int packetSize = (int)header.PacketSize / 8 - headerBufer.Length;
+                int packetSize = (int)header.PacketSize / 8 - headerBufer.Length;
 
-                    if (buffer == null || buffer.Length < packetSize)
-                        buffer = new byte[packetSize];
+                if (buffer == null || buffer.Length < packetSize)
+                    buffer = new byte[packetSize];
 
-                    int read = _stream.Read(buffer, 0, packetSize);
-                    if (read == 0)
-                        break;
+                int read = _stream.Read(buffer, 0, packetSize);
+                if (read == 0)
+                    break;
 
-                    int contentSize = (int)header.ContentSize / 8 - headerBufer.Length;
-                    if (contentSize < read)
-                        read = contentSize;
+                int contentSize = (int)header.ContentSize / 8 - headerBufer.Length;
+                if (contentSize < read)
+                    read = contentSize;
 
-                    string result = Encoding.ASCII.GetString(buffer, 0, read);
+                string result = Encoding.ASCII.GetString(buffer, 0, read);
 
-                    sb.Append(result);
-                }
-                return sb.ToString();
+                sb.Append(result);
             }
+
+            return sb.ToString();
         }
         
         private static int FindCloseBrace(string str, int open)
@@ -476,6 +497,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             string last = str.Substring(start, stop - start);
             if (!string.IsNullOrWhiteSpace(last))
                 yield return last;
+        }
+
+        void IDisposable.Dispose()
+        {
+            Dispose(true);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+                _stream.Close();
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

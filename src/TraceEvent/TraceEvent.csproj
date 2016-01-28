@@ -79,6 +79,11 @@
     <Compile Include="Computers\StartStopActivityComputer.cs" />
     <Compile Include="Computers\TcpIpComputer.cs" />
     <Compile Include="Computers\ThreadTimeComputer.cs" />
+    <Compile Include="Ctf\CtfDataStream.cs" />
+    <Compile Include="Ctf\CtfMetadata.cs" />
+    <Compile Include="Ctf\CtfMetadataLegacyParser.cs" />
+    <Compile Include="Ctf\CtfMetadataParser.cs" />
+    <Compile Include="Ctf\CtfMetadataTypes.cs" />
     <Compile Include="ETWReloggerTraceEventSource.cs" />
     <Compile Include="EventCounterSource.cs" />
     <Compile Include="NativeDlls.cs" />
@@ -88,7 +93,7 @@
     <Compile Include="Parsers\ClrTraceEventParser.cs" />
     <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
     <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
-    <Compile Include="LttngTextTraceEventSource.cs" />
+    <Compile Include="CtfTraceEventSource.cs" />
     <Compile Include="Stacks\AggregateStackSource.cs" />
     <Compile Include="Stacks\FilterStacks.cs" />
     <Compile Include="Stacks\IndexMap.cs" />
@@ -163,6 +168,10 @@
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
       <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
       <Name>FastSerialization</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Zip\Zip.csproj">
+      <Project>{6fa47d21-6b1c-40e1-ad6b-d9139fa4123b}</Project>
+      <Name>Zip</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.targets" />

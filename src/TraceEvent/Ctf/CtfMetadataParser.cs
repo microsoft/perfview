@@ -58,12 +58,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(name == null || name == name.Trim());
         }
 
-        public CtfMetadataDeclaration(CtfDeclarationTypes declaration, CtfField[] fields, string name, string text)
+        public CtfMetadataDeclaration(CtfDeclarationTypes declaration, CtfPropertyBag bag, CtfField[] fields, string name, string text)
         {
             Definition = declaration;
             Fields = fields;
             Name = name;
             RawText = text;
+            Properties = bag;
 
             Debug.Assert(name == null || name == name.Trim());
         }

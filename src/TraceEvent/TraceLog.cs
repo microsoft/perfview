@@ -138,7 +138,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 etlxFilePath = filePath + ".etlx";
             }
 
-            using (LttngTextTraceEventSource source = new LttngTextTraceEventSource(filePath))
+            using (CtfTraceEventSource source = new CtfTraceEventSource(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -645,7 +645,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return CallStackIndex.Invalid;
         }
 
-        internal static void CreateFromLinuxEventSources(LttngTextTraceEventSource source, string etlxFilePath, TraceLogOptions options)
+        internal static void CreateFromLinuxEventSources(CtfTraceEventSource source, string etlxFilePath, TraceLogOptions options)
         {
             if (options == null)
             {
@@ -656,8 +656,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             newLog.rawEventSourceToConvert = source;
             newLog.options = options;
 
-            // Parse the header.
-            source.ParseAndCopyHeaderData(newLog);
+            // Parse the metadata.
+            source.ParseMetadata();
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 
             // that even though we have not built up the state yet (since we have not scanned the data yet), it will
@@ -1432,7 +1432,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
-                Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
+                //Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
                 lastTimeStamp = data.TimeStampQPC;
 #endif
                 // Show status every 128K events
@@ -2731,7 +2731,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
+            serializer.Write(DateTime.Now.ToFileTimeUtc());  //_syncTimeUTC.ToFileTimeUtc());
             serializer.Write(pointerSize);
             serializer.Write(numberOfProcessors);
             serializer.Write(cpuSpeedMHz);
