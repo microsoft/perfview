@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,55 +50,62 @@ namespace LinuxTracing
 			XmlWriterSettings settings = new XmlWriterSettings();
 			settings.Indent = true;
 			settings.IndentChars = " ";
+			string directory = Path.GetDirectoryName(filename);
+			string zipFilePath = string.Format(@"{0}\{1}.zip", directory, parser.OutputName);
 
-			string outputFile = string.Format(@"{0}\{1}", Path.GetDirectoryName(filename), parser.OutputName);
-
-			using (XmlWriter writer = XmlWriter.Create(outputFile, settings))
+			using (FileStream zipStream = File.Create(zipFilePath))
 			{
-				writer.WriteStartElement("StackWindow");
-				writer.WriteStartElement("StackSource");
-
-				// Frames
-				WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
+				using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Update))
 				{
-					writer.WriteStartElement("Frame");
-					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteString(parser.GetFrameAt(i));
-					writer.WriteEndElement();
-				});
+					ZipArchiveEntry xmlEntry = archive.CreateEntry(parser.OutputName);
+					using (XmlWriter writer = XmlWriter.Create(xmlEntry.Open(), settings))
+					{
+						writer.WriteStartElement("StackWindow");
+						writer.WriteStartElement("StackSource");
 
-				// Stacks
-				WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
-				{
-					writer.WriteStartElement("Stack");
-					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
-					writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
-					writer.WriteEndElement();
-				});
+						// Frames
+						WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
+						{
+							writer.WriteStartElement("Frame");
+							writer.WriteAttributeString("ID", i.ToString());
+							writer.WriteString(parser.GetFrameAt(i));
+							writer.WriteEndElement();
+						});
 
-				// Samples
-				WriteElementCount(writer, "Samples", parser.SampleCount, delegate (int i)
-				{
-					writer.WriteStartElement("Sample");
-					writer.WriteAttributeString("ID", i.ToString());
-					writer.WriteAttributeString("Time", string.Format("{0:0.000}", 1000 * parser.GetTimeInSecondsAtSample(i)));
-					writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
-					writer.WriteEndElement();
+						// Stacks
+						WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
+						{
+							writer.WriteStartElement("Stack");
+							writer.WriteAttributeString("ID", i.ToString());
+							writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
+							writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
+							writer.WriteEndElement();
+						});
 
-				});
+						// Samples
+						WriteElementCount(writer, "Samples", parser.SampleCount, delegate (int i)
+						{
+							writer.WriteStartElement("Sample");
+							writer.WriteAttributeString("ID", i.ToString());
+							writer.WriteAttributeString("Time", string.Format("{0:0.000}", 1000 * parser.GetTimeInSecondsAtSample(i)));
+							writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
+							writer.WriteEndElement();
+
+						});
 
 
-				writer.WriteEndElement();
+						writer.WriteEndElement();
 
 
-				// Write window state
-				Program.WriteCommonWindowState(writer);
+						// Write window state
+						Program.WriteCommonWindowState(writer);
 
 
-				// End
-				writer.WriteEndElement();
-				writer.Flush();
+						// End
+						writer.WriteEndElement();
+						writer.Flush();
+					}
+				}
 			}
 		}
 
