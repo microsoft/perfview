@@ -79,6 +79,9 @@
     <None Include="Sources\onegeneric.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Sources\space_sep_command.perf.data.dump">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Sources\one_incomplete_switch.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

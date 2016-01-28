@@ -53,5 +53,16 @@ namespace LinuxTracing.Shared
 				}
 			}
 		}
+
+		internal static void ReadAsciiStringUpToTrue(this FastStream stream, StringBuilder sb, Func<byte, bool> comp)
+		{
+			while (!comp(stream.Current)) {
+				sb.Append((char)stream.Current);
+				if (!stream.MoveNext())
+				{
+					break;
+				}
+			}
+		}
 	}
 }

@@ -120,15 +120,31 @@ namespace LinuxTracing.Tests
 		{
 			string path = Constants.GetPerfDumpPath("onegeneric");
 			this.HeaderTest(path, blockedTime: false,
-			commands: new string[] { "comm" },
-			pids: new int[] { 0 },
-			tids: new int[] { 0 },
-			cpus: new int[] { 0 },
-			times: new double[] { 0.0 },
-			timeProperties: new int[] { 1 },
-			events: new string[] { "event_name" },
-			eventProperties: new string[] { "event_properties" },
-			switches: null);
+				commands: new string[] { "comm" },
+				pids: new int[] { 0 },
+				tids: new int[] { 0 },
+				cpus: new int[] { 0 },
+				times: new double[] { 0.0 },
+				timeProperties: new int[] { 1 },
+				events: new string[] { "event_name" },
+				eventProperties: new string[] { "event_properties" },
+				switches: null);
+		}
+
+		[Fact]
+		public void SpaceSeparatedCommandHeader()
+		{
+			string path = Constants.GetPerfDumpPath("space_sep_command");
+			this.HeaderTest(path, blockedTime: false,
+				commands: new string[] { "comm and3 another part to the command line5 part3 part1" },
+				pids: new int[] { 0 },
+				tids: new int[] { 0 },
+				cpus: new int[] { 0 },
+				times: new double[] { 0.0 },
+				timeProperties: new int[] { 1 },
+				events: new string[] { "event_name" },
+				eventProperties: new string[] { "event_properties" },
+				switches: null);
 		}
 
 		[Fact]

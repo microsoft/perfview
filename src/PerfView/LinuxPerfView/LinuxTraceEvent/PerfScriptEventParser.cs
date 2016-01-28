@@ -20,7 +20,7 @@ namespace LinuxTracing.LinuxTraceEvent
 		{
 			get
 			{
-				return string.Format("{0}.perfView.xml", 
+				return string.Format("{0}.perfView.xml",
 					Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(this.SourceFileName)));
 			}
 		}
@@ -272,9 +272,15 @@ namespace LinuxTracing.LinuxTraceEvent
 
 				StringBuilder sb = new StringBuilder();
 
-				// comm
-				this.source.ReadAsciiStringUpToWhiteSpace(sb);
-				string comm = sb.ToString();
+				// Command - Stops at first number AFTER whitespace
+				while (!Utils.IsNumberChar((char)this.source.Current))
+				{
+					sb.Append(' ');
+					this.source.ReadAsciiStringUpToWhiteSpace(sb);
+					this.source.SkipWhiteSpace();
+				}
+
+				string comm = sb.ToString().Trim();
 				if (comm.Length > 0 && comm[0] == 0)
 				{
 					comm = comm.Substring(1, comm.Length - 1);
@@ -282,7 +288,6 @@ namespace LinuxTracing.LinuxTraceEvent
 				sb.Clear();
 
 				// Process ID
-				this.source.SkipWhiteSpace();
 				int pid = this.source.ReadInt();
 				this.source.MoveNext();
 
@@ -549,7 +554,8 @@ namespace LinuxTracing.LinuxTraceEvent
 					this.source.RestoreToMark(beforeSignature);
 					frameID = this.FrameCount++;
 					this.FrameID.Add(signature, frameID);
-					this.IDFrame.Add(this.ReadFrameInfo(address));
+					FrameInfo frameInfo = this.ReadFrameInfo(address);
+					this.IDFrame.Add(frameInfo);
 				}
 				else
 				{
