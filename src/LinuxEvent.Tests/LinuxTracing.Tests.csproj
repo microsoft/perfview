@@ -79,6 +79,9 @@
     <None Include="Sources\no_stack_frames.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Sources\ms_stack.perf.data.dump">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Sources\onegeneric.perf.data.dump">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

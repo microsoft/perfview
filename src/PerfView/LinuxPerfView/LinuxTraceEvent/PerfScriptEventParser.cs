@@ -372,10 +372,6 @@ namespace LinuxTracing.LinuxTraceEvent
 					}
 				}
 
-				// In any case, we end up reading up to a new line symbol, so we need to move past it.
-				// this.source.MoveNext();
-
-
 				// Period Between last thread sample
 				double previousTime;
 				double period;
@@ -484,7 +480,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				{
 					processFrameID = this.FrameCount++;
 					this.FrameID.Add(linuxEvent.Command, processFrameID);
-					this.IDFrame.Add(new ProcessThreadFrame(linuxEvent.ProcessID, linuxEvent.Command));
+					this.IDFrame.Add(new ProcessFrame(linuxEvent.Command));
 				}
 
 				StackNode stackNull = this.Stacks[-1];
@@ -506,7 +502,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				{
 					threadFrameID = this.FrameCount++;
 					this.FrameID.Add(linuxEvent.Command + linuxEvent.ThreadID.ToString(), threadFrameID);
-					this.IDFrame.Add(new ProcessThreadFrame(linuxEvent.ThreadID, "Thread"));
+					this.IDFrame.Add(new ThreadFrame(linuxEvent.ThreadID, "Thread"));
 				}
 
 
@@ -794,16 +790,28 @@ namespace LinuxTracing.LinuxTraceEvent
 			}
 		}
 
-		private struct ProcessThreadFrame : FrameInfo
+		private struct ThreadFrame : FrameInfo
 		{
 			internal string Name { get; }
 			internal int ID { get; }
 			public string DisplayName { get { return string.Format("{0} ({1})", this.Name, this.ID); } }
 
-			internal ProcessThreadFrame(int id, string name)
+			internal ThreadFrame(int id, string name)
 			{
 				this.Name = name;
 				this.ID = id;
+			}
+		}
+
+		private struct ProcessFrame : FrameInfo
+		{
+			internal string Name { get; }
+			
+			public string DisplayName { get { return this.Name; } }
+
+			internal ProcessFrame(string name)
+			{
+				this.Name = name;
 			}
 		}
 

@@ -89,7 +89,7 @@ namespace LinuxTracing.Tests
 		{
 			string path = Constants.GetPerfDumpPath("onegeneric");
 			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>> {
-				new List<string>{ "module!symbol", "Thread (0)", "comm (0)", null }
+				new List<string>{ "module!symbol", "Thread (0)", "comm", null }
 			});
 		}
 
@@ -99,8 +99,18 @@ namespace LinuxTracing.Tests
 			string path = Constants.GetPerfDumpPath("two_small_generic");
 			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>>
 			{
-				new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "comm (0)" },
-				new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (0)", "comm2 (0)" }
+				new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "comm" },
+				new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (0)", "comm2" }
+			});
+		}
+
+		[Fact]
+		public void MicrosoftStackTrace()
+		{
+			string path = Constants.GetPerfDumpPath("ms_stack");
+			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>>
+			{
+				new List<string> { "module!symbol(param[])", "Thread (0)", "comm" },
 			});
 		}
 
@@ -110,8 +120,8 @@ namespace LinuxTracing.Tests
 			string path = Constants.GetPerfDumpPath("one_complete_switch");
 			this.DoStackTraceTest(path, blockedTime: true, callerStacks: new List<List<string>>
 			{
-				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1 (0)"},
-				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2 (1)"},
+				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1"},
+				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2"},
 			});
 		}
 
@@ -122,8 +132,8 @@ namespace LinuxTracing.Tests
 			this.DoStackTraceTest(path, blockedTime: false,
 				callerStacks: new List<List<string>>
 				{
-					new List<string> { "Thread (0)", "comm (0)" },
-					new List<string> { "module!symbol", "Thread (0)", "comm (0)" },
+					new List<string> { "Thread (0)", "comm" },
+					new List<string> { "module!symbol", "Thread (0)", "comm" },
 				});
 		}
 
@@ -176,8 +186,7 @@ namespace LinuxTracing.Tests
 				{
 					new ScheduleSwitch("comm1", 0, 0, 'S', "comm2", 1, 1),
 					new ScheduleSwitch("comm2", 1, 0, 'S', "comm1", 0, 1)
-				}
-				);
+				});
 		}
 	}
 }
