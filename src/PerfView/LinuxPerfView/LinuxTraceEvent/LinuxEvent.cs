@@ -15,8 +15,8 @@ namespace LinuxTracing.LinuxTraceEvent
 		public ScheduledEvent(
 			string comm, int tid, int pid,
 			double time, double period, int timeProp, int cpu,
-			string eventName, string eventProp, int sampleID, ScheduleSwitch schedSwitch) :
-			base(comm, tid, pid, time, period, timeProp, cpu, eventName, eventProp, sampleID)
+			string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
+			base(comm, tid, pid, time, period, timeProp, cpu, eventName, eventProp, callerStacks)
 		{
 			this.Switch = schedSwitch;
 		}
@@ -55,12 +55,12 @@ namespace LinuxTracing.LinuxTraceEvent
 		public int Cpu { get; }
 		public string EventName { get; }
 		public string EventProperty { get; }
-		public int SampleID { get; }
+		public IEnumerable<Frame> CallerStacks { get; }
 
 		public LinuxEvent(
 			string comm, int tid, int pid,
 			double time, double period, int timeProp, int cpu,
-			string eventName, string eventProp, int sampleID)
+			string eventName, string eventProp, IEnumerable<Frame> callerStacks)
 		{
 			this.Command = comm;
 			this.ThreadID = tid;
@@ -71,7 +71,7 @@ namespace LinuxTracing.LinuxTraceEvent
 			this.Cpu = cpu;
 			this.EventName = eventName;
 			this.EventProperty = eventProp;
-			this.SampleID = sampleID;
+			this.CallerStacks = callerStacks;
 		}
 	}
 }

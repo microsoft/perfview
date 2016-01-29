@@ -157,10 +157,11 @@ namespace LinuxTracing.LinuxTraceEvent
 		#region Fields
 		private FastStream source;
 		private List<LinuxEvent> events;
+		private List<Frame> callerStacks;
 
 		// Optimized later to only have arrays of each of these types...
 		private Dictionary<string, int> FrameID;
-		private List<FrameInfo> IDFrame;
+		private List<Frame> IDFrame;
 		private Dictionary<int, StackNode> Stacks;
 		private Dictionary<long, FrameStack> FrameStacks;
 		private List<SampleInfo> Samples;
@@ -193,7 +194,7 @@ namespace LinuxTracing.LinuxTraceEvent
 			this.SampleCount = 0;
 
 			this.FrameID = new Dictionary<string, int>();
-			this.IDFrame = new List<FrameInfo>();
+			this.IDFrame = new List<Frame>();
 			this.Stacks = new Dictionary<int, StackNode>();
 			this.Stacks.Add(-1, new FrameStack(-1, -1, null));
 			this.FrameStacks = new Dictionary<long, FrameStack>();
@@ -411,14 +412,14 @@ namespace LinuxTracing.LinuxTraceEvent
 							{
 								linuxEvent =
 									new ScheduledEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, this.SampleCount++, scheduleSwitch);
+									eventName, eventDetails, null, scheduleSwitch);
 								break;
 							}
 						default:
 							{
 								linuxEvent =
 									new LinuxEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, this.SampleCount++);
+									eventName, eventDetails, null);
 								break;
 							}
 					}
@@ -550,7 +551,7 @@ namespace LinuxTracing.LinuxTraceEvent
 					this.source.RestoreToMark(beforeSignature);
 					frameID = this.FrameCount++;
 					this.FrameID.Add(signature, frameID);
-					FrameInfo frameInfo = this.ReadFrameInfo(address);
+					Frame frameInfo = this.ReadFrameInfo(address);
 					this.IDFrame.Add(frameInfo);
 				}
 				else
@@ -774,64 +775,6 @@ namespace LinuxTracing.LinuxTraceEvent
 		}
 
 		#region FrameInfos
-		private struct StackFrame : FrameInfo
-		{
-			internal string Address { get; }
-			internal string Module { get; }
-			internal string Symbol { get; }
-
-			public string DisplayName { get { return this.Module + "!" + this.Symbol; } }
-
-			internal StackFrame(string address, string module, string symbol)
-			{
-				this.Address = address;
-				this.Module = module;
-				this.Symbol = symbol;
-			}
-		}
-
-		private struct ThreadFrame : FrameInfo
-		{
-			internal string Name { get; }
-			internal int ID { get; }
-			public string DisplayName { get { return string.Format("{0} ({1})", this.Name, this.ID); } }
-
-			internal ThreadFrame(int id, string name)
-			{
-				this.Name = name;
-				this.ID = id;
-			}
-		}
-
-		private struct ProcessFrame : FrameInfo
-		{
-			internal string Name { get; }
-			
-			public string DisplayName { get { return this.Name; } }
-
-			internal ProcessFrame(string name)
-			{
-				this.Name = name;
-			}
-		}
-
-		private struct BlockedCPUFrame : FrameInfo
-		{
-			internal string Kind { get; }
-			internal int ID { get; }
-			public string DisplayName { get { return this.Kind; } }
-
-			internal BlockedCPUFrame(int id, string kind)
-			{
-				this.ID = id;
-				this.Kind = kind;
-			}
-		}
-
-		private interface FrameInfo
-		{
-			string DisplayName { get; }
-		}
 		#endregion
 
 		#region StackNodes
