@@ -38,75 +38,8 @@ namespace LinuxTracing
 				}
 			}
 
-			PerfScriptEventParser parser = new PerfScriptEventParser(args[0], doBlockedTime);
-			parser.Parse(
-				pattern: pattern,
-				maxSamples: maxSamples);
-			Program.TranslateToPerfViewXml(args[0], parser);
-		}
-
-		private static void TranslateToPerfViewXml(string filename, PerfScriptEventParser parser)
-		{
-			XmlWriterSettings settings = new XmlWriterSettings();
-			settings.Indent = true;
-			settings.IndentChars = " ";
-			string directory = Path.GetDirectoryName(filename);
-			string zipFilePath = string.Format(@"{0}\{1}.zip", directory, parser.OutputName);
-
-			using (FileStream zipStream = File.Create(zipFilePath))
-			{
-				using (ZipArchive archive = new ZipArchive(zipStream, ZipArchiveMode.Update))
-				{
-					ZipArchiveEntry xmlEntry = archive.CreateEntry(parser.OutputName);
-					using (XmlWriter writer = XmlWriter.Create(xmlEntry.Open(), settings))
-					{
-						writer.WriteStartElement("StackWindow");
-						writer.WriteStartElement("StackSource");
-
-						// Frames
-						//WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
-						//{
-						//	writer.WriteStartElement("Frame");
-						//	writer.WriteAttributeString("ID", i.ToString());
-						//	writer.WriteString(parser.GetFrameAt(i));
-						//	writer.WriteEndElement();
-						//;
-
-						// Stacks
-						// WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
-						//{
-						//	writer.WriteStartElement("Stack");
-						//	writer.WriteAttributeString("ID", i.ToString());
-					//		writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
-					//		writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
-					//		writer.WriteEndElement();
-					//	});
-
-						// Samples
-						WriteElementCount(writer, "Samples", parser.EventCount, delegate (int i)
-						{
-							writer.WriteStartElement("Sample");
-							writer.WriteAttributeString("ID", i.ToString());
-							writer.WriteAttributeString("Time", string.Format("{0:0.000}", 1000 * parser.GetTimeInSecondsAtEvent(i)));
-							//writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
-							writer.WriteEndElement();
-
-						});
-
-
-						writer.WriteEndElement();
-
-
-						// Write window state
-						Program.WriteCommonWindowState(writer);
-
-
-						// End
-						writer.WriteEndElement();
-						writer.Flush();
-					}
-				}
-			}
+			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(args[0]);
+			parser.Parse(pattern, maxSamples);
 		}
 
 		private static void WriteCommonWindowState(XmlWriter writer)

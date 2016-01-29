@@ -12,7 +12,7 @@ namespace LinuxTracing.Tests
 	{
 		private void InterningStackCountTest(string source, int expectedStackCount)
 		{
-			PerfScriptEventParser parser = new PerfScriptEventParser(source, false);
+			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
 			parser.Parse(null, 100, testing: true);
 
 			Assert.Equal(expectedStackCount, 0);

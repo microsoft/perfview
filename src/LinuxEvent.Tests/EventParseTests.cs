@@ -12,7 +12,7 @@ namespace LinuxTracing.Tests
 	{
 		private void DoStackTraceTest(string source, bool blockedTime, List<List<string>> callerStacks)
 		{
-			PerfScriptEventParser parser = new PerfScriptEventParser(source, blockedTime);
+			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
 			parser.Parse(null, 100, testing: true);
 
 			for (int e = 0; e < parser.EventCount; e++)
@@ -38,7 +38,7 @@ namespace LinuxTracing.Tests
 			ScheduleSwitch[] switches
 			)
 		{
-			PerfScriptEventParser parser = new PerfScriptEventParser(source, blockedTime);
+			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
 			parser.Parse(null, 100, testing: true);
 
 			// Need to make sure we have the same amount of samples

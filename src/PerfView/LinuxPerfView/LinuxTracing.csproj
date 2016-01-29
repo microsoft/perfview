@@ -86,11 +86,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LinuxTraceEvent\FrameInfo.cs" />
+    <Compile Include="LinuxTraceEvent\Frame.cs" />
     <Compile Include="Shared\Constants.cs" />
     <Compile Include="Shared\FastStreamExtension.cs" />
     <Compile Include="LinuxTraceEvent\LinuxEvent.cs" />
-    <Compile Include="LinuxTraceEvent\PerfScriptEventParser.cs" />
+    <Compile Include="LinuxTraceEvent\LinuxPerfScriptEventParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared\Utils.cs" />
