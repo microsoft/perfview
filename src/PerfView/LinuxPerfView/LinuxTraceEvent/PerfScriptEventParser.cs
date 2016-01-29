@@ -157,7 +157,6 @@ namespace LinuxTracing.LinuxTraceEvent
 		#region Fields
 		private FastStream source;
 		private List<LinuxEvent> events;
-		private List<Frame> callerStacks;
 
 		// Optimized later to only have arrays of each of these types...
 		private Dictionary<string, int> FrameID;
@@ -406,25 +405,42 @@ namespace LinuxTracing.LinuxTraceEvent
 				else
 				{
 					LinuxEvent linuxEvent;
+
+					Frame threadTimeFrame = null;
+
+					if (this.TrackBlockedTime)
+					{
+						ThreadInfo ti;
+						if (this.BlockedThreads.TryGetValue(tid, out ti))
+						{
+							threadTimeFrame = new BlockedCPUFrame(tid, Constants.BLOCKED_TIME);
+						}
+						else
+						{
+							threadTimeFrame = new BlockedCPUFrame(tid, Constants.CPU_TIME);
+						}
+					}
+
+					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame).ToList();
+
 					switch (eventKind)
 					{
 						case EventKind.Scheduled:
 							{
 								linuxEvent =
 									new ScheduledEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, null, scheduleSwitch);
+									eventName, eventDetails, frames, scheduleSwitch);
 								break;
 							}
 						default:
 							{
 								linuxEvent =
 									new LinuxEvent(comm, tid, pid, time, period, timeProp, cpu,
-									eventName, eventDetails, null);
+									eventName, eventDetails, frames);
 								break;
 							}
 					}
 
-					this.ReadStackTraceForEvent(linuxEvent);
 					yield return linuxEvent;
 				}
 			}
@@ -459,132 +475,27 @@ namespace LinuxTracing.LinuxTraceEvent
 			this.BlockedThreads.Remove(threadID);
 		}
 
-		private void ReadStackTraceForEvent(LinuxEvent linuxEvent)
+		private IEnumerable<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame)
 		{
-			this.DoStackTrace(linuxEvent, this.TrackBlockedTime);
-			this.Samples.Add(new SampleInfo(this.StackCount - 1, linuxEvent.Time));
-		}
-
-		private StackNode DoStackTrace(LinuxEvent linuxEvent, bool checkBlocking)
-		{
-
-			// This is the base case for the stack trace, when there are no more "real" frames (i.e. an empty line)
-			if ((this.source.Current == '\n' &&
-				(this.source.Peek(1) == '\n' || this.source.Peek(1) == '\r' || this.source.Peek(1) == '\0')) ||
-				 this.source.EndOfStream)
+			Func<byte, byte, bool> isEndOfStackTrace = delegate (byte current, byte peek1)
 			{
-				this.source.MoveNext();
+				return ((current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == '\0')) ||
+						 this.source.EndOfStream);
+			};
 
-				// Get the frame for the process...
-				int processFrameID;
-				if (!this.FrameID.TryGetValue(linuxEvent.Command, out processFrameID))
-				{
-					processFrameID = this.FrameCount++;
-					this.FrameID.Add(linuxEvent.Command, processFrameID);
-					this.IDFrame.Add(new ProcessFrame(linuxEvent.Command));
-				}
-
-				StackNode stackNull = this.Stacks[-1];
-
-				// Get the Process/CPU|Blocked|NULL FrameStack
-				long processFrameStackID = Utils.ConcatIntegers(stackNull.StackID, processFrameID);
-				FrameStack processFrameStack;
-				if (!this.FrameStacks.TryGetValue(processFrameStackID, out processFrameStack))
-				{
-					processFrameStack = new FrameStack(this.StackCount++, processFrameID, stackNull);
-					this.FrameStacks.Add(processFrameStackID, processFrameStack);
-					this.Stacks.Add(processFrameStack.StackID,
-						new ProcessNode(processFrameStack.StackID, linuxEvent.ProcessID, linuxEvent.Command, processFrameID, stackNull));
-				}
-
-				// Get the threadID
-				int threadFrameID;
-				if (!this.FrameID.TryGetValue(linuxEvent.Command + linuxEvent.ThreadID.ToString(), out threadFrameID))
-				{
-					threadFrameID = this.FrameCount++;
-					this.FrameID.Add(linuxEvent.Command + linuxEvent.ThreadID.ToString(), threadFrameID);
-					this.IDFrame.Add(new ThreadFrame(linuxEvent.ThreadID, "Thread"));
-				}
-
-
-				long threadFrameStackID = Utils.ConcatIntegers(processFrameStack.StackID, threadFrameID);
-
-				// Get the FrameStack for the ProcessThread
-				FrameStack threadFrameStack;
-				if (!this.FrameStacks.TryGetValue(threadFrameStackID, out threadFrameStack))
-				{
-					threadFrameStack = new FrameStack(this.StackCount++, threadFrameID, processFrameStack.Caller);
-					this.FrameStacks.Add(threadFrameStackID, threadFrameStack);
-					this.Stacks.Add(threadFrameStack.StackID,
-						new ThreadNode(threadFrameStack.StackID, linuxEvent.ThreadID, threadFrameID,
-						(ProcessNode)this.Stacks[processFrameStack.StackID]));
-				}
-
-				// Finally return the valid stack
-				return this.Stacks[threadFrameStack.StackID];
-
+			if (threadTimeFrame != null)
+			{
+				yield return threadTimeFrame;
 			}
 
-			int frameID;
-
-			if (!checkBlocking)
+			while (!isEndOfStackTrace(this.source.Current, this.source.Peek(1)))
 			{
-
-				StringBuilder sb = new StringBuilder();
-
-				this.source.SkipWhiteSpace();
-				this.source.ReadAsciiStringUpTo(' ', sb);
-				string address = sb.ToString();
-				sb.Clear();
-
-				var beforeSignature = this.source.MarkPosition();
-
-				this.source.MoveNext();
-				this.source.ReadAsciiStringUpTo('\n', sb);
-				string signature = sb.ToString().Trim();
-				sb.Clear();
-
-				if (!this.FrameID.TryGetValue(signature, out frameID))
-				{
-					// If the frame signature is not in the dictionary, we need to go back 
-					//   and actually parse it.
-					this.source.RestoreToMark(beforeSignature);
-					frameID = this.FrameCount++;
-					this.FrameID.Add(signature, frameID);
-					Frame frameInfo = this.ReadFrameInfo(address);
-					this.IDFrame.Add(frameInfo);
-				}
-				else
-				{
-					// If we found the frame, we don't care about this specific instance since we already have it cached
-					this.source.SkipUpTo('\n');
-				}
-			}
-			else
-			{
-				ThreadInfo ti;
-				if (this.BlockedThreads.TryGetValue(linuxEvent.ThreadID, out ti))
-				{
-					frameID = this.FrameID[Constants.BLOCKED_TIME];
-				}
-				else
-				{
-					frameID = this.FrameID[Constants.CPU_TIME];
-				}
+				yield return this.ReadFrame();
 			}
 
-			StackNode caller = this.DoStackTrace(linuxEvent, false);
-			long frameStackID = Utils.ConcatIntegers(caller.StackID, frameID);
+			yield return new ThreadFrame(threadID, "Thread");
+			yield return new ProcessFrame(command);
 
-			FrameStack framestack;
-			if (!FrameStacks.TryGetValue(frameStackID, out framestack))
-			{
-				framestack = new FrameStack(this.StackCount++, frameID, caller);
-				this.FrameStacks.Add(frameStackID, framestack);
-				this.Stacks.Add(framestack.StackID, framestack);
-			}
-
-			return framestack;
 		}
 		#endregion
 
@@ -635,12 +546,19 @@ namespace LinuxTracing.LinuxTraceEvent
 			return;
 		}
 
-		private StackFrame ReadFrameInfo(string address)
+		private StackFrame ReadFrame()
 		{
+			StringBuilder sb = new StringBuilder();
+
+			// Address
+			this.source.SkipWhiteSpace();
+			this.source.ReadAsciiStringUpTo(' ', sb);
+			string address = sb.ToString();
+			sb.Clear();
+
+			// Trying to get the module and symbol...
 			this.source.SkipWhiteSpace();
 			var mp = this.source.MarkPosition();
-
-			StringBuilder sb = new StringBuilder();
 
 			this.source.ReadAsciiStringUpToLastOnLine('(', sb);
 			string assumedSymbol = sb.ToString();

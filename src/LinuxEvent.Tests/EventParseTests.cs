@@ -15,21 +15,13 @@ namespace LinuxTracing.Tests
 			PerfScriptEventParser parser = new PerfScriptEventParser(source, blockedTime);
 			parser.Parse(null, 100, testing: true);
 
-			for (int sample = 0; sample < parser.SampleCount; sample++)
+			for (int e = 0; e < parser.SampleCount; e++)
 			{
-				int stackID = parser.GetStackAtSample(sample);
-				for (int i = 0; i < callerStacks[sample].Count; i++)
-				{
-					if (stackID == -1)
-					{
-						Assert.Equal(callerStacks[sample][i], null);
-						continue;
-					}
+				List<Frame> frames = parser.GetLinuxEventAt(e).CallerStacks.ToList();
 
-					int actualFrame = parser.GetFrameAtStack(stackID);
-					string actualName = parser.GetFrameAt(actualFrame);
-					Assert.Equal(callerStacks[sample][i], actualName);
-					stackID = parser.GetCallerAtStack(stackID);
+				for (int i = 0; i < frames.Count; i++)
+				{
+					Assert.Equal(callerStacks[e][i], frames[i].DisplayName);
 				}
 			}
 		}
