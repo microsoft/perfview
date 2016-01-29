@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Diagnostics.Tracing.StackSources;
 using Xunit;
-using LinuxTracing.LinuxTraceEvent;
 
 namespace LinuxTracing.Tests
 {

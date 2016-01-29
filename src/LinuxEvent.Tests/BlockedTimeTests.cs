@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using LinuxTracing.LinuxTraceEvent;
+using Diagnostics.Tracing.StackSources;
 using Xunit;
 
 namespace LinuxTracing.Tests

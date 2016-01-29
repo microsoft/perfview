@@ -120,10 +120,6 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PerfView\LinuxPerfView\LinuxTracing.csproj">
-      <Project>{83a5532a-fb42-4f6f-905a-bced8f3f5b74}</Project>
-      <Name>LinuxTracing</Name>
-    </ProjectReference>
     <ProjectReference Include="..\PerfView\PerfView.csproj">
       <Project>{6bac7496-6953-41b8-9042-aae45405a095}</Project>
       <Name>PerfView</Name>

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ClrProfiler;
 using LinuxTracing.Tests;
+using PerfView.Utilities;
 using Xunit;
 
 namespace LinuxTracing.Tests

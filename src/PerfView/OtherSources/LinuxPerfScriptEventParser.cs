@@ -5,12 +5,11 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using ClrProfiler;
-using LinuxTracing.Shared;
+using PerfView.Utilities;
 using Validation;
 
-namespace LinuxTracing.LinuxTraceEvent
+namespace Diagnostics.Tracing.StackSources
 {
 
 	public class LinuxPerfScriptEventParser : IDisposable
@@ -23,8 +22,6 @@ namespace LinuxTracing.LinuxTraceEvent
 		/// <summary>
 		/// Creates a stream reader to parse the given source file into interning stacks.
 		/// </summary>
-		/// <param name="pattern">Filters the samples through the event name.</param>
-		/// <param name="maxSamples">Truncates the number of samples.</param>
 		public void Parse(string pattern, int maxSamples, bool testing = false)
 		{
 			this.events = new List<LinuxEvent>();
@@ -111,7 +108,7 @@ namespace LinuxTracing.LinuxTraceEvent
 				StringBuilder sb = new StringBuilder();
 
 				// Command - Stops at first number AFTER whitespace
-				while (!Utils.IsNumberChar((char)this.Source.Current))
+				while (!this.IsNumberChar((char)this.Source.Current))
 				{
 					sb.Append(' ');
 					this.Source.ReadAsciiStringUpToWhiteSpace(sb);
@@ -365,6 +362,26 @@ namespace LinuxTracing.LinuxTraceEvent
 			}
 
 			return s;
+		}
+
+		private bool IsNumberChar(char c)
+		{
+			switch (c)
+			{
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+				case '0':
+					return true;
+			}
+
+			return false;
 		}
 
 		public void Dispose()
