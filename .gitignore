@@ -6,6 +6,10 @@
 *.user
 *.sln.docstates
 
+# VS 2015 stuff
+.vs/
+*.VC.opendb
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

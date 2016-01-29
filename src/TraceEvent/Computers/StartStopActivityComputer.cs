@@ -686,6 +686,9 @@ namespace Microsoft.Diagnostics.Tracing
                     if (creator == null)
                         Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
                 }
+                // If there is no RelatedActivityID, or the activity ID we have is 'bad' (dead), fall back to the activity we track.  
+                if (creator == null)
+                    creator = GetStartStopActivityForActivity(curTaskActivity);
             }
 
             if (taskName == null)
@@ -805,17 +808,19 @@ namespace Microsoft.Diagnostics.Tracing
                     creator = creator.Creator;
                 m_traceActivityToStartStopActivity.Set((int)startStopActivity.activityIndex, creator);
 
-                // If the creator shares the same activity ID, then set the activity ID to the creator, 
-                // otherwise we can remove it.  
+                // If the creator shares the same activity ID, then set the activity ID to the creator,  This happens
+                // when mulitple activities share the same activity ID (not the best practice but reasonably common).  
+                // If this sharing is not present, we can remove the activity ID from the table. 
                 if (creator != null && creator.ActivityID == startStopActivity.ActivityID && creator.ProcessID == startStopActivity.ProcessID)
                     SetActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID, creator);
                 else
                     RemoveActiveStartStopActivityTable(startStopActivity.ActivityID, startStopActivity.ProcessID);
 
+                // We can also remove any 'extra ActivityID entries (only used for ASP.NET events that needed fixing up).  
                 if (startStopActivity.unfixedActivityID != Guid.Empty)
                     RemoveActiveStartStopActivityTable(startStopActivity.unfixedActivityID, startStopActivity.ProcessID);
 
-                // If we are supposed to auto-stop our creator, go ahead and do that.  
+                // If we are supposed to auto-stop our creator, go ahead and do that.  (Only used on virtual RecHttp events)
                 if (startStopActivity.Creator != null && startStopActivity.Creator.killIfChildDies && !startStopActivity.Creator.IsStopped)    // Some activities die when their child dies.  
                 {
                     startStopActivity.Creator.RememberStop(startStopActivity.StopEventIndex, startStopActivity.StartTimeRelativeMSec + startStopActivity.DurationMSec, startStopActivity.activityIndex);

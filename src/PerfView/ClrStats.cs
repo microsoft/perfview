@@ -334,7 +334,7 @@ namespace Stats
                 {
                     MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
                     Inliner = data.InlinerNamespace + "." + data.InlinerName,
-                    Inlinee = data.InlineeName
+                    Inlinee = data.InlinerNamespace + "." + data.InlineeName
                 });
             };
             source.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData data)
@@ -343,7 +343,7 @@ namespace Stats
                 {
                     MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
                     Inliner = data.InlinerNamespace + "." + data.InlinerName,
-                    Inlinee = data.InlineeName,
+                    Inlinee = data.InlineeNamespace + "." + data.InlineeName,
                     Reason = data.FailReason
                 });
             };

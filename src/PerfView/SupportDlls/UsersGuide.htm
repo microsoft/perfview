@@ -7747,10 +7747,69 @@
         </li>
         -->
         <li>
+            Version 1.8.24 1/27/16
+            <ul>
+                <li> When opening 'Drill Into' windows, the columns are not in the order of the parent window in the ByName view.  
+                     Fixed this.  
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.23 1/26/16  
+            <ul>
+                <li>
+                    Merging failed on Win7 and Win2k8 systems in PerfView Version 1.8.  This means you could still analyze on 
+                    the machine where you collected, but symbols would fail to look up if you took the trace off the system.
+                    Fixed by including an old version of KernelTraceControl.dll an used it on Win7 systems.    
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.22 1/23/16
+            <ul>
+                <li>
+                    Fixed ArgumentOutOfRange execeptions thrown in EventView for some events (strings with length prefixes)
+                </li>
+                <li>Don't crash if regular expressions are incorrect in Events view. </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.21 1/18/16
+            <ul>
+                <li>
+                    Extended perfView.xml file format so that it can more easily consume 'ad hoc' creation of stacks.
+                    It still accepts the 'interned' scheme where you give IDs to each frame and stack and use those
+                    to create samples, but now you can specify the samples inline with the sample like this
+                    <ul>
+                        <li> &lt;StackWindow&gt; &lt;StackSource&gt; &lt;Samples&gt; </li>
+                        <li>
+                            &lt;Sample Time="10"&gt;
+                            <ul>
+                                <li>Executing Func for Sample 1</li>
+                                <li>Calling Func</li>
+                                <li>Main</li>
+                            </ul>
+                        <li>
+                            &lt;Sample Time="20"&gt;
+                            <ul>
+                                <li>Executing Func for Sample 1</li>
+                                <li>Calling Func</li>
+                                <li>Main</li>
+                            </ul>
+                        </li>
+                        <li> &lt;/Samples&gt; &lt;/StackSource&gt; &lt;/StackWindow&gt; </li>
+                    </ul>
+                    While this format is inefficient (you repeat many strings in many stacks), it is sometimes 
+                    convinient, and it is easy enough to support.   There are more details which I will blog about in 
+                    the near future.  
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.20 1/13/16
             <ul>
                 <li>
-                   Improved the robustness of the UserCommand 'Listen' command in the face of bad events.  
+                    Improved the robustness of the UserCommand 'Listen' command in the face of bad events.
                 </li>
             </ul>
         </li>

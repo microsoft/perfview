@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO.Compression;
 using System.IO;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using System.Collections.Generic;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -15,7 +16,7 @@ namespace Diagnostics.Tracing.StackSources
         {
             if (File.Exists(fileName))
                 File.Delete(fileName);
-            using (var archive =  ZipFile.Open(fileName, ZipArchiveMode.Create))
+            using (var archive = ZipFile.Open(fileName, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(Path.GetFileNameWithoutExtension(fileName));
                 using (var entryStream = entry.Open())
@@ -77,7 +78,7 @@ namespace Diagnostics.Tracing.StackSources
             // We use the invariant culture, otherwise if we encode in France and decode 
             // in English we get parse errors (this happened!);
             var invariantCulture = CultureInfo.InvariantCulture;
-            source.ForEach(delegate(StackSourceSample sample)
+            source.ForEach(delegate (StackSourceSample sample)
             {
                 // <Sample ID="1" Time="3432.23" StackID="2" Metric="1" EventKind="CPUSample" />
                 writer.WriteStartElement("Sample");
@@ -135,7 +136,7 @@ namespace Diagnostics.Tracing.StackSources
                     throw new ApplicationException("The file " + fileName + " does not have a StackWindow element");
 
                 reader.Read();      // Skip the StackWindow element. 
-                for(;;)
+                for (;;)
                 {
                     if (reader.NodeType == XmlNodeType.Element)
                     {
@@ -149,13 +150,33 @@ namespace Diagnostics.Tracing.StackSources
                     else if (!reader.Read())
                         break;
                 }
+                if (m_interner != null)
+                {
+                    // Transfer the interned names to the m_frames array.  
+                    // Go from high to low so at most one reallocation happens.  
+                    for (int i = m_interner.FrameCount - 1; 0 <= i; --i)
+                    {
+                        StackSourceFrameIndex frameIdx = m_interner.FrameStartIndex + i;
+                        m_frames.Set((int)frameIdx, m_interner.GetFrameName(frameIdx, true));
+                    }
+
+                    for (int i = m_interner.CallStackCount - 1; 0 <= i; --i)
+                    {
+                        StackSourceCallStackIndex stackIdx = m_interner.CallStackStartIndex + i;
+                        m_stacks.Set((int)stackIdx, new Frame(
+                            (int) m_interner.GetFrameIndex(stackIdx),
+                            (int) m_interner.GetCallerIndex(stackIdx)));
+                    }
+
+                    m_interner = null;  // we are done with it.  
+                }
             }
         }
 
         // TODO intern modules 
         public override void ForEach(Action<StackSourceSample> callback)
         {
-            for (int i = 0; i < m_samples.Length; i++)
+            for (int i = 0; i < m_samples.Count; i++)
                 callback(m_samples[i]);
         }
         public override bool SamplesImmutable { get { return true; } }
@@ -169,12 +190,10 @@ namespace Diagnostics.Tracing.StackSources
         }
         public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
         {
-            var ret = m_frames[(int)frameIndex];
+            string ret = m_frames.Get((int)frameIndex);
             if (!verboseName)
             {
-                if (m_shortFrameNames == null)
-                    m_shortFrameNames = new string[m_frames.Length];
-                var shortName = m_shortFrameNames[(int)frameIndex];
+                var shortName = m_shortFrameNames.Get((int)frameIndex);
                 if (shortName == null)
                 {
                     shortName = ret;
@@ -183,26 +202,21 @@ namespace Diagnostics.Tracing.StackSources
                     if (0 < exclaimIdx)
                     {
                         // Becomes 0 if it fails, which is what we want. 
-                        var startIdx = ret.LastIndexOf('\\', exclaimIdx - 1, exclaimIdx - 1) + 1;   
+                        var startIdx = ret.LastIndexOf('\\', exclaimIdx - 1, exclaimIdx - 1) + 1;
                         shortName = ret.Substring(startIdx);
                     }
-                    m_shortFrameNames[(int)frameIndex] = shortName;
+                    m_shortFrameNames.Set((int)frameIndex, shortName);
                 }
                 ret = shortName;
             }
             return ret;
         }
-        public override int CallStackIndexLimit
-        {
-            get { return m_stacks.Length; }
-        }
-        public override int CallFrameIndexLimit
-        {
-            get { return m_frames.Length; }
-        }
+        public override int CallStackIndexLimit { get { return m_stacks.Count; } }
+        public override int CallFrameIndexLimit { get { return m_frames.Count; } }
+
         public override int SampleIndexLimit
         {
-            get { return m_samples.Length; }
+            get { return m_samples.Count; }
         }
         public override double SampleTimeRelativeMSecLimit
         {
@@ -222,6 +236,7 @@ namespace Diagnostics.Tracing.StackSources
             var inputDepth = reader.Depth;
             while (reader.Read())
             {
+                PROCESS_NODE:
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
@@ -233,9 +248,7 @@ namespace Diagnostics.Tracing.StackSources
                             {
                                 do
                                 {
-                                    if (reader.Name == "ID")
-                                        sample.SampleIndex = (StackSourceSampleIndex)reader.ReadContentAsInt();
-                                    else if (reader.Name == "Time")
+                                    if (reader.Name == "Time")
                                         sample.TimeRelativeMSec = double.Parse(reader.ReadContentAsString(), invariantCulture);
                                     else if (reader.Name == "StackID")
                                         sample.StackIndex = (StackSourceCallStackIndex)reader.ReadContentAsInt();
@@ -243,15 +256,42 @@ namespace Diagnostics.Tracing.StackSources
                                         sample.Metric = float.Parse(reader.ReadContentAsString(), invariantCulture);
                                 } while (reader.MoveToNextAttribute());
                             }
-                            m_samples[m_curSample++] = sample;
+                            sample.SampleIndex = (StackSourceSampleIndex) m_curSample;
+                            m_samples.Set(m_curSample++, sample);
                             if (sample.TimeRelativeMSec > m_maxTime)
                                 m_maxTime = sample.TimeRelativeMSec;
+
+                            // See if there is a literal stack present as the body of 
+                            if (!reader.Read())
+                                break;
+                            if (reader.NodeType != XmlNodeType.Text)
+                                goto PROCESS_NODE;
+
+                            string rawStack = reader.Value.Trim();
+                            if (0 < rawStack.Length)
+                            {
+                                if (m_interner == null)
+                                {
+                                    m_interner = new StackSourceInterner(5000, 1000, 5,
+                                        (StackSourceFrameIndex)m_frames.Count,
+                                        (StackSourceCallStackIndex)m_stacks.Count);
+                                }
+
+                                StackSourceCallStackIndex stackIdx = StackSourceCallStackIndex.Invalid;
+                                string[] frames = rawStack.Split('\n');
+                                for (int i = frames.Length - 1;  0 <= i; --i)
+                                {
+                                    var frameIdx = m_interner.FrameIntern(frames[i].Trim());
+                                    stackIdx = m_interner.CallStackIntern(frameIdx, stackIdx);
+                                }
+                                sample.StackIndex = stackIdx;
+                            }
                         }
-                        if (reader.Name == "Stack")
+                        else if (reader.Name == "Stack")
                         {
-                            var stackID = -1;
-                            var callerID = -1;
-                            var frameID = -1;
+                            int stackID = -1;
+                            int callerID = -1;
+                            int frameID = -1;
                             if (reader.MoveToFirstAttribute())
                             {
                                 do
@@ -264,8 +304,7 @@ namespace Diagnostics.Tracing.StackSources
                                         callerID = reader.ReadContentAsInt();
                                 } while (reader.MoveToNextAttribute());
                             }
-                            m_stacks[stackID].frameID = frameID;
-                            m_stacks[stackID].callerID = callerID;
+                            m_stacks.Set(stackID, new Frame(frameID, callerID));
                         }
                         else if (reader.Name == "Frame")
                         {
@@ -280,29 +319,29 @@ namespace Diagnostics.Tracing.StackSources
                             }
                             reader.Read();      // Move on to body of the element
                             var frameName = reader.ReadContentAsString();
-                            m_frames[frameID] = frameName;
+                            m_frames.Set(frameID, frameName);
                         }
                         else if (reader.Name == "Frames")
                         {
                             var count = reader.GetAttribute("Count");
-                            m_frames = new string[int.Parse(count)];
+                            if (count != null && m_frames.Count == 0)
+                                m_frames = new GrowableArray<string>(int.Parse(count));
                         }
                         else if (reader.Name == "Stacks")
                         {
                             var count = reader.GetAttribute("Count");
-                            m_stacks = new Frame[int.Parse(count)];
+                            if (count != null && m_stacks.Count == 0)
+                                m_stacks = new GrowableArray<Frame>(int.Parse(count));
 #if DEBUG
-                            for (int i = 0; i < m_stacks.Length; i++)
-                            {
-                                m_stacks[i].frameID = int.MinValue;
-                                m_stacks[i].callerID = int.MinValue;
-                            }
+                            for (int i = 0; i < m_stacks.Count; i++)
+                                m_stacks[i] = new Frame(int.MinValue, int.MinValue);
 #endif
                         }
                         else if (reader.Name == "Samples")
                         {
                             var count = reader.GetAttribute("Count");
-                            m_samples = new StackSourceSample[int.Parse(count)];
+                            if (count != null && m_samples.Count == 0)
+                                m_samples = new GrowableArray<StackSourceSample>(int.Parse(count));
                         }
                         break;
                     case XmlNodeType.EndElement:
@@ -317,14 +356,13 @@ namespace Diagnostics.Tracing.StackSources
                         break;
                 }
             }
-        Done: ;
+            Done:;
 #if DEBUG
-            Debug.Assert(m_samples != null && m_frames != null && m_stacks != null);
-            for (int i = 0; i < m_samples.Length; i++)
+            for (int i = 0; i < m_samples.Count; i++)
                 Debug.Assert(m_samples[i] != null);
-            for (int i = 0; i < m_frames.Length; i++)
+            for (int i = 0; i < m_frames.Count; i++)
                 Debug.Assert(m_frames[i] != null);
-            for (int i = 0; i < m_stacks.Length; i++)
+            for (int i = 0; i < m_stacks.Count; i++)
             {
                 Debug.Assert(m_stacks[i].frameID >= 0);
                 Debug.Assert(m_stacks[i].callerID >= -1);
@@ -334,14 +372,16 @@ namespace Diagnostics.Tracing.StackSources
 
         struct Frame
         {
-            public int callerID;
+            public Frame(int frameID, int callerID) { this.frameID = frameID; this.callerID = callerID; }
             public int frameID;
+            public int callerID;
         }
 
-        string[] m_shortFrameNames;
-        string[] m_frames;
-        Frame[] m_stacks;
-        StackSourceSample[] m_samples;
+        GrowableArray<string> m_shortFrameNames;
+        GrowableArray<string> m_frames;
+        GrowableArray<Frame> m_stacks;
+        GrowableArray<StackSourceSample> m_samples;
+        StackSourceInterner m_interner;     // If the XML has samples with explicit stacks, then this is non-null and used to intern them. 
         int m_curSample;
         double m_maxTime;
         #endregion

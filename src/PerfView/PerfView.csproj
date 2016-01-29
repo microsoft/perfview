@@ -435,6 +435,11 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\x86\KernelTraceControl.Win61.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
