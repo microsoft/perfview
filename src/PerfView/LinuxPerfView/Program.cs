@@ -64,31 +64,31 @@ namespace LinuxTracing
 						writer.WriteStartElement("StackSource");
 
 						// Frames
-						WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
-						{
-							writer.WriteStartElement("Frame");
-							writer.WriteAttributeString("ID", i.ToString());
-							writer.WriteString(parser.GetFrameAt(i));
-							writer.WriteEndElement();
-						});
+						//WriteElementCount(writer, "Frames", parser.FrameCount, delegate (int i)
+						//{
+						//	writer.WriteStartElement("Frame");
+						//	writer.WriteAttributeString("ID", i.ToString());
+						//	writer.WriteString(parser.GetFrameAt(i));
+						//	writer.WriteEndElement();
+						//;
 
 						// Stacks
-						WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
-						{
-							writer.WriteStartElement("Stack");
-							writer.WriteAttributeString("ID", i.ToString());
-							writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
-							writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
-							writer.WriteEndElement();
-						});
+						// WriteElementCount(writer, "Stacks", parser.StackCount, delegate (int i)
+						//{
+						//	writer.WriteStartElement("Stack");
+						//	writer.WriteAttributeString("ID", i.ToString());
+					//		writer.WriteAttributeString("CallerID", parser.GetCallerAtStack(i).ToString());
+					//		writer.WriteAttributeString("FrameID", parser.GetFrameAtStack(i).ToString());
+					//		writer.WriteEndElement();
+					//	});
 
 						// Samples
-						WriteElementCount(writer, "Samples", parser.SampleCount, delegate (int i)
+						WriteElementCount(writer, "Samples", parser.EventCount, delegate (int i)
 						{
 							writer.WriteStartElement("Sample");
 							writer.WriteAttributeString("ID", i.ToString());
-							writer.WriteAttributeString("Time", string.Format("{0:0.000}", 1000 * parser.GetTimeInSecondsAtSample(i)));
-							writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
+							writer.WriteAttributeString("Time", string.Format("{0:0.000}", 1000 * parser.GetTimeInSecondsAtEvent(i)));
+							//writer.WriteAttributeString("StackID", parser.GetStackAtSample(i).ToString());
 							writer.WriteEndElement();
 
 						});

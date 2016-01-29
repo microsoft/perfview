@@ -15,7 +15,7 @@ namespace LinuxTracing.Tests
 			PerfScriptEventParser parser = new PerfScriptEventParser(source, blockedTime);
 			parser.Parse(null, 100, testing: true);
 
-			for (int e = 0; e < parser.SampleCount; e++)
+			for (int e = 0; e < parser.EventCount; e++)
 			{
 				List<Frame> frames = parser.GetLinuxEventAt(e).CallerStacks.ToList();
 
@@ -42,11 +42,11 @@ namespace LinuxTracing.Tests
 			parser.Parse(null, 100, testing: true);
 
 			// Need to make sure we have the same amount of samples
-			Assert.Equal(commands.Length, parser.SampleCount);
+			Assert.Equal(commands.Length, parser.EventCount);
 
 			int schedCount = 0;
 
-			for (int i = 0; i < parser.SampleCount; i++)
+			for (int i = 0; i < parser.EventCount; i++)
 			{
 				LinuxEvent linuxEvent = parser.GetLinuxEventAt(i);
 				Assert.Equal(commands[i], linuxEvent.Command);

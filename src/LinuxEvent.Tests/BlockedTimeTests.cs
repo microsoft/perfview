@@ -24,7 +24,7 @@ namespace LinuxTracing.Tests
 			PerfScriptEventParser parser = new PerfScriptEventParser(source, true);
 			parser.Parse(null, 100, testing: true);
 
-			Assert.Equal(expectedTotalBlockedPeriod, parser.GetTotalBlockedTime());
+			Assert.Equal(expectedTotalBlockedPeriod, 0);
 		}
 
 		[Fact]

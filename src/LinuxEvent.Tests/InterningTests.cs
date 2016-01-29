@@ -15,7 +15,7 @@ namespace LinuxTracing.Tests
 			PerfScriptEventParser parser = new PerfScriptEventParser(source, false);
 			parser.Parse(null, 100, testing: true);
 
-			Assert.Equal(expectedStackCount, parser.StackCount);
+			Assert.Equal(expectedStackCount, 0);
 		}
 
 		[Fact]

@@ -6,6 +6,12 @@ using System.Threading.Tasks;
 
 namespace LinuxTracing.LinuxTraceEvent
 {
+	public enum EventKind
+	{
+		General,
+		Scheduled,
+	}
+
 	public class ScheduledEvent : LinuxEvent
 	{
 		public static readonly string Name = "sched_switch";
@@ -14,9 +20,9 @@ namespace LinuxTracing.LinuxTraceEvent
 
 		public ScheduledEvent(
 			string comm, int tid, int pid,
-			double time, double period, int timeProp, int cpu,
+			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
-			base(comm, tid, pid, time, period, timeProp, cpu, eventName, eventProp, callerStacks)
+			base(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
 		{
 			this.Switch = schedSwitch;
 		}
@@ -59,14 +65,13 @@ namespace LinuxTracing.LinuxTraceEvent
 
 		public LinuxEvent(
 			string comm, int tid, int pid,
-			double time, double period, int timeProp, int cpu,
+			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks)
 		{
 			this.Command = comm;
 			this.ThreadID = tid;
 			this.ProcessID = pid;
 			this.Time = time;
-			this.Period = period;
 			this.TimeProperty = timeProp;
 			this.Cpu = cpu;
 			this.EventName = eventName;
