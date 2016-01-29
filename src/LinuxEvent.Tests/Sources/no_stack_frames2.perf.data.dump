@@ -1,0 +1,12 @@
+﻿mono  5661/5661  [000] 590639.572987: cpu-clock: 
+	    7ff4a2acb4d4 pthread_mutex_lock (/lib/x86_64-linux-gnu/libpthread-2.19.so)
+	          4fd622 [unknown] (/usr/bin/mono-sgen)
+	8000800a0000221e [unknown] ([unknown])
+	32800600099c7306 [unknown] ([unknown])
+
+swapper     0/0     [001] 590639.573057: cpu-clock: 
+	ffffffff810561a6 native_safe_halt ([kernel.kallsyms])
+	ffffffff8101e29f default_idle ([kernel.kallsyms])
+	ffffffff8101ec8f arch_cpu_idle ([kernel.kallsyms])
+	ffffffff810b67c5 cpu_startup_entry ([kernel.kallsyms])
+	ffffffff810463dd start_secondary ([kernel.kallsyms])

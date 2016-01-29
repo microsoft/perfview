@@ -138,6 +138,33 @@ namespace LinuxTracing.Tests
 		}
 
 		[Fact]
+		public void EmptyStackFrames2()
+		{
+			string path = Constants.GetPerfDumpPath("no_stack_frames2");
+			this.DoStackTraceTest(path, blockedTime: false,
+				callerStacks: new List<List<string>>
+				{
+					new List<string>
+					{
+						"libpthread-2.19.so!pthread_mutex_lock",
+						"mono-sgen!unknown",
+						"unknown!unknown",
+						"unknown!unknown",
+						"Thread (5661)", "mono"
+					},
+					new List<string>
+					{
+						"kernel.kallsyms!native_safe_halt",
+						"kernel.kallsyms!default_idle",
+						"kernel.kallsyms!arch_cpu_idle",
+						"kernel.kallsyms!cpu_startup_entry",
+						"kernel.kallsyms!start_secondary",
+						"Thread (0)", "swapper"
+					}
+				});
+		}
+
+		[Fact]
 		public void NonSchedHeader()
 		{
 			string path = Constants.GetPerfDumpPath("onegeneric");

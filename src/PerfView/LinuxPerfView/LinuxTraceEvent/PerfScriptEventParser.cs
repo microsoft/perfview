@@ -21,7 +21,7 @@ namespace LinuxTracing.LinuxTraceEvent
 			get
 			{
 				return string.Format("{0}.perfView.xml",
-					Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(this.SourceFileName)));
+					Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(this.SourcePath)));
 			}
 		}
 
