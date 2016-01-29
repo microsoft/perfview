@@ -117,12 +117,6 @@
             with OpenPerfViewXmlFile
             </summary>
         </member>
-        <member name="T:Commands.MyStackSource">
-            <summary>
-            InternStackSource is used to create a StackSource out of nothing.  However at least currently
-            you need to subclass it to get at the creation APIs.   
-            </summary>
-        </member>
         <member name="M:Commands.GetTraceEventsWithProcessFilter(PerfViewExtensibility.ETLDataFile)">
             <summary>
             Gets the TraceEvents list of events from etlFile, applying a process filter if the /process argument is given. 
@@ -159,6 +153,12 @@
             It will create a child node for all .etl files called 'Demo View In Etl File'  If you click 
             on this node it will execute this user command.  It is passed the name of the file that was 
             opened and the name of the view that was opened (in this case 'Demo View In Etl File').  
+            </summary>
+        </member>
+        <member name="T:Commands.MyStackSource">
+            <summary>
+            InternStackSource is used to create a StackSource out of nothing.  However at least currently
+            you need to subclass it to get at the creation APIs.   
             </summary>
         </member>
     </members>

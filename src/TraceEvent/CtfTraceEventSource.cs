@@ -20,11 +20,11 @@ namespace Microsoft.Diagnostics.Tracing
         public TraceEventID Id;
         public Byte Version;
 
-        public ETWMapping(Guid guid, TraceEventOpcode opcode, TraceEventID id, int version)
+        public ETWMapping(Guid guid, int opcode, int id, int version)
         {
             Guid = guid;
-            Opcode = opcode;
-            Id = id;
+            Opcode = (TraceEventOpcode)opcode;
+            Id = (TraceEventID)id;
             Version = (byte)version;
         }
     }
@@ -35,21 +35,11 @@ namespace Microsoft.Diagnostics.Tracing
         private ZipArchive _zip;
         private CtfMetadata _metadata;
         private ZipArchiveEntry[] _channels;
-        private StreamWriter _debugOutput = File.CreateText("debug.txt");
         private TraceEventNativeMethods.EVENT_RECORD* _header;
-        private Dictionary<string, TraceEvent> _privateEvents = new Dictionary<string, TraceEvent>();
-        private Dictionary<string, TraceEvent> _publicEvents = new Dictionary<string, TraceEvent>();
-
-
-        const string DotNetPrivate = "DotNETRuntimePrivate";
-        const string DotNetPublic = "DotNETRuntime";
-        const string PrivateProviderName = "Microsoft-Windows-DotNETRuntimePrivate";
-        const string PublicProviderName = "Microsoft-Windows-DotNETRuntime";
-        
+        private Dictionary<string, ETWMapping> _eventMapping;
 
         public CtfTraceEventSource(string fileName)
         {
-            _debugOutput.AutoFlush = true;
             _filename = fileName;
             _zip = ZipFile.Open(fileName, ZipArchiveMode.Read);
             ZipArchiveEntry metadataArchive = _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata").Single();
@@ -79,43 +69,35 @@ namespace Microsoft.Diagnostics.Tracing
             _syncTimeQPC = 1;
             _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
 
-            InitEvents();
+            _eventMapping = InitEventMap();
         }
 
-        private void InitEvents()
+        private static Dictionary<string, ETWMapping> InitEventMap()
         {
-            var parser = new Parsers.ClrPrivateTraceEventParser(this);
-            parser.EnumerateTemplates(null, delegate(TraceEvent evt)
-            {
-                Debug.Assert(evt.ProviderName == PrivateProviderName);
-                _privateEvents[evt.OpcodeName] = evt;
-            });
-
-            var parser2 = new Parsers.ClrTraceEventParser(this);
-            parser2.EnumerateTemplates(null, delegate(TraceEvent evt)
-            {
-                Debug.Assert(evt.ProviderName == PublicProviderName);
-                _publicEvents[evt.OpcodeName] = evt;
-            });
-            
-            _privateEvents["PrvSetGCHandle"] = _privateEvents["SetGCHandle"];
-            _publicEvents["AppDomainLoad_V1"] = _publicEvents["AppDomainLoad"];
-            _publicEvents["GCCreateSegment_V1"] = _publicEvents["CreateSegment"];
-            _privateEvents["SecurityCatchCall_V1"] = _privateEvents["SecurityCatchCallStart"];
-            _publicEvents["AssemblyLoad_V1"] = _publicEvents["AssemblyLoad"];
-            _publicEvents["MethodJittingStarted_V1"] = _publicEvents["JittingStarted"];
-            _privateEvents["PrvFinalizeObject"] = _privateEvents["FinalizeObject"];
-            _publicEvents["MethodJitInliningSucceeded"] = _publicEvents["InliningSucceeded"];
-            _publicEvents["MethodLoadVerbose_V1"] = _publicEvents["LoadVerbose"];
-            _publicEvents["MethodILToNativeMap"] = _publicEvents["ILToNativeMap"];
-            _publicEvents["GCAllocationTick_V3"] = _publicEvents["AllocationTick"];
-            _publicEvents["DomainModuleLoad_V1"] = _publicEvents["DomainModuleLoad"];
-            _publicEvents["GCSuspendEEBegin_V1"] = _publicEvents["SuspendEEStart"];
-            _publicEvents["GCSuspendEEEnd_V1"] = _publicEvents["SuspendEEStop"];
-            _publicEvents["GCRestartEEBegin_V1"] = _publicEvents["RestartEEStart"];
-            _publicEvents["GCRestartEEEnd_V1"] = _publicEvents["RestartEEStop"];
-            _publicEvents["GCFinalizersBegin_V1"] = _publicEvents["FinalizersStart"];
-            _publicEvents["GCFinalizersEnd_V1"] = _publicEvents["FinalizersStop"];
+            Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
+            result["DotNETRuntime:SetGCHandle"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 33, 30, 0);
+            result["DotNETRuntimePrivate:PrvSetGCHandle"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 42, 194, 0);
+            result["DotNETRuntime:AppDomainLoad_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 41, 156, 1);
+            result["DotNETRuntime:ThreadCreated"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 50, 85, 0);
+            result["DotNETRuntime:GCCreateSegment_V1"] = new ETWMapping(new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"), 6, 5, 1);
+            result["DotNETRuntimePrivate:SecurityCatchCall_V1"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 42, 122, 1);
+            result["DotNETRuntimePrivate:AllocRequest"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 97, 310, 0);
+            result["DotNETRuntime:AssemblyLoad_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 37, 154, 1);
+            result["DotNETRuntime:MethodJittingStarted_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 42, 145, 1);
+            result["DotNETRuntime:MethodJitInliningSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 83, 185, 0);
+            result["DotNETRuntime:MethodLoadVerbose_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 37, 143, 1);
+            result["DotNETRuntime:MethodILToNativeMap"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 87, 190, 0);
+            result["DotNETRuntime:GCAllocationTick_V3"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 11, 10, 3);
+            result["DotNETRuntime:DomainModuleLoad_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 45, 151, 1);
+            result["DotNETRuntime:GCSuspendEEBegin_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 10, 9, 1);
+            result["DotNETRuntime:GCSuspendEEEnd_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 137, 8, 1);
+            result["DotNETRuntime:GCRestartEEBegin_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 136, 7, 1);
+            result["DotNETRuntime:GCRestartEEEnd_V1"] = new ETWMapping(new Guid("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"), 8, 3, 1);
+            result["DotNETRuntime:GCFinalizersBegin_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 19, 14, 1);
+            result["DotNETRuntime:GCFinalizersEnd_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 15, 13, 1);
+            result["DotNETRuntime:FinalizeObject"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 32, 29, 0);
+            result["DotNETRuntimePrivate:PrvFinalizeObject"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 39, 192, 0);
+            return result;
         }
 
         ~CtfTraceEventSource()
@@ -157,7 +139,6 @@ namespace Microsoft.Diagnostics.Tracing
                 CtfEvent evt = header.Event;
                 stream.ReadEventIntoBuffer(evt);
 
-                //TraceEvent traceEvent = Lookup(eventRecord);
                 ETWMapping etw = GetTraceEvent(evt);
                 if (etw.IsNull)
                     continue;
@@ -167,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing
                 traceEvent.eventRecord = hdr;
                 traceEvent.userData = stream.BufferPtr;
 
-                //traceEvent.DebugValidate();
+                traceEvent.DebugValidate();
                 Dispatch(traceEvent);
             }
         }
@@ -197,7 +178,6 @@ namespace Microsoft.Diagnostics.Tracing
             _header->BufferContext = new TraceEventNativeMethods.ETW_BUFFER_CONTEXT();
             _header->BufferContext.ProcessorNumber = 0; // todo
 
-            // ExtendedDataCount
             _header->UserDataLength = (ushort)stream.BufferLength;
             _header->UserData = stream.BufferPtr;
             return _header;
@@ -207,22 +187,7 @@ namespace Microsoft.Diagnostics.Tracing
         private ETWMapping GetTraceEvent(CtfEvent evt)
         {
             ETWMapping result;
-            if (_traceEvents.TryGetValue(evt, out result))
-                return result;
-
-            int i = evt.Name.IndexOf(':');
-            if (i != -1)
-            {
-                string provider = evt.Name.Substring(0, i);
-                string eventName = evt.Name.Substring(i + 1);
-
-                Dictionary<string, TraceEvent> lookup = (provider == DotNetPrivate) ? _privateEvents : _publicEvents;
-                TraceEvent traceEvent;
-                if (lookup.TryGetValue(eventName, out traceEvent))
-                    result = new ETWMapping(traceEvent.ProviderGuid, traceEvent.Opcode, traceEvent.ID, 0);
-            }
-
-            _traceEvents[evt] = result;
+            _eventMapping.TryGetValue(evt.Name, out result);
             return result;
         }
 
