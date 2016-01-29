@@ -164,15 +164,23 @@ namespace PerfView
         }
         public void RemoveColumn(string columnName)
         {
+            int col = GetColumnIndex(columnName);
+            if (0 <= col)
+                Grid.Columns.RemoveAt(col);
+        }
+
+        public int GetColumnIndex(string columnName)
+        {
             int i = 0;
             while (i < Grid.Columns.Count)
             {
                 var name = ((TextBlock)Grid.Columns[i].Header).Name;
                 if (name == columnName)
-                    Grid.Columns.RemoveAt(i);
+                    return i;
                 else
                     i++;
             }
+            return -1;
         }
         public List<string> ColumnNames()
         {

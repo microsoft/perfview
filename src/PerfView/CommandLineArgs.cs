@@ -225,7 +225,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("StopOnPerfCounter", ref StopOnPerfCounter,
                 "This is of the form CATEGORY:COUNTERNAME:INSTANCE OP NUM  where CATEGORY:COUNTERNAME:INSTANCE, identify " +
                 "a performance counter (same as PerfMon), OP is either < or >, and NUM is a number.  " +
-                "When that condition is true then collection will stop.  You can specify this qualifier more than once.  See 'Stop Trigger' in the users guide for more.");
+                "When that condition is true then collection will stop.  You can specify this qualifier more than once (logical OR).  See 'Stop Trigger' in the users guide for more.");
             parser.DefineOptionalQualifier("StopOnEventLogMessage", ref StopOnEventLogMessage,
                 "Stop when an event log message that matches the given (ignore case) regular expression is written to the Windows 'Application' event log.  " +
                 "You can specify a particular event log with the syntax eventLogName@RegExp.   Can be specified more than once (logical OR).");
