@@ -6,13 +6,72 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ClrProfiler;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using Validation;
 
 namespace Diagnostics.Tracing.StackSources
 {
 
-	public class LinuxPerfScriptEventParser : IDisposable
+	public class LinuxPerfScriptStackSource : InternStackSource
+	{
+
+		public static readonly string PerfScriptSuffix = "perf.data.dump";
+
+		private LinuxPerfScriptEventParser Parser { get; }
+		public LinuxPerfScriptStackSource(string path)
+		{
+			Stream stream = null;
+
+			if (path.EndsWith(".zip"))
+			{
+				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
+				ZipArchiveEntry foundEntry = null;
+				foreach (ZipArchiveEntry entry in archive.Entries)
+				{
+					if (entry.FullName.EndsWith(PerfScriptSuffix))
+					{
+						foundEntry = entry;
+						break;
+					}
+				}
+
+				stream = foundEntry.Open();
+			}
+			else
+			{
+				if (path.EndsWith(PerfScriptSuffix))
+				{
+					stream = new FileStream(path, FileMode.Open);
+				}
+				else
+				{
+					throw new Exception("Not a valid input file");
+				}
+			}
+
+			if (stream != null)
+			{
+				this.Parser = new LinuxPerfScriptEventParser(stream);
+			}
+			else
+			{
+				throw new Exception(".zip does not contain a perf.data.dump file suffix entry");
+			}
+
+			this.AddAllLinuxEvents();
+		}
+
+		#region private
+		private void AddAllLinuxEvents()
+		{
+		}
+
+		#endregion
+	}
+
+
+	public class LinuxPerfScriptEventParser
 	{
 		/// <summary>
 		/// Gets the total number of samples created.
@@ -22,7 +81,7 @@ namespace Diagnostics.Tracing.StackSources
 		/// <summary>
 		/// Creates a stream reader to parse the given source file into interning stacks.
 		/// </summary>
-		public void Parse(string pattern, int maxSamples, bool testing = false)
+		public IEnumerable<LinuxEvent> Parse(bool testing = false)
 		{
 			this.events = new List<LinuxEvent>();
 
@@ -34,20 +93,23 @@ namespace Diagnostics.Tracing.StackSources
 				this.Source.MoveNext();
 			}
 
-			Regex rgx = pattern == null ? null : new Regex(pattern);
+			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
 			{
 				if (linuxEvent != null)
 				{
-					this.events.Add(linuxEvent);
+					yield return linuxEvent;
 				}
 
-				if (this.EventCount > maxSamples)
+				if (this.EventCount > this.MaxSamples)
 				{
-					break;
+					yield break;
 				}
 			}
 		}
+
+		public Regex Pattern { get; set; }
+		public long MaxSamples { get; set; }
 
 		/// <summary>
 		/// Gets the time at the given sample ID.
@@ -68,15 +130,17 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			Requires.NotNull(path, nameof(path));
 			this.Source = new FastStream(path);
+			this.SetDefaultValues();
 		}
 
 		public LinuxPerfScriptEventParser(Stream stream)
 		{
 			Requires.NotNull(stream, nameof(stream));
 			this.Source = new FastStream(stream);
+			this.SetDefaultValues();
 		}
 
-		#region Fields
+		#region fields
 		private FastStream Source { get; }
 		private List<LinuxEvent> events;
 
@@ -85,8 +149,13 @@ namespace Diagnostics.Tracing.StackSources
 
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
-		private ZipArchive Archive { get; set; }
 		#endregion
+
+		private void SetDefaultValues()
+		{
+			this.Pattern = null;
+			this.MaxSamples = 50000;
+		}
 
 		private IEnumerable<LinuxEvent> NextEvent(Regex regex)
 		{
@@ -382,11 +451,6 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			return false;
-		}
-
-		public void Dispose()
-		{
-			this.Archive?.Dispose();
 		}
 	}
 
