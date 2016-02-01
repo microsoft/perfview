@@ -130,7 +130,6 @@ namespace Microsoft.Diagnostics.Tracing
                 tplProvider.TaskExecuteStart += OnSampledProfile;
                 tplProvider.TaskWaitSend += OnSampledProfile;
                 tplProvider.TaskWaitStop += OnTaskUnblock;  // Log the activity stack even if you don't have a stack. 
-
             }
 
             if (!ExcludeReadyThread)
@@ -165,12 +164,16 @@ namespace Microsoft.Diagnostics.Tracing
 
                 m_startStopActivities.Start += delegate (StartStopActivity startStopActivity, TraceEvent data)
                 {
-                    // We only care about the top-most activities.   fast out otehrwise.   
+                    // We only care about the top-most activities since unknown async time is defined as time
+                    // where a top  most activity is running but no thread (or await time) is associated with it 
+                    // fast out otherwise (we just insure that we mark the thread as doing this activity)
                     if (startStopActivity.Creator != null)
+                    {
+                        UpdateThreadToWorkOnStartStopActivity(data.Thread(), startStopActivity, data);
                         return;
+                    }
 
                     // Then we have a refcount of exactly one
-                    Debug.Assert(data.Opcode == TraceEventOpcode.Start);
                     Debug.Assert(m_unknownTimeStartMsec.Get((int)startStopActivity.Index) >= 0);    // There was nothing running before.  
 
                     m_unknownTimeStartMsec.Set((int)startStopActivity.Index, -1);       // Set it so just we are running.  
@@ -178,7 +181,9 @@ namespace Microsoft.Diagnostics.Tracing
                 };
                 m_startStopActivities.Stop += delegate (StartStopActivity startStopActivity, TraceEvent data)
                 {
-                    // We only care about the top-most activities.   fast out otehrwise.   
+                    // We only care about the top-most activities since unknown async time is defined as time
+                    // where a top  most activity is running but no thread (or await time) is associated with it 
+                    // fast out otherwise   
                     if (startStopActivity.Creator != null)
                         return;
 
@@ -191,7 +196,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (samples != null)
                     {
                         foreach (var sample in samples)
-                            m_outputStackSource.AddSample(sample);
+                            m_outputStackSource.AddSample(sample);  // Adding Unknown ASync
                         m_startStopActivityToAsyncUnknownSamples.Set((int)startStopActivity.Index, null);
                     }
 
@@ -275,10 +280,6 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // We don't care about ManifestData events.  
                 if (data.ID == (TraceEventID)0xFFFE)
-                    return;
-
-                // If we don't have a stack skip it. 
-                if (data.CallStackIndex() == CallStackIndex.Invalid)
                     return;
 
                 TraceThread thread = data.Thread();
@@ -445,10 +446,6 @@ namespace Microsoft.Diagnostics.Tracing
             // We dont bother with times that are too small, we consider 1msec the threshold  
             double delta = data.TimeStampRelativeMSec - unknownStartTimeMSec;
             if (delta < 1)
-                return;
-
-            // We don't long unknown unless we are the deepest child.   
-            if (startStopActivity.LiveChildCount > 0)
                 return;
 
             // Add a sample with the amount of unknown duration.  
@@ -782,7 +779,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
 
                     sample.StackIndex = morphedStackIndex;
-                    LastUnblockEvent = computer.m_outputStackSource.AddSample(sample);
+                    LastUnblockEvent = computer.m_outputStackSource.AddSample(sample);  // Thread unblocking
 
                     // Did we have a non-trivial delay trying to get the CPU?  
                     if (schedulingDelayMSec > 0)
@@ -800,7 +797,7 @@ namespace Microsoft.Diagnostics.Tracing
                         morphedStack = computer.m_outputStackSource.Interner.CallStackIntern(nodeIndex, morphedStack);
 
                         sample.StackIndex = computer.m_outputStackSource.Interner.CallStackIntern(computer.m_readyFrameIndex, morphedStack);
-                        computer.m_outputStackSource.AddSample(sample);
+                        computer.m_outputStackSource.AddSample(sample); // Thread unblocking
                     }
 
                     BlockTimeStartRelativeMSec = -timeRelativeMSec;               // Thread is now unblocked. 
@@ -882,7 +879,7 @@ namespace Microsoft.Diagnostics.Tracing
                     sample.StackIndex = LastCPUCallStack;
                     if (computer.m_traceHasCSwitches)
                         sample.StackIndex = computer.m_outputStackSource.Interner.CallStackIntern(nodeIndex, sample.StackIndex);
-                    computer.m_outputStackSource.AddSample(sample);
+                    computer.m_outputStackSource.AddSample(sample); // CPU
                 }
             }
 
@@ -1103,20 +1100,31 @@ namespace Microsoft.Diagnostics.Tracing
             public ActivityIndex ActivityIndex; // The activity that is currently processing this request.  
         }
         Dictionary<Guid, AspNetRequestInfo> m_aspNetRequestInfo;
-        /// <summary>
-        /// This is actually only the top most start-stop activity.  If an activity is nested, it does
-        /// not show up here.  It is only used to create UNKNONW_ASYNC nodes.  
-        /// </summary>
-        StartStopActivityComputer m_startStopActivities;
+        StartStopActivityComputer m_startStopActivities;    // Tracks start-stop activities so we can add them to the top above thread in the stack.  
+
+        // UNKNOWN_ASYNC support 
         /// <summary>
         /// Used to create UNKNOWN frames for start-stop activities.   This is indexed by StartStopActivityIndex.
         /// and for each start-stop activity indicates when unknown time starts.   However if that activity still
         /// has known activities associated with it then the number will be negative, and its value is the 
-        /// ref-count of activities known activities (thus when it falls to 0, it we set it to the start of unknown time. 
+        /// ref-count of known activities (thus when it falls to 0, it we set it to the start of unknown time. 
+        /// This is indexed by the TOP-MOST start-stop activity.  
         /// </summary>
         GrowableArray<double> m_unknownTimeStartMsec;
+        /// <summary>
+        /// maps thread ID to the current TOP-MOST start-stop activity running on that thread.   Used to updated m_unknownTimeStartMsec 
+        /// to figure out when to put in UNKNOWN_ASYNC nodes.  
+        /// </summary>
         StartStopActivity[] m_threadToStartStopActivity;
-        GrowableArray<List<StackSourceSample>> m_startStopActivityToAsyncUnknownSamples;    // Maps an start-stop index to the list of ASYNC_UNKNOWN nodes.  
+        /// <summary>
+        /// Sadly, with AWAIT nodes might come into existance AFTER we would have normally identified 
+        /// a region as having no thread/await working on it.  Thus you have to be able to 'undo' ASYNC_UNKONWN
+        /// nodes.   We solve this by remembering all of our ASYNC_UNKNOWN nodes on a list (basically provisional)
+        /// and only add them when the start-stop activity dies (when we know there can't be another AWAIT.  
+        /// Note that we only care about TOP-MOST activities.  
+        /// </summary>
+        GrowableArray<List<StackSourceSample>> m_startStopActivityToAsyncUnknownSamples;
+        // End UNKNOWN_ASYNC support 
 
         ThreadState[] m_threadState;            // This maps thread (indexes) to what we know about the thread
         /// <summary>

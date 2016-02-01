@@ -144,6 +144,16 @@ namespace Microsoft.Diagnostics.Tracing
                 OnStart(data, GetClrRawID(data, data.WorkID));
             };
 
+            // Unfortunately, the thread pool will go onto other tasks without anything that 
+            // says we have transitioned.  Just like cswitches in the thread pool mark this 
+            // We will make Start of of the ASP.NET provider also mark an auto-start. 
+            // What we really need is to know when TPL activities end, but we don't have that.
+            // This will help.   
+            m_source.Dynamic.AddCallbackForProviderEvent("Microsoft-Windows-ASPNET", "Request/Start", delegate (TraceEvent data)
+            {
+                AutoRestart(data, data.Thread());
+            });
+
             // This should not be needed if the thread pool provided proper events.  Basically we want to know
             // when a activity must have ended because we are blocking in the thread pool where we park threads
             // waiting for the 'next thing'.  
@@ -356,7 +366,7 @@ namespace Microsoft.Diagnostics.Tracing
         #region Private
         // When we stop because we notice we are in the threadpool, then we need to auto-start it
         // when it wakes up.  This does that logic. 
-        private void AutoRestartIfNecessary(CSwitchTraceData data)
+        private void AutoRestartIfNecessary(TraceEvent data)
         {
             var thread = data.Thread();
             if (thread == null)
@@ -366,31 +376,35 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_threadNeedsToAutoStart[threadIndex])
             {
                 m_threadNeedsToAutoStart[threadIndex] = false;
-
-                // TODO: ideally we just call OnCreated, and OnStarted. 
-                // Can't remember why I did not do this... 
-
-                // Create a new activity 
-                TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
-                    data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
-
-                var create = Create;
-                if (create != null)
-                    create(autoStartActivity, data);
-
-                m_indexToActivity.Add(autoStartActivity);
-                m_beginWaits.Add(null);
-
-                // Start it 
-                autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
-                m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
-                autoStartActivity.startTimeQPC = data.TimeStampQPC;
-                autoStartActivity.thread = thread;
-
-                var start = Start;
-                if (start != null)
-                    start(autoStartActivity, data);
+                AutoRestart(data, thread);
             }
+        }
+
+        private void AutoRestart(TraceEvent data, TraceThread thread)
+        {
+            // TODO: ideally we just call OnCreated, and OnStarted. 
+            // Can't remember why I did not do this... 
+
+            // Create a new activity 
+            TraceActivity autoStartActivity = new TraceActivity((ActivityIndex)m_indexToActivity.Count, null, data.EventIndex, CallStackIndex.Invalid,
+                data.TimeStampQPC, Address.MaxValue, false, false, TraceActivity.ActivityKind.Implied);
+
+            var create = Create;
+            if (create != null)
+                create(autoStartActivity, data);
+
+            m_indexToActivity.Add(autoStartActivity);
+            m_beginWaits.Add(null);
+
+            // Start it 
+            autoStartActivity.prevActivityOnThread = m_threadToCurrentActivity[(int)thread.ThreadIndex];
+            m_threadToCurrentActivity[(int)thread.ThreadIndex] = autoStartActivity;
+            autoStartActivity.startTimeQPC = data.TimeStampQPC;
+            autoStartActivity.thread = thread;
+
+            var start = Start;
+            if (start != null)
+                start(autoStartActivity, data);
         }
 
         /// <summary>
