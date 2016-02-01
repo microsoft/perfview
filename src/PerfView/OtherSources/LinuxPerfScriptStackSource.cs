@@ -59,12 +59,39 @@ namespace Diagnostics.Tracing.StackSources
 				throw new Exception(".zip does not contain a perf.data.dump file suffix entry");
 			}
 
-			this.AddAllLinuxEvents();
+			this.InternAllLinuxEvents();
 		}
 
 		#region private
-		private void AddAllLinuxEvents()
+		private void InternAllLinuxEvents()
 		{
+			StackSourceCallStackIndex stackIndex = 0;
+			foreach (LinuxEvent linuxEvent in this.Parser.Parse())
+			{
+				IEnumerable<Frame> frames = linuxEvent.CallerStacks;
+
+				stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex);
+
+				var sample = new StackSourceSample(this);
+				sample.StackIndex = stackIndex;
+				sample.TimeRelativeMSec = linuxEvent.Time;
+				this.AddSample(sample);
+			}
+
+			this.Interner.DoneInterning();
+		}
+
+		private StackSourceCallStackIndex InternFrames(
+			IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex)
+		{
+			if (!frameIterator.MoveNext())
+			{
+				return StackSourceCallStackIndex.Invalid;
+			}
+
+			var frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+			stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
+			return stackIndex;
 		}
 
 		#endregion
@@ -504,7 +531,6 @@ namespace Diagnostics.Tracing.StackSources
 		public int ThreadID { get; }
 		public int ProcessID { get; }
 		public double Time { get; }
-		public double Period { get; }
 		public int TimeProperty { get; }
 		public int Cpu { get; }
 		public string EventName { get; }

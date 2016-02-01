@@ -123,7 +123,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="OtherSources\LinuxPerfScriptEventParser.cs" />
+    <Compile Include="OtherSources\LinuxPerfScriptStackSource.cs" />
     <Compile Include="sigparser.cs">
       <Link>Utilities\sigparser.cs</Link>
     </Compile>
