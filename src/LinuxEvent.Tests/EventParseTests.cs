@@ -13,7 +13,8 @@ namespace LinuxTracing.Tests
 		private void DoStackTraceTest(string source, bool blockedTime, List<List<string>> callerStacks)
 		{
 			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse(testing: true);
+			parser.Testing = true;
+			parser.Parse();
 
 			for (int e = 0; e < parser.EventCount; e++)
 			{
@@ -39,7 +40,8 @@ namespace LinuxTracing.Tests
 			)
 		{
 			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse(testing: true);
+			parser.Testing = true;
+			parser.Parse();
 
 			// Need to make sure we have the same amount of samples
 			Assert.Equal(commands.Length, parser.EventCount);

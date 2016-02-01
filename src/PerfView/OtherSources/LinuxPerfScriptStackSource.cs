@@ -19,6 +19,17 @@ namespace Diagnostics.Tracing.StackSources
 		public static readonly string PerfScriptSuffix = "perf.data.dump";
 
 		private LinuxPerfScriptEventParser Parser { get; }
+
+		public LinuxPerfScriptStackSource(LinuxPerfScriptEventParser parser)
+		{
+			if (!parser.Parsed)
+			{
+				parser.Parse();
+			}
+
+			this.Parser = parser;
+		}
+
 		public LinuxPerfScriptStackSource(string path)
 		{
 			Stream stream = null;
@@ -106,13 +117,24 @@ namespace Diagnostics.Tracing.StackSources
 		public int EventCount { get; private set; }
 
 		/// <summary>
+		/// True if the source given had been parsed before, otherwise false.
+		/// </summary>
+		public bool Parsed { get; private set; }
+
+		/// <summary>
+		/// Returns true if parser is in testing mode, false otherwise.
+		/// (Testing mode skips BOM with VS txt files)
+		/// </summary>
+		public bool Testing { get; set; }
+
+		/// <summary>
 		/// Creates a stream reader to parse the given source file into interning stacks.
 		/// </summary>
-		public IEnumerable<LinuxEvent> Parse(bool testing = false)
+		public IEnumerable<LinuxEvent> Parse()
 		{
 			this.events = new List<LinuxEvent>();
 
-			if (testing)
+			if (this.Testing)
 			{
 				this.Source.MoveNext();
 				this.Source.MoveNext();
@@ -130,9 +152,12 @@ namespace Diagnostics.Tracing.StackSources
 
 				if (this.EventCount > this.MaxSamples)
 				{
-					yield break;
+					break;
 				}
 			}
+
+			this.Parsed = true;
+			yield break;
 		}
 
 		public Regex Pattern { get; set; }
@@ -180,6 +205,8 @@ namespace Diagnostics.Tracing.StackSources
 
 		private void SetDefaultValues()
 		{
+			this.Testing = false;
+			this.Parsed = false;
 			this.Pattern = null;
 			this.MaxSamples = 50000;
 		}
