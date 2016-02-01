@@ -95,9 +95,9 @@ namespace Diagnostics.Tracing.StackSources
 
 		private StackSourceCallStackIndex InternFrames(
 			IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex)
-	{
+		{
 			if (!frameIterator.MoveNext())
-			{
+		{
 				return StackSourceCallStackIndex.Invalid;
 			}
 
