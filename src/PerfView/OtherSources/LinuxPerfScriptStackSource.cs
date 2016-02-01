@@ -133,8 +133,6 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
-			this.events = new List<LinuxEvent>();
-
 			if (this.Testing)
 			{
 				this.Source.MoveNext();
@@ -148,6 +146,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				if (linuxEvent != null)
 				{
+					this.EventCount++;
 					yield return linuxEvent;
 				}
 
@@ -163,21 +162,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		public Regex Pattern { get; set; }
 		public long MaxSamples { get; set; }
-
-		/// <summary>
-		/// Gets the time at the given sample ID.
-		/// </summary>
-		/// <param name="i">The ID that holds the time in question.</param>
-		/// <returns>A double representing the time since execution in milliseconds.</returns>
-		public double GetTimeInSecondsAtEvent(int i)
-		{
-			return this.events[i].Time;
-		}
-
-		public LinuxEvent GetLinuxEventAt(int i)
-		{
-			return this.events[i];
-		}
 
 		public LinuxPerfScriptEventParser(string path)
 		{
@@ -195,8 +179,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		#region fields
 		private FastStream Source { get; }
-		private List<LinuxEvent> events;
-
 
 		private double CurrentTime { get; set; }
 
@@ -206,6 +188,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		private void SetDefaultValues()
 		{
+			this.EventCount = 0;
 			this.Testing = false;
 			this.Parsed = false;
 			this.Pattern = null;
