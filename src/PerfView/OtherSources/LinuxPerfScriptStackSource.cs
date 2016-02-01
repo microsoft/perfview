@@ -97,7 +97,7 @@ namespace Diagnostics.Tracing.StackSources
 			IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex)
 		{
 			if (!frameIterator.MoveNext())
-		{
+			{
 				return StackSourceCallStackIndex.Invalid;
 			}
 
@@ -152,7 +152,7 @@ namespace Diagnostics.Tracing.StackSources
 
 				if (this.EventCount > this.MaxSamples)
 				{
-					yield break;
+					break;
 				}
 			}
 
