@@ -28,6 +28,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.Parser = parser;
+			this.InternAllLinuxEvents();
 		}
 
 		public LinuxPerfScriptStackSource(string path)

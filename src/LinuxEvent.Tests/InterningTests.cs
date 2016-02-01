@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using Xunit;
 
 namespace LinuxTracing.Tests
@@ -12,11 +13,12 @@ namespace LinuxTracing.Tests
 	{
 		private void InterningStackCountTest(string source, int expectedStackCount)
 		{
-			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
+			var parser = new LinuxPerfScriptEventParser(source);
 			parser.Testing = true;
-			parser.Parse();
+			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(parser);
+			
 
-			Assert.Equal(expectedStackCount, 0);
+			Assert.Equal(expectedStackCount, stackSource.Interner.CallStackCount);
 		}
 
 		[Fact]
