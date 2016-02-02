@@ -125,24 +125,16 @@ namespace Diagnostics.Tracing.StackSources
 		public bool Parsed { get; private set; }
 
 		/// <summary>
-		/// Returns true if parser is in testing mode, false otherwise.
-		/// (Testing mode skips BOM with VS txt files)
-		/// </summary>
-		public bool Testing { get; set; }
-
-		/// <summary>
-		/// Creates a stream reader to parse the given source file into interning stacks.
+		/// Parses the PerfScript .dump file given, gives one sample at a time
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
 			this.Source.MoveNext(); // Skip Sentinal value
-			
-			if (this.Testing)
+
+			byte[] preamble = Encoding.UTF8.GetPreamble();
+			while (preamble.Contains(this.Source.Current)) // Skip the BOM marks if there are any
 			{
-				for (int i = 0; i < 3; i++)
-				{
-					this.Source.MoveNext();
-				}
+				this.Source.MoveNext();
 			}
 
 			Regex rgx = this.Pattern;
@@ -164,7 +156,14 @@ namespace Diagnostics.Tracing.StackSources
 			yield break;
 		}
 
+		/// <summary>
+		/// Regex string pattern for filtering events.
+		/// </summary>
 		public Regex Pattern { get; set; }
+
+		/// <summary>
+		/// The amount of samples the parser takes.
+		/// </summary>
 		public long MaxSamples { get; set; }
 
 		public LinuxPerfScriptEventParser(string path)
@@ -193,7 +192,6 @@ namespace Diagnostics.Tracing.StackSources
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
-			this.Testing = false;
 			this.Parsed = false;
 			this.Pattern = null;
 			this.MaxSamples = 50000;
@@ -245,11 +243,6 @@ namespace Diagnostics.Tracing.StackSources
 				this.Source.ReadAsciiStringUpTo(':', sb);
 
 				double time = double.Parse(sb.ToString());
-
-				if (time == 411965.212798)
-				{
-					Console.WriteLine("something");
-				}
 
 				sb.Clear();
 				if (!this.startTimeSet)
@@ -484,16 +477,25 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Defines the kind of an event for easy casting.
+	/// </summary>
 	public enum EventKind
 	{
-		General,
+		Cpu,
 		Scheduled,
 	}
 
+	/// <summary>
+	/// A sample that has extra properties to hold scheduled events.
+	/// </summary>
 	public class ScheduledEvent : LinuxEvent
 	{
 		public static readonly string Name = "sched_switch";
 
+		/// <summary>
+		/// The details of the context switch.
+		/// </summary>
 		public ScheduleSwitch Switch { get; }
 
 		public ScheduledEvent(
@@ -528,6 +530,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A generic Linux event, all Linux events contain these properties.
+	/// </summary>
 	public class LinuxEvent
 	{
 		public string Command { get; }
@@ -557,11 +562,17 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A way to define different types of frames with different names on PerfView.
+	/// </summary>
 	public interface Frame
 	{
 		string DisplayName { get; }
 	}
 
+	/// <summary>
+	/// Defines a single stack frame on a linux sample.
+	/// </summary>
 	public struct StackFrame : Frame
 	{
 		public string Address { get; }
@@ -578,6 +589,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Represents the name of the process.
+	/// </summary>
 	public struct ProcessFrame : Frame
 	{
 		public string Name { get; }
@@ -590,6 +604,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Represents the name of the thread and its ID.
+	/// </summary>
 	public struct ThreadFrame : Frame
 	{
 		public string Name { get; }
@@ -603,6 +620,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A visual frame that represents whether or not a call stack was blocked or not.
+	/// </summary>
 	public struct BlockedCPUFrame : Frame
 	{
 		public string Kind { get; }

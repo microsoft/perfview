@@ -14,10 +14,7 @@ namespace LinuxTracing.Tests
 		private void InterningStackCountTest(string source, int expectedStackCount)
 		{
 			var parser = new LinuxPerfScriptEventParser(source);
-			parser.Testing = true;
 			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(parser);
-			
-
 			Assert.Equal(expectedStackCount, stackSource.Interner.CallStackCount);
 		}
 
