@@ -136,10 +136,14 @@ namespace Diagnostics.Tracing.StackSources
 		public IEnumerable<LinuxEvent> Parse()
 		{
 			this.Source.MoveNext(); // Skip Sentinal value
-			if (Encoding.UTF8.GetPreamble().Contains(this.Source.Current))
+			
+			if (this.Testing)
 			{
-				this.Source.MoveNext();
-			} // Skip BOM Marks on UTF-8, only really used for files made/copied into VS
+				for (int i = 0; i < 3; i++)
+				{
+					this.Source.MoveNext();
+				}
+			}
 
 			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
