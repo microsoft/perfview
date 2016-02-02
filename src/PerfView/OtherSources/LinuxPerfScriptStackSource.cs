@@ -125,7 +125,7 @@ namespace Diagnostics.Tracing.StackSources
 		public bool Parsed { get; private set; }
 
 		/// <summary>
-		/// Creates a stream reader to parse the given source file into interning stacks.
+		/// Parses the PerfScript .dump file given, gives one sample at a time
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
@@ -156,7 +156,14 @@ namespace Diagnostics.Tracing.StackSources
 			yield break;
 		}
 
+		/// <summary>
+		/// Regex string pattern for filtering events.
+		/// </summary>
 		public Regex Pattern { get; set; }
+
+		/// <summary>
+		/// The amount of samples the parser takes.
+		/// </summary>
 		public long MaxSamples { get; set; }
 
 		public LinuxPerfScriptEventParser(string path)
