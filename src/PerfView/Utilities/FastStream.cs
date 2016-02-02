@@ -81,30 +81,25 @@ namespace PerfView.Utilities
 			long delta = this.Position - position.streamPos;
 			if (delta > MaxRestoreLength)
 			{
-				throw new Exception(string.Format("Can't go futher than {0} back in stream", MaxRestoreLength.ToString()));
+				this.stream.Position = position.streamPos;
+				bufferFillPos = position.bufferFillPos;
+				bufferReadPos = position.bufferReadPos;
+				Array.Copy(position.buffer, buffer, bufferFillPos);
+				if (markBufferUsed)
+				{
+					if (Object.ReferenceEquals(position.buffer, buffer))
+						markBufferUsed = false;
+				}
+			}
+			else
+			{
+				this.bufferReadPos -= (uint)delta;
 			}
 
-			this.bufferReadPos -= (uint)delta;
 			this.Position = position.streamPos;
-
-			/*
-			bufferFillPos = position.bufferFillPos;
-			bufferReadPos = position.bufferReadPos;
-			Array.Copy(position.buffer, buffer, bufferFillPos);
-			if (markBufferUsed)
-			{
-				if (Object.ReferenceEquals(position.buffer, buffer))
-					markBufferUsed = false;
-			}*/
 		}
 
-		public byte Current
-		{
-			get
-			{
-				return buffer[bufferReadPos];
-			}
-		}
+		public byte Current { get { return buffer[bufferReadPos]; } }
 
 		public const int MaxRestoreLength = 256;
 
