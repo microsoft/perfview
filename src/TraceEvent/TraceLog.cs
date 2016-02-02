@@ -868,7 +868,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadStartGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start);
+                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
                 thread.startTimeQPC = data.TimeStampQPC;
                 thread.userStackBase = data.UserStackBase;
                 if (data.Opcode == TraceEventOpcode.DataCollectionStart)
@@ -1828,7 +1828,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null;)
             {
 #if DEBUG
-                Debug.Assert((++cnt % 4096) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
+                Debug.Assert((++cnt % 8192) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
 #endif
                 var nextPtr = ptr.PrevKernelEventOnSameThread;
                 ptr.PrevKernelEventOnSameThread = null;         // Remove it from the list.  

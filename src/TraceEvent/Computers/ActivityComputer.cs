@@ -614,6 +614,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(!m_rawIDToActivity.ContainsKey(rawScheduledActivityId) ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.FxTimer ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.ClrIOThreadPool ||
+                m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.ClrThreadPool ||
                 m_rawIDToActivity[rawScheduledActivityId].kind == TraceActivity.ActivityKind.FxAsyncIO);
 
             TraceThread thread = data.Thread();

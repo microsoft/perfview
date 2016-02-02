@@ -136,7 +136,13 @@ namespace Microsoft.Diagnostics.Tracing
                 eventSource.Kernel.DispatcherReadyThread += OnReadyThread;
 
             if (!BlockedTimeOnly)
+            {
                 eventSource.Kernel.PerfInfoSample += OnSampledProfile;
+
+                // WE add these too, because they are reasonably common so they can add a level of detail.  
+                eventSource.Clr.GCAllocationTick += OnSampledProfile;
+                eventSource.Clr.GCSampledObjectAllocation += OnSampledProfile;
+            }
 
             if (GroupByStartStopActivity)
             {
@@ -201,7 +207,8 @@ namespace Microsoft.Diagnostics.Tracing
                     }
 
                     m_unknownTimeStartMsec.Set((int)startStopActivity.Index, 0);
-                    Debug.Assert(m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] == startStopActivity);
+                    Debug.Assert(m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] == startStopActivity ||
+                        m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] == null);
                     m_threadToStartStopActivity[(int)data.Thread().ThreadIndex] = null;
                 };
             }
@@ -346,6 +353,11 @@ namespace Microsoft.Diagnostics.Tracing
 
             m_outputStackSource.DoneAddingSamples();
             m_threadState = null;
+        }
+
+        private void Clr_GCAllocationTick(GCAllocationTickTraceData obj)
+        {
+            throw new NotImplementedException();
         }
 
         #region private
@@ -571,6 +583,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (thread != null)
             {
                 // Should be running.  
+                // I have seen this fire becasue there are two thread-stops for the same thread in the trace.   
+                // I have only seen this once so I am leaving this assert (it seems it does more good than harm)
+                // But if it happens habitually, we should pull it.  
                 Debug.Assert(m_threadState[(int)thread.ThreadIndex].ThreadRunning || m_threadState[(int)thread.ThreadIndex].ThreadUninitialized);
                 m_threadState[(int)thread.ThreadIndex].BlockTimeStartRelativeMSec = double.NegativeInfinity;       // Indicate we are dead
             }
