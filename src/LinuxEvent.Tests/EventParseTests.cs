@@ -106,7 +106,7 @@ namespace LinuxTracing.Tests
 			});
 		}
 
-		[Fact]
+		[Fact(Skip = "Not implemented")]
 		public void SchedStackTrace()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
