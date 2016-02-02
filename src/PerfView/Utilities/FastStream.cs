@@ -35,17 +35,11 @@ namespace PerfView.Utilities
 		public FastStream(Stream stream)
 		{
 			buffer = new byte[16384];
-			historyBuffer = new byte[HistoryBufferLength];
-			this.historyBufferCount = 0;
-			this.historyBufferPosition = 0;
 			bufferReadPos = 1;          // We make this 1, 1 initially so that EndOfStream works before MoveNext is called
 			bufferFillPos = 1;
 			this.stream = stream;
 		}
 
-		/// <summary>
-		/// The stream position can't be used for compressed files, so we need to keep track of it
-		/// </summary>
 		public long Position { get; private set; }
 
 		public struct MarkedPosition
@@ -84,20 +78,16 @@ namespace PerfView.Utilities
 
 		public void RestoreToMark(MarkedPosition position)
 		{
-
-			if (HistoryBufferLength < this.Position - position.streamPos + 1)
+			long delta = this.Position - position.streamPos;
+			if (delta > MaxRestoreLength)
 			{
-				this.stream.Position = position.streamPos;
-				this.historyBufferPosition = 0;
-				this.historyBufferCount = 0;
-			}
-			else
-			{
-				this.historyBufferCount = this.historyBufferPosition = (int)(this.Position - position.streamPos + 1);
+				throw new Exception(string.Format("Can't go futher than {0} back in stream", MaxRestoreLength.ToString()));
 			}
 
+			this.bufferReadPos -= (uint)delta;
 			this.Position = position.streamPos;
 
+			/*
 			bufferFillPos = position.bufferFillPos;
 			bufferReadPos = position.bufferReadPos;
 			Array.Copy(position.buffer, buffer, bufferFillPos);
@@ -105,45 +95,25 @@ namespace PerfView.Utilities
 			{
 				if (Object.ReferenceEquals(position.buffer, buffer))
 					markBufferUsed = false;
-			}
-
-			this.IncrementHistoryBuffer();
+			}*/
 		}
 
 		public byte Current
 		{
 			get
 			{
-				if (this.historyBufferCount > 0)
-				{
-					return this.historyBuffer[this.historyBufferPosition];
-				}
 				return buffer[bufferReadPos];
 			}
 		}
 
-		private void IncrementHistoryBuffer()
-		{
-			byte[] historyBufferCopy = new byte[HistoryBufferLength];
-			this.historyBuffer.CopyTo(historyBufferCopy, 0);
-			for (int i = 1; i < this.historyBuffer.Length; i++)
-			{
-				this.historyBuffer[i] = historyBufferCopy[i - 1];
-			};
-			this.historyBuffer[0] = this.Current;
-			return;
-		}
+		public const int MaxRestoreLength = 256;
 
 		public bool MoveNext()
 		{
 			IncReadPos();
-			this.Position++;
-			this.historyBufferCount = this.historyBufferCount < 1 ? 0 : this.historyBufferCount - 1;
 			bool ret = true;
 			if (bufferReadPos >= bufferFillPos)
 				ret = MoveNextHelper();
-
-			this.IncrementHistoryBuffer();
 
 #if DEBUG
             nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
@@ -239,7 +209,7 @@ namespace PerfView.Utilities
 		{
 			return (ulong)ReadLong();
 		}
-		public bool EndOfStream { get { return bufferFillPos == 0; } }
+		public bool EndOfStream { get { return bufferFillPosReadIn == 0; } }
 		public void ReadAsciiStringUpTo(char endMarker, StringBuilder sb)
 		{
 			for (;;)
@@ -332,17 +302,23 @@ namespace PerfView.Utilities
 		#region privateMethods
 		private bool MoveNextHelper()
 		{
-			bufferReadPos = 0;
-			bufferFillPos = (uint)stream.Read(buffer, 0, buffer.Length);
+			bufferReadPos = MaxRestoreLength;
+			for (int i = 0; i < MaxRestoreLength; i++)
+			{
+				if (bufferFillPos - (MaxRestoreLength - i) < 0)
+				{
+					buffer[i] = 0;
+					continue;
+				}
+
+				buffer[i] = buffer[bufferFillPos - (MaxRestoreLength - i)];
+			}
+			bufferFillPosReadIn = (uint)stream.Read(buffer, MaxRestoreLength, buffer.Length - MaxRestoreLength);
+			bufferFillPos = bufferFillPosReadIn + MaxRestoreLength;
 			if (bufferFillPos < buffer.Length)
 				buffer[bufferFillPos] = Sentinal;       // we define 0 as the value you get after EOS.  
-			return (bufferFillPos > 0);
+			return (bufferFillPosReadIn > 0);
 		}
-
-		private const int HistoryBufferLength = byte.MaxValue;
-		private int historyBufferPosition;
-		private int historyBufferCount;
-		private byte[] historyBuffer;
 
 		private uint PeekHelper(uint bytesAhead)
 		{
@@ -375,6 +351,7 @@ namespace PerfView.Utilities
 		private void IncReadPos()
 		{
 			bufferReadPos++;
+			this.Position++;
 		}
 
 		public int ReadHex()
@@ -422,6 +399,7 @@ namespace PerfView.Utilities
 		readonly byte[] buffer;
 		uint bufferReadPos;      // The next character to read
 		uint bufferFillPos;      // The last character in the buffer that is valid
+		uint bufferFillPosReadIn;
 		Stream stream;
 #if DEBUG
         string nextChars;
