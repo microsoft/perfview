@@ -447,7 +447,7 @@ namespace PerfView.Utilities
 		internal void ReadAsciiStringUpToLastOnLine(char c, StringBuilder sb)
 		{
 			StringBuilder buffer = new StringBuilder();
-			FastStream.MarkedPosition mp = this.MarkPosition();
+			MarkedPosition mp = this.MarkPosition();
 
 			while (this.Current != '\n' && !this.EndOfStream)
 			{

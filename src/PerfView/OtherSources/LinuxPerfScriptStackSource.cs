@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -87,6 +88,7 @@ namespace Diagnostics.Tracing.StackSources
 				var sample = new StackSourceSample(this);
 				sample.StackIndex = stackIndex;
 				sample.TimeRelativeMSec = linuxEvent.Time;
+				sample.Metric = 1;
 				this.AddSample(sample);
 			}
 
@@ -133,13 +135,11 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
-			if (this.Testing)
+			this.Source.MoveNext(); // Skip Sentinal value
+			if (Encoding.UTF8.GetPreamble().Contains(this.Source.Current))
 			{
 				this.Source.MoveNext();
-				this.Source.MoveNext();
-				this.Source.MoveNext();
-				this.Source.MoveNext();
-			}
+			} // Skip BOM Marks on UTF-8, only really used for files made/copied into VS
 
 			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx))
@@ -210,8 +210,6 @@ namespace Diagnostics.Tracing.StackSources
 					break;
 				}
 
-				EventKind eventKind = EventKind.General;
-
 				StringBuilder sb = new StringBuilder();
 
 				// Command - Stops at first number AFTER whitespace
@@ -223,29 +221,32 @@ namespace Diagnostics.Tracing.StackSources
 				}
 
 				string comm = sb.ToString().Trim();
-				if (comm.Length > 0 && comm[0] == 0)
-				{
-					comm = comm.Substring(1, comm.Length - 1);
-				}
 				sb.Clear();
 
 				// Process ID
 				int pid = this.Source.ReadInt();
-				this.Source.MoveNext();
+				this.Source.MoveNext(); // Move past the "/"
 
 				// Thread ID
 				int tid = this.Source.ReadInt();
 
 				// CPU
 				this.Source.SkipWhiteSpace();
-				this.Source.MoveNext();
+				this.Source.MoveNext(); // Move past the "["
 				int cpu = this.Source.ReadInt();
-				this.Source.MoveNext();
+				this.Source.MoveNext(); // Move past the "]"
 
 				// Time
 				this.Source.SkipWhiteSpace();
 				this.Source.ReadAsciiStringUpTo(':', sb);
+
 				double time = double.Parse(sb.ToString());
+
+				if (time == 411965.212798)
+				{
+					Console.WriteLine("something");
+				}
+
 				sb.Clear();
 				if (!this.startTimeSet)
 				{
@@ -254,11 +255,15 @@ namespace Diagnostics.Tracing.StackSources
 				}
 				this.CurrentTime = time - this.StartTime;
 				time = this.CurrentTime;
+				this.Source.MoveNext(); // Move past ":"
 
 				// Time Property
-				this.Source.MoveNext();
 				this.Source.SkipWhiteSpace();
-				int timeProp = this.Source.ReadInt(); // for now we just move past it...
+				int timeProp = -1;
+				if (this.IsNumberChar((char)this.Source.Current))
+				{
+					timeProp = this.Source.ReadInt();
+				}
 
 				// Event Name
 				this.Source.SkipWhiteSpace();
@@ -269,12 +274,10 @@ namespace Diagnostics.Tracing.StackSources
 
 				// Event Properties
 				// I mark a position here because I need to check what type of event this is without screwing up the stream
-				var markedPosition = this.Source.MarkPosition();
+				// var markedPosition = this.Source.MarkPosition();
 				this.Source.ReadAsciiStringUpTo('\n', sb);
 				string eventDetails = sb.ToString().Trim();
 				sb.Clear();
-
-				ScheduleSwitch scheduleSwitch = null;
 
 				// Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
 				if (regex != null && !regex.IsMatch(eventName))
@@ -282,9 +285,7 @@ namespace Diagnostics.Tracing.StackSources
 					while (true)
 					{
 						this.Source.MoveNext();
-						if ((this.Source.Current == '\n' &&
-							(this.Source.Peek(1) == '\n' || this.Source.Peek(1) == '\r' || this.Source.Peek(1) == 0)) ||
-							 this.Source.EndOfStream)
+						if (this.IsEndOfSample())
 						{
 							break;
 						}
@@ -298,52 +299,40 @@ namespace Diagnostics.Tracing.StackSources
 
 					Frame threadTimeFrame = null;
 
-					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame).ToList();
+					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame);
 
-					switch (eventKind)
-					{
-						case EventKind.Scheduled:
-							{
-								linuxEvent =
-									new ScheduledEvent(comm, tid, pid, time, timeProp, cpu,
-									eventName, eventDetails, frames, scheduleSwitch);
-								break;
-							}
-						default:
-							{
-								linuxEvent =
-									new LinuxEvent(comm, tid, pid, time, timeProp, cpu,
-									eventName, eventDetails, frames);
-								break;
-							}
-					}
+					linuxEvent = new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
 
 					yield return linuxEvent;
 				}
 			}
 		}
 
-		private IEnumerable<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame)
+		private bool IsEndOfSample()
 		{
-			Func<byte, byte, bool> isEndOfStackTrace = delegate (byte current, byte peek1)
-			{
-				return ((current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == '\0')) ||
-						 this.Source.EndOfStream);
-			};
+			byte current = this.Source.Current;
+			byte peek1 = this.Source.Peek(1);
+			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || this.Source.EndOfStream;
+		}
+
+		private List<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame)
+		{
+			List<Frame> frames = new List<Frame>();
 
 			if (threadTimeFrame != null)
 			{
-				yield return threadTimeFrame;
+				frames.Add(threadTimeFrame);
 			}
 
-			while (!isEndOfStackTrace(this.Source.Current, this.Source.Peek(1)))
+			while (!this.IsEndOfSample())
 			{
-				yield return this.ReadFrame();
+				frames.Add(this.ReadFrame());
 			}
 
-			yield return new ThreadFrame(threadID, "Thread");
-			yield return new ProcessFrame(command);
+			frames.Add(new ThreadFrame(threadID, "Thread"));
+			frames.Add(new ProcessFrame(command));
 
+			return frames;
 		}
 
 		private StackFrame ReadFrame()
@@ -358,7 +347,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			// Trying to get the module and symbol...
 			this.Source.SkipWhiteSpace();
-			var mp = this.Source.MarkPosition();
 
 			this.Source.ReadAsciiStringUpToLastOnLine('(', sb);
 			string assumedSymbol = sb.ToString();
