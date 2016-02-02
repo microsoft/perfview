@@ -477,16 +477,25 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Defines the kind of an event for easy casting.
+	/// </summary>
 	public enum EventKind
 	{
-		General,
+		Cpu,
 		Scheduled,
 	}
 
+	/// <summary>
+	/// A sample that has extra properties to hold scheduled events.
+	/// </summary>
 	public class ScheduledEvent : LinuxEvent
 	{
 		public static readonly string Name = "sched_switch";
 
+		/// <summary>
+		/// The details of the context switch.
+		/// </summary>
 		public ScheduleSwitch Switch { get; }
 
 		public ScheduledEvent(
@@ -521,6 +530,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A generic Linux event, all Linux events contain these properties.
+	/// </summary>
 	public class LinuxEvent
 	{
 		public string Command { get; }
@@ -550,11 +562,17 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A way to define different types of frames with different names on PerfView.
+	/// </summary>
 	public interface Frame
 	{
 		string DisplayName { get; }
 	}
 
+	/// <summary>
+	/// Defines a single stack frame on a linux sample.
+	/// </summary>
 	public struct StackFrame : Frame
 	{
 		public string Address { get; }
@@ -571,6 +589,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Represents the name of the process.
+	/// </summary>
 	public struct ProcessFrame : Frame
 	{
 		public string Name { get; }
@@ -583,6 +604,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Represents the name of the thread and its ID.
+	/// </summary>
 	public struct ThreadFrame : Frame
 	{
 		public string Name { get; }
@@ -596,6 +620,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// A visual frame that represents whether or not a call stack was blocked or not.
+	/// </summary>
 	public struct BlockedCPUFrame : Frame
 	{
 		public string Kind { get; }
