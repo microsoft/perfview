@@ -725,7 +725,8 @@ namespace PerfView
 			new ProcessDumpPerfViewFile(),
 			new ScenarioSetPerfViewFile(),
 			new OffProfPerfViewFile(),
-			new DiagSessionPerfViewFile()
+			new DiagSessionPerfViewFile(),
+			new PerfScriptPerfViewFile()
 		};
 
 		#region private
@@ -5107,7 +5108,7 @@ namespace PerfView
 	{
 		public override string FormatName { get { return "Linux events through PerfScript"; } }
 
-		public override string[] FileExtensions { get { return new string[] { ".dump" }; } }
+		public override string[] FileExtensions { get { return new string[] { ".data.dump", ".trace.zip" }; } }
 
 		protected internal override StackSource OpenStackSourceImpl(TextWriter log)
 		{
