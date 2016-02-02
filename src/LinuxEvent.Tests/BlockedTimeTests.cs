@@ -22,7 +22,8 @@ namespace LinuxTracing.Tests
 		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
 		{
 			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse(null, 100, testing: true);
+			parser.Testing = true;
+			parser.Parse();
 
 			Assert.Equal(expectedTotalBlockedPeriod, 0);
 		}

@@ -13,11 +13,12 @@ namespace LinuxTracing.Tests
 		private void DoStackTraceTest(string source, bool blockedTime, List<List<string>> callerStacks)
 		{
 			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse(null, 100, testing: true);
+			parser.Testing = true;
+			List<LinuxEvent> events = parser.Parse().ToList();
 
 			for (int e = 0; e < parser.EventCount; e++)
 			{
-				List<Frame> frames = parser.GetLinuxEventAt(e).CallerStacks.ToList();
+				List<Frame> frames = events[e].CallerStacks.ToList();
 
 				for (int i = 0; i < frames.Count; i++)
 				{
@@ -39,7 +40,8 @@ namespace LinuxTracing.Tests
 			)
 		{
 			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse(null, 100, testing: true);
+			parser.Testing = true;
+			List<LinuxEvent> samples = parser.Parse().ToList();
 
 			// Need to make sure we have the same amount of samples
 			Assert.Equal(commands.Length, parser.EventCount);
@@ -48,7 +50,7 @@ namespace LinuxTracing.Tests
 
 			for (int i = 0; i < parser.EventCount; i++)
 			{
-				LinuxEvent linuxEvent = parser.GetLinuxEventAt(i);
+				LinuxEvent linuxEvent = samples[i];
 				Assert.Equal(commands[i], linuxEvent.Command);
 				Assert.Equal(pids[i], linuxEvent.ProcessID);
 				Assert.Equal(tids[i], linuxEvent.ThreadID);
