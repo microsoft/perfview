@@ -125,24 +125,16 @@ namespace Diagnostics.Tracing.StackSources
 		public bool Parsed { get; private set; }
 
 		/// <summary>
-		/// Returns true if parser is in testing mode, false otherwise.
-		/// (Testing mode skips BOM with VS txt files)
-		/// </summary>
-		public bool Testing { get; set; }
-
-		/// <summary>
 		/// Creates a stream reader to parse the given source file into interning stacks.
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
 			this.Source.MoveNext(); // Skip Sentinal value
-			
-			if (this.Testing)
+
+			byte[] preamble = Encoding.UTF8.GetPreamble();
+			while (preamble.Contains(this.Source.Current)) // Skip the BOM marks if there are any
 			{
-				for (int i = 0; i < 3; i++)
-				{
-					this.Source.MoveNext();
-				}
+				this.Source.MoveNext();
 			}
 
 			Regex rgx = this.Pattern;
@@ -193,7 +185,6 @@ namespace Diagnostics.Tracing.StackSources
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
-			this.Testing = false;
 			this.Parsed = false;
 			this.Pattern = null;
 			this.MaxSamples = 50000;
