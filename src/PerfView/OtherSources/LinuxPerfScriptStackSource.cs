@@ -244,11 +244,6 @@ namespace Diagnostics.Tracing.StackSources
 
 				double time = double.Parse(sb.ToString());
 
-				if (time == 411965.212798)
-				{
-					Console.WriteLine("something");
-				}
-
 				sb.Clear();
 				if (!this.startTimeSet)
 				{
