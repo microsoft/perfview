@@ -24,28 +24,28 @@ namespace LinuxTracing.Tests
 		[Fact]
 		public void OneSample()
 		{
-			string path = Constants.GetPerfDumpPath("onegeneric");
+			string path = Constants.GetTestingPerfDumpPath("onegeneric");
 			this.InterningStackCountTest(path, expectedStackCount: 3);
 		}
 
 		[Fact]
 		public void TwoSameSamples()
 		{
-			string path = Constants.GetPerfDumpPath("twogenericsame");
+			string path = Constants.GetTestingPerfDumpPath("twogenericsame");
 			this.InterningStackCountTest(path, expectedStackCount: 3);
 		}
 
 		[Fact]
 		public void TwoSameLongSamples()
 		{
-			string path = Constants.GetPerfDumpPath("twogenericsamelongstacks");
+			string path = Constants.GetTestingPerfDumpPath("twogenericsamelongstacks");
 			this.InterningStackCountTest(path, expectedStackCount: 8);
 		}
 
 		[Fact]
 		public void TwoAlteredLongSamples()
 		{
-			string path = Constants.GetPerfDumpPath("twodifferentlongstacks");
+			string path = Constants.GetTestingPerfDumpPath("twodifferentlongstacks");
 			this.InterningStackCountTest(path, expectedStackCount: 10);
 		}
 	}

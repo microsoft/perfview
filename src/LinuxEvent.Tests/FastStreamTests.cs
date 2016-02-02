@@ -14,7 +14,7 @@ namespace LinuxTracing.Tests
 	{
 		private FastStream GetTestStream()
 		{
-			return new FastStream(Constants.GetFilePath("faststream.txt"));
+			return new FastStream(Constants.GetTestingFilePath("faststream.txt"));
 		}
 
 		[Fact]

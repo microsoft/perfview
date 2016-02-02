@@ -31,42 +31,42 @@ namespace LinuxTracing.Tests
 		[Fact]
 		public void NoTimeBlocked1()
 		{
-			string path = Constants.GetPerfDumpPath("onegeneric");
+			string path = Constants.GetTestingPerfDumpPath("onegeneric");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 0.0);
 		}
 
 		[Fact]
 		public void OneCompletedContextSwitch()
 		{
-			string path = Constants.GetPerfDumpPath("one_complete_switch");
+			string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
 		[Fact]
 		public void OneInducedContextSwitch()
 		{
-			string path = Constants.GetPerfDumpPath("one_induced_switch");
+			string path = Constants.GetTestingPerfDumpPath("one_induced_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
 		[Fact]
 		public void OneIncomplateContextSwitch()
 		{
-			string path = Constants.GetPerfDumpPath("one_incomplete_switch");
+			string path = Constants.GetTestingPerfDumpPath("one_incomplete_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
 		[Fact]
 		public void NoTimeBlocked2_Induced()
 		{
-			string path = Constants.GetPerfDumpPath("notimeblocked_induced");
+			string path = Constants.GetTestingPerfDumpPath("notimeblocked_induced");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 2.0);
 		}
 
 		[Fact]
 		public void MixedBlocked()
 		{
-			string path = Constants.GetPerfDumpPath("mixed_switches");
+			string path = Constants.GetTestingPerfDumpPath("mixed_switches");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 8.0);
 		}
 	}
