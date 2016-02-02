@@ -19,9 +19,9 @@ namespace LinuxTracing.Tests
 		}
 
 		[Fact]
-		public void SimpleDump()
+		public void SpinningOnLinuxDump()
 		{
-			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\longtrace2.perf.data.dump"));
+			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\helloworld.trace.zip"));
 		}
 	}
 }
