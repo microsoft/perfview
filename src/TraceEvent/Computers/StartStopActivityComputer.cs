@@ -837,7 +837,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Debug.Assert(data.payloadNames[0] == "objectId");
                 Guid startStopId = new Guid((int)data.PayloadValue(0), 1234, 5, 7, 7, 8, 9, 10, 11, 12, 13);  // Tail 7,7,8,9,10,11,12,13 means SQL Execute
-                TraceEventTask executeTask = (TraceEventTask)1;
 
                 if (data.ID == (TraceEventID)1) // BeginExecute
                 {
