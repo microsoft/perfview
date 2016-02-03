@@ -315,10 +315,13 @@ namespace Diagnostics.Tracing.StackSources
 
 					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame);
 
-					linuxEvent = new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
 					if (eventKind == EventKind.Scheduled)
 					{
-						linuxEvent = new ScheduledEvent(linuxEvent, schedSwitch);
+						linuxEvent = new ScheduledEvent(comm, tid, pid, time, timeProp, cpu, eventName,eventDetails, frames, schedSwitch);
+					}
+					else
+					{
+						linuxEvent = new CpuEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
 					}
 
 					yield return linuxEvent;
@@ -523,15 +526,10 @@ namespace Diagnostics.Tracing.StackSources
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
-			base(comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+			base(EventKind.Scheduled, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
 		{
 			this.Switch = schedSwitch;
 		}
-
-		public ScheduledEvent(LinuxEvent linuxEvent, ScheduleSwitch schedSwitch) :
-			this(linuxEvent.Command, linuxEvent.ThreadID, linuxEvent.ProcessID, linuxEvent.Time, linuxEvent.TimeProperty,
-				 linuxEvent.Cpu, linuxEvent.EventName, linuxEvent.EventProperty, linuxEvent.CallerStacks, schedSwitch)
-		{ }
 	}
 
 	public class ScheduleSwitch
@@ -556,10 +554,20 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	public class CpuEvent : LinuxEvent
+	{
+		public CpuEvent(
+			string comm, int tid, int pid,
+			double time, int timeProp, int cpu,
+			string eventName, string eventProp, IEnumerable<Frame> callerStacks) :
+			base(EventKind.Cpu, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+		{ }
+	}
+
 	/// <summary>
 	/// A generic Linux event, all Linux events contain these properties.
 	/// </summary>
-	public class LinuxEvent
+	public abstract class LinuxEvent
 	{
 		public EventKind Kind { get; }
 		public string Command { get; }
@@ -572,12 +580,12 @@ namespace Diagnostics.Tracing.StackSources
 		public string EventProperty { get; }
 		public IEnumerable<Frame> CallerStacks { get; }
 
-		public LinuxEvent(
+		public LinuxEvent(EventKind kind,
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks)
 		{
-			this.Kind = EventKind.Cpu;
+			this.Kind = kind;
 			this.Command = comm;
 			this.ThreadID = tid;
 			this.ProcessID = pid;

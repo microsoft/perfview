@@ -58,7 +58,7 @@ namespace LinuxTracing.Tests
 				Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
 				Assert.Equal(events[i], linuxEvent.EventName);
 				Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
-				// Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
+				Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
 
 				ScheduledEvent sched = linuxEvent as ScheduledEvent;
 				if (switches != null && sched != null)
