@@ -220,7 +220,10 @@ namespace Diagnostics.Tracing.StackSources
 				while (!this.IsNumberChar((char)this.Source.Current))
 				{
 					sb.Append(' ');
-					this.Source.ReadAsciiStringUpToWhiteSpace(sb);
+					this.Source.ReadAsciiStringUpToTrue(sb, delegate (byte c)
+					{
+						return char.IsWhiteSpace((char)c);
+					});
 					this.Source.SkipWhiteSpace();
 				}
 
@@ -317,7 +320,7 @@ namespace Diagnostics.Tracing.StackSources
 
 					if (eventKind == EventKind.Scheduled)
 					{
-						linuxEvent = new ScheduledEvent(comm, tid, pid, time, timeProp, cpu, eventName,eventDetails, frames, schedSwitch);
+						linuxEvent = new ScheduledEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
 					}
 					else
 					{

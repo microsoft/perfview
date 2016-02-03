@@ -272,6 +272,45 @@ namespace PerfView.Utilities
 		}
 
 		/// <summary>
+		/// Reads the stream into the string builder until the last end marker on the line is hit.
+		/// </summary>
+		public void ReadAsciiStringUpToLastOnLine(char endMarker, StringBuilder sb)
+		{
+			StringBuilder buffer = new StringBuilder();
+			MarkedPosition mp = this.MarkPosition();
+
+			while (this.Current != '\n' && !this.EndOfStream)
+			{
+				if (this.Current == endMarker)
+				{
+					sb.Append(buffer);
+					buffer.Clear();
+					mp = this.MarkPosition();
+				}
+
+				buffer.Append((char)this.Current);
+				this.MoveNext();
+			}
+
+			this.RestoreToMark(mp);
+		}
+
+		/// <summary>
+		/// Reads the stream in the string builder until the given predicate function is false.
+		/// </summary>
+		public void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> predicate)
+		{
+			while (!predicate(this.Current))
+			{
+				sb.Append((char)this.Current);
+				if (!this.MoveNext())
+				{
+					break;
+				}
+			}
+		}
+
+		/// <summary>
 		/// Returns a number of bytes ahead without advancing the pointer. 
 		/// Peek(0) is the same as calling Current.  
 		/// </summary>
@@ -404,63 +443,5 @@ namespace PerfView.Utilities
         }
 #endif
 		#endregion
-
-		internal void ReadBytesUpTo(char c, byte[] bytes, out int length)
-		{
-			int numbytes = 0;
-			while (this.Current != c && numbytes < bytes.Length)
-			{
-				bytes[numbytes++] = this.Current;
-				this.MoveNext();
-			}
-
-			length = numbytes;
-		}
-
-		internal void ReadAsciiStringUpToLastOnLine(char c, StringBuilder sb)
-		{
-			StringBuilder buffer = new StringBuilder();
-			MarkedPosition mp = this.MarkPosition();
-
-			while (this.Current != '\n' && !this.EndOfStream)
-			{
-				if (this.Current == c)
-				{
-					sb.Append(buffer);
-					buffer.Clear();
-					mp = this.MarkPosition();
-				}
-
-				buffer.Append((char)this.Current);
-				this.MoveNext();
-			}
-
-			this.RestoreToMark(mp);
-		}
-
-		internal void ReadAsciiStringUpToWhiteSpace(StringBuilder sb)
-		{
-			while (!char.IsWhiteSpace((char)this.Current))
-			{
-				sb.Append((char)this.Current);
-				if (!this.MoveNext())
-				{
-					break;
-				}
-			}
-		}
-
-		internal void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> comp)
-		{
-			while (!comp(this.Current))
-			{
-				sb.Append((char)this.Current);
-				if (!this.MoveNext())
-				{
-					break;
-				}
-			}
-		}
-
 	}
 }
