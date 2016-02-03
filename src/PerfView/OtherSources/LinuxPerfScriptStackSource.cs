@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 using ClrProfiler;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
-using Validation;
+using System.Diagnostics.Contracts;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -168,14 +168,14 @@ namespace Diagnostics.Tracing.StackSources
 
 		public LinuxPerfScriptEventParser(string path)
 		{
-			Requires.NotNull(path, nameof(path));
+			Contract.Requires(path != null, nameof(path));
 			this.Source = new FastStream(path);
 			this.SetDefaultValues();
 		}
 
 		public LinuxPerfScriptEventParser(Stream stream)
 		{
-			Requires.NotNull(stream, nameof(stream));
+			Contract.Requires(stream != null, nameof(stream));
 			this.Source = new FastStream(stream);
 			this.SetDefaultValues();
 		}
