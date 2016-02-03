@@ -5119,6 +5119,7 @@ namespace PerfView
 		{
 			stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
 			stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+			stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
 		}
 	}
 
