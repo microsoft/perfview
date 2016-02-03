@@ -619,7 +619,7 @@ declare -a eventsToCollect
 usePerf=1
 
 # Use LTTng
-useLTTng=0
+useLTTng=1
 
 # LTTng Installed
 lttngInstalled=0
@@ -846,19 +846,30 @@ EnsurePrereqsInstalled()
 		echo "Perf not installed."
 		if  [ "$(SupportsAutoInstall)" == "1" ]
 		then
-			echo "Run ./perfcollect install-perf"
-			echo "or install linux-tools-common package."
+			echo "Run ./perfcollect install"
+			echo "or install perf manually to $perfcmd."
 		else
-			echo "Install linux-tools-common package."
+			echo "Install perf to $perfcmd to proceed."
 		fi
 		ResetText
 		exit 1
 	fi
 
 	# If LTTng is installed, consider using it.
-	if [ -f $lttngcmd ]
+	if ! [ -f $lttngcmd ]
 	then
-		lttngInstalled=1
+		RedText
+		echo "LTTng not installed."
+		if  [ "$(SupportsAutoInstall)" == "1" ]
+		then
+			echo "Run ./perfcollect install"
+			echo "or install LTTng manually to $perfcmd."
+		else
+			echo "Install perf to $perfcmd to proceed."
+		fi
+		ResetText
+		exit 1
+
 	fi
 }
 
@@ -955,13 +966,9 @@ ProcessArguments()
 			then
 				FatalError "Invalid viewer specified.  Valid values are 'perf' and 'lttng'."
 			fi
-		elif [ "-uselttng" == "$arg" ]
+		elif [ "-nolttng" == "$arg" ]
 		then
-			# If LTTng is installed and we've been asked to use it, then use it.
-			if [ "$lttngInstalled" == "1" ]
-			then
-				useLTTng=1
-			fi
+			useLTTng=0
 		elif [ "-gccollectonly" == "$arg" ]
 		then
 			gcCollectOnly=1
@@ -970,12 +977,6 @@ ProcessArguments()
 			gcOnly=1
 		elif [ "-events" == "$arg" ]
 		then
-			# If LTTng is installed and we've been asked to use it, then use it.
-			if [ "$lttngInstalled" == "1" ]
-			then
-				useLTTng=1
-			fi
-
 			events=$value
 			i=$i+1
 		fi
@@ -1229,24 +1230,20 @@ PrintUsage()
 	echo "For detailed collection and viewing steps, view this script in a text editor or viewer."
 	echo ""
 	echo "./perfcollect <action> <tracename>"
-	echo "Valid Actions: collect view install-perf install-lttng"
+	echo "Valid Actions: collect view install"
 	echo ""
 	echo "collect options:"
 	echo "By default, collection includes CPU samples collected every ms."
 	echo "	-pid		  : Only collect data from the specified process id."
 	echo "	-threadtime       : Collect context switch events."
-	echo "	-uselttng	  : Collect .NET tracepoint data using LTTng. (Experimental, not yet documented.)"
 	echo ""
 	echo "view options:"
 	echo "	-processfilter	  : Filter data by the specified process name."
 	echo "	-graphtype	  : Specify the type of graph.  Valid values are 'caller' and 'callee'.  Default is 'callee'."
 	echo "	-viewer		  : Specify the data viewer.  Valid values are 'perf' and 'lttng'.  Default is 'perf'."
 	echo ""
-	echo "install-perf:"
-	echo "	Useful for first-time setup, to upgrade perf_event, or after kernel upgrade."
-	echo ""
-	echo "install-lttng:"
-	echo "	Useful for first-time setup or to upgrade LTTng."
+	echo "install:"
+	echo "	Useful for first-time setup.  Installs/upgrades perf_event and LTTng."
 	echo ""
 }
 
@@ -1426,15 +1423,9 @@ DoView()
 #####################################
 
 # Install perf if requested.  Do this before all other validation.
-if [ "$1" == "install-perf" ]
+if [ "$1" == "install" ]
 then
 	InstallPerf
-	exit 0
-fi
-
-# Install LTTng if requested.  Do this before all other validation.
-if [ "$1" == "install-lttng" ]
-then
 	InstallLTTng
 	exit 0
 fi
