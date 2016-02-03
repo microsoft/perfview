@@ -35,6 +35,7 @@ namespace LinuxTracing.Tests
 			int[] timeProperties,
 			string[] events,
 			string[] eventProperties,
+			EventKind[] eventKinds,
 			ScheduleSwitch[] switches
 			)
 		{
@@ -57,6 +58,7 @@ namespace LinuxTracing.Tests
 				Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
 				Assert.Equal(events[i], linuxEvent.EventName);
 				Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
+				// Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
 
 				ScheduledEvent sched = linuxEvent as ScheduledEvent;
 				if (switches != null && sched != null)
@@ -155,6 +157,7 @@ namespace LinuxTracing.Tests
 				timeProperties: new int[] { 1 },
 				events: new string[] { "event_name" },
 				eventProperties: new string[] { "event_properties" },
+				eventKinds: null,
 				switches: null);
 		}
 
@@ -171,6 +174,7 @@ namespace LinuxTracing.Tests
 				timeProperties: new int[] { 1 },
 				events: new string[] { "event_name" },
 				eventProperties: new string[] { "event_properties" },
+				eventKinds: null,
 				switches: null);
 		}
 
@@ -187,6 +191,7 @@ namespace LinuxTracing.Tests
 				timeProperties: new int[] { 1, 1 },
 				events: new string[] { "sched", "sched" },
 				eventProperties: new string[] { "sched_switch: prev_comm=comm1 prev_pid=0 prev_prio=0 prev_state=S ==> next_comm=comm2 next_pid=1 next_prio=1", "sched_switch: prev_comm=comm2 prev_pid=1 prev_prio=0 prev_state=S ==> next_comm=comm1 next_pid=0 next_prio=1" },
+				eventKinds: new EventKind[] { EventKind.Scheduled, EventKind.Scheduled },
 				switches: new ScheduleSwitch[]
 				{
 					new ScheduleSwitch("comm1", 0, 0, 'S', "comm2", 1, 1),

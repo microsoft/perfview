@@ -212,6 +212,8 @@ namespace Diagnostics.Tracing.StackSources
 					break;
 				}
 
+				EventKind eventKind = EventKind.Cpu;
+
 				StringBuilder sb = new StringBuilder();
 
 				// Command - Stops at first number AFTER whitespace
@@ -271,10 +273,15 @@ namespace Diagnostics.Tracing.StackSources
 
 				// Event Properties
 				// I mark a position here because I need to check what type of event this is without screwing up the stream
-				// var markedPosition = this.Source.MarkPosition();
+				var markedPosition = this.Source.MarkPosition();
 				this.Source.ReadAsciiStringUpTo('\n', sb);
 				string eventDetails = sb.ToString().Trim();
 				sb.Clear();
+
+				if (eventDetails.Length >= ScheduledEvent.Name.Length && eventDetails.Substring(0, ScheduledEvent.Name.Length) == ScheduledEvent.Name)
+				{
+					eventKind = EventKind.Scheduled;
+				}
 
 				// Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
 				if (regex != null && !regex.IsMatch(eventName))
@@ -296,9 +303,23 @@ namespace Diagnostics.Tracing.StackSources
 
 					Frame threadTimeFrame = null;
 
+					// For the sake of immutability, I have to do a similar if-statement twice. I'm trying to figure out a better way
+					//   for now this will do.
+					ScheduleSwitch schedSwitch = null;
+					if (eventKind == EventKind.Scheduled)
+					{
+						this.Source.RestoreToMark(markedPosition);
+						schedSwitch = ReadScheduleSwitch();
+						this.Source.SkipUpTo('\n');
+					}
+
 					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame);
 
 					linuxEvent = new LinuxEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames);
+					if (eventKind == EventKind.Scheduled)
+					{
+						linuxEvent = new ScheduledEvent(linuxEvent, schedSwitch);
+					}
 
 					yield return linuxEvent;
 				}
@@ -506,6 +527,11 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			this.Switch = schedSwitch;
 		}
+
+		public ScheduledEvent(LinuxEvent linuxEvent, ScheduleSwitch schedSwitch) :
+			this(linuxEvent.Command, linuxEvent.ThreadID, linuxEvent.ProcessID, linuxEvent.Time, linuxEvent.TimeProperty,
+				 linuxEvent.Cpu, linuxEvent.EventName, linuxEvent.EventProperty, linuxEvent.CallerStacks, schedSwitch)
+		{ }
 	}
 
 	public class ScheduleSwitch
@@ -535,6 +561,7 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public class LinuxEvent
 	{
+		public EventKind Kind { get; }
 		public string Command { get; }
 		public int ThreadID { get; }
 		public int ProcessID { get; }
@@ -550,6 +577,7 @@ namespace Diagnostics.Tracing.StackSources
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks)
 		{
+			this.Kind = EventKind.Cpu;
 			this.Command = comm;
 			this.ThreadID = tid;
 			this.ProcessID = pid;
