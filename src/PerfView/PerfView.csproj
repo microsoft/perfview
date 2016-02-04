@@ -119,6 +119,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OtherSources\LinuxPerfScriptStackSource.cs" />
     <Compile Include="sigparser.cs">
       <Link>Utilities\sigparser.cs</Link>
     </Compile>
@@ -276,6 +277,7 @@
     <Compile Include="Utilities\commandLine.cs" />
     <Compile Include="Utilities\CommandLineUtilities.cs" />
     <Compile Include="Utilities\ExceptionMessage.cs" />
+    <Compile Include="Utilities\FastStream.cs" />
     <Compile Include="Utilities\ProcessTree.cs" />
     <Compile Include="Utilities\SupportFiles.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
@@ -412,6 +414,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Triggers;
+using Utilities;
 using EventSource = EventSources.EventSource;
 
 namespace PerfView
@@ -563,7 +564,7 @@ namespace PerfView
                     }
                 }
                 if (putInRest)
-                    restString.Append(fieldName).Append("=").Append(Utilities.Command.Quote(fieldValue)).Append(' ');
+                    restString.Append(fieldName).Append("=").Append(Command.Quote(fieldValue)).Append(' ');
             }
 
             /// <summary>

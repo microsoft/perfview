@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Utilities
 {
-    class ExceptionMessage
+    public class ExceptionMessage
     {
         /// <summary>
         /// Figures out a good user message for the exception 'e'   For things that directly
