@@ -23,46 +23,12 @@ namespace Diagnostics.Tracing.StackSources
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
-			Stream stream = null;
 
-			if (path.EndsWith(".zip"))
-			{
-				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
-				ZipArchiveEntry foundEntry = null;
-				foreach (ZipArchiveEntry entry in archive.Entries)
-				{
-					if (entry.FullName.EndsWith(PerfScriptSuffix))
-					{
-						foundEntry = entry;
-						break;
-					}
-				}
-
-				stream = foundEntry.Open();
-			}
-			else
-			{
-				if (path.EndsWith(PerfScriptSuffix))
-				{
-					stream = new FileStream(path, FileMode.Open);
-				}
-				else
-				{
-					throw new Exception("Not a valid input file");
-				}
-			}
-
-			if (stream != null)
+			using (Stream stream = this.GetPerfScriptStream(path))
 			{
 				this.Parser = new LinuxPerfScriptEventParser(stream);
+				this.InternAllLinuxEvents(doThreadTime);
 			}
-			else
-			{
-				throw new Exception(".zip does not contain a perf.data.dump file suffix entry");
-			}
-
-			this.InternAllLinuxEvents(doThreadTime);
-			stream.Close();
 		}
 
 		public double GetTotalBlockedTime()
@@ -192,6 +158,33 @@ namespace Diagnostics.Tracing.StackSources
 			
 			stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
 			return stackIndex;
+		}
+
+		private Stream GetPerfScriptStream(string path)
+		{
+			if (path.EndsWith(".zip"))
+			{
+				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
+				ZipArchiveEntry foundEntry = null;
+				foreach (ZipArchiveEntry entry in archive.Entries)
+				{
+					if (entry.FullName.EndsWith(PerfScriptSuffix))
+					{
+						foundEntry = entry;
+						break;
+					}
+				}
+				return foundEntry.Open();
+			}
+			else
+			{
+				if (path.EndsWith(PerfScriptSuffix))
+				{
+					return new FileStream(path, FileMode.Open);
+				}
+			}
+
+			throw new Exception("Not a valid input file");
 		}
 
 		#endregion

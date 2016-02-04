@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,16 +13,19 @@ namespace LinuxTracing.Tests
 	{
 		private void DoStackTraceTest(string source, bool blockedTime, List<List<string>> callerStacks)
 		{
-			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			List<LinuxEvent> events = parser.Parse().ToList();
-
-			for (int e = 0; e < parser.EventCount; e++)
+			using (Stream stream = File.Open(source, FileMode.Open))
 			{
-				List<Frame> frames = events[e].CallerStacks.ToList();
+				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
+				List<LinuxEvent> events = parser.Parse().ToList();
 
-				for (int i = 0; i < frames.Count; i++)
+				for (int e = 0; e < parser.EventCount; e++)
 				{
-					Assert.Equal(callerStacks[e][i], frames[i].DisplayName);
+					List<Frame> frames = events[e].CallerStacks.ToList();
+
+					for (int i = 0; i < frames.Count; i++)
+					{
+						Assert.Equal(callerStacks[e][i], frames[i].DisplayName);
+					}
 				}
 			}
 		}
@@ -39,43 +43,45 @@ namespace LinuxTracing.Tests
 			ScheduleSwitch[] switches
 			)
 		{
-			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			List<LinuxEvent> samples = parser.Parse().ToList();
-
-			// Need to make sure we have the same amount of samples
-			Assert.Equal(commands.Length, parser.EventCount);
-
-			int schedCount = 0;
-
-			for (int i = 0; i < parser.EventCount; i++)
+			using (Stream stream = File.Open(source, FileMode.Open))
 			{
-				LinuxEvent linuxEvent = samples[i];
-				Assert.Equal(commands[i], linuxEvent.Command);
-				Assert.Equal(pids[i], linuxEvent.ProcessID);
-				Assert.Equal(tids[i], linuxEvent.ThreadID);
-				Assert.Equal(cpus[i], linuxEvent.Cpu);
-				Assert.Equal(times[i], linuxEvent.Time);
-				Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
-				Assert.Equal(events[i], linuxEvent.EventName);
-				Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
-				Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
+				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
+				List<LinuxEvent> samples = parser.Parse().ToList();
 
-				SchedulerEvent sched = linuxEvent as SchedulerEvent;
-				if (switches != null && sched != null)
+				// Need to make sure we have the same amount of samples
+				Assert.Equal(commands.Length, parser.EventCount);
+
+				int schedCount = 0;
+
+				for (int i = 0; i < parser.EventCount; i++)
 				{
-					ScheduleSwitch actualSwitch = sched.Switch;
-					ScheduleSwitch expectedSwitch = switches[schedCount++];
-					Assert.Equal(expectedSwitch.NextCommand, actualSwitch.NextCommand);
-					Assert.Equal(expectedSwitch.NextPriority, actualSwitch.NextPriority);
-					Assert.Equal(expectedSwitch.NextThreadID, actualSwitch.NextThreadID);
-					Assert.Equal(expectedSwitch.PreviousCommand, actualSwitch.PreviousCommand);
-					Assert.Equal(expectedSwitch.PreviousPriority, actualSwitch.PreviousPriority);
-					Assert.Equal(expectedSwitch.PreviousState, actualSwitch.PreviousState);
-					Assert.Equal(expectedSwitch.PreviousThreadID, actualSwitch.PreviousThreadID);
+					LinuxEvent linuxEvent = samples[i];
+					Assert.Equal(commands[i], linuxEvent.Command);
+					Assert.Equal(pids[i], linuxEvent.ProcessID);
+					Assert.Equal(tids[i], linuxEvent.ThreadID);
+					Assert.Equal(cpus[i], linuxEvent.Cpu);
+					Assert.Equal(times[i], linuxEvent.Time);
+					Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
+					Assert.Equal(events[i], linuxEvent.EventName);
+					Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
+					Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
 
+					SchedulerEvent sched = linuxEvent as SchedulerEvent;
+					if (switches != null && sched != null)
+					{
+						ScheduleSwitch actualSwitch = sched.Switch;
+						ScheduleSwitch expectedSwitch = switches[schedCount++];
+						Assert.Equal(expectedSwitch.NextCommand, actualSwitch.NextCommand);
+						Assert.Equal(expectedSwitch.NextPriority, actualSwitch.NextPriority);
+						Assert.Equal(expectedSwitch.NextThreadID, actualSwitch.NextThreadID);
+						Assert.Equal(expectedSwitch.PreviousCommand, actualSwitch.PreviousCommand);
+						Assert.Equal(expectedSwitch.PreviousPriority, actualSwitch.PreviousPriority);
+						Assert.Equal(expectedSwitch.PreviousState, actualSwitch.PreviousState);
+						Assert.Equal(expectedSwitch.PreviousThreadID, actualSwitch.PreviousThreadID);
+
+					}
 				}
 			}
-
 		}
 
 		[Fact]
