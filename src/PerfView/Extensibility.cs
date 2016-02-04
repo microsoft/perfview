@@ -2664,6 +2664,24 @@ namespace PerfViewExtensibility
             }
         }
 
+		public void PerfScript(string path, string threadTime = null)
+		{
+			bool doThreadTime = threadTime != null && threadTime == "--threadtime";
+
+			var perfScriptStackSource = new LinuxPerfScriptStackSource(path, doThreadTime);
+			string outputFileName = Path.ChangeExtension(path, ".perfView.xml.zip");
+
+			XmlStackSourceWriter.WriteStackViewAsZippedXml(perfScriptStackSource, outputFileName);
+
+			if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+			{
+				if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+				{
+					GuiApp.MainWindow.OpenNext(outputFileName);
+				}
+			}
+		}
+
         /// <summary>
         /// Creates a stack source out of the textFileName where each line is a frame (which is directly rooted)
         /// and every such line has a metric of 1.  Thus it allows you to form histograms for these lines nicely
