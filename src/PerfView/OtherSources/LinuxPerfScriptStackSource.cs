@@ -77,9 +77,13 @@ namespace Diagnostics.Tracing.StackSources
 				this.cpuThreadUsage = new Dictionary<int, int>();
 			}
 
+			double lastTime = 0;
+
 			StackSourceCallStackIndex stackIndex = 0;
 			foreach (LinuxEvent linuxEvent in this.parser.Parse())
 			{
+				lastTime = linuxEvent.Time;
+
 				if (doThreadTime)
 				{
 					this.AnalyzeSampleForBlockedTime(linuxEvent);
@@ -98,10 +102,22 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (doThreadTime)
 			{
+				this.FlushBlockedThreadsAt(lastTime);
 				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 			}
 
 			this.Interner.DoneInterning();
+		}
+
+		private void FlushBlockedThreadsAt(double endTime)
+		{
+			foreach (int threadid in this.blockedThreads.Keys)
+			{
+				double startTime = this.blockedThreads[threadid];
+				this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, endTime));
+			}
+
+			this.blockedThreads = null;
 		}
 
 		private void AnalyzeSampleForBlockedTime(LinuxEvent linuxEvent)

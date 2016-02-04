@@ -47,21 +47,21 @@ namespace LinuxTracing.Tests
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void OneIncomplateContextSwitch()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_incomplete_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void NoTimeBlocked2_Induced()
 		{
 			string path = Constants.GetTestingPerfDumpPath("notimeblocked_induced");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 2.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void MixedBlocked()
 		{
 			string path = Constants.GetTestingPerfDumpPath("mixed_switches");
