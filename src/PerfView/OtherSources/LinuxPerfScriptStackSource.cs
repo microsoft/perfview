@@ -21,17 +21,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		private LinuxPerfScriptEventParser Parser { get; }
 
-		public LinuxPerfScriptStackSource(LinuxPerfScriptEventParser parser, bool doThreadTime = false)
-		{
-			if (!parser.Parsed)
-			{
-				parser.Parse();
-			}
-
-			this.Parser = parser;
-			this.InternAllLinuxEvents(doThreadTime);
-		}
-
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			Stream stream = null;
@@ -73,6 +62,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.InternAllLinuxEvents(doThreadTime);
+			stream.Close();
 		}
 
 		public double GetTotalBlockedTime()
