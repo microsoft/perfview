@@ -10,15 +10,17 @@ namespace Tests
     [TestClass]
     public class CtfTraceTests
     {
-        static string TestPath = @"C:\Users\leecu_000\Documents\GitHub\perfview\src\Tests";
+        static string TestPath = @"C:\Users\leculver\Documents\GitHub\perfview\src\Tests";
 
         [TestMethod]
         public void GCAllocationTick()
         {
+            //string path = Path.Combine(TestPath, "auto-20160204-132425.lttng.zip");
             string path = Path.Combine(TestPath, "auto-20151103-132930.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
             {
+
                 int allocTicks = 0, allocTicksFromAll = 0;
 
                 ctfSource.AllEvents += delegate(TraceEvent obj)
@@ -28,6 +30,32 @@ namespace Tests
                     if (obj is GCAllocationTickTraceData)
                         allocTicksFromAll++;
                 };
+
+                ctfSource.Clr.RuntimeStart += delegate(RuntimeInformationTraceData d)
+                {
+
+                };
+
+
+                ctfSource.Clr.LoaderModuleLoad += delegate(ModuleLoadUnloadTraceData d)
+                {
+
+                };
+
+                ctfSource.Clr.MethodInliningFailed += delegate(MethodJitInliningFailedTraceData d)
+                {
+
+                };
+
+
+
+                ctfSource.Clr.MethodTailCallSucceeded += delegate (MethodJitTailCallSucceededTraceData d)
+                {
+
+                };
+
+                
+
 
                 ctfSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData o) { allocTicks++; };
 

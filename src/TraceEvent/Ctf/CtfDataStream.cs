@@ -34,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     sealed class CtfDataStream : IDisposable
     {
         private Stream _stream;
-        private byte[] _buffer = new byte[1];
+        private byte[] _buffer = new byte[1024];
         private long _fileOffset;
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
@@ -56,6 +56,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
 
         public int BufferLength { get { return _bufferLength; } }
+        public byte[] Buffer { get { return _buffer; } }
         public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
 
         public CtfDataStream(Stream stream, CtfMetadata metadata)
@@ -236,11 +237,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     
                 case CtfTypes.String:
                     bool ascii = ((CtfString)type).IsAscii;
-
-                    if (ascii)
-                        return ReadString(System.Text.Encoding.ASCII);
-
-                    return ReadString(System.Text.Encoding.UTF8);
+                    return ReadString(ascii);
 
                 case CtfTypes.Struct:
                     return ReadStruct((CtfStruct)type);
@@ -431,7 +428,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             if (offset + count > _buffer.Length)
             {
                 byte[] buffer = ReallocateBuffer((int)((offset + count) * 1.5));
-                Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
+                System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
             }
 
             int read = _stream.Read(_buffer, offset, count);
@@ -447,21 +444,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
-
-        private byte ReadByte()
-        {
-            int c = _stream.ReadByte();
-            if (c == -1)
-            {
-                _eof = true;
-                return 0;
-            }
-
-            _fileOffset++;
-            CheckEOF();
-            return (byte)c;
-        }
-
         private void CheckEOF()
         {
             long offs = Offset;
@@ -471,7 +453,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 bytes++;
                 if (_buffer.Length < bytes)
-                    ReallocateBuffer(bytes);
+                {
+                    byte[] buffer = ReallocateBuffer(bytes);
+                    System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
+                }
 
                 int read = _stream.Read(_buffer, 0, bytes);
                 if (read != bytes)
@@ -488,27 +473,110 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
-        internal string ReadString(Encoding encoding)
+        byte[] _bytes = new byte[1024];
+        internal string ReadString(bool ascii)
         {
-            StringBuilder builder = new StringBuilder();
-            char[] next = new char[1];
-            Decoder decoder = encoding.GetDecoder();
-
-            while (true)
+            byte b = ReadByte();
+            if (b == 0)
             {
-                _buffer[0] = ReadByte();
-                if (_buffer[0] == 0)
-                    break;
+                if (_buffer.Length < _bufferLength + 2)
+                {
+                    byte[] buffer = ReallocateBuffer(_bufferLength + 2);
+                    System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
+                }
 
-                int count = decoder.GetChars(_buffer, 0, 1, next, 0);
-                if (count == 0)
-                    continue;
+                _buffer[_bufferLength++] = 0;
+                _buffer[_bufferLength++] = 0;
+                _bitOffset += 16;
 
-                builder.Append(next[0]);
-
+                return "";
             }
 
-            return builder.ToString();
+            int i = 0;
+            _bytes[i++] = b;
+            if (ascii)
+            {
+                while (b != 0)
+                {
+                    if (i >= _bytes.Length - 4)
+                    {
+                        byte[] tmp = _bytes;
+                        _bytes = new byte[_bytes.Length + 1024];
+                        System.Buffer.BlockCopy(tmp, 0, _bytes, 0, tmp.Length);
+                    }
+
+                    b = _bytes[i++] = ReadByte();
+                }
+            }
+            else
+            {
+                while (b != 0)
+                {
+                    if (i >= _bytes.Length - 4)
+                    {
+                        byte[] tmp = _bytes;
+                        _bytes = new byte[_bytes.Length + 1024];
+                        System.Buffer.BlockCopy(tmp, 0, _bytes, 0, tmp.Length);
+                    }
+
+                    b >>= 4;
+
+                    switch (b)
+                    {
+                        default:
+                            break;
+
+                        case 0xc:
+                        case 0xd:
+                            _bytes[i++] = ReadByte();
+                            break;
+
+                        case 0xe:
+                            _bytes[i++] = ReadByte();
+                            _bytes[i++] = ReadByte();
+                            break;
+
+                        case 0xf:
+                            _bytes[i++] = ReadByte();
+                            _bytes[i++] = ReadByte();
+                            _bytes[i++] = ReadByte();
+                            break;
+                    }
+
+                    b = _bytes[i++] = ReadByte();
+                }
+            }
+
+            Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
+
+            string s = encoding.GetString(_bytes, 0, i - 1);
+            byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _bytes, 0, i);
+
+            if (_buffer.Length < _bufferLength + newArr.Length)
+            {
+                byte[] buffer = ReallocateBuffer(_bufferLength + newArr.Length);
+                System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
+            }
+
+            System.Buffer.BlockCopy(newArr, 0, _buffer, _bufferLength, newArr.Length);
+            _bufferLength += newArr.Length;
+            _bitOffset += newArr.Length * 8;
+
+            return s;
+        }
+        
+        private byte ReadByte()
+        {
+            int c = _stream.ReadByte();
+            if (c == -1)
+            {
+                _eof = true;
+                return 0;
+            }
+
+            _fileOffset++;
+            CheckEOF();
+            return (byte)c;
         }
     }
 }

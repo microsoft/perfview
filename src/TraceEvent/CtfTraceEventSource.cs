@@ -71,7 +71,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventMapping = InitEventMap();
         }
-
+        
         private static Dictionary<string, ETWMapping> InitEventMap()
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
@@ -97,6 +97,25 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:GCFinalizersEnd_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 15, 13, 1);
             result["DotNETRuntime:FinalizeObject"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 32, 29, 0);
             result["DotNETRuntimePrivate:PrvFinalizeObject"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 39, 192, 0);
+
+            result["DotNETRuntime:RuntimeInformationStart"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 187, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:RuntimeInformationStart_1"] = new ETWMapping();
+
+            result["DotNETRuntime:ModuleLoad_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 33, 152, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:ModuleLoad_V2_1"] = new ETWMapping();
+
+
+            result["DotNETRuntime:MethodJitInliningFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 84, 186, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:MethodJitInliningFailed_1"] = new ETWMapping();
+
+
+            result["DotNETRuntime:MethodJitTailCallSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 85, 188, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:MethodJitTailCallSucceeded_1"] = new ETWMapping();
+
+            result["DotNETRuntime:MethodJitTailCallFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 86, 189, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:MethodJitTailCallFailed_1"] = new ETWMapping();
+
+            //result[""] = new ETWMapping(new Guid(), , 0);
             return result;
         }
 
@@ -131,14 +150,16 @@ namespace Microsoft.Diagnostics.Tracing
 
         private void ProcessOneChannel(CtfDataStream stream)
         {
+            int events = 0;
             foreach (CtfEventHeader header in stream.EnumerateEventHeaders())
             {
+                events++;
                 if (stopProcessing)
                     return;
-
+                
                 CtfEvent evt = header.Event;
                 stream.ReadEventIntoBuffer(evt);
-
+                
                 ETWMapping etw = GetTraceEvent(evt);
                 if (etw.IsNull)
                     continue;
@@ -162,28 +183,27 @@ namespace Microsoft.Diagnostics.Tracing
             else
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
 
-            _header->EventHeader.ThreadId = 0;
-            _header->EventHeader.ProcessId = 0;
-            _header->EventHeader.TimeStamp = 0;
+            _header->EventHeader.TimeStamp = (long)header.Timestamp;
             _header->EventHeader.ProviderId = etw.Guid;
             _header->EventHeader.Version = etw.Version;
             _header->EventHeader.Level = 0;
             _header->EventHeader.Opcode = (byte)etw.Opcode;
             _header->EventHeader.Id = (ushort)etw.Id;
 
-            _header->EventHeader.KernelTime = 0;
-            _header->EventHeader.UserTime = 0;
-            _header->EventHeader.TimeStamp = (long)header.Timestamp;
-
-            _header->BufferContext = new TraceEventNativeMethods.ETW_BUFFER_CONTEXT();
-            _header->BufferContext.ProcessorNumber = 0; // todo
-
             _header->UserDataLength = (ushort)stream.BufferLength;
             _header->UserData = stream.BufferPtr;
+
+            // TODO: Set these properties based on Ctf context
+            _header->BufferContext = new TraceEventNativeMethods.ETW_BUFFER_CONTEXT();
+            _header->BufferContext.ProcessorNumber = 0;
+            _header->EventHeader.ThreadId = 0;
+            _header->EventHeader.ProcessId = 0;
+            _header->EventHeader.KernelTime = 0;
+            _header->EventHeader.UserTime = 0;
+
             return _header;
         }
 
-        Dictionary<CtfEvent, ETWMapping> _traceEvents = new Dictionary<CtfEvent, ETWMapping>();
         private ETWMapping GetTraceEvent(CtfEvent evt)
         {
             ETWMapping result;
