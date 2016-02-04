@@ -5108,6 +5108,7 @@ namespace PerfView
 	{
 		public override string FormatName { get { return "Linux events through PerfScript"; } }
 
+        // TODO remove support for .data.dump suffixes after 3/2016
 		public override string[] FileExtensions { get { return new string[] { ".data.dump", ".data.txt", ".trace.zip" }; } }
 
 		protected internal override StackSource OpenStackSourceImpl(TextWriter log)

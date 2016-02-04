@@ -7747,7 +7747,20 @@
         </li>
         -->
         <li>
-            Version 1.8.245 1/2/16
+            Version 1.8.28 2/4/16
+            <ul>
+                <li>
+                    Added support doing performance investigations with Linux Perf Events data.   Basically if
+                    collect data with the bash script https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/perfcollect
+                    it will runt the Linux 'perf' tool that will collect CPU samples, convert them to a .data.txt file
+                    (which is a textual representation of the data) and then ZIP it into a .trace.zip file PerfVIew 
+                    knows how to decode either the uncompressed .data.txt file or the zipped .trace.zip file and 
+                    display it as a stack view.   Thus you can now do linux  performance investigations with PerfView.   
+                </li>
+            </ul>
+        </li>
+        <li>
+            Version 1.8.25 2/2/16
             <ul>
                 <li> Improvements in Start-Stop time.   UNKNOWN_ASYNC displayed more often, some AWAIT time shown more often.  
                 </li>

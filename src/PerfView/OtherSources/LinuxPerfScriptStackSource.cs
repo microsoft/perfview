@@ -16,12 +16,10 @@ namespace Diagnostics.Tracing.StackSources
 
 	public class LinuxPerfScriptStackSource : InternStackSource
 	{
-
-		public static readonly string PerfScriptSuffix = "perf.data.dump";
+		public static readonly string PerfScriptSuffix = ".data.txt";
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
-
 			using (Stream stream = this.GetPerfScriptStream(path))
 			{
 				this.parser = new LinuxPerfScriptEventParser(stream);
@@ -161,13 +159,14 @@ namespace Diagnostics.Tracing.StackSources
 
 		private Stream GetPerfScriptStream(string path)
 		{
-			if (path.EndsWith(".zip"))
+			if (path.EndsWith(".trace.zip"))
 			{
 				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
 				ZipArchiveEntry foundEntry = null;
 				foreach (ZipArchiveEntry entry in archive.Entries)
 				{
-					if (entry.FullName.EndsWith(PerfScriptSuffix))
+                    // TODO remove the support for .data.dump after 3/2016
+                    if (entry.FullName.EndsWith(PerfScriptSuffix) || entry.FullName.EndsWith(".data.dump"))
 					{
 						foundEntry = entry;
 						break;
@@ -177,7 +176,8 @@ namespace Diagnostics.Tracing.StackSources
 			}
 			else
 			{
-				if (path.EndsWith(PerfScriptSuffix))
+                // TODO remove the support for .data.dump after 3/2016
+                if (path.EndsWith(PerfScriptSuffix) || path.EndsWith(".data.dump"))
 				{
 					return new FileStream(path, FileMode.Open);
 				}
