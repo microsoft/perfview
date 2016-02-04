@@ -5,29 +5,31 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using Xunit;
 
 namespace LinuxTracing.Tests
 {
 	public class EventParseTests
 	{
-		private void DoStackTraceTest(string source, bool blockedTime, List<List<string>> callerStacks)
+		private void DoStackTraceTest(string path, bool doBlockedTime, List<List<string>> callerStacks)
 		{
-			using (Stream stream = File.Open(source, FileMode.Open))
-			{
-				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
-				List<LinuxEvent> events = parser.Parse().ToList();
+			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(path, doBlockedTime);
 
-			for (int e = 0; e < parser.EventCount; e++)
+			for (int i = 0; i < stackSource.SampleIndexLimit; i++)
 			{
-				List<Frame> frames = events[e].CallerStacks.ToList();
+				var sample = stackSource.GetSampleByIndex((StackSourceSampleIndex)i);
 
-				for (int i = 0; i < frames.Count; i++)
+				var stackIndex = sample.StackIndex;
+				for (int j = 0;  (int)stackIndex != -1; j++)
 				{
-					Assert.Equal(callerStacks[e][i], frames[i].DisplayName);
+					var frameIndex = stackSource.GetFrameIndex(stackIndex);
+					Assert.Equal(callerStacks[i][j], stackSource.GetFrameName(frameIndex, false));
+					stackIndex = stackSource.GetCallerIndex(stackIndex);
 				}
+
+				Assert.Equal(-1, (int)stackIndex);
 			}
-		}
 		}
 
 		private void HeaderTest(string source, bool blockedTime,
@@ -48,47 +50,47 @@ namespace LinuxTracing.Tests
 				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
 				List<LinuxEvent> samples = parser.Parse().ToList();
 
-			// Need to make sure we have the same amount of samples
-			Assert.Equal(commands.Length, parser.EventCount);
+				// Need to make sure we have the same amount of samples
+				Assert.Equal(commands.Length, parser.EventCount);
 
-			int schedCount = 0;
+				int schedCount = 0;
 
-			for (int i = 0; i < parser.EventCount; i++)
-			{
-				LinuxEvent linuxEvent = samples[i];
-				Assert.Equal(commands[i], linuxEvent.Command);
-				Assert.Equal(pids[i], linuxEvent.ProcessID);
-				Assert.Equal(tids[i], linuxEvent.ThreadID);
-				Assert.Equal(cpus[i], linuxEvent.Cpu);
-				Assert.Equal(times[i], linuxEvent.Time);
-				Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
-				Assert.Equal(events[i], linuxEvent.EventName);
-				Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
+				for (int i = 0; i < parser.EventCount; i++)
+				{
+					LinuxEvent linuxEvent = samples[i];
+					Assert.Equal(commands[i], linuxEvent.Command);
+					Assert.Equal(pids[i], linuxEvent.ProcessID);
+					Assert.Equal(tids[i], linuxEvent.ThreadID);
+					Assert.Equal(cpus[i], linuxEvent.Cpu);
+					Assert.Equal(times[i], linuxEvent.Time);
+					Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
+					Assert.Equal(events[i], linuxEvent.EventName);
+					Assert.Equal(eventProperties[i], linuxEvent.EventProperty);
 					Assert.Equal(eventKinds == null ? EventKind.Cpu : eventKinds[i], linuxEvent.Kind);
 
 					SchedulerEvent sched = linuxEvent as SchedulerEvent;
-				if (switches != null && sched != null)
-				{
-					ScheduleSwitch actualSwitch = sched.Switch;
-					ScheduleSwitch expectedSwitch = switches[schedCount++];
-					Assert.Equal(expectedSwitch.NextCommand, actualSwitch.NextCommand);
-					Assert.Equal(expectedSwitch.NextPriority, actualSwitch.NextPriority);
-					Assert.Equal(expectedSwitch.NextThreadID, actualSwitch.NextThreadID);
-					Assert.Equal(expectedSwitch.PreviousCommand, actualSwitch.PreviousCommand);
-					Assert.Equal(expectedSwitch.PreviousPriority, actualSwitch.PreviousPriority);
-					Assert.Equal(expectedSwitch.PreviousState, actualSwitch.PreviousState);
-					Assert.Equal(expectedSwitch.PreviousThreadID, actualSwitch.PreviousThreadID);
+					if (switches != null && sched != null)
+					{
+						ScheduleSwitch actualSwitch = sched.Switch;
+						ScheduleSwitch expectedSwitch = switches[schedCount++];
+						Assert.Equal(expectedSwitch.NextCommand, actualSwitch.NextCommand);
+						Assert.Equal(expectedSwitch.NextPriority, actualSwitch.NextPriority);
+						Assert.Equal(expectedSwitch.NextThreadID, actualSwitch.NextThreadID);
+						Assert.Equal(expectedSwitch.PreviousCommand, actualSwitch.PreviousCommand);
+						Assert.Equal(expectedSwitch.PreviousPriority, actualSwitch.PreviousPriority);
+						Assert.Equal(expectedSwitch.PreviousState, actualSwitch.PreviousState);
+						Assert.Equal(expectedSwitch.PreviousThreadID, actualSwitch.PreviousThreadID);
 
+					}
 				}
 			}
-		}
 		}
 
 		[Fact]
 		public void OneStack()
 		{
 			string path = Constants.GetTestingPerfDumpPath("onegeneric");
-			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>> {
+			this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
 				new List<string>{ "module!symbol", "Thread (0)", "comm", null }
 			});
 		}
@@ -97,7 +99,7 @@ namespace LinuxTracing.Tests
 		public void LargeStack()
 		{
 			string path = Constants.GetTestingPerfDumpPath("two_small_generic");
-			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>>
+			this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
 			{
 				new List<string> { "module!symbol", "module2!symbol2", "main!main", "Thread (0)", "comm" },
 				new List<string> { "module3!symbol3", "module4!symbol4", "main!main", "Thread (0)", "comm2" }
@@ -108,17 +110,17 @@ namespace LinuxTracing.Tests
 		public void MicrosoftStackTrace()
 		{
 			string path = Constants.GetTestingPerfDumpPath("ms_stack");
-			this.DoStackTraceTest(path, blockedTime: false, callerStacks: new List<List<string>>
+			this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
 			{
 				new List<string> { "module!symbol(param[])", "Thread (0)", "comm" },
 			});
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void SchedStackTrace()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_complete_switch");
-			this.DoStackTraceTest(path, blockedTime: true, callerStacks: new List<List<string>>
+			this.DoStackTraceTest(path, doBlockedTime: true, callerStacks: new List<List<string>>
 			{
 				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (0)", "comm1"},
 				new List<string> { "BLOCKED_TIME", "module!symbol", "Thread (1)", "comm2"},
@@ -129,7 +131,7 @@ namespace LinuxTracing.Tests
 		public void EmptyStackFrames()
 		{
 			string path = Constants.GetTestingPerfDumpPath("no_stack_frames");
-			this.DoStackTraceTest(path, blockedTime: false,
+			this.DoStackTraceTest(path, doBlockedTime: false,
 				callerStacks: new List<List<string>>
 				{
 					new List<string> { "Thread (0)", "comm" },
@@ -141,7 +143,7 @@ namespace LinuxTracing.Tests
 		public void EmptyStackFrames2()
 		{
 			string path = Constants.GetTestingPerfDumpPath("no_stack_frames2");
-			this.DoStackTraceTest(path, blockedTime: false,
+			this.DoStackTraceTest(path, doBlockedTime: false,
 				callerStacks: new List<List<string>>
 				{
 					new List<string>
