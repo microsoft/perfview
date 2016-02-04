@@ -1,7 +1,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 using System;
-using System.Collections.Generic;
+// using System.Collections.Generic;
 
 class Program
 {

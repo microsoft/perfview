@@ -21,14 +21,13 @@ using Graphs;
 using PerfView.Dialogs;
 using PerfViewModel;
 using Microsoft.Diagnostics.Symbols;
-using Utilities;
 using Address = System.UInt64;
 using Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using PerfView.GuiUtilities;
-
+using Utilities;
 
 namespace PerfView
 {
@@ -2012,7 +2011,7 @@ namespace PerfView
                         StatusBar.Log("Viewing line " + sourceLocation.LineNumber + " in " + logicalSourcePath);
 
                         // TODO FIX NOW this is a hack
-                        var notepad2 = Utilities.Command.FindOnPath("notepad2.exe");
+                        var notepad2 = Command.FindOnPath("notepad2.exe");
                         if (notepad2 == null && AppLog.InternalUser)
                         {
                             var clrMainNotepad2 = @"\\clrmain\tools\x86\notepad2.exe";
@@ -2022,8 +2021,8 @@ namespace PerfView
 
                         Window dialogParentWindow = this;
                         if (notepad2 != null)
-                            Utilities.Command.Run(Utilities.Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
-                                + Utilities.Command.Quote(sourcePathToOpen), new Utilities.CommandOptions().AddStart());
+                            Command.Run(Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
+                                + Command.Quote(sourcePathToOpen), new CommandOptions().AddStart());
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
