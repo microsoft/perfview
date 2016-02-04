@@ -19,23 +19,21 @@ namespace Diagnostics.Tracing.StackSources
 
 		public static readonly string PerfScriptSuffix = "perf.data.dump";
 
-		private LinuxPerfScriptEventParser Parser { get; }
-
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 
 			using (Stream stream = this.GetPerfScriptStream(path))
 			{
-				this.Parser = new LinuxPerfScriptEventParser(stream);
+				this.parser = new LinuxPerfScriptEventParser(stream);
 				this.InternAllLinuxEvents(doThreadTime);
 			}
 		}
 
 		public double GetTotalBlockedTime()
 		{
-			Contract.Requires(this.ThreadBlockedPeriods != null, nameof(ThreadBlockedPeriods));
+			Contract.Requires(this.threadBlockedPeriods != null, nameof(threadBlockedPeriods));
 			double timeBlocked = 0;
-			foreach (ThreadPeriod period in this.ThreadBlockedPeriods)
+			foreach (ThreadPeriod period in this.threadBlockedPeriods)
 			{
 				timeBlocked += period.Period;
 			}
@@ -45,8 +43,9 @@ namespace Diagnostics.Tracing.StackSources
 
 		#region private
 
-		private Dictionary<int, double> BlockedThreads;
-		private List<ThreadPeriod> ThreadBlockedPeriods;
+		private readonly LinuxPerfScriptEventParser parser;
+		private Dictionary<int, double> blockedThreads;
+		private List<ThreadPeriod> threadBlockedPeriods;
 
 		private enum StateThread
 		{
@@ -71,12 +70,12 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			if (doThreadTime)
 			{
-				this.BlockedThreads = new Dictionary<int, double>();
-				this.ThreadBlockedPeriods = new List<ThreadPeriod>();
+				this.blockedThreads = new Dictionary<int, double>();
+				this.threadBlockedPeriods = new List<ThreadPeriod>();
 			}
 
 			StackSourceCallStackIndex stackIndex = 0;
-			foreach (LinuxEvent linuxEvent in this.Parser.Parse())
+			foreach (LinuxEvent linuxEvent in this.parser.Parse())
 			{
 				if (doThreadTime)
 				{
@@ -96,7 +95,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (doThreadTime)
 			{
-				this.ThreadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 			}
 
 			this.Interner.DoneInterning();
@@ -109,16 +108,16 @@ namespace Diagnostics.Tracing.StackSources
 			if (linuxEvent.Kind == EventKind.Scheduler)
 			{
 				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
-				if (!this.BlockedThreads.ContainsKey(schedEvent.Switch.PreviousThreadID))
+				if (!this.blockedThreads.ContainsKey(schedEvent.Switch.PreviousThreadID))
 				{
-					this.BlockedThreads.Add(schedEvent.Switch.PreviousThreadID, schedEvent.Time);
+					this.blockedThreads.Add(schedEvent.Switch.PreviousThreadID, schedEvent.Time);
 				}
 
 				double startTime;
-				if (this.BlockedThreads.TryGetValue(schedEvent.Switch.NextThreadID, out startTime))
+				if (this.blockedThreads.TryGetValue(schedEvent.Switch.NextThreadID, out startTime))
 				{
-					this.BlockedThreads.Remove(schedEvent.Switch.NextThreadID);
-					this.ThreadBlockedPeriods.Add(new ThreadPeriod(startTime, schedEvent.Time));
+					this.blockedThreads.Remove(schedEvent.Switch.NextThreadID);
+					this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, schedEvent.Time));
 				}
 				
 			}
@@ -141,7 +140,7 @@ namespace Diagnostics.Tracing.StackSources
 				// If doThreadTime is true, then we need to make sure that threadid is not null
 				Contract.Requires(threadid != null, nameof(threadid));
 
-				if (this.BlockedThreads.ContainsKey((int)threadid))
+				if (this.blockedThreads.ContainsKey((int)threadid))
 				{
 					frameIndex = this.Interner.FrameIntern(StateThread.BLOCKED_TIME.ToString());
 				}
