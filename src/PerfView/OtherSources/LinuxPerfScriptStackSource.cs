@@ -44,8 +44,10 @@ namespace Diagnostics.Tracing.StackSources
 		#region private
 
 		private readonly LinuxPerfScriptEventParser parser;
+
 		private Dictionary<int, double> blockedThreads;
 		private List<ThreadPeriod> threadBlockedPeriods;
+		private Dictionary<int, int> cpuThreadUsage;
 
 		private enum StateThread
 		{
@@ -72,6 +74,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				this.blockedThreads = new Dictionary<int, double>();
 				this.threadBlockedPeriods = new List<ThreadPeriod>();
+				this.cpuThreadUsage = new Dictionary<int, int>();
 			}
 
 			StackSourceCallStackIndex stackIndex = 0;
@@ -103,8 +106,8 @@ namespace Diagnostics.Tracing.StackSources
 
 		private void AnalyzeSampleForBlockedTime(LinuxEvent linuxEvent)
 		{
-			// The if is in here because there might be other event kinds that we need to analyze for
-			//   blocked time
+			// This is check for completed scheduler events, ones that start with prev_comm and have 
+			//   corresponding next_comm.
 			if (linuxEvent.Kind == EventKind.Scheduler)
 			{
 				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
@@ -119,8 +122,25 @@ namespace Diagnostics.Tracing.StackSources
 					this.blockedThreads.Remove(schedEvent.Switch.NextThreadID);
 					this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, schedEvent.Time));
 				}
-				
+
 			}
+			// This is for induced blocked time, if the thread that has already been blocked is
+			//   somehow now unblocked but we didn't get a scheduled event for it.
+			else if (linuxEvent.Kind == EventKind.Cpu)
+			{
+				int threadid;
+				if (this.cpuThreadUsage.TryGetValue(linuxEvent.Cpu, out threadid) && threadid != linuxEvent.ThreadID)
+				{
+					double startTime;
+					if (this.blockedThreads.TryGetValue(threadid, out startTime))
+					{
+						this.blockedThreads.Remove(threadid);
+						this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, linuxEvent.Time));
+					}
+				}
+			}
+
+			this.cpuThreadUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
 
 		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
@@ -154,7 +174,7 @@ namespace Diagnostics.Tracing.StackSources
 				frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
 			}
 
-			
+
 			stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
 			return stackIndex;
 		}

@@ -40,7 +40,7 @@ namespace LinuxTracing.Tests
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void OneInducedContextSwitch()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_induced_switch");
