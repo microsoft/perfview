@@ -564,14 +564,8 @@ namespace PerfView
                                 (ulong)(TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
 
-                            EnableUserProvider(userModeSession, ".NETFramework",
-                                FrameworkEventSourceTraceEventParser.ProviderGuid,
-                                parsedArgs.ClrEventLevel,
-                                (ulong)(
-                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
-                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
-                                    FrameworkEventSourceTraceEventParser.Keywords.NetClient),
-                                stacksEnabled);
+                            // Turn on the Nuget package provider that tracks activity IDs. 
+                            EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80);
 
                             // Turn on new SQL client logging 
                             EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
