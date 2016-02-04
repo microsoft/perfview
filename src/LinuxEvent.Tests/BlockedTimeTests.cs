@@ -21,10 +21,9 @@ namespace LinuxTracing.Tests
 	{
 		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
 		{
-			LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(source);
-			parser.Parse();
+			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(source, doThreadTime: true);
 
-			Assert.Equal(expectedTotalBlockedPeriod, 0);
+			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());
 		}
 
 		[Fact]
@@ -34,7 +33,7 @@ namespace LinuxTracing.Tests
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 0.0);
 		}
 
-		[Fact(Skip ="Not implemented")]
+		[Fact]
 		public void OneCompletedContextSwitch()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_complete_switch");

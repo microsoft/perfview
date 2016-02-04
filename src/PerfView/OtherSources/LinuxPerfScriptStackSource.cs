@@ -21,7 +21,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		private LinuxPerfScriptEventParser Parser { get; }
 
-		public LinuxPerfScriptStackSource(LinuxPerfScriptEventParser parser)
+		public LinuxPerfScriptStackSource(LinuxPerfScriptEventParser parser, bool doThreadTime = false)
 		{
 			if (!parser.Parsed)
 			{
@@ -29,10 +29,10 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.Parser = parser;
-			this.InternAllLinuxEvents();
+			this.InternAllLinuxEvents(doThreadTime);
 		}
 
-		public LinuxPerfScriptStackSource(string path)
+		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			Stream stream = null;
 
@@ -72,18 +72,64 @@ namespace Diagnostics.Tracing.StackSources
 				throw new Exception(".zip does not contain a perf.data.dump file suffix entry");
 			}
 
-			this.InternAllLinuxEvents();
+			this.InternAllLinuxEvents(doThreadTime);
+		}
+
+		public double GetTotalBlockedTime()
+		{
+			Contract.Requires(this.ThreadBlockedPeriods != null, nameof(ThreadBlockedPeriods));
+			double timeBlocked = 0;
+			foreach (ThreadPeriod period in this.ThreadBlockedPeriods)
+			{
+				timeBlocked += period.Period;
+			}
+
+			return timeBlocked;
 		}
 
 		#region private
-		private void InternAllLinuxEvents()
+
+		private Dictionary<int, double> BlockedThreads;
+		private List<ThreadPeriod> ThreadBlockedPeriods;
+
+		private enum StateThread
 		{
+			BLOCKED_TIME,
+			CPU_TIME
+		}
+
+		private class ThreadPeriod
+		{
+			internal double StartTime { get; }
+			internal double EndTime { get; }
+			internal double Period { get { return this.EndTime - this.StartTime; } }
+
+			internal ThreadPeriod(double startTime, double endTime)
+			{
+				this.StartTime = startTime;
+				this.EndTime = endTime;
+			}
+		}
+
+		private void InternAllLinuxEvents(bool doThreadTime)
+		{
+			if (doThreadTime)
+			{
+				this.BlockedThreads = new Dictionary<int, double>();
+				this.ThreadBlockedPeriods = new List<ThreadPeriod>();
+			}
+
 			StackSourceCallStackIndex stackIndex = 0;
 			foreach (LinuxEvent linuxEvent in this.Parser.Parse())
 			{
+				if (doThreadTime)
+				{
+					this.AnalyzeSampleForBlockedTime(linuxEvent);
+				}
+
 				IEnumerable<Frame> frames = linuxEvent.CallerStacks;
 
-				stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex);
+				stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, doThreadTime);
 
 				var sample = new StackSourceSample(this);
 				sample.StackIndex = stackIndex;
@@ -92,18 +138,68 @@ namespace Diagnostics.Tracing.StackSources
 				this.AddSample(sample);
 			}
 
+			if (doThreadTime)
+			{
+				this.ThreadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
+
 			this.Interner.DoneInterning();
 		}
 
-		private StackSourceCallStackIndex InternFrames(
-			IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex)
+		private void AnalyzeSampleForBlockedTime(LinuxEvent linuxEvent)
 		{
-			if (!frameIterator.MoveNext())
+			// The if is in here because there might be other event kinds that we need to analyze for
+			//   blocked time
+			if (linuxEvent.Kind == EventKind.Scheduler)
+			{
+				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
+				if (!this.BlockedThreads.ContainsKey(schedEvent.Switch.PreviousThreadID))
+				{
+					this.BlockedThreads.Add(schedEvent.Switch.PreviousThreadID, schedEvent.Time);
+				}
+
+				double startTime;
+				if (this.BlockedThreads.TryGetValue(schedEvent.Switch.NextThreadID, out startTime))
+				{
+					this.BlockedThreads.Remove(schedEvent.Switch.NextThreadID);
+					this.ThreadBlockedPeriods.Add(new ThreadPeriod(startTime, schedEvent.Time));
+				}
+				
+			}
+		}
+
+		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
+		{
+
+			// We shouldn't advance the iterator if thread time is enabled because we need 
+			//   to add an extra frame to the caller stack that is not in the frameIterator.
+			//   i.e. Short-circuiting prevents the frameIterator from doing MoveNext :)
+			if (!doThreadTime && !frameIterator.MoveNext())
 			{
 				return StackSourceCallStackIndex.Invalid;
 			}
 
-			var frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+			StackSourceFrameIndex frameIndex;
+			if (doThreadTime)
+			{
+				// If doThreadTime is true, then we need to make sure that threadid is not null
+				Contract.Requires(threadid != null, nameof(threadid));
+
+				if (this.BlockedThreads.ContainsKey((int)threadid))
+				{
+					frameIndex = this.Interner.FrameIntern(StateThread.BLOCKED_TIME.ToString());
+				}
+				else
+				{
+					frameIndex = this.Interner.FrameIntern(StateThread.CPU_TIME.ToString());
+				}
+			}
+			else
+			{
+				frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+			}
+
+			
 			stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
 			return stackIndex;
 		}
@@ -281,9 +377,9 @@ namespace Diagnostics.Tracing.StackSources
 				string eventDetails = sb.ToString().Trim();
 				sb.Clear();
 
-				if (eventDetails.Length >= ScheduledEvent.Name.Length && eventDetails.Substring(0, ScheduledEvent.Name.Length) == ScheduledEvent.Name)
+				if (eventDetails.Length >= SchedulerEvent.Name.Length && eventDetails.Substring(0, SchedulerEvent.Name.Length) == SchedulerEvent.Name)
 				{
-					eventKind = EventKind.Scheduled;
+					eventKind = EventKind.Scheduler;
 				}
 
 				// Now that we know the header of the trace, we can decide whether or not to skip it given our pattern
@@ -309,7 +405,7 @@ namespace Diagnostics.Tracing.StackSources
 					// For the sake of immutability, I have to do a similar if-statement twice. I'm trying to figure out a better way
 					//   for now this will do.
 					ScheduleSwitch schedSwitch = null;
-					if (eventKind == EventKind.Scheduled)
+					if (eventKind == EventKind.Scheduler)
 					{
 						this.Source.RestoreToMark(markedPosition);
 						schedSwitch = ReadScheduleSwitch();
@@ -318,9 +414,9 @@ namespace Diagnostics.Tracing.StackSources
 
 					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame);
 
-					if (eventKind == EventKind.Scheduled)
+					if (eventKind == EventKind.Scheduler)
 					{
-						linuxEvent = new ScheduledEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
+						linuxEvent = new SchedulerEvent(comm, tid, pid, time, timeProp, cpu, eventName, eventDetails, frames, schedSwitch);
 					}
 					else
 					{
@@ -510,13 +606,13 @@ namespace Diagnostics.Tracing.StackSources
 	public enum EventKind
 	{
 		Cpu,
-		Scheduled,
+		Scheduler,
 	}
 
 	/// <summary>
 	/// A sample that has extra properties to hold scheduled events.
 	/// </summary>
-	public class ScheduledEvent : LinuxEvent
+	public class SchedulerEvent : LinuxEvent
 	{
 		public static readonly string Name = "sched_switch";
 
@@ -525,11 +621,11 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public ScheduleSwitch Switch { get; }
 
-		public ScheduledEvent(
+		public SchedulerEvent(
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
-			base(EventKind.Scheduled, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
+			base(EventKind.Scheduler, comm, tid, pid, time, timeProp, cpu, eventName, eventProp, callerStacks)
 		{
 			this.Switch = schedSwitch;
 		}
