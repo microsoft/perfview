@@ -8,16 +8,6 @@ using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    struct CtfPacketContext
-    {
-        public ulong TimestampBegin;
-        public ulong TimestampEnd;
-        public ulong ContextSize;
-        public ulong PacketSize;
-        public ulong EventsDiscarded;
-        public uint CpuId;
-    }
 
     struct CtfEventHeader
     {
@@ -31,45 +21,31 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
-    sealed class CtfDataStream : IDisposable
+    sealed class CtfReader : IDisposable
     {
         private Stream _stream;
         private byte[] _buffer = new byte[1204];
-        private long _fileOffset;
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
-
-        private long _contentSize = int.MinValue;
-        private long _packetSize;
-        private int _cpu;
+        
         private bool _eof;
         private GCHandle _handle;
         private int _bitOffset;
         private int _bufferLength;
 
-        public long Offset
-        {
-            get
-            {
-                return _fileOffset * 8;
-            }
-        }
-
         public int BufferLength { get { return _bufferLength; } }
         public byte[] Buffer { get { return _buffer; } }
         public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
 
-        public CtfDataStream(Stream stream, CtfMetadata metadata)
+        public CtfReader(Stream stream, CtfMetadata metadata)
         {
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
             _stream = stream;
             _metadata = metadata;
-
-            ReadHeader();
-            //ReadPacketContext();
+            _streamDefinition = _metadata.Streams.First(); // todo
         }
 
-        ~CtfDataStream()
+        ~CtfReader()
         {
             Dispose(false);
         }
@@ -116,7 +92,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 {
                     timestamp = compact.GetFieldValue<ulong>(result, "timestamp");
                 }
-                
+
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
 
                 CtfStruct eventContext = _streamDefinition.EventContext;
@@ -133,57 +109,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _bitOffset = 0;
             _bufferLength = 0;
         }
-
-        private void ReadPacketContext()
-        {
-            CtfStruct packetContext = _streamDefinition.PacketContext;
-
-            bool matchesDefined = true;
-            if (matchesDefined)
-            {
-                CtfPacketContext context = new CtfPacketContext();
-                ReadStruct(ref context, packetContext.Align);
-
-                _packetSize = (long)context.PacketSize;
-                _contentSize = (long)context.ContextSize;
-                _cpu = (int)context.CpuId;
-            }
-            else
-            {
-                object[] result = ReadStruct(packetContext);
-
-                _packetSize = packetContext.GetFieldValue<long>(result, "packet_size");
-                _contentSize = packetContext.GetFieldValue<long>(result, "content_size");
-                _cpu = packetContext.GetFieldValue<int>(result, "cpu_id");
-            }
-        }
-
-        private void ReadStruct<T>(ref T context, int align) where T : struct
-        {
-            //TODO: Respect align
-            int size = Marshal.SizeOf(typeof(T));
-
-            if (size > _buffer.Length)
-                ReallocateBuffer(size);
-
-            _stream.Read(_buffer, 0, size);
-            _fileOffset += size;
-
-            context = (T)Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(T));
-        }
-
-        private void ReadHeader()
-        {
-            CtfStruct traceHeader = _metadata.Trace.Header;
-
-            object[] result = ReadStruct(traceHeader);
-            int stream_id = traceHeader.GetFieldValue<int>(result, "stream_id");
-
-            _streamDefinition = _metadata.Streams[stream_id];
-            _contentSize = 0;
-        }
         
-        
+
         public object[] ReadEvent(CtfEvent evt)
         {
             ResetBuffer();
@@ -236,11 +163,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     CtfFloat flt = (CtfFloat)type;
                     ReadBits(flt.Exp + flt.Mant);
                     return 0f;  // TODO:  Not implemented.
-                    
+
                 case CtfTypes.Integer:
                     CtfInteger ctfInt = (CtfInteger)type;
                     return ReadInteger(ctfInt);
-                    
+
                 case CtfTypes.String:
                     bool ascii = ((CtfString)type).IsAscii;
                     return ReadString(ascii);
@@ -275,7 +202,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             int bitOffset = ReadBits(ctfInt.Size);
             int byteOffset = bitOffset / 8;
 
-            bool fastPath = (_bitOffset % 8) == 0  && (ctfInt.Size % 8) == 0;
+            bool fastPath = (_bitOffset % 8) == 0 && (ctfInt.Size % 8) == 0;
             if (fastPath)
             {
                 if (ctfInt.Size == 32)
@@ -312,7 +239,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             // Sloooow path for misaligned integers
             int bits = ctfInt.Size;
             int end = bitOffset + bits;
-            int leading= end - IntHelpers.AlignDown(end, 8);
+            int leading = end - IntHelpers.AlignDown(end, 8);
             int trailing = IntHelpers.AlignUp(bitOffset, 8) - bitOffset;
 
             ulong value = 0;
@@ -394,7 +321,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 _handle.Free();
         }
         #endregion
-        
+
         private void Align(int bits)
         {
             Debug.Assert(bits > 0);
@@ -420,7 +347,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 FillBuffer(bufferLength, newBufferLength - bufferLength);
             }
-            
+
             return currentOffset;
         }
 
@@ -440,45 +367,25 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
             }
 
-            CheckPacketContext();
 
-            int read = _stream.Read(_buffer, offset, count);
-            if (read == count)
+            if (count == 1)
             {
-                _bufferLength = offset + count;
-                _fileOffset += count;
-
-                if (_contentSize != int.MinValue)
-                {
-                    _contentSize -= read;
-                    _packetSize -= read;
-                }
+                int value = _stream.ReadByte();
+                if (value != -1)
+                    _buffer[_bufferLength++] = (byte)value;
+                else
+                    _eof = true;
             }
             else
             {
-                _eof = true;
-                _contentSize = 0;
-            }
-        }
 
-        private void CheckPacketContext()
-        {
-            if (_contentSize == int.MinValue || _contentSize > 0)
-                return;
-
-            Debug.Assert(_contentSize >= -1);
-            if (_packetSize > 0)
-            {
-                byte[] tmp = new byte[(int)_packetSize];
-                int tmpread = _stream.Read(tmp, 0, tmp.Length);
-                if (tmpread != tmp.Length)
+                int read = _stream.Read(_buffer, offset, count);
+                if (read == count)
+                    _bufferLength = offset + count;
+                else
                     _eof = true;
             }
-
-            _contentSize = int.MinValue;  // Ensure we don't recurse
-            ReadPacketContext();
         }
-        
 
         byte[] _bytes = new byte[1024];
         internal string ReadString(bool ascii)
@@ -574,21 +481,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         private byte ReadByte()
         {
-            CheckPacketContext();
-
             int c = _stream.ReadByte();
             if (c == -1)
             {
                 _eof = true;
                 return 0;
-            }
-
-            _fileOffset++;
-
-            if (_contentSize != int.MinValue)
-            {
-                _packetSize--;
-                _contentSize--;
             }
 
             return (byte)c;

@@ -79,7 +79,8 @@
     <Compile Include="Computers\StartStopActivityComputer.cs" />
     <Compile Include="Computers\TcpIpComputer.cs" />
     <Compile Include="Computers\ThreadTimeComputer.cs" />
-    <Compile Include="Ctf\CtfDataStream.cs" />
+    <Compile Include="Ctf\CtfChannel.cs" />
+    <Compile Include="Ctf\CtfReader.cs" />
     <Compile Include="Ctf\CtfMetadata.cs" />
     <Compile Include="Ctf\CtfMetadataLegacyParser.cs" />
     <Compile Include="Ctf\CtfMetadataParser.cs" />

@@ -135,12 +135,13 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 using (Stream stream = channelZip.Open())
                 {
-                    using (CtfDataStream dataStream = new CtfDataStream(stream, _metadata))
+                    CtfChannel channel = new CtfChannel(stream, _metadata);
+                    CtfReader reader = new CtfReader(channel, _metadata);
                     {
                         if (stopProcessing)
                             return false;
 
-                        ProcessOneChannel(dataStream);
+                        ProcessOneChannel(reader);
                     }
                 }
             }
@@ -148,7 +149,7 @@ namespace Microsoft.Diagnostics.Tracing
             return true;
         }
 
-        private void ProcessOneChannel(CtfDataStream stream)
+        private void ProcessOneChannel(CtfReader stream)
         {
             int events = 0;
             foreach (CtfEventHeader header in stream.EnumerateEventHeaders())
@@ -174,7 +175,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfDataStream stream, ETWMapping etw)
+        private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw)
         {
             _header->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
             _header->EventHeader.Flags = 0;
