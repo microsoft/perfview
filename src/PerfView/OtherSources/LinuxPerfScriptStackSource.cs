@@ -18,7 +18,7 @@ namespace Diagnostics.Tracing.StackSources
 	{
 		public static readonly string[] PerfDumpSuffixes = new string[]
 		{
-			"perf.data.dump", "perf.data.txt"
+			".data.dump", ".data.txt"
 		};
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
