@@ -14,7 +14,7 @@ namespace LinuxTracing.Tests
 	/// Induced Context Switch - Starts with a blocked thread through sched_switch, ends when a different thread is
 	/// using the same CPU, in which we induce that the original thread was unblocked somewhere in between.
 	/// Incomplete Context Switch - Starts with a thread that has been blocked through a sched_switch event and unblocked
-	/// when the sample data is finished.
+	/// when the sample data is finished and the thread has not been unblocked.
 	/// </summary>
 
 	public class BlockedTimeTests
@@ -40,28 +40,28 @@ namespace LinuxTracing.Tests
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void OneInducedContextSwitch()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_induced_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void OneIncomplateContextSwitch()
 		{
 			string path = Constants.GetTestingPerfDumpPath("one_incomplete_switch");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 1.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void NoTimeBlocked2_Induced()
 		{
 			string path = Constants.GetTestingPerfDumpPath("notimeblocked_induced");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 2.0);
 		}
 
-		[Fact(Skip = "Not implemented")]
+		[Fact]
 		public void MixedBlocked()
 		{
 			string path = Constants.GetTestingPerfDumpPath("mixed_switches");

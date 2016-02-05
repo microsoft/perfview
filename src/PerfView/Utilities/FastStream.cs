@@ -44,36 +44,17 @@ namespace PerfView.Utilities
 
 		public struct MarkedPosition
 		{
-			internal byte[] buffer;
-			internal uint bufferReadPos;
-			internal uint bufferFillPos;
 			internal long streamPos;
 
-			public MarkedPosition(byte[] buffer, uint readPos, uint fillPos, long streamPos)
+			public MarkedPosition(long streamPos)
 			{
-				this.buffer = buffer;
-				this.bufferReadPos = readPos;
-				this.bufferFillPos = fillPos;
 				this.streamPos = streamPos;
 			}
 		}
 
 		public MarkedPosition MarkPosition()
 		{
-			byte[] tempBuffer = null;
-			if (!markBufferUsed)
-			{
-				markBufferUsed = true;
-				if (markBuffer == null)
-					markBuffer = new byte[buffer.Length];
-				tempBuffer = markBuffer;
-			}
-			else
-			{
-				tempBuffer = new byte[bufferFillPos];
-			}
-			Array.Copy(buffer, tempBuffer, bufferFillPos);
-			return new MarkedPosition(tempBuffer, bufferReadPos, bufferFillPos, this.Position);
+			return new MarkedPosition(this.Position);
 		}
 
 		public void RestoreToMark(MarkedPosition position)
@@ -82,14 +63,7 @@ namespace PerfView.Utilities
 			if (delta > MaxRestoreLength)
 			{
 				this.stream.Position = position.streamPos;
-				bufferFillPos = position.bufferFillPos;
-				bufferReadPos = position.bufferReadPos;
-				Array.Copy(position.buffer, buffer, bufferFillPos);
-				if (markBufferUsed)
-				{
-					if (Object.ReferenceEquals(position.buffer, buffer))
-						markBufferUsed = false;
-				}
+				this.MoveNextHelper(); // To refill the buffer
 			}
 			else
 			{
