@@ -16,8 +16,10 @@ namespace Diagnostics.Tracing.StackSources
 
 	public class LinuxPerfScriptStackSource : InternStackSource
 	{
-
-		public static readonly string PerfScriptSuffix = "perf.data.dump";
+		public static readonly string[] PerfDumpSuffixes = new string[]
+		{
+			"perf.data.dump", "perf.data.txt"
+		};
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
@@ -203,7 +205,7 @@ namespace Diagnostics.Tracing.StackSources
 				ZipArchiveEntry foundEntry = null;
 				foreach (ZipArchiveEntry entry in archive.Entries)
 				{
-					if (entry.FullName.EndsWith(PerfScriptSuffix))
+					if (entry.FullName.EndsWithOneOf(PerfDumpSuffixes))
 					{
 						foundEntry = entry;
 						break;
@@ -213,7 +215,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 			else
 			{
-				if (path.EndsWith(PerfScriptSuffix))
+				if (path.EndsWithOneOf(PerfDumpSuffixes))
 				{
 					return new FileStream(path, FileMode.Open);
 				}
@@ -221,10 +223,24 @@ namespace Diagnostics.Tracing.StackSources
 
 			throw new Exception("Not a valid input file");
 		}
-
 		#endregion
 	}
 
+	public static class StringExtension
+	{
+		internal static bool EndsWithOneOf(this string path, string[] suffixes)
+		{
+			foreach (string suffix in suffixes)
+			{
+				if (path.EndsWith(suffix))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+	}
 
 	public class LinuxPerfScriptEventParser
 	{

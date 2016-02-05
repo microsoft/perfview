@@ -5108,7 +5108,15 @@ namespace PerfView
 	{
 		public override string FormatName { get { return "Linux events through PerfScript"; } }
 
-		public override string[] FileExtensions { get { return new string[] { ".data.dump", ".data.txt", ".trace.zip" }; } }
+		public override string[] FileExtensions
+		{
+			get
+			{
+				List<string> extensions = new List<string> { ".trace.zip" };
+				extensions.AddRange(LinuxPerfScriptStackSource.PerfDumpSuffixes);
+				return extensions.ToArray();
+			}
+		}
 
 		protected internal override StackSource OpenStackSourceImpl(TextWriter log)
 		{
