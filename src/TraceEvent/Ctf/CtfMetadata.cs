@@ -151,10 +151,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         CtfMetadataType _header;
         CtfMetadataType _context;
+        CtfMetadataType _eventContext;
 
         public int ID { get; private set; }
         public CtfStruct EventHeader { get { return (CtfStruct)_header; } }
         public CtfStruct PacketContext { get { return (CtfStruct)_context; } }
+        public CtfStruct EventContext { get { return (CtfStruct)_eventContext; } }
         public IList<CtfEvent> Events { get { return _events; } }
 
         public CtfStream(CtfPropertyBag properties)
@@ -162,6 +164,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ID = properties.GetInt("id");
             _header = properties.GetType("event.header");
             _context = properties.GetType("packet.context");
+            _eventContext = properties.GetType("event.context");
         }
 
         public void AddEvent(CtfEvent evt)
