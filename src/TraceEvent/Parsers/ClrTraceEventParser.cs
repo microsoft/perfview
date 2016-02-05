@@ -2032,10 +2032,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalPromotedSize3 { get { return GetInt64At(56); } }
         public long FinalizationPromotedSize { get { return GetInt64At(64); } }
         public long FinalizationPromotedCount { get { return GetInt64At(72); } }
-        public int PinnedObjectCount { get { return GetInt32At(80); } }
-        public int SinkBlockCount { get { return GetInt32At(84); } }
-        public int GCHandleCount { get { return GetInt32At(88); } }
-        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(92); return 0; } }
+        public int PinnedObjectCount { get { if (Version != SplitEventVersion) return GetInt32At(80); return 0; } }
+        public int SinkBlockCount { get { if (Version != SplitEventVersion) return GetInt32At(84); return 0; } }
+        public int GCHandleCount { get { if (Version != SplitEventVersion) return GetInt32At(88); return 0; } }
+        public int ClrInstanceID { get { if (Version >= 1 && Version != SplitEventVersion) return GetInt16At(92); return 0; } }
 
         #region Private
         internal GCHeapStatsTraceData(Action<GCHeapStatsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -2056,7 +2056,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 96));          // HAND_MODIFIED C++ pads to 96
             Debug.Assert(!(Version == 1 && EventDataLength != 94));
-            Debug.Assert(!(Version > 1 && EventDataLength < 94));
+            Debug.Assert(Version == SplitEventVersion || !(Version > 1 && EventDataLength < 94));
+            Debug.Assert(!(Version == SplitEventVersion && EventDataLength != 80));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -4298,6 +4299,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         internal protected override void Validate()
         {
+            int len = (HostOffset(54, 7) + 4) + TotalSizeOfGenData;
             Debug.Assert(Version == 3 && EventDataLength == (HostOffset(54, 7) + 4) + TotalSizeOfGenData);
         }
         internal protected override Delegate Target

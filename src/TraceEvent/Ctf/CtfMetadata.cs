@@ -340,5 +340,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return Name;
         }
+
+        public int GetFieldOffset(string name)
+        {
+            return Fields.GetFieldOffset(name);
+        }
     }
 }

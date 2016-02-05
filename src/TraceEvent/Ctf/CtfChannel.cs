@@ -17,15 +17,24 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
 #if DEBUG
         private long _fileOffset;
+
+        public long FileOffset { get { return _fileOffset; } }
 #endif
+
+        public ulong StartTimestamp { get; private set; }
+        public ulong EndTimestamp { get; private set; }
+
+        public CtfStream CtfStream { get { return _ctfStream; } }
 
         public CtfChannel(Stream stream, CtfMetadata metadata)
         {
             _stream = stream;
             _metadata = metadata;
-            _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
+            _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned); // TODO: Free handle
 
-            _ctfStream = metadata.Streams[(int)ReadStruct<CtfStreamHeader>().Stream];
+            CtfStreamHeader header = ReadStruct<CtfStreamHeader>();
+            _ctfStream = metadata.Streams[(int)header.Stream];
+
             ReadContext();
         }
 
@@ -44,9 +53,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 }
 
                 CtfPacketContext context = ReadStruct<CtfPacketContext>();
-                _packetSize = (long)context.PacketSize;
-                _contentSize = (long)context.ContextSize;
-
+                _packetSize = (long)context.PacketSize / 8;
+                _contentSize = (long)context.ContextSize / 8;
+                StartTimestamp = context.TimestampBegin;
+                EndTimestamp = context.TimestampEnd;
+                
                 if (_packetSize == 0)
                     return false;
             } while (_contentSize == 0);

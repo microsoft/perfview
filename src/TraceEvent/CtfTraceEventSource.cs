@@ -37,6 +37,7 @@ namespace Microsoft.Diagnostics.Tracing
         private ZipArchiveEntry[] _channels;
         private TraceEventNativeMethods.EVENT_RECORD* _header;
         private Dictionary<string, ETWMapping> _eventMapping;
+        private TextWriter _dbgOut;
 
         public CtfTraceEventSource(string fileName)
         {
@@ -70,6 +71,10 @@ namespace Microsoft.Diagnostics.Tracing
             _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
 
             _eventMapping = InitEventMap();
+
+            StreamWriter sw = File.CreateText(@"C:\Users\leecu_000\Desktop\work\out.txt");
+            sw.AutoFlush = true;
+            _dbgOut = sw;
         }
         
         private static Dictionary<string, ETWMapping> InitEventMap()
@@ -96,7 +101,21 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:GCFinalizersBegin_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 19, 14, 1);
             result["DotNETRuntime:GCFinalizersEnd_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 15, 13, 1);
             result["DotNETRuntime:FinalizeObject"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 32, 29, 0);
-            result["DotNETRuntimePrivate:PrvFinalizeObject"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 39, 192, 0);
+            result["DotNETRuntime:GCTriggered"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 35, 35, 0);
+            result["DotNETRuntime:GCGenerationRange"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 27, 23, 0);
+            result["DotNETRuntime:GCMarkWithType"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 202, 202, 0);
+            result["DotNETRuntime:GCGlobalHeapHistory_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 205, 205, 2);
+
+
+            result["DotNETRuntime:GCStart_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 1, 2);
+            result["DotNETRuntime:GCEnd_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 2, 2, 1);
+
+            result["DotNETRuntime:GCPerHeapHistory_V3"] = new ETWMapping();
+            result["DotNETRuntime:GCPerHeapHistory_V3_1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 204, 204, 3);
+
+
+            result["DotNETRuntime:GCHeapStats_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 133, 4, TraceEvent.SplitEventVersion);
+            result["DotNETRuntime:GCHeapStats_V1_1"] = new ETWMapping();
 
             result["DotNETRuntime:RuntimeInformationStart"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 187, TraceEvent.SplitEventVersion);
             result["DotNETRuntime:RuntimeInformationStart_1"] = new ETWMapping();
@@ -107,15 +126,18 @@ namespace Microsoft.Diagnostics.Tracing
 
             result["DotNETRuntime:MethodJitInliningFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 84, 186, TraceEvent.SplitEventVersion);
             result["DotNETRuntime:MethodJitInliningFailed_1"] = new ETWMapping();
-
-
+            
             result["DotNETRuntime:MethodJitTailCallSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 85, 188, TraceEvent.SplitEventVersion);
             result["DotNETRuntime:MethodJitTailCallSucceeded_1"] = new ETWMapping();
 
             result["DotNETRuntime:MethodJitTailCallFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 86, 189, TraceEvent.SplitEventVersion);
             result["DotNETRuntime:MethodJitTailCallFailed_1"] = new ETWMapping();
 
-            //result[""] = new ETWMapping(new Guid(), , 0);
+            // Private events
+
+            result["DotNETRuntimePrivate:PrvFinalizeObject"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 39, 192, 0);
+            result["DotNETRuntimePrivate:GCDecision"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 132, 1, 0);
+
             return result;
         }
 
@@ -136,32 +158,44 @@ namespace Microsoft.Diagnostics.Tracing
                 using (Stream stream = channelZip.Open())
                 {
                     CtfChannel channel = new CtfChannel(stream, _metadata);
-                    CtfReader reader = new CtfReader(channel, _metadata);
+                    CtfReader reader = new CtfReader(channel, _metadata, channel.CtfStream);
                     {
                         if (stopProcessing)
                             return false;
 
-                        ProcessOneChannel(reader);
+                        ProcessOneChannel(channel, reader);
                     }
                 }
             }
 
             return true;
         }
-
-        private void ProcessOneChannel(CtfReader stream)
+        
+        private void ProcessOneChannel(CtfChannel channel, CtfReader stream)
         {
             int events = 0;
             foreach (CtfEventHeader header in stream.EnumerateEventHeaders())
             {
-                events++;
                 if (stopProcessing)
                     return;
-                
+
+                if (header.Timestamp < channel.StartTimestamp || channel.EndTimestamp < header.Timestamp)
+                {
+                    // We seem to get "null" events in data streams (even though the data packet seems to
+                    // say we should have that value).
+                    Debug.Assert(header.Event.ID == 0);
+                    Debug.Assert(header.Timestamp == 0);
+
+                    continue;
+                }
+
                 CtfEvent evt = header.Event;
+                events++;
+                
                 stream.ReadEventIntoBuffer(evt);
                 
                 ETWMapping etw = GetTraceEvent(evt);
+
                 if (etw.IsNull)
                     continue;
 

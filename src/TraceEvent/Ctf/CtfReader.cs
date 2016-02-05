@@ -24,10 +24,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     sealed class CtfReader : IDisposable
     {
         private Stream _stream;
-        private byte[] _buffer = new byte[1204];
+        private byte[] _buffer = new byte[1024];
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
-        
+        CtfEvent _perHeapHistoryEvent;
+
         private bool _eof;
         private GCHandle _handle;
         private int _bitOffset;
@@ -37,12 +38,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public byte[] Buffer { get { return _buffer; } }
         public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
 
-        public CtfReader(Stream stream, CtfMetadata metadata)
+        public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
             _stream = stream;
             _metadata = metadata;
-            _streamDefinition = _metadata.Streams.First(); // todo
+            _streamDefinition = ctfStream;
+
+            ResetBuffer();
         }
 
         ~CtfReader()
@@ -104,7 +107,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
-        private void ResetBuffer()
+        public void ResetBuffer()
         {
             _bitOffset = 0;
             _bufferLength = 0;
@@ -114,17 +117,64 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public object[] ReadEvent(CtfEvent evt)
         {
             ResetBuffer();
-            return ReadStruct(evt.Fields);
-        }
 
+            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
+                PreFixupPerHeapHistory(evt);
+
+            object[] result = ReadStruct(evt.Fields);
+
+
+            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
+                PostFixupPerHeapHistory(evt);
+
+            return result;
+        }
+        
         internal void ReadEventIntoBuffer(CtfEvent evt)
         {
             ResetBuffer();
+
+            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
+                PreFixupPerHeapHistory(evt);
 
             if (evt.IsFixedSize)
                 ReadBits(evt.Size);
             else
                 ReadEvent(evt);
+
+            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
+                PostFixupPerHeapHistory(evt);
+        }
+
+        private void PostFixupPerHeapHistory(CtfEvent evt)
+        {
+            Debug.Assert(evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1");
+
+            int baseOffset = _perHeapHistoryEvent.Size / 8;
+            int start = evt.GetFieldOffset("_Arg15_Struct_Len_") / 8;
+            int end = evt.GetFieldOffset("_Arg15_Struct_Pointer_") / 8;
+            int len = _bufferLength - end;
+
+            System.Buffer.BlockCopy(_buffer, baseOffset + end, _buffer, baseOffset + start, len);
+
+            _bufferLength -= end - start;
+        }
+
+        private void PreFixupPerHeapHistory(CtfEvent evt)
+        {
+            Debug.Assert(evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1");
+            if (_perHeapHistoryEvent == null)
+            {
+                _perHeapHistoryEvent = _streamDefinition.Events.Where(e => e.Name == "DotNETRuntime:GCPerHeapHistory_V3").First();
+                Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
+            }
+
+            int len = _perHeapHistoryEvent.Size / 8;
+            _bufferLength = len;
+            _bitOffset = len * 8;
+
+            for (int i = 0; i < len; i++)
+                _buffer[i] = 0;
         }
 
         public object[] ReadStruct(CtfStruct strct)

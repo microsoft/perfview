@@ -478,6 +478,24 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             return size;
         }
+        
+        internal int GetFieldOffset(string name)
+        {
+            int offset = 0;
+            foreach (CtfField field in Fields)
+            {
+                if (field.Name == name)
+                    return offset;
+
+                int tmp = field.Type.GetSize();
+                offset += tmp;
+
+                if (tmp == CtfEvent.SizeIndeterminate)
+                    return CtfEvent.SizeIndeterminate;
+            }
+
+            throw new ArgumentException();
+        }
     }
 
     class CtfVariant : CtfMetadataType
