@@ -24,11 +24,14 @@ namespace Diagnostics.Tracing.StackSources
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 
-			using (Stream stream = this.GetPerfScriptStream(path))
+			ZipArchive archive = null;
+			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
 				this.parser = new LinuxPerfScriptEventParser(stream);
 				this.InternAllLinuxEvents(doThreadTime);
+				stream.Close();
 			}
+			archive?.Dispose();
 		}
 
 		public double GetTotalBlockedTime()
@@ -197,11 +200,12 @@ namespace Diagnostics.Tracing.StackSources
 			return stackIndex;
 		}
 
-		private Stream GetPerfScriptStream(string path)
+		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
 		{
+			archive = null;
 			if (path.EndsWith(".zip"))
 			{
-				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
+				archive = new ZipArchive(new FileStream(path, FileMode.Open));
 				ZipArchiveEntry foundEntry = null;
 				foreach (ZipArchiveEntry entry in archive.Entries)
 				{
