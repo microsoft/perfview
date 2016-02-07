@@ -5514,11 +5514,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 module.nativeModule = GetLoadedModule(data.ModuleNativePath, data.TimeStampQPC);
             if (module.ModuleFile.fileName == null)
                 process.Log.ModuleFiles.SetModuleFileName(module.ModuleFile, data.ModuleILPath);
-            if (data.ManagedPdbSignature != Guid.Empty && module.ModuleFile.pdbSignature == Guid.Empty)
+            if (module.ModuleFile.pdbSignature == Guid.Empty)
             {
-                module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
-                module.ModuleFile.pdbAge = data.ManagedPdbAge;
-                module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                // CoreCLR uses the native image as the only managed image.   If present, use that. 
+                if (data.NativePdbSignature != Guid.Empty && data.ModuleILPath == data.ModuleNativePath)
+                {
+                    module.ModuleFile.pdbSignature = data.NativePdbSignature;
+                    module.ModuleFile.pdbAge = data.NativePdbAge;
+                    module.ModuleFile.pdbName = data.NativePdbBuildPath;
+                }
+                else if (data.ManagedPdbSignature != Guid.Empty)
+                {
+                    module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
+                    module.ModuleFile.pdbAge = data.ManagedPdbAge;
+                    module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                }
             }
             if (module.NativeModule != null)
             {

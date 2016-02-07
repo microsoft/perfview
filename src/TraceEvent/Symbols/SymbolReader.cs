@@ -419,10 +419,47 @@ namespace Microsoft.Diagnostics.Symbols
             if (File.Exists(pdbPath))
                 return pdbPath;
 
+            var options = new CommandOptions();
+            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", symReader.SymbolPath);
+            options.AddOutputStream(log);
+            options.AddNoThrow();
+
             string privateRuntimeVerString;
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, log, out privateRuntimeVerString);
             if (clrDir == null)
-                return null;
+            {
+                // CoreCLR case. 
+                var imageDir = Path.GetDirectoryName(ngenImageFullPath);
+                string crossGen = Path.Combine(imageDir, "crossGen.exe");
+
+                log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
+                if (!File.Exists(crossGen))
+                    return null;            // Not the crossGen case.  
+
+                string pdbDir = Path.GetDirectoryName(pdbPath);
+                Directory.CreateDirectory(pdbDir);
+                var cmdLine = Command.Quote(crossGen) + " /CreatePdb " +
+                    Command.Quote(pdbDir) + " " +
+                    Command.Quote(ngenImageFullPath);
+
+                var winDir = Environment.GetEnvironmentVariable("winDir");
+                if (winDir == null)
+                    return null;
+
+                // Needs diasymreader.dll to be on the path.  
+                var newPath1 = winDir + @"\Microsoft.NET\Framework\v4.0.30319" + ";" +
+                    winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
+                options.AddEnvironmentVariable("PATH", newPath1);
+
+                log.WriteLine("*** CrossGen cmdline: {0}\r\n", cmdLine);
+                var cmd = Command.Run(cmdLine, options);
+                if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
+                {
+                    log.WriteLine("CrossGen failed error code {0}", cmd.ExitCode);
+                    return null;
+                }
+                return pdbPath;
+            }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
             var lineNumberArg = "";
@@ -478,17 +515,13 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            var options = new CommandOptions();
             options.AddEnvironmentVariable("COMPLUS_NGenEnableCreatePdb", "1");
 
             // NGenLocalWorker is needed for V4.0 runtimes but interferes on V4.5 runtimes.  
             if (!isV4_5Runtime)
                 options.AddEnvironmentVariable("COMPLUS_NGenLocalWorker", "1");
-            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", symReader.SymbolPath);
             var newPath = "%PATH%;" + clrDir;
             options.AddEnvironmentVariable("PATH", newPath);
-            options.AddOutputStream(log);
-            options.AddNoThrow();
 
             // For Win8 Store Auto-NGEN images we need to use a location where the app can write the PDB file
             var outputPdbPath = pdbPath;
@@ -538,7 +571,6 @@ namespace Microsoft.Diagnostics.Symbols
                     log.WriteLine("set PATH=" + newPath);
                     log.WriteLine("set _NT_SYMBOL_PATH={0}", symReader.SymbolPath);
                     log.WriteLine("*** NGEN  CREATEPDB cmdline: {0}\r\n", cmdLine);
-                    options.AddOutputStream(log);
                     var cmd = Command.Run(cmdLine, options);
                     log.WriteLine("*** NGEN CREATEPDB returns: {0}", cmd.ExitCode);
 
@@ -703,7 +735,11 @@ namespace Microsoft.Diagnostics.Symbols
                             if (!canceled)
                             {
                                 using (var fromStream = response.GetResponseStream())
-                                    CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled);
+                                    if (CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled) == 0)
+                                    {
+                                        File.Delete(fullDestPath);
+                                        throw new InvalidOperationException("Illegal Zero sized file " + fullDestPath);
+                                    }
                                 successful = true;
                             }
                         }
@@ -737,7 +773,11 @@ namespace Microsoft.Diagnostics.Symbols
                             if (!canceled)
                             {
                                 using (var fromStream = File.OpenRead(fullSrcPath))
-                                    CopyStreamToFile(fromStream, fullSrcPath, fullDestPath, ref canceled);
+                                    if (CopyStreamToFile(fromStream, fullSrcPath, fullDestPath, ref canceled) == 0)
+                                    {
+                                        File.Delete(fullDestPath);
+                                        throw new InvalidOperationException("Illegal Zero sized file " + fullDestPath);
+                                    }
                                 successful = true;
                             }
                         }
@@ -797,9 +837,10 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// This just copies a stream to a file path with logging.  
         /// </summary>
-        private void CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
+        private int CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
         {
             bool completed = false;
+            int byteCount = 0;
             var copyToFileName = fullDestPath + ".new";
             try
             {
@@ -809,7 +850,6 @@ namespace Microsoft.Diagnostics.Symbols
                 var sw = Stopwatch.StartNew();
                 int lastMeg = 0;
                 int last10K = 0;
-                int byteCount = 0;
                 using (Stream toStream = File.Create(copyToFileName))
                 {
                     byte[] buffer = new byte[8192];
@@ -861,6 +901,7 @@ namespace Microsoft.Diagnostics.Symbols
                     FileUtilities.ForceDelete(copyToFileName);
                 }
             }
+            return byteCount;
         }
 
         /// <summary>
@@ -1023,10 +1064,7 @@ namespace Microsoft.Diagnostics.Symbols
                         bitness = m.Groups[1].Value;
                     }
                     else
-                    {
-                        log.WriteLine("Warning: Could not deduce CLR version from path of NGEN image, skipping {0}", ngenImagePath);
                         return null;
-                    }
                 }
             }
 
@@ -1574,7 +1612,9 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present.  
+        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present. 
+        /// 
+        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
         /// </summary>
         internal string GetSrcSrvStream()
         {

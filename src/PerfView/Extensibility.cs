@@ -3033,6 +3033,26 @@ namespace PerfViewExtensibility
                 OpenHtmlReport(outputFileName, "JITStats report");
         }
 
+        /// <summary>
+        /// Given a PDB file, dump the source server information in the PDB file.
+        /// </summary>
+        //public void DumpSourceServerStream(string pdbFile)
+        //{
+        //    SymbolReader reader = new SymbolReader(LogFile);
+        //    SymbolModule module = reader.OpenSymbolFile(pdbFile);
+
+        //    string srcsrvData = module.GetSrcSrvStream();
+        //    if (srcsrvData == null)
+        //        LogFile.WriteLine("[No source server information on {0}]", pdbFile);
+        //    else
+        //    {
+        //        LogFile.WriteLine("Source Server Data for {0}", pdbFile);
+        //        LogFile.Write(srcsrvData);
+        //        LogFile.WriteLine();
+        //        LogFile.WriteLine("[Source Server Data Dumped into log for {0}]", pdbFile);
+        //    }
+        //}
+
 #if CAP
         /// <summary>
         /// Reads the JITStats report for the CAP program (XML format) and produces a list of hot methods as txt for a given process.
