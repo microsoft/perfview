@@ -441,7 +441,7 @@ namespace Diagnostics.Tracing.StackSources
 					Frame threadTimeFrame = null;
 
 					// For the sake of immutability, I have to do a similar if-statement twice. I'm trying to figure out a better way
-					//   for now this will do.
+					//   but for now this will do.
 					ScheduleSwitch schedSwitch = null;
 					if (eventKind == EventKind.Scheduler)
 					{
