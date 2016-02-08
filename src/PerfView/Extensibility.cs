@@ -3533,17 +3533,6 @@ public static class TraceEventStackSourceExtensions
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
     }
-    public static MutableTraceEventStackSource BlockedTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
-    {
-        var stackSource = new MutableTraceEventStackSource(eventLog);
-        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-        var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
-        computer.BlockedTimeOnly = true;
-        computer.GenerateThreadTimeStacks(stackSource);
-
-        return stackSource;
-    }
     public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
     {
         var stackSource = new MutableTraceEventStackSource(eventLog);
