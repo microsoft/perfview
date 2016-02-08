@@ -5541,14 +5541,26 @@ namespace PerfView
 
 		protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
 		{
-			if (streamName == "Blocked Time (experimental)")
+			string xmlPath;
+			bool doThreadTime = false;
+
+			if (streamName == "Thread Time (experimental)")
 			{
-				return new LinuxPerfScriptStackSource(this.FilePath, doThreadTime: true);
+				xmlPath = CacheFiles.FindFile(this.FilePath, "perfscript.threadtime.xml.zip");
+				doThreadTime = true;
 			}
 			else
 			{
-				return new LinuxPerfScriptStackSource(this.FilePath);
+				xmlPath = CacheFiles.FindFile(this.FilePath, "perfscript.cpu.xml.zip");
 			}
+
+			if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
+			{
+				XmlStackSourceWriter.WriteStackViewAsZippedXml(
+					new LinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
+			}
+
+			return new XmlStackSource(xmlPath);
 		}
 
 		protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
@@ -5577,6 +5589,7 @@ namespace PerfView
 			stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
 			stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
 			stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+			// stackWindow.GroupRegExTextBox.AddItem(stackWindow.Group);
 		}
 
 
