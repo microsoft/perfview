@@ -276,7 +276,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				if (linuxEvent != null)
 				{
-					this.EventCount++;
+					this.EventCount++; // Needs to be thread safe
 					yield return linuxEvent;
 				}
 
