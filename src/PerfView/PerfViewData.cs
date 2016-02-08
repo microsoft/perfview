@@ -274,7 +274,7 @@ namespace PerfView
 
         public override IList<PerfViewTreeItem> Children { get { return m_Children; } }
 
-        public override string HelpAnchor { get { return null; } }      // Don't bother with help for this.  
+        public override string HelpAnchor { get { return Name.Replace(" ", ""); } }   
 
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
     }
@@ -4673,9 +4673,9 @@ namespace PerfView
                 }
             }
 
-            var specialized = new PerfViewTreeGroup("Specialized Group");
+            var advanced = new PerfViewTreeGroup("Advanced Group");
             var memory = new PerfViewTreeGroup("Memory Group");
-            var obsolete = new PerfViewTreeGroup("Obsolete Group");
+            var obsolete = new PerfViewTreeGroup("Old Group");
             m_Children = new List<PerfViewTreeItem>();
 
             bool hasCPUStacks = false;
@@ -4775,7 +4775,7 @@ namespace PerfView
 
             m_Children.Add(new PerfViewTraceInfo(this));
             m_Children.Add(new PerfViewProcesses(this));
-            specialized.Children.Add(new PerfViewEventSource(this));
+            advanced.Children.Add(new PerfViewEventSource(this));
 
             if (hasCPUStacks)
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
@@ -4783,20 +4783,20 @@ namespace PerfView
             {
                 if (hasTplStacks)
                 {
-                    specialized.Children.Add(new PerfViewStackSource(this, "Thread Time"));
-                    specialized.Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Tasks)"));
                 }
                 else
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
                 if (hasReadyThreadStacks)
-                    specialized.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
             }
 
             if (hasDiskStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
             if (hasFileStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "File I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "File I/O"));
 
             if (hasHeapStacks)
                 memory.Children.Add(new PerfViewStackSource(this, "Net OS Heap Alloc"));
@@ -4819,32 +4819,32 @@ namespace PerfView
             }
 
             if (hasDllStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "Image Load"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Image Load"));
             if (hasManagedLoads)
-                specialized.Children.Add(new PerfViewStackSource(this, "Managed Load"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Managed Load"));
             if (hasExceptions)
-                specialized.Children.Add(new PerfViewStackSource(this, "Exceptions"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Exceptions"));
             if (hasGCHandleStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "Pinning"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Pinning"));
             if (hasPinObjectAtGCTime)
-                specialized.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
 
             if (hasGCEvents && hasCPUStacks && AppLog.InternalUser)
                 memory.Children.Add(new PerfViewStackSource(this, "Server GC"));
 
             if (hasCCWRefCountStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "CCW Ref Count"));
+                advanced.Children.Add(new PerfViewStackSource(this, "CCW Ref Count"));
 
             if (hasWindowsRefCountStacks)
-                specialized.Children.Add(new PerfViewStackSource(this, "Windows Handle Ref Count"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Windows Handle Ref Count"));
 
             if (hasGCHandleStacks && hasMemAllocStacks)
             {
                 bool matchingHeapSnapshotExists = GCPinnedObjectAnalyzer.ExistsMatchingHeapSnapshot(this.FilePath);
                 if (matchingHeapSnapshotExists)
                 {
-                    specialized.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
-                    specialized.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinned Object Allocation"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinned Object Allocation"));
                 }
             }
 
@@ -4868,16 +4868,16 @@ namespace PerfView
 
             if (hasAnyStacks)
             {
-                specialized.Children.Add(new PerfViewStackSource(this, "Any"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Any"));
                 if (hasTpl)
                 {
                     if (hasCSwitchStacks)
                     {
-                        specialized.Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
-                        specialized.Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
-                        specialized.Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
                     }
-                    specialized.Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
                 }
             }
 
@@ -4899,7 +4899,7 @@ namespace PerfView
 
             if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
             {
-                specialized.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
 
             memory.Children.Add(new PerfViewGCStats(this));
@@ -4911,14 +4911,14 @@ namespace PerfView
             if (hasJSHeapDumps || hasDotNetHeapDumps)
                 memory.Children.Add(new PerfViewHeapSnapshots(this));
 
-            specialized.Children.Add(new PerfViewJitStats(this));
+            advanced.Children.Add(new PerfViewJitStats(this));
 
-            specialized.Children.Add(new PerfViewEventStats(this));
+            advanced.Children.Add(new PerfViewEventStats(this));
 
             if (0 < memory.Children.Count)
                 m_Children.Add(memory);
-            if (0 < specialized.Children.Count)
-                m_Children.Add(specialized);
+            if (0 < advanced.Children.Count)
+                m_Children.Add(advanced);
             if (0 < obsolete.Children.Count)
                 m_Children.Add(obsolete);
 

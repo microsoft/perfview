@@ -601,9 +601,10 @@ namespace PerfView
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
                                     new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue);
 
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
-                                    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
-                                    parsedArgs.ClrEventLevel, ulong.MaxValue);
+                                // This provider is verbose in high volume networking scnearios and its value is dubious.  
+                                //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
+                                //    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
+                                //    parsedArgs.ClrEventLevel, ulong.MaxValue);
 
                                 // This is probably too verbose, but we will see 
                                 EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
