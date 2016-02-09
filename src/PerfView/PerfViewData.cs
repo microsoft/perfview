@@ -5546,12 +5546,12 @@ namespace PerfView
 
 			if (streamName == "Thread Time (experimental)")
 			{
-				xmlPath = CacheFiles.FindFile(this.FilePath, "perfscript.threadtime.xml.zip");
+				xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
 				doThreadTime = true;
 			}
 			else
 			{
-				xmlPath = CacheFiles.FindFile(this.FilePath, "perfscript.cpu.xml.zip");
+				xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
 			}
 
 			if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
