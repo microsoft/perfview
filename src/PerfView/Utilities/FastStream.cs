@@ -38,10 +38,7 @@ namespace PerfView.Utilities
 			bufferReadPos = 1;          // We make this 1, 1 initially so that EndOfStream works before MoveNext is called
 			bufferFillPos = 1;
 			this.stream = stream;
-			this.ManualBufferFill = false;
 		}
-
-		public bool ManualBufferFill { get; }
 
 		public long Position { get; private set; }
 
@@ -76,7 +73,7 @@ namespace PerfView.Utilities
 			this.Position = position.streamPos;
 		}
 
-		public void FillBuffer(uint keepFromBack = 0)
+		private void FillBuffer(uint keepFromBack = 0)
 		{
 			// Start after the restore amount, but on repetition part.
 			bufferReadPos = MaxRestoreLength;
@@ -109,14 +106,7 @@ namespace PerfView.Utilities
 			bool ret = true;
 			if (bufferReadPos >= bufferFillPos)
 			{
-				if (!this.ManualBufferFill)
-				{
-					ret = MoveNextHelper();
-				}
-				else
-				{
-					throw new IndexOutOfRangeException();
-				}
+				ret = MoveNextHelper();
 			}
 
 #if DEBUG
