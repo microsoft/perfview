@@ -10,21 +10,29 @@ using ClrProfiler;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using System.Diagnostics.Contracts;
+using System.Threading.Tasks;
 
 namespace Diagnostics.Tracing.StackSources
 {
 
 	public class LinuxPerfScriptStackSource : InternStackSource
 	{
-		public static readonly string PerfScriptSuffix = ".data.txt";
+		public static readonly string[] PerfDumpSuffixes = new string[]
+		{
+			".data.dump", ".data.txt"
+		};
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
-			using (Stream stream = this.GetPerfScriptStream(path))
+
+			ZipArchive archive = null;
+			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
 				this.parser = new LinuxPerfScriptEventParser(stream);
 				this.InternAllLinuxEvents(doThreadTime);
+				stream.Close();
 			}
+			archive?.Dispose();
 		}
 
 		public double GetTotalBlockedTime()
@@ -193,16 +201,16 @@ namespace Diagnostics.Tracing.StackSources
 			return stackIndex;
 		}
 
-		private Stream GetPerfScriptStream(string path)
+		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
 		{
-			if (path.EndsWith(".trace.zip"))
+			archive = null;
+			if (path.EndsWith(".zip"))
 			{
-				ZipArchive archive = new ZipArchive(new FileStream(path, FileMode.Open));
+				archive = new ZipArchive(new FileStream(path, FileMode.Open));
 				ZipArchiveEntry foundEntry = null;
 				foreach (ZipArchiveEntry entry in archive.Entries)
 				{
-                    // TODO remove the support for .data.dump after 3/2016
-                    if (entry.FullName.EndsWith(PerfScriptSuffix) || entry.FullName.EndsWith(".data.dump"))
+					if (entry.FullName.EndsWithOneOf(PerfDumpSuffixes))
 					{
 						foundEntry = entry;
 						break;
@@ -212,8 +220,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 			else
 			{
-                // TODO remove the support for .data.dump after 3/2016
-                if (path.EndsWith(PerfScriptSuffix) || path.EndsWith(".data.dump"))
+				if (path.EndsWithOneOf(PerfDumpSuffixes))
 				{
 					return new FileStream(path, FileMode.Open);
 				}
@@ -221,10 +228,24 @@ namespace Diagnostics.Tracing.StackSources
 
 			throw new Exception("Not a valid input file");
 		}
-
 		#endregion
 	}
 
+	public static class StringExtension
+	{
+		internal static bool EndsWithOneOf(this string path, string[] suffixes)
+		{
+			foreach (string suffix in suffixes)
+			{
+				if (path.EndsWith(suffix))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+	}
 
 	public class LinuxPerfScriptEventParser
 	{
@@ -245,8 +266,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			this.Source.MoveNext(); // Skip Sentinal value
 
-			byte[] preamble = Encoding.UTF8.GetPreamble();
-			while (preamble.Contains(this.Source.Current)) // Skip the BOM marks if there are any
+			while (Encoding.UTF8.GetPreamble().Contains(this.Source.Current)) // Skip the BOM marks if there are any
 			{
 				this.Source.MoveNext();
 			}
@@ -256,7 +276,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				if (linuxEvent != null)
 				{
-					this.EventCount++;
+					this.EventCount++; // Needs to be thread safe
 					yield return linuxEvent;
 				}
 
@@ -421,7 +441,7 @@ namespace Diagnostics.Tracing.StackSources
 					Frame threadTimeFrame = null;
 
 					// For the sake of immutability, I have to do a similar if-statement twice. I'm trying to figure out a better way
-					//   for now this will do.
+					//   but for now this will do.
 					ScheduleSwitch schedSwitch = null;
 					if (eventKind == EventKind.Scheduler)
 					{

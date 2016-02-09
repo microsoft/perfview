@@ -2664,6 +2664,13 @@ namespace PerfViewExtensibility
             }
         }
 
+		/// <summary>
+		/// Creates a .perfView.xml.zip that represents the profiling data from a perf script output dump. Adding a
+		/// --threadtime tag enables blocked time investigations on the perf script dump.
+		/// </summary>
+		/// <param name="path">The path to the perf script dump, right now, either a file with suffix perf.data.dump,
+		/// .trace.zip or .data.txt will be accepted.</param>
+		/// <param name="threadTime">Option to turn on thread time on the perf script dump.</param>
 		public void PerfScript(string path, string threadTime = null)
 		{
 			bool doThreadTime = threadTime != null && threadTime == "--threadtime";
