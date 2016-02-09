@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.IO;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Json;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -115,37 +116,56 @@ namespace Diagnostics.Tracing.StackSources
         /// 
         /// If the filename ends in .zip, the file is assumed to be a ZIPPed XML file and
         /// it is first Unziped and then processed.  
+        /// 
+        /// If the file ends in .json or .json.zip it can also read that (using JsonReaderWriterFactory.CreateJsonReader)
+        /// see https://msdn.microsoft.com/en-us/library/bb412170.aspx?f=255&MSPPError=-2147217396 for 
+        /// more on this mapping.  
         /// </summary>
         public XmlStackSource(string fileName, Action<XmlReader> readElement = null)
         {
             using (Stream dataStream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
             {
                 var xmlStream = dataStream;
-                if (fileName.EndsWith(".zip"))
+                string unzippedName = fileName;
+                if (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
                 {
                     var zipArchive = new ZipArchive(dataStream);
                     var entries = zipArchive.Entries;
                     if (entries.Count != 1)
                         throw new ApplicationException("The ZIP file does not have exactly 1 XML file in it,");
                     xmlStream = entries[0].Open();
+                    unzippedName = fileName.Substring(0, fileName.Length - 4);
                 }
 
-                XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
-                XmlReader reader = XmlTextReader.Create(xmlStream, settings);
-                if (!reader.ReadToDescendant("StackWindow"))
-                    throw new ApplicationException("The file " + fileName + " does not have a StackWindow element");
+                XmlReader reader;
+                if (unzippedName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                {
+                    reader = GetJsonReader(dataStream);
+                }
+                else
+                {
+                    XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
+                    reader = XmlTextReader.Create(xmlStream, settings);
+                }
 
                 reader.Read();      // Skip the StackWindow element. 
+				bool readStackSource = false;
                 for (;;)
                 {
                     if (reader.NodeType == XmlNodeType.Element)
                     {
-                        if (reader.Name == "StackSource")
-                            Read(reader);
-                        else if (readElement != null)
-                            readElement(reader);
-                        else
-                            reader.Skip();
+						if (reader.Name == "StackSource")
+						{
+							if (!readStackSource)
+							{
+								Read(reader);
+								readStackSource = true;
+							}
+						}
+						else if (readElement != null)
+							readElement(reader);
+						else
+							reader.Read();
                     }
                     else if (!reader.Read())
                         break;
@@ -164,8 +184,8 @@ namespace Diagnostics.Tracing.StackSources
                     {
                         StackSourceCallStackIndex stackIdx = m_interner.CallStackStartIndex + i;
                         m_stacks.Set((int)stackIdx, new Frame(
-                            (int) m_interner.GetFrameIndex(stackIdx),
-                            (int) m_interner.GetCallerIndex(stackIdx)));
+                            (int)m_interner.GetFrameIndex(stackIdx),
+                            (int)m_interner.GetCallerIndex(stackIdx)));
                     }
 
                     m_interner = null;  // we are done with it.  
@@ -227,13 +247,23 @@ namespace Diagnostics.Tracing.StackSources
             return m_samples[(int)sampleIndex];
         }
 
-        #region private
+        #region 
+        // To avoid loading the System.Runtime.Serialization Dll which is only needed in the JSON case, we have
+        // the actual reference to that in this method that will not be called unless it is needed. 
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static private XmlReader GetJsonReader(Stream dataStream)
+        {
+            return JsonReaderWriterFactory.CreateJsonReader(dataStream, new XmlDictionaryReaderQuotas());
+        }
+
         private void Read(XmlReader reader)
         {
+            Stack<string> frameStack = null;
             // We use the invarient culture, otherwise if we encode in france and decode 
             // in english we get parse errors (this happened!);
             var invariantCulture = CultureInfo.InvariantCulture;
             var inputDepth = reader.Depth;
+            var depthForSamples = 0;
             while (reader.Read())
             {
                 PROCESS_NODE:
@@ -256,7 +286,7 @@ namespace Diagnostics.Tracing.StackSources
                                         sample.Metric = float.Parse(reader.ReadContentAsString(), invariantCulture);
                                 } while (reader.MoveToNextAttribute());
                             }
-                            sample.SampleIndex = (StackSourceSampleIndex) m_curSample;
+                            sample.SampleIndex = (StackSourceSampleIndex)m_curSample;
                             m_samples.Set(m_curSample++, sample);
                             if (sample.TimeRelativeMSec > m_maxTime)
                                 m_maxTime = sample.TimeRelativeMSec;
@@ -270,16 +300,11 @@ namespace Diagnostics.Tracing.StackSources
                             string rawStack = reader.Value.Trim();
                             if (0 < rawStack.Length)
                             {
-                                if (m_interner == null)
-                                {
-                                    m_interner = new StackSourceInterner(5000, 1000, 5,
-                                        (StackSourceFrameIndex)m_frames.Count,
-                                        (StackSourceCallStackIndex)m_stacks.Count);
-                                }
+                                InitInterner();
 
                                 StackSourceCallStackIndex stackIdx = StackSourceCallStackIndex.Invalid;
                                 string[] frames = rawStack.Split('\n');
-                                for (int i = frames.Length - 1;  0 <= i; --i)
+                                for (int i = frames.Length - 1; 0 <= i; --i)
                                 {
                                     var frameIdx = m_interner.FrameIntern(frames[i].Trim());
                                     stackIdx = m_interner.CallStackIntern(frameIdx, stackIdx);
@@ -303,8 +328,10 @@ namespace Diagnostics.Tracing.StackSources
                                     else if (reader.Name == "CallerID")
                                         callerID = reader.ReadContentAsInt();
                                 } while (reader.MoveToNextAttribute());
+                                if (0 <= stackID)
+                                    m_stacks.Set(stackID, new Frame(frameID, callerID));
                             }
-                            m_stacks.Set(stackID, new Frame(frameID, callerID));
+
                         }
                         else if (reader.Name == "Frame")
                         {
@@ -342,6 +369,60 @@ namespace Diagnostics.Tracing.StackSources
                             var count = reader.GetAttribute("Count");
                             if (count != null && m_samples.Count == 0)
                                 m_samples = new GrowableArray<StackSourceSample>(int.Parse(count));
+                            depthForSamples = reader.Depth;
+                        }
+                        // This is the logic for the JSON case.  These are the anonymous object representing a sample.  
+                        else if (reader.Name == "item")
+                        {
+                            // THis is an item which is an element of the 'Samples' array.  
+                            if (reader.Depth == depthForSamples + 1)
+                            {
+                                var sample = new StackSourceSample(this);
+                                sample.Metric = 1;
+
+                                InitInterner();
+                                int depthForSample = reader.Depth;
+                                if (frameStack == null)
+                                    frameStack = new Stack<string>();
+                                frameStack.Clear();
+
+                                while (reader.Read())
+                                {
+                                    PROCESS_NODE_SAMPLE:
+                                    if (reader.Depth <= depthForSample)
+                                        break;
+                                    if (reader.NodeType == XmlNodeType.Element)
+                                    {
+                                        if (reader.Name == "Time")
+                                        {
+                                            sample.TimeRelativeMSec = reader.ReadElementContentAsDouble();
+                                            goto PROCESS_NODE_SAMPLE;
+                                        }
+                                        else if (reader.Name == "item")
+                                        {
+                                            // Item is a string under stack under the sample.  
+                                            if (reader.Depth == depthForSample + 2)
+                                            {
+                                                frameStack.Push(reader.ReadElementContentAsString());
+                                                goto PROCESS_NODE_SAMPLE;
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Reverse the order of the frames in the stack.  
+                                sample.StackIndex = StackSourceCallStackIndex.Invalid;
+                                while (0 < frameStack.Count)
+                                {
+                                    var frameIdx = m_interner.FrameIntern(frameStack.Pop());
+                                    sample.StackIndex = m_interner.CallStackIntern(frameIdx, sample.StackIndex);
+                                }
+
+                                if (sample.TimeRelativeMSec > m_maxTime)
+                                    m_maxTime = sample.TimeRelativeMSec;
+                                sample.SampleIndex = (StackSourceSampleIndex)m_curSample;
+                                m_samples.Set(m_curSample++, sample);
+                            }
                         }
                         break;
                     case XmlNodeType.EndElement:
@@ -368,6 +449,16 @@ namespace Diagnostics.Tracing.StackSources
                 Debug.Assert(m_stacks[i].callerID >= -1);
             }
 #endif
+        }
+
+        void InitInterner()
+        {
+            if (m_interner == null)
+            {
+                m_interner = new StackSourceInterner(5000, 1000, 5,
+                    (StackSourceFrameIndex)m_frames.Count,
+                    (StackSourceCallStackIndex)m_stacks.Count);
+            }
         }
 
         struct Frame

@@ -875,6 +875,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
             m_callStackIntern = new Dictionary<CallStackInfo, StackSourceCallStackIndex>(estNumCallStacks);
 
+            if (frameStartIndex < StackSourceFrameIndex.Start)
+                frameStartIndex = StackSourceFrameIndex.Start;
+            if (callStackStartIndex < StackSourceCallStackIndex.Start)
+                callStackStartIndex = StackSourceCallStackIndex.Start;
+            if (moduleStackStartIndex < StackSourceModuleIndex.Start)
+                moduleStackStartIndex = StackSourceModuleIndex.Start;
+
             m_frameStartIndex = frameStartIndex;
             m_callStackStartIndex = callStackStartIndex;
             m_moduleStackStartIndex = moduleStackStartIndex;

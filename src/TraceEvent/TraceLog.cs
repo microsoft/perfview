@@ -868,7 +868,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadStartGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start);
+                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
                 thread.startTimeQPC = data.TimeStampQPC;
                 thread.userStackBase = data.UserStackBase;
                 if (data.Opcode == TraceEventOpcode.DataCollectionStart)
@@ -1828,7 +1828,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null;)
             {
 #if DEBUG
-                Debug.Assert((++cnt % 4096) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
+                Debug.Assert((++cnt % 8192) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
 #endif
                 var nextPtr = ptr.PrevKernelEventOnSameThread;
                 ptr.PrevKernelEventOnSameThread = null;         // Remove it from the list.  
@@ -5514,11 +5514,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 module.nativeModule = GetLoadedModule(data.ModuleNativePath, data.TimeStampQPC);
             if (module.ModuleFile.fileName == null)
                 process.Log.ModuleFiles.SetModuleFileName(module.ModuleFile, data.ModuleILPath);
-            if (data.ManagedPdbSignature != Guid.Empty && module.ModuleFile.pdbSignature == Guid.Empty)
+            if (module.ModuleFile.pdbSignature == Guid.Empty)
             {
-                module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
-                module.ModuleFile.pdbAge = data.ManagedPdbAge;
-                module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                // CoreCLR uses the native image as the only managed image.   If present, use that. 
+                if (data.NativePdbSignature != Guid.Empty && data.ModuleILPath == data.ModuleNativePath)
+                {
+                    module.ModuleFile.pdbSignature = data.NativePdbSignature;
+                    module.ModuleFile.pdbAge = data.NativePdbAge;
+                    module.ModuleFile.pdbName = data.NativePdbBuildPath;
+                }
+                else if (data.ManagedPdbSignature != Guid.Empty)
+                {
+                    module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
+                    module.ModuleFile.pdbAge = data.ManagedPdbAge;
+                    module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                }
             }
             if (module.NativeModule != null)
             {

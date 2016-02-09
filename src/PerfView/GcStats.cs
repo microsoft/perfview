@@ -274,7 +274,7 @@ namespace Stats
                                     int endIndex = procThread.ThreadInfo.IndexOf(')');
                                     string heapNumString = procThread.ThreadInfo.Substring(startIndex + 1, (endIndex - startIndex - 1));
                                     int heapNum = int.Parse(heapNumString);
-                                    stats.serverGCThreads.Add(procThread.ThreadID, heapNum);
+                                    stats.serverGCThreads[procThread.ThreadID] = heapNum;
                                     stats.ServerGcHeap2ThreadId[heapNum] = procThread.ThreadID;
                                 }
                             }

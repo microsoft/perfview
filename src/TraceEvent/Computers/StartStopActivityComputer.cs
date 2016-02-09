@@ -662,7 +662,7 @@ namespace Microsoft.Diagnostics.Tracing
 
 
         // The main start and stop logic.  
-        unsafe private StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null)
+        unsafe private StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null, bool useCurrentActivityForCreatorAsFallback = true)
         {
             // Because we want the stop to logically be 'after' the actual stop event (so that the stop looks like
             // it is part of the start-stop activity we defer it until the next event.   If there is already
@@ -687,7 +687,7 @@ namespace Microsoft.Diagnostics.Tracing
                         Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
                 }
                 // If there is no RelatedActivityID, or the activity ID we have is 'bad' (dead), fall back to the activity we track.  
-                if (creator == null)
+                if (creator == null && useCurrentActivityForCreatorAsFallback)
                     creator = GetStartStopActivityForActivity(curTaskActivity);
             }
 
@@ -703,8 +703,6 @@ namespace Microsoft.Diagnostics.Tracing
                 Guid activityIdValue = data.ActivityID;
                 activity = new StartStopActivity(data, taskName, ref activityIdValue, creator, m_nextIndex++, extraStartInfo);
             }
-            if (creator != null)
-                creator.LiveChildCount++;
             SetActiveStartStopActivityTable(activity.ActivityID, data.ProcessID, activity);       // Put it in our table of live activities.  
             m_traceActivityToStartStopActivity.Set((int)taskIndex, activity);
 
@@ -771,9 +769,13 @@ namespace Microsoft.Diagnostics.Tracing
                 m_deferredStop = activity;      // Remember this one for deferral.  
 
                 // Issue callback if requested, this is before state update since we have deferred the stop.  
-                var onStartBefore = Stop;
-                if (onStartBefore != null)
-                    onStartBefore(activity, data);
+                var stop = Stop;
+                if (stop != null)
+                {
+                    stop(activity, data);
+                    if (activity.Creator != null && activity.Creator.killIfChildDies && !activity.Creator.IsStopped)
+                        stop(activity.Creator, data);
+                }
             }
             else
             {
@@ -798,12 +800,6 @@ namespace Microsoft.Diagnostics.Tracing
                 var startStopActivity = m_deferredStop;
 
                 var creator = startStopActivity.Creator;
-                if (creator != null)
-                {
-                    --creator.LiveChildCount;
-                    Debug.Assert(0 <= creator.LiveChildCount);
-                }
-
                 while (creator != null && creator.IsStopped)
                     creator = creator.Creator;
                 m_traceActivityToStartStopActivity.Set((int)startStopActivity.activityIndex, creator);
@@ -841,7 +837,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Debug.Assert(data.payloadNames[0] == "objectId");
                 Guid startStopId = new Guid((int)data.PayloadValue(0), 1234, 5, 7, 7, 8, 9, 10, 11, 12, 13);  // Tail 7,7,8,9,10,11,12,13 means SQL Execute
-                TraceEventTask executeTask = (TraceEventTask)1;
 
                 if (data.ID == (TraceEventID)1) // BeginExecute
                 {
@@ -946,7 +941,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (creator == null)        // If we don't have a creator for the ASP.NET event, make one since WCF and others are children of it and we want to see that 
                 {
                     // We create another 
-                    creator = OnStart(data, extraStartInfo, &relatedActivityId, thread, null, "RecHttp");
+                    creator = OnStart(data, extraStartInfo, &relatedActivityId, thread, null, "RecHttp", useCurrentActivityForCreatorAsFallback: false);
                     Debug.Assert(creator.Creator == null);  // will try to use the relatedActivityId field but we know that that was empty
                     creator.killIfChildDies = true;         // Mark that we should clean up
                 }
@@ -1137,10 +1132,6 @@ namespace Microsoft.Diagnostics.Tracing
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activity " + Name), stackIdx);
             return stackIdx;
         }
-        /// <summary>
-        /// returns the number of children that are alive.  
-        /// </summary>
-        public int LiveChildCount { get; internal set; }
 #region private
         /// <summary>
         /// override.   Gives the name and start time.  

@@ -3040,6 +3040,26 @@ namespace PerfViewExtensibility
                 OpenHtmlReport(outputFileName, "JITStats report");
         }
 
+        /// <summary>
+        /// Given a PDB file, dump the source server information in the PDB file.
+        /// </summary>
+        //public void DumpSourceServerStream(string pdbFile)
+        //{
+        //    SymbolReader reader = new SymbolReader(LogFile);
+        //    SymbolModule module = reader.OpenSymbolFile(pdbFile);
+
+        //    string srcsrvData = module.GetSrcSrvStream();
+        //    if (srcsrvData == null)
+        //        LogFile.WriteLine("[No source server information on {0}]", pdbFile);
+        //    else
+        //    {
+        //        LogFile.WriteLine("Source Server Data for {0}", pdbFile);
+        //        LogFile.Write(srcsrvData);
+        //        LogFile.WriteLine();
+        //        LogFile.WriteLine("[Source Server Data Dumped into log for {0}]", pdbFile);
+        //    }
+        //}
+
 #if CAP
         /// <summary>
         /// Reads the JITStats report for the CAP program (XML format) and produces a list of hot methods as txt for a given process.
@@ -3519,17 +3539,6 @@ public static class TraceEventStackSourceExtensions
         traceStackSource.ShowUnknownAddresses = showUnknownAddresses;
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
-    }
-    public static MutableTraceEventStackSource BlockedTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
-    {
-        var stackSource = new MutableTraceEventStackSource(eventLog);
-        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-        var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
-        computer.BlockedTimeOnly = true;
-        computer.GenerateThreadTimeStacks(stackSource);
-
-        return stackSource;
     }
     public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
     {
