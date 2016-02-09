@@ -101,6 +101,8 @@
                     <MenuItem Header="User Command Help" Click="DoUserCommandHelp"/>
                     <MenuItem Header="Multi-Scenarios Analysis" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="MultiScenarioAnalysis"/>
                     <MenuItem Header="_Extending Perfview" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="PerfViewExtensions"/>
+                    <MenuItem Header="Viewing Linux Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingLinuxData"/>
+                    <MenuItem Header="Viewing External Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingExternalData"/>
                     <MenuItem Header="Using EventSources" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsingEventSources"/>
                     <MenuItem Header="_Release Notes" Click="DoReleaseNotes"/>
                     <MenuItem Header="_About" Click="DoAbout"/>

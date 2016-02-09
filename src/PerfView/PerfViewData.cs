@@ -3391,6 +3391,7 @@ namespace PerfView
                     if (asSampledProfile != null)
                     {
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
                         goto ADD_SAMPLE;
                     }

@@ -2846,11 +2846,6 @@ namespace PerfViewExtensibility
 
             class CodeSymbolState
             {
-                int m_moduleId;
-                string m_pdbName;
-                int m_chunksReadSoFar;
-                int m_totalChunks;
-                byte[][] m_chunks;
                 string m_pdbIndexPath;
                 MemoryStream m_stream;
                 private ModuleLoadUnloadTraceData m_moduleData;

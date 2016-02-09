@@ -498,6 +498,12 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                     }
 
+                    // TODO FIX NOW:  In V4.6.1 of the runtime we no longer need /lines to get line number 
+                    // information (the native to IL mapping is always put in the NGEN image and that
+                    // is sufficient to look up line numbers later (not at NGEN pdb creation time).  
+                    // Thus this code could be removed once we really don't care about the case where
+                    // it is a V4.5.* runtime but not a V4.6.1+ runtime AND we care about line numbers.  
+                    // After 12/2016 we can probably pull this code.  
                     if (isV4_5Runtime)
                     {
                         log.WriteLine("Is a V4.5 Runtime or beyond");
@@ -668,22 +674,26 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge)
         {
-            if (File.Exists(filePath))
+            try
             {
-                if (pdbGuid == Guid.Empty)
+                if (File.Exists(filePath))
                 {
-                    m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
-                    return true;
+                    if (pdbGuid == Guid.Empty)
+                    {
+                        m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
+                        return true;
+                    }
+                    SymbolModule module = this.OpenSymbolFile(filePath);
+                    if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
+                        return true;
+                    else
+                        m_log.WriteLine("FindSymbolFilePath: PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
+                            filePath, module.PdbGuid, module.PdbAge, pdbGuid, pdbAge);
                 }
-                SymbolModule module = this.OpenSymbolFile(filePath);
-                if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
-                    return true;
                 else
-                    m_log.WriteLine("FindSymbolFilePath: PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
-                        filePath, module.PdbGuid, module.PdbAge, pdbGuid, pdbAge);
+                    m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
             }
-            else
-                m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
+            catch { }
             return false;
         }
 
