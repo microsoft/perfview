@@ -10,6 +10,7 @@ using ClrProfiler;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using System.Diagnostics.Contracts;
+using System.Threading.Tasks;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -265,8 +266,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			this.Source.MoveNext(); // Skip Sentinal value
 
-			byte[] preamble = Encoding.UTF8.GetPreamble();
-			while (preamble.Contains(this.Source.Current)) // Skip the BOM marks if there are any
+			while (Encoding.UTF8.GetPreamble().Contains(this.Source.Current)) // Skip the BOM marks if there are any
 			{
 				this.Source.MoveNext();
 			}
