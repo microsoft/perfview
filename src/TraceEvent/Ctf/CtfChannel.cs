@@ -33,6 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned); // TODO: Free handle
 
             CtfStreamHeader header = ReadStruct<CtfStreamHeader>();
+            Debug.Assert(header.Magic == 0xc1fc1fc1);
             _ctfStream = metadata.Streams[(int)header.Stream];
 
             ReadContext();

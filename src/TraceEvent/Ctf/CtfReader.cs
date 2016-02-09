@@ -8,16 +8,25 @@ using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-
-    struct CtfEventHeader
+    class CtfEventHeader
     {
         public CtfEvent Event;
         public ulong Timestamp;
+        public int Pid;
+        public int Tid;
+        public string ProcessName;
 
-        public CtfEventHeader(CtfEvent evt, ulong timestamp)
+        public CtfEventHeader()
         {
-            Event = evt;
-            Timestamp = timestamp;
+        }
+
+        public void Clear()
+        {
+            Event = null;
+            Timestamp = 0;
+            Pid = 0;
+            Tid = 0;
+            ProcessName = null;
         }
     }
 
@@ -28,6 +37,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
         CtfEvent _perHeapHistoryEvent;
+        CtfEventHeader _header = new CtfEventHeader();
 
         private bool _eof;
         private GCHandle _handle;
@@ -78,6 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             while (!_eof)
             {
+                _header.Clear();
                 ResetBuffer();
 
                 object[] result = ReadStruct(header);
@@ -87,23 +98,44 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 result = header.GetFieldValue<object[]>(result, "v");
                 if (en.GetName((int)event_id) == "extended")
-                {
+               { 
                     event_id = extended.GetFieldValue<uint>(result, "id");
                     timestamp = extended.GetFieldValue<ulong>(result, "timestamp");
                 }
                 else
                 {
+                    // TODO: Handle multiple clocks
+                    CtfClock clock = _metadata.Clocks.First();
                     timestamp = compact.GetFieldValue<ulong>(result, "timestamp");
                 }
 
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
+                _header.Event = evt;
+                _header.Timestamp = timestamp;
 
                 CtfStruct eventContext = _streamDefinition.EventContext;
                 if (eventContext != null)
+                {
                     result = ReadStruct(eventContext);
+                    _header.Pid = eventContext.GetFieldValue<int>(result, "_vpid");
+                    _header.Tid = eventContext.GetFieldValue<int>(result, "_vtid");
 
+                    int procnameIndex = eventContext.GetFieldIndex("_procname");
+                    object[] procname = (object[])(result[procnameIndex]);
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < 17; i++)
+                    {
+                        sbyte b = (sbyte)procname[i];
+                        if (b == 0)
+                            break;
 
-                yield return new CtfEventHeader(evt, timestamp);
+                        sb.Append((char)b);
+                    }
+
+                    _header.ProcessName = sb.ToString();
+                }
+                
+                yield return _header;
             }
         }
 
@@ -297,7 +329,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             {
                 byte endByte = _buffer[IntHelpers.AlignDown(trailing, 8) / 8];
 
-                if (trailing < bits)
+                if (trailing > bits)
                     trailing = bits;
 
                 value = (ulong)(endByte >> (8 - trailing));
@@ -306,7 +338,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert((bits - trailing - leading) % 8 == 0);
 
             int len = (bits - trailing - leading) / 8;
-            for (int i = 0; i < len / 8; i++)
+            for (int i = 0; i < len; i++)
                 value = unchecked((value << 8) | _buffer[len - i - 1]);
 
             if (leading != 0)

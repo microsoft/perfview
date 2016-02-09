@@ -17,6 +17,7 @@ namespace Tests
         {
             //string path = Path.Combine(TestPath, "auto-20160204-132425.lttng.zip");
             string path = Path.Combine(TestPath, "auto-20151103-132930.lttng.zip");
+            //string path = Path.Combine(TestPath, "auto-20160204-162218.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
             {
@@ -54,8 +55,33 @@ namespace Tests
 
                 };
 
-                
 
+                ctfSource.Clr.GCHeapStats += delegate (GCHeapStatsTraceData d)
+                {
+                };
+
+                ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
+                {
+                };
+
+
+                ctfSource.Clr.GCStop += delegate (GCEndTraceData d)
+                {
+                };
+
+                ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 d)
+                {
+                };
+
+                ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
+                {
+
+                };
+
+                ctfSource.Clr.MethodILToNativeMap += delegate(MethodILToNativeMapTraceData d)
+                {
+
+                };
 
                 ctfSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData o) { allocTicks++; };
 
