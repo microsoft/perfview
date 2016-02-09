@@ -7,6 +7,16 @@ using System.Text;
 
 namespace PerfView.Utilities
 {
+	public sealed class Buffer
+	{
+
+		public Buffer(Stream stream)
+		{
+
+		}
+	}
+
+
 	/// <summary>
 	/// The is really what BinaryReader should have been... (sigh)
 	/// 
