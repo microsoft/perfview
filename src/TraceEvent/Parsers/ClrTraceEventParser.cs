@@ -4299,7 +4299,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         internal protected override void Validate()
         {
-            int len = (HostOffset(54, 7) + 4) + TotalSizeOfGenData;
             Debug.Assert(Version == 3 && EventDataLength == (HostOffset(54, 7) + 4) + TotalSizeOfGenData);
         }
         internal protected override Delegate Target
@@ -8319,9 +8318,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int VMQfeNumber { get { return (ushort) GetInt16At(18); } }
         public StartupFlags StartupFlags { get { if (Version != TraceEvent.SplitEventVersion) return (StartupFlags)GetInt32At(20); return StartupFlags.None; } }
         public StartupMode StartupMode { get { if (Version != TraceEvent.SplitEventVersion) return (StartupMode)GetByteAt(24); return StartupMode.None; } }
-        public string CommandLine { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(25); return null; } }
+        public string CommandLine { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(25); return ""; } }
         public Guid ComObjectGuid { get { if (Version != TraceEvent.SplitEventVersion) return GetGuidAt(SkipUnicodeString(25)); return Guid.Empty; } }
-        public string RuntimeDllPath { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(SkipUnicodeString(25) + 16); return null; } }
+        public string RuntimeDllPath { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(SkipUnicodeString(25) + 16); return ""; } }
 
         #region Private
         internal RuntimeInformationTraceData(Action<RuntimeInformationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
