@@ -38,7 +38,10 @@ namespace PerfView.Utilities
 			bufferReadPos = 1;          // We make this 1, 1 initially so that EndOfStream works before MoveNext is called
 			bufferFillPos = 1;
 			this.stream = stream;
+			this.ManualBufferFill = false;
 		}
+
+		public bool ManualBufferFill { get; }
 
 		public long Position { get; private set; }
 
@@ -73,6 +76,29 @@ namespace PerfView.Utilities
 			this.Position = position.streamPos;
 		}
 
+		public void FillBuffer(uint keepFromBack = 0)
+		{
+			// Start after the restore amount, but on repetition part.
+			bufferReadPos = MaxRestoreLength;
+
+			// This is so the first 'keepFromBack' integers are read in again.
+			uint preamble = MaxRestoreLength + keepFromBack;
+			for (int i = 0; i < preamble; i++)
+			{
+				if (bufferFillPos - (preamble - i) < 0)
+				{
+					buffer[i] = 0;
+					continue;
+				}
+
+				buffer[i] = buffer[bufferFillPos - (preamble - i)];
+			}
+			bufferFillPosReadIn = (uint)stream.Read(buffer, (int)preamble, buffer.Length - (int)preamble);
+			bufferFillPos = bufferFillPosReadIn + preamble;
+			if (bufferFillPos < buffer.Length)
+				buffer[bufferFillPos] = Sentinal;       // we define 0 as the value you get after EOS. 
+		}
+
 		public byte Current { get { return buffer[bufferReadPos]; } }
 
 		public const int MaxRestoreLength = 256;
@@ -82,7 +108,16 @@ namespace PerfView.Utilities
 			IncReadPos();
 			bool ret = true;
 			if (bufferReadPos >= bufferFillPos)
-				ret = MoveNextHelper();
+			{
+				if (!this.ManualBufferFill)
+				{
+					ret = MoveNextHelper();
+				}
+				else
+				{
+					throw new IndexOutOfRangeException();
+				}
+			}
 
 #if DEBUG
             nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
@@ -310,21 +345,7 @@ namespace PerfView.Utilities
 		#region privateMethods
 		private bool MoveNextHelper()
 		{
-			bufferReadPos = MaxRestoreLength;
-			for (int i = 0; i < MaxRestoreLength; i++)
-			{
-				if (bufferFillPos - (MaxRestoreLength - i) < 0)
-				{
-					buffer[i] = 0;
-					continue;
-				}
-
-				buffer[i] = buffer[bufferFillPos - (MaxRestoreLength - i)];
-			}
-			bufferFillPosReadIn = (uint)stream.Read(buffer, MaxRestoreLength, buffer.Length - MaxRestoreLength);
-			bufferFillPos = bufferFillPosReadIn + MaxRestoreLength;
-			if (bufferFillPos < buffer.Length)
-				buffer[bufferFillPos] = Sentinal;       // we define 0 as the value you get after EOS.  
+			this.FillBuffer(); 
 			return (bufferFillPosReadIn > 0);
 		}
 
