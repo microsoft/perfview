@@ -1407,7 +1407,7 @@ namespace Microsoft.Diagnostics.Symbols
                             string name = method.name;
                             if (name != null)
                             {
-                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with mangled name {0}", name);
+                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with 4.6.1 mangled name {0}", name);
                                 int suffixIdx = name.LastIndexOf("$#");
                                 if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
                                 {

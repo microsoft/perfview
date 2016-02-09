@@ -6531,6 +6531,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
                         // Look up the IL PDB needed
 
+                        reader.m_log.WriteLine("GetSourceLine: Found mapping from Native to IL assmebly {0} Token {1:x} offset {2}",
+                            ilAssemblyName, ilMetaDataToken, ilMethodOffset);
                         if (moduleFile.ManagedModule != null)
                         {
                             // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  

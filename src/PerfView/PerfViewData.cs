@@ -527,6 +527,16 @@ namespace PerfView
                     var asStackSource = child as PerfViewStackSource;
                     if (asStackSource != null && asStackSource.SourceName == sourceName)
                         return asStackSource;
+                    var asGroup = child as PerfViewTreeGroup;
+                    if (asGroup != null && asGroup.Children != null)
+                    {
+                        foreach(var groupChild in asGroup.Children)
+                        {
+                            asStackSource = groupChild as PerfViewStackSource;
+                            if (asStackSource != null && asStackSource.SourceName == sourceName)
+                                return asStackSource;
+                        }
+                    }
                 }
             }
             else if (m_singletonStackSource != null)
