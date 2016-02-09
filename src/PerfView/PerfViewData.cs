@@ -387,7 +387,7 @@ namespace PerfView
             if (m_UserDeclaredChildren == null)
                 m_UserDeclaredChildren = new List<PerfViewReport>();
 
-            m_UserDeclaredChildren.Add(new PerfViewReport(viewName, delegate (string reportFileName, string reportViewName)
+			m_UserDeclaredChildren.Add(new PerfViewReport(viewName, delegate (string reportFileName, string reportViewName)
             {
                 PerfViewExtensibility.Extensions.ExecuteUserCommand(userCommand, new string[] { reportFileName, reportViewName });
             }));
@@ -468,11 +468,11 @@ namespace PerfView
         {
             if (!m_opened)
             {
-                worker.StartWork("Opening " + Name, delegate ()
+				worker.StartWork("Opening " + Name, delegate ()
                 {
                     Action<Action> continuation = OpenImpl(parentWindow, worker);
                     ExecuteOnOpenCommand(worker);
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         m_opened = true;
                         FirePropertyChanged("Children");
@@ -580,7 +580,7 @@ namespace PerfView
             var processes = new List<IProcess>();
 
             DateTime start = DateTime.Now;
-            stackSource.ForEach(delegate (StackSourceSample sample)
+			stackSource.ForEach(delegate (StackSourceSample sample)
             {
                 if (sample.StackIndex != StackSourceCallStackIndex.Invalid)
                 {
@@ -636,7 +636,7 @@ namespace PerfView
         /// </summary>
         protected virtual Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
-            return delegate (Action doAfter)
+			return delegate (Action doAfter)
             {
                 // By default we have a singleton source (which we don't show on the GUI) and we immediately open it
                 m_singletonStackSource = new PerfViewStackSource(this, "");
@@ -758,8 +758,8 @@ namespace PerfView
             new ProcessDumpPerfViewFile(),
             new ScenarioSetPerfViewFile(),
             new OffProfPerfViewFile(),
-            new DiagSessionPerfViewFile(),
-            new PerfScriptPerfViewFile()
+			new DiagSessionPerfViewFile(),
+			new PerfScriptPerfViewFile()
         };
 
         #region private
@@ -920,7 +920,7 @@ namespace PerfView
                     trace = etlDataFile.GetTraceLog(worker.LogWriter);
                 }
 
-                worker.StartWork("Opening " + Name, delegate ()
+				worker.StartWork("Opening " + Name, delegate ()
                 {
                     var reportFileName = CacheFiles.FindFile(FilePath, "." + Name + ".html");
                     using (var writer = File.CreateText(reportFileName))
@@ -939,24 +939,24 @@ namespace PerfView
 
                     }
 
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         Viewer = new WebBrowserWindow();
                         Viewer.WindowState = System.Windows.WindowState.Maximized;
-                        Viewer.Closing += delegate (object sender, CancelEventArgs e)
+						Viewer.Closing += delegate (object sender, CancelEventArgs e)
                         {
                             Viewer = null;
                         };
-                        Viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+						Viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
                         {
                             if (e.Uri.Scheme == "command")
                             {
                                 e.Cancel = true;
-                                Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
+								Viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                                 {
                                     Action continuation;
                                     var message = DoCommand(e.Uri.LocalPath, Viewer.StatusBar, out continuation);
-                                    Viewer.StatusBar.EndWork(delegate ()
+									Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
                                             Viewer.StatusBar.Log(message);
@@ -1054,7 +1054,7 @@ namespace PerfView
             if (command.StartsWith("displayLog:"))
             {
                 string logFile = command.Substring(command.IndexOf(':') + 1);
-                worker.Parent.Dispatcher.BeginInvoke((Action)delegate ()
+				worker.Parent.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     var logTextWindow = new Controls.TextEditorWindow();
                     logTextWindow.TextEditor.OpenText(logFile);
@@ -1081,7 +1081,7 @@ namespace PerfView
         {
             m_processes = new List<TraceProcess>(dataFile.Processes);
             // Sort by CPU time (largest first), then by start time (latest first)
-            m_processes.Sort(delegate (TraceProcess x, TraceProcess y)
+			m_processes.Sort(delegate (TraceProcess x, TraceProcess y)
             {
                 var ret = y.CPUMSec.CompareTo(x.CPUMSec);
                 if (ret != 0)
@@ -1283,7 +1283,7 @@ namespace PerfView
 
             var requestsProcessing = 0;
 
-            dispatcher.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
+			dispatcher.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
                 if (data.ProcessID == 0)    // Non-idle time.  
                     return;
@@ -1293,7 +1293,7 @@ namespace PerfView
                     byTimeStats[idx].CpuMSec++;
             };
 
-            dispatcher.Clr.RuntimeStart += delegate (RuntimeInformationTraceData data)
+			dispatcher.Clr.RuntimeStart += delegate (RuntimeInformationTraceData data)
             {
                 if ((data.StartupFlags & StartupFlags.SERVER_GC) != 0)
                     GCType = "Server";
@@ -1301,14 +1301,14 @@ namespace PerfView
                     GCType = "Client";
             };
 
-            dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
+			dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
                     byTimeStats[idx].Contentions++;
             };
 
-            dispatcher.Clr.GCStop += delegate (GCEndTraceData data)
+			dispatcher.Clr.GCStop += delegate (GCEndTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -1320,7 +1320,7 @@ namespace PerfView
             };
 
             bool seenBadAllocTick = false;
-            dispatcher.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
+			dispatcher.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -1331,7 +1331,7 @@ namespace PerfView
                 }
             };
 
-            dispatcher.Clr.GCHeapStats += delegate (GCHeapStatsTraceData data)
+			dispatcher.Clr.GCHeapStats += delegate (GCHeapStatsTraceData data)
             {
                 // TODO should it be summed over processes? 
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
@@ -1342,7 +1342,7 @@ namespace PerfView
                 }
             };
 
-            dispatcher.Clr.ThreadPoolWorkerThreadAdjustmentAdjustment += delegate (ThreadPoolWorkerThreadAdjustmentTraceData data)
+			dispatcher.Clr.ThreadPoolWorkerThreadAdjustmentAdjustment += delegate (ThreadPoolWorkerThreadAdjustmentTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
@@ -1354,7 +1354,7 @@ namespace PerfView
             };
 
             var lastDiskEndMSec = new GrowableArray<double>(4);
-            dispatcher.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
+			dispatcher.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
             {
                 // Compute the disk service time.  
                 if (data.DiskNumber >= lastDiskEndMSec.Count)
@@ -1372,14 +1372,14 @@ namespace PerfView
                     byTimeStats[idx].DiskIOMsec += serviceTimeMSec;
             });
 
-            dispatcher.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
+			dispatcher.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
                     byTimeStats[idx].ContextSwitch++;
             };
 
-            aspNet.AspNetReqStart += delegate (AspNetStartTraceData data)
+			aspNet.AspNetReqStart += delegate (AspNetStartTraceData data)
             {
                 var request = new AspNetRequest();
                 request.ID = data.ContextId;
@@ -1398,7 +1398,7 @@ namespace PerfView
                 request.RequestsProcessing = requestsProcessing;
             };
 
-            aspNet.AspNetReqStop += delegate (AspNetStopTraceData data)
+			aspNet.AspNetReqStop += delegate (AspNetStopTraceData data)
             {
                 AspNetRequest request;
                 if (requestByID.TryGetValue(data.ContextId, out request))
@@ -1439,7 +1439,7 @@ namespace PerfView
             };
 
 
-            Action<int, double, Guid> handlerStartAction = delegate (int threadID, double timeStampRelativeMSec, Guid contextId)
+			Action<int, double, Guid> handlerStartAction = delegate (int threadID, double timeStampRelativeMSec, Guid contextId)
             {
                 AspNetRequest request;
                 if (requestByID.TryGetValue(contextId, out request))
@@ -1457,19 +1457,19 @@ namespace PerfView
                 }
             };
 
-            aspNet.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
+			aspNet.AspNetReqStartHandler += delegate (AspNetStartHandlerTraceData data)
             {
                 handlerStartAction(data.ThreadID, data.TimeStampRelativeMSec, data.ContextId);
             };
 
             // When you don't turn on the most verbose ASP.NET events, you only get a SessionDataBegin event.  Use
             // this as the start of the processing (because it is pretty early) if we have nothing better to use.  
-            aspNet.AspNetReqSessionDataBegin += delegate (AspNetAcquireSessionBeginTraceData data)
+			aspNet.AspNetReqSessionDataBegin += delegate (AspNetAcquireSessionBeginTraceData data)
             {
                 handlerStartAction(data.ThreadID, data.TimeStampRelativeMSec, data.ContextId);
             };
 
-            aspNet.AspNetReqEndHandler += delegate (AspNetEndHandlerTraceData data)
+			aspNet.AspNetReqEndHandler += delegate (AspNetEndHandlerTraceData data)
             {
                 AspNetRequest request;
                 if (requestByID.TryGetValue(data.ContextId, out request))
@@ -1641,7 +1641,7 @@ namespace PerfView
             }
 
             var requestStats = new List<ByRequestStats>(byRequestType.Values);
-            requestStats.Sort(delegate (ByRequestStats x, ByRequestStats y)
+			requestStats.Sort(delegate (ByRequestStats x, ByRequestStats y)
             {
                 return -x.TotalDurationMSec.CompareTo(y.TotalDurationMSec);
             });
@@ -2108,7 +2108,7 @@ namespace PerfView
             if (m_Children == null)
             {
                 var newChildren = new List<PerfViewTreeItem>();
-                worker.StartWork("Searching for heap dumps in " + Name, delegate ()
+				worker.StartWork("Searching for heap dumps in " + Name, delegate ()
                 {
                     var traceLog = DataFile.GetTraceLog(worker.LogWriter);
                     var source = traceLog.Events.GetSource();
@@ -2118,13 +2118,13 @@ namespace PerfView
                     // For .NET, we are looking for a Gen 2 GC Start that is induced that has GCBulkNodes after it.   
                     var lastGCStartsRelMSec = new Dictionary<int, double>();
 
-                    source.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
+					source.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
                     {
                         // Look for induced GCs.  and remember their when it happened.    
                         if (data.Depth == 2 && data.Reason == GCReason.Induced)
                             lastGCStartsRelMSec[data.ProcessID] = data.TimeStampRelativeMSec;
                     };
-                    source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
+					source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                     {
                         double lastGCStartRelMSec;
                         if (lastGCStartsRelMSec.TryGetValue(data.ProcessID, out lastGCStartRelMSec))
@@ -2139,7 +2139,7 @@ namespace PerfView
                         }
                     };
 
-                    jsHeapParser.JSDumpHeapEnvelopeStart += delegate (SettingsTraceData data)
+					jsHeapParser.JSDumpHeapEnvelopeStart += delegate (SettingsTraceData data)
                     {
                         var processName = "";
                         var process = data.Process();
@@ -2149,7 +2149,7 @@ namespace PerfView
                     };
                     source.Process();
 
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         m_Children = newChildren;
                         FirePropertyChanged("Children");
@@ -2221,11 +2221,11 @@ namespace PerfView
         {
             if (Viewer == null || !DataFile.IsUpToDate)
             {
-                worker.StartWork("Opening " + Name, delegate ()
+				worker.StartWork("Opening " + Name, delegate ()
                 {
                     if (m_eventSource == null || !DataFile.IsUpToDate)
                         m_eventSource = DataFile.OpenEventSourceImpl(worker.LogWriter);
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         if (m_eventSource == null)
                             throw new ApplicationException("Not a file type that supports the EventView.");
@@ -2301,7 +2301,7 @@ namespace PerfView
         {
             if (Viewer == null || !DataFile.IsUpToDate)
             {
-                worker.StartWork("Opening " + Name, delegate ()
+				worker.StartWork("Opening " + Name, delegate ()
                 {
                     if (m_StackSource == null || !DataFile.IsUpToDate)
                     {
@@ -2322,10 +2322,10 @@ namespace PerfView
                         processes = DataFile.GetProcesses(worker.LogWriter);
                     }
 
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         // This is the action that happens either after select process or after the stacks are computed.  
-                        Action<List<IProcess>> launchViewer = delegate (List<IProcess> selectedProcesses)
+						Action<List<IProcess>> launchViewer = delegate (List<IProcess> selectedProcesses)
                         {
                             Viewer = new StackWindow(parentWindow, this);
                             ConfigureStackWindow(Viewer);
@@ -2386,7 +2386,7 @@ namespace PerfView
                                             "See merging and zipping in the users guide for more information.",
                                             "Data not merged before leaving the machine!");
 
-                                    Viewer.SetStackSource(m_StackSource, delegate ()
+									Viewer.SetStackSource(m_StackSource, delegate ()
                                     {
                                         worker.Log("Opening Viewer.");
                                         if (WarnAboutBrokenStacks(Viewer, Viewer.StatusBar.LogWriter))
@@ -2409,7 +2409,7 @@ namespace PerfView
                         {
                             if (DataFile.InitiallyIncludedProcesses == null)
                             {
-                                m_SelectProcess = new SelectProcess(processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
+								m_SelectProcess = new SelectProcess(processes, new TimeSpan(1, 0, 0), delegate (List<IProcess> selectedProcesses)
                                 {
                                     launchViewer(selectedProcesses);
                                 }, hasAllProc: true);
@@ -2659,9 +2659,9 @@ namespace PerfView
             else if (streamName == "GC Heap Alloc Ignore Free")
             {
                 var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
-                gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+				gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
                 {
-                    newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
+					newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = objInfo.RepresentativeSize;
                         sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                               // We guess a count from the size.  
@@ -2683,9 +2683,9 @@ namespace PerfView
                     m_extraTopStats = "Sampled only 100K bytes";
                 }
 
-                gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+				gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
                 {
-                    newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
+					newHeap.OnObjectCreate += delegate (Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = objInfo.RepresentativeSize;
                         sample.Count = objInfo.RepresentativeSize / objInfo.Size;                                                // We guess a count from the size.  
@@ -2694,7 +2694,7 @@ namespace PerfView
                         stackSource.AddSample(sample);
                         return true;
                     };
-                    newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
+					newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         sample.Metric = -objInfo.RepresentativeSize;
                         sample.Count = -(objInfo.RepresentativeSize / objInfo.Size);                                            // We guess a count from the size.  
@@ -2709,9 +2709,9 @@ namespace PerfView
             else if (streamName == "Gen 2 Object Deaths")
             {
                 var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
-                gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
+				gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
                 {
-                    newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
+					newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
                     {
                         if (2 <= gen)
                         {
@@ -2732,7 +2732,7 @@ namespace PerfView
 
                 bool seenBadAllocTick = false;
 
-                eventSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
+				eventSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData data)
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
 
@@ -2773,7 +2773,7 @@ namespace PerfView
             }
             else if (streamName == "Exceptions")
             {
-                eventSource.Clr.ExceptionStart += delegate (ExceptionTraceData data)
+				eventSource.Clr.ExceptionStart += delegate (ExceptionTraceData data)
                 {
                     sample.Metric = 1;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
@@ -2785,7 +2785,7 @@ namespace PerfView
                     stackSource.AddSample(sample);
                 };
 
-                eventSource.Kernel.MemoryAccessViolation += delegate (MemoryPageFaultTraceData data)
+				eventSource.Kernel.MemoryAccessViolation += delegate (MemoryPageFaultTraceData data)
                 {
                     sample.Metric = 1;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
@@ -2808,7 +2808,7 @@ namespace PerfView
                 // Keep track of the current GC per process 
                 var curGCGen = new int[eventLog.Processes.Count];
                 var curGCIndex = new int[eventLog.Processes.Count];
-                eventSource.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
+				eventSource.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
                 {
                     var process = data.Process();
                     if (process == null)
@@ -2819,7 +2819,7 @@ namespace PerfView
 
                 // Keep track of the live Pinning handles per process.  
                 var allLiveHandles = new Dictionary<Address, GCHandleInfo>[eventLog.Processes.Count];
-                Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
+				Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
                         return;
@@ -2850,7 +2850,7 @@ namespace PerfView
                 clrPrivate.GCSetGCHandle += onSetHandle;
                 eventSource.Clr.GCSetGCHandle += onSetHandle;
 
-                Action<DestroyGCHandleTraceData> onDestroyHandle = delegate (DestroyGCHandleTraceData data)
+				Action<DestroyGCHandleTraceData> onDestroyHandle = delegate (DestroyGCHandleTraceData data)
                 {
                     var process = data.Process();
                     if (process == null)
@@ -2891,7 +2891,7 @@ namespace PerfView
                 var lastHandleInfoForThreads = new PerThreadGCHandleInfo[eventLog.Threads.Count];
 
                 // The main event, we have pinning that is happening at GC time.  
-                Action<PinObjectAtGCTimeTraceData> objectAtGCTime = delegate (PinObjectAtGCTimeTraceData data)
+				Action<PinObjectAtGCTimeTraceData> objectAtGCTime = delegate (PinObjectAtGCTimeTraceData data)
                 {
                     var thread = data.Thread();
                     if (thread == null)
@@ -3090,7 +3090,7 @@ namespace PerfView
                 int maxLiveHandles = 0;
                 double maxLiveHandleRelativeMSec = 0;
 
-                Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
+				Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
                         return;
@@ -3122,7 +3122,7 @@ namespace PerfView
                 clrPrivate.GCSetGCHandle += onSetHandle;
                 eventSource.Clr.GCSetGCHandle += onSetHandle;
 
-                Action<DestroyGCHandleTraceData> onDestroyHandle = delegate (DestroyGCHandleTraceData data)
+				Action<DestroyGCHandleTraceData> onDestroyHandle = delegate (DestroyGCHandleTraceData data)
                 {
                     GCHandleInfo info;
                     var handle = (long)data.HandleID;
@@ -3191,7 +3191,7 @@ namespace PerfView
             {
                 var allocationsStacks = new Dictionary<long, StackSourceCallStackIndex>(200);
 
-                Action<string, Address, int, int, TraceEvent> onHandleEvent = delegate (string handleTypeName, Address objectInstance, int handleInstance, int handleProcess, TraceEvent data)
+				Action<string, Address, int, int, TraceEvent> onHandleEvent = delegate (string handleTypeName, Address objectInstance, int handleInstance, int handleProcess, TraceEvent data)
                 {
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.StackIndex = StackSourceCallStackIndex.Invalid;
@@ -3267,7 +3267,7 @@ namespace PerfView
                     activityComputer = new ActivityComputer(eventSource, GetSymbolReader(log));
 
                     // Log a pseudo-event that indicates when the activity dies
-                    activityComputer.Stop += delegate (TraceActivity activity, TraceEvent data)
+					activityComputer.Stop += delegate (TraceActivity activity, TraceEvent data)
                     {
                         // TODO This is a clone of the logic below, factor it.  
                         TraceThread thread = data.Thread();
@@ -3288,7 +3288,7 @@ namespace PerfView
                         {
                             Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
                             if (isAnyWithStartStop)
-                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+								topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
@@ -3310,7 +3310,7 @@ namespace PerfView
                 StackSourceFrameIndex readyThreadEventFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/Dispatcher/ReadyThread");
                 StackSourceFrameIndex sampledProfileFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/PerfInfo/Sample");
 
-                eventSource.AllEvents += delegate (TraceEvent data)
+				eventSource.AllEvents += delegate (TraceEvent data)
                 {
                     // Get most of the stack (we support getting the normal call stack as well as the task stack.  
                     StackSourceCallStackIndex stackIndex;
@@ -3333,7 +3333,7 @@ namespace PerfView
                         {
                             Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
                             if (isAnyWithStartStop)
-                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+								topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
@@ -3487,11 +3487,11 @@ namespace PerfView
                         }
                     }
 
-                    ADD_EVENT_FRAME:
+                ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                    ADD_SAMPLE:
+                ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -3501,7 +3501,7 @@ namespace PerfView
             }
             else if (streamName == "Managed Load")
             {
-                eventSource.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
+				eventSource.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
                 {
                     sample.Metric = 1;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
@@ -3520,12 +3520,12 @@ namespace PerfView
                 // On a per-disk basis remember when the last Disk I/O completed.  
                 var lastDiskEndMSec = new GrowableArray<double>(4);
 
-                eventSource.Kernel.AddCallbackForEvents<DiskIOInitTraceData>(delegate (DiskIOInitTraceData data)
+				eventSource.Kernel.AddCallbackForEvents<DiskIOInitTraceData>(delegate (DiskIOInitTraceData data)
                 {
                     diskStartStack[data.Irp] = stackSource.GetCallStack(data.CallStackIndex(), data);
                 });
 
-                eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
+				eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
                 {
                     StackSourceCallStackIndex stackIdx;
                     if (diskStartStack.TryGetValue(data.Irp, out stackIdx))
@@ -3599,7 +3599,7 @@ namespace PerfView
             {
                 TraceLogEventSource source = eventLog.Events.GetSource();
 
-                Action<TraceEvent> tracingCallback = delegate (TraceEvent data)
+				Action<TraceEvent> tracingCallback = delegate (TraceEvent data)
                 {
                     string assemblyName = (string)data.PayloadByName("assembly");
                     string typeName = (string)data.PayloadByName("type");
@@ -3625,7 +3625,7 @@ namespace PerfView
             }
             else if (streamName == "File I/O")
             {
-                eventSource.Kernel.AddCallbackForEvents<FileIOReadWriteTraceData>(delegate (FileIOReadWriteTraceData data)
+				eventSource.Kernel.AddCallbackForEvents<FileIOReadWriteTraceData>(delegate (FileIOReadWriteTraceData data)
                 {
                     sample.Metric = (float)data.IoSize;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
@@ -3650,7 +3650,7 @@ namespace PerfView
             else if (streamName == "Image Load")
             {
                 var loadedImages = new Dictionary<Address, StackSourceCallStackIndex>(100);
-                Action<ImageLoadTraceData> imageLoadUnload = delegate (ImageLoadTraceData data)
+				Action<ImageLoadTraceData> imageLoadUnload = delegate (ImageLoadTraceData data)
                 {
                     // TODO this is not really correct, it assumes process IDs < 64K and images bases don't use lower bits
                     // but it is true 
@@ -3685,7 +3685,7 @@ namespace PerfView
             {
                 var droppedEvents = 0;
                 var memStates = new MemState[eventLog.Processes.Count];
-                eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
+				eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
                 {
                     bool isAlloc = false;
                     if ((data.Flags & (
@@ -3733,7 +3733,7 @@ namespace PerfView
                             }
                         }
                         memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
-                            delegate (long metric, StackSourceCallStackIndex allocStack)
+							delegate (long metric, StackSourceCallStackIndex allocStack)
                             {
                                 Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
                                 Debug.Assert(metric != 0);                                                  // They should trim this already.  
@@ -3753,7 +3753,7 @@ namespace PerfView
             {
                 // Mapped file (which includes image loads) logic. 
                 var mappedImages = new Dictionary<Address, StackSourceCallStackIndex>(100);
-                Action<MapFileTraceData> mapUnmapFile = delegate (MapFileTraceData data)
+				Action<MapFileTraceData> mapUnmapFile = delegate (MapFileTraceData data)
                 {
                     sample.Metric = data.ViewSize;
                     // If it is a UnMapFile or MapFileDCStop event
@@ -3792,7 +3792,7 @@ namespace PerfView
                 var droppedEvents = 0;
                 var memStates = new MemState[eventLog.Processes.Count];
                 var virtualReserverFrame = stackSource.Interner.FrameIntern("VirtualReserve");
-                eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
+				eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
                 {
                     bool isAlloc = false;
                     if ((data.Flags & (
@@ -3847,7 +3847,7 @@ namespace PerfView
                             stackIndex = stackSource.Interner.CallStackIntern(virtualReserverFrame, stackIndex);
                         }
                         memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
-                            delegate (long metric, StackSourceCallStackIndex allocStack)
+							delegate (long metric, StackSourceCallStackIndex allocStack)
                             {
                                 Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
                                 Debug.Assert(metric != 0);                                                  // They should trim this already.  
@@ -3879,7 +3879,7 @@ namespace PerfView
                 float sumCumMetric = 0;
                 int cumCount = 0;
 
-                heapParser.HeapTraceAlloc += delegate (HeapAllocTraceData data)
+				heapParser.HeapTraceAlloc += delegate (HeapAllocTraceData data)
                 {
                     var allocs = lastHeapAllocs;
                     if (data.HeapHandle != lastHeapHandle)
@@ -3902,7 +3902,7 @@ namespace PerfView
                     cumCount++;
                 };
 
-                heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)
+				heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)
                 {
                     var allocs = lastHeapAllocs;
                     if (data.HeapHandle != lastHeapHandle)
@@ -3926,7 +3926,7 @@ namespace PerfView
                     }
                 };
 
-                heapParser.HeapTraceReAlloc += delegate (HeapReallocTraceData data)
+				heapParser.HeapTraceReAlloc += delegate (HeapReallocTraceData data)
                 {
                     // Reallocs that actually move stuff will cause a Alloc and delete event
                     // so there is nothing to do for those events.  But when the address is
@@ -3974,7 +3974,7 @@ namespace PerfView
                     cumCount++;
                 };
 
-                heapParser.HeapTraceDestroy += delegate (HeapTraceData data)
+				heapParser.HeapTraceDestroy += delegate (HeapTraceData data)
                 {
                     // Heap is dieing, kill all objects in it.   
                     var allocs = lastHeapAllocs;
@@ -4247,7 +4247,7 @@ namespace PerfView
                 }
 
                 int searchTableIdx;             // Points at prev or before.  
-                m_searchTable.BinarySearch(startAddr - 1, out searchTableIdx, delegate (Address x, Region y) { return x.CompareTo(y.MemAddr); });
+				m_searchTable.BinarySearch(startAddr - 1, out searchTableIdx, delegate (Address x, Region y) { return x.CompareTo(y.MemAddr); });
                 Debug.Assert(0 <= searchTableIdx);          // Can't get -1 because 0 is the smallest number 
                 Region prev = m_searchTable[searchTableIdx];
 
@@ -4642,7 +4642,7 @@ namespace PerfView
 
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
-            var tracelog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
+			var tracelog = GetTraceLog(worker.LogWriter, delegate (bool truncated, int numberOfLostEvents, int eventCountAtTrucation)
             {
                 if (!m_notifiedAboutLostEvents)
                 {
@@ -4665,7 +4665,7 @@ namespace PerfView
                                                      "on and earlier OS.  If you experience any problems please\r\n" +
                                                      "read the trace on an Windows 8 OS.";
                         worker.LogWriter.WriteLine(versionMismatchWarning);
-                        parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+						parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
                         {
                             MessageBox.Show(parentWindow, versionMismatchWarning, "Log File Version Mismatch", MessageBoxButton.OK);
                         });
@@ -4944,7 +4944,7 @@ namespace PerfView
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+			options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
 
             // But if there is a directory called EtwManifests exists, look in there instead. 
             var etwManifestDirPath = Path.Combine(Path.GetDirectoryName(dataFileName), "EtwManifests");
@@ -5002,7 +5002,7 @@ namespace PerfView
 
             if (m_traceLog.Truncated)   // Warn about truncation.  
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+				GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
                 });
@@ -5030,7 +5030,7 @@ namespace PerfView
             }
 
             MessageBoxResult result = MessageBoxResult.None;
-            parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
+			parentWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
                 worker.LogWriter.WriteLine(warning);
@@ -5139,32 +5139,12 @@ namespace PerfView
         {
             return new WTStackSource(FilePath);
         }
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
-            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
-        }
-    }
-
-    class PerfScriptPerfViewFile : PerfViewFile
-    {
-        public override string FormatName { get { return "Linux events through PerfScript"; } }
-
-        // TODO remove support for .data.dump suffixes after 3/2016
-        public override string[] FileExtensions { get { return new string[] { ".data.dump", ".data.txt", ".trace.zip" }; } }
-
-        protected internal override StackSource OpenStackSourceImpl(TextWriter log)
-        {
-            return new LinuxPerfScriptStackSource(this.FilePath);
-        }
-
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
-            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
-            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
-        }
-    }
+		protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+		{
+			stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
+			stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+		}
+	}
 
     class OffProfPerfViewFile : PerfViewFile
     {
@@ -5218,7 +5198,7 @@ namespace PerfView
         {
             m_guiState = new StackWindowGuiState();
 
-            return new XmlStackSource(FilePath, delegate (XmlReader reader)
+			return new XmlStackSource(FilePath, delegate (XmlReader reader)
             {
                 if (reader.Name == "StackWindowGuiState")
                     m_guiState = m_guiState.ReadFromXml(reader);
@@ -5366,7 +5346,7 @@ namespace PerfView
                     Children = new List<MemoryNode>();
 
                 // Search backwards for efficiency.  
-                for (int i = Children.Count; 0 < i;)
+				for (int i = Children.Count; 0 < i;)
                 {
                     var child = Children[--i];
                     if (child.Address <= newNode.Address && newNode.End <= child.End)
@@ -5585,6 +5565,76 @@ namespace PerfView
         {
             ConfigureAsMemoryWindow(stackSourceName, stackWindow);
         }
+	}
+
+	class PerfScriptPerfViewFile : PerfViewFile
+	{
+		public override string FormatName { get { return "Linux events through PerfScript"; } }
+
+		public override string[] FileExtensions
+		{
+			get
+			{
+				List<string> extensions = new List<string> { ".trace.zip" };
+				extensions.AddRange(LinuxPerfScriptStackSource.PerfDumpSuffixes);
+				return extensions.ToArray();
+			}
+		}
+
+		protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+		{
+			string xmlPath;
+			bool doThreadTime = false;
+
+			if (streamName == "Thread Time (experimental)")
+			{
+				xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
+				doThreadTime = true;
+			}
+			else
+			{
+				xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
+			}
+
+			if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
+			{
+				XmlStackSourceWriter.WriteStackViewAsZippedXml(
+					new LinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
+			}
+
+			return new XmlStackSource(xmlPath);
+		}
+
+		protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+		{
+			if (AppLog.InternalUser)
+			{
+				m_Children = new List<PerfViewTreeItem>(2);
+
+				m_Children.Add(new PerfViewStackSource(this, "Cpu"));
+				m_Children.Add(new PerfViewStackSource(this, "Thread Time (experimental)"));
+
+				return null;
+			}
+			return delegate (Action doAfter)
+			{
+				// By default we have a singleton source (which we dont show on the GUI) and we immediately open it
+				m_singletonStackSource = new PerfViewStackSource(this, "");
+				m_singletonStackSource.Open(parentWindow, worker);
+				if (doAfter != null)
+					doAfter();
+			};
+		}
+
+		protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+		{
+			stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
+			stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+			stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+			// stackWindow.GroupRegExTextBox.AddItem(stackWindow.Group);
+		}
+
+
     }
 
     class HeapDumpPerfViewFile : PerfViewFile
@@ -5680,7 +5730,7 @@ namespace PerfView
                 }
                 return null;
             }
-            return delegate (Action doAfter)
+			return delegate (Action doAfter)
             {
                 // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
                 m_singletonStackSource = new PerfViewStackSource(this, "");
@@ -5832,7 +5882,7 @@ namespace PerfView
             double totalMemory = 0;
 
             var cache = new UnreachableCacheEntry[10000];
-            memoryStackSource.ForEach(delegate (StackSourceSample sample)
+			memoryStackSource.ForEach(delegate (StackSourceSample sample)
             {
                 totalMemory += sample.Metric;
                 if (IsUnreachable(memoryStackSource, sample.StackIndex, cache, 0))
@@ -5938,7 +5988,7 @@ namespace PerfView
                 {
                     if (m_numFailures == 1 && !Path.GetFileName(module.Path).StartsWith("mrt", StringComparison.OrdinalIgnoreCase))
                     {
-                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+						GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                         {
                             MessageBox.Show(GuiApp.MainWindow,
                                 "Warning: Could not find PDB for module " + Path.GetFileName(module.Path) + "\r\n" +
@@ -6253,12 +6303,12 @@ namespace PerfView
             {
                 IsExpanded = false;
 
-                worker.StartWork("Opening " + Name, delegate ()
+				worker.StartWork("Opening " + Name, delegate ()
                 {
                     OpenImpl(parentWindow, worker);
                     ExecuteOnOpenCommand(worker);
 
-                    worker.EndWork(delegate ()
+					worker.EndWork(delegate ()
                     {
                         m_opened = true;
 

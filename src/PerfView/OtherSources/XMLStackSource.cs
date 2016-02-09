@@ -149,16 +149,23 @@ namespace Diagnostics.Tracing.StackSources
                 }
 
                 reader.Read();      // Skip the StackWindow element. 
+				bool readStackSource = false;
                 for (;;)
                 {
                     if (reader.NodeType == XmlNodeType.Element)
                     {
-                        if (reader.Name == "StackSource")
-                            Read(reader);
-                        else if (readElement != null)
-                            readElement(reader);
-                        else
-                            reader.Skip();
+						if (reader.Name == "StackSource")
+						{
+							if (!readStackSource)
+							{
+								Read(reader);
+								readStackSource = true;
+							}
+						}
+						else if (readElement != null)
+							readElement(reader);
+						else
+							reader.Read();
                     }
                     else if (!reader.Read())
                         break;
