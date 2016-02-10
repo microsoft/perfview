@@ -187,20 +187,22 @@ namespace PerfView.Utilities
 			}
 			else
 			{
-				this.bufferReadPos -= (uint)delta;
+				this.bufferIndex -= (uint)delta;
 			}
 
 			this.Position = position.streamPos;
 		}
 
-		public byte Current { get { return buffer[bufferReadPos]; } }
+		public byte Current { get { return buffer[bufferIndex]; } }
+
+		public uint BufferIndex { get { return this.bufferIndex; } }
 
 		public const int MaxRestoreLength = 256;
 
 		public bool MoveNext()
 		{
 			IncReadPos();
-			return this.buffer.MoveNext(ref this.bufferReadPos);
+			return this.buffer.MoveNext(ref this.bufferIndex);
 		}
 		public byte ReadChar()
 		{
@@ -405,7 +407,7 @@ namespace PerfView.Utilities
 		/// <returns></returns>
 		public byte Peek(uint bytesAhead)
 		{
-			byte peeked = this.buffer.PeekFrom(ref bufferReadPos, bytesAhead);
+			byte peeked = this.buffer.PeekFrom(ref bufferIndex, bytesAhead);
 			return peeked;
 		}
 
@@ -415,7 +417,7 @@ namespace PerfView.Utilities
 		// Only here to 'trick' the JIT compiler into inlining MoveNext.  (we were a bit over the 32 byte IL limit). 
 		private void IncReadPos()
 		{
-			bufferReadPos++;
+			bufferIndex++;
 			this.Position++;
 		}
 
@@ -460,7 +462,7 @@ namespace PerfView.Utilities
 		#endregion
 		#region privateState
 		private readonly Buffer buffer;
-		private uint bufferReadPos;      // The next character to read
+		private uint bufferIndex;      // The next character to read
 #if DEBUG
         string nextChars;
         public override string ToString()
