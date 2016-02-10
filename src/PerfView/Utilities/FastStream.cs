@@ -19,7 +19,14 @@ namespace PerfView.Utilities
 		/// </summary>
 		public byte Sentinal = 0;
 
+		/// <summary>
+		/// The length of the buffer.
+		/// </summary>
 		public uint BufferFillPosition { get { return this.bufferFillPos; } }
+		
+		/// <summary>
+		/// The count on the amount of stream characters read in from the last read.
+		/// </summary>
 		public uint StreamReadIn { get { return this.streamReadIn; } }
 
 
@@ -36,7 +43,12 @@ namespace PerfView.Utilities
 			set { this.buffer[i] = value; }
 		}
 
-		public uint FillBufferFromCurrentPosition(uint keepLast = 0)
+		/// <summary>
+		/// Fills the buffer starting from the current position on the stream.
+		/// </summary>
+		/// <param name="keepLast">The amount of characters you want ot keep from the end.</param>
+		/// <returns>Returns the index in which the next buffer starts anew.</returns>
+		public uint FillBufferFromStreamPosition(uint keepLast = 0)
 		{
 			// This is so the first 'keepFromBack' integers are read in again.
 			uint preamble = MaxRestoreLength + keepLast;
@@ -58,6 +70,11 @@ namespace PerfView.Utilities
 			return MaxRestoreLength;
 		}
 
+		/// <summary>
+		/// Checks if we need to refill the buffer, and if we do, refill it.
+		/// </summary>
+		/// <param name="index">The index that the user is on.</param>
+		/// <returns>Returns false if there is no more to read, otherwise true.</returns>
 		public bool MoveNext(ref uint index)
 		{
 			bool ret = true;
@@ -72,53 +89,32 @@ namespace PerfView.Utilities
 			return ret;
 		}
 
-		private bool MoveNextHelper(ref uint index)
-		{
-			index = this.FillBufferFromCurrentPosition();
-			return (streamReadIn > 0);
-		}
-
 		/// <summary>
 		/// Returns a number of bytes ahead without advancing the pointer. 
-		/// Peek(0) is the same as calling Current.  
+		/// PeekFrom(index, 0) is the same as calling getting the current index.  
 		/// </summary>
-		public byte LookAheadFrom(ref uint index, uint bytesAhead)
+		public byte PeekFrom(ref uint index, uint bytesAhead)
 		{
 			uint peekIndex = bytesAhead + index;
 			if (peekIndex >= bufferFillPos)
-				peekIndex = PeekHelper(ref index, bytesAhead);
+				peekIndex = PeekFromHelper(ref index, bytesAhead);
 
 			return buffer[peekIndex];
 		}
 
-		private uint PeekHelper(ref uint index, uint bytesAhead)
+		private bool MoveNextHelper(ref uint index)
+		{
+			index = this.FillBufferFromStreamPosition();
+			return (streamReadIn > 0);
+		}
+
+		private uint PeekFromHelper(ref uint index, uint bytesAhead)
 		{
 			if (bytesAhead >= buffer.Length - MaxRestoreLength || index - MaxRestoreLength < 0)
 				throw new Exception("Can only peek ahead the length of the buffer");
 
-			index = this.FillBufferFromCurrentPosition(keepLast: this.bufferFillPos - index); // We keep everything above the index.
+			index = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - index); // We keep everything above the index.
 
-			/*// Copy down the remaining characters. 
-			this.bufferFillPos = this.bufferFillPos - (index - MaxRestoreLength);
-			for (uint i = 0; i < this.bufferFillPos; i++)
-			{
-				buffer[i] = buffer[index + i];
-			}
-			index = MaxRestoreLength;
-
-			// Fill up the buffer as much as we can.  
-			for (;;)
-			{
-				uint count = (uint)stream.Read(buffer, (int)bufferFillPos, buffer.Length - (int)bufferFillPos);
-				bufferFillPos += count;
-				if (bufferFillPos < buffer.Length)
-					buffer[bufferFillPos] = Sentinal;
-
-				if (bufferFillPos > bytesAhead)
-					break;
-				if (count == 0)
-					break;
-			}*/
 			return bytesAhead + index;
 		}
 
@@ -187,7 +183,7 @@ namespace PerfView.Utilities
 			if (delta > MaxRestoreLength)
 			{
 				this.buffer.BaseStream.Position = position.streamPos;
-				this.buffer.FillBufferFromCurrentPosition();
+				this.buffer.FillBufferFromStreamPosition();
 			}
 			else
 			{
@@ -409,7 +405,7 @@ namespace PerfView.Utilities
 		/// <returns></returns>
 		public byte Peek(uint bytesAhead)
 		{
-			byte peeked = this.buffer.LookAheadFrom(ref bufferReadPos, bytesAhead);
+			byte peeked = this.buffer.PeekFrom(ref bufferReadPos, bytesAhead);
 			return peeked;
 		}
 
