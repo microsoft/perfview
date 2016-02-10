@@ -71,6 +71,21 @@ namespace LinuxTracing.Tests
 		}
 
 		[Fact]
+		public void PeekingWhileEnough()
+		{
+			FastStream stream = this.GetTestStream();
+			SkipBOM(stream);
+			Assert.Equal("2", ((char)stream.Peek(1)).ToString());
+		}
+
+		[Fact]
+		public void PeekingWithNoBuffer()
+		{
+			FastStream stream = this.GetTestStream();
+			Assert.Equal("1", ((char)stream.Peek(4)).ToString());
+		}
+
+		[Fact]
 		public void LongRestoreAndMovePastHistory()
 		{
 			FastStream stream = this.GetTestStream();
