@@ -40,7 +40,7 @@ namespace PerfView.Utilities
 		public byte this[uint i]
 		{
 			get { return this.buffer[i]; }
-			set { this.buffer[i] = value; }
+			// set { this.buffer[i] = value; }
 		}
 
 		/// <summary>
@@ -91,7 +91,7 @@ namespace PerfView.Utilities
 
 		/// <summary>
 		/// Returns a number of bytes ahead without advancing the pointer. 
-		/// PeekFrom(index, 0) is the same as calling getting the current index.  
+		/// PeekFrom(index, 0) is the same as getting the current index.  
 		/// </summary>
 		public byte PeekFrom(ref uint index, uint bytesAhead)
 		{
