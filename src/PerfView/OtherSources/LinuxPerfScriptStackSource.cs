@@ -1,4 +1,4 @@
-﻿using System;
+﻿// using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -226,7 +226,7 @@ namespace Diagnostics.Tracing.StackSources
 				}
 			}
 
-			throw new Exception("Not a valid input file");
+			throw new System.Exception("Not a valid input file");
 		}
 		#endregion
 	}
@@ -300,25 +300,23 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public long MaxSamples { get; set; }
 
-		public LinuxPerfScriptEventParser(string path)
+		public LinuxPerfScriptEventParser(string path) :
+			this(new FileStream(path, FileMode.Open))
 		{
-			Contract.Requires(path != null, nameof(path));
-			this.Source = new FastStream(path);
-			this.SetDefaultValues();
 		}
 
 		public LinuxPerfScriptEventParser(Stream stream)
 		{
 			Contract.Requires(stream != null, nameof(stream));
-			this.Source = new FastStream(stream);
+			this.Buffer = new Buffer(stream);
+			this.Source = new FastStream(this.Buffer);
 			this.SetDefaultValues();
 		}
 
 		#region fields
 		private FastStream Source { get; }
-
+		private Buffer Buffer { get; }
 		private double CurrentTime { get; set; }
-
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
 		#endregion
