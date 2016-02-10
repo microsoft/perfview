@@ -33,7 +33,7 @@ namespace PerfView.Utilities
 		public Buffer(Stream stream)
 		{
 			this.buffer = new byte[16384];
-			bufferFillPos = 1;
+			this.bufferFillPos = 1;
 			this.stream = stream;
 		}
 
@@ -54,18 +54,19 @@ namespace PerfView.Utilities
 			uint preamble = MaxRestoreLength + keepLast;
 			for (int i = 0; i < preamble; i++)
 			{
-				if (bufferFillPos - (preamble - i) < 0)
+				if (this.bufferFillPos - (preamble - i) < 0)
 				{
 					buffer[i] = 0;
 					continue;
 				}
 
-				buffer[i] = buffer[bufferFillPos - (preamble - i)];
+				this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
 			}
-			streamReadIn = (uint)stream.Read(buffer, (int)preamble, buffer.Length - (int)preamble);
-			bufferFillPos = streamReadIn + preamble;
-			if (bufferFillPos < buffer.Length)
-				buffer[bufferFillPos] = Sentinal;       // we define 0 as the value you get after EOS.
+
+			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
+			this.bufferFillPos = this.streamReadIn + preamble;
+			if (this.bufferFillPos < this.buffer.Length)
+				this.buffer[this.bufferFillPos] = this.Sentinal;       // we define 0 as the value you get after EOS.
 
 			return MaxRestoreLength;
 		}
@@ -80,7 +81,7 @@ namespace PerfView.Utilities
 			bool ret = true;
 			if (index >= this.bufferFillPos)
 			{
-				ret = MoveNextHelper(ref index);
+				ret = this.MoveNextHelper(ref index);
 			}
 
 #if DEBUG
@@ -96,21 +97,21 @@ namespace PerfView.Utilities
 		public byte PeekFrom(ref uint index, uint bytesAhead)
 		{
 			uint peekIndex = bytesAhead + index;
-			if (peekIndex >= bufferFillPos)
-				peekIndex = PeekFromHelper(ref index, bytesAhead);
+			if (peekIndex >= this.bufferFillPos)
+				peekIndex = this.PeekFromHelper(ref index, bytesAhead);
 
-			return buffer[peekIndex];
+			return this.buffer[peekIndex];
 		}
 
 		private bool MoveNextHelper(ref uint index)
 		{
 			index = this.FillBufferFromStreamPosition();
-			return (streamReadIn > 0);
+			return (this.streamReadIn > 0);
 		}
 
 		private uint PeekFromHelper(ref uint index, uint bytesAhead)
 		{
-			if (bytesAhead >= buffer.Length - MaxRestoreLength || index - MaxRestoreLength < 0)
+			if (bytesAhead >= this.buffer.Length - MaxRestoreLength || index - MaxRestoreLength < 0)
 				throw new Exception("Can only peek ahead the length of the buffer");
 
 			index = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - index); // We keep everything above the index.
@@ -193,7 +194,7 @@ namespace PerfView.Utilities
 			this.Position = position.streamPos;
 		}
 
-		public byte Current { get { return buffer[bufferIndex]; } }
+		public byte Current { get { return buffer[this.bufferIndex]; } }
 
 		public uint BufferIndex { get { return this.bufferIndex; } }
 
@@ -206,7 +207,7 @@ namespace PerfView.Utilities
 		}
 		public byte ReadChar()
 		{
-			MoveNext();
+			this.MoveNext();
 			return Current;
 		}
 		public int ReadInt()
