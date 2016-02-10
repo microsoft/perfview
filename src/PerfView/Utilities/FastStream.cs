@@ -199,7 +199,7 @@ namespace PerfView.Utilities
 				{
 					if (markerIdx >= endMarker.Length)
 						return;
-					if (Peek(markerIdx) != endMarker[(int)markerIdx])
+					if (Peek((int)markerIdx) != endMarker[(int)markerIdx])
 						break;
 					markerIdx++;
 				}
@@ -287,7 +287,7 @@ namespace PerfView.Utilities
 		/// </summary>
 		/// <param name="bytesAhead"></param>
 		/// <returns></returns>
-		public byte Peek(uint bytesAhead)
+		public byte Peek(int bytesAhead)
 		{
 			byte peeked = this.buffer.PeekFrom(ref bufferIndex, bytesAhead);
 			return peeked;
@@ -442,13 +442,20 @@ namespace PerfView.Utilities
 		/// Returns a number of bytes ahead without advancing the pointer. 
 		/// PeekFrom(index, 0) is the same as getting the current index.  
 		/// </summary>
-		public byte PeekFrom(ref uint index, uint bytesAhead)
+		public byte PeekFrom(ref uint index, int bytesAhead)
 		{
-			uint peekIndex = bytesAhead + index;
-			if (peekIndex >= this.bufferFillPos)
-				peekIndex = this.PeekFromHelper(ref index, bytesAhead);
+			if (bytesAhead <= -(int)MaxRestoreLength)
+			{
+				throw new Exception("Can't peek back more than restore length");
+			}
 
-			return this.buffer[peekIndex];
+			int peekIndex = bytesAhead + (int)index;
+			if (peekIndex >= this.bufferFillPos)
+			{
+				peekIndex = (int)this.PeekFromHelper(ref index, (uint)bytesAhead);
+			}
+
+			return peekIndex < 0 ? this.Sentinal : this.buffer[peekIndex];
 		}
 
 		private bool MoveNextHelper(ref uint index)
