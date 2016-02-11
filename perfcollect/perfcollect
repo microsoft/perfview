@@ -687,6 +687,26 @@ EnsureRoot()
 ######################################
 # Prerequisite Installation
 ######################################
+IsRHEL()
+{
+	local rhel=0
+	if [ -f /etc/redhat-release ]
+	then
+		rhel=1
+	fi
+
+	echo $rhel
+}
+
+InstallPerf_RHEL()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Install perf
+	yum install perf zip unzip
+}
+
 IsDebian()
 {
 	local debian=0
@@ -766,8 +786,47 @@ InstallPerf()
 	elif [ "$(IsDebian)" == "1" ]
 	then
 		InstallPerf_Debian
+	elif [ "$(IsRHEL)" == "1" ]
+	then
+		InstallPerf_RHEL
 	else
 		FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
+	fi
+}
+
+InstallLTTng_RHEL()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	packageRepo="https://packages.efficios.com/repo.files/EfficiOS-RHEL7-x86-64.repo"
+
+	# Prompt for confirmation, since we need to add a new repository.
+	BlueText
+	echo "LTTng installation requires that a new package repo be added to your yum configuration."
+	echo "The package repo url is: $packageRepo"
+	echo ""
+	read -p "Would you like to add the LTTng package repo to your zypper configuration? [Y/N]" resp
+	ResetText
+	if [ "$resp" == "Y" ] || [ "$resp" == "y" ]
+	then
+		# Make sure that wget is installed.
+		BlueText
+		echo "Installing wget.  Required to add package repo."
+		ResetText
+		yum install wget
+
+		# Connect to the LTTng package repo.
+		wget -P /etc/yum.repos.d/ $packageRepo
+
+		# Import package signing key.
+		rpmkeys --import https://packages.efficios.com/rhel/repo.key
+
+		# Update the yum package database.
+		yum updateinfo
+
+		# Install LTTng
+		yum install lttng-tools lttng-ust kmod-lttng-modules babeltrace
 	fi
 }
 
@@ -857,6 +916,9 @@ InstallLTTng()
 	elif [ "$(IsDebian)" == "1" ]
 	then
 		InstallLTTng_Debian
+	elif [ "$(IsRHEL)" == "1" ]
+	then
+		InstallLTTng_RHEL
 	else
 		FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
 	fi
@@ -1205,7 +1267,14 @@ ProcessCollectedData()
 	outputDumpFile="perf.data.txt"
 	mergedFile="perf.data.merged"
 	$perfcmd inject -v -s -i perf.data -o $mergedFile
-	$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+
+	# There is a breaking change where the capitalization of the -f parameter changed.
+	if [ "$(IsRHEL)" == "1" ]
+	then
+		$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+	else
+		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+	fi
 
 	# If the dump file is zero length, try to collect without the period field, which was added recently.
 	if [ ! -s $outputDumpFile ]
