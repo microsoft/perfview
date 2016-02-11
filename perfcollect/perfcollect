@@ -687,6 +687,27 @@ EnsureRoot()
 ######################################
 # Prerequisite Installation
 ######################################
+IsDebian()
+{
+	local debian=0
+	local uname=`uname -a`
+	if [[ $uname =~ .*Debian.* ]]
+	then
+		debian=1
+	fi
+
+	echo $debian
+}
+
+InstallPerf_Debian()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Install zip and perf.
+	apt-get install zip linux-tools
+}
+
 IsSUSE()
 {
 	local suse=0
@@ -742,9 +763,21 @@ InstallPerf()
 	elif [ "$(IsSUSE)" == "1" ]
 	then
 		InstallPerf_SUSE
+	elif [ "$(IsDebian)" == "1" ]
+	then
+		InstallPerf_Debian
 	else
 		FatalError "Auto install unsupported for this distribution.  Install perf manually to continue."
 	fi
+}
+
+InstallLTTng_Debian()
+{
+	# Disallow non-root users.
+	EnsureRoot
+
+	# Install LTTng
+	apt-get install lttng-tools liblttng-ust-dev
 }
 
 InstallLTTng_SUSE()
@@ -821,6 +854,9 @@ InstallLTTng()
 	elif [ "$(IsSUSE)" == "1" ]
 	then
 		InstallLTTng_SUSE
+	elif [ "$(IsDebian)" == "1" ]
+	then
+		InstallLTTng_Debian
 	else
 		FatalError "Auto install unsupported for this distribution.  Install lttng and lttng-ust packages manually."
 	fi
