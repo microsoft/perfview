@@ -10,8 +10,7 @@
     <p>
         PerfView is a tool for quickly and easily collecting and viewing both time and memory
         performance data. PerfView uses the <a href="http://msdn.microsoft.com/en-us/library/bb968803(v=VS.85).aspx">
-            Event
-            Tracing for Windows (ETW)
+            Event Tracing for Windows (ETW)
         </a> feature of the operating system which can
         collect information machine wide a variety of useful events as described in the
         <a href="#AdvancedCollection">advanced collection</a> section. ETW is the same powerful
@@ -60,7 +59,7 @@
     </p>
     <ol>
         <li>
-            &nbsp;<a id="CPUInvestigation">CPU Investigation</a>: One of the more useful events
+            <strong><a id="CPUInvestigation">CPU Investigation</a>:</strong> One of the more useful events
             (and one that is turned on
             by default) is the &#39;profile&#39; sampling event.&nbsp;&nbsp; This event samples
             the instruction pointer of each of the machine&#39;s CPUs every millisecond.&nbsp;&nbsp;
@@ -75,27 +74,45 @@
             mis-behaved. See <a href="#StartingAnAnalysis">Starting a CPU Analysis</a> for more
         </li>
         <li>
-            Managed Memory Investigations: PerfView also has the ability to take a snapshot
+            <strong>Managed Memory Investigations:</strong> PerfView also has the ability to take a snapshot
             of the .NET GC heap. Because these heaps can be very large, PerfView allows control
             over how large of a sample is taken, and goes to some trouble to take a representative
             sample if the heap is too big to capture in its entirety. It then converts the graph
             of objects in the heap into a tree, and displays this in the same <a href="#StackViewer">stack viewer</a>
             that was used for CPU investigations. See <a href="#InvestigatingMemoryData">Investigating Memory</a> and
-            <a href="#StartingAnAnalysisGCHeap">Starting a GC Heap Analysis</a> for more
+            <a href="#StartingAnAnalysisGCHeap">Starting a GC Heap Analysis</a> for moreWik
+        </li>
+        <li><strong>Response Time Investigations: </strong>  By collecting with the 'ThreadTime' option
+           enough information is collected so that PerfView has the ability to measure what every
+           thread (blocked or not), gather all the thread time associated with every request and display
+            it as a tree.   This is what the 'Thread Time (with Start-Stop Activities) view is.   
+            See <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a> for more.  
         </li>
         <li>
-            Wall Clock / Blocked Time Investigations: If your program is too slow, but it is not consuming
+            <strong>Wall Clock / Blocked Time Investigations:</strong> If your program is too slow, but it is not consuming
             excessive CPU, then it must be blocked waiting on something else (disk network,
             ...). PerfView can instruct the OS to log events whenever threads sleep or wake
             up, and has a display for visualizing where your program is waiting.
             See <a href="#BlockedTimeInvestigation">Blocked / Wall Clock Time Investigation</a> for more.
         </li>
         <li>
-            Unmanaged Memory Investigations: You can also turn on events every time the OS heap memory
+            <strong></strong> Memory Investigations:</strong> You can also turn on events every time the OS heap memory
             allocator allocates or frees an object.   Using these events you can see what call
             stacks are responsible for the most net unmanaged memory allocations.
             See <a href="#InvestigatingMemoryData">Investigating Memory</a> and
             <a href="#UnmanagedMemoryAnalysis">Unmanaged Heap Analysis</a> for more.
+        </li>
+        <li>
+            <strong> CPU Investigations:</strong>  PerfView has the ability to read the output of the Linux 'Perf Events'
+            collector that is built into the Linux kernel.
+            See <a href="#ViewingLinuxData">Viewing Linux Data</a> for more.
+        </li>
+        <li>
+            <strong>Viewing your own hierarchical data in PerfView's stack viewer:</strong>  PerfView's stack viewer is
+            powerful, but it is also very flexible.  PerfVIew defines a very simple XML or JSON format that
+            it can read into this viewer.   This allows you to easily generate data that you can then
+            view in PerfView's powerful stack viewer.
+            See <a href="#ViewingExternalData">Viewing External Data</a> for more.
         </li>
     </ol>
     <p>
@@ -2128,7 +2145,7 @@
                     rolled up by the location the stack CPU was consumed.&nbsp;
                 </li>
                 <li>
-                    <strong><a id="ThreadTime(withStartStopTasks)Stacks">Thread Time (With StartStop Tasks) Stacks</a></strong>
+                    <strong><a id="ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a></strong>
                     - This is like <a href="#ThreadTime(withTasks)Stacks">Thread Time Stacks</a> in that it shows
                     what every thread is doing (consuming CPU, Disk, Network) at any instant of time, and
                     it tracks the causality of System.Threading.Tasks.Tasks so that costs incurred by the task
@@ -2139,8 +2156,8 @@
                     web request).   It is very valuable for doing server investigations.
                     You will only get this view if you collected data with the
                     <a href="#ThreadTimeCheckbox">Thread Time</a> events.
-                    See <a href="#BlockedTimeInvestigation">Blocked time investigation</a> and
-                    <a href="#UnderstandingPerfDataThreadTimeWithTasks">How to make Thread Time Easy</a>
+                    See <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a> 
+                    and <a href="#BlockedTimeInvestigation">Blocked time investigation</a>
                     for more details.
                 </li>
                 <li>
@@ -2243,14 +2260,6 @@
                     wall clock time, and memory investigations.
                     <ul>
                         <li>
-                            <strong><a id="ETLEventSource">Events View</a></strong> - The Events view is the
-                            &#39;raw&#39; view of the ETW events.&nbsp;&nbsp; Basically and ETL file is simply
-                            a sequence of event payloads where each event consists of an event type, a timestamp,
-                            an process and thread that generated the event, and additional event-specific information.&nbsp;&nbsp;
-                            The Event viewer allows this information to be filtered (by time, process, and text),
-                            and viewed in Excel.&nbsp;&nbsp;
-                        </li>
-                        <li>
                             <strong><a id="ThreadTimeStacks">Thread Time Stacks</a></strong> - Shows what every
                             thread is doing whether it is consuming CPU, disk, network or blocked on something
                             else.  It does not include the 'ReadyThread' information.
@@ -2268,8 +2277,13 @@
                             for programs that use the C# 'async' feature.
                             You will only get this view if you collected data with the
                             <a href="#ThreadTimeCheckbox">Thread Time</a> events.
-                            See <a href="#BlockedTimeInvestigation">Blocked time investigation</a> and
-                            <a href="#UnderstandingPerfDataThreadTimeWithTasks">How to make Thread Time Easy</a>
+                            If you investigating a HTTP service or have Start-stop events in your code, it is generalll
+                            better to use the
+                            <a href="#ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a>
+                            view instead.
+                            See <a href="#BlockedTimeInvestigation">Blocked time investigation</a>,
+                            <a href="#UnderstandingPerfDataThreadTimeWithTasks">Understading Thread Time With Tasks</a>
+                            and <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a>
                             for more details.
                         </li>
                         <li>
@@ -2386,18 +2400,17 @@
                             source.
                         </li>
                         <li>
-                            <strong><a id="AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a></strong> - This view
+                            <strong><a id="AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a></strong> - This view
                             is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have
                             call stacks associated with them.  The only difference is at the top of the each stack (between the
-                            process and thread frames) is a list of Start-Stop tasks (that is activities See
+                            process and thread frames) is a list of Start-Stop tasks (that is  an activity See
                             <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
                                 EventSource Activities
-                            </a> on how to define your own) that are current started
-                            but not stopped.
+                            </a> on how to define your own).
                         </li>
                         <li>
                             <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
-                            is a simplification of the <a href="#AnyStacks(withStartStopTasks)Stacks">Any Stacks (with StartStop Tasks)</a> view.
+                            is a simplification of the <a href="#AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a> view.
                             Like that view, it shows every event in the context of the start-stop activities that are currently
                             active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
                             and is useful when you don't want the extra detail.
@@ -2501,6 +2514,14 @@
                     including what the average throughput was, the average request response time, and
                     other basic information to quickly assess your server&#39;s basic health.  You typically
                     drill into more detail by using the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks view</a>.
+                </li>
+                <li>
+                    <strong><a id="ETLEventSource">Events View</a></strong> - The Events view is the
+                    &#39;raw&#39; view of the ETW events.&nbsp;&nbsp; Basically and ETL file is simply
+                    a sequence of event payloads where each event consists of an event type, a timestamp,
+                    an process and thread that generated the event, and additional event-specific information.&nbsp;&nbsp;
+                    The Event viewer allows this information to be filtered (by time, process, and text),
+                    and viewed in Excel.&nbsp;&nbsp;
                 </li>
             </ul>
         <li>
@@ -5102,100 +5123,115 @@
         thread).&nbsp; This is EXACTLY what the Thread Time (with Tasks), view does.&nbsp; If your
         application uses Tasks, you should be using this view.&nbsp;
     </p>
-    <h3>Making ASP.NET Investigations Easy (The ASP.NET Thread Time View)</h3>
-    <p>
-        At its heart, an ASP.NET application consists of an .ASPX file that indicates how to
-        generate a HTML file, and the ASP.NET infrastructure takes care of building a working
-        web service around that definition.&nbsp;&nbsp; The natural performance metric is
-        (wall clock) response time.&nbsp;&nbsp; Unfortunately if you took a standard PerfView
-        trace and looked at it in the normal CPU viewer you would see just the CPU time, but
-        you would see it aggregated by thread.&nbsp;&nbsp; These thread do lots of different work
-        and thus it is hard to focus on what a particular ASP.NET request is doing.
-    </p>
-    <p>
-        &nbsp;Solving this problem is what the ASP.NET Thread time view is about.&nbsp;&nbsp; If
-        you collect the data with the /ThreadTime qualifier/checkbox, PerfView will collect the
-        necessary information to do a wall clock time analysis.&nbsp; In addition if you look at the
-        ASP.NET Thread time view you will see this time broken down by Request (naturally sorted
-        from the request that took the longest time to the request that took the shortest time.&nbsp;&nbsp;
-        Basically because we know this is an ASP.NET scenario, and we have ASP.NET events
-        that tell us when we are processing a particular request, we can serrate &#39;interesting
-        time&#39; (time processing requests), from uninteresting time (thread pool threads waiting
-        for work to do etc).&nbsp;
-    </p>
-    <p>
-        Here is a example of a ASP.NET Thread time view for a &#39;hello world&#39; ASPX page
-        in which I purposefully put both CPU time (I spin setting page properties) as well
-        as blocked time (I call Thread.Sleep).&nbsp;&nbsp;&nbsp; Here is the resulting view.
-    </p>
-    <center>
-        <img src="images/AspNetThreadTime.png" alt="AspNetThreadTime" />
-    </center>
-    <p>
-        What the view does is segregate the world into two halfs, that time that can be identified
-        as processing a request (the &#39;Requests&#39; frame) and everything else (the &#39;Not
-        Requests&#39; frame, which has been excluded in the view above).&nbsp;&nbsp; The requests
-        are broken down further by URL and then actual request ID (each request is
-        given a GUID by ASP.NET that identifies it uniquely).&nbsp; Under that
-        is all snippets of threads that participated in processing that request
-        (often on one or two).&nbsp;&nbsp; In the example above you an see that there is a
-        generated file (&#39;App_Web_e3m0hys&#39;&nbsp; which represents code in the ASPX file
-        itself).&nbsp; The main body of this code is the &#39;helloworld_aspx_Render_control1&#39;
-        method and you can see this particular request took 1.7609 seconds and that
-        this page takes a lot of (CPU) time&nbsp; in the &#39;Concat&#39; (888 msec) and
-        &#39;DateTime.Now&#39; (582 msec) methods as well as some (BLOCKED) time (203 msec)
-        in the ThreadNative::Sleep method.&nbsp;
-    </p>
-    <p>
-        In short it makes finding your long response times, and see how time in requests break
-        down (in wall clock time).&nbsp; If you are doing an ASP.NET investigation, you
-        should be using this view.&nbsp;
-    </p>
-    <p>
-        Typically you want to exclude the &#39;Not Requests&#39; category because it only
-        contains &#39;overhead&#39; that is not directly related to a particular request,
-        however before you exclude any costs, it is wise to make sure that they are in line
-        with expectations.&nbsp;&nbsp; In particular, you should look at CPU costs in the &#39;Not
-        Requests&#39;.&nbsp; Thus it is not a bad idea to Right click -&gt; &#39;Include
-        Item&#39; on &#39;CPU_TIME&#39; and also &#39;Not Requests&#39; nodes, and take a look at
-        what shows up.&nbsp; Typically this will be dominated by GC time (which
-        for ASP.NET is on its own threads, that can&#39;t easily be associated with
-        any particular request).&nbsp; If this CPU time is in line with expectations (.e.g. GC time
-        should be well under 10% of the total CPU time), then you have completed
-        the &#39;non-requests&#39; part of investigations.&nbsp; You can undo the
-        filtering (hit back button), and put in new filtering (filter by the &#39;Requests&#39; node),
-        that only shows you time in requests.&nbsp;&nbsp;
-    </p>
+    <!--  ************************************************************ -->
 
-    <h3>Strategies for Server Application Investigations</h3>
-
+    <h3><a id="MakingServerInvestigationEasy">Making Server Investigations Easy (The Thread Time (with Start-Stop Tasks) View)</a></h3>
     <p>
-        Investigations on server applications tend to be more complicated than client
-        applications due to the fact that a server application performs many actions
-        at once on behalf of many different users.&nbsp; Server applications by their
-        very nature, are designed to scale to support many concurrent users, which means
-        that it is difficult to isolate a single user request for analysis.
+        At its heart, a server investigation is typically about <strong>response time</strong>.   Thus to do
+        an server investigation you would like all costs that contribute to making this
+        resonse time longer rolled up together in the display.   This is exactly what the
+        <strong>Thread Time with Start-Stop Tasks View</strong> does.
+        <ul>
+            <li>
+                Like all <a href="#BlockedTimeInvestigation">thread time</a> views, it keeps track of where every thread is (what
+                its current stack is) regardless of wehther it is blocked or using CPU.   Like all thread time
+                views <strong>it needs the 'ThreadTime' checkbox</strong> (or /threadTime command line parameter) to be used when
+                collecting the data so the necessary events are present.   
+            </li>
+            <li>
+                Like all <a href="#UnderstandingPerfDataThreadTimeWithTasks">'with Tasks'</a> views it also knows how to track 
+                any Asynchronous or concurrent activity done by thread pool threads and assign that cost to the code that
+                caused that work to happen.
+            </li>
+            <li>
+                Finally on top of this it identifies events declared to be 'Start-Stop pairs'
+                which identify 'interesting' units of time.   The .NET Framework has declared a
+                one such start-stop pair when IIS or ASP.NET requests begin, but there are others
+                when WCF operations start and stop, as well as when HTTP requests or SQL requests are made to
+                other machines.   In addition you can define start-stop requests of your own
+                that PerfView will recognise (see below).  Once a 'Start' event is emitted, anything on that
+                thread (or any Task caused by that thread) will be part of that start-stop activity
+                until the Stop event for that start-stop pair is seen.
+            </li>
+        </ul>
     </p>
-    <p>
-        The Server Request views are designed to make this type of investigation simple,
-        by allowing the user to drill into the time spent in a single request.&nbsp;
-        The metric used by the Server Request Thread Time Stacks is wall clock time,
-        and as such, represents the actual amount of time that the server spent processing
-        the request as perceived by the user.
-    </p>
-    <p>The the views are currently supported for ASP.NET and WCF services hosted by IIS.</p>
-    <p>
-        The best way to start with the views is to open one and go to the CallTree view.&nbsp;
-        This will allow you to drill into individual requests based on the request url.
-    </p>
+    <p>This is best shown by example.   This is an example of a ASP.NET Web server that was 
+    monitored using 'PerfView /threadTime collect'.  Because we use the /ThreadTime parameter,
+    information on context switches and tasks is collected that allows 'Thread Time' views
+    to be displayed including the 'Thread Time (with StartStop Tasks)' display .   Here is the 
+    result of opening this view and focusing on the W3WP process (which is the web server process).
+     </p>
     <center>
-        <img src="Images/ServerRequestThreadTime.PNG" alt="ServerRequestThreadTime" height="362" />
+        <img src="images/ThreadTimeWithStartStop.png" alt="ThreadTimeWithStartStop" />
     </center>
-    <p>
-        From the example image above, one can tell how much actual time was spent in
-        each method for a single request to HelloWorld.aspx.&nbsp; Use of this view
-        should make it very simple to determine the root cause of any slow request.
+    <p> 
+    At the top of the tree, we see the process node, but then immediately all costs are segregated
+    into two parts, things that are associtedd with some start-stop activity, and everything else. 
+    Thus this lets you quickly focus on the thread time that is likely to be of interest.  
     </p>
+    <p>
+        Under the 'Activities' node you see all 'top level' start-stop activities, sorted by
+        cost (that is thread time attributed to that activity).  In the view above we opened
+        the 'IISRequest' activity (which has a particular ID nunber and URL) that happens to have
+        730.7 msec of thread time.  This IISRequest Activity happens to cause another nested
+        Start-stop pair for an AspNetReq activity, so that is shown, from there all stacks 
+        associated with the AspNetReq activity are shown.  In this example we can see the call
+        stack through user code to the method MyOtherAsyncMethod which does a 'await' that
+        takes 524.5 msec)
+    </p>
+    <p>
+        Hopefully you can immediately see how useful this view is.  Basically it takes all the
+        thread time associated with semantically relevant things (start-stop tasks that someone
+        instrumented into the code), and displays the stack based on causality (thus event if
+        execution hops threads the stacks 'follow' it).   Thus it becomes trivial to see exactly
+        where time is being spent.  
+    </p>
+    <p> A typical strategy is to immediately select the '(Activities)' node, right click -> Include Item, 
+    which will exclude all the non-activity thread time.   This works well most of the time
+    however keep in mind that some importnat costs may be in this (Non-Activies) node, in partciular
+    things like the GC (in server or background GC), or any non-threadpool threads did work but 
+    never logged a start and stop event.   This is why perfView does not hide this, but typically
+    you start by looking at the activities, only look outside that if you are lead there.  Typicall
+    if you will filter to just look at the non-activies and only the CPU_TIME, to see what 
+    is 'interesting' in that group.  
+    </p>
+    <h4>Thread Time is not Elapsed Wall Clock Time</h4>
+    <p>
+        It is important to note that what is being shown is STILL thread time, NOT wall clock
+        time.   Thus if there is concurrency going on, the total metric is very likley to 
+        add up to more than elapsed wall clock time.  This is easy to determine this is the case (because you will
+        see more than one thread as childen of the activity), and you can even see the overlap
+        (by looking at the 'when' column of each of the children).   Still it is something to
+        be aware of.  See <a href="UnderstandingPerfDataThreadTime">Understanding Thread Time</a> and for more.  
+     </p>
+     <p>
+        It is also possible that the thread time will be LESS than elapesed wall clock time.  
+        This should be a much rarer case.   It happens when the code casues work to happen but
+        does not use the mechanisms that have been instrumented to detect that work on another 
+        thread was caused by the currnet thread.   Because of this the current thread may return
+        to the threadpool (at which point its time is NOT attributed to the activity anymore), but because
+        the work on the other thread is unknown to PerfView, it can't propertly attribute that
+        time to the activity (it ends up under the non-activies node).  Thus there can be 'gaps' in the thread time 
+        for a request.   PerfView tries to fill these gaps
+        with a pseudo-node called 'UNKNOWN_ASYNC', so that at the cost in the view is never less
+        than the wall clock time for sorting purposes, but sometimes PerfView's algorithm is not
+        perfect.   In either case, however it becomes very difficult to determine what was going
+        on during these gaps.   Hopefully this simply won't happen to you...  
+    </p>
+    <h4>Making your own Start-Stop tasks</h4>
+    <p>
+        Often the 'standard' instrumentation in the .NET Framework gives you good 'starting'
+        activities to work with (as the IISRequest and AspNetReq did above).   However if those
+        are not sufficient, you can define start-stop activities of your own.   
+        If your code is running on V4.6 of the .NET Framework or beyond, then it is trivial 
+        to add new start-stop activties that will show up in this view.
+        See
+        <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
+            EventSource Activities
+        </a> for details of doing this.   You will want to turn your events on using the
+        /Provider=*YOUR_EVENT_SOURCE_NAME when collecting data, and this view will simply
+        incorperate them automatically.  
+   </p>
     <hr />
     <!--  ********************************** -->
     <h2><a id="UnmanagedMemoryAnalysis">Unmanaged Memory Analysis</a></h2>
@@ -5860,13 +5896,21 @@
         are APPENDED to the log file (we append so you can use the same file for several
         PerfView commands.&nbsp;&nbsp; The exit code of the PerfView process will indicate
         the success or failure of the collection and the log file will contain the detailed
-        diagnostic messages.&nbsp;&nbsp;&nbsp; For example
+        diagnostic messages.&nbsp;&nbsp;&nbsp;
     </p>
+    <p>
+        In addition to the /logFile qualifer it is good to also apply the /AcceptEula qualifer
+        to scripts that call PerfView.  By default the first time PerfView is run on any particualr
+        computer it displays a pop-up that asks the user to accept the usage agreement (EULA).  This
+        can be problematic for scripts since it requries human interation.   To avoid this you can
+        use the /AcceptEula qualifer on the command line that does this operation silently.
+    </p>
+    <p>Thus a typical use of the /logFile and /AcceptEula qualifiers is the command</p>
     <ul>
-        <li>PerfView /logFile=perfViewRun.log run tutorial.exe</li>
+        <li>PerfView /logFile=perfViewRun.log /AcceptEula run tutorial.exe</li>
     </ul>
     <p>
-        Runs the &#39;tutorial.exe&#39; from a script (no gui).&nbsp;&nbsp; If you need
+        which runs the &#39;tutorial.exe&#39; from a script (no gui).&nbsp;&nbsp; If you need
         to collect system wide, (you want to use &#39;collect&#39; not &#39;run&#39;) there
         is a problem because PerfView does not know when to stop.&nbsp; There are two ways
         to solve this problem.&nbsp; The first is to use the &#39;/MaxCollectSec&#39; qualifier..&nbsp;
@@ -5874,7 +5918,7 @@
     </p>
     <ul>
         <li>
-            PerfView&nbsp; /LogFile=PerfViewCollect.log /MaxCollectSec:10 collect&nbsp;
+            PerfView&nbsp; /LogFile=PerfViewCollect.log /AcceptEula /MaxCollectSec:10 collect&nbsp;
         </li>
     </ul>
     <p>
@@ -5882,9 +5926,9 @@
         can also use the &#39;start&#39; and &#39;stop&#39; and &#39;abort&#39; commands.&nbsp;
     </p>
     <ul>
-        <li>PerfView start /LogFile=PerfViewCollect.log</li>
-        <li>PerfView stop /LogFile=PerfViewCollect.log</li>
-        <li>PerfView abort /LogFile=PerfViewCollect.log</li>
+        <li>PerfView start /AcceptEula /LogFile=PerfViewCollect.log</li>
+        <li>PerfView stop /AcceptEula /LogFile=PerfViewCollect.log</li>
+        <li>PerfView abort /AcceptEula /LogFile=PerfViewCollect.log</li>
     </ul>
     <p>
         These are meant to be used in scripts.&nbsp;&nbsp; The first will start logging
@@ -5897,14 +5941,6 @@
         to be called at locations where you know that PerfView should NOT be running, and
         it insures that indeed it is not.&nbsp;&nbsp; You should use it liberally in scripts
         that use the &#39;start&#39; command.
-    </p>
-    <h4>Avoiding EULA prompts</h4>
-    <p>
-        The very first time PerfView is run on a particular machine it has to confirm that you have accepted
-        the legal restrictions associated with using PerfView (the EULA).&nbsp;&nbsp; This can be a problem
-        for automation if you run your testing on &#39;clean&#39; machine images.&nbsp; You can avoid this
-        problem by specifying the /AcceptEULA qualifier on the PerfView command line.&nbsp; This will suppress
-        the EULA dialog.
     </p>
     <h4>
         <a id="ProductionMonitoring">Production Monitoring</a>
@@ -5922,7 +5958,7 @@
         monitoring. First is the /MaxCollectSec:N qualifier. The command
     </p>
     <ul>
-        <li>PerfView collect /MaxCollectSec:20 /logFile=collectionLog.txt</li>
+        <li>PerfView collect /MaxCollectSec:20 /AcceptEula /logFile=collectionLog.txt</li>
     </ul>
     <p>
         Will indicate that PerfView should collect for at most 20 seconds. Thus this command
@@ -6800,6 +6836,14 @@
         PerfView.   It will open the file in a stack window of the CPU samples, and all the normal techniques of CPU
         investigation are applicable.
     </p>
+    <p>
+        What is going on under the hood is that PerfView is opening the FILENAME.trace.zip file to locate a file within
+        the archive with the suffix *.data.txt and reads that.  This file is expectec to be the output of running
+        <a href="http://linux.die.net/man/1/perf-script">'Perf script'</a> command.  PerfView also knows how to read files
+        with the *.data.txt suffix directly, so if you don't wish to use the 'perfCollect' script when collecting your Linux
+        data, you can still easily feed the data to PerfView.  (You can also zip up your *.data.txt file into a file with the
+        suffix *.trace.zip and perfView will happily open it)
+    </p>
     <hr />
     <!--  ********************************** -->
     <h2><a id="ViewingExternalData">Viewing External Data</a></h2>
@@ -6808,14 +6852,14 @@
         this viewer is that it is VERY generic.     The data that is shown in this viewer is simply a set of samples where
         each sample contains
     </p>
-        <ol>
-            <li>An (optional) floating point value representing the time.</li>
-            <li>A value (defaults to 1) representing the metrice or cost fo the sample.</li>
-            <li>A list of names representing the stack or path in a hierarchitcal tree.</li>
-        </ol>
+    <ol>
+        <li>An (optional) floating point value representing the time.</li>
+        <li>A value (defaults to 1) representing the metrice or cost fo the sample.</li>
+        <li>A list of names representing the stack or path in a hierarchitcal tree.</li>
+    </ol>
     <p>
-        All the rest of magic of the stack viewer, the inclusive and exclusive cost, the timeline, filtering, the callers, 
-        and callees views, are all just different aggregations of this data.   
+        All the rest of magic of the stack viewer, the inclusive and exclusive cost, the timeline, filtering, the callers,
+        and callees views, are all just different aggregations of this data.
     </p>
     <p>
         What this means is that prety much any hierarchical data can be usefully displayed in the stack viewer.   For example
@@ -6824,7 +6868,7 @@
         place where the data forms a hierarchy can be viewed with the stack viewer.
     </p>
     <h3>Simple .perfView.xml Format</h3>
-    <p> 
+    <p>
         Now inside the implementation of PerfView is a class called a 'StackSource' that represents this list of samples with
         stacks that PerfView's viewer views.   There is also a class called a 'InternStackSource' that is designed to make
         it easy to read other formats and turn that data into a StackSource.    However PerfView also has two formats that make
@@ -6832,9 +6876,9 @@
         and the other is JSON based, and neither of them will be suprising, they are simply the 'obvious' encoding of the
         data that the stack viewer needs in those formats.   For example here is a sample of the .perfView.xml format
     </p>
-        <dl>
-            <dd>
-                <pre>
+    <dl>
+        <dd>
+            <pre>
         &lt;StackSource&gt;
           &lt;Samples&gt;
            &lt;Sample Time="10" Metric="10"&gt; 
@@ -6863,21 +6907,21 @@
           &lt;/Samples&gt;
          &lt;/StackSource&gt;
 </pre>
-            </dd>
-        </dl>
+        </dd>
+    </dl>
     <p>
         You can see that the format can be very straightfoward.   There is a 'StackSource' element that has a member 'Samples'
         which in turn contains a list of Samples, each of which has a time and a metric (both of these are optional, time defaults
-        to 0 and metric defaults to 1) Inside each sample is a list of stack frames, one per line.   These are ordered from the 
-        most specific (or deepest call tree nesting) to the least specific (main program).    That is all you need to generate 
+        to 0 and metric defaults to 1) Inside each sample is a list of stack frames, one per line.   These are ordered from the
+        most specific (or deepest call tree nesting) to the least specific (main program).    That is all you need to generate
         in order for PerfView to read the data.    You can try this out by simply pasting the above text into a '*.perfView.xml'
         file and the opening the file in perfview.   PerfVIew will open that data in the stack viewer (Try it!)
     </p>
     <p>
         There is a cooresponding *.perfView.json format which is completely analogous to the XML format.   The basic structure
         is the same: A StackSource which has a list of Samples each same has a time, metric and list of names that represent
-        the stack.   Here is an example.   Like the previous example you can cut and paste into a *.perfView.json file and 
-        open it in PerfView, to see the data in the stack viewer.  
+        the stack.   Here is an example.   Like the previous example you can cut and paste into a *.perfView.json file and
+        open it in PerfView, to see the data in the stack viewer.
     </p>
     <dl>
         <dd>
@@ -6924,25 +6968,25 @@
     <h3>Advanced .perfView.xml Format</h3>
     <p>
         The simple format is nice because it is so easy to explain, but it is very inefficient.  You can see the each stack
-        has to be repeated in its entirety for each sample, and most of the time the stacks are very simmilar to one another.  
+        has to be repeated in its entirety for each sample, and most of the time the stacks are very simmilar to one another.
         Morever when you read the samples into the viewer, you don't get any defaults for PerfView's grouping, folding and
         filtering options, which makes the experience less than ideal.
     </p>
     <p>
         Well, the .perfView.xml format is actually more complex than what has been shown so far.   In fact you can assign
-        IDs to each unique Frame of the stack and use the ID instead of the name (saving alot of space).  Simmilarly you 
-        can assign IDs to each unique Stack (built from Frame IDs) that can be used in the samples (saving more space).   
+        IDs to each unique Frame of the stack and use the ID instead of the name (saving alot of space).  Simmilarly you
+        can assign IDs to each unique Stack (built from Frame IDs) that can be used in the samples (saving more space).
         This compression dramatically reduces the time to load the data.  Finally it is possible to specify all the defaults
         and all the options for each of the stack viewers texboxes (eg. the Group Pats, Fold Pats Include Pats ... textboxes).
         In short with a little more work when you generate your .perfView.xml file you can make the experience significnatly
-        nicer.   
+        nicer.
     </p>
     <p>
         Rather than document the specific format for these, it is easier to simply show you an example.   The PerfVIew
-        stack viewer has a File -> Save command and this saves the current stack view as a .perfView.xml.zip file.   
+        stack viewer has a File -> Save command and this saves the current stack view as a .perfView.xml.zip file.
         If you unzip this file, then you will see the representation of the data data in this more complete, efficient
         format.   Thus you can take one of the examples above, open it, add some data to the text boxes (which remember
-        the history), and the save the view.   Then you an unzip it and look at the format.   The format is completely straightfoward. 
+        the history), and the save the view.   Then you an unzip it and look at the format.   The format is completely straightfoward.
     </p>
     <hr />
     <!--  ********************************** -->
@@ -7998,6 +8042,14 @@
         </li>
         -->
         <li>
+            Version 1.9.0 2/12/16
+            <ul>
+                <li>
+                    Updated documetation.  Preped for release to web.  
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.8.28 2/7/16
             <ul>
                 <li>
@@ -8256,7 +8308,7 @@
             Version 1.8.5 10/6/15
             <ul>
                 <li>
-                    Made 'Any Stacks (with StartStop Tasks)' and 'Any StartStopTree' public.
+                    Made 'Any Stacks (with StartStop Activities)' and 'Any StartStopTree' public.
                 </li>
             </ul>
         </li>
@@ -8432,7 +8484,7 @@
             Version 1.7.12 - 2/12/2015
             <ul>
                 <li>
-                    Fixed serious bugs in the StartStop computer (the with StartStop tasks view).  It now seems to pass
+                    Fixed serious bugs in the StartStop computer (the with StartStop Activities view).  It now seems to pass
                     basic self-consistancy tests
                 </li>
                 <li>
@@ -8440,7 +8492,7 @@
                     the Events view (very useful for debugging task views)
                 </li>
                 <li>
-                    Added right click options to go to the Any TaskTree and Any (With StartStop Tasks) from
+                    Added right click options to go to the Any TaskTree and Any (With StartStop Activities) from
                     the events view.
                 </li>
                 <li>

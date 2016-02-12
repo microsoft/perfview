@@ -807,7 +807,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                         var nodeName = "BLOCKED on CPU " + ProcessorNumberWhereBlocked +
                             " UNBLOCKED on CPU " + ProcessorNumberWhereAwakened +
-                            " IDLE CPUS before UNBLOCK " + computer.m_numIdleProcs;
+                            " IDLE CPUS = " + computer.m_numIdleProcs;
                         nodeIndex = computer.m_outputStackSource.Interner.FrameIntern(nodeName);
                         morphedStack = computer.m_outputStackSource.Interner.CallStackIntern(nodeIndex, morphedStack);
 

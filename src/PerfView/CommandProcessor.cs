@@ -171,7 +171,7 @@ namespace PerfView
                 parsedArgs.CircularMB = 500;
             }
 
-            for (int collectionNum = 1; ; )
+            for (int collectionNum = 1; ;)
             {
                 if (parsedArgs.CollectMultiple > 1)
                     LogFile.WriteLine("[************** CollectMultple={0} collecting {1} ****************]", parsedArgs.CollectMultiple, collectionNum);
@@ -238,7 +238,7 @@ namespace PerfView
                     bool startTriggered = false;
                     foreach (var startTriggerSpec in parsedArgs.StartOnPerfCounter)
                     {
-                        startTigggers.Add(new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate(PerformanceCounterTrigger startTrigger)
+                        startTigggers.Add(new PerformanceCounterTrigger(startTriggerSpec, 0, LogFile, delegate (PerformanceCounterTrigger startTrigger)
                         {
                             LogFile.WriteLine("StartOnPerfCounter " + startTriggerSpec + " Triggered.  Value: " + startTrigger.CurrentValue.ToString("n1"));
                             startTriggered = true;
@@ -547,8 +547,8 @@ namespace PerfView
                                     ClrPrivateTraceEventParser.Keywords.Binding |
                                     ClrPrivateTraceEventParser.Keywords.Fusion |
                                     ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
-                                // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
-                                //  ClrPrivateTraceEventParser.Keywords.Startup 
+                                                                                         // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
+                                                                                         //  ClrPrivateTraceEventParser.Keywords.Startup 
                                     ClrPrivateTraceEventParser.Keywords.Stack
                                 ));
 
@@ -563,6 +563,15 @@ namespace PerfView
                                 TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
                                 (ulong)(TplEtwProviderTraceEventParser.Keywords.Default),
                                 netTaskStacks);
+
+                            EnableUserProvider(userModeSession, ".NETFramework",
+                                FrameworkEventSourceTraceEventParser.ProviderGuid,
+                                 parsedArgs.ClrEventLevel,
+                                (ulong)(
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
+                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
+                                    FrameworkEventSourceTraceEventParser.Keywords.NetClient),
+                                stacksEnabled);
 
                             // Turn on the Nuget package provider that tracks activity IDs. 
                             EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80);
@@ -1196,7 +1205,7 @@ namespace PerfView
 
         private void InformedAboutSkippingMerge()
         {
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 MessageBox.Show(GuiApp.MainWindow,
                     "If you are analyzing the data on the same machine on which you collected it, in the future " +
@@ -1214,7 +1223,7 @@ namespace PerfView
         {
             if (GuiApp.MainWindow != null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     GuiApp.MainWindow.DoRun(null, null);
                 });
@@ -1224,7 +1233,7 @@ namespace PerfView
         {
             if (GuiApp.MainWindow != null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     GuiApp.MainWindow.DoCollect(null, null);
                 });
@@ -1246,7 +1255,7 @@ namespace PerfView
             {
                 LogFile.WriteLine("Waiting on a performance counter trigger {0}", parsedArgs.StartOnPerfCounter[0]);
                 bool done = false;
-                var pcTrigger = new PerformanceCounterTrigger(parsedArgs.StartOnPerfCounter[0], parsedArgs.DecayToZeroHours, LogFile, delegate(PerformanceCounterTrigger trigger)
+                var pcTrigger = new PerformanceCounterTrigger(parsedArgs.StartOnPerfCounter[0], parsedArgs.DecayToZeroHours, LogFile, delegate (PerformanceCounterTrigger trigger)
                 {
                     done = true;
                 });
@@ -1326,9 +1335,9 @@ namespace PerfView
 
             if (GuiApp.MainWindow != null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    GuiApp.MainWindow.TakeHeapShapshot((Action)delegate()
+                    GuiApp.MainWindow.TakeHeapShapshot((Action)delegate ()
                     {
                         // Set the wait handle once the memory heap snapshot has been completed.
                         // This action will run in the memory dialog continuation.
@@ -1506,7 +1515,7 @@ namespace PerfView
 
             if (GuiApp.MainWindow != null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     GuiApp.MainWindow.DoUserCommandHelp(null, null);
                 });
@@ -1648,7 +1657,7 @@ namespace PerfView
                     foreach (var perfCounterTrigger in parsedArgs.StopOnPerfCounter)
                     {
                         LogFile.WriteLine("[Enabling StopOnPerfCounter {0}.]", perfCounterTrigger);
-                        var perfCtrTrigger = new PerformanceCounterTrigger(perfCounterTrigger, parsedArgs.DecayToZeroHours, LogFile, delegate(PerformanceCounterTrigger trigger)
+                        var perfCtrTrigger = new PerformanceCounterTrigger(perfCounterTrigger, parsedArgs.DecayToZeroHours, LogFile, delegate (PerformanceCounterTrigger trigger)
                         {
                             TriggerStop(collectionCompleted, "StopOnPerfCounter " + perfCounterTrigger + " Triggered.  Value: " + trigger.CurrentValue.ToString("n1"),
                             parsedArgs.DelayAfterTriggerSec);
@@ -1668,7 +1677,7 @@ namespace PerfView
                 if (parsedArgs.StopOnGCOverMsec > 0)
                 {
                     LogFile.WriteLine("[Enabling StopOnGCOverMsec {0}.]", parsedArgs.StopOnGCOverMsec);
-                    triggers.Add(ETWEventTrigger.GCTooLong(parsedArgs.StopOnGCOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate(ETWEventTrigger trigger)
+                    triggers.Add(ETWEventTrigger.GCTooLong(parsedArgs.StopOnGCOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
                     {
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
@@ -1676,7 +1685,7 @@ namespace PerfView
                 if (parsedArgs.StopOnException != null)
                 {
                     LogFile.WriteLine("[Enabling StopOnException {0}.]", parsedArgs.StopOnException);
-                    triggers.Add(ETWEventTrigger.StopOnException(parsedArgs.StopOnException, parsedArgs.Process, LogFile, delegate(ETWEventTrigger trigger)
+                    triggers.Add(ETWEventTrigger.StopOnException(parsedArgs.StopOnException, parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
                         {
                             TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                         }));
@@ -1686,7 +1695,7 @@ namespace PerfView
                     foreach (string etwTriggerSpec in parsedArgs.StopOnEtwEvent)
                     {
                         LogFile.WriteLine("[Enabling StopOnEtwEvent {0}.]", etwTriggerSpec);
-                        triggers.Add(new ETWEventTrigger(etwTriggerSpec, LogFile, delegate(ETWEventTrigger trigger)
+                        triggers.Add(new ETWEventTrigger(etwTriggerSpec, LogFile, delegate (ETWEventTrigger trigger)
                         {
                             TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                         }));
@@ -1695,7 +1704,7 @@ namespace PerfView
                 if (parsedArgs.StopOnGen2GC)
                 {
                     LogFile.WriteLine("[Enabling StopOnGen2GC.]");
-                    triggers.Add(ETWEventTrigger.StopOnGen2GC(parsedArgs.Process, LogFile, delegate(ETWEventTrigger trigger)
+                    triggers.Add(ETWEventTrigger.StopOnGen2GC(parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
                     {
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
@@ -1704,7 +1713,7 @@ namespace PerfView
                 if (parsedArgs.StopOnAppFabricOverMsec > 0)
                 {
                     LogFile.WriteLine("[Enabling StopOnAppFabricOverMSec {0}.]", parsedArgs.StopOnAppFabricOverMsec);
-                    triggers.Add(ETWEventTrigger.AppFabricTooLong(parsedArgs.StopOnAppFabricOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate(ETWEventTrigger trigger)
+                    triggers.Add(ETWEventTrigger.AppFabricTooLong(parsedArgs.StopOnAppFabricOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
                     {
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
@@ -1713,7 +1722,7 @@ namespace PerfView
                 if (parsedArgs.StopOnEventLogMessage != null)
                 {
                     LogFile.WriteLine("[Enabling StopOnEventLogMessage with Regex pattern: '{0}'.]", parsedArgs.StopOnEventLogMessage);
-                    triggers.Add(new EventLogTrigger(parsedArgs.StopOnEventLogMessage, LogFile, delegate(EventLogTrigger trigger)
+                    triggers.Add(new EventLogTrigger(parsedArgs.StopOnEventLogMessage, LogFile, delegate (EventLogTrigger trigger)
                     {
                         TriggerStop(collectionCompleted, "StopOnEventLogMessage triggered.  Message: " + parsedArgs.StopOnEventLogMessage,
                             parsedArgs.DelayAfterTriggerSec);
@@ -1784,7 +1793,7 @@ namespace PerfView
             RunCommandDialog collectWindow = null;
 
             // Hook up the logic to cause the 'Stop' button to set 'collectionCompleted'.
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 collectWindow = GuiApp.MainWindow.CollectWindow;
                 if (collectWindow == null)      // This happens on the command line case and collectMultiple case.  Is this a hack?
@@ -1794,7 +1803,7 @@ namespace PerfView
                 }
 
                 // This callback gets called when we END collection (same button is used for start and end of collection.  
-                collectWindow.OKButton.Click += delegate(object sender, System.Windows.RoutedEventArgs e)
+                collectWindow.OKButton.Click += delegate (object sender, System.Windows.RoutedEventArgs e)
                 {
                     // Because ZIP Merge, and NoRundown affect post collection we allow the user to update them 
                     // even after collection has started by only updating the values when the collection has stopped.   
@@ -1819,7 +1828,7 @@ namespace PerfView
             Task.Factory.StartNew(delegate
             {
                 collectionCompleted.WaitOne();
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     if (collectWindow != null)
                     {
@@ -2460,7 +2469,7 @@ namespace PerfView
             // Are we activating with the GUI, then pop a dialog box
             if (App.CommandLineArgs.LogFile == null && GuiApp.MainWindow != null)
             {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     MessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
                 });
@@ -2750,7 +2759,7 @@ namespace PerfView
                     providerStr = "@" + wildCardFileName;
                 }
 
-            RETRY:
+                RETRY:
                 // Handle : style keyword, level and stacks description. 
                 m = Regex.Match(rest, @"^([^:=]*)(:(.*))?$");
                 if (m.Success)
@@ -2808,7 +2817,7 @@ namespace PerfView
                 if (rest.Length > 0)
                 {
                     // TODO FIX so that it works with things with commas and colons and equals
-                    for (var pos = 0; pos < rest.Length; )
+                    for (var pos = 0; pos < rest.Length;)
                     {
                         var regex = new Regex(@"\s*(@?\w+)=([^;]*)");
                         var match = regex.Match(rest, pos);
