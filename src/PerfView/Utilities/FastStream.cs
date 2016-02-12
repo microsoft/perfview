@@ -77,7 +77,17 @@ namespace PerfView.Utilities
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
 
-		public uint BufferIndex { get { return this.bufferIndex; } }
+		public uint BufferIndex
+		{
+			get
+			{
+				return this.bufferIndex;
+			}
+			set
+			{
+				this.bufferIndex = value;
+			}
+		}
 
 		public const int MaxRestoreLength = 256;
 
@@ -224,6 +234,15 @@ namespace PerfView.Utilities
 			while (Char.IsWhiteSpace((char)Current))
 				MoveNext();
 		}
+
+		public void SkipUpToFalse(Func<byte, bool> predicate)
+		{
+			while (predicate(this.Current))
+			{
+				MoveNext();
+			}
+		}
+
 		/// <summary>
 		/// Reads the string into the stringBuilder until a byte is read that
 		/// is one of the characters in 'endMarkers'.  
@@ -245,12 +264,12 @@ namespace PerfView.Utilities
 		/// <summary>
 		/// Reads the stream into the string builder until the last end marker on the line is hit.
 		/// </summary>
-		public void ReadAsciiStringUpToLastOnLine(char endMarker, StringBuilder sb)
+		public void ReadAsciiStringUpToLastBeforeTrue(char endMarker, StringBuilder sb, Func<byte, bool> predicate)
 		{
 			StringBuilder buffer = new StringBuilder();
 			MarkedPosition mp = this.MarkPosition();
 
-			while (this.Current != '\n' && !this.EndOfStream)
+			while (predicate(this.Current) && !this.EndOfStream)
 			{
 				if (this.Current == endMarker)
 				{
@@ -271,7 +290,7 @@ namespace PerfView.Utilities
 		/// </summary>
 		public void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> predicate)
 		{
-			while (!predicate(this.Current))
+			while (predicate(this.Current))
 			{
 				sb.Append((char)this.Current);
 				if (!this.MoveNext())
@@ -370,13 +389,14 @@ namespace PerfView.Utilities
 		/// <summary>
 		/// The length of the buffer.
 		/// </summary>
-		public uint BufferFillPosition { get { return this.bufferFillPos; } }
+		public uint FillPosition { get { return this.bufferFillPos; } }
 
 		/// <summary>
 		/// The count on the amount of stream characters read in from the last read.
 		/// </summary>
 		public uint StreamReadIn { get { return this.streamReadIn; } }
 
+		public int AllocatedLength { get { return this.buffer.Length; } }
 
 		public Buffer(Stream stream)
 		{
