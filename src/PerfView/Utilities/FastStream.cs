@@ -410,8 +410,9 @@ namespace PerfView.Utilities
 
 			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
 			this.bufferFillPos = this.streamReadIn + preamble;
+			this.streamReadIn += keepLast;
 			if (this.bufferFillPos < this.buffer.Length)
-				this.buffer[this.bufferFillPos] = this.Sentinal;       // we define 0 as the value you get after EOS.
+				this.buffer[this.bufferFillPos] = this.Sentinal;	// we define 0 as the value you get after EOS.
 
 			return MaxRestoreLength;
 		}

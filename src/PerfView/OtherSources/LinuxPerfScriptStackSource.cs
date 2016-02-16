@@ -259,6 +259,14 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public bool Parsed { get; private set; }
 
+
+		// Basically, if the length returned is -1, then there's no more stream in the
+		//   master source, otherwise, buffer should be valid with the length returned 
+		private int RequestBuffer(byte[] buffer)
+		{
+			throw new System.NotImplementedException();
+		}
+
 		/// <summary>
 		/// Parses the PerfScript .dump file given, gives one sample at a time
 		/// </summary>
@@ -272,6 +280,8 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.MasterSource.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
+
+
 
 			while (!this.MasterSource.EndOfStream)
 			{
@@ -323,6 +333,8 @@ namespace Diagnostics.Tracing.StackSources
 
 					if (i == this.MasterSource.BufferFillPosition - 2)
 					{
+						// This is just in case we don't find an end to the stack we're on... In that case we need
+						//   to make the estimatedCountPortion smaller to capture more stuff
 						return this.GetCompleteBuffer(index, count, estimatedCountPortion * 0.9);
 					}
 				}
