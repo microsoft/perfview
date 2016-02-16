@@ -264,24 +264,27 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse()
 		{
-			this.Source.MoveNext(); // Skip Sentinal value
+			this.MasterSource.MoveNext(); // Skip Sentinal value
 
-			while (Encoding.UTF8.GetPreamble().Contains(this.Source.Current)) // Skip the BOM marks if there are any
+			while (Encoding.UTF8.GetPreamble().Contains(this.MasterSource.Current)) // Skip the BOM marks if there are any
 			{
-				this.Source.MoveNext();
+				this.MasterSource.MoveNext();
 			}
 
-			this.Source.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
+			this.MasterSource.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
 
-			while (!this.Source.EndOfStream)
+			while (!this.MasterSource.EndOfStream)
 			{
-				uint startIndex = this.Source.BufferIndex;
-				uint endIndex = this.GetEndForCompleteSampleBuffer(startIndex);
+				int start = (int)this.MasterSource.BufferIndex;
+				int length = this.MasterSource.Buffer.Length - start;
+				length = this.GetCompleteBuffer(start, length);
+
+				FastStream source1 = new FastStream(this.MasterSource.Buffer, start, length);
 
 				// Create the tasks other FastStreams, we have the master FastStream Source which
 				//   basically initializes the position of the buffer and stuff
 
-				foreach (LinuxEvent linuxEvent in this.ParseBoundedBuffer(startIndex, endIndex))
+				foreach (LinuxEvent linuxEvent in this.ParseBoundedBuffer(source1))
 				{
 					yield return linuxEvent;
 				}
@@ -289,45 +292,49 @@ namespace Diagnostics.Tracing.StackSources
 				// Wait until all the tasks are finished
 
 				// We need to refill the buffer as much as we can
-				this.Source.BufferIndex = this.Buffer.FillBufferFromStreamPosition(keepLast: this.Buffer.FillPosition - endIndex);
+				this.MasterSource.FillBufferFromStreamPosition(keepLast: (this.MasterSource.BufferFillPosition - (uint)start) - (uint)length);
 
 				// This is to ensure that we start at the beginning of sample next loop and also so that we hit
 				//   the end of the stream if there's nothing left.
-				this.Source.SkipWhiteSpace();
+				this.MasterSource.SkipWhiteSpace();
 			}
 		}
 
-		private uint GetEndForCompleteSampleBuffer(uint startIndex, double estimatedBufferPortion = 0.8)
+		private int GetCompleteBuffer(int index, int count, double estimatedCountPortion = 0.8)
 		{
-			if (this.Buffer.FillPosition < this.Buffer.AllocatedLength)
+			if (this.MasterSource.BufferFillPosition - index < count)
 			{
-				return this.Buffer.FillPosition;
+				return (int)this.MasterSource.BufferFillPosition - index;
 			}
-
-			uint endIndex = (uint)(this.Buffer.FillPosition * estimatedBufferPortion);
-
-			for (uint i = endIndex; i < this.Buffer.FillPosition - 1; i++)
+			else
 			{
-				int bytesAhead = (int)(i - this.Source.BufferIndex);
-				endIndex = i;
-				if (this.IsEndOfSample(this.Source.Peek(bytesAhead), this.Source.Peek(bytesAhead + 1)))
+				int newCount = (int)(this.MasterSource.BufferFillPosition * estimatedCountPortion);
+
+				for (int i = index + newCount; i < this.MasterSource.BufferFillPosition - 1; i++)
 				{
-					break;
+					int bytesAhead = (int)(i - this.MasterSource.BufferIndex);
+					newCount++;
+					if (this.IsEndOfSample(this.MasterSource,
+						this.MasterSource.Peek(bytesAhead),
+						this.MasterSource.Peek(bytesAhead + 1)))
+					{
+						break;
+					}
+
+					if (i == this.MasterSource.BufferFillPosition - 2)
+					{
+						return this.GetCompleteBuffer(index, count, estimatedCountPortion * 0.9);
+					}
 				}
 
-				if (i == this.Buffer.FillPosition - 2)
-				{
-					return this.GetEndForCompleteSampleBuffer(startIndex, estimatedBufferPortion * 0.9);
-				}
+				return newCount;
 			}
-
-			return endIndex;
 		}
 
-		private IEnumerable<LinuxEvent> ParseBoundedBuffer(uint startIndex, uint endIndex)
+		private IEnumerable<LinuxEvent> ParseBoundedBuffer(FastStream source)
 		{
 			Regex rgx = this.Pattern;
-			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, endIndex))
+			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
 			{
 				if (linuxEvent != null)
 				{
@@ -363,14 +370,12 @@ namespace Diagnostics.Tracing.StackSources
 		public LinuxPerfScriptEventParser(Stream stream)
 		{
 			Contract.Requires(stream != null, nameof(stream));
-			this.Buffer = new Buffer(stream);
-			this.Source = new FastStream(this.Buffer);
+			this.MasterSource = new FastStream(stream);
 			this.SetDefaultValues();
 		}
 
 		#region fields
-		private FastStream Source { get; }
-		private Buffer Buffer { get; }
+		private FastStream MasterSource { get; }
 		private double CurrentTime { get; set; }
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
@@ -384,18 +389,21 @@ namespace Diagnostics.Tracing.StackSources
 			this.MaxSamples = 50000;
 		}
 
-		private IEnumerable<LinuxEvent> NextEvent(Regex regex, uint endIndex)
+		private IEnumerable<LinuxEvent> NextEvent(Regex regex, FastStream source)
 		{
 
 			string line = string.Empty;
+
+			// Skip the 0
+			source.MoveNext();
 
 			while (true)
 			{
 
 				// This is to make sure we don't leave the Buffer and accidently write to it!
-				this.Source.SkipUpToFalse(delegate (byte c)
+				source.SkipUpToFalse(delegate (byte c)
 				{
-					if (this.Source.BufferIndex < endIndex - 1 && char.IsWhiteSpace((char)c))
+					if (!source.EndOfStream && char.IsWhiteSpace((char)c))
 					{
 						return true;
 					}
@@ -403,7 +411,7 @@ namespace Diagnostics.Tracing.StackSources
 					return false;
 				});
 
-				if (this.Source.BufferIndex >= endIndex - 1)
+				if (source.EndOfStream)
 				{
 					break;
 				}
@@ -413,35 +421,35 @@ namespace Diagnostics.Tracing.StackSources
 				StringBuilder sb = new StringBuilder();
 
 				// Command - Stops at first number AFTER whitespace
-				while (!this.IsNumberChar((char)this.Source.Current))
+				while (!this.IsNumberChar((char)source.Current))
 				{
 					sb.Append(' ');
-					this.Source.ReadAsciiStringUpToTrue(sb, delegate (byte c)
+					source.ReadAsciiStringUpToTrue(sb, delegate (byte c)
 					{
 						return !char.IsWhiteSpace((char)c);
 					});
-					this.Source.SkipWhiteSpace();
+					source.SkipWhiteSpace();
 				}
 
 				string comm = sb.ToString().Trim();
 				sb.Clear();
 
 				// Process ID
-				int pid = this.Source.ReadInt();
-				this.Source.MoveNext(); // Move past the "/"
+				int pid = source.ReadInt();
+				source.MoveNext(); // Move past the "/"
 
 				// Thread ID
-				int tid = this.Source.ReadInt();
+				int tid = source.ReadInt();
 
 				// CPU
-				this.Source.SkipWhiteSpace();
-				this.Source.MoveNext(); // Move past the "["
-				int cpu = this.Source.ReadInt();
-				this.Source.MoveNext(); // Move past the "]"
+				source.SkipWhiteSpace();
+				source.MoveNext(); // Move past the "["
+				int cpu = source.ReadInt();
+				source.MoveNext(); // Move past the "]"
 
 				// Time
-				this.Source.SkipWhiteSpace();
-				this.Source.ReadAsciiStringUpTo(':', sb);
+				source.SkipWhiteSpace();
+				source.ReadAsciiStringUpTo(':', sb);
 
 				double time = double.Parse(sb.ToString());
 
@@ -453,27 +461,27 @@ namespace Diagnostics.Tracing.StackSources
 				}
 				this.CurrentTime = time - this.StartTime;
 				time = this.CurrentTime;
-				this.Source.MoveNext(); // Move past ":"
+				source.MoveNext(); // Move past ":"
 
 				// Time Property
-				this.Source.SkipWhiteSpace();
+				source.SkipWhiteSpace();
 				int timeProp = -1;
-				if (this.IsNumberChar((char)this.Source.Current))
+				if (this.IsNumberChar((char)source.Current))
 				{
-					timeProp = this.Source.ReadInt();
+					timeProp = source.ReadInt();
 				}
 
 				// Event Name
-				this.Source.SkipWhiteSpace();
-				this.Source.ReadAsciiStringUpTo(':', sb);
+				source.SkipWhiteSpace();
+				source.ReadAsciiStringUpTo(':', sb);
 				string eventName = sb.ToString();
 				sb.Clear();
-				this.Source.MoveNext();
+				source.MoveNext();
 
 				// Event Properties
 				// I mark a position here because I need to check what type of event this is without screwing up the stream
-				var markedPosition = this.Source.MarkPosition();
-				this.Source.ReadAsciiStringUpTo('\n', sb);
+				var markedPosition = source.MarkPosition();
+				source.ReadAsciiStringUpTo('\n', sb);
 				string eventDetails = sb.ToString().Trim();
 				sb.Clear();
 
@@ -487,8 +495,8 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					while (true)
 					{
-						this.Source.MoveNext();
-						if (this.IsEndOfSample(this.Source.Current, this.Source.Peek(1)))
+						source.MoveNext();
+						if (this.IsEndOfSample(source, source.Current, source.Peek(1)))
 						{
 							break;
 						}
@@ -507,12 +515,12 @@ namespace Diagnostics.Tracing.StackSources
 					ScheduleSwitch schedSwitch = null;
 					if (eventKind == EventKind.Scheduler)
 					{
-						this.Source.RestoreToMark(markedPosition);
-						schedSwitch = ReadScheduleSwitch();
-						this.Source.SkipUpTo('\n');
+						source.RestoreToMark(markedPosition);
+						schedSwitch = this.ReadScheduleSwitch(source);
+						source.SkipUpTo('\n');
 					}
 
-					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame, endIndex);
+					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame, source);
 
 					if (eventKind == EventKind.Scheduler)
 					{
@@ -528,12 +536,12 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private bool IsEndOfSample(byte current, byte peek1)
+		private bool IsEndOfSample(FastStream source, byte current, byte peek1)
 		{
-			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || this.Source.EndOfStream;
+			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
 		}
 
-		private List<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame, uint endIndex)
+		private List<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame, FastStream source)
 		{
 			List<Frame> frames = new List<Frame>();
 
@@ -542,9 +550,9 @@ namespace Diagnostics.Tracing.StackSources
 				frames.Add(threadTimeFrame);
 			}
 
-			while (this.Source.BufferIndex < endIndex - 1 && !this.IsEndOfSample(this.Source.Current, this.Source.Peek(1)))
+			while (!this.IsEndOfSample(source, source.Current, source.Peek(1)))
 			{
-				frames.Add(this.ReadFrame(endIndex));
+				frames.Add(this.ReadFrame(source));
 			}
 
 			frames.Add(new ThreadFrame(threadID, "Thread"));
@@ -553,22 +561,22 @@ namespace Diagnostics.Tracing.StackSources
 			return frames;
 		}
 
-		private StackFrame ReadFrame(uint endIndex)
+		private StackFrame ReadFrame(FastStream source)
 		{
 			StringBuilder sb = new StringBuilder();
 
 			// Address
-			this.Source.SkipWhiteSpace();
-			this.Source.ReadAsciiStringUpTo(' ', sb);
+			source.SkipWhiteSpace();
+			source.ReadAsciiStringUpTo(' ', sb);
 			string address = sb.ToString();
 			sb.Clear();
 
 			// Trying to get the module and symbol...
-			this.Source.SkipWhiteSpace();
+			source.SkipWhiteSpace();
 
-			this.Source.ReadAsciiStringUpToLastBeforeTrue('(', sb, delegate (byte c)
+			source.ReadAsciiStringUpToLastBeforeTrue('(', sb, delegate (byte c)
 			{
-				if (c != '\n' && this.Source.BufferIndex < endIndex - 1)
+				if (c != '\n' && !source.EndOfStream)
 				{
 					return true;
 				}
@@ -578,23 +586,7 @@ namespace Diagnostics.Tracing.StackSources
 			string assumedSymbol = sb.ToString();
 			sb.Clear();
 
-			while (true)
-			{
-				if (this.Source.Current == '\n')
-				{
-					break;
-				}
-
-				sb.Append((char)this.Source.Current);
-
-				if (this.Source.BufferIndex < endIndex - 1)
-				{
-					this.Source.MoveNext();
-					continue;
-				}
-
-				break;
-			}
+			source.ReadAsciiStringUpTo('\n', sb);
 
 			string assumedModule = sb.ToString();
 			sb.Clear();
@@ -616,50 +608,50 @@ namespace Diagnostics.Tracing.StackSources
 			return new StackFrame(address, actualModule, actualSymbol);
 		}
 
-		private ScheduleSwitch ReadScheduleSwitch()
+		private ScheduleSwitch ReadScheduleSwitch(FastStream source)
 		{
 			StringBuilder sb = new StringBuilder();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			this.Source.ReadAsciiStringUpTo(' ', sb);
+			source.ReadAsciiStringUpTo(' ', sb);
 			string prevComm = sb.ToString();
 			sb.Clear();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			int prevTid = this.Source.ReadInt();
+			int prevTid = source.ReadInt();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			int prevPrio = this.Source.ReadInt();
+			int prevPrio = source.ReadInt();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			char prevState = (char)this.Source.Current;
+			char prevState = (char)source.Current;
 
-			this.Source.MoveNext();
-			this.Source.SkipUpTo('n'); // this is to bypass the ==>
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.MoveNext();
+			source.SkipUpTo('n'); // this is to bypass the ==>
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			this.Source.ReadAsciiStringUpTo(' ', sb);
+			source.ReadAsciiStringUpTo(' ', sb);
 			string nextComm = sb.ToString();
 			sb.Clear();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			int nextTid = this.Source.ReadInt();
+			int nextTid = source.ReadInt();
 
-			this.Source.SkipUpTo('=');
-			this.Source.MoveNext();
+			source.SkipUpTo('=');
+			source.MoveNext();
 
-			int nextPrio = this.Source.ReadInt();
+			int nextPrio = source.ReadInt();
 
 			return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
 		}
