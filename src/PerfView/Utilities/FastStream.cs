@@ -34,14 +34,6 @@ namespace PerfView.Utilities
 			: this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
 		{
 		}
-		public FastStream(Stream stream)
-		{
-			this.stream = stream;
-			this.buffer = new byte[16384];
-			this.bufferFillPos = 1;
-			this.bufferIndex = 0;
-			this.streamReadIn = 1;
-		}
 
 		// Allows for a byte array while keeping a stream
 		public FastStream(byte[] buffer, int length) :
@@ -54,11 +46,62 @@ namespace PerfView.Utilities
 		{
 		}
 
-		public byte[] Buffer { get { return this.buffer; } }
+		public FastStream(Stream stream)
+		{
+			this.stream = stream;
+			this.buffer = new byte[16384];
+			this.bufferFillPos = 1;
+			this.bufferIndex = 0;
+			this.streamReadIn = 1;
+		}
 
+		/// <summary>
+		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
+		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
+		/// there is a better 'rare' value to use as an end of stream marker.  
+		/// </summary>
+		public byte Sentinal = 0;
+		public byte[] Buffer { get { return this.buffer; } }
 		public long Position { get; private set; }
 		public uint BufferFillPosition { get { return this.bufferFillPos; } }
 		public uint BufferIndex { get { return this.bufferIndex; } }
+
+		public bool MoveNext()
+		{
+			IncReadPos();
+			bool ret = true;
+			if (this.bufferIndex >= this.bufferFillPos)
+			{
+				ret = this.MoveNextHelper();
+			}
+
+#if DEBUG
+            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
+#endif
+			return ret;
+		}
+
+		/// <summary>
+		/// Returns a number of bytes ahead without advancing the pointer. 
+		/// Peek(0) is the same as calling Current.  
+		/// </summary>
+		/// <param name="bytesAhead"></param>
+		/// <returns></returns>
+		public byte Peek(int bytesAhead)
+		{
+			if (bytesAhead <= -(int)MaxRestoreLength)
+			{
+				throw new Exception("Can't peek back more than restore length");
+			}
+
+			int peekIndex = bytesAhead + (int)this.bufferIndex;
+			if (peekIndex >= this.bufferFillPos)
+			{
+				peekIndex = (int)this.PeekHelper((uint)bytesAhead);
+			}
+
+			return peekIndex < 0 ? this.Sentinal : this.buffer[peekIndex];
+		}
 
 		public struct MarkedPosition
 		{
@@ -93,20 +136,6 @@ namespace PerfView.Utilities
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
 
-		public bool MoveNext()
-		{
-			IncReadPos();
-			bool ret = true;
-			if (this.bufferIndex >= this.bufferFillPos)
-			{
-				ret = this.MoveNextHelper();
-			}
-
-#if DEBUG
-            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
-#endif
-			return ret;
-		}
 		public byte ReadChar()
 		{
 			this.MoveNext();
@@ -311,28 +340,6 @@ namespace PerfView.Utilities
 			}
 		}
 
-		/// <summary>
-		/// Returns a number of bytes ahead without advancing the pointer. 
-		/// Peek(0) is the same as calling Current.  
-		/// </summary>
-		/// <param name="bytesAhead"></param>
-		/// <returns></returns>
-		public byte Peek(int bytesAhead)
-		{
-			if (bytesAhead <= -(int)MaxRestoreLength)
-			{
-				throw new Exception("Can't peek back more than restore length");
-			}
-
-			int peekIndex = bytesAhead + (int)this.bufferIndex;
-			if (peekIndex >= this.bufferFillPos)
-			{
-				peekIndex = (int)this.PeekHelper((uint)bytesAhead);
-			}
-
-			return peekIndex < 0 ? this.Sentinal : this.buffer[peekIndex];
-		}
-
 		public Stream BaseStream { get { return this.stream; } }
 
 		#region privateMethods
@@ -380,13 +387,6 @@ namespace PerfView.Utilities
 				value = value * 16 + digit;
 			}
 		}
-
-		/// <summary>
-		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
-		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
-		/// there is a better 'rare' value to use as an end of stream marker.  
-		/// </summary>
-		public byte Sentinal = 0;
 
 		/// <summary>
 		/// Fills the buffer starting from the current position on the stream.
