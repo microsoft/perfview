@@ -388,9 +388,17 @@ namespace Microsoft.Diagnostics.Tracing
                                 pdbRelativePath = m.Groups[1].Value;
                             else
                             {
-                                Log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
-                                Log.WriteLine("         Unzip this ETL and PDB by hand to use this PDB.");
-                                continue;
+                                // .diagsession files (created by the Visual Studio Diagnostic Hub) put PDBs in a path like
+                                // 194BAE98-C4ED-470E-9204-1F9389FC9DC1\symcache\xyz.pdb
+                                m = Regex.Match(archivePath, @"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\symcache\\(.*)", RegexOptions.IgnoreCase);
+                                if (m.Success)
+                                    pdbRelativePath = m.Groups[1].Value;
+                                else
+                                {
+                                    Log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
+                                    Log.WriteLine("         Unzip this ETL and PDB by hand to use this PDB.");
+                                    continue;
+                                }
                             }
                         }
 
