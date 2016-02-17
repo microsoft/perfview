@@ -25,19 +25,20 @@ namespace Diagnostics.Tracing.StackSources
 		};
 
 		private bool DoThreadTime { get; }
-		private double LastTime { get; set; }
+
+		private List<StackSourceSample> samples;
 
 		private StackSourceCallStackIndex CurrentStackIndex { get; set; }
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
+			this.samples = new List<StackSourceSample>();
+
 			this.DoThreadTime = doThreadTime;
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
-				this.parser = new LinuxPerfScriptEventParser();
-
-				this.LastTime = 0;
+				this.parseController = new PerfScriptToSampleController(stream);
 
 				if (this.DoThreadTime)
 				{
@@ -65,8 +66,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-
-		private readonly LinuxPerfScriptEventParser parser;
+		private readonly PerfScriptToSampleController parseController;
 
 		private Dictionary<int, double> blockedThreads;
 		private List<ThreadPeriod> threadBlockedPeriods;
@@ -91,37 +91,45 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		private object sampleLock = new object();
+
 		internal void AddLinuxEventAsSample(LinuxEvent linuxEvent)
 		{
-			this.LastTime = linuxEvent.Time;
-
-			if (this.DoThreadTime)
+			lock(sampleLock)
 			{
-				this.AnalyzeSampleForBlockedTime(linuxEvent);
+				if (this.DoThreadTime)
+				{
+					this.AnalyzeSampleForBlockedTime(linuxEvent);
+				}
+
+				IEnumerable<Frame> frames = linuxEvent.CallerStacks;
+
+				this.CurrentStackIndex = this.InternFrames(frames.GetEnumerator(), this.CurrentStackIndex, linuxEvent.ThreadID, this.DoThreadTime);
+
+				var sample = new StackSourceSample(this);
+				sample.StackIndex = this.CurrentStackIndex;
+				sample.TimeRelativeMSec = linuxEvent.Time;
+				sample.Metric = 1;
+				this.samples.Add(sample);
 			}
-
-			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
-
-			this.CurrentStackIndex = this.InternFrames(frames.GetEnumerator(), this.CurrentStackIndex, linuxEvent.ThreadID, this.DoThreadTime);
-
-			var sample = new StackSourceSample(this);
-			sample.StackIndex = this.CurrentStackIndex;
-			sample.TimeRelativeMSec = linuxEvent.Time;
-			sample.Metric = 1;
-			this.AddSample(sample);
 		}
 
 		private void InternAllLinuxEvents(Stream stream)
 		{
-			foreach (LinuxEvent linuxEvent in this.parser.Parse(stream))
-			{
-				this.AddLinuxEventAsSample(linuxEvent);
-			}
+
+			this.parseController.ParseOnto(this);
+
+			this.samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
 
 			if (this.DoThreadTime)
 			{
-				this.FlushBlockedThreadsAt(this.LastTime);
+				this.FlushBlockedThreadsAt(this.samples.Last().TimeRelativeMSec);
 				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
+
+			foreach (var sample in samples)
+			{
+				this.AddSample(sample);
 			}
 
 			this.Interner.DoneInterning();
@@ -259,20 +267,19 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	internal class Parallelizer
+	internal class PerfScriptToSampleController
 	{
-		private readonly Task[] tasks;
 		private readonly LinuxPerfScriptEventParser parser;
 		private readonly FastStream masterSource;
 
 
-		internal Parallelizer(Stream source)
+		internal PerfScriptToSampleController(Stream source)
 		{
-			this.tasks = new Task[4];
+			this.masterSource = new FastStream(source);
 			this.parser = new LinuxPerfScriptEventParser();
 		}
 
-		internal void ParallelParse(LinuxPerfScriptStackSource stackSource)
+		internal void ParseOnto(LinuxPerfScriptStackSource stackSource)
 		{
 			this.parser.SkipPreamble(masterSource);
 
@@ -296,6 +303,8 @@ namespace Diagnostics.Tracing.StackSources
 
 				tasks[i].Start();
 			}
+
+			Task.WaitAll(tasks);
 		}
 
 		private object bufferLock = new object();
@@ -418,6 +427,11 @@ namespace Diagnostics.Tracing.StackSources
 
 		public IEnumerable<LinuxEvent> ParseSamples(FastStream source)
 		{
+			if (source.Current == 0 && !source.EndOfStream)
+			{
+				source.MoveNext();
+			}
+
 			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
 			{
