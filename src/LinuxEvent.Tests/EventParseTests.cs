@@ -47,8 +47,8 @@ namespace LinuxTracing.Tests
 		{
 			using (Stream stream = File.Open(source, FileMode.Open))
 			{
-				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
-				List<LinuxEvent> samples = parser.Parse().ToList();
+				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
+				List<LinuxEvent> samples = parser.Parse(stream).ToList();
 
 				// Need to make sure we have the same amount of samples
 				Assert.Equal(commands.Length, parser.EventCount);

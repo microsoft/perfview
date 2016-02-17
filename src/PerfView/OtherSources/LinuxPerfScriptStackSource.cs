@@ -30,8 +30,8 @@ namespace Diagnostics.Tracing.StackSources
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
-				this.parser = new LinuxPerfScriptEventParser(stream);
-				this.InternAllLinuxEvents(doThreadTime);
+				this.parser = new LinuxPerfScriptEventParser();
+				this.InternAllLinuxEvents(stream, doThreadTime);
 				stream.Close();
 			}
 			archive?.Dispose();
@@ -76,7 +76,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private void InternAllLinuxEvents(bool doThreadTime)
+		private void InternAllLinuxEvents(Stream stream, bool doThreadTime)
 		{
 			if (doThreadTime)
 			{
@@ -88,7 +88,7 @@ namespace Diagnostics.Tracing.StackSources
 			double lastTime = 0;
 
 			StackSourceCallStackIndex stackIndex = 0;
-			foreach (LinuxEvent linuxEvent in this.parser.Parse())
+			foreach (LinuxEvent linuxEvent in this.parser.Parse(stream))
 			{
 				lastTime = linuxEvent.Time;
 
@@ -249,6 +249,27 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	internal class Parallelizer
+	{
+		private readonly Task[] tasks;
+		private readonly LinuxPerfScriptEventParser parser;
+		private readonly FastStream masterSource;
+
+
+		internal Parallelizer(Stream source)
+		{
+			this.tasks = new Task[4];
+			this.parser = new LinuxPerfScriptEventParser();
+		}
+
+		internal List<object> ParallelParse()
+		{
+			this.parser.SkipPreamble(masterSource);
+
+			return null;
+		}
+	}
+
 	public class LinuxPerfScriptEventParser
 	{
 		/// <summary>
@@ -266,43 +287,60 @@ namespace Diagnostics.Tracing.StackSources
 		// Basically, if the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
 		// Note: This needs to be thread safe
-		private int GetNextBuffer(byte[] buffer)
+		private int GetNextBuffer(FastStream source, byte[] buffer)
 		{
 			lock (bufferLock)
 			{
-				if (this.MasterSource.EndOfStream)
+				if (source.EndOfStream)
 				{
 					return -1;
 				}
 
-				int start = (int)this.MasterSource.BufferIndex;
-				int length = this.MasterSource.Buffer.Length / 4;
+				int start = (int)source.BufferIndex;
+				int length = source.Buffer.Length / 4;
 
-				length = this.GetCompleteBuffer(start, length);
+				length = this.GetCompleteBuffer(source, start, length);
 
-				System.Buffer.BlockCopy(src: this.MasterSource.Buffer, srcOffset: start,
+				System.Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
 										dst: buffer, dstOffset: 0, count: length);
 
-				this.MasterSource.FillBufferFromStreamPosition(this.MasterSource.BufferFillPosition - (uint)(start + length));
+				source.FillBufferFromStreamPosition(source.BufferFillPosition - (uint)(start + length));
 
 				return length;
 			}
 		}
 
+		public void SkipPreamble(FastStream source)
+		{
+			source.MoveNext(); // Skip Sentinal value
+
+			while (Encoding.UTF8.GetPreamble().Contains(source.Current)) // Skip the BOM marks if there are any
+			{
+				source.MoveNext();
+			}
+
+			source.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
+		}
+
+		public IEnumerable<LinuxEvent> Parse(string filename)
+		{
+			return this.Parse(new FastStream(filename));
+		}
+
+		public IEnumerable<LinuxEvent> Parse(Stream stream)
+		{
+			return this.Parse(new FastStream(stream));
+		}
+
 		/// <summary>
 		/// Parses the PerfScript .dump file given, gives one sample at a time
 		/// </summary>
-		public IEnumerable<LinuxEvent> Parse()
+		public IEnumerable<LinuxEvent> Parse(FastStream source)
 		{
-			this.MasterSource.MoveNext(); // Skip Sentinal value
+			this.SkipPreamble(source);
 
-			while (Encoding.UTF8.GetPreamble().Contains(this.MasterSource.Current)) // Skip the BOM marks if there are any
-			{
-				this.MasterSource.MoveNext();
-			}
-
-			this.MasterSource.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
-
+			return this.ParseSamples(source);
+			/*
 			ConcurrentBag<LinuxEvent> concurrentBag = new ConcurrentBag<LinuxEvent>();
 			Task[] tasks = new Task[4];
 			for (int i = 0; i < 4; i++)
@@ -325,45 +363,59 @@ namespace Diagnostics.Tracing.StackSources
 				tasks[i].Start();
 			}
 
-			// Waiting for all the tasks to finish parsing :)
-			Task.WaitAll(tasks);
 
-			while (!concurrentBag.IsEmpty)
+			while (!TasksComplete(tasks))
 			{
-				LinuxEvent linuxEvent;
-				if (concurrentBag.TryTake(out linuxEvent))
+				while (!concurrentBag.IsEmpty)
 				{
-					yield return linuxEvent;
+					LinuxEvent linuxEvent;
+					if (concurrentBag.TryTake(out linuxEvent))
+					{
+						yield return linuxEvent;
+					}
 				}
-			}
+			}*/
 		}
 
-		private int GetCompleteBuffer(int index, int count, double estimatedCountPortion = 0.8)
+		private bool TasksComplete(Task[] tasks)
 		{
-			if (this.MasterSource.BufferFillPosition - index < count)
+			for (int i = 0; i < tasks.Length; i++)
 			{
-				return (int)this.MasterSource.BufferFillPosition - index;
+				if (tasks[i]?.IsCompleted != true)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		private int GetCompleteBuffer(FastStream source, int index, int count, double estimatedCountPortion = 0.8)
+		{
+			if (source.BufferFillPosition - index < count)
+			{
+				return (int)source.BufferFillPosition - index;
 			}
 			else
 			{
-				int newCount = (int)(this.MasterSource.BufferFillPosition * estimatedCountPortion);
+				int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
 
-				for (int i = index + newCount; i < this.MasterSource.BufferFillPosition - 1; i++)
+				for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
 				{
-					int bytesAhead = (int)(i - this.MasterSource.BufferIndex);
+					int bytesAhead = (int)(i - source.BufferIndex);
 					newCount++;
-					if (this.IsEndOfSample(this.MasterSource,
-						this.MasterSource.Peek(bytesAhead),
-						this.MasterSource.Peek(bytesAhead + 1)))
+					if (this.IsEndOfSample(source,
+						source.Peek(bytesAhead),
+						source.Peek(bytesAhead + 1)))
 					{
 						break;
 					}
 
-					if (i == this.MasterSource.BufferFillPosition - 2)
+					if (i == source.BufferFillPosition - 2)
 					{
 						// This is just in case we don't find an end to the stack we're on... In that case we need
 						//   to make the estimatedCountPortion smaller to capture more stuff
-						return this.GetCompleteBuffer(index, count, estimatedCountPortion * 0.9);
+						return this.GetCompleteBuffer(source, index, count, estimatedCountPortion * 0.9);
 					}
 				}
 
@@ -371,7 +423,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private IEnumerable<LinuxEvent> ParseBuffer(FastStream source)
+		public IEnumerable<LinuxEvent> ParseSamples(FastStream source)
 		{
 			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
@@ -402,20 +454,12 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public long MaxSamples { get; set; }
 
-		public LinuxPerfScriptEventParser(string path) :
-			this(new FileStream(path, FileMode.Open))
+		public LinuxPerfScriptEventParser()
 		{
-		}
-
-		public LinuxPerfScriptEventParser(Stream stream)
-		{
-			Contract.Requires(stream != null, nameof(stream));
-			this.MasterSource = new FastStream(stream);
 			this.SetDefaultValues();
 		}
 
 		#region fields
-		private FastStream MasterSource { get; }
 		private double CurrentTime { get; set; }
 		private bool startTimeSet = false;
 		private double StartTime { get; set; }
@@ -433,9 +477,6 @@ namespace Diagnostics.Tracing.StackSources
 		{
 
 			string line = string.Empty;
-
-			// Skip the 0
-			source.MoveNext();
 
 			while (true)
 			{
