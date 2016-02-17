@@ -313,27 +313,19 @@ namespace Diagnostics.Tracing.StackSources
 					byte[] buffer = new byte[16384];
 					while ((length = this.GetNextBuffer(buffer)) != -1)
 					{
-						FastStream source1 = new FastStream(buffer, length);
+						FastStream bufferPart = new FastStream(buffer, length);
 
-						// Create the tasks other FastStreams, we have the master FastStream Source which
-						//   basically initializes the position of the buffer and stuff
-
-						foreach (LinuxEvent linuxEvent in this.ParseBuffer(source1))
+						foreach (LinuxEvent linuxEvent in this.ParseBuffer(bufferPart))
 						{
 							concurrentBag.Add(linuxEvent);
 						}
-
-						// Wait until all the tasks are finished
-
-						// This is to ensure that we start at the beginning of sample next loop and also so that we hit
-						//   the end of the stream if there's nothing left.
-						this.MasterSource.SkipWhiteSpace();
 					}
 				});
 
 				tasks[i].Start();
 			}
 
+			// Waiting for all the tasks to finish parsing :)
 			Task.WaitAll(tasks);
 
 			while (!concurrentBag.IsEmpty)
