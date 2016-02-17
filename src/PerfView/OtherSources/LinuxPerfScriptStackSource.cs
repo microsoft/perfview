@@ -11,6 +11,8 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 using System.Diagnostics.Contracts;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -260,11 +262,31 @@ namespace Diagnostics.Tracing.StackSources
 		public bool Parsed { get; private set; }
 
 
+		private object bufferLock = new object();
 		// Basically, if the length returned is -1, then there's no more stream in the
-		//   master source, otherwise, buffer should be valid with the length returned 
-		private int RequestBuffer(byte[] buffer)
+		//   master source, otherwise, buffer should be valid with the length returned
+		// Note: This needs to be thread safe
+		private int GetNextBuffer(byte[] buffer)
 		{
-			throw new System.NotImplementedException();
+			lock (bufferLock)
+			{
+				if (this.MasterSource.EndOfStream)
+				{
+					return -1;
+				}
+
+				int start = (int)this.MasterSource.BufferIndex;
+				int length = this.MasterSource.Buffer.Length / 4;
+
+				length = this.GetCompleteBuffer(start, length);
+
+				System.Buffer.BlockCopy(src: this.MasterSource.Buffer, srcOffset: start,
+										dst: buffer, dstOffset: 0, count: length);
+
+				this.MasterSource.FillBufferFromStreamPosition(this.MasterSource.BufferFillPosition - (uint)(start + length));
+
+				return length;
+			}
 		}
 
 		/// <summary>
@@ -281,32 +303,46 @@ namespace Diagnostics.Tracing.StackSources
 
 			this.MasterSource.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
 
-
-
-			while (!this.MasterSource.EndOfStream)
+			ConcurrentBag<LinuxEvent> concurrentBag = new ConcurrentBag<LinuxEvent>();
+			Task[] tasks = new Task[4];
+			for (int i = 0; i < 4; i++)
 			{
-				int start = (int)this.MasterSource.BufferIndex;
-				int length = this.MasterSource.Buffer.Length - start;
-				length = this.GetCompleteBuffer(start, length);
+				tasks[i] = new Task(delegate ()
+				{
+					int length;
+					byte[] buffer = new byte[16384];
+					while ((length = this.GetNextBuffer(buffer)) != -1)
+					{
+						FastStream source1 = new FastStream(buffer, length);
 
-				FastStream source1 = new FastStream(this.MasterSource.Buffer, start, length);
+						// Create the tasks other FastStreams, we have the master FastStream Source which
+						//   basically initializes the position of the buffer and stuff
 
-				// Create the tasks other FastStreams, we have the master FastStream Source which
-				//   basically initializes the position of the buffer and stuff
+						foreach (LinuxEvent linuxEvent in this.ParseBuffer(source1))
+						{
+							concurrentBag.Add(linuxEvent);
+						}
 
-				foreach (LinuxEvent linuxEvent in this.ParseBoundedBuffer(source1))
+						// Wait until all the tasks are finished
+
+						// This is to ensure that we start at the beginning of sample next loop and also so that we hit
+						//   the end of the stream if there's nothing left.
+						this.MasterSource.SkipWhiteSpace();
+					}
+				});
+
+				tasks[i].Start();
+			}
+
+			Task.WaitAll(tasks);
+
+			while (!concurrentBag.IsEmpty)
+			{
+				LinuxEvent linuxEvent;
+				if (concurrentBag.TryTake(out linuxEvent))
 				{
 					yield return linuxEvent;
 				}
-
-				// Wait until all the tasks are finished
-
-				// We need to refill the buffer as much as we can
-				this.MasterSource.FillBufferFromStreamPosition(keepLast: (this.MasterSource.BufferFillPosition - (uint)start) - (uint)length);
-
-				// This is to ensure that we start at the beginning of sample next loop and also so that we hit
-				//   the end of the stream if there's nothing left.
-				this.MasterSource.SkipWhiteSpace();
 			}
 		}
 
@@ -343,7 +379,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private IEnumerable<LinuxEvent> ParseBoundedBuffer(FastStream source)
+		private IEnumerable<LinuxEvent> ParseBuffer(FastStream source)
 		{
 			Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
