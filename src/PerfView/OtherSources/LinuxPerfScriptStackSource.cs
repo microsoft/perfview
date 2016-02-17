@@ -68,9 +68,9 @@ namespace Diagnostics.Tracing.StackSources
 		#region private
 		private readonly PerfScriptToSampleController parseController;
 
-		private Dictionary<int, double> blockedThreads;
-		private List<ThreadPeriod> threadBlockedPeriods;
-		private Dictionary<int, int> cpuThreadUsage;
+		private readonly Dictionary<int, double> blockedThreads;
+		private readonly List<ThreadPeriod> threadBlockedPeriods;
+		private readonly Dictionary<int, int> cpuThreadUsage;
 
 		private enum StateThread
 		{
@@ -116,7 +116,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		private void InternAllLinuxEvents(Stream stream)
 		{
-
+			// This is where the parallel stuff happens
 			this.parseController.ParseOnto(this);
 
 			this.samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
@@ -148,7 +148,7 @@ namespace Diagnostics.Tracing.StackSources
 				this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, endTime));
 			}
 
-			this.blockedThreads = null;
+			this.blockedThreads.Clear();
 		}
 
 		private void AnalyzeSampleForBlockedTime(LinuxEvent linuxEvent)
