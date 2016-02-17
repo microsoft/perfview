@@ -120,6 +120,11 @@ namespace Diagnostics.Tracing.StackSources
 			this.parseController.ParseOnto(this);
 
 			this.samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
+			double startTime = this.samples[0].TimeRelativeMSec;
+			for (int i = 0; i < samples.Count; i++)
+			{
+				this.samples[i].TimeRelativeMSec -= startTime;
+			}
 
 			if (this.DoThreadTime)
 			{
@@ -284,12 +289,12 @@ namespace Diagnostics.Tracing.StackSources
 			this.parser.SkipPreamble(masterSource);
 
 			Task[] tasks = new Task[4];
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < tasks.Length; i++)
 			{
 				tasks[i] = new Task(delegate ()
 				{
 					int length;
-					byte[] buffer = new byte[16384];
+					byte[] buffer = new byte[this.masterSource.Buffer.Length];
 					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
 					{
 						FastStream bufferPart = new FastStream(buffer, length);
@@ -325,7 +330,7 @@ namespace Diagnostics.Tracing.StackSources
 
 				length = this.GetCompleteBuffer(source, start, length);
 
-				System.Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
+				Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
 										dst: buffer, dstOffset: 0, count: length);
 
 				source.FillBufferFromStreamPosition(source.BufferFillPosition - (uint)(start + length));
@@ -360,6 +365,7 @@ namespace Diagnostics.Tracing.StackSources
 				for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
 				{
 					int bytesAhead = (int)(i - source.BufferIndex);
+
 					newCount++;
 					if (this.parser.IsEndOfSample(source,
 						source.Peek(bytesAhead),
@@ -466,12 +472,6 @@ namespace Diagnostics.Tracing.StackSources
 			this.SetDefaultValues();
 		}
 
-		#region fields
-		private double CurrentTime { get; set; }
-		private bool startTimeSet = false;
-		private double StartTime { get; set; }
-		#endregion
-
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
@@ -540,15 +540,7 @@ namespace Diagnostics.Tracing.StackSources
 				source.ReadAsciiStringUpTo(':', sb);
 
 				double time = double.Parse(sb.ToString());
-
 				sb.Clear();
-				if (!this.startTimeSet)
-				{
-					this.startTimeSet = true;
-					this.StartTime = time;
-				}
-				this.CurrentTime = time - this.StartTime;
-				time = this.CurrentTime;
 				source.MoveNext(); // Move past ":"
 
 				// Time Property

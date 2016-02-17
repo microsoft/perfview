@@ -23,5 +23,11 @@ namespace LinuxTracing.Tests
 		{
 			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\helloworld.trace.zip"));
 		}
+
+		//[Fact]
+		public void BigDataDump()
+		{
+			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\bigperf.data.dump"));
+		}
 	}
 }
