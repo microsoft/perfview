@@ -103,28 +103,42 @@ namespace Diagnostics.Tracing.StackSources
 			this.SampleEndTime = samples.Last().TimeRelativeMSec;
 		}
 
-		private object sampleLock = new object();
+		private object internCallStackLock = new object();
+		private object internFrameLock = new object();
 
 		internal StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
 		{
-			lock (sampleLock)
+			//lock (sampleLock)
+			//{
+
+			// Running on one thread only
+			if (this.DoThreadTime)
 			{
-				if (this.DoThreadTime)
-				{
-					this.AnalyzeSampleForBlockedTime(linuxEvent);
-				}
-
-				IEnumerable<Frame> frames = linuxEvent.CallerStacks;
-
-				this.CurrentStackIndex = this.InternFrames(frames.GetEnumerator(), this.CurrentStackIndex, linuxEvent.ThreadID, this.DoThreadTime);
-
-				var sample = new StackSourceSample(this);
-				sample.StackIndex = this.CurrentStackIndex;
-				sample.TimeRelativeMSec = linuxEvent.Time;
-				sample.Metric = 1;
-
-				return sample;
+				this.AnalyzeSampleForBlockedTime(linuxEvent);
 			}
+			// Running on one thread only
+
+			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
+			StackSourceCallStackIndex stackIndex = this.CurrentStackIndex;
+
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.DoThreadTime);
+
+			var sample = new StackSourceSample(this);
+			sample.StackIndex = stackIndex;
+			sample.TimeRelativeMSec = linuxEvent.Time;
+			sample.Metric = 1;
+
+			return sample;
+			//}
+		}
+
+		private long ConcatTwoIntegers(int left, int right)
+		{
+			long ret = left;
+			ret = ret << 32;
+			ret = ret | (long)(uint)right;
+
+			return ret;
 		}
 
 		private void InternAllLinuxEvents(Stream stream)
@@ -204,6 +218,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			StackSourceFrameIndex frameIndex;
+			// Running only on one thread
 			if (doThreadTime)
 			{
 				// If doThreadTime is true, then we need to make sure that threadid is not null
@@ -218,13 +233,21 @@ namespace Diagnostics.Tracing.StackSources
 					frameIndex = this.Interner.FrameIntern(StateThread.CPU_TIME.ToString());
 				}
 			}
+			// Running only on one thread
+
+
 			else
 			{
-				frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+				lock(internFrameLock)
+				{
+					frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+				}
 			}
 
-
-			stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
+			lock (internCallStackLock)
+			{
+				stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
+			}
 			return stackIndex;
 		}
 
@@ -312,7 +335,7 @@ namespace Diagnostics.Tracing.StackSources
 
 				tasks[i].Start();
 			}
-			
+
 			Task.WaitAll(tasks);
 
 			IEnumerable<StackSourceSample> allSamplesEnumator = null;
