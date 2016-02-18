@@ -26,14 +26,10 @@ namespace Diagnostics.Tracing.StackSources
 
 		private bool DoThreadTime { get; }
 
-		private List<StackSourceSample> samples;
-
 		private StackSourceCallStackIndex CurrentStackIndex { get; set; }
 
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
-			this.samples = new List<StackSourceSample>();
-
 			this.DoThreadTime = doThreadTime;
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
@@ -72,6 +68,8 @@ namespace Diagnostics.Tracing.StackSources
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
 		private readonly Dictionary<int, int> cpuThreadUsage;
 
+		private double? SampleEndTime;
+
 		private enum StateThread
 		{
 			BLOCKED_TIME,
@@ -91,11 +89,25 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		internal void AddSamples(IEnumerable<StackSourceSample> _samples)
+		{
+			List<StackSourceSample> samples = _samples.ToList();
+			samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
+			double startTime = samples[0].TimeRelativeMSec;
+			for (int i = 0; i < samples.Count; i++)
+			{
+				samples[i].TimeRelativeMSec -= startTime;
+				this.AddSample(samples[i]);
+			}
+
+			this.SampleEndTime = samples.Last().TimeRelativeMSec;
+		}
+
 		private object sampleLock = new object();
 
-		internal void AddLinuxEventAsSample(LinuxEvent linuxEvent)
+		internal StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
 		{
-			lock(sampleLock)
+			lock (sampleLock)
 			{
 				if (this.DoThreadTime)
 				{
@@ -110,7 +122,8 @@ namespace Diagnostics.Tracing.StackSources
 				sample.StackIndex = this.CurrentStackIndex;
 				sample.TimeRelativeMSec = linuxEvent.Time;
 				sample.Metric = 1;
-				this.samples.Add(sample);
+
+				return sample;
 			}
 		}
 
@@ -119,22 +132,10 @@ namespace Diagnostics.Tracing.StackSources
 			// This is where the parallel stuff happens
 			this.parseController.ParseOnto(this);
 
-			this.samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
-			double startTime = this.samples[0].TimeRelativeMSec;
-			for (int i = 0; i < samples.Count; i++)
-			{
-				this.samples[i].TimeRelativeMSec -= startTime;
-			}
-
 			if (this.DoThreadTime)
 			{
-				this.FlushBlockedThreadsAt(this.samples.Last().TimeRelativeMSec);
+				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
 				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
-			}
-
-			foreach (var sample in samples)
-			{
-				this.AddSample(sample);
 			}
 
 			this.Interner.DoneInterning();
@@ -289,9 +290,11 @@ namespace Diagnostics.Tracing.StackSources
 			this.parser.SkipPreamble(masterSource);
 
 			Task[] tasks = new Task[4];
+			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
 			for (int i = 0; i < tasks.Length; i++)
 			{
-				tasks[i] = new Task(delegate ()
+				threadSamples[i] = new List<StackSourceSample>();
+				tasks[i] = new Task(delegate (object array)
 				{
 					int length;
 					byte[] buffer = new byte[this.masterSource.Buffer.Length];
@@ -301,15 +304,30 @@ namespace Diagnostics.Tracing.StackSources
 
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
-							stackSource.AddLinuxEventAsSample(linuxEvent);
+							threadSamples[(int)array].Add(stackSource.GetSampleFor(linuxEvent));
 						}
 					}
-				});
+				}, i);
 
 				tasks[i].Start();
 			}
-
+			
 			Task.WaitAll(tasks);
+
+			IEnumerable<StackSourceSample> allSamplesEnumator = null;
+			foreach (var samples in threadSamples)
+			{
+				if (allSamplesEnumator == null)
+				{
+					allSamplesEnumator = samples;
+				}
+				else
+				{
+					allSamplesEnumator = allSamplesEnumator.Concat(samples);
+				}
+			}
+
+			stackSource.AddSamples(allSamplesEnumator);
 		}
 
 		private object bufferLock = new object();
