@@ -9,6 +9,10 @@ using Xunit;
 
 namespace LinuxTracing.Tests
 {
+
+	/// <summary>
+	/// These tests are just here to determine whether or not big files fail at any point.
+	/// </summary>
 	public class XmlWriting
 	{
 		private static void Write(string source)
@@ -24,7 +28,7 @@ namespace LinuxTracing.Tests
 			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\helloworld.trace.zip"));
 		}
 
-		//[Fact]
+		[Fact]
 		public void BigDataDump()
 		{
 			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\bigperf.data.dump"));

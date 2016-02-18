@@ -132,6 +132,7 @@ namespace Diagnostics.Tracing.StackSources
 			//}
 		}
 
+		// Don't think I'll need this....
 		private long ConcatTwoIntegers(int left, int right)
 		{
 			long ret = left;
@@ -238,7 +239,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			else
 			{
-				lock(internFrameLock)
+				lock (internFrameLock)
 				{
 					frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
 				}
