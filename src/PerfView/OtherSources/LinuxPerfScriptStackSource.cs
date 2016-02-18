@@ -129,8 +129,9 @@ namespace Diagnostics.Tracing.StackSources
 
 		private void InternAllLinuxEvents(Stream stream)
 		{
-			// This is where the parallel stuff happens
-			this.parseController.ParseOnto(this);
+			// This is where the parallel stuff happens, for now if threadtime is involved we force it
+			//   to run on one thread...
+			this.parseController.ParseOnto(this, threadCount: this.DoThreadTime ? 1 : 4);
 
 			if (this.DoThreadTime)
 			{
@@ -285,16 +286,16 @@ namespace Diagnostics.Tracing.StackSources
 			this.parser = new LinuxPerfScriptEventParser();
 		}
 
-		internal void ParseOnto(LinuxPerfScriptStackSource stackSource)
+		internal void ParseOnto(LinuxPerfScriptStackSource stackSource, int threadCount = 4)
 		{
 			this.parser.SkipPreamble(masterSource);
 
-			Task[] tasks = new Task[4];
+			Task[] tasks = new Task[threadCount];
 			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
 			for (int i = 0; i < tasks.Length; i++)
 			{
 				threadSamples[i] = new List<StackSourceSample>();
-				tasks[i] = new Task(delegate (object array)
+				tasks[i] = new Task((object array) =>
 				{
 					int length;
 					byte[] buffer = new byte[this.masterSource.Buffer.Length];

@@ -49,7 +49,7 @@ namespace PerfView.Utilities
 		public FastStream(Stream stream)
 		{
 			this.stream = stream;
-			this.buffer = new byte[16384];
+			this.buffer = new byte[262144];
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
