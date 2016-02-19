@@ -1,18 +1,15 @@
-﻿// using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using ClrProfiler;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
-using System.Diagnostics.Contracts;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using System;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -59,8 +56,46 @@ namespace Diagnostics.Tracing.StackSources
 			return timeBlocked;
 		}
 
+		internal StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
+		{
+
+			if (this.doThreadTime)
+			{
+				// If doThreadTime is true this is running on a single thread.
+				this.AnalyzeSampleForBlockedTime(linuxEvent);
+			}
+
+			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
+			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
+
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.doThreadTime);
+
+			var sample = new StackSourceSample(this);
+			sample.StackIndex = stackIndex;
+			sample.TimeRelativeMSec = linuxEvent.Time;
+			sample.Metric = 1;
+
+			return sample;
+		}
+
+		internal void AddSamples(IEnumerable<StackSourceSample> _samples)
+		{
+			List<StackSourceSample> samples = _samples.ToList();
+			samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
+			double startTime = samples[0].TimeRelativeMSec;
+			for (int i = 0; i < samples.Count; i++)
+			{
+				samples[i].TimeRelativeMSec -= startTime;
+				this.AddSample(samples[i]);
+			}
+
+			this.SampleEndTime = samples.Last().TimeRelativeMSec;
+		}
+
 		#region private
 		private readonly PerfScriptToSampleController parseController;
+		private object internCallStackLock = new object();
+		private object internFrameLock = new object();
 
 		private readonly Dictionary<int, double> blockedThreads;
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -89,59 +124,6 @@ namespace Diagnostics.Tracing.StackSources
 				this.StartTime = startTime;
 				this.EndTime = endTime;
 			}
-		}
-
-		internal void AddSamples(IEnumerable<StackSourceSample> _samples)
-		{
-			List<StackSourceSample> samples = _samples.ToList();
-			samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
-			double startTime = samples[0].TimeRelativeMSec;
-			for (int i = 0; i < samples.Count; i++)
-			{
-				samples[i].TimeRelativeMSec -= startTime;
-				this.AddSample(samples[i]);
-			}
-
-			this.SampleEndTime = samples.Last().TimeRelativeMSec;
-		}
-
-		private object internCallStackLock = new object();
-		private object internFrameLock = new object();
-
-		internal StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
-		{
-			//lock (sampleLock)
-			//{
-
-			// Running on one thread only
-			if (this.doThreadTime)
-			{
-				this.AnalyzeSampleForBlockedTime(linuxEvent);
-			}
-			// Running on one thread only
-
-			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
-			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
-
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.doThreadTime);
-
-			var sample = new StackSourceSample(this);
-			sample.StackIndex = stackIndex;
-			sample.TimeRelativeMSec = linuxEvent.Time;
-			sample.Metric = 1;
-
-			return sample;
-			//}
-		}
-
-		// Don't think I'll need this....
-		private long ConcatTwoIntegers(int left, int right)
-		{
-			long ret = left;
-			ret = ret << 32;
-			ret = ret | (long)(uint)right;
-
-			return ret;
 		}
 
 		private void InternAllLinuxEvents(Stream stream)
@@ -289,28 +271,8 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
-	public static class StringExtension
-	{
-		internal static bool EndsWithOneOf(this string path, string[] suffixes)
-		{
-			foreach (string suffix in suffixes)
-			{
-				if (path.EndsWith(suffix))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-	}
-
 	internal class PerfScriptToSampleController
 	{
-		private readonly LinuxPerfScriptEventParser parser;
-		private readonly FastStream masterSource;
-
-
 		internal PerfScriptToSampleController(Stream source)
 		{
 			this.masterSource = new FastStream(source);
@@ -326,7 +288,7 @@ namespace Diagnostics.Tracing.StackSources
 			for (int i = 0; i < tasks.Length; i++)
 			{
 				threadSamples[i] = new List<StackSourceSample>();
-				tasks[i] = new Task((object array) =>
+				tasks[i] = new Task((object givenArrayIndex) =>
 				{
 					int length;
 					byte[] buffer = new byte[this.masterSource.Buffer.Length];
@@ -337,7 +299,7 @@ namespace Diagnostics.Tracing.StackSources
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
 							StackSourceSample sample = stackSource.GetSampleFor(linuxEvent);
-							threadSamples[(int)array].Add(sample);
+							threadSamples[(int)givenArrayIndex].Add(sample);
 						}
 					}
 				}, i);
@@ -363,8 +325,13 @@ namespace Diagnostics.Tracing.StackSources
 			stackSource.AddSamples(allSamplesEnumator);
 		}
 
+		#region private
+		private readonly LinuxPerfScriptEventParser parser;
+		private readonly FastStream masterSource;
+
 		private object bufferLock = new object();
-		// Basically, if the length returned is -1, then there's no more stream in the
+
+		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
 		// Note: This needs to be thread safe
 		private int GetNextBuffer(FastStream source, byte[] buffer)
@@ -436,6 +403,7 @@ namespace Diagnostics.Tracing.StackSources
 				return newCount;
 			}
 		}
+		#endregion
 	}
 
 	public class LinuxPerfScriptEventParser
@@ -523,6 +491,12 @@ namespace Diagnostics.Tracing.StackSources
 			this.SetDefaultValues();
 		}
 
+		internal bool IsEndOfSample(FastStream source, byte current, byte peek1)
+		{
+			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
+		}
+
+		#region private
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
@@ -664,11 +638,6 @@ namespace Diagnostics.Tracing.StackSources
 					yield return linuxEvent;
 				}
 			}
-		}
-
-		internal bool IsEndOfSample(FastStream source, byte current, byte peek1)
-		{
-			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
 		}
 
 		private List<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame, FastStream source)
@@ -843,6 +812,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			return false;
 		}
+		#endregion
 	}
 
 	/// <summary>
@@ -1013,6 +983,22 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			this.ID = id;
 			this.Kind = kind;
+		}
+	}
+
+	public static class StringExtension
+	{
+		internal static bool EndsWithOneOf(this string path, string[] suffixes)
+		{
+			foreach (string suffix in suffixes)
+			{
+				if (path.EndsWith(suffix))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 	}
 }
