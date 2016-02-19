@@ -31,6 +31,8 @@ namespace Diagnostics.Tracing.StackSources
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			this.DoThreadTime = doThreadTime;
+			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
+
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
@@ -219,6 +221,8 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			StackSourceFrameIndex frameIndex;
+			string frameDisplayName;
+
 			// Running only on one thread
 			if (doThreadTime)
 			{
@@ -227,11 +231,11 @@ namespace Diagnostics.Tracing.StackSources
 
 				if (this.blockedThreads.ContainsKey((int)threadid))
 				{
-					frameIndex = this.Interner.FrameIntern(StateThread.BLOCKED_TIME.ToString());
+					frameDisplayName = StateThread.BLOCKED_TIME.ToString();
 				}
 				else
 				{
-					frameIndex = this.Interner.FrameIntern(StateThread.CPU_TIME.ToString());
+					frameDisplayName = StateThread.CPU_TIME.ToString();
 				}
 			}
 			// Running only on one thread
@@ -239,9 +243,15 @@ namespace Diagnostics.Tracing.StackSources
 
 			else
 			{
+				frameDisplayName = frameIterator.Current.DisplayName;
+			}
+
+
+			if (!frames.TryGetValue(frameDisplayName, out frameIndex)) {
 				lock (internFrameLock)
 				{
-					frameIndex = this.Interner.FrameIntern(frameIterator.Current.DisplayName);
+					frameIndex = this.Interner.FrameIntern(frameDisplayName);
+					frames[frameDisplayName] = frameIndex;
 				}
 			}
 
@@ -251,6 +261,8 @@ namespace Diagnostics.Tracing.StackSources
 			}
 			return stackIndex;
 		}
+
+		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
 
 		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
 		{
@@ -329,7 +341,8 @@ namespace Diagnostics.Tracing.StackSources
 
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
-							threadSamples[(int)array].Add(stackSource.GetSampleFor(linuxEvent));
+							StackSourceSample sample = stackSource.GetSampleFor(linuxEvent);
+							threadSamples[(int)array].Add(sample);
 						}
 					}
 				}, i);
@@ -376,7 +389,7 @@ namespace Diagnostics.Tracing.StackSources
 				Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
 										dst: buffer, dstOffset: 0, count: length);
 
-				source.FillBufferFromStreamPosition(source.BufferFillPosition - (uint)(start + length));
+				source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - (uint)(start + length));
 
 				return length;
 			}
@@ -530,7 +543,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			while (true)
 			{
-
 				// This is to make sure we don't leave the Buffer and accidently write to it!
 				source.SkipUpToFalse(delegate (byte c)
 				{
