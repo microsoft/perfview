@@ -24,13 +24,9 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		private bool DoThreadTime { get; }
-
-		private StackSourceCallStackIndex CurrentStackIndex { get; set; }
-
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
-			this.DoThreadTime = doThreadTime;
+			this.doThreadTime = doThreadTime;
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 
 			ZipArchive archive = null;
@@ -38,7 +34,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				this.parseController = new PerfScriptToSampleController(stream);
 
-				if (this.DoThreadTime)
+				if (this.doThreadTime)
 				{
 					this.blockedThreads = new Dictionary<int, double>();
 					this.threadBlockedPeriods = new List<ThreadPeriod>();
@@ -70,7 +66,11 @@ namespace Diagnostics.Tracing.StackSources
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
 		private readonly Dictionary<int, int> cpuThreadUsage;
 
+		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
 		private double? SampleEndTime;
+		private readonly bool doThreadTime;
+
+		private StackSourceCallStackIndex currentStackIndex;
 
 		private enum StateThread
 		{
@@ -114,16 +114,16 @@ namespace Diagnostics.Tracing.StackSources
 			//{
 
 			// Running on one thread only
-			if (this.DoThreadTime)
+			if (this.doThreadTime)
 			{
 				this.AnalyzeSampleForBlockedTime(linuxEvent);
 			}
 			// Running on one thread only
 
 			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
-			StackSourceCallStackIndex stackIndex = this.CurrentStackIndex;
+			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
 
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.DoThreadTime);
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.doThreadTime);
 
 			var sample = new StackSourceSample(this);
 			sample.StackIndex = stackIndex;
@@ -148,15 +148,65 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			// This is where the parallel stuff happens, for now if threadtime is involved we force it
 			//   to run on one thread...
-			this.parseController.ParseOnto(this, threadCount: this.DoThreadTime ? 1 : 4);
+			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : 4);
 
-			if (this.DoThreadTime)
+			if (this.doThreadTime)
 			{
 				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
 				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 			}
 
 			this.Interner.DoneInterning();
+		}
+
+		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
+		{
+			// We shouldn't advance the iterator if thread time is enabled because we need 
+			//   to add an extra frame to the caller stack that is not in the frameIterator.
+			//   i.e. Short-circuiting prevents the frameIterator from doing MoveNext :)
+			if (!doThreadTime && !frameIterator.MoveNext())
+			{
+				return StackSourceCallStackIndex.Invalid;
+			}
+
+			StackSourceFrameIndex frameIndex;
+			string frameDisplayName;
+
+			if (doThreadTime)
+			{
+				// If doThreadTime is true, then we need to make sure that threadid is not null
+				Contract.Requires(threadid != null, nameof(threadid));
+
+				if (this.blockedThreads.ContainsKey((int)threadid))
+				{
+					frameDisplayName = StateThread.BLOCKED_TIME.ToString();
+				}
+				else
+				{
+					frameDisplayName = StateThread.CPU_TIME.ToString();
+				}
+			}
+			else
+			{
+				frameDisplayName = frameIterator.Current.DisplayName;
+			}
+
+
+			if (!frames.TryGetValue(frameDisplayName, out frameIndex))
+			{
+				lock (internFrameLock)
+				{
+					frameIndex = this.Interner.FrameIntern(frameDisplayName);
+					frames[frameDisplayName] = frameIndex;
+				}
+			}
+
+			lock (internCallStackLock)
+			{
+				stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
+			}
+
+			return stackIndex;
 		}
 
 		private void FlushBlockedThreadsAt(double endTime)
@@ -208,61 +258,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			this.cpuThreadUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
-
-		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
-		{
-
-			// We shouldn't advance the iterator if thread time is enabled because we need 
-			//   to add an extra frame to the caller stack that is not in the frameIterator.
-			//   i.e. Short-circuiting prevents the frameIterator from doing MoveNext :)
-			if (!doThreadTime && !frameIterator.MoveNext())
-			{
-				return StackSourceCallStackIndex.Invalid;
-			}
-
-			StackSourceFrameIndex frameIndex;
-			string frameDisplayName;
-
-			// Running only on one thread
-			if (doThreadTime)
-			{
-				// If doThreadTime is true, then we need to make sure that threadid is not null
-				Contract.Requires(threadid != null, nameof(threadid));
-
-				if (this.blockedThreads.ContainsKey((int)threadid))
-				{
-					frameDisplayName = StateThread.BLOCKED_TIME.ToString();
-				}
-				else
-				{
-					frameDisplayName = StateThread.CPU_TIME.ToString();
-				}
-			}
-			// Running only on one thread
-
-
-			else
-			{
-				frameDisplayName = frameIterator.Current.DisplayName;
-			}
-
-
-			if (!frames.TryGetValue(frameDisplayName, out frameIndex)) {
-				lock (internFrameLock)
-				{
-					frameIndex = this.Interner.FrameIntern(frameDisplayName);
-					frames[frameDisplayName] = frameIndex;
-				}
-			}
-
-			lock (internCallStackLock)
-			{
-				stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
-			}
-			return stackIndex;
-		}
-
-		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
 
 		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
 		{
