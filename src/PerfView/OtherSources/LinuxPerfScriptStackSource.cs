@@ -25,6 +25,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			this.doThreadTime = doThreadTime;
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
+			this.currentStackIndex = 0;
 
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
@@ -58,7 +59,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		internal StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
 		{
-
 			if (this.doThreadTime)
 			{
 				// If doThreadTime is true this is running on a single thread.
