@@ -49,6 +49,7 @@ namespace PerfView.Utilities
 		public FastStream(Stream stream)
 		{
 			this.stream = stream;
+			// TODO: Need to fix this edge problem
 			this.buffer = new byte[262144];
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
@@ -64,7 +65,7 @@ namespace PerfView.Utilities
 		public byte[] Buffer { get { return this.buffer; } }
 		public long Position { get; private set; }
 		public uint BufferFillPosition { get { return this.bufferFillPos; } }
-		public uint BufferIndex { get { return this.bufferIndex; } }
+		public uint BufferIndex { get { return this.bufferIndex; } set { this.bufferIndex = value; } }
 
 		public bool MoveNext()
 		{
@@ -338,6 +339,17 @@ namespace PerfView.Utilities
 					break;
 				}
 			}
+		}
+
+		public string PeekString(int length)
+		{
+			StringBuilder sb = new StringBuilder();
+			for (int i = (int)this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
+			{
+				sb.Append((char)this.Peek((int)(i - this.BufferIndex)));
+			}
+
+			return sb.ToString();
 		}
 
 		public Stream BaseStream { get { return this.stream; } }

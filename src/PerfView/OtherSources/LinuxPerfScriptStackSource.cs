@@ -345,33 +345,46 @@ namespace Diagnostics.Tracing.StackSources
 
 				int start = (int)source.BufferIndex;
 				int length = source.Buffer.Length / 4;
+				bool truncated;
 
-				length = this.GetCompleteBuffer(source, start, length);
+				length = this.GetCompleteBuffer(source, start, length, estimatedCountPortion: 0.8, truncated: out truncated);
 
 				Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
 										dst: buffer, dstOffset: 0, count: length);
 
 				source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - (uint)(start + length));
 
+				if (truncated)
+				{
+					// We find a good start for the next round and add a pseudo frame.
+					this.FindValidStartOn(source);
+					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0     truncated     (truncated)");
+					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
+									 dst: buffer, dstOffset: length, count: truncatedMessage.Length);
+
+					length += truncatedMessage.Length;
+
+					source.BufferIndex = source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - source.BufferIndex);
+				}
+
 				return length;
 			}
 		}
 
-		private bool TasksComplete(Task[] tasks)
+		// Assumes that source is at an invalid start position.
+		private void FindValidStartOn(FastStream source)
 		{
-			for (int i = 0; i < tasks.Length; i++)
+			while (!this.parser.IsEndOfSample(source))
 			{
-				if (tasks[i]?.IsCompleted != true)
-				{
-					return false;
-				}
+				source.MoveNext();
 			}
-
-			return true;
 		}
 
-		private int GetCompleteBuffer(FastStream source, int index, int count, double estimatedCountPortion = 0.8)
+		// Returns the length of the valid buffer in the FastStream source.
+		private int GetCompleteBuffer(FastStream source, int index, int count, double estimatedCountPortion, out bool truncated)
 		{
+			truncated = false;
+
 			if (source.BufferFillPosition - index < count)
 			{
 				return (int)source.BufferFillPosition - index;
@@ -394,14 +407,42 @@ namespace Diagnostics.Tracing.StackSources
 
 					if (i == source.BufferFillPosition - 2)
 					{
+						if (estimatedCountPortion < 0.5)
+						{
+							// At this point, we'll truncate the stack.
+							truncated = true;
+							return this.GetTruncatedBuffer(source, index, count, estimatedCountPortion);
+						}
+
 						// This is just in case we don't find an end to the stack we're on... In that case we need
 						//   to make the estimatedCountPortion smaller to capture more stuff
-						return this.GetCompleteBuffer(source, index, count, estimatedCountPortion * 0.9);
+						return this.GetCompleteBuffer(source, index, count, estimatedCountPortion * 0.9, out truncated);
 					}
 				}
 
 				return newCount;
 			}
+		}
+
+		// Returns the length of the truncated buffer... Requires to be ran with estimatedCountPortion at
+		//   less than 0.5
+		private int GetTruncatedBuffer(FastStream source, int index, int count, double estimatedCountPortion)
+		{
+			Contract.Assert(estimatedCountPortion < 0.5, nameof(estimatedCountPortion));
+
+			int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
+			for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
+			{
+				int bytesAhead = (int)(i - source.BufferIndex);
+				newCount++;
+
+				if (source.Peek(bytesAhead) == '\n')
+				{
+					break;
+				}
+			}
+
+			return newCount;
 		}
 		#endregion
 	}
@@ -491,6 +532,11 @@ namespace Diagnostics.Tracing.StackSources
 			this.SetDefaultValues();
 		}
 
+		internal bool IsEndOfSample(FastStream source)
+		{
+			return this.IsEndOfSample(source, source.Current, source.Peek(1));
+		}
+
 		internal bool IsEndOfSample(FastStream source, byte current, byte peek1)
 		{
 			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
@@ -512,16 +558,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			while (true)
 			{
-				// This is to make sure we don't leave the Buffer and accidently write to it!
-				source.SkipUpToFalse(delegate (byte c)
-				{
-					if (!source.EndOfStream && char.IsWhiteSpace((char)c))
-					{
-						return true;
-					}
-
-					return false;
-				});
+				source.SkipWhiteSpace();
 
 				if (source.EndOfStream)
 				{
