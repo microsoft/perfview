@@ -4510,8 +4510,9 @@ namespace PerfView
 
                 stackWindow.GroupRegExTextBox.Items.Insert(0, @"[Nuget] System.%!=>OTHER;Microsoft.%!=>OTHER;mscorlib%=>OTHER;v4.0.30319%\%!=>OTHER;system32\*!=>OTHER;syswow64\*!=>OTHER");
 
-                var excludePat = "LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage * RunApp";
+                var excludePat = "LAST_BLOCK";
                 stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
+                stackWindow.ExcludeRegExTextBox.Items.Add("LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage*RunApp");
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 

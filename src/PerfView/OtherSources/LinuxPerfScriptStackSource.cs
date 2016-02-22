@@ -101,7 +101,7 @@ namespace Diagnostics.Tracing.StackSources
 
 				var sample = new StackSourceSample(this);
 				sample.StackIndex = stackIndex;
-				sample.TimeRelativeMSec = linuxEvent.Time;
+				sample.TimeRelativeMSec = linuxEvent.Time * 1000;   // They measure time in seconds, 
 				sample.Metric = 1;
 				this.AddSample(sample);
 			}

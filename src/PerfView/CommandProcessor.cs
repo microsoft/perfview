@@ -587,6 +587,12 @@ namespace PerfView
                                 new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
                                 TraceEventLevel.Verbose, ulong.MaxValue);
 
+                            // Turn on Power stuff
+                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
+                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5F);
+                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
+                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
+
                             // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
                             // It does not increase the volume in a significant way and they can be pretty useful.     
                             if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
@@ -784,9 +790,12 @@ namespace PerfView
         /// </summary>
         private void SetWPRProviders(TraceEventSession userModeSession)
         {
+            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
+            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", 0x1000000000000L);
+            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
+
             LogFile.WriteLine("Adding the user mode providers that WPR would.");
             EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Memory", 0x60);   // WPR uses kernel for this but this makes up for it. 
-            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", 0x1000000000000L);
             EnableProvider(userModeSession, "Microsoft-Windows-WLAN-AutoConfig", 0x1000000000200L, (TraceEventLevel)0xff);
             EnableProvider(userModeSession, "Microsoft-Windows-Tethering-Station", 0x1000000000000L);
             EnableProvider(userModeSession, "Microsoft-Windows-SleepStudy", 0x1000000000000L);
@@ -845,7 +854,6 @@ namespace PerfView
             EnableProvider(userModeSession, "Microsoft-Windows-MediaEngine", 0x1000000000000L);
             EnableProvider(userModeSession, "Microsoft-Windows-HealthCenter", 0x1000000000000L);
             EnableProvider(userModeSession, "Microsoft-Windows-Ncasvc", 0x1000000000000L);
-            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0x1000000000004L, (TraceEventLevel)0xff);
             EnableProvider(userModeSession, "Microsoft-Windows-HomeGroup-ProviderService", 0x1000000000000L);
             EnableProvider(userModeSession, "Microsoft-JScript", 0x1, (TraceEventLevel)0xff);
             EnableProvider(userModeSession, "Microsoft-Windows-VolumeControl", 0x1000000000000L);

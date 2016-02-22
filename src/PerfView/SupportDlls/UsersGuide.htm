@@ -5342,10 +5342,6 @@
     <hr />
 
     <!--  ********************************** -->
-    <h2><a id="DiskSizeAnalysis"></a>Disk Size Analysis</h2>
-    <p>
-        TODO NOT DONE
-    </p>
     <h3><a id="DirectorySize">Directory Size Analysis</a></h3>
     <p>
         The directory size menu entry will generate an *.directorySize.perfView.xml.zip file that is a
@@ -5360,6 +5356,14 @@
         (which may take a while for large directories), it will automatically open the data file it
         generates).  You may reopen the file at any time later simply by clicking on it in PerfView's
         main tree view.
+    </p>
+    <p>
+        The 'when' field for directory size works a bit different than for most performance data.   
+        For each data file, its 'Timestamp' is the number of days (which can be fractional) from the
+        time that the data was collected, to the time it was last modified.    Thus by selecting the
+        time range from 0 to 7  you will see all files that were modified less than one week ago.   
+        This information can be very useful for seeing how 'old' the data is (which is often useful
+        to determine whether to keep it or not).   
     </p>
     <h3><a id="ImageSize">Image Size Analysis</a></h3>
     <h4>Collecting data</h4>
@@ -8041,6 +8045,14 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.1 2/22/16
+            <ul>
+                <li>
+                    Added Power events (so you can know how throttled the CPU is)
+                </li>
+            </ul>
+        </li>
         <li>
             Version 1.9.0 2/12/16
             <ul>
