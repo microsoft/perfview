@@ -597,8 +597,15 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         internal void Write(TextWriter output, object value, int indent)
         {
-            Type.Write(output, null, indent);
-            output.Write(" {0} = {1};", Name, value);
+            if (Type.CtfType == CtfTypes.Array)
+            {
+                Type.Write(output, value, indent);
+            }
+            else
+            {
+                Type.Write(output, null, indent);
+                output.Write(" {0} = {1};", Name, value);
+            }
         }
 
         internal void WriteLine(TextWriter output, object value, int indent)
