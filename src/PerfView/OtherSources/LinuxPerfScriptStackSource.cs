@@ -27,6 +27,8 @@ namespace Diagnostics.Tracing.StackSources
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 			this.currentStackIndex = 0;
 
+			this.fileSymbolMappers = new Dictionary<int, Mapper>();
+
 			ZipArchive archive = null;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
@@ -96,6 +98,8 @@ namespace Diagnostics.Tracing.StackSources
 		private readonly PerfScriptToSampleController parseController;
 		private object internCallStackLock = new object();
 		private object internFrameLock = new object();
+
+		private readonly Dictionary<int, Mapper> fileSymbolMappers;
 
 		private readonly Dictionary<int, double> blockedThreads;
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -271,45 +275,99 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
+	#region Mapper
 	internal class Mapper
 	{
-		private List<Interval> intervals;
+		private List<Map> maps;
 
-		private class Map
+		internal Mapper()
 		{
-			internal Interval Interval { get; }
-			internal string MapTo { get; }
-
-			internal Map(Interval interval, string mapTo)
-			{
-				this.Interval = interval;
-				this.MapTo = mapTo;
-			}
+			this.maps = new List<Map>();
 		}
 
-		private class Interval
+		internal void DoneMapping()
 		{
-			internal long Start { get; }
-			internal long Length { get; }
-			internal long End { get { return this.Start + this.Length; } }
+			// Sort by the start part of the interval... This is for O(log(n)) search time.
+			this.maps.Sort((Map x, Map y) => x.Interval.Start.CompareTo(y.Interval.Start));
+		}
 
-			internal bool IsWithin(long thing, bool inclusiveStart = true, bool inclusiveEnd = false)
+		internal void Add(long start, long size, string symbol)
+		{
+			this.maps.Add(new Map(new Interval(start, size), symbol));
+		}
+
+		internal bool TryFindSymbol(long location, out string symbol)
+		{
+			symbol = "";
+
+			int start = 0;
+			int end = this.maps.Count;
+			int mid = (start - end) / 2;
+
+			while (true)
 			{
-				bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
-				bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
-				bool within = thing.CompareTo(this.Start) > 0 && thing.CompareTo(this.End) < 0;
+				int index = start + mid;
+				if (this.maps[index].Interval.IsWithin(location))
+				{
+					symbol = this.maps[index].MapTo;
+					return true;
+				}
+				else if (location < this.maps[index].Interval.Start)
+				{
+					end = mid;
+				}
+				else if (location >= this.maps[index].Interval.End)
+				{
+					start = mid;
+				}
 
-				return within || startEqual || endEqual;
+				if (mid <= 1)
+				{
+					break;
+				}
+
+				mid = (start - end) / 2;
 			}
 
-			internal Interval(long start, long length)
-			{
-				this.Start = start;
-				this.Length = length;
-			}
-
+			return false;
 		}
 	}
+
+	internal class Map
+	{
+		internal Interval Interval { get; }
+		internal string MapTo { get; }
+
+		internal Map(Interval interval, string mapTo)
+		{
+			this.Interval = interval;
+			this.MapTo = mapTo;
+		}
+	}
+
+	internal class Interval
+	{
+		internal long Start { get; }
+		internal long Length { get; }
+		internal long End { get { return this.Start + this.Length; } }
+
+		internal bool IsWithin(long thing, bool inclusiveStart = true, bool inclusiveEnd = false)
+		{
+			bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
+			bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
+			bool within = thing.CompareTo(this.Start) > 0 && thing.CompareTo(this.End) < 0;
+
+			return within || startEqual || endEqual;
+		}
+
+		internal Interval(long start, long length)
+		{
+			this.Start = start;
+			this.Length = length;
+		}
+
+	}
+	#endregion
 
 	internal class PerfScriptToSampleController
 	{
