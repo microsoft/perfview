@@ -73,7 +73,7 @@ namespace Diagnostics.Tracing.StackSources
 			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
 			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
 
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ThreadID, this.doThreadTime);
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
 
 			var sample = new StackSourceSample(this);
 			sample.StackIndex = stackIndex;
@@ -148,7 +148,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.Interner.DoneInterning();
 		}
 
-		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
+		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int processID, int? threadid = null, bool doThreadTime = false)
 		{
 			// We shouldn't advance the iterator if thread time is enabled because we need 
 			//   to add an extra frame to the caller stack that is not in the frameIterator.
@@ -178,6 +178,16 @@ namespace Diagnostics.Tracing.StackSources
 			else
 			{
 				frameDisplayName = frameIterator.Current.DisplayName;
+				if (frameIterator.Current.Kind == FrameKind.StackFrame)
+				{
+					StackFrame stackFrame = (StackFrame)frameIterator.Current;
+					// We need to check if we need to resolve symbols for this frame...
+					if (stackFrame.Address.Length > 1 &&
+						stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
+					{
+						frameDisplayName = this.ResolveSymbols(processID, stackFrame);
+					}
+				}
 			}
 
 
@@ -192,10 +202,43 @@ namespace Diagnostics.Tracing.StackSources
 
 			lock (internCallStackLock)
 			{
-				stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex));
+				stackIndex = this.Interner.CallStackIntern(frameIndex, this.InternFrames(frameIterator, stackIndex, processID));
 			}
 
 			return stackIndex;
+		}
+
+		private string ResolveSymbols(int processID, StackFrame stackFrame)
+		{
+			ulong absoluteLocation = ulong.Parse(
+				stackFrame.Address.Substring(2),
+				System.Globalization.NumberStyles.HexNumber);
+
+			Mapper mapper;
+			if (this.fileSymbolMappers.TryGetValue(
+				string.Format("perf-{0}", processID.ToString()), out mapper))
+			{
+				string symbol;
+				ulong location;
+				if (mapper.TryFindSymbol(absoluteLocation, out symbol, out location))
+				{
+					Regex regex = new Regex(@"^.+\.ni\.\{.+\}$");
+					if (regex.IsMatch(symbol))
+					{
+						ulong relativeLocation = absoluteLocation - location;
+						if (this.fileSymbolMappers.TryGetValue(symbol, out mapper))
+						{
+							if (mapper.TryFindSymbol(relativeLocation, out symbol, out location))
+							{
+								string[] symbolModule = this.parseController.GetSymbolsFromMicrosoftMap(symbol);
+								return symbolModule[0] + "!" + symbolModule[1];
+							}
+						}
+					}
+				}
+			}
+
+			return stackFrame.DisplayName;
 		}
 
 		private void FlushBlockedThreadsAt(double endTime)
@@ -304,18 +347,19 @@ namespace Diagnostics.Tracing.StackSources
 			this.maps.Sort((Map x, Map y) => x.Interval.Start.CompareTo(y.Interval.Start));
 		}
 
-		internal void Add(long start, long size, string symbol)
+		internal void Add(ulong start, ulong size, string symbol)
 		{
 			this.maps.Add(new Map(new Interval(start, size), symbol));
 		}
 
-		internal bool TryFindSymbol(long location, out string symbol)
+		internal bool TryFindSymbol(ulong location, out string symbol, out ulong startLocation)
 		{
 			symbol = "";
+			startLocation = 0;
 
 			int start = 0;
 			int end = this.maps.Count;
-			int mid = (start - end) / 2;
+			int mid = (end - start) / 2;
 
 			while (true)
 			{
@@ -323,23 +367,24 @@ namespace Diagnostics.Tracing.StackSources
 				if (this.maps[index].Interval.IsWithin(location))
 				{
 					symbol = this.maps[index].MapTo;
+					startLocation = this.maps[index].Interval.Start;
 					return true;
 				}
 				else if (location < this.maps[index].Interval.Start)
 				{
-					end = mid;
+					end = index;
 				}
 				else if (location >= this.maps[index].Interval.End)
 				{
-					start = mid;
+					start = index;
 				}
 
-				if (mid <= 1)
+				if (mid < 1)
 				{
 					break;
 				}
 
-				mid = (start - end) / 2;
+				mid = (end - start) / 2;
 			}
 
 			return false;
@@ -360,11 +405,11 @@ namespace Diagnostics.Tracing.StackSources
 
 	internal class Interval
 	{
-		internal long Start { get; }
-		internal long Length { get; }
-		internal long End { get { return this.Start + this.Length; } }
+		internal ulong Start { get; }
+		internal ulong Length { get; }
+		internal ulong End { get { return this.Start + this.Length; } }
 
-		internal bool IsWithin(long thing, bool inclusiveStart = true, bool inclusiveEnd = false)
+		internal bool IsWithin(ulong thing, bool inclusiveStart = true, bool inclusiveEnd = false)
 		{
 			bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
 			bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
@@ -373,7 +418,7 @@ namespace Diagnostics.Tracing.StackSources
 			return within || startEqual || endEqual;
 		}
 
-		internal Interval(long start, long length)
+		internal Interval(ulong start, ulong length)
 		{
 			this.Start = start;
 			this.Length = length;
@@ -671,12 +716,18 @@ namespace Diagnostics.Tracing.StackSources
 
 			StringBuilder sb = new StringBuilder();
 
+			Func<byte, bool> untilWhiteSpace = (byte c) => { return !char.IsWhiteSpace((char)c); };
+
 			while (!source.EndOfStream)
 			{
-				int start = source.ReadHex();
+				source.ReadAsciiStringUpToTrue(sb, untilWhiteSpace);
+				ulong start = ulong.Parse(sb.ToString(), System.Globalization.NumberStyles.HexNumber);
+				sb.Clear();
 				source.SkipWhiteSpace();
 
-				int size = source.ReadHex();
+				source.ReadAsciiStringUpToTrue(sb, untilWhiteSpace);
+				ulong size = ulong.Parse(sb.ToString(), System.Globalization.NumberStyles.HexNumber);
+				sb.Clear();
 				source.SkipWhiteSpace();
 
 				source.ReadAsciiStringUpTo('\n', sb);
@@ -704,7 +755,7 @@ namespace Diagnostics.Tracing.StackSources
 						symbol += splits[j] + ' ';
 					}
 
-					return new string[2] { module, symbol.Trim() };
+					return new string[2] { this.RemoveOutterBrackets(module), symbol.Trim() };
 				}
 			}
 
@@ -915,7 +966,6 @@ namespace Diagnostics.Tracing.StackSources
 			if (assumedModule.EndsWith(".map"))
 			{
 				string[] moduleSymbol = this.GetSymbolFromMicrosoftMap(assumedSymbol, assumedModule);
-				actualModule = this.RemoveOutterBrackets(moduleSymbol[0]);
 				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
 			}
 
@@ -1106,11 +1156,20 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	public enum FrameKind
+	{
+		StackFrame,
+		ProcessFrame,
+		ThreadFrame,
+		BlockedCPUFrame
+	}
+
 	/// <summary>
 	/// A way to define different types of frames with different names on PerfView.
 	/// </summary>
 	public interface Frame
 	{
+		FrameKind Kind { get; }
 		string DisplayName { get; }
 	}
 
@@ -1119,6 +1178,7 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public struct StackFrame : Frame
 	{
+		public FrameKind Kind { get { return FrameKind.StackFrame; } }
 		public string Address { get; }
 		public string Module { get; }
 		public string Symbol { get; }
@@ -1136,8 +1196,10 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// Represents the name of the process.
 	/// </summary>
-	public struct ProcessFrame : Frame
+	internal struct ProcessFrame : Frame
 	{
+		public FrameKind Kind { get { return FrameKind.ProcessFrame; } }
+
 		public string Name { get; }
 
 		public string DisplayName { get { return this.Name; } }
@@ -1153,6 +1215,7 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public struct ThreadFrame : Frame
 	{
+		public FrameKind Kind { get { return FrameKind.ThreadFrame; } }
 		public string Name { get; }
 		public int ID { get; }
 		public string DisplayName { get { return string.Format("{0} ({1})", this.Name, this.ID); } }
@@ -1169,14 +1232,15 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public struct BlockedCPUFrame : Frame
 	{
-		public string Kind { get; }
+		public FrameKind Kind { get { return FrameKind.BlockedCPUFrame; } }
+		public string SubKind { get; }
 		public int ID { get; }
-		public string DisplayName { get { return this.Kind; } }
+		public string DisplayName { get { return this.SubKind; } }
 
 		internal BlockedCPUFrame(int id, string kind)
 		{
 			this.ID = id;
-			this.Kind = kind;
+			this.SubKind = kind;
 		}
 	}
 
