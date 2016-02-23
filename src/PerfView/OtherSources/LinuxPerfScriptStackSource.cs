@@ -271,6 +271,46 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
+	internal class Mapper
+	{
+		private List<Interval> intervals;
+
+		private class Map
+		{
+			internal Interval Interval { get; }
+			internal string MapTo { get; }
+
+			internal Map(Interval interval, string mapTo)
+			{
+				this.Interval = interval;
+				this.MapTo = mapTo;
+			}
+		}
+
+		private class Interval
+		{
+			internal long Start { get; }
+			internal long Length { get; }
+			internal long End { get { return this.Start + this.Length; } }
+
+			internal bool IsWithin(long thing, bool inclusiveStart = true, bool inclusiveEnd = false)
+			{
+				bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
+				bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
+				bool within = thing.CompareTo(this.Start) > 0 && thing.CompareTo(this.End) < 0;
+
+				return within || startEqual || endEqual;
+			}
+
+			internal Interval(long start, long length)
+			{
+				this.Start = start;
+				this.Length = length;
+			}
+
+		}
+	}
+
 	internal class PerfScriptToSampleController
 	{
 		internal PerfScriptToSampleController(Stream source)
