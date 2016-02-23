@@ -29,8 +29,9 @@ namespace Diagnostics.Tracing.StackSources
 
 			this.fileSymbolMappers = new Dictionary<int, Mapper>();
 
-			ZipArchive archive = null;
-			using (Stream stream = this.GetPerfScriptStream(path, out archive))
+			ZipArchive archive;
+			Dictionary<string, Stream> symbolFiles = new Dictionary<string, Stream>();
+			using (Stream stream = this.GetPerfScriptStream(path, symbolFiles, out archive))
 			{
 				this.parseController = new PerfScriptToSampleController(stream);
 
@@ -44,6 +45,13 @@ namespace Diagnostics.Tracing.StackSources
 				this.InternAllLinuxEvents(stream);
 				stream.Close();
 			}
+			
+			foreach (Stream stream in symbolFiles.Values)
+			{
+				stream?.Close();
+				stream?.Dispose();
+			}
+
 			archive?.Dispose();
 		}
 
@@ -245,9 +253,13 @@ namespace Diagnostics.Tracing.StackSources
 			this.cpuThreadUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
 
-		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
+		private Stream GetPerfScriptStream(string path, Dictionary<string, Stream> symbolFiles, out ZipArchive archive)
 		{
 			archive = null;
+
+			// Might put this somewhere more clear later...
+			Regex symbolFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
+
 			if (path.EndsWith(".zip"))
 			{
 				archive = new ZipArchive(new FileStream(path, FileMode.Open));
@@ -257,10 +269,16 @@ namespace Diagnostics.Tracing.StackSources
 					if (entry.FullName.EndsWithOneOf(PerfDumpSuffixes))
 					{
 						foundEntry = entry;
-						break;
 					}
+
+					if (symbolFilePatterns.IsMatch(entry.FullName))
+					{
+						symbolFiles.Add(entry.FullName, entry.Open());
+					}
+
 				}
-				return foundEntry.Open();
+
+				return foundEntry?.Open();
 			}
 			else
 			{
