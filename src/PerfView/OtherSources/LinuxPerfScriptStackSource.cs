@@ -451,6 +451,11 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		internal string[] GetSymbolsFromMicrosoftMap(string symbol)
+		{
+			return this.parser.GetSymbolFromMicrosoftMap(symbol);
+		}
+
 		#region private
 		private readonly FastStream masterSource;
 		private readonly LinuxPerfScriptEventParser parser;
@@ -684,6 +689,29 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		internal string[] GetSymbolFromMicrosoftMap(string entireSymbol, string mapFileLocation = "")
+		{
+			string[] splits = entireSymbol.Split(' ');
+
+			for (int i = 0; i < splits.Length; i++)
+			{
+				string module = splits[i].Trim();
+				if (module.Length > 0 && module[0] == '[' && module[module.Length - 1] == ']')
+				{
+					string symbol = "";
+					for (int j = i + 1; j < splits.Length; j++)
+					{
+						symbol += splits[j] + ' ';
+					}
+
+					return new string[2] { module, symbol.Trim() };
+				}
+			}
+
+			// This is suppose to safely recover if for some reason the .map sequence doesn't have a noticeable module
+			return new string[2] { entireSymbol, mapFileLocation };
+		}
+
 		internal bool IsEndOfSample(FastStream source)
 		{
 			return this.IsEndOfSample(source, source.Current, source.Peek(1));
@@ -886,7 +914,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (assumedModule.EndsWith(".map"))
 			{
-				string[] moduleSymbol = this.GetModuleAndSymbol(assumedSymbol, assumedModule);
+				string[] moduleSymbol = this.GetSymbolFromMicrosoftMap(assumedSymbol, assumedModule);
 				actualModule = this.RemoveOutterBrackets(moduleSymbol[0]);
 				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
 			}
@@ -942,29 +970,6 @@ namespace Diagnostics.Tracing.StackSources
 			int nextPrio = source.ReadInt();
 
 			return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
-		}
-
-		private string[] GetModuleAndSymbol(string assumedModule, string assumedSymbol)
-		{
-			string[] splits = assumedModule.Split(' ');
-
-			for (int i = 0; i < splits.Length; i++)
-			{
-				string module = splits[i].Trim();
-				if (module.Length > 0 && module[0] == '[' && module[module.Length - 1] == ']')
-				{
-					string symbol = "";
-					for (int j = i + 1; j < splits.Length; j++)
-					{
-						symbol += splits[j] + ' ';
-					}
-
-					return new string[2] { module, symbol.Trim() };
-				}
-			}
-
-			// This is suppose to safely recover if for some reason the .map sequence doesn't have a noticeable module
-			return new string[2] { assumedModule, assumedSymbol };
 		}
 
 		private string RemoveOutterBrackets(string s)
