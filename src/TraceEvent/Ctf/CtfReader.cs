@@ -155,7 +155,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             object[] result = ReadStruct(evt.Fields);
 
-
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
                 PostFixupPerHeapHistory(evt);
 
@@ -220,6 +219,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             return result;
         }
+        
 
         private object ReadType(CtfStruct strct, object[] result, CtfMetadataType type)
         {
