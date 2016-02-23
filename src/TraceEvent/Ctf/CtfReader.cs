@@ -171,7 +171,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             if (evt.IsFixedSize)
                 ReadBits(evt.Size);
             else
-                ReadEvent(evt);
+                ReadStruct(evt.Fields);
 
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
                 PostFixupPerHeapHistory(evt);
