@@ -27,13 +27,15 @@ namespace Diagnostics.Tracing.StackSources
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 			this.currentStackIndex = 0;
 
-			this.fileSymbolMappers = new Dictionary<int, Mapper>();
+			this.fileSymbolMappers = new Dictionary<string, Mapper>();
 
 			ZipArchive archive;
 			Dictionary<string, Stream> symbolFiles = new Dictionary<string, Stream>();
 			using (Stream stream = this.GetPerfScriptStream(path, symbolFiles, out archive))
 			{
 				this.parseController = new PerfScriptToSampleController(stream);
+
+				this.parseController.MakeSymbolTables(symbolFiles, this.fileSymbolMappers);
 
 				if (this.doThreadTime)
 				{
@@ -45,13 +47,6 @@ namespace Diagnostics.Tracing.StackSources
 				this.InternAllLinuxEvents(stream);
 				stream.Close();
 			}
-			
-			foreach (Stream stream in symbolFiles.Values)
-			{
-				stream?.Close();
-				stream?.Dispose();
-			}
-
 			archive?.Dispose();
 		}
 
@@ -107,7 +102,7 @@ namespace Diagnostics.Tracing.StackSources
 		private object internCallStackLock = new object();
 		private object internFrameLock = new object();
 
-		private readonly Dictionary<int, Mapper> fileSymbolMappers;
+		private readonly Dictionary<string, Mapper> fileSymbolMappers;
 
 		private readonly Dictionary<int, double> blockedThreads;
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -441,10 +436,24 @@ namespace Diagnostics.Tracing.StackSources
 			stackSource.AddSamples(allSamplesEnumator);
 		}
 
-		#region private
-		private readonly LinuxPerfScriptEventParser parser;
-		private readonly FastStream masterSource;
+		internal void MakeSymbolTables(Dictionary<string, Stream> source, Dictionary<string, Mapper> destination)
+		{
+			foreach (string fileName in source.Keys)
+			{
+				using (Stream symbolStream = source[fileName])
+				{
+					Mapper mapper = new Mapper();
+					destination[Path.GetFileNameWithoutExtension(fileName)] = mapper;
+					this.parser.ParseSymbolFile(symbolStream, mapper);
+					mapper.DoneMapping();
+					symbolStream.Close();
+				}
+			}
+		}
 
+		#region private
+		private readonly FastStream masterSource;
+		private readonly LinuxPerfScriptEventParser parser;
 		private object bufferLock = new object();
 
 		// If the length returned is -1, then there's no more stream in the
@@ -646,6 +655,33 @@ namespace Diagnostics.Tracing.StackSources
 		public LinuxPerfScriptEventParser()
 		{
 			this.SetDefaultValues();
+		}
+
+		internal void ParseSymbolFile(Stream stream, Mapper mapper)
+		{
+			FastStream source = new FastStream(stream);
+			source.MoveNext(); // Avoid \0 encounter
+			this.SkipPreamble(source); // Remove encoding stuff if it's there
+			source.SkipWhiteSpace();
+
+			StringBuilder sb = new StringBuilder();
+
+			while (!source.EndOfStream)
+			{
+				int start = source.ReadHex();
+				source.SkipWhiteSpace();
+
+				int size = source.ReadHex();
+				source.SkipWhiteSpace();
+
+				source.ReadAsciiStringUpTo('\n', sb);
+				string symbol = sb.ToString().TrimEnd();
+				sb.Clear();
+
+				mapper.Add(start, size, symbol);
+
+				source.SkipWhiteSpace();
+			}
 		}
 
 		internal bool IsEndOfSample(FastStream source)

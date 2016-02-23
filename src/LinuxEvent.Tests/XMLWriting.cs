@@ -33,5 +33,11 @@ namespace LinuxTracing.Tests
 		{
 			Write(Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\bigperf.data.dump"));
 		}
+
+		[Fact]
+		public void ZipDump()
+		{
+			Write(Constants.GetTestingFilePath(@"symbol-tests.trace.zip"));
+		}
 	}
 }
