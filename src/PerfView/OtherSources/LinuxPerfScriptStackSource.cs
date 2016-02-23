@@ -21,6 +21,9 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
+		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
+		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
+
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			this.doThreadTime = doThreadTime;
@@ -222,8 +225,7 @@ namespace Diagnostics.Tracing.StackSources
 				ulong location;
 				if (mapper.TryFindSymbol(absoluteLocation, out symbol, out location))
 				{
-					Regex regex = new Regex(@"^.+\.ni\.\{.+\}$");
-					if (regex.IsMatch(symbol))
+					if (DllMapFilePattern.IsMatch(symbol))
 					{
 						ulong relativeLocation = absoluteLocation - location;
 						if (this.fileSymbolMappers.TryGetValue(symbol, out mapper))
@@ -294,10 +296,6 @@ namespace Diagnostics.Tracing.StackSources
 		private Stream GetPerfScriptStream(string path, Dictionary<string, Stream> symbolFiles, out ZipArchive archive)
 		{
 			archive = null;
-
-			// Might put this somewhere more clear later...
-			Regex symbolFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
-
 			if (path.EndsWith(".zip"))
 			{
 				archive = new ZipArchive(new FileStream(path, FileMode.Open));
@@ -309,7 +307,7 @@ namespace Diagnostics.Tracing.StackSources
 						foundEntry = entry;
 					}
 
-					if (symbolFilePatterns.IsMatch(entry.FullName))
+					if (MapFilePatterns.IsMatch(entry.FullName))
 					{
 						symbolFiles.Add(entry.FullName, entry.Open());
 					}
