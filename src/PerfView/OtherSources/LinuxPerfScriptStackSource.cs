@@ -471,20 +471,20 @@ namespace Diagnostics.Tracing.StackSources
 
 			Task.WaitAll(tasks);
 
-			IEnumerable<StackSourceSample> allSamplesEnumator = null;
+			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
 			foreach (var samples in threadSamples)
 			{
-				if (allSamplesEnumator == null)
+				if (allSamplesEnumerator == null)
 				{
-					allSamplesEnumator = samples;
+					allSamplesEnumerator = samples;
 				}
 				else
 				{
-					allSamplesEnumator = allSamplesEnumator.Concat(samples);
+					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
 				}
 			}
 
-			stackSource.AddSamples(allSamplesEnumator);
+			stackSource.AddSamples(allSamplesEnumerator);
 		}
 
 		internal void MakeSymbolTables(Dictionary<string, Stream> source, Dictionary<string, Mapper> destination)

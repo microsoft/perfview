@@ -36,21 +36,21 @@ namespace PerfView.Utilities
 		}
 
 		// Allows for a byte array while keeping a stream
-		public FastStream(byte[] buffer, int length) :
-			this(new MemoryStream(buffer, 0, length))
+		public FastStream(byte[] buffer, int length, int bufferSize = 262144) :
+			this(new MemoryStream(buffer, 0, length), bufferSize, true)
 		{
 		}
 
-		public FastStream(byte[] buffer, int start, int length) :
-			this(new MemoryStream(buffer, start, length))
+		public FastStream(byte[] buffer, int start, int length, int bufferSize = 262144) :
+			this(new MemoryStream(buffer, start, length), bufferSize, true)
 		{
 		}
 
-		public FastStream(Stream stream)
+		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
 		{
 			this.stream = stream;
-			// TODO: Need to fix this edge problem
-			this.buffer = new byte[262144];
+			this.closeStream = closeStream;
+			this.buffer = new byte[bufferSize];
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
@@ -62,9 +62,9 @@ namespace PerfView.Utilities
 		/// there is a better 'rare' value to use as an end of stream marker.  
 		/// </summary>
 		public byte Sentinal = 0;
-		public byte[] Buffer { get { return this.buffer; } }
+		public byte[] Buffer => this.buffer;
 		public long Position { get; private set; }
-		public uint BufferFillPosition { get { return this.bufferFillPos; } }
+		public uint BufferFillPosition => this.bufferFillPos;
 		public uint BufferIndex { get { return this.bufferIndex; } set { this.bufferIndex = value; } }
 
 		public bool MoveNext()
@@ -92,7 +92,7 @@ namespace PerfView.Utilities
 		{
 			if (bytesAhead <= -(int)MaxRestoreLength)
 			{
-				throw new Exception("Can't peek back more than restore length");
+				throw new InvalidOperationException("Can't peek back more than restore length");
 			}
 
 			int peekIndex = bytesAhead + (int)this.bufferIndex;
@@ -439,6 +439,7 @@ namespace PerfView.Utilities
 		private uint streamReadIn;
 		private Stream stream;
 		private uint bufferIndex;      // The next character to read
+		private bool closeStream;
 
 		private bool MoveNextHelper()
 		{
@@ -449,7 +450,7 @@ namespace PerfView.Utilities
 		private uint PeekHelper(uint bytesAhead)
 		{
 			if (bytesAhead >= this.buffer.Length - MaxRestoreLength || this.bufferIndex - MaxRestoreLength < 0)
-				throw new Exception("Can only peek ahead the length of the buffer");
+				throw new InvalidOperationException("Can only peek ahead the length of the buffer");
 
 			// We keep everything above the index.
 			this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
@@ -459,9 +460,11 @@ namespace PerfView.Utilities
 
 		public void Dispose()
 		{
-			// Don't know if I need this...
-			// this.stream?.Close();
-			// this.stream?.Dispose();
+			if (this.closeStream)
+			{
+				this.stream?.Close();
+				this.stream?.Dispose();
+			}
 		}
 
 #if DEBUG
