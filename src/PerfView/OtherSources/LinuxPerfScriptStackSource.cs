@@ -457,7 +457,9 @@ namespace Diagnostics.Tracing.StackSources
 					byte[] buffer = new byte[this.masterSource.Buffer.Length];
 					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
 					{
-						FastStream bufferPart = new FastStream(buffer, length);
+						// We don't need a gigantic buffer now, so we reduce the size by 16 times
+						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
+						FastStream bufferPart = new FastStream(buffer, length, bufferSize: 16384);
 
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
