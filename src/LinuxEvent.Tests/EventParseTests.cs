@@ -158,19 +158,6 @@ namespace LinuxTracing.Tests
 				});
 		}
 
-		//[Fact]
-		public void EmptyStackFrames2()
-		{
-			string path = Constants.GetTestingPerfDumpPath("no_stack_frames2");
-			this.DoStackTraceTest(path, doBlockedTime: false,
-				callerStacks: new List<List<string>>
-				{
-					new List<string>
-					{
-					},
-				});
-		}
-
 		[Fact]
 		public void NonSchedHeader()
 		{
