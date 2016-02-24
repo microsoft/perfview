@@ -965,6 +965,7 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				string[] moduleSymbol = this.GetSymbolFromMicrosoftMap(assumedSymbol, assumedModule);
 				actualSymbol = string.IsNullOrEmpty(moduleSymbol[1]) ? assumedModule : moduleSymbol[1];
+				actualModule = moduleSymbol[0];
 			}
 
 			actualModule = Path.GetFileName(actualModule);
