@@ -14,6 +14,8 @@ namespace LinuxTracing.Tests
 	{
 		private void DoStackTraceTest(string path, bool doBlockedTime, List<List<string>> callerStacks)
 		{
+			Constants.WaitUntilFileIsReady(path);
+
 			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(path, doBlockedTime);
 
 			for (int i = 0; i < stackSource.SampleIndexLimit; i++)
@@ -45,6 +47,9 @@ namespace LinuxTracing.Tests
 			ScheduleSwitch[] switches
 			)
 		{
+
+			Constants.WaitUntilFileIsReady(source);
+
 			using (Stream stream = File.Open(source, FileMode.Open))
 			{
 				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();

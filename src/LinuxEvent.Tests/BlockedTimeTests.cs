@@ -20,6 +20,8 @@ namespace LinuxTracing.Tests
 	{
 		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
 		{
+			Constants.WaitUntilFileIsReady(source);
+
 			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(source, doThreadTime: true);
 
 			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());

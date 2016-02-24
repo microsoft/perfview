@@ -26,5 +26,35 @@ namespace LinuxTracing.Tests
 		{
 			return Path.Combine(Environment.CurrentDirectory, OutputFolder, string.Format("{0}", filename));
 		}
+
+		public static void WaitUntilFileIsReady(string fileName)
+		{
+			while (!IsFileReady(fileName))
+			{
+			}
+		}
+
+		public static bool IsFileReady(string fileName)
+		{
+			try
+			{
+				using (FileStream inputStream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.None))
+				{
+					if (inputStream.Length > 0)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+
+				}
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
 	}
 }
