@@ -280,7 +280,10 @@ namespace PerfView.Utilities
 		{
 			while (predicate(this.Current))
 			{
-				MoveNext();
+				if (!MoveNext())
+				{
+					break;
+				}
 			}
 		}
 

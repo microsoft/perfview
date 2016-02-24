@@ -30,12 +30,9 @@ namespace LinuxTracing.Tests
 
 		public static void WaitUntilFileIsReady(string fileName)
 		{
-			// For some reason these things sometimes don't catch when a file is being used by another
-			//   process. Is there a better way to check whether or not a file is still being used?
-			//   I realize this solution might have been the result of an XY problem.
-			Thread.Sleep(50);
 			while (!IsFileReady(fileName))
 			{
+				Thread.Sleep(50);
 			}
 		}
 
@@ -43,18 +40,8 @@ namespace LinuxTracing.Tests
 		{
 			try
 			{
-				using (FileStream inputStream = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.None))
-				{
-					if (inputStream.Length > 0)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
-
-				}
+				// Still doesn't resolve the problem - kind of weird
+				return new FileInfo(fileName).Length > 0;
 			}
 			catch (IOException)
 			{

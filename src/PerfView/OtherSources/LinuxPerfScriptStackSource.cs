@@ -409,6 +409,7 @@ namespace Diagnostics.Tracing.StackSources
 		internal ulong Length { get; }
 		internal ulong End { get { return this.Start + this.Length; } }
 
+		// Taking advantage of unsigned arithmetic wrap-around to get it done in just one comparison.
 		internal bool IsWithin(ulong thing)
 		{
 			return (thing - this.Start) < this.Length;
