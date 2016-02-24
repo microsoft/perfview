@@ -447,6 +447,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			Task[] tasks = new Task[threadCount];
 			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
+
 			for (int i = 0; i < tasks.Length; i++)
 			{
 				threadSamples[i] = new List<StackSourceSample>();

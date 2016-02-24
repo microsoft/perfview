@@ -37,12 +37,12 @@ namespace PerfView.Utilities
 
 		// Allows for a byte array while keeping a stream
 		public FastStream(byte[] buffer, int length, int bufferSize = 262144) :
-			this(new MemoryStream(buffer, 0, length), bufferSize, true)
+			this(new MemoryStream(buffer, 0, length, writable: false), bufferSize, true)
 		{
 		}
 
 		public FastStream(byte[] buffer, int start, int length, int bufferSize = 262144) :
-			this(new MemoryStream(buffer, start, length), bufferSize, true)
+			this(new MemoryStream(buffer, start, length, writable: false), bufferSize, true)
 		{
 		}
 
