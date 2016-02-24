@@ -88,13 +88,15 @@ namespace Diagnostics.Tracing.StackSources
 
 		internal void AddSamples(IEnumerable<StackSourceSample> _samples)
 		{
+			Contract.Requires(_samples != null, nameof(_samples));
+
 			List<StackSourceSample> samples = _samples.ToList();
 			samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
 			double startTime = samples[0].TimeRelativeMSec;
-			for (int i = 0; i < samples.Count; i++)
+			foreach (var sample in samples)
 			{
-				samples[i].TimeRelativeMSec -= startTime;
-				this.AddSample(samples[i]);
+				sample.TimeRelativeMSec -= startTime;
+				this.AddSample(sample);
 			}
 
 			this.SampleEndTime = samples.Last().TimeRelativeMSec;
@@ -389,7 +391,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	internal class Map
+	internal struct Map
 	{
 		internal Interval Interval { get; }
 		internal string MapTo { get; }
@@ -407,7 +409,12 @@ namespace Diagnostics.Tracing.StackSources
 		internal ulong Length { get; }
 		internal ulong End { get { return this.Start + this.Length; } }
 
-		internal bool IsWithin(ulong thing, bool inclusiveStart = true, bool inclusiveEnd = false)
+		internal bool IsWithin(ulong thing)
+		{
+			return (thing - this.Start) < this.Length;
+		}
+
+		internal bool IsWithin(ulong thing, bool inclusiveStart, bool inclusiveEnd)
 		{
 			bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
 			bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
