@@ -749,24 +749,23 @@ namespace Diagnostics.Tracing.StackSources
 
 		internal string[] GetSymbolFromMicrosoftMap(string entireSymbol, string mapFileLocation = "")
 		{
-			string[] splits = entireSymbol.Split(' ');
-
-			for (int i = 0; i < splits.Length; i++)
+			for (int first = 0; first < entireSymbol.Length;)
 			{
-				string module = splits[i].Trim();
-				if (module.Length > 0 && module[0] == '[' && module[module.Length - 1] == ']')
+				int last = entireSymbol.IndexOf(' ', first);
+				if (last == -1)
 				{
-					string symbol = "";
-					for (int j = i + 1; j < splits.Length; j++)
-					{
-						symbol += splits[j] + ' ';
-					}
-
-					return new string[2] { this.RemoveOutterBrackets(module), symbol.Trim() };
+					last = entireSymbol.Length;
 				}
+
+				if (entireSymbol[first] == '[' && entireSymbol[last - 1] == ']')
+				{
+					var symbol = entireSymbol.Substring(System.Math.Min(entireSymbol.Length, last + 1));
+					return new string[2] { entireSymbol.Substring(first + 1, last - first - 2), symbol.Trim() };
+				}
+
+				first = last + 1;
 			}
 
-			// This is suppose to safely recover if for some reason the .map sequence doesn't have a noticeable module
 			return new string[2] { entireSymbol, mapFileLocation };
 		}
 
@@ -965,10 +964,10 @@ namespace Diagnostics.Tracing.StackSources
 			string assumedModule = sb.ToString();
 			sb.Clear();
 
-			assumedModule = this.RemoveOutterBrackets(assumedModule.Trim());
+			assumedModule = this.RemoveOuterBrackets(assumedModule.Trim());
 
 			string actualModule = assumedModule;
-			string actualSymbol = this.RemoveOutterBrackets(assumedSymbol.Trim());
+			string actualSymbol = this.RemoveOuterBrackets(assumedSymbol.Trim());
 
 			if (assumedModule.EndsWith(".map"))
 			{
@@ -1030,7 +1029,7 @@ namespace Diagnostics.Tracing.StackSources
 			return new ScheduleSwitch(prevComm, prevTid, prevPrio, prevState, nextComm, nextTid, nextPrio);
 		}
 
-		private string RemoveOutterBrackets(string s)
+		private string RemoveOuterBrackets(string s)
 		{
 			if (s.Length < 1)
 			{
@@ -1254,11 +1253,11 @@ namespace Diagnostics.Tracing.StackSources
 
 	public static class StringExtension
 	{
-		internal static bool EndsWithOneOf(this string path, string[] suffixes)
+		internal static bool EndsWithOneOf(this string path, string[] suffixes, StringComparison stringComparison = StringComparison.Ordinal)
 		{
 			foreach (string suffix in suffixes)
 			{
-				if (path.EndsWith(suffix))
+				if (path.EndsWith(suffix, stringComparison))
 				{
 					return true;
 				}
