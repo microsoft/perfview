@@ -119,6 +119,8 @@ namespace Diagnostics.Tracing.StackSources
 
 		private StackSourceCallStackIndex currentStackIndex;
 
+		private const int MaxThreadAmount = 4;
+
 		private enum StateThread
 		{
 			BLOCKED_TIME,
@@ -142,7 +144,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			// This is where the parallel stuff happens, for now if threadtime is involved we force it
 			//   to run on one thread...
-			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : 4);
+			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadAmount);
 
 			if (this.doThreadTime)
 			{
@@ -514,6 +516,7 @@ namespace Diagnostics.Tracing.StackSources
 		private readonly FastStream masterSource;
 		private readonly LinuxPerfScriptEventParser parser;
 		private object bufferLock = new object();
+		private const int bufferDivider = 4;
 
 		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
@@ -528,7 +531,7 @@ namespace Diagnostics.Tracing.StackSources
 				}
 
 				int start = (int)source.BufferIndex;
-				int length = source.Buffer.Length / 4;
+				int length = source.Buffer.Length / bufferDivider;
 				bool truncated;
 
 				length = this.GetCompleteBuffer(source, start, length, estimatedCountPortion: 0.8, truncated: out truncated);
