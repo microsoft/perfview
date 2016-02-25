@@ -177,23 +177,19 @@ namespace Microsoft.Diagnostics.Tracing
         
         private void ProcessOneChannel(CtfChannel channel, CtfReader stream)
         {
-            ulong last = 0;
             int events = 0;
             foreach (CtfEventHeader header in stream.EnumerateEventHeaders())
             {
                 if (stopProcessing)
                     return;
                 
+                // Despite the content length field in packets, LTTng still seems to put some "null value"
+                // packets at the end of a data stream.  This check simply discards those null events.  There
+                // never seems to be anything after them in the event stream, but we'll continue processing
+                // just in case.
                 if (header.Event.ID == 0 && header.Tid == 0 && header.Pid == 0 && header.Timestamp == 0)
-                    break;
+                    continue;
 
-                if (header.Timestamp <= last)
-                {
-                    // TODO: I'm not sure how to interpret timestamps from compact headers.
-                    header.Timestamp = last + 1;
-                }
-
-                last = header.Timestamp;
                 CtfEvent evt = header.Event;
                 stream.ReadEventIntoBuffer(evt);
                 events++;

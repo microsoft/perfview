@@ -86,6 +86,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfStruct extended = (CtfStruct)v.GetVariant("extended").Type;
             CtfStruct compact = (CtfStruct)v.GetVariant("compact").Type;
 
+            ulong last = 0;
+
             while (!_eof)
             {
                 _header.Clear();
@@ -98,16 +100,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 result = header.GetFieldValue<object[]>(result, "v");
                 if (en.GetName((int)event_id) == "extended")
-               { 
+                { 
                     event_id = extended.GetFieldValue<uint>(result, "id");
                     timestamp = extended.GetFieldValue<ulong>(result, "timestamp");
                 }
                 else
                 {
-                    // TODO: Handle multiple clocks
-                    CtfClock clock = _metadata.Clocks.First();
-                    timestamp = compact.GetFieldValue<ulong>(result, "timestamp");
+                    timestamp = compact.GetFieldValue<ulong>(result, "timestamp") + last;
                 }
+
+
+                last = timestamp;
 
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
                 _header.Event = evt;
