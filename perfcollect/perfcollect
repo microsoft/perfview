@@ -1077,6 +1077,12 @@ ProcessArguments()
 		then
 			events=$value
 			i=$i+1
+		elif [ "-collectsec" == "$arg" ]
+		then
+			duration=$value
+			i=$i+1
+		else
+			echo "Unknown arg ${arg}, ignored..."
 		fi
 	done
 	
@@ -1315,7 +1321,10 @@ CTRLC_Handler()
 {
 	# Mark the handler invoked.
 	handlerInvoked=1
+}
 
+EndCollect()
+{
 	if [ "$useLTTng" == "1" ]
 	then
 		StopLTTngCollection
@@ -1400,8 +1409,13 @@ BuildPerfRecordArgs()
 
 	done
 
+	if [ ! -z ${duration} ]
+	then
+		durationString="sleep ${duration}"
+	fi
+
 	# Add the events onto the collection command line args.	
-	collectionArgs="$collectionArgs -e $eventString"
+	collectionArgs="$collectionArgs -e $eventString $durationString"
 }
 
 DoCollect()
@@ -1436,8 +1450,6 @@ DoCollect()
 	then
 		echo "Running cmd: $perfcmd $collectionArgs $perfOpt"
 		$perfcmd $collectionArgs
-
-		# CTRL+C handler will run after the user hits CTRL+C to stop collection.
 	else
 		# Wait here until CTRL+C handler gets called when user types CTRL+C.
 		for (( ; ; ))
@@ -1451,6 +1463,7 @@ DoCollect()
 			sleep 1
 		done
 	fi
+	EndCollect
 }
 
 # $1 == Path to directory containing trace files
