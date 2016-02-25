@@ -13,18 +13,17 @@ using PerfView.Utilities;
 
 namespace Diagnostics.Tracing.StackSources
 {
-
-	public class LinuxPerfScriptStackSource : InternStackSource
+	internal class LinuxPerfScriptStackSource : InternStackSource
 	{
-		public static readonly string[] PerfDumpSuffixes = new string[]
+		internal static readonly string[] PerfDumpSuffixes = new string[]
 		{
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
-		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
+		internal static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
+		internal static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
 
-		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
+		internal LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			this.doThreadTime = doThreadTime;
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
@@ -53,7 +52,7 @@ namespace Diagnostics.Tracing.StackSources
 			archive?.Dispose();
 		}
 
-		public double GetTotalBlockedTime()
+		internal double GetTotalBlockedTime()
 		{
 			Contract.Requires(this.threadBlockedPeriods != null, nameof(threadBlockedPeriods));
 			double timeBlocked = 0;
@@ -119,7 +118,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		private StackSourceCallStackIndex currentStackIndex;
 
-		private const int MaxThreadAmount = 4;
+		private const int MaxThreadCount = 4;
 
 		private enum StateThread
 		{
@@ -144,7 +143,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			// This is where the parallel stuff happens, for now if threadtime is involved we force it
 			//   to run on one thread...
-			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadAmount);
+			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
 
 			if (this.doThreadTime)
 			{
@@ -634,19 +633,19 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
-	public class LinuxPerfScriptEventParser
+	internal class LinuxPerfScriptEventParser
 	{
 		/// <summary>
 		/// Gets the total number of samples created.
 		/// </summary>
-		public int EventCount { get; private set; }
+		internal int EventCount { get; private set; }
 
 		/// <summary>
 		/// True if the source given had been parsed before, otherwise false.
 		/// </summary>
-		public bool Parsed { get; private set; }
+		internal bool Parsed { get; private set; }
 
-		public void SkipPreamble(FastStream source)
+		internal void SkipPreamble(FastStream source)
 		{
 			source.MoveNext(); // Skip Sentinal value
 
@@ -658,12 +657,12 @@ namespace Diagnostics.Tracing.StackSources
 			source.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
 		}
 
-		public IEnumerable<LinuxEvent> Parse(string filename)
+		internal IEnumerable<LinuxEvent> Parse(string filename)
 		{
 			return this.Parse(new FastStream(filename));
 		}
 
-		public IEnumerable<LinuxEvent> Parse(Stream stream)
+		internal IEnumerable<LinuxEvent> Parse(Stream stream)
 		{
 			return this.Parse(new FastStream(stream));
 		}
@@ -671,14 +670,14 @@ namespace Diagnostics.Tracing.StackSources
 		/// <summary>
 		/// Parses the PerfScript .dump file given, gives one sample at a time
 		/// </summary>
-		public IEnumerable<LinuxEvent> Parse(FastStream source)
+		internal IEnumerable<LinuxEvent> Parse(FastStream source)
 		{
 			this.SkipPreamble(source);
 
 			return this.ParseSamples(source);
 		}
 
-		public IEnumerable<LinuxEvent> ParseSamples(FastStream source)
+		internal IEnumerable<LinuxEvent> ParseSamples(FastStream source)
 		{
 			if (source.Current == 0 && !source.EndOfStream)
 			{
@@ -707,14 +706,14 @@ namespace Diagnostics.Tracing.StackSources
 		/// <summary>
 		/// Regex string pattern for filtering events.
 		/// </summary>
-		public Regex Pattern { get; set; }
+		internal Regex Pattern { get; set; }
 
 		/// <summary>
 		/// The amount of samples the parser takes.
 		/// </summary>
-		public long MaxSamples { get; set; }
+		internal long MaxSamples { get; set; }
 
-		public LinuxPerfScriptEventParser()
+		internal LinuxPerfScriptEventParser()
 		{
 			this.SetDefaultValues();
 		}
@@ -1074,7 +1073,7 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// Defines the kind of an event for easy casting.
 	/// </summary>
-	public enum EventKind
+	internal enum EventKind
 	{
 		Cpu,
 		Scheduler,
@@ -1083,16 +1082,16 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// A sample that has extra properties to hold scheduled events.
 	/// </summary>
-	public class SchedulerEvent : LinuxEvent
+	internal class SchedulerEvent : LinuxEvent
 	{
-		public static readonly string Name = "sched_switch";
+		internal static readonly string Name = "sched_switch";
 
 		/// <summary>
 		/// The details of the context switch.
 		/// </summary>
-		public ScheduleSwitch Switch { get; }
+		internal ScheduleSwitch Switch { get; }
 
-		public SchedulerEvent(
+		internal SchedulerEvent(
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks, ScheduleSwitch schedSwitch) :
@@ -1102,17 +1101,17 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	public class ScheduleSwitch
+	internal class ScheduleSwitch
 	{
-		public string PreviousCommand { get; }
-		public int PreviousThreadID { get; }
-		public int PreviousPriority { get; }
-		public char PreviousState { get; }
-		public string NextCommand { get; }
-		public int NextThreadID { get; }
-		public int NextPriority { get; }
+		internal string PreviousCommand { get; }
+		internal int PreviousPriority { get; }
+		internal char PreviousState { get; }
+		internal string NextCommand { get; }
+		internal int NextThreadID { get; }
+		internal int NextPriority { get; }
+		internal int PreviousThreadID { get; }
 
-		public ScheduleSwitch(string prevComm, int prevTid, int prevPrio, char prevState, string nextComm, int nextTid, int nextPrio)
+		internal ScheduleSwitch(string prevComm, int prevTid, int prevPrio, char prevState, string nextComm, int nextTid, int nextPrio)
 		{
 			this.PreviousCommand = prevComm;
 			this.PreviousThreadID = prevTid;
@@ -1124,9 +1123,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	public class CpuEvent : LinuxEvent
+	internal class CpuEvent : LinuxEvent
 	{
-		public CpuEvent(
+		internal CpuEvent(
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks) :
@@ -1137,20 +1136,20 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// A generic Linux event, all Linux events contain these properties.
 	/// </summary>
-	public abstract class LinuxEvent
+	internal abstract class LinuxEvent
 	{
-		public EventKind Kind { get; }
-		public string Command { get; }
-		public int ThreadID { get; }
-		public int ProcessID { get; }
-		public double Time { get; }
-		public int TimeProperty { get; }
-		public int Cpu { get; }
-		public string EventName { get; }
-		public string EventProperty { get; }
-		public IEnumerable<Frame> CallerStacks { get; }
+		internal EventKind Kind { get; }
+		internal string Command { get; }
+		internal int ThreadID { get; }
+		internal int ProcessID { get; }
+		internal double Time { get; }
+		internal int TimeProperty { get; }
+		internal int Cpu { get; }
+		internal string EventName { get; }
+		internal string EventProperty { get; }
+		internal IEnumerable<Frame> CallerStacks { get; }
 
-		public LinuxEvent(EventKind kind,
+		internal LinuxEvent(EventKind kind,
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,
 			string eventName, string eventProp, IEnumerable<Frame> callerStacks)
@@ -1168,7 +1167,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	public enum FrameKind
+	internal enum FrameKind
 	{
 		StackFrame,
 		ProcessFrame,
@@ -1179,7 +1178,7 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// A way to define different types of frames with different names on PerfView.
 	/// </summary>
-	public interface Frame
+	internal interface Frame
 	{
 		FrameKind Kind { get; }
 		string DisplayName { get; }
@@ -1188,14 +1187,13 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// Defines a single stack frame on a linux sample.
 	/// </summary>
-	public struct StackFrame : Frame
+	internal struct StackFrame : Frame
 	{
 		public FrameKind Kind { get { return FrameKind.StackFrame; } }
-		public string Address { get; }
-		public string Module { get; }
-		public string Symbol { get; }
-
 		public string DisplayName { get { return string.Format("{0}!{1}", this.Module, this.Symbol); } }
+		internal string Address { get; }
+		internal string Module { get; }
+		internal string Symbol { get; }
 
 		internal StackFrame(string address, string module, string symbol)
 		{
@@ -1211,10 +1209,8 @@ namespace Diagnostics.Tracing.StackSources
 	internal struct ProcessFrame : Frame
 	{
 		public FrameKind Kind { get { return FrameKind.ProcessFrame; } }
-
-		public string Name { get; }
-
 		public string DisplayName { get { return this.Name; } }
+		internal string Name { get; }
 
 		internal ProcessFrame(string name)
 		{
@@ -1225,12 +1221,12 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// Represents the name of the thread and its ID.
 	/// </summary>
-	public struct ThreadFrame : Frame
+	internal struct ThreadFrame : Frame
 	{
 		public FrameKind Kind { get { return FrameKind.ThreadFrame; } }
-		public string Name { get; }
-		public int ID { get; }
 		public string DisplayName { get { return string.Format("{0} ({1})", this.Name, this.ID); } }
+		internal string Name { get; }
+		internal int ID { get; }
 
 		internal ThreadFrame(int id, string name)
 		{
@@ -1242,12 +1238,12 @@ namespace Diagnostics.Tracing.StackSources
 	/// <summary>
 	/// A visual frame that represents whether or not a call stack was blocked or not.
 	/// </summary>
-	public struct BlockedCPUFrame : Frame
+	internal struct BlockedCPUFrame : Frame
 	{
 		public FrameKind Kind { get { return FrameKind.BlockedCPUFrame; } }
-		public string SubKind { get; }
-		public int ID { get; }
 		public string DisplayName { get { return this.SubKind; } }
+		internal string SubKind { get; }
+		internal int ID { get; }
 
 		internal BlockedCPUFrame(int id, string kind)
 		{
@@ -1258,7 +1254,7 @@ namespace Diagnostics.Tracing.StackSources
 
 	public static class StringExtension
 	{
-		internal static bool EndsWithOneOf(this string path, string[] suffixes, StringComparison stringComparison = StringComparison.Ordinal)
+		public static bool EndsWithOneOf(this string path, string[] suffixes, StringComparison stringComparison = StringComparison.Ordinal)
 		{
 			foreach (string suffix in suffixes)
 			{
