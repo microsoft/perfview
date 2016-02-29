@@ -50,6 +50,7 @@ namespace PerfView.Utilities
 			this.bufferIndex = MaxRestoreLength;
 			System.Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
 			this.buffer[this.bufferIndex] = 0;
+			this.streamPosition = this.streamReadIn;
 		}
 
 		public FastStream(Stream stream)
@@ -59,6 +60,7 @@ namespace PerfView.Utilities
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
+			this.streamPosition = 0;
 		}
 
 		/// <summary>
@@ -68,13 +70,19 @@ namespace PerfView.Utilities
 		/// </summary>
 		public byte Sentinal = 0;
 		public byte[] Buffer { get { return this.buffer; } }
-		public long Position { get; private set; }
+		public long Position
+		{
+			get
+			{
+				return this.streamPosition - (this.streamReadIn - (this.BufferIndex - MaxRestoreLength));
+			}
+		}
 		public uint BufferFillPosition { get { return this.bufferFillPos; } }
 		public uint BufferIndex { get { return this.bufferIndex; } set { this.bufferIndex = value; } }
 
 		public bool MoveNext()
 		{
-			IncReadPos();
+			bufferIndex++;
 			bool ret = true;
 			if (this.bufferIndex >= this.bufferFillPos)
 			{
@@ -124,15 +132,13 @@ namespace PerfView.Utilities
 			long delta = this.Position - position.streamPos;
 			if (delta > MaxRestoreLength)
 			{
-				this.stream.Position = position.streamPos;
+				this.stream.Position = this.streamPosition = position.streamPos;
 				this.FillBufferFromStreamPosition();
 			}
 			else
 			{
 				this.bufferIndex -= (uint)delta;
 			}
-
-			this.Position = position.streamPos;
 		}
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
@@ -358,13 +364,6 @@ namespace PerfView.Utilities
 		internal Stream BaseStream { get { return this.stream; } }
 
 		#region privateMethods
-		// Only here to 'trick' the JIT compiler into inlining MoveNext.  (we were a bit over the 32 byte IL limit). 
-		private void IncReadPos()
-		{
-			bufferIndex++;
-			this.Position++;
-		}
-
 		public int ReadHex()
 		{
 			int value = 0;
@@ -426,6 +425,7 @@ namespace PerfView.Utilities
 			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
 			this.bufferFillPos = this.streamReadIn + preamble;
 			this.streamReadIn += keepLast;
+			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
 			if (this.bufferFillPos < this.buffer.Length)
 				this.buffer[this.bufferFillPos] = this.Sentinal;	// we define 0 as the value you get after EOS.
 
@@ -439,6 +439,7 @@ namespace PerfView.Utilities
 		private uint streamReadIn;
 		private Stream stream;
 		private uint bufferIndex;      // The next character to read
+		private long streamPosition;
 
 		private bool MoveNextHelper()
 		{
