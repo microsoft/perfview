@@ -341,7 +341,10 @@ namespace PerfView.Utilities
 			}
 		}
 
-		public string PeekString(int length)
+		/// <summary>
+		/// Gets a string from the position to the length indicated (for debugging)
+		/// </summary>
+		internal string PeekString(int length)
 		{
 			StringBuilder sb = new StringBuilder();
 			for (uint i = this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
