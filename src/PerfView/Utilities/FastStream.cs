@@ -37,19 +37,24 @@ namespace PerfView.Utilities
 
 		// Allows for a byte array while keeping a stream
 		public FastStream(byte[] buffer, int length) :
-			this(new MemoryStream(buffer, 0, length))
-		{
+			this(buffer, 0, length)
+		{	
 		}
 
-		public FastStream(byte[] buffer, int start, int length) :
-			this(new MemoryStream(buffer, start, length))
+		public FastStream(byte[] buffer, int start, int length)
 		{
+			this.stream = Stream.Null;
+			this.streamReadIn = (uint)length;
+			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+			this.buffer = new byte[this.bufferFillPos];
+			this.bufferIndex = MaxRestoreLength;
+			System.Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+			this.buffer[this.bufferIndex] = 0;
 		}
 
 		public FastStream(Stream stream)
 		{
 			this.stream = stream;
-			// TODO: Need to fix this edge problem
 			this.buffer = new byte[262144];
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
@@ -445,7 +450,7 @@ namespace PerfView.Utilities
 
 		private uint PeekHelper(uint bytesAhead)
 		{
-			if (bytesAhead >= this.buffer.Length - MaxRestoreLength || this.bufferIndex - MaxRestoreLength < 0)
+			if (bytesAhead >= this.buffer.Length - MaxRestoreLength)
 				throw new Exception("Can only peek ahead the length of the buffer");
 
 			// We keep everything above the index.
