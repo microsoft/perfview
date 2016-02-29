@@ -93,20 +93,15 @@ namespace PerfView.Utilities
 		/// </summary>
 		/// <param name="bytesAhead"></param>
 		/// <returns></returns>
-		public byte Peek(int bytesAhead)
+		public byte Peek(uint bytesAhead)
 		{
-			if (bytesAhead <= -(int)MaxRestoreLength)
-			{
-				throw new Exception("Can't peek back more than restore length");
-			}
-
-			int peekIndex = bytesAhead + (int)this.bufferIndex;
+			uint peekIndex = bytesAhead + this.bufferIndex;
 			if (peekIndex >= this.bufferFillPos)
 			{
-				peekIndex = (int)this.PeekHelper((uint)bytesAhead);
+				peekIndex = this.PeekHelper(bytesAhead);
 			}
 
-			return peekIndex < 0 ? this.Sentinal : this.buffer[peekIndex];
+			return this.buffer[peekIndex];
 		}
 
 		public struct MarkedPosition
@@ -255,7 +250,7 @@ namespace PerfView.Utilities
 				{
 					if (markerIdx >= endMarker.Length)
 						return;
-					if (Peek((int)markerIdx) != endMarker[(int)markerIdx])
+					if (Peek(markerIdx) != endMarker[(int)markerIdx])
 						break;
 					markerIdx++;
 				}
@@ -349,9 +344,9 @@ namespace PerfView.Utilities
 		public string PeekString(int length)
 		{
 			StringBuilder sb = new StringBuilder();
-			for (int i = (int)this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
+			for (uint i = this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
 			{
-				sb.Append((char)this.Peek((int)(i - this.BufferIndex)));
+				sb.Append((char)this.Peek(i - this.BufferIndex));
 			}
 
 			return sb.ToString();

@@ -393,9 +393,9 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
 
-				for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
+				for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
 				{
-					int bytesAhead = (int)(i - source.BufferIndex);
+					uint bytesAhead = i - source.BufferIndex;
 
 					newCount++;
 					if (this.parser.IsEndOfSample(source,
@@ -431,9 +431,9 @@ namespace Diagnostics.Tracing.StackSources
 			Contract.Assert(estimatedCountPortion < 0.5, nameof(estimatedCountPortion));
 
 			int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
-			for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
+			for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
 			{
-				int bytesAhead = (int)(i - source.BufferIndex);
+				uint bytesAhead = i - source.BufferIndex;
 				newCount++;
 
 				if (source.Peek(bytesAhead) == '\n')
