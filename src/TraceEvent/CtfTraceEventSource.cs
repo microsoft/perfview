@@ -157,32 +157,16 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
-            foreach (ZipArchiveEntry channelZip in _channels)
-            {
-                using (Stream stream = channelZip.Open())
-                {
-                    CtfChannel channel = new CtfChannel(stream, _metadata);
-                    CtfReader reader = new CtfReader(channel, _metadata, channel.CtfStream);
-                    {
-                        if (stopProcessing)
-                            return false;
-
-                        ProcessOneChannel(channel, reader);
-                    }
-                }
-            }
-
-            return true;
-        }
-        
-        private void ProcessOneChannel(CtfChannel channel, CtfReader stream)
-        {
             int events = 0;
-            foreach (CtfEventHeader header in stream.EnumerateEventHeaders())
+            ChannelList list = new ChannelList(_channels, _metadata);
+            foreach (ChannelEntry entry in list)
             {
                 if (stopProcessing)
-                    return;
-                
+                    break;
+
+
+                CtfEventHeader header = entry.Current;
+
                 // Despite the content length field in packets, LTTng still seems to put some "null value"
                 // packets at the end of a data stream.  This check simply discards those null events.  There
                 // never seems to be anything after them in the event stream, but we'll continue processing
@@ -191,22 +175,24 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
 
                 CtfEvent evt = header.Event;
-                stream.ReadEventIntoBuffer(evt);
+                entry.Reader.ReadEventIntoBuffer(evt);
                 events++;
-                
+
                 ETWMapping etw = GetTraceEvent(evt);
 
                 if (etw.IsNull)
                     continue;
 
-                var hdr = InitEventRecord(header, stream, etw);
+                var hdr = InitEventRecord(header, entry.Reader, etw);
                 TraceEvent traceEvent = Lookup(hdr);
                 traceEvent.eventRecord = hdr;
-                traceEvent.userData = stream.BufferPtr;
+                traceEvent.userData = entry.Reader.BufferPtr;
 
                 traceEvent.DebugValidate();
                 Dispatch(traceEvent);
             }
+
+            return true;
         }
 
         private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw)
@@ -289,5 +275,128 @@ namespace Microsoft.Diagnostics.Tracing
 
             GC.SuppressFinalize(this);
         }
+
+        // Each file has streams which have sets of events.  These classes help merge those channels
+        // into one chronological stream of events.
+        #region Enumeration Helper
+
+        class ChannelList : IEnumerable<ChannelEntry>
+        {
+            ZipArchiveEntry[] _channels;
+            CtfMetadata _metadata;
+
+            public ChannelList(ZipArchiveEntry[] channels, CtfMetadata metadata)
+            {
+                _channels = channels;
+                _metadata = metadata;
+            }
+
+            public IEnumerator<ChannelEntry> GetEnumerator()
+            {
+                return new ChannelListEnumerator(_channels, _metadata);
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return new ChannelListEnumerator(_channels, _metadata);
+            }
+        }
+
+        class ChannelListEnumerator : IEnumerator<ChannelEntry>
+        {
+            List<ChannelEntry> _channels;
+            int _current;
+
+            public ChannelListEnumerator(ZipArchiveEntry[] channels, CtfMetadata metadata)
+            {
+                _channels = new List<ChannelEntry>(channels.Select(channel => new ChannelEntry(channel, metadata)).Where(channel => channel.MoveNext()));
+                _current = GetCurrent();
+            }
+
+            private int GetCurrent()
+            {
+                if (_channels.Count == 0)
+                    return -1;
+
+                int min = 0;
+
+                for (int i = 1; i < _channels.Count; i++)
+                    if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
+                        min = i;
+
+                return min;
+            }
+
+            public ChannelEntry Current
+            {
+                get { return _current != -1 ? _channels[_current] : null; }
+            }
+
+            public void Dispose()
+            {
+                foreach (var channel in _channels)
+                    channel.Dispose();
+
+                _channels = null;
+            }
+
+            object System.Collections.IEnumerator.Current
+            {
+                get { return Current; }
+            }
+
+            public bool MoveNext()
+            {
+                if (_current == -1)
+                    return false;
+
+                bool hasMore = _channels[_current].MoveNext();
+                if (!hasMore)
+                {
+                    _channels[_current].Dispose();
+                    _channels.RemoveAt(_current);
+                }
+
+                _current = GetCurrent();
+                return _current != -1;
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        class ChannelEntry : IDisposable
+        {
+            public CtfStream CtfStream { get { return Channel.CtfStream; } }
+            public CtfChannel Channel { get; private set; }
+            public CtfReader Reader { get; private set; }
+            public CtfEventHeader Current { get { return _events.Current; } }
+
+            private Stream _stream;
+            private IEnumerator<CtfEventHeader> _events;
+
+            public ChannelEntry(ZipArchiveEntry zip, CtfMetadata metadata)
+            {
+                _stream = zip.Open();
+                Channel = new CtfChannel(_stream, metadata);
+                Reader = new CtfReader(Channel, metadata, Channel.CtfStream);
+                _events = Reader.EnumerateEventHeaders().GetEnumerator();
+            }
+
+            public void Dispose()
+            {
+                Reader.Dispose();
+                Channel.Dispose();
+                _stream.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                return _events.MoveNext();
+            }
+        }
+        #endregion
     }
 }
