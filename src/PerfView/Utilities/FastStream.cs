@@ -461,6 +461,7 @@ namespace PerfView.Utilities
 		{
 			this.stream?.Close();
 			this.stream?.Dispose();
+			this.stream = null;
 		}
 
 #if DEBUG
