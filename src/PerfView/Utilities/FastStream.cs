@@ -355,7 +355,7 @@ namespace PerfView.Utilities
 			return sb.ToString();
 		}
 
-		public Stream BaseStream { get { return this.stream; } }
+		internal Stream BaseStream { get { return this.stream; } }
 
 		#region privateMethods
 		// Only here to 'trick' the JIT compiler into inlining MoveNext.  (we were a bit over the 32 byte IL limit). 
@@ -459,9 +459,8 @@ namespace PerfView.Utilities
 
 		public void Dispose()
 		{
-			// Don't know if I need this...
-			// this.stream?.Close();
-			// this.stream?.Dispose();
+			this.stream?.Close();
+			this.stream?.Dispose();
 		}
 
 #if DEBUG
