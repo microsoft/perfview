@@ -36,14 +36,21 @@ namespace PerfView.Utilities
 		}
 
 		// Allows for a byte array while keeping a stream
-		public FastStream(byte[] buffer, int length, int bufferSize = 262144) :
-			this(new MemoryStream(buffer, 0, length, writable: false), bufferSize, closeStream: true)
+		public FastStream(byte[] buffer, int length) :
+			this(buffer, 0, length)
 		{
 		}
 
-		public FastStream(byte[] buffer, int start, int length, int bufferSize = 262144) :
-			this(new MemoryStream(buffer, start, length, writable: false), bufferSize, closeStream: true)
+		public FastStream(byte[] buffer, int start, int length)
 		{
+			this.stream = Stream.Null;
+			this.streamReadIn = (uint)length;
+			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+			this.buffer = new byte[this.bufferFillPos];
+			this.bufferIndex = MaxRestoreLength;
+			System.Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+			this.buffer[this.bufferIndex] = 0;
+			this.streamPosition = this.streamReadIn;
 		}
 
 		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
@@ -54,6 +61,7 @@ namespace PerfView.Utilities
 			this.bufferFillPos = 1;
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
+			this.streamPosition = 0;
 		}
 
 		/// <summary>
@@ -62,14 +70,20 @@ namespace PerfView.Utilities
 		/// there is a better 'rare' value to use as an end of stream marker.  
 		/// </summary>
 		public byte Sentinal = 0;
-		public byte[] Buffer => this.buffer;
-		public long Position { get; private set; }
-		public uint BufferFillPosition => this.bufferFillPos;
+		public byte[] Buffer { get { return this.buffer; } }
+		public long Position
+		{
+			get
+			{
+				return this.streamPosition - (this.streamReadIn - (this.BufferIndex - MaxRestoreLength));
+			}
+		}
+		public uint BufferFillPosition { get { return this.bufferFillPos; } }
 		public uint BufferIndex { get { return this.bufferIndex; } set { this.bufferIndex = value; } }
 
 		public bool MoveNext()
 		{
-			IncReadPos();
+			bufferIndex++;
 			bool ret = true;
 			if (this.bufferIndex >= this.bufferFillPos)
 			{
@@ -88,20 +102,15 @@ namespace PerfView.Utilities
 		/// </summary>
 		/// <param name="bytesAhead"></param>
 		/// <returns></returns>
-		public byte Peek(int bytesAhead)
+		public byte Peek(uint bytesAhead)
 		{
-			if (bytesAhead <= -(int)MaxRestoreLength)
-			{
-				throw new InvalidOperationException("Can't peek back more than restore length");
-			}
-
-			int peekIndex = bytesAhead + (int)this.bufferIndex;
+			uint peekIndex = bytesAhead + this.bufferIndex;
 			if (peekIndex >= this.bufferFillPos)
 			{
-				peekIndex = (int)this.PeekHelper((uint)bytesAhead);
+				peekIndex = this.PeekHelper(bytesAhead);
 			}
 
-			return peekIndex < 0 ? this.Sentinal : this.buffer[peekIndex];
+			return this.buffer[peekIndex];
 		}
 
 		public struct MarkedPosition
@@ -124,15 +133,13 @@ namespace PerfView.Utilities
 			long delta = this.Position - position.streamPos;
 			if (delta > MaxRestoreLength)
 			{
-				this.stream.Position = position.streamPos;
+				this.stream.Position = this.streamPosition = position.streamPos;
 				this.FillBufferFromStreamPosition();
 			}
 			else
 			{
 				this.bufferIndex -= (uint)delta;
 			}
-
-			this.Position = position.streamPos;
 		}
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
@@ -250,7 +257,7 @@ namespace PerfView.Utilities
 				{
 					if (markerIdx >= endMarker.Length)
 						return;
-					if (Peek((int)markerIdx) != endMarker[(int)markerIdx])
+					if (Peek(markerIdx) != endMarker[(int)markerIdx])
 						break;
 					markerIdx++;
 				}
@@ -344,27 +351,23 @@ namespace PerfView.Utilities
 			}
 		}
 
-		public string PeekString(int length)
+		/// <summary>
+		/// Gets a string from the position to the length indicated (for debugging)
+		/// </summary>
+		internal string PeekString(int length)
 		{
 			StringBuilder sb = new StringBuilder();
-			for (int i = (int)this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
+			for (uint i = this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
 			{
-				sb.Append((char)this.Peek((int)(i - this.BufferIndex)));
+				sb.Append((char)this.Peek(i - this.BufferIndex));
 			}
 
 			return sb.ToString();
 		}
 
-		public Stream BaseStream { get { return this.stream; } }
+		internal Stream BaseStream { get { return this.stream; } }
 
 		#region privateMethods
-		// Only here to 'trick' the JIT compiler into inlining MoveNext.  (we were a bit over the 32 byte IL limit). 
-		private void IncReadPos()
-		{
-			bufferIndex++;
-			this.Position++;
-		}
-
 		public int ReadHex()
 		{
 			int value = 0;
@@ -426,6 +429,7 @@ namespace PerfView.Utilities
 			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
 			this.bufferFillPos = this.streamReadIn + preamble;
 			this.streamReadIn += keepLast;
+			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
 			if (this.bufferFillPos < this.buffer.Length)
 				this.buffer[this.bufferFillPos] = this.Sentinal;	// we define 0 as the value you get after EOS.
 
@@ -439,6 +443,7 @@ namespace PerfView.Utilities
 		private uint streamReadIn;
 		private Stream stream;
 		private uint bufferIndex;      // The next character to read
+		private long streamPosition;
 		private bool closeStream;
 
 		private bool MoveNextHelper()
@@ -449,8 +454,8 @@ namespace PerfView.Utilities
 
 		private uint PeekHelper(uint bytesAhead)
 		{
-			if (bytesAhead >= this.buffer.Length - MaxRestoreLength || this.bufferIndex - MaxRestoreLength < 0)
-				throw new InvalidOperationException("Can only peek ahead the length of the buffer");
+			if (bytesAhead >= this.buffer.Length - MaxRestoreLength)
+				throw new Exception("Can only peek ahead the length of the buffer");
 
 			// We keep everything above the index.
 			this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
@@ -464,6 +469,7 @@ namespace PerfView.Utilities
 			{
 				this.stream?.Close();
 				this.stream?.Dispose();
+				this.stream = null;
 			}
 		}
 

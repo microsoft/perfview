@@ -115,23 +115,6 @@ namespace LinuxTracing.Tests
 			Assert.Equal("12345\r\n6789a\r\n", sb.ToString());
 		}
 
-		[Fact]
-		public void PeekBackNegativeIndices()
-		{
-			FastStream stream = this.GetTestStream();
-			SkipBOM(stream);
-			Assert.Equal(0, stream.Peek(-10));
-		}
-
-		[Fact]
-		public void PeekBackRegular()
-		{
-			FastStream stream = this.GetTestStream();
-			SkipBOM(stream);
-			stream.SkipUpTo('a');
-			Assert.Equal("6", ((char)stream.Peek(-4)).ToString());
-		}
-
 		private static void SkipBOM(FastStream stream)
 		{
 			stream.MoveNext();

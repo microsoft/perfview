@@ -192,7 +192,7 @@ namespace Diagnostics.Tracing.StackSources
 						stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
 					{
 						frameDisplayName = this.ResolveSymbols(processID, stackFrame);
-					}
+			}
 				}
 			}
 
@@ -313,9 +313,9 @@ namespace Diagnostics.Tracing.StackSources
 					if (MapFilePatterns.IsMatch(entry.FullName))
 					{
 						symbolFiles.Add(entry.FullName, entry.Open());
-					}
-
 				}
+
+			}
 
 				return foundEntry?.Open();
 			}
@@ -460,7 +460,7 @@ namespace Diagnostics.Tracing.StackSources
 					{
 						// We don't need a gigantic buffer now, so we reduce the size by 16 times
 						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
-						FastStream bufferPart = new FastStream(buffer, length, bufferSize: 16384);
+						FastStream bufferPart = new FastStream(buffer, length);
 
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
@@ -503,8 +503,8 @@ namespace Diagnostics.Tracing.StackSources
 					mapper.DoneMapping();
 					symbolStream.Close();
 				}
+				}
 			}
-		}
 
 		internal string[] GetSymbolsFromMicrosoftMap(string symbol)
 		{
@@ -544,7 +544,7 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					// We find a good start for the next round and add a pseudo frame.
 					this.FindValidStartOn(source);
-					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0     truncated     (truncated)");
+					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0 truncated (truncated)");
 					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
 									 dst: buffer, dstOffset: length, count: truncatedMessage.Length);
 
@@ -579,9 +579,9 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
 
-				for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
+				for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
 				{
-					int bytesAhead = (int)(i - source.BufferIndex);
+					uint bytesAhead = i - source.BufferIndex;
 
 					newCount++;
 					if (this.parser.IsEndOfSample(source,
@@ -617,9 +617,9 @@ namespace Diagnostics.Tracing.StackSources
 			Contract.Assert(estimatedCountPortion < 0.5, nameof(estimatedCountPortion));
 
 			int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
-			for (int i = index + newCount; i < source.BufferFillPosition - 1; i++)
+			for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
 			{
-				int bytesAhead = (int)(i - source.BufferIndex);
+				uint bytesAhead = i - source.BufferIndex;
 				newCount++;
 
 				if (source.Peek(bytesAhead) == '\n')

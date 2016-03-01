@@ -334,7 +334,7 @@ namespace PerfView
         }
         private void DoOpenAnyStartStopStacks(object sender, ExecutedRoutedEventArgs e)
         {
-            OpenStacks("Any Stacks (with StartStop Tasks)");
+            OpenStacks("Any Stacks (with StartStop Activities)");
         }
         private void DoOpenAnyTaskTreeStacks(object sender, ExecutedRoutedEventArgs e)
         {
