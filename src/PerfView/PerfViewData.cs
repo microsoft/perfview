@@ -527,6 +527,16 @@ namespace PerfView
                     var asStackSource = child as PerfViewStackSource;
                     if (asStackSource != null && asStackSource.SourceName == sourceName)
                         return asStackSource;
+                    var asGroup = child as PerfViewTreeGroup;
+                    if (asGroup != null && asGroup.Children != null)
+                    {
+                        foreach(var groupChild in asGroup.Children)
+                        {
+                            asStackSource = groupChild as PerfViewStackSource;
+                            if (asStackSource != null && asStackSource.SourceName == sourceName)
+                                return asStackSource;
+                        }
+                    }
                 }
             }
             else if (m_singletonStackSource != null)
@@ -2639,7 +2649,7 @@ namespace PerfView
                 else
                     return eventLog.ThreadTimeAspNetStacks();
             }
-            else if (streamName == "Thread Time (with StartStop Tasks)")
+            else if (streamName == "Thread Time (with StartStop Activities)")
             {
                 var startStopSource = new MutableTraceEventStackSource(eventLog);
 
@@ -3260,8 +3270,8 @@ namespace PerfView
                 StartStopActivityComputer startStopComputer = null;
                 bool isAnyTaskTree = (streamName == "Any TaskTree");
                 bool isAnyWithTasks = (streamName == "Any Stacks (with Tasks)");
-                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Tasks)");          // These have the call stacks 
-                bool isAnyStartStopTreeNoCallStack = (streamName == "Any StartStopTree");               // These have just the start-stop tasks.  
+                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Activities)");          // These have the call stacks 
+                bool isAnyStartStopTreeNoCallStack = (streamName == "Any StartStopTree");               // These have just the start-stop activities.  
                 if (isAnyTaskTree || isAnyWithTasks || isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                 {
                     activityComputer = new ActivityComputer(eventSource, GetSymbolReader(log));
@@ -3381,6 +3391,7 @@ namespace PerfView
                     if (asSampledProfile != null)
                     {
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
                         goto ADD_SAMPLE;
                     }
@@ -4486,7 +4497,7 @@ namespace PerfView
         {
             ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
 
-            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Tasks)"))
+            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
                 var taskFoldPatBase = "ntoskrnl!%ServiceCopyEnd;mscorlib%!System.Runtime.CompilerServices.Async%MethodBuilder";
                 var taskFoldPat = taskFoldPatBase + ";^STARTING TASK";
@@ -4499,8 +4510,9 @@ namespace PerfView
 
                 stackWindow.GroupRegExTextBox.Items.Insert(0, @"[Nuget] System.%!=>OTHER;Microsoft.%!=>OTHER;mscorlib%=>OTHER;v4.0.30319%\%!=>OTHER;system32\*!=>OTHER;syswow64\*!=>OTHER");
 
-                var excludePat = "LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage * RunApp";
+                var excludePat = "LAST_BLOCK";
                 stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
+                stackWindow.ExcludeRegExTextBox.Items.Add("LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage*RunApp");
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
@@ -4775,7 +4787,6 @@ namespace PerfView
 
             m_Children.Add(new PerfViewTraceInfo(this));
             m_Children.Add(new PerfViewProcesses(this));
-            advanced.Children.Add(new PerfViewEventSource(this));
 
             if (hasCPUStacks)
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
@@ -4785,7 +4796,7 @@ namespace PerfView
                 {
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time"));
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Tasks)"));
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
                 }
                 else
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
@@ -4874,7 +4885,7 @@ namespace PerfView
                     if (hasCSwitchStacks)
                     {
                         advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
-                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Activities)"));
                         advanced.Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
                     }
                     advanced.Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
@@ -4914,6 +4925,8 @@ namespace PerfView
             advanced.Children.Add(new PerfViewJitStats(this));
 
             advanced.Children.Add(new PerfViewEventStats(this));
+
+            m_Children.Add(new PerfViewEventSource(this));
 
             if (0 < memory.Children.Count)
                 m_Children.Add(memory);

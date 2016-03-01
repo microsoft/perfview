@@ -101,6 +101,8 @@
                     <MenuItem Header="User Command Help" Click="DoUserCommandHelp"/>
                     <MenuItem Header="Multi-Scenarios Analysis" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="MultiScenarioAnalysis"/>
                     <MenuItem Header="_Extending Perfview" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="PerfViewExtensions"/>
+                    <MenuItem Header="Viewing Linux Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingLinuxData"/>
+                    <MenuItem Header="Viewing External Data" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="ViewingExternalData"/>
                     <MenuItem Header="Using EventSources" Command="{x:Static src:MainWindow.UsersGuideCommand}" CommandParameter="UsingEventSources"/>
                     <MenuItem Header="_Release Notes" Click="DoReleaseNotes"/>
                     <MenuItem Header="_About" Click="DoAbout"/>
@@ -219,8 +221,13 @@
                             <Hyperlink Command="Help" CommandParameter="WhatPerfViewCanDoForYou">what perfView can do for you</Hyperlink> .
                         </Paragraph>
                         <Paragraph Margin="0,8,0,0" FontWeight="Bold">Optimizing Time, or Unmanaged Memory: Collecting ETW Profile Data</Paragraph>
-                        <Paragraph>PerfView can collect a time based ETW trace that is useful for investigating
-                            <Hyperlink Command="Help" CommandParameter="CpuInvestigation">CPU</Hyperlink> ,
+                        <Paragraph>PerfView can collect a time based ETW trace for investigating
+                            <Bold>
+                                <Hyperlink Command="Help" CommandParameter="CpuInvestigation">CPU</Hyperlink>
+                            </Bold> and 
+                            <Bold>
+                                <Hyperlink Command="Help" CommandParameter="MakingServerInvestigationEasy">Server Response Time</Hyperlink>
+                            </Bold>, as well as 
                             <Hyperlink Command="Help" CommandParameter="BlockedTimeInvestigation">Wall Clock / Blocked Time</Hyperlink> ,
                             <Hyperlink Command="Help" CommandParameter="UnmanagedMemoryAnalysis">Unmanaged memory</Hyperlink> or
                             <Hyperlink Command="Help" CommandParameter="GCHeapNetMemStacks">Managed memory</Hyperlink> .

@@ -398,6 +398,11 @@ namespace Diagnostics.Tracing.StackSources
                                             sample.TimeRelativeMSec = reader.ReadElementContentAsDouble();
                                             goto PROCESS_NODE_SAMPLE;
                                         }
+                                        else if (reader.Name == "Metric")
+                                        {
+                                            sample.Metric = (float) reader.ReadElementContentAsDouble();
+                                            goto PROCESS_NODE_SAMPLE;
+                                        }
                                         else if (reader.Name == "item")
                                         {
                                             // Item is a string under stack under the sample.  
