@@ -142,7 +142,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int? threadid = null, bool doThreadTime = false)
-		{
+			{
 			// We shouldn't advance the iterator if thread time is enabled because we need 
 			//   to add an extra frame to the caller stack that is not in the frameIterator.
 			//   i.e. Short-circuiting prevents the frameIterator from doing MoveNext :)
@@ -154,8 +154,8 @@ namespace Diagnostics.Tracing.StackSources
 			StackSourceFrameIndex frameIndex;
 			string frameDisplayName;
 
-			if (doThreadTime)
-			{
+				if (doThreadTime)
+				{
 				// If doThreadTime is true, then we need to make sure that threadid is not null
 				Contract.Requires(threadid != null, nameof(threadid));
 
@@ -180,7 +180,7 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					frameIndex = this.Interner.FrameIntern(frameDisplayName);
 					frames[frameDisplayName] = frameIndex;
-				}
+			}
 			}
 
 			lock (internCallStackLock)
@@ -272,21 +272,21 @@ namespace Diagnostics.Tracing.StackSources
 	}
 
 	internal class PerfScriptToSampleController
-	{
+			{
 		internal PerfScriptToSampleController(Stream source)
 		{
 			this.masterSource = new FastStream(source);
 			this.parser = new LinuxPerfScriptEventParser();
-		}
+			}
 
 		internal void ParseOnto(LinuxPerfScriptStackSource stackSource, int threadCount = 4)
-		{
+			{
 			this.parser.SkipPreamble(masterSource);
 
 			Task[] tasks = new Task[threadCount];
 			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
 			for (int i = 0; i < tasks.Length; i++)
-			{
+				{
 				threadSamples[i] = new List<StackSourceSample>();
 				tasks[i] = new Task((object givenArrayIndex) =>
 				{
@@ -300,7 +300,7 @@ namespace Diagnostics.Tracing.StackSources
 						{
 							StackSourceSample sample = stackSource.GetSampleFor(linuxEvent);
 							threadSamples[(int)givenArrayIndex].Add(sample);
-						}
+				}
 					}
 				}, i);
 
@@ -335,13 +335,13 @@ namespace Diagnostics.Tracing.StackSources
 		//   master source, otherwise, buffer should be valid with the length returned
 		// Note: This needs to be thread safe
 		private int GetNextBuffer(FastStream source, byte[] buffer)
-		{
+			{
 			lock (bufferLock)
 			{
 				if (source.EndOfStream)
 				{
 					return -1;
-				}
+			}
 
 				int start = (int)source.BufferIndex;
 				int length = source.Buffer.Length / 4;
@@ -365,7 +365,7 @@ namespace Diagnostics.Tracing.StackSources
 					length += truncatedMessage.Length;
 
 					source.BufferIndex = source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - source.BufferIndex);
-				}
+		}
 
 				return length;
 			}
@@ -406,9 +406,9 @@ namespace Diagnostics.Tracing.StackSources
 					}
 
 					if (i == source.BufferFillPosition - 2)
-					{
+			{
 						if (estimatedCountPortion < 0.5)
-						{
+				{
 							// At this point, we'll truncate the stack.
 							truncated = true;
 							return this.GetTruncatedBuffer(source, index, count, estimatedCountPortion);
@@ -417,12 +417,12 @@ namespace Diagnostics.Tracing.StackSources
 						// This is just in case we don't find an end to the stack we're on... In that case we need
 						//   to make the estimatedCountPortion smaller to capture more stuff
 						return this.GetCompleteBuffer(source, index, count, estimatedCountPortion * 0.9, out truncated);
-					}
 				}
+			}
 
 				return newCount;
-			}
 		}
+	}
 
 		// Returns the length of the truncated buffer... Requires to be ran with estimatedCountPortion at
 		//   less than 0.5

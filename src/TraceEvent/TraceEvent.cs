@@ -470,7 +470,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
             for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
-                    return *((Guid*)extendedData->DataPtr);
+                    return *((Guid*)extendedData[i].DataPtr);
             return Guid.Empty;
         }
         #endregion

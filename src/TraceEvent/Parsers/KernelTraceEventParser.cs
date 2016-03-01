@@ -3544,7 +3544,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public DateTime BootTime { get { return DateTime.FromFileTime(BootTime100ns); } }
         public long PerfFreq { get { return GetInt64At(HostOffset(248, 2)); } }
         internal long StartTime100ns { get { return GetInt64At(HostOffset(256, 2)); } }
-        public DateTime StartTime { get { return DateTime.FromFileTime(HostOffset(256, 2)); } }
+        public DateTime StartTime { get { return DateTime.FromFileTime(StartTime100ns); } }
         public int ReservedFlags { get { return GetInt32At(HostOffset(264, 2)); } }
         public int BuffersLost { get { return GetInt32At(HostOffset(268, 2)); } }
         public string SessionName { get { return GetUnicodeStringAt(HostOffset(272, 2)); } }

@@ -1435,7 +1435,10 @@ namespace PerfView
                     if (canSendFeedback)
                     {
                         // FeedbackButton.Visibility = System.Windows.Visibility.Visible;
-                        WikiButton.Visibility = System.Windows.Visibility.Visible;
+
+                        // TODO Currently even the internal Wiki is now a broken link, so simply give up for now.
+                        // When we go open source we can use GitHub for this.   
+                        // WikiButton.Visibility = System.Windows.Visibility.Visible;
                     }
                     if (pdbScopeExists)
                         ImageSizeMenuItem.Visibility = System.Windows.Visibility.Visible;

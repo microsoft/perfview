@@ -689,15 +689,10 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\MemoryCollection.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\AspNetThreadTime.png">
+    <EmbeddedResource Include="SupportDlls\Images\ThreadTimeWithStartStop.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\Images\AspNetThreadTime.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\ServerRequestThreadTime.png">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Images\ServerRequestThreadTime.png</LogicalName>
+      <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -736,9 +731,6 @@
     <Resource Include="images\VSProject_schema.png" />
     <Resource Include="images\VSProject_html.png" />
     <Resource Include="images\Chart.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="SupportDlls\Images\ServerRequestThreadTime.PNG" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
