@@ -358,7 +358,7 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					// We find a good start for the next round and add a pseudo frame.
 					this.FindValidStartOn(source);
-					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0     truncated     (truncated)");
+					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0 truncated (truncated)");
 					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
 									 dst: buffer, dstOffset: length, count: truncatedMessage.Length);
 
