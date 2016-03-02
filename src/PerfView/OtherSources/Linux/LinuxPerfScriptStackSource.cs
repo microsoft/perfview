@@ -277,7 +277,6 @@ namespace Diagnostics.Tracing.StackSources
 	}
 
 	#region Mapper
-
 	internal class LinuxPerfScriptMapper
 	{
 		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
@@ -350,27 +349,27 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
-	public class Mapper
+	internal class Mapper
 	{
 		private List<Map> maps;
 
-		internal Mapper()
+		public Mapper()
 		{
 			this.maps = new List<Map>();
 		}
 
-		internal void DoneMapping()
+		public void DoneMapping()
 		{
 			// Sort by the start part of the interval... This is for O(log(n)) search time.
 			this.maps.Sort((Map x, Map y) => x.Interval.Start.CompareTo(y.Interval.Start));
 		}
 
-		internal void Add(ulong start, ulong size, string symbol)
+		public void Add(ulong start, ulong size, string symbol)
 		{
 			this.maps.Add(new Map(new Interval(start, size), symbol));
 		}
 
-		internal bool TryFindSymbol(ulong location, out string symbol, out ulong startLocation)
+		public bool TryFindSymbol(ulong location, out string symbol, out ulong startLocation)
 		{
 			symbol = "";
 			startLocation = 0;
@@ -411,10 +410,10 @@ namespace Diagnostics.Tracing.StackSources
 
 	internal struct Map
 	{
-		internal Interval Interval { get; }
-		internal string MapTo { get; }
+		public Interval Interval { get; }
+		public string MapTo { get; }
 
-		internal Map(Interval interval, string mapTo)
+		public Map(Interval interval, string mapTo)
 		{
 			this.Interval = interval;
 			this.MapTo = mapTo;
@@ -423,17 +422,17 @@ namespace Diagnostics.Tracing.StackSources
 
 	internal class Interval
 	{
-		internal ulong Start { get; }
-		internal ulong Length { get; }
-		internal ulong End { get { return this.Start + this.Length; } }
+		public ulong Start { get; }
+		public ulong Length { get; }
+		public ulong End { get { return this.Start + this.Length; } }
 
 		// Taking advantage of unsigned arithmetic wrap-around to get it done in just one comparison.
-		internal bool IsWithin(ulong thing)
+		public bool IsWithin(ulong thing)
 		{
 			return (thing - this.Start) < this.Length;
 		}
 
-		internal bool IsWithin(ulong thing, bool inclusiveStart, bool inclusiveEnd)
+		public bool IsWithin(ulong thing, bool inclusiveStart, bool inclusiveEnd)
 		{
 			bool startEqual = inclusiveStart && thing.CompareTo(this.Start) == 0;
 			bool endEqual = inclusiveEnd && thing.CompareTo(this.End) == 0;
@@ -442,7 +441,7 @@ namespace Diagnostics.Tracing.StackSources
 			return within || startEqual || endEqual;
 		}
 
-		internal Interval(ulong start, ulong length)
+		public Interval(ulong start, ulong length)
 		{
 			this.Start = start;
 			this.Length = length;
@@ -734,7 +733,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.SetSymbolFile(new ZipArchive(new FileStream(path, FileMode.Open)));
 		}
 
-		public void ParseSymbolFile(Stream stream, Mapper mapper)
+		internal void ParseSymbolFile(Stream stream, Mapper mapper)
 		{
 			FastStream source = new FastStream(stream);
 			source.MoveNext(); // Avoid \0 encounter
