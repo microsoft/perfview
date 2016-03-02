@@ -81,6 +81,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfPropertyBag()
         {
         }
+
+        public void Clear()
+        {
+            _properties.Clear();
+            _typeProperties.Clear();
+        }
         
         public bool GetBoolean(string name)
         {

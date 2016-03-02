@@ -75,6 +75,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public abstract int GetSize();
     }
 
+    /// <summary>
+    /// Represents a type which has been referenced by name, but has not yet been resolved to a concrete type.
+    /// </summary>
     class CtfUnresolvedType : CtfMetadataType
     {
         public string Name { get; private set; }
@@ -114,7 +117,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         public override int GetSize()
         {
-            throw new NotImplementedException();
+            throw new InvalidOperationException();
         }
     }
 
@@ -124,7 +127,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             get
             {
-                return 1;
+                return Type.Align;
             }
         }
 

@@ -51,7 +51,6 @@ namespace Microsoft.Diagnostics.Tracing
                 
             CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
             _metadata = new CtfMetadata(parser);
-            _metadata.Load();
 
             pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
 
@@ -241,27 +240,22 @@ namespace Microsoft.Diagnostics.Tracing
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
 
-            if (!_metadata.IsLoaded)
-            {
-                _metadata.Load();
+            int processors = (from entry in _channels
+                                let filename = entry.FullName
+                                let i = filename.LastIndexOf('_')
+                                let processor = filename.Substring(i + 1)
+                                select int.Parse(processor)
+                                ).Max() + 1;
 
-                int processors = (from entry in _channels
-                                  let filename = entry.FullName
-                                  let i = filename.LastIndexOf('_')
-                                  let processor = filename.Substring(i + 1)
-                                  select int.Parse(processor)
-                                  ).Max() + 1;
+            numberOfProcessors = processors;
 
-                numberOfProcessors = processors;
-
-                var env = _metadata.Environment;
-                var trace = _metadata.Trace;
-                userData["hostname"] = env.HostName;
-                userData["tracer_name"] = env.TracerName;
-                userData["tracer_version"] = env.TracerMajor + "." + env.TracerMinor;
-                userData["uuid"] = trace.UUID;
-                userData["ctf version"] = trace.Major + "." + trace.Minor;
-            }
+            var env = _metadata.Environment;
+            var trace = _metadata.Trace;
+            userData["hostname"] = env.HostName;
+            userData["tracer_name"] = env.TracerName;
+            userData["tracer_version"] = env.TracerMajor + "." + env.TracerMinor;
+            userData["uuid"] = trace.UUID;
+            userData["ctf version"] = trace.Major + "." + trace.Minor;
         }
 
         protected override void Dispose(bool disposing)
@@ -369,7 +363,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         class ChannelEntry : IDisposable
         {
-            public CtfStream CtfStream { get { return Channel.CtfStream; } }
             public CtfChannel Channel { get; private set; }
             public CtfReader Reader { get; private set; }
             public CtfEventHeader Current { get { return _events.Current; } }
@@ -390,6 +383,10 @@ namespace Microsoft.Diagnostics.Tracing
                 Reader.Dispose();
                 Channel.Dispose();
                 _stream.Dispose();
+
+                IDisposable enumerator = _events as IDisposable;
+                if (enumerator != null)
+                    enumerator.Dispose();
             }
 
             public bool MoveNext()

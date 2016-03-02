@@ -88,6 +88,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             ulong last = 0;
 
+            StringBuilder processName = new StringBuilder();
             while (!_eof)
             {
                 _header.Clear();
@@ -125,17 +126,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                     int procnameIndex = eventContext.GetFieldIndex("_procname");
                     object[] procname = (object[])(result[procnameIndex]);
-                    StringBuilder sb = new StringBuilder();
+                    processName.Clear();
                     for (int i = 0; i < 17; i++)
                     {
                         sbyte b = (sbyte)procname[i];
                         if (b == 0)
                             break;
 
-                        sb.Append((char)b);
+                        processName.Append((char)b);
                     }
 
-                    _header.ProcessName = sb.ToString();
+                    _header.ProcessName = processName.ToString();
                 }
                 
                 yield return _header;
@@ -184,6 +185,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             Debug.Assert(evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1");
 
+            Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
+
             int baseOffset = _perHeapHistoryEvent.Size / 8;
             int start = evt.GetFieldOffset("_Arg15_Struct_Len_") / 8;
             int end = evt.GetFieldOffset("_Arg15_Struct_Pointer_") / 8;
@@ -203,6 +206,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
             }
 
+            Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
             int len = _perHeapHistoryEvent.Size / 8;
             _bufferLength = len;
             _bitOffset = len * 8;
@@ -472,7 +476,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
         }
 
-        byte[] _bytes = new byte[1024];
+        byte[] _stringBuffer = new byte[1024];
         internal string ReadString(bool ascii)
         {
             byte b = ReadByte();
@@ -492,30 +496,30 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             }
 
             int i = 0;
-            _bytes[i++] = b;
+            _stringBuffer[i++] = b;
             if (ascii)
             {
                 while (b != 0)
                 {
-                    if (i >= _bytes.Length - 4)
+                    if (i >= _stringBuffer.Length - 4)
                     {
-                        byte[] tmp = _bytes;
-                        _bytes = new byte[_bytes.Length + 1024];
-                        System.Buffer.BlockCopy(tmp, 0, _bytes, 0, tmp.Length);
+                        byte[] tmp = _stringBuffer;
+                        _stringBuffer = new byte[_stringBuffer.Length + 1024];
+                        System.Buffer.BlockCopy(tmp, 0, _stringBuffer, 0, tmp.Length);
                     }
 
-                    b = _bytes[i++] = ReadByte();
+                    b = _stringBuffer[i++] = ReadByte();
                 }
             }
             else
             {
                 while (b != 0)
                 {
-                    if (i >= _bytes.Length - 4)
+                    if (i >= _stringBuffer.Length - 4)
                     {
-                        byte[] tmp = _bytes;
-                        _bytes = new byte[_bytes.Length + 1024];
-                        System.Buffer.BlockCopy(tmp, 0, _bytes, 0, tmp.Length);
+                        byte[] tmp = _stringBuffer;
+                        _stringBuffer = new byte[_stringBuffer.Length + 1024];
+                        System.Buffer.BlockCopy(tmp, 0, _stringBuffer, 0, tmp.Length);
                     }
 
                     b >>= 4;
@@ -527,29 +531,29 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                         case 0xc:
                         case 0xd:
-                            _bytes[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
                             break;
 
                         case 0xe:
-                            _bytes[i++] = ReadByte();
-                            _bytes[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
                             break;
 
                         case 0xf:
-                            _bytes[i++] = ReadByte();
-                            _bytes[i++] = ReadByte();
-                            _bytes[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
+                            _stringBuffer[i++] = ReadByte();
                             break;
                     }
 
-                    b = _bytes[i++] = ReadByte();
+                    b = _stringBuffer[i++] = ReadByte();
                 }
             }
 
             Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
 
-            string s = encoding.GetString(_bytes, 0, i - 1);
-            byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _bytes, 0, i);
+            string s = encoding.GetString(_stringBuffer, 0, i - 1);
+            byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _stringBuffer, 0, i);
 
             if (_buffer.Length < _bufferLength + newArr.Length)
             {

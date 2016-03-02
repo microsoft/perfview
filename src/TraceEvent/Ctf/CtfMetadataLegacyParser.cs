@@ -9,6 +9,10 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
+    /// <summary>
+    /// A manual parser for CtfMetadata.  Eventually this should be replaced when CtfMetadata no longer
+    /// uses a custom, BNF style format.
+    /// </summary>
     class CtfMetadataLegacyParser : CtfMetadataParser, IDisposable
     {
         static Regex s_align = new Regex(@"align\( *(\d+) *\)");
@@ -128,8 +132,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 ;
             
             int nameStart = metadata.IndexOf(":=", close);
-
-
             if (name == null && nameStart != -1 && nameStart < curr)
             {
                 nameStart += 2; // move past :=
@@ -437,7 +439,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             Debug.Assert(str[open] == '{');
 
-            // TODO: error handling past str buffer
             int braces = 1;
             int end = open + 1;
             while (braces != 0)

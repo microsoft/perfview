@@ -10,46 +10,36 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// </summary>
     class CtfMetadata
     {
-        private CtfTrace _trace;
-        private CtfEnvironment _environment;
         private Dictionary<string, CtfClock> _clocks = new Dictionary<string, CtfClock>();
-        private List<CtfStream> _streams = new List<CtfStream>();
-        private Dictionary<string, CtfMetadataType> _typeAlias = new Dictionary<string, CtfMetadataType>();
-        CtfMetadataParser _parser;
 
-        public bool IsLoaded { get; private set; }
-
-        internal void WriteMetadata(TextWriter output)
-        {
-            _trace.WriteLine(output, 0);
-            _environment.WriteLine(output, 0);
-
-            foreach (CtfClock clock in _clocks.Values)
-                clock.WriteLine(output, 0);
-
-            foreach (CtfStream stream in _streams)
-                stream.WriteLine(output, 0);
-        }
-
-        public CtfTrace Trace { get { return _trace; } }
-        public CtfEnvironment Environment { get { return _environment; } }
-        public IList<CtfStream> Streams { get { return _streams; } }
+        public CtfTrace Trace { get; private set; }
+        public CtfEnvironment Environment { get; private set; }
+        public CtfStream[] Streams { get; private set; }
         public ICollection<CtfClock> Clocks { get { return _clocks.Values; } }
         
         public CtfMetadata(CtfMetadataParser parser)
         {
-            _parser = parser;
+            Load(parser);
         }
-        
-        public void Load()
+
+        internal void WriteMetadata(TextWriter output)
         {
-            if (IsLoaded)
-                return;
+            Trace.WriteLine(output, 0);
+            Environment.WriteLine(output, 0);
 
-            IsLoaded = true;
+            foreach (CtfClock clock in _clocks.Values)
+                clock.WriteLine(output, 0);
 
-            CtfStream stream;
-            foreach (CtfMetadataDeclaration entry in _parser.Parse())
+            foreach (CtfStream stream in Streams)
+                stream.WriteLine(output, 0);
+        }
+
+        public void Load(CtfMetadataParser parser)
+        {
+            Dictionary<string, CtfMetadataType> typeAlias = new Dictionary<string, CtfMetadataType>();
+            List<CtfStream> streams = new List<CtfStream>();
+
+            foreach (CtfMetadataDeclaration entry in parser.Parse())
             {
                 switch (entry.Definition)
                 {
@@ -59,33 +49,32 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                         break;
 
                     case CtfDeclarationTypes.Trace:
-                        _trace = new CtfTrace(entry.Properties);
+                        Trace = new CtfTrace(entry.Properties);
                         break;
 
                     case CtfDeclarationTypes.Environment:
-                        _environment = new CtfEnvironment(entry.Properties);
+                        Environment = new CtfEnvironment(entry.Properties);
                         break;
 
                     case CtfDeclarationTypes.TypeAlias:
-                        _typeAlias[entry.Name] = entry.Type;
+                        typeAlias[entry.Name] = entry.Type;
                         break;
 
                     case CtfDeclarationTypes.Struct:
-                        _typeAlias[entry.Name] = new CtfStruct(entry.Properties, entry.Fields);
+                        typeAlias[entry.Name] = new CtfStruct(entry.Properties, entry.Fields);
                         break;
 
                     case CtfDeclarationTypes.Stream:
-                        stream = new CtfStream(entry.Properties);
-                        while (_streams.Count <= stream.ID)
-                            _streams.Add(null);
+                        CtfStream stream = new CtfStream(entry.Properties);
+                        while (streams.Count <= stream.ID)
+                            streams.Add(null);
 
-                        _streams[stream.ID] = stream;
+                        streams[stream.ID] = stream;
                         break;
 
                     case CtfDeclarationTypes.Event:
                         CtfEvent evt = new CtfEvent(entry.Properties);
-                        stream = _streams[evt.Stream];
-                        stream.AddEvent(evt);
+                        streams[evt.Stream].AddEvent(evt);
                         break;
 
                     default:
@@ -94,20 +83,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 }
             }
 
-
-            ResolveReferences();
+            Streams = streams.ToArray();
+            ResolveReferences(typeAlias);
         }
 
-        private void ResolveReferences()
+        private void ResolveReferences(Dictionary<string, CtfMetadataType> typeAlias)
         {
-            _trace.ResolveReferences(_typeAlias);
-            foreach (CtfStream stream in _streams)
-                stream.ResolveReferences(_typeAlias);
+            Trace.ResolveReferences(typeAlias);
+            foreach (CtfStream stream in Streams)
+                stream.ResolveReferences(typeAlias);
         }
     }
 
-
-
+    /// <summary>
+    /// Information about the trace itself.
+    /// </summary>
     class CtfTrace
     {
         public short Major { get; private set; }
@@ -145,6 +135,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
+    /// <summary>
+    /// Information about a single stream in the trace.
+    /// </summary>
     class CtfStream
     {
         List<CtfEvent> _events = new List<CtfEvent>();
@@ -157,7 +150,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfStruct EventHeader { get { return (CtfStruct)_header; } }
         public CtfStruct PacketContext { get { return (CtfStruct)_context; } }
         public CtfStruct EventContext { get { return (CtfStruct)_eventContext; } }
-        public IList<CtfEvent> Events { get { return _events; } }
+        public List<CtfEvent> Events { get { return _events; } }
 
         public CtfStream(CtfPropertyBag properties)
         {
@@ -206,6 +199,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
+    /// <summary>
+    /// The environment the trace was taken in.
+    /// </summary>
     class CtfEnvironment
     {
         public CtfEnvironment(CtfPropertyBag bag)
@@ -234,6 +230,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
+
+    /// <summary>
+    /// A clock definition in the trace.
+    /// </summary>
     class CtfClock
     {
         public CtfClock(CtfPropertyBag bag)
@@ -263,10 +263,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
     }
 
+    /// <summary>
+    /// A definition of an event.
+    /// </summary>
     class CtfEvent
     {
         const int SizeUninitialized = -2;
-        public const int SizeIndeterminate = -1;
+        internal const int SizeIndeterminate = -1;
 
         int _size = SizeUninitialized;
         

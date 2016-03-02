@@ -30,13 +30,20 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             _stream = stream;
             _metadata = metadata;
-            _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned); // TODO: Free handle
+            _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
             CtfStreamHeader header = ReadStruct<CtfStreamHeader>();
             Debug.Assert(header.Magic == 0xc1fc1fc1);
             _ctfStream = metadata.Streams[(int)header.Stream];
 
             ReadContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (_handle.IsAllocated)
+                _handle.Free();
         }
 
         private bool ReadContext()
