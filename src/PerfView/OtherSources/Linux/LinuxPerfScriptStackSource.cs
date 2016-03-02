@@ -26,19 +26,17 @@ namespace Diagnostics.Tracing.StackSources
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 			this.currentStackIndex = 0;
 
-			ZipArchive archive;
-			Dictionary<string, Stream> symbolFiles = new Dictionary<string, Stream>();
-			using (Stream stream = this.GetPerfScriptStream(path, symbolFiles, out archive))
+			if (this.doThreadTime)
 			{
-				this.parseController = new PerfScriptToSampleController(stream);
-				this.linuxMapper = new LinuxPerfScriptMapper(archive, parseController.parser);
+				this.blockedThreads = new Dictionary<int, double>();
+				this.threadBlockedPeriods = new List<ThreadPeriod>();
+				this.cpuThreadUsage = new Dictionary<int, int>();
+			}
 
-				if (this.doThreadTime)
-				{
-					this.blockedThreads = new Dictionary<int, double>();
-					this.threadBlockedPeriods = new List<ThreadPeriod>();
-					this.cpuThreadUsage = new Dictionary<int, int>();
-				}
+			ZipArchive archive;
+			using (Stream stream = this.GetPerfScriptStream(path, out archive))
+			{
+				this.parseController = new PerfScriptToSampleController(stream, archive);
 
 				this.InternAllLinuxEvents(stream);
 				stream.Close();
@@ -99,8 +97,6 @@ namespace Diagnostics.Tracing.StackSources
 		private readonly PerfScriptToSampleController parseController;
 		private object internCallStackLock = new object();
 		private object internFrameLock = new object();
-
-		private readonly LinuxPerfScriptMapper linuxMapper;
 
 		private readonly Dictionary<int, double> blockedThreads;
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -178,16 +174,6 @@ namespace Diagnostics.Tracing.StackSources
 			else
 			{
 				frameDisplayName = frameIterator.Current.DisplayName;
-				if (frameIterator.Current.Kind == FrameKind.StackFrame)
-				{
-					StackFrame stackFrame = (StackFrame)frameIterator.Current;
-					// We need to check if we need to resolve symbols for this frame...
-					if (stackFrame.Address.Length > 1 &&
-						stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
-					{
-						frameDisplayName = this.linuxMapper.ResolveSymbols(processID, stackFrame);
-					}
-				}
 			}
 
 
@@ -258,7 +244,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.cpuThreadUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
 
-		private Stream GetPerfScriptStream(string path, Dictionary<string, Stream> symbolFiles, out ZipArchive archive)
+		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
 		{
 			archive = null;
 			if (path.EndsWith(".zip"))
@@ -308,26 +294,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private void PopulateSymbolMapper(ZipArchive archive)
-		{
-			Contract.Requires(archive != null, nameof(archive));
-
-			foreach (var entry in archive.Entries)
-			{
-				if (MapFilePatterns.IsMatch(entry.FullName))
-				{
-					Mapper mapper = new Mapper();
-					this.fileSymbolMappers[Path.GetFileNameWithoutExtension(entry.FullName)] = mapper;
-					using (Stream stream = entry.Open())
-					{
-						this.parser.ParseSymbolFile(stream, mapper);
-					}
-					mapper.DoneMapping();
-				}
-			}
-		}
-
-		public string ResolveSymbols(int processID, StackFrame stackFrame)
+		public string[] ResolveSymbols(int processID, StackFrame stackFrame)
 		{
 			ulong absoluteLocation = ulong.Parse(
 				stackFrame.Address.Substring(2),
@@ -348,20 +315,38 @@ namespace Diagnostics.Tracing.StackSources
 						{
 							if (mapper.TryFindSymbol(relativeLocation, out symbol, out location))
 							{
-								string[] symbolModule = this.parser.GetSymbolFromMicrosoftMap(symbol);
-								return symbolModule[0] + "!" + symbolModule[1];
+								return this.parser.GetSymbolFromMicrosoftMap(symbol);
 							}
 						}
 					}
 				}
 			}
 
-			return stackFrame.DisplayName;
+			return new string[] { stackFrame.Module, stackFrame.Symbol };
 		}
 
 		#region private
 		private readonly Dictionary<string, Mapper> fileSymbolMappers;
 		private readonly LinuxPerfScriptEventParser parser;
+
+		private void PopulateSymbolMapper(ZipArchive archive)
+		{
+			Contract.Requires(archive != null, nameof(archive));
+
+			foreach (var entry in archive.Entries)
+			{
+				if (MapFilePatterns.IsMatch(entry.FullName))
+				{
+					Mapper mapper = new Mapper();
+					this.fileSymbolMappers[Path.GetFileNameWithoutExtension(entry.FullName)] = mapper;
+					using (Stream stream = entry.Open())
+					{
+						this.parser.ParseSymbolFile(stream, mapper);
+					}
+					mapper.DoneMapping();
+				}
+			}
+		}
 		#endregion
 	}
 
@@ -468,10 +453,11 @@ namespace Diagnostics.Tracing.StackSources
 
 	public class PerfScriptToSampleController
 	{
-		public PerfScriptToSampleController(Stream source)
+		public PerfScriptToSampleController(Stream source, ZipArchive symbolFiles)
 		{
 			this.masterSource = new FastStream(source);
 			this.parser = new LinuxPerfScriptEventParser();
+			this.parser.SetSymbolFile(symbolFiles);
 		}
 
 		public void ParseOnto(LinuxPerfScriptStackSource stackSource, int threadCount = 4)
@@ -730,9 +716,22 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public long MaxSamples { get; set; }
 
+		private LinuxPerfScriptMapper mapper;
+
 		public LinuxPerfScriptEventParser()
 		{
+			this.mapper = null;
 			this.SetDefaultValues();
+		}
+
+		public void SetSymbolFile(ZipArchive archive)
+		{
+			this.mapper = new LinuxPerfScriptMapper(archive, this);
+		}
+
+		public void SetSymbolFile(string path)
+		{
+			this.SetSymbolFile(new ZipArchive(new FileStream(path, FileMode.Open)));
 		}
 
 		public void ParseSymbolFile(Stream stream, Mapper mapper)
@@ -919,7 +918,7 @@ namespace Diagnostics.Tracing.StackSources
 						source.SkipUpTo('\n');
 					}
 
-					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, tid, threadTimeFrame, source);
+					IEnumerable<Frame> frames = this.ReadFramesForSample(comm, pid, tid, threadTimeFrame, source);
 
 					if (eventKind == EventKind.Scheduler)
 					{
@@ -935,7 +934,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private List<Frame> ReadFramesForSample(string command, int threadID, Frame threadTimeFrame, FastStream source)
+		private List<Frame> ReadFramesForSample(string command, int processID, int threadID, Frame threadTimeFrame, FastStream source)
 		{
 			List<Frame> frames = new List<Frame>();
 
@@ -946,7 +945,13 @@ namespace Diagnostics.Tracing.StackSources
 
 			while (!this.IsEndOfSample(source, source.Current, source.Peek(1)))
 			{
-				frames.Add(this.ReadFrame(source));
+				StackFrame stackFrame = this.ReadFrame(source);
+				if (stackFrame.Address.Length > 1 && stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
+				{
+					string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame);
+					stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
+				}
+				frames.Add(stackFrame);
 			}
 
 			frames.Add(new ThreadFrame(threadID, "Thread"));
