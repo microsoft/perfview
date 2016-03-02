@@ -20,24 +20,18 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
-		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
-
 		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			this.doThreadTime = doThreadTime;
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 			this.currentStackIndex = 0;
 
-			this.fileSymbolMappers = new Dictionary<string, Mapper>();
-
 			ZipArchive archive;
 			Dictionary<string, Stream> symbolFiles = new Dictionary<string, Stream>();
 			using (Stream stream = this.GetPerfScriptStream(path, symbolFiles, out archive))
 			{
 				this.parseController = new PerfScriptToSampleController(stream);
-
-				this.parseController.MakeSymbolTables(symbolFiles, this.fileSymbolMappers);
+				this.linuxMapper = new LinuxPerfScriptMapper(archive, parseController.parser);
 
 				if (this.doThreadTime)
 				{
@@ -106,7 +100,7 @@ namespace Diagnostics.Tracing.StackSources
 		private object internCallStackLock = new object();
 		private object internFrameLock = new object();
 
-		private readonly Dictionary<string, Mapper> fileSymbolMappers;
+		private readonly LinuxPerfScriptMapper linuxMapper;
 
 		private readonly Dictionary<int, double> blockedThreads;
 		private readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -191,8 +185,8 @@ namespace Diagnostics.Tracing.StackSources
 					if (stackFrame.Address.Length > 1 &&
 						stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
 					{
-						frameDisplayName = this.ResolveSymbols(processID, stackFrame);
-			}
+						frameDisplayName = this.linuxMapper.ResolveSymbols(processID, stackFrame);
+					}
 				}
 			}
 
@@ -212,38 +206,6 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			return stackIndex;
-		}
-
-		private string ResolveSymbols(int processID, StackFrame stackFrame)
-		{
-			ulong absoluteLocation = ulong.Parse(
-				stackFrame.Address.Substring(2),
-				System.Globalization.NumberStyles.HexNumber);
-
-			Mapper mapper;
-			if (this.fileSymbolMappers.TryGetValue(
-				string.Format("perf-{0}", processID.ToString()), out mapper))
-			{
-				string symbol;
-				ulong location;
-				if (mapper.TryFindSymbol(absoluteLocation, out symbol, out location))
-				{
-					if (DllMapFilePattern.IsMatch(symbol))
-					{
-						ulong relativeLocation = absoluteLocation - location;
-						if (this.fileSymbolMappers.TryGetValue(symbol, out mapper))
-						{
-							if (mapper.TryFindSymbol(relativeLocation, out symbol, out location))
-							{
-								string[] symbolModule = this.parseController.GetSymbolsFromMicrosoftMap(symbol);
-								return symbolModule[0] + "!" + symbolModule[1];
-							}
-						}
-					}
-				}
-			}
-
-			return stackFrame.DisplayName;
 		}
 
 		private void FlushBlockedThreadsAt(double endTime)
@@ -303,19 +265,15 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				archive = new ZipArchive(new FileStream(path, FileMode.Open));
 				ZipArchiveEntry foundEntry = null;
+
 				foreach (ZipArchiveEntry entry in archive.Entries)
 				{
 					if (entry.FullName.EndsWithOneOf(PerfDumpSuffixes))
 					{
 						foundEntry = entry;
+						break;
 					}
-
-					if (MapFilePatterns.IsMatch(entry.FullName))
-					{
-						symbolFiles.Add(entry.FullName, entry.Open());
 				}
-
-			}
 
 				return foundEntry?.Open();
 			}
@@ -333,6 +291,80 @@ namespace Diagnostics.Tracing.StackSources
 	}
 
 	#region Mapper
+
+	internal class LinuxPerfScriptMapper
+	{
+		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
+		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
+
+		public LinuxPerfScriptMapper(ZipArchive archive, LinuxPerfScriptEventParser parser)
+		{
+			this.fileSymbolMappers = new Dictionary<string, Mapper>();
+			this.parser = parser;
+
+			if (archive != null)
+			{
+				this.PopulateSymbolMapper(archive);
+			}
+		}
+
+		private void PopulateSymbolMapper(ZipArchive archive)
+		{
+			Contract.Requires(archive != null, nameof(archive));
+
+			foreach (var entry in archive.Entries)
+			{
+				if (MapFilePatterns.IsMatch(entry.FullName))
+				{
+					Mapper mapper = new Mapper();
+					this.fileSymbolMappers[Path.GetFileNameWithoutExtension(entry.FullName)] = mapper;
+					using (Stream stream = entry.Open())
+					{
+						this.parser.ParseSymbolFile(stream, mapper);
+					}
+					mapper.DoneMapping();
+				}
+			}
+		}
+
+		public string ResolveSymbols(int processID, StackFrame stackFrame)
+		{
+			ulong absoluteLocation = ulong.Parse(
+				stackFrame.Address.Substring(2),
+				System.Globalization.NumberStyles.HexNumber);
+
+			Mapper mapper;
+			if (this.fileSymbolMappers.TryGetValue(
+				string.Format("perf-{0}", processID.ToString()), out mapper))
+			{
+				string symbol;
+				ulong location;
+				if (mapper.TryFindSymbol(absoluteLocation, out symbol, out location))
+				{
+					if (DllMapFilePattern.IsMatch(symbol))
+					{
+						ulong relativeLocation = absoluteLocation - location;
+						if (this.fileSymbolMappers.TryGetValue(symbol, out mapper))
+						{
+							if (mapper.TryFindSymbol(relativeLocation, out symbol, out location))
+							{
+								string[] symbolModule = this.parser.GetSymbolFromMicrosoftMap(symbol);
+								return symbolModule[0] + "!" + symbolModule[1];
+							}
+						}
+					}
+				}
+			}
+
+			return stackFrame.DisplayName;
+		}
+
+		#region private
+		private readonly Dictionary<string, Mapper> fileSymbolMappers;
+		private readonly LinuxPerfScriptEventParser parser;
+		#endregion
+	}
+
 	public class Mapper
 	{
 		private List<Map> maps;
@@ -491,21 +523,6 @@ namespace Diagnostics.Tracing.StackSources
 			stackSource.AddSamples(allSamplesEnumerator);
 		}
 
-		public void MakeSymbolTables(Dictionary<string, Stream> source, Dictionary<string, Mapper> destination)
-		{
-			foreach (string fileName in source.Keys)
-			{
-				using (Stream symbolStream = source[fileName])
-				{
-					Mapper mapper = new Mapper();
-					destination[Path.GetFileNameWithoutExtension(fileName)] = mapper;
-					this.parser.ParseSymbolFile(symbolStream, mapper);
-					mapper.DoneMapping();
-					symbolStream.Close();
-				}
-				}
-			}
-
 		public string[] GetSymbolsFromMicrosoftMap(string symbol)
 		{
 			return this.parser.GetSymbolFromMicrosoftMap(symbol);
@@ -513,7 +530,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		#region private
 		private readonly FastStream masterSource;
-		private readonly LinuxPerfScriptEventParser parser;
+		internal readonly LinuxPerfScriptEventParser parser; // TODO: This class will be gone later, so parser being internal is OK
 		private object bufferLock = new object();
 		private const int bufferDivider = 4;
 
