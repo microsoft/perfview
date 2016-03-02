@@ -13,14 +13,14 @@ using PerfView.Utilities;
 
 namespace Diagnostics.Tracing.StackSources
 {
-	public class LinuxPerfScriptStackSource : InternStackSource
+	public abstract class AbstractLinuxPerfScriptStackSource : InternStackSource
 	{
 		public static readonly string[] PerfDumpSuffixes = new string[]
 		{
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false)
+		public AbstractLinuxPerfScriptStackSource(string path, bool doThreadTime = false)
 		{
 			this.doThreadTime = doThreadTime;
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
@@ -94,21 +94,21 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		private readonly PerfScriptToSampleController parseController;
+		protected readonly PerfScriptToSampleController parseController;
 		private object internCallStackLock = new object();
 		private object internFrameLock = new object();
 
 		private readonly Dictionary<int, double> blockedThreads;
-		private readonly List<ThreadPeriod> threadBlockedPeriods;
+		protected readonly List<ThreadPeriod> threadBlockedPeriods;
 		private readonly Dictionary<int, int> cpuThreadUsage;
 
 		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
-		private double? SampleEndTime;
-		private readonly bool doThreadTime;
+		protected double? SampleEndTime;
+		protected readonly bool doThreadTime;
 
 		private StackSourceCallStackIndex currentStackIndex;
 
-		private const int MaxThreadCount = 4;
+		protected const int MaxThreadCount = 4;
 
 		private enum StateThread
 		{
@@ -116,7 +116,7 @@ namespace Diagnostics.Tracing.StackSources
 			CPU_TIME
 		}
 
-		private class ThreadPeriod
+		protected class ThreadPeriod
 		{
 			internal double StartTime { get; }
 			internal double EndTime { get; }
@@ -129,20 +129,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		private void InternAllLinuxEvents(Stream stream)
-		{
-			// This is where the parallel stuff happens, for now if threadtime is involved we force it
-			//   to run on one thread...
-			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
-
-			if (this.doThreadTime)
-			{
-				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
-				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
-			}
-
-			this.Interner.DoneInterning();
-		}
+		protected abstract void InternAllLinuxEvents(Stream stream);
 
 		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int processID, int? threadid = null, bool doThreadTime = false)
 		{
@@ -194,7 +181,7 @@ namespace Diagnostics.Tracing.StackSources
 			return stackIndex;
 		}
 
-		private void FlushBlockedThreadsAt(double endTime)
+		protected void FlushBlockedThreadsAt(double endTime)
 		{
 			foreach (int threadid in this.blockedThreads.Keys)
 			{
@@ -274,6 +261,28 @@ namespace Diagnostics.Tracing.StackSources
 			throw new Exception("Not a valid input file");
 		}
 		#endregion
+	}
+	public class LinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
+	{
+		public LinuxPerfScriptStackSource(string path, bool doThreadTime = false) : base(path, doThreadTime)
+		{
+		}
+
+		protected override void InternAllLinuxEvents(Stream stream)
+		{
+			// This is where the parallel stuff happens, for now if threadtime is involved we force it
+			//   to run on one thread...
+			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
+
+			if (this.doThreadTime)
+			{
+				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
+				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
+
+			this.Interner.DoneInterning();
+		}
+
 	}
 
 	public class PerfScriptToSampleController

@@ -14,6 +14,12 @@ namespace Diagnostics.Tracing.StackSources
 {
 	public class LinuxPerfScriptEventParser
 	{
+		public LinuxPerfScriptEventParser()
+		{
+			this.mapper = null;
+			this.SetDefaultValues();
+		}
+
 		/// <summary>
 		/// Gets the total number of samples created.
 		/// </summary>
@@ -92,14 +98,6 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public long MaxSamples { get; set; }
 
-		private LinuxPerfScriptMapper mapper;
-
-		public LinuxPerfScriptEventParser()
-		{
-			this.mapper = null;
-			this.SetDefaultValues();
-		}
-
 		public void SetSymbolFile(ZipArchive archive)
 		{
 			this.mapper = new LinuxPerfScriptMapper(archive, this);
@@ -176,6 +174,8 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
+		private LinuxPerfScriptMapper mapper;
+
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
@@ -322,7 +322,7 @@ namespace Diagnostics.Tracing.StackSources
 			while (!this.IsEndOfSample(source, source.Current, source.Peek(1)))
 			{
 				StackFrame stackFrame = this.ReadFrame(source);
-				if (stackFrame.Address.Length > 1 && stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
+				if (this.mapper != null && stackFrame.Address.Length > 1 && stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
 				{
 					string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame);
 					stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
