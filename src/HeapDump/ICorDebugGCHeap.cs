@@ -93,8 +93,6 @@ namespace ClrMemory
             }
         }
         
-        [Obsolete]
-        public override int TypeIndexLimit { get { return m_types.Count; } }
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
         public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
 
