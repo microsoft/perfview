@@ -351,6 +351,21 @@ namespace PerfView.Utilities
 			}
 		}
 
+		public void Skip(uint amount)
+		{
+			while (amount >= this.bufferFillPos - this.bufferIndex)
+			{
+				if (this.EndOfStream)
+				{
+					return;
+				}
+				amount -= this.bufferFillPos - this.bufferIndex;
+				this.bufferIndex = this.FillBufferFromStreamPosition();
+			}
+
+			this.bufferIndex += amount;
+		}
+
 		/// <summary>
 		/// Gets a string from the position to the length indicated (for debugging)
 		/// </summary>
