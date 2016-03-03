@@ -94,20 +94,22 @@ namespace Diagnostics.Tracing.StackSources
 			this.SampleEndTime = samples.Last().TimeRelativeMSec;
 		}
 
-		#region private
 		protected readonly LinuxPerfScriptEventParser parser;
 		protected readonly FastStream masterSource;
-
-		private readonly Dictionary<int, double> blockedThreads;
-		protected readonly List<ThreadPeriod> threadBlockedPeriods;
-		private readonly Dictionary<int, int> cpuThreadUsage;
-
-		protected double? SampleEndTime;
 		protected readonly bool doThreadTime;
 
-		private StackSourceCallStackIndex currentStackIndex;
+		protected abstract void DoInterning();
+		protected abstract StackSourceFrameIndex InternFrame(string displayName);
+		protected abstract StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex);
 
-		protected const int MaxThreadCount = 4;
+		#region private
+		private readonly Dictionary<int, double> blockedThreads;
+		private readonly List<ThreadPeriod> threadBlockedPeriods;
+		private readonly Dictionary<int, int> cpuThreadUsage;
+
+		private double? SampleEndTime;
+
+		private StackSourceCallStackIndex currentStackIndex;
 
 		private enum StateThread
 		{
@@ -115,7 +117,7 @@ namespace Diagnostics.Tracing.StackSources
 			CPU_TIME
 		}
 
-		protected class ThreadPeriod
+		private class ThreadPeriod
 		{
 			internal double StartTime { get; }
 			internal double EndTime { get; }
@@ -128,9 +130,18 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		protected abstract void InternAllLinuxEvents(Stream stream);
-		protected abstract StackSourceFrameIndex InternFrame(string displayName);
-		protected abstract StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex);
+		private void InternAllLinuxEvents(Stream stream)
+		{
+			this.DoInterning();
+
+			if (this.doThreadTime)
+			{
+				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
+				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
+
+			this.Interner.DoneInterning();
+		}
 
 		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int processID, int? threadid = null, bool doThreadTime = false)
 		{
@@ -171,7 +182,7 @@ namespace Diagnostics.Tracing.StackSources
 			return stackIndex;
 		}
 
-		protected void FlushBlockedThreadsAt(double endTime)
+		private void FlushBlockedThreadsAt(double endTime)
 		{
 			foreach (int threadid in this.blockedThreads.Keys)
 			{
@@ -258,20 +269,57 @@ namespace Diagnostics.Tracing.StackSources
 		{
 		}
 
-		protected override void InternAllLinuxEvents(Stream stream)
+		protected override void DoInterning()
 		{
-			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
-			// This is where the parallel stuff happens, for now if threadtime is involved we force it
-			//   to run on one thread...
-			this.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
+			int threadCount = this.doThreadTime ? 1 : MaxThreadCount;
 
-			if (this.doThreadTime)
+			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
+
+			this.parser.SkipPreamble(masterSource);
+
+			Task[] tasks = new Task[threadCount];
+			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
+
+			for (int i = 0; i < tasks.Length; i++)
 			{
-				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
-				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+				threadSamples[i] = new List<StackSourceSample>();
+				tasks[i] = new Task((object givenArrayIndex) =>
+				{
+					int length;
+					byte[] buffer = new byte[this.masterSource.Buffer.Length];
+					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
+					{
+						// We don't need a gigantic buffer now, so we reduce the size by 16 times
+						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
+						FastStream bufferPart = new FastStream(buffer, length);
+
+						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
+						{
+							StackSourceSample sample = this.GetSampleFor(linuxEvent);
+							threadSamples[(int)givenArrayIndex].Add(sample);
+						}
+					}
+				}, i);
+
+				tasks[i].Start();
 			}
 
-			this.Interner.DoneInterning();
+			Task.WaitAll(tasks);
+
+			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
+			foreach (var samples in threadSamples)
+			{
+				if (allSamplesEnumerator == null)
+				{
+					allSamplesEnumerator = samples;
+				}
+				else
+				{
+					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
+				}
+			}
+
+			this.AddSamples(allSamplesEnumerator);
 		}
 
 		protected override StackSourceFrameIndex InternFrame(string displayName)
@@ -298,6 +346,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		#region private
 		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
 		private object internFrameLock = new object();
 		private object internCallStackLock = new object();
@@ -305,54 +354,7 @@ namespace Diagnostics.Tracing.StackSources
 		private object bufferLock = new object();
 		private const int bufferDivider = 4;
 
-		private void ParseOnto(ParallelLinuxPerfScriptStackSource stackSource, int threadCount = 4)
-		{
-			this.parser.SkipPreamble(masterSource);
-
-			Task[] tasks = new Task[threadCount];
-			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
-
-			for (int i = 0; i < tasks.Length; i++)
-			{
-				threadSamples[i] = new List<StackSourceSample>();
-				tasks[i] = new Task((object givenArrayIndex) =>
-				{
-					int length;
-					byte[] buffer = new byte[this.masterSource.Buffer.Length];
-					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
-					{
-						// We don't need a gigantic buffer now, so we reduce the size by 16 times
-						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
-						FastStream bufferPart = new FastStream(buffer, length);
-
-						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
-						{
-							StackSourceSample sample = stackSource.GetSampleFor(linuxEvent);
-							threadSamples[(int)givenArrayIndex].Add(sample);
-						}
-					}
-				}, i);
-
-				tasks[i].Start();
-			}
-
-			Task.WaitAll(tasks);
-
-			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
-			foreach (var samples in threadSamples)
-			{
-				if (allSamplesEnumerator == null)
-				{
-					allSamplesEnumerator = samples;
-				}
-				else
-				{
-					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
-				}
-			}
-
-			stackSource.AddSamples(allSamplesEnumerator);
-		}
+		private const int MaxThreadCount = 4;
 
 		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
@@ -467,6 +469,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			return newCount;
 		}
+		#endregion
 	}
 
 	public static class StringExtension
