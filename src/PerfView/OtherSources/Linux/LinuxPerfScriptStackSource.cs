@@ -367,7 +367,7 @@ namespace Diagnostics.Tracing.StackSources
 					return -1;
 				}
 
-				int start = (int)source.BufferIndex;
+				/*int start = (int)source.BufferIndex;
 				int length = source.Buffer.Length / bufferDivider;
 				bool truncated;
 
@@ -389,9 +389,45 @@ namespace Diagnostics.Tracing.StackSources
 					length += truncatedMessage.Length;
 
 					source.BufferIndex = source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - source.BufferIndex);
+				}*/
+
+				uint startLook = (uint)source.Buffer.Length / 4;
+				uint length;
+
+				bool truncated;
+				bool truncate = false;
+				double portion = 1;
+
+				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer, truncate, out length))
+				{
+					if (truncate)
+					{
+						break;
+					}
+
+					if (portion < 0.5)
+					{
+						truncate = true;
+					}
+
+					portion *= 0.8;
 				}
 
-				return length;
+				source.Skip(length);
+
+				if (truncated)
+				{
+					this.FindValidStartOn(source);
+					byte[] truncatedMessage = Encoding.ASCII.GetBytes(TruncateString);
+					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
+									 dst: buffer, dstOffset: (int)length, count: truncatedMessage.Length);
+
+					length += (uint)truncatedMessage.Length;
+				}
+
+				source.SkipWhiteSpace();
+
+				return (int)length;
 			}
 		}
 
@@ -402,15 +438,15 @@ namespace Diagnostics.Tracing.StackSources
 			Contract.Requires(source != null, nameof(source));
 			Contract.Requires(buffer != null, nameof(buffer));
 
+			length = startLook;
+
 			if (source.Peek(startLook) == 0)
 			{
-				length = this.PeekBytes(source, startLook, buffer);
+				// length = this.PeekBytes(source, startLook, buffer);
 				return false;
 			}
 
 			int maxLength = buffer.Length - TruncateString.Length;
-
-			length = startLook;
 
 			uint lastNewLine = 0;
 
@@ -440,10 +476,10 @@ namespace Diagnostics.Tracing.StackSources
 					lastNewLine = length;
 				}
 
-				buffer[length++] = current;
+				//buffer[length++] = current;
 			}
 
-			this.PeekBytes(source, startLook, buffer);
+			// this.PeekBytes(source, startLook, buffer);
 			return truncate;
 		}
 
