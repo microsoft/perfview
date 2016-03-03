@@ -356,10 +356,15 @@ namespace PerfView.Utilities
 		/// </summary>
 		internal string PeekString(int length)
 		{
+			return this.PeekString(0, length);
+		}
+
+		internal string PeekString(int start, int length)
+		{
 			StringBuilder sb = new StringBuilder();
-			for (uint i = this.BufferIndex; i < this.BufferIndex + length && i < this.bufferFillPos - 1; i++)
+			for (uint i = this.BufferIndex + (uint)start; i < this.BufferIndex + length + start && i < this.bufferFillPos - 1; i++)
 			{
-				sb.Append((char)this.Peek(i - this.BufferIndex));
+				sb.Append((char)this.Peek(i + (uint)start - this.BufferIndex));
 			}
 
 			return sb.ToString();

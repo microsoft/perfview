@@ -341,8 +341,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			lock (internCallStackLock)
 			{
-				stackIndex = this.Interner.CallStackIntern(frameIndex, stackIndex);
-				return stackIndex;
+				return this.Interner.CallStackIntern(frameIndex, stackIndex);
 			}
 		}
 
@@ -394,6 +393,16 @@ namespace Diagnostics.Tracing.StackSources
 
 				return length;
 			}
+		}
+
+		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
+		{
+			Contract.Requires(source != null, nameof(source));
+			Contract.Requires(buffer != null, nameof(buffer));
+
+			length = startLook;
+
+			return false;
 		}
 
 		// Assumes that source is at an invalid start position.
