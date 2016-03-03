@@ -472,6 +472,31 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
+	public class LinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
+	{
+		public LinuxPerfScriptStackSource(string path, bool doThreadTime) : base (path, doThreadTime)
+		{
+		}
+
+		protected override void DoInterning()
+		{
+			foreach (var linuxEvent in this.parser.Parse(this.masterSource))
+			{
+				this.AddSample(this.GetSampleFor(linuxEvent));
+			}
+		}
+
+		protected override StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
+		{
+			return this.Interner.CallStackIntern(frameIndex, stackIndex);
+		}
+
+		protected override StackSourceFrameIndex InternFrame(string displayName)
+		{
+			return this.Interner.FrameIntern(displayName);
+		}
+	}
+
 	public static class StringExtension
 	{
 		public static bool EndsWithOneOf(this string path, string[] suffixes, StringComparison stringComparison = StringComparison.Ordinal)
