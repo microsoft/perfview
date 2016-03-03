@@ -395,14 +395,73 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		private const string TruncateString = "0 truncate (truncate)";
+
 		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
 		{
 			Contract.Requires(source != null, nameof(source));
 			Contract.Requires(buffer != null, nameof(buffer));
 
+			if (source.Peek(startLook) == 0)
+			{
+				length = this.PeekBytes(source, startLook, buffer);
+				return false;
+			}
+
+			int maxLength = buffer.Length - TruncateString.Length;
+
 			length = startLook;
 
-			return false;
+			uint lastNewLine = 0;
+
+			while (true)
+			{
+				if (length >= maxLength)
+				{
+					length = lastNewLine;
+
+					if (!truncate)
+					{
+						return true;
+					}
+
+					break;
+				}
+
+				byte current = source.Peek(length);
+
+				if (this.parser.IsEndOfSample(source, current, source.Peek(length + 1)))
+				{
+					break;
+				}
+
+				if (current == '\n')
+				{
+					lastNewLine = length;
+				}
+
+				buffer[length++] = current;
+			}
+
+			this.PeekBytes(source, startLook, buffer);
+			return truncate;
+		}
+
+		private uint PeekBytes(FastStream source, uint length, byte[] buffer)
+		{
+			Contract.Requires(length <= buffer.Length, nameof(length));
+
+			for (uint i = 0; i < length; i++)
+			{
+				if (source.Peek(i) == 0)
+				{
+					return i;
+				}
+
+				buffer[i] = source.Peek(i);
+			}
+
+			return length;
 		}
 
 		// Assumes that source is at an invalid start position.
@@ -483,7 +542,7 @@ namespace Diagnostics.Tracing.StackSources
 
 	public class LinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
 	{
-		public LinuxPerfScriptStackSource(string path, bool doThreadTime) : base (path, doThreadTime)
+		public LinuxPerfScriptStackSource(string path, bool doThreadTime) : base(path, doThreadTime)
 		{
 		}
 
