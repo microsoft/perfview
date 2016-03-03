@@ -2675,7 +2675,7 @@ namespace PerfViewExtensibility
 		{
 			bool doThreadTime = threadTime != null && threadTime == "--threadtime";
 
-			var perfScriptStackSource = new LinuxPerfScriptStackSource(path, doThreadTime);
+			var perfScriptStackSource = new ParallelLinuxPerfScriptStackSource(path, doThreadTime);
 			string outputFileName = Path.ChangeExtension(path, ".perfView.xml.zip");
 
 			XmlStackSourceWriter.WriteStackViewAsZippedXml(perfScriptStackSource, outputFileName);

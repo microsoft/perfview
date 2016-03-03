@@ -16,7 +16,7 @@ namespace LinuxTracing.Tests
 		{
 			Constants.WaitUntilFileIsReady(path);
 
-			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(path, doBlockedTime);
+			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(path, doBlockedTime);
 
 			for (int i = 0; i < stackSource.SampleIndexLimit; i++)
 			{

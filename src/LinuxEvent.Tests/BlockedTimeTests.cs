@@ -22,7 +22,7 @@ namespace LinuxTracing.Tests
 		{
 			Constants.WaitUntilFileIsReady(source);
 
-			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(source, doThreadTime: true);
+			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
 
 			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());
 		}

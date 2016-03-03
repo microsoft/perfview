@@ -15,7 +15,7 @@ namespace LinuxTracing.Tests
 		{
 			Constants.WaitUntilFileIsReady(source);
 
-			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(source);
+			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source);
 			Assert.Equal(expectedStackCount, stackSource.Interner.CallStackCount);
 		}
 

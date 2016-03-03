@@ -19,7 +19,7 @@ namespace LinuxTracing.Tests
 		{
 			Constants.WaitUntilFileIsReady(source);
 
-			var stackSource = new LinuxPerfScriptStackSource(source);
+			var stackSource = new ParallelLinuxPerfScriptStackSource(source);
 			XmlStackSourceWriter.WriteStackViewAsZippedXml(stackSource,
 				Constants.GetOutputPath(Path.GetFileNameWithoutExtension(source) + ".perfView.xml.zip"));
 		}
