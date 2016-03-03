@@ -432,7 +432,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		private const string TruncateString = "0 truncate (truncate)";
-
+		
 		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
 		{
 			Contract.Requires(source != null, nameof(source));
@@ -442,7 +442,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (source.Peek(startLook) == 0)
 			{
-				// length = this.PeekBytes(source, startLook, buffer);
+				length = this.PeekBytes(source, startLook, buffer);
 				return false;
 			}
 
@@ -476,10 +476,10 @@ namespace Diagnostics.Tracing.StackSources
 					lastNewLine = length;
 				}
 
-				//buffer[length++] = current;
+				buffer[length++] = current;
 			}
 
-			// this.PeekBytes(source, startLook, buffer);
+			this.PeekBytes(source, startLook, buffer);
 			return truncate;
 		}
 
