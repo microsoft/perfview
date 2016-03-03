@@ -25,11 +25,6 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public int EventCount { get; private set; }
 
-		/// <summary>
-		/// True if the source given had been parsed before, otherwise false.
-		/// </summary>
-		public bool Parsed { get; private set; }
-
 		public void SkipPreamble(FastStream source)
 		{
 			source.MoveNext(); // Skip Sentinal value
@@ -84,7 +79,6 @@ namespace Diagnostics.Tracing.StackSources
 				}
 			}
 
-			this.Parsed = true;
 			yield break;
 		}
 
@@ -179,7 +173,6 @@ namespace Diagnostics.Tracing.StackSources
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
-			this.Parsed = false;
 			this.Pattern = null;
 			this.MaxSamples = 50000;
 		}
