@@ -35,7 +35,9 @@ namespace Diagnostics.Tracing.StackSources
 			ZipArchive archive;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
-				this.parseController = new PerfScriptToSampleController(stream, archive);
+				this.masterSource = new FastStream(stream);
+				this.parser = new LinuxPerfScriptEventParser();
+				this.parser.SetSymbolFile(archive);
 
 				this.InternAllLinuxEvents(stream);
 				stream.Close();
@@ -93,7 +95,8 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		protected readonly PerfScriptToSampleController parseController;
+		protected readonly LinuxPerfScriptEventParser parser;
+		protected readonly FastStream masterSource;
 
 		private readonly Dictionary<int, double> blockedThreads;
 		protected readonly List<ThreadPeriod> threadBlockedPeriods;
@@ -260,7 +263,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 			// This is where the parallel stuff happens, for now if threadtime is involved we force it
 			//   to run on one thread...
-			this.parseController.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
+			this.ParseOnto(this, threadCount: this.doThreadTime ? 1 : MaxThreadCount);
 
 			if (this.doThreadTime)
 			{
@@ -299,18 +302,10 @@ namespace Diagnostics.Tracing.StackSources
 		private object internFrameLock = new object();
 		private object internCallStackLock = new object();
 
-	}
+		private object bufferLock = new object();
+		private const int bufferDivider = 4;
 
-	public class PerfScriptToSampleController
-	{
-		public PerfScriptToSampleController(Stream source, ZipArchive symbolFiles)
-		{
-			this.masterSource = new FastStream(source);
-			this.parser = new LinuxPerfScriptEventParser();
-			this.parser.SetSymbolFile(symbolFiles);
-		}
-
-		public void ParseOnto(ParallelLinuxPerfScriptStackSource stackSource, int threadCount = 4)
+		private void ParseOnto(ParallelLinuxPerfScriptStackSource stackSource, int threadCount = 4)
 		{
 			this.parser.SkipPreamble(masterSource);
 
@@ -358,17 +353,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			stackSource.AddSamples(allSamplesEnumerator);
 		}
-
-		public string[] GetSymbolsFromMicrosoftMap(string symbol)
-		{
-			return this.parser.GetSymbolFromMicrosoftMap(symbol);
-		}
-
-		#region private
-		private readonly FastStream masterSource;
-		internal readonly LinuxPerfScriptEventParser parser; // TODO: This class will be gone later, so parser being internal is OK
-		private object bufferLock = new object();
-		private const int bufferDivider = 4;
 
 		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
@@ -483,7 +467,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			return newCount;
 		}
-		#endregion
 	}
 
 	public static class StringExtension
