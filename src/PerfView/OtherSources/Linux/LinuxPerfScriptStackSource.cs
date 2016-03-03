@@ -476,10 +476,10 @@ namespace Diagnostics.Tracing.StackSources
 					lastNewLine = length;
 				}
 
-				//buffer[length++] = current;
+				buffer[length++] = current;
 			}
 
-			// this.PeekBytes(source, startLook, buffer);
+			this.PeekBytes(source, startLook, buffer);
 			return truncate;
 		}
 
