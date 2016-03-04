@@ -389,7 +389,7 @@ namespace Diagnostics.Tracing.StackSources
 					portion *= 0.8;
 				}
 
-				source.CopyBytes((int)length, buffer);
+				length = (uint)source.CopyBytes((int)length, buffer);
 
 				source.Skip(length);
 

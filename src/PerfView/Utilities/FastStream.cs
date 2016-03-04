@@ -376,7 +376,7 @@ namespace PerfView.Utilities
 		{
 			if (this.bufferIndex + start + length >= this.bufferFillPos)
 			{
-				this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
 			}
 
 			if (this.bufferFillPos - (this.bufferIndex + start) < length)
