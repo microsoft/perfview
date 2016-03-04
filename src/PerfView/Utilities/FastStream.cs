@@ -383,7 +383,7 @@ namespace PerfView.Utilities
 				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
 			}
 
-			System.Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
+			Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
 
 			return length;
 		}
@@ -426,36 +426,6 @@ namespace PerfView.Utilities
 			}
 		}
 
-		/// <summary>
-		/// Fills the buffer starting from the current position on the stream.
-		/// </summary>
-		/// <param name="keepLast">The amount of characters you want ot keep from the end.</param>
-		/// <returns>Returns the index in which the next buffer starts anew.</returns>
-		public uint FillBufferFromStreamPosition(uint keepLast = 0)
-		{
-			// This is so the first 'keepFromBack' integers are read in again.
-			uint preamble = MaxRestoreLength + keepLast;
-			for (int i = 0; i < preamble; i++)
-			{
-				if (this.bufferFillPos - (preamble - i) < 0)
-				{
-					buffer[i] = 0;
-					continue;
-				}
-
-				this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
-			}
-
-			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
-			this.bufferFillPos = this.streamReadIn + preamble;
-			this.streamReadIn += keepLast;
-			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
-			if (this.bufferFillPos < this.buffer.Length)
-				this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
-
-			return MaxRestoreLength;
-		}
-
 		public void Dispose()
 		{
 			if (this.closeStream)
@@ -485,6 +455,31 @@ namespace PerfView.Utilities
 		}
 
 		#region privateMethods
+		private uint FillBufferFromStreamPosition(uint keepLast = 0)
+		{
+			// This is so the first 'keepFromBack' integers are read in again.
+			uint preamble = MaxRestoreLength + keepLast;
+			for (int i = 0; i < preamble; i++)
+			{
+				if (this.bufferFillPos - (preamble - i) < 0)
+				{
+					buffer[i] = 0;
+					continue;
+				}
+
+				this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
+			}
+
+			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
+			this.bufferFillPos = this.streamReadIn + preamble;
+			this.streamReadIn += keepLast;
+			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
+			if (this.bufferFillPos < this.buffer.Length)
+				this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
+
+			return MaxRestoreLength;
+		}
+
 		private bool MoveNextHelper()
 		{
 			this.bufferIndex = this.FillBufferFromStreamPosition();
