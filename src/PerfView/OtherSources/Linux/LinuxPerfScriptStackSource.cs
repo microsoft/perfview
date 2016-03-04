@@ -105,14 +105,6 @@ namespace Diagnostics.Tracing.StackSources
 		protected readonly int BufferSize = 262144;
 
 		#region private
-		private readonly Dictionary<int, double> blockedThreads;
-		private readonly List<ThreadPeriod> threadBlockedPeriods;
-		private readonly Dictionary<int, int> cpuThreadUsage;
-
-		private double? SampleEndTime;
-
-		private StackSourceCallStackIndex currentStackIndex;
-
 		private enum StateThread
 		{
 			BLOCKED_TIME,
@@ -263,6 +255,14 @@ namespace Diagnostics.Tracing.StackSources
 
 			throw new Exception("Not a valid input file");
 		}
+
+		private readonly Dictionary<int, double> blockedThreads;
+		private readonly List<ThreadPeriod> threadBlockedPeriods;
+		private readonly Dictionary<int, int> cpuThreadUsage;
+
+		private double? SampleEndTime;
+
+		private StackSourceCallStackIndex currentStackIndex;
 		#endregion
 	}
 	public class ParallelLinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
@@ -348,15 +348,6 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
-		private object internFrameLock = new object();
-		private object internCallStackLock = new object();
-
-		private object bufferLock = new object();
-		private const int bufferDivider = 4;
-
-		private const int MaxThreadCount = 4;
-
 		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
 		// Note: This needs to be thread safe
@@ -485,6 +476,15 @@ namespace Diagnostics.Tracing.StackSources
 				source.MoveNext();
 			}
 		}
+
+		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
+		private object internFrameLock = new object();
+		private object internCallStackLock = new object();
+
+		private object bufferLock = new object();
+		private const int bufferDivider = 4;
+
+		private const int MaxThreadCount = 4;
 		#endregion
 	}
 

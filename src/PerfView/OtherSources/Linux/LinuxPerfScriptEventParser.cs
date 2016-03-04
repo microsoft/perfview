@@ -102,6 +102,38 @@ namespace Diagnostics.Tracing.StackSources
 			this.SetSymbolFile(new ZipArchive(new FileStream(path, FileMode.Open)));
 		}
 
+		public string[] GetSymbolFromMicrosoftMap(string entireSymbol, string mapFileLocation = "")
+		{
+			for (int first = 0; first < entireSymbol.Length;)
+			{
+				int last = entireSymbol.IndexOf(' ', first);
+				if (last == -1)
+				{
+					last = entireSymbol.Length;
+				}
+
+				if (entireSymbol[first] == '[' && entireSymbol[last - 1] == ']')
+				{
+					var symbol = entireSymbol.Substring(System.Math.Min(entireSymbol.Length, last + 1));
+					return new string[2] { entireSymbol.Substring(first + 1, last - first - 2), symbol.Trim() };
+				}
+
+				first = last + 1;
+			}
+
+			return new string[2] { entireSymbol, mapFileLocation };
+		}
+
+		public bool IsEndOfSample(FastStream source)
+		{
+			return this.IsEndOfSample(source, source.Current, source.Peek(1));
+		}
+
+		public bool IsEndOfSample(FastStream source, byte current, byte peek1)
+		{
+			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
+		}
+
 		internal void ParseSymbolFile(Stream stream, Mapper mapper)
 		{
 			FastStream source = new FastStream(stream);
@@ -135,41 +167,7 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		public string[] GetSymbolFromMicrosoftMap(string entireSymbol, string mapFileLocation = "")
-		{
-			for (int first = 0; first < entireSymbol.Length;)
-			{
-				int last = entireSymbol.IndexOf(' ', first);
-				if (last == -1)
-				{
-					last = entireSymbol.Length;
-				}
-
-				if (entireSymbol[first] == '[' && entireSymbol[last - 1] == ']')
-				{
-					var symbol = entireSymbol.Substring(System.Math.Min(entireSymbol.Length, last + 1));
-					return new string[2] { entireSymbol.Substring(first + 1, last - first - 2), symbol.Trim() };
-				}
-
-				first = last + 1;
-			}
-
-			return new string[2] { entireSymbol, mapFileLocation };
-		}
-
-		public bool IsEndOfSample(FastStream source)
-		{
-			return this.IsEndOfSample(source, source.Current, source.Peek(1));
-		}
-
-		public bool IsEndOfSample(FastStream source, byte current, byte peek1)
-		{
-			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
-		}
-
 		#region private
-		private LinuxPerfScriptMapper mapper;
-
 		private void SetDefaultValues()
 		{
 			this.EventCount = 0;
@@ -458,6 +456,8 @@ namespace Diagnostics.Tracing.StackSources
 
 			return false;
 		}
+
+		private LinuxPerfScriptMapper mapper;
 		#endregion
 	}
 
@@ -510,9 +510,6 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		private readonly Dictionary<string, Mapper> fileSymbolMappers;
-		private readonly LinuxPerfScriptEventParser parser;
-
 		private void PopulateSymbolMapper(ZipArchive archive)
 		{
 			Contract.Requires(archive != null, nameof(archive));
@@ -531,13 +528,14 @@ namespace Diagnostics.Tracing.StackSources
 				}
 			}
 		}
+
+		private readonly Dictionary<string, Mapper> fileSymbolMappers;
+		private readonly LinuxPerfScriptEventParser parser;
 		#endregion
 	}
 
 	internal class Mapper
 	{
-		private List<Map> maps;
-
 		public Mapper()
 		{
 			this.maps = new List<Map>();
@@ -591,6 +589,8 @@ namespace Diagnostics.Tracing.StackSources
 
 			return false;
 		}
+
+		private List<Map> maps;
 	}
 
 	internal struct Map
