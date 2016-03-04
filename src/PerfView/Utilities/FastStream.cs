@@ -389,28 +389,6 @@ namespace PerfView.Utilities
 			return length;
 		}
 
-		/// <summary>
-		/// Gets a string from the position to the length indicated (for debugging)
-		/// </summary>
-		internal string PeekString(int length)
-		{
-			return this.PeekString(0, length);
-		}
-
-		internal string PeekString(int start, int length)
-		{
-			StringBuilder sb = new StringBuilder();
-			for (uint i = this.BufferIndex + (uint)start; i < this.BufferIndex + length + start && i < this.bufferFillPos - 1; i++)
-			{
-				sb.Append((char)this.Peek(i + (uint)start - this.BufferIndex));
-			}
-
-			return sb.ToString();
-		}
-
-		internal Stream BaseStream { get { return this.stream; } }
-
-		#region privateMethods
 		public int ReadHex()
 		{
 			int value = 0;
@@ -474,21 +452,40 @@ namespace PerfView.Utilities
 			this.streamReadIn += keepLast;
 			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
 			if (this.bufferFillPos < this.buffer.Length)
-				this.buffer[this.bufferFillPos] = this.Sentinal;	// we define 0 as the value you get after EOS.
+				this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
 
 			return MaxRestoreLength;
 		}
 
-		#endregion
-		#region privateState
-		private byte[] buffer;
-		private uint bufferFillPos;
-		private uint streamReadIn;
-		private Stream stream;
-		private uint bufferIndex;      // The next character to read
-		private long streamPosition;
-		private bool closeStream;
+		public void Dispose()
+		{
+			if (this.closeStream)
+			{
+				this.stream?.Dispose();
+				this.stream = null;
+			}
+		}
 
+		/// <summary>
+		/// Gets a string from the position to the length indicated (for debugging)
+		/// </summary>
+		internal string PeekString(int length)
+		{
+			return this.PeekString(0, length);
+		}
+
+		internal string PeekString(int start, int length)
+		{
+			StringBuilder sb = new StringBuilder();
+			for (uint i = this.BufferIndex + (uint)start; i < this.BufferIndex + length + start && i < this.bufferFillPos - 1; i++)
+			{
+				sb.Append((char)this.Peek(i + (uint)start - this.BufferIndex));
+			}
+
+			return sb.ToString();
+		}
+
+		#region privateMethods
 		private bool MoveNextHelper()
 		{
 			this.bufferIndex = this.FillBufferFromStreamPosition();
@@ -506,15 +503,15 @@ namespace PerfView.Utilities
 			return bytesAhead + this.bufferIndex;
 		}
 
-		public void Dispose()
-		{
-			if (this.closeStream)
-			{
-				this.stream?.Close();
-				this.stream?.Dispose();
-				this.stream = null;
-			}
-		}
+		#endregion
+		#region privateState
+		private byte[] buffer;
+		private uint bufferFillPos;
+		private uint streamReadIn;
+		private Stream stream;
+		private uint bufferIndex;      // The next character to read
+		private long streamPosition;
+		private bool closeStream;
 
 #if DEBUG
         string nextChars;
