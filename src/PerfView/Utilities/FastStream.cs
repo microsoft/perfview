@@ -49,7 +49,7 @@ namespace PerfView.Utilities
 			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
 			this.buffer = new byte[this.bufferFillPos];
 			this.bufferIndex = MaxRestoreLength;
-			System.Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+			Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
 			this.buffer[this.bufferIndex] = 0;
 			this.streamPosition = this.streamReadIn;
 		}
@@ -65,22 +65,21 @@ namespace PerfView.Utilities
 			this.streamPosition = 0;
 		}
 
+		public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
+
 		/// <summary>
 		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
 		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
 		/// there is a better 'rare' value to use as an end of stream marker.  
 		/// </summary>
 		public byte Sentinal = 0;
-		public byte[] Buffer { get { return this.buffer; } }
 		public long Position
 		{
 			get
 			{
-				return this.streamPosition - (this.streamReadIn - (this.BufferIndex - MaxRestoreLength));
+				return this.streamPosition - (this.streamReadIn - (this.bufferIndex - MaxRestoreLength));
 			}
 		}
-		public uint BufferFillPosition { get { return this.bufferFillPos; } }
-		public uint BufferIndex { get { return this.bufferIndex; } set { this.bufferIndex = value; } }
 
 		public bool MoveNext()
 		{
@@ -477,9 +476,9 @@ namespace PerfView.Utilities
 		internal string PeekString(int start, int length)
 		{
 			StringBuilder sb = new StringBuilder();
-			for (uint i = this.BufferIndex + (uint)start; i < this.BufferIndex + length + start && i < this.bufferFillPos - 1; i++)
+			for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
 			{
-				sb.Append((char)this.Peek(i + (uint)start - this.BufferIndex));
+				sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
 			}
 
 			return sb.ToString();

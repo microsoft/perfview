@@ -35,7 +35,7 @@ namespace Diagnostics.Tracing.StackSources
 			ZipArchive archive;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
-				this.masterSource = new FastStream(stream);
+				this.masterSource = new FastStream(stream, this.BufferSize);
 				this.parser = new LinuxPerfScriptEventParser();
 				this.parser.SetSymbolFile(archive);
 
@@ -101,6 +101,8 @@ namespace Diagnostics.Tracing.StackSources
 		protected abstract void DoInterning();
 		protected abstract StackSourceFrameIndex InternFrame(string displayName);
 		protected abstract StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex);
+
+		protected readonly int BufferSize = 262144;
 
 		#region private
 		private readonly Dictionary<int, double> blockedThreads;
@@ -286,7 +288,7 @@ namespace Diagnostics.Tracing.StackSources
 				tasks[i] = new Task((object givenArrayIndex) =>
 				{
 					int length;
-					byte[] buffer = new byte[this.masterSource.Buffer.Length];
+					byte[] buffer = new byte[this.BufferSize];
 					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
 					{
 						// We don't need a gigantic buffer now, so we reduce the size by 16 times
@@ -367,7 +369,7 @@ namespace Diagnostics.Tracing.StackSources
 					return -1;
 				}
 
-				uint startLook = (uint)source.Buffer.Length / 4;
+				uint startLook = (uint)this.BufferSize / 4;
 				uint length;
 
 				bool truncated;
@@ -482,71 +484,6 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				source.MoveNext();
 			}
-		}
-
-		// Returns the length of the valid buffer in the FastStream source.
-		private int GetCompleteBuffer(FastStream source, int index, int count, double estimatedCountPortion, out bool truncated)
-		{
-			truncated = false;
-
-			if (source.BufferFillPosition - index < count)
-			{
-				return (int)source.BufferFillPosition - index;
-			}
-			else
-			{
-				int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
-
-				for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
-				{
-					uint bytesAhead = i - source.BufferIndex;
-
-					newCount++;
-					if (this.parser.IsEndOfSample(source,
-						source.Peek(bytesAhead),
-						source.Peek(bytesAhead + 1)))
-					{
-						break;
-					}
-
-					if (i == source.BufferFillPosition - 2)
-					{
-						if (estimatedCountPortion < 0.5)
-						{
-							// At this point, we'll truncate the stack.
-							truncated = true;
-							return this.GetTruncatedBuffer(source, index, count, estimatedCountPortion);
-						}
-
-						// This is just in case we don't find an end to the stack we're on... In that case we need
-						//   to make the estimatedCountPortion smaller to capture more stuff
-						return this.GetCompleteBuffer(source, index, count, estimatedCountPortion * 0.9, out truncated);
-					}
-				}
-
-				return newCount;
-			}
-		}
-
-		// Returns the length of the truncated buffer... Requires to be ran with estimatedCountPortion at
-		//   less than 0.5
-		private int GetTruncatedBuffer(FastStream source, int index, int count, double estimatedCountPortion)
-		{
-			Contract.Assert(estimatedCountPortion < 0.5, nameof(estimatedCountPortion));
-
-			int newCount = (int)(source.BufferFillPosition * estimatedCountPortion);
-			for (uint i = (uint)(index + newCount); i < source.BufferFillPosition - 1; i++)
-			{
-				uint bytesAhead = i - source.BufferIndex;
-				newCount++;
-
-				if (source.Peek(bytesAhead) == '\n')
-				{
-					break;
-				}
-			}
-
-			return newCount;
 		}
 		#endregion
 	}
