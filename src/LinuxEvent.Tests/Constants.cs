@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LinuxTracing.Tests
@@ -25,6 +26,27 @@ namespace LinuxTracing.Tests
 		public static string GetOutputPath(string filename)
 		{
 			return Path.Combine(Environment.CurrentDirectory, OutputFolder, string.Format("{0}", filename));
+		}
+
+		public static void WaitUntilFileIsReady(string fileName)
+		{
+			while (!IsFileReady(fileName))
+			{
+				Thread.Sleep(50);
+			}
+		}
+
+		public static bool IsFileReady(string fileName)
+		{
+			try
+			{
+				// Still doesn't resolve the problem - kind of weird
+				return new FileInfo(fileName).Length > 0;
+			}
+			catch (IOException)
+			{
+				return false;
+			}
 		}
 	}
 }

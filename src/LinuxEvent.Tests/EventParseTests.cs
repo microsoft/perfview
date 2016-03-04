@@ -14,7 +14,9 @@ namespace LinuxTracing.Tests
 	{
 		private void DoStackTraceTest(string path, bool doBlockedTime, List<List<string>> callerStacks)
 		{
-			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(path, doBlockedTime);
+			Constants.WaitUntilFileIsReady(path);
+
+			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(path, doBlockedTime);
 
 			for (int i = 0; i < stackSource.SampleIndexLimit; i++)
 			{
@@ -45,10 +47,13 @@ namespace LinuxTracing.Tests
 			ScheduleSwitch[] switches
 			)
 		{
+
+			Constants.WaitUntilFileIsReady(source);
+
 			using (Stream stream = File.Open(source, FileMode.Open))
 			{
-				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser(stream);
-				List<LinuxEvent> samples = parser.Parse().ToList();
+				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
+				List<LinuxEvent> samples = parser.Parse(stream).ToList();
 
 				// Need to make sure we have the same amount of samples
 				Assert.Equal(commands.Length, parser.EventCount);
@@ -96,6 +101,20 @@ namespace LinuxTracing.Tests
 		}
 
 		[Fact]
+		public void ResolvingSymbols()
+		{
+			string path = Constants.GetTestingFilePath("symbol-tests.trace.zip");
+			this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
+			{
+				new List<string> { "mscorlib!dynamicClass::IL_STUB_PInvoke(int32,native int,int32,int32,class System.Text.StringBuilder,int32,native int)", "Thread (0)", "first_symbol", null },
+				new List<string> { "module!symbol", "Thread (0)", "no_file_association", null },
+				new List<string> { "mscorlib!System.BadImageFormatException::.ctor(string,string)", "Thread (0)", "middle_symbol", null },
+				new List<string> { "mscorlib!System.Collections.Generic.Dictionary`2+Enumerator[System.UInt64,System.__Canon]::.ctor(class System.Collections.Generic.Dictionary`2<!0,!1>,int32)", "Thread (0)", "last_symbol", null },
+				new List<string> { "module!symbol", "Thread (0)", "out_of_range", null }
+			});
+		}
+
+		[Fact]
 		public void LargeStack()
 		{
 			string path = Constants.GetTestingPerfDumpPath("two_small_generic");
@@ -136,19 +155,6 @@ namespace LinuxTracing.Tests
 				{
 					new List<string> { "Thread (0)", "comm" },
 					new List<string> { "module!symbol", "Thread (0)", "comm" },
-				});
-		}
-
-		//[Fact]
-		public void EmptyStackFrames2()
-		{
-			string path = Constants.GetTestingPerfDumpPath("no_stack_frames2");
-			this.DoStackTraceTest(path, doBlockedTime: false,
-				callerStacks: new List<List<string>>
-				{
-					new List<string>
-					{
-					},
 				});
 		}
 

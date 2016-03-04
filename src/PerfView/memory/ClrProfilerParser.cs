@@ -865,7 +865,7 @@ namespace ClrProfiler
 			finally
 			{
 				if (stream != null)
-					stream.BaseStream.Close();
+					stream.Dispose();
 			}
 		}
 

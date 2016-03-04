@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -26,21 +27,91 @@ namespace PerfView.Utilities
 	/// Another really useful feature of this stream is that you can peek ahead efficiently a large number
 	/// of bytes (since you read ahead into a buffer anyway).
 	/// </summary>
-	public sealed class FastStream
+	public sealed class FastStream : IDisposable
 	{
+		public const uint MaxRestoreLength = 256;
+
 		public FastStream(string filePath)
 			: this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
 		{
 		}
-		public FastStream(Stream stream)
+
+		// Allows for a byte array while keeping a stream
+		public FastStream(byte[] buffer, int length) :
+			this(buffer, 0, length)
 		{
-			buffer = new byte[16384];
-			bufferReadPos = 1;          // We make this 1, 1 initially so that EndOfStream works before MoveNext is called
-			bufferFillPos = 1;
-			this.stream = stream;
 		}
 
-		public long Position { get; private set; }
+		public FastStream(byte[] buffer, int start, int length)
+		{
+			this.stream = Stream.Null;
+			this.streamReadIn = (uint)length;
+			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+			this.buffer = new byte[this.bufferFillPos];
+			this.bufferIndex = MaxRestoreLength;
+			Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+			this.buffer[this.bufferIndex] = 0;
+			this.streamPosition = this.streamReadIn;
+		}
+
+		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
+		{
+			this.stream = stream;
+			this.closeStream = closeStream;
+			this.buffer = new byte[bufferSize];
+			this.bufferFillPos = 1;
+			this.bufferIndex = 0;
+			this.streamReadIn = 1;
+			this.streamPosition = 0;
+		}
+
+		public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
+
+		/// <summary>
+		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
+		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
+		/// there is a better 'rare' value to use as an end of stream marker.  
+		/// </summary>
+		public byte Sentinal = 0;
+		public long Position
+		{
+			get
+			{
+				return this.streamPosition - (this.streamReadIn - (this.bufferIndex - MaxRestoreLength));
+			}
+		}
+
+		public bool MoveNext()
+		{
+			bufferIndex++;
+			bool ret = true;
+			if (this.bufferIndex >= this.bufferFillPos)
+			{
+				ret = this.MoveNextHelper();
+			}
+
+#if DEBUG
+            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
+#endif
+			return ret;
+		}
+
+		/// <summary>
+		/// Returns a number of bytes ahead without advancing the pointer. 
+		/// Peek(0) is the same as calling Current.  
+		/// </summary>
+		/// <param name="bytesAhead"></param>
+		/// <returns></returns>
+		public byte Peek(uint bytesAhead)
+		{
+			uint peekIndex = bytesAhead + this.bufferIndex;
+			if (peekIndex >= this.bufferFillPos)
+			{
+				peekIndex = this.PeekHelper(bytesAhead);
+			}
+
+			return this.buffer[peekIndex];
+		}
 
 		public struct MarkedPosition
 		{
@@ -62,61 +133,20 @@ namespace PerfView.Utilities
 			long delta = this.Position - position.streamPos;
 			if (delta > MaxRestoreLength)
 			{
-				this.stream.Position = position.streamPos;
-				this.MoveNextHelper(); // To refill the buffer
+				this.stream.Position = this.streamPosition = position.streamPos;
+				this.FillBufferFromStreamPosition();
 			}
 			else
 			{
-				this.bufferReadPos -= (uint)delta;
+				this.bufferIndex -= (uint)delta;
 			}
-
-			this.Position = position.streamPos;
 		}
 
-		private void FillBuffer(uint keepFromBack = 0)
-		{
-			// Start after the restore amount, but on repetition part.
-			bufferReadPos = MaxRestoreLength;
+		public byte Current { get { return buffer[this.bufferIndex]; } }
 
-			// This is so the first 'keepFromBack' integers are read in again.
-			uint preamble = MaxRestoreLength + keepFromBack;
-			for (int i = 0; i < preamble; i++)
-			{
-				if (bufferFillPos - (preamble - i) < 0)
-				{
-					buffer[i] = 0;
-					continue;
-				}
-
-				buffer[i] = buffer[bufferFillPos - (preamble - i)];
-			}
-			bufferFillPosReadIn = (uint)stream.Read(buffer, (int)preamble, buffer.Length - (int)preamble);
-			bufferFillPos = bufferFillPosReadIn + preamble;
-			if (bufferFillPos < buffer.Length)
-				buffer[bufferFillPos] = Sentinal;       // we define 0 as the value you get after EOS. 
-		}
-
-		public byte Current { get { return buffer[bufferReadPos]; } }
-
-		public const int MaxRestoreLength = 256;
-
-		public bool MoveNext()
-		{
-			IncReadPos();
-			bool ret = true;
-			if (bufferReadPos >= bufferFillPos)
-			{
-				ret = MoveNextHelper();
-			}
-
-#if DEBUG
-            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
-#endif
-			return ret;
-		}
 		public byte ReadChar()
 		{
-			MoveNext();
+			this.MoveNext();
 			return Current;
 		}
 		public int ReadInt()
@@ -203,7 +233,7 @@ namespace PerfView.Utilities
 		{
 			return (ulong)ReadLong();
 		}
-		public bool EndOfStream { get { return bufferFillPosReadIn == 0; } }
+		public bool EndOfStream { get { return this.streamReadIn == 0; } }
 		public void ReadAsciiStringUpTo(char endMarker, StringBuilder sb)
 		{
 			for (;;)
@@ -252,6 +282,18 @@ namespace PerfView.Utilities
 			while (Char.IsWhiteSpace((char)Current))
 				MoveNext();
 		}
+
+		public void SkipUpToFalse(Func<byte, bool> predicate)
+		{
+			while (predicate(this.Current))
+			{
+				if (!MoveNext())
+				{
+					break;
+				}
+			}
+		}
+
 		/// <summary>
 		/// Reads the string into the stringBuilder until a byte is read that
 		/// is one of the characters in 'endMarkers'.  
@@ -273,12 +315,12 @@ namespace PerfView.Utilities
 		/// <summary>
 		/// Reads the stream into the string builder until the last end marker on the line is hit.
 		/// </summary>
-		public void ReadAsciiStringUpToLastOnLine(char endMarker, StringBuilder sb)
+		public void ReadAsciiStringUpToLastBeforeTrue(char endMarker, StringBuilder sb, Func<byte, bool> predicate)
 		{
 			StringBuilder buffer = new StringBuilder();
 			MarkedPosition mp = this.MarkPosition();
 
-			while (this.Current != '\n' && !this.EndOfStream)
+			while (predicate(this.Current) && !this.EndOfStream)
 			{
 				if (this.Current == endMarker)
 				{
@@ -299,7 +341,7 @@ namespace PerfView.Utilities
 		/// </summary>
 		public void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> predicate)
 		{
-			while (!predicate(this.Current))
+			while (predicate(this.Current))
 			{
 				sb.Append((char)this.Current);
 				if (!this.MoveNext())
@@ -309,68 +351,41 @@ namespace PerfView.Utilities
 			}
 		}
 
-		/// <summary>
-		/// Returns a number of bytes ahead without advancing the pointer. 
-		/// Peek(0) is the same as calling Current.  
-		/// </summary>
-		/// <param name="bytesAhead"></param>
-		/// <returns></returns>
-		public byte Peek(uint bytesAhead)
+		public void Skip(uint amount)
 		{
-			uint index = bytesAhead + bufferReadPos;
-			if (index >= bufferFillPos)
-				index = PeekHelper(bytesAhead);
-
-			return buffer[index];
-		}
-
-		public Stream BaseStream { get { return stream; } }
-		/// <summary>
-		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
-		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
-		/// there is a better 'rare' value to use as an end of stream marker.  
-		/// </summary>
-		public byte Sentinal = 0;
-
-		#region privateMethods
-		private bool MoveNextHelper()
-		{
-			this.FillBuffer(); 
-			return (bufferFillPosReadIn > 0);
-		}
-
-		private uint PeekHelper(uint bytesAhead)
-		{
-			if (bytesAhead >= buffer.Length)
-				throw new Exception("Can only peek ahead the length of the buffer");
-
-			// Copy down the remaining characters. 
-			bufferFillPos = bufferFillPos - bufferReadPos;
-			for (uint i = 0; i < bufferFillPos; i++)
-				buffer[i] = buffer[bufferReadPos + i];
-			bufferReadPos = 0;
-
-			// Fill up the buffer as much as we can.  
-			for (;;)
+			while (amount >= this.bufferFillPos - this.bufferIndex)
 			{
-				uint count = (uint)stream.Read(buffer, (int)bufferFillPos, buffer.Length - (int)bufferFillPos);
-				bufferFillPos += count;
-				if (bufferFillPos < buffer.Length)
-					buffer[bufferFillPos] = Sentinal;
-
-				if (bufferFillPos > bytesAhead)
-					break;
-				if (count == 0)
-					break;
+				if (this.EndOfStream)
+				{
+					return;
+				}
+				amount -= this.bufferFillPos - this.bufferIndex;
+				this.bufferIndex = this.FillBufferFromStreamPosition();
 			}
-			return bytesAhead;
+
+			this.bufferIndex += amount;
 		}
 
-		// Only here to 'trick' the JIT compiler into inlining MoveNext.  (we were a bit over the 32 byte IL limit). 
-		private void IncReadPos()
+		public int CopyBytes(int length, byte[] buffer)
 		{
-			bufferReadPos++;
-			this.Position++;
+			return this.CopyBytes(0, length, buffer);
+		}
+
+		public int CopyBytes(int start, int length, byte[] buffer)
+		{
+			if (this.bufferIndex + start + length >= this.bufferFillPos)
+			{
+				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+			}
+
+			if (this.bufferFillPos - (this.bufferIndex + start) < length)
+			{
+				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
+			}
+
+			System.Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
+
+			return length;
 		}
 
 		public int ReadHex()
@@ -411,15 +426,92 @@ namespace PerfView.Utilities
 			}
 		}
 
+		/// <summary>
+		/// Fills the buffer starting from the current position on the stream.
+		/// </summary>
+		/// <param name="keepLast">The amount of characters you want ot keep from the end.</param>
+		/// <returns>Returns the index in which the next buffer starts anew.</returns>
+		public uint FillBufferFromStreamPosition(uint keepLast = 0)
+		{
+			// This is so the first 'keepFromBack' integers are read in again.
+			uint preamble = MaxRestoreLength + keepLast;
+			for (int i = 0; i < preamble; i++)
+			{
+				if (this.bufferFillPos - (preamble - i) < 0)
+				{
+					buffer[i] = 0;
+					continue;
+				}
+
+				this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
+			}
+
+			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
+			this.bufferFillPos = this.streamReadIn + preamble;
+			this.streamReadIn += keepLast;
+			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
+			if (this.bufferFillPos < this.buffer.Length)
+				this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
+
+			return MaxRestoreLength;
+		}
+
+		public void Dispose()
+		{
+			if (this.closeStream)
+			{
+				this.stream?.Dispose();
+				this.stream = null;
+			}
+		}
+
+		/// <summary>
+		/// Gets a string from the position to the length indicated (for debugging)
+		/// </summary>
+		internal string PeekString(int length)
+		{
+			return this.PeekString(0, length);
+		}
+
+		internal string PeekString(int start, int length)
+		{
+			StringBuilder sb = new StringBuilder();
+			for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
+			{
+				sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
+			}
+
+			return sb.ToString();
+		}
+
+		#region privateMethods
+		private bool MoveNextHelper()
+		{
+			this.bufferIndex = this.FillBufferFromStreamPosition();
+			return (this.streamReadIn > 0);
+		}
+
+		private uint PeekHelper(uint bytesAhead)
+		{
+			if (bytesAhead >= this.buffer.Length - MaxRestoreLength)
+				throw new Exception("Can only peek ahead the length of the buffer");
+
+			// We keep everything above the index.
+			this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+
+			return bytesAhead + this.bufferIndex;
+		}
+
 		#endregion
 		#region privateState
-		byte[] markBuffer;
-		bool markBufferUsed;
-		readonly byte[] buffer;
-		uint bufferReadPos;      // The next character to read
-		uint bufferFillPos;      // The last character in the buffer that is valid
-		uint bufferFillPosReadIn;
-		Stream stream;
+		private byte[] buffer;
+		private uint bufferFillPos;
+		private uint streamReadIn;
+		private Stream stream;
+		private uint bufferIndex;      // The next character to read
+		private long streamPosition;
+		private bool closeStream;
+
 #if DEBUG
         string nextChars;
         public override string ToString()

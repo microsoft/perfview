@@ -14,6 +14,7 @@ namespace LinuxTracing.Tests
 	{
 		private FastStream GetTestStream()
 		{
+			Constants.WaitUntilFileIsReady(Constants.GetTestingFilePath("faststream.txt"));
 			return new FastStream(Constants.GetTestingFilePath("faststream.txt"));
 		}
 
@@ -68,6 +69,21 @@ namespace LinuxTracing.Tests
 			stream.RestoreToMark(mp);
 			stream.MoveNext(); stream.MoveNext(); stream.MoveNext();
 			Assert.Equal("4", ((char)stream.Current).ToString());
+		}
+
+		[Fact]
+		public void PeekingWhileEnough()
+		{
+			FastStream stream = this.GetTestStream();
+			SkipBOM(stream);
+			Assert.Equal("2", ((char)stream.Peek(1)).ToString());
+		}
+
+		[Fact]
+		public void PeekingWithNoBuffer()
+		{
+			FastStream stream = this.GetTestStream();
+			Assert.Equal("1", ((char)stream.Peek(4)).ToString());
 		}
 
 		[Fact]
