@@ -510,7 +510,6 @@ namespace PerfView.Utilities
 		{
 			if (this.closeStream)
 			{
-				this.stream?.Close();
 				this.stream?.Dispose();
 				this.stream = null;
 			}
