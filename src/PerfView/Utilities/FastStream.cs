@@ -366,7 +366,7 @@ namespace PerfView.Utilities
 			this.bufferIndex += amount;
 		}
 
-		public int CopyBytes(int length, byte[] buffer)
+		public int CopyPeek(int length, byte[] buffer)
 		{
 			return this.CopyBytes(0, length, buffer);
 		}
