@@ -367,30 +367,6 @@ namespace Diagnostics.Tracing.StackSources
 					return -1;
 				}
 
-				/*int start = (int)source.BufferIndex;
-				int length = source.Buffer.Length / bufferDivider;
-				bool truncated;
-
-				length = this.GetCompleteBuffer(source, start, length, estimatedCountPortion: 0.8, truncated: out truncated);
-
-				Buffer.BlockCopy(src: source.Buffer, srcOffset: start,
-										dst: buffer, dstOffset: 0, count: length);
-
-				source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - (uint)(start + length));
-
-				if (truncated)
-				{
-					// We find a good start for the next round and add a pseudo frame.
-					this.FindValidStartOn(source);
-					byte[] truncatedMessage = Encoding.ASCII.GetBytes("0 truncated (truncated)");
-					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
-									 dst: buffer, dstOffset: length, count: truncatedMessage.Length);
-
-					length += truncatedMessage.Length;
-
-					source.BufferIndex = source.FillBufferFromStreamPosition(keepLast: source.BufferFillPosition - source.BufferIndex);
-				}*/
-
 				uint startLook = (uint)source.Buffer.Length / 4;
 				uint length;
 
@@ -444,7 +420,6 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (source.Peek(startLook) == 0)
 			{
-				// length = (uint)source.CopyBytes((int)startLook, buffer);
 				return false;
 			}
 
@@ -478,10 +453,8 @@ namespace Diagnostics.Tracing.StackSources
 					lastNewLine = length;
 				}
 				length++;
-				// buffer[length++] = current;
 			}
 
-			// source.CopyBytes((int)startLook, buffer);
 			return truncate;
 		}
 
