@@ -16,12 +16,13 @@ namespace LinuxTracing.Tests
 	/// Incomplete Context Switch - Starts with a thread that has been blocked through a sched_switch event and unblocked
 	/// when the sample data is finished and the thread has not been unblocked.
 	/// </summary>
-
 	public class BlockedTimeTests
 	{
 		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
 		{
-			LinuxPerfScriptStackSource stackSource = new LinuxPerfScriptStackSource(source, doThreadTime: true);
+			Constants.WaitUntilFileIsReady(source);
+
+			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
 
 			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());
 		}
