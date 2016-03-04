@@ -413,6 +413,8 @@ namespace Diagnostics.Tracing.StackSources
 					portion *= 0.8;
 				}
 
+				source.CopyBytes((int)length, buffer);
+
 				source.Skip(length);
 
 				if (truncated)
@@ -442,7 +444,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (source.Peek(startLook) == 0)
 			{
-				length = this.PeekBytes(source, startLook, buffer);
+				// length = (uint)source.CopyBytes((int)startLook, buffer);
 				return false;
 			}
 
@@ -475,11 +477,11 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					lastNewLine = length;
 				}
-
-				buffer[length++] = current;
+				length++;
+				// buffer[length++] = current;
 			}
 
-			this.PeekBytes(source, startLook, buffer);
+			// source.CopyBytes((int)startLook, buffer);
 			return truncate;
 		}
 

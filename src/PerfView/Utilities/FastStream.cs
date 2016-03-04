@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -364,6 +365,28 @@ namespace PerfView.Utilities
 			}
 
 			this.bufferIndex += amount;
+		}
+
+		public int CopyBytes(int length, byte[] buffer)
+		{
+			return this.CopyBytes(0, length, buffer);
+		}
+
+		public int CopyBytes(int start, int length, byte[] buffer)
+		{
+			if (this.bufferIndex + start + length >= this.bufferFillPos)
+			{
+				this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+			}
+
+			if (this.bufferFillPos - (this.bufferIndex + start) < length)
+			{
+				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
+			}
+
+			System.Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
+
+			return length;
 		}
 
 		/// <summary>
