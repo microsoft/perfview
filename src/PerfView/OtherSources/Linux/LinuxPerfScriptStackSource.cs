@@ -13,14 +13,232 @@ using PerfView.Utilities;
 
 namespace Diagnostics.Tracing.StackSources
 {
-	public abstract class AbstractLinuxPerfScriptStackSource : InternStackSource
+	public class ParallelLinuxPerfScriptStackSource : LinuxPerfScriptStackSource
 	{
-		public static readonly string[] PerfDumpSuffixes = new string[]
+		public ParallelLinuxPerfScriptStackSource(string path, bool doThreadTime = false) : base(path, doThreadTime)
 		{
-			".data.dump", ".data.txt", ".trace.zip"
-		};
+		}
 
-		public AbstractLinuxPerfScriptStackSource(string path, bool doThreadTime = false)
+		protected override void DoInterning()
+		{
+			int threadCount = this.doThreadTime ? 1 : MaxThreadCount;
+
+			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
+
+			this.parser.SkipPreamble(masterSource);
+
+			Task[] tasks = new Task[threadCount];
+			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
+
+			for (int i = 0; i < tasks.Length; i++)
+			{
+				threadSamples[i] = new List<StackSourceSample>();
+				tasks[i] = new Task((object givenArrayIndex) =>
+				{
+					int length;
+					byte[] buffer = new byte[this.BufferSize];
+					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
+					{
+						// We don't need a gigantic buffer now, so we reduce the size by 16 times
+						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
+						FastStream bufferPart = new FastStream(buffer, length);
+
+						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
+						{
+							StackSourceSample sample = this.GetSampleFor(linuxEvent);
+							threadSamples[(int)givenArrayIndex].Add(sample);
+						}
+					}
+				}, i);
+
+				tasks[i].Start();
+			}
+
+			Task.WaitAll(tasks);
+
+			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
+			foreach (var samples in threadSamples)
+			{
+				if (allSamplesEnumerator == null)
+				{
+					allSamplesEnumerator = samples;
+				}
+				else
+				{
+					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
+				}
+			}
+
+			this.AddSamples(allSamplesEnumerator);
+		}
+
+		protected override StackSourceFrameIndex InternFrame(string displayName)
+		{
+			StackSourceFrameIndex frameIndex;
+			if (!frames.TryGetValue(displayName, out frameIndex))
+			{
+				lock (internFrameLock)
+				{
+					frameIndex = this.Interner.FrameIntern(displayName);
+					frames[displayName] = frameIndex;
+				}
+			}
+
+			return frameIndex;
+		}
+
+		protected override StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
+		{
+			lock (internCallStackLock)
+			{
+				return this.Interner.CallStackIntern(frameIndex, stackIndex);
+			}
+		}
+
+		#region private
+		// If the length returned is -1, then there's no more stream in the
+		//   master source, otherwise, buffer should be valid with the length returned
+		// Note: This needs to be thread safe
+		private int GetNextBuffer(FastStream source, byte[] buffer)
+		{
+			lock (bufferLock)
+			{
+				if (source.EndOfStream)
+				{
+					return -1;
+				}
+
+				uint startLook = (uint)this.BufferSize / 4;
+				uint length;
+
+				bool truncated;
+				bool truncate = false;
+				double portion = 1;
+
+				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer, truncate, out length))
+				{
+					if (truncate)
+					{
+						break;
+					}
+
+					if (portion < 0.5)
+					{
+						truncate = true;
+					}
+
+					portion *= 0.8;
+				}
+
+				length = (uint)source.CopyBytes((int)length, buffer);
+
+				source.Skip(length);
+
+				if (truncated)
+				{
+					this.FindValidStartOn(source);
+					byte[] truncatedMessage = Encoding.ASCII.GetBytes(TruncateString);
+					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
+									 dst: buffer, dstOffset: (int)length, count: truncatedMessage.Length);
+
+					length += (uint)truncatedMessage.Length;
+				}
+
+				source.SkipWhiteSpace();
+
+				return (int)length;
+			}
+		}
+
+		private const string TruncateString = "0 truncate (truncate)";
+
+		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
+		{
+			Contract.Requires(source != null, nameof(source));
+			Contract.Requires(buffer != null, nameof(buffer));
+
+			length = startLook;
+
+			if (source.Peek(startLook) == 0)
+			{
+				return false;
+			}
+
+			int maxLength = buffer.Length - TruncateString.Length;
+
+			uint lastNewLine = 0;
+
+			while (true)
+			{
+				if (length >= maxLength)
+				{
+					length = lastNewLine;
+
+					if (!truncate)
+					{
+						return true;
+					}
+
+					break;
+				}
+
+				byte current = source.Peek(length);
+
+				if (this.parser.IsEndOfSample(source, current, source.Peek(length + 1)))
+				{
+					break;
+				}
+
+				if (current == '\n')
+				{
+					lastNewLine = length;
+				}
+				length++;
+			}
+
+			return truncate;
+		}
+
+		private uint PeekBytes(FastStream source, uint length, byte[] buffer)
+		{
+			Contract.Requires(length <= buffer.Length, nameof(length));
+
+			for (uint i = 0; i < length; i++)
+			{
+				if (source.Peek(i) == 0)
+				{
+					return i;
+				}
+
+				buffer[i] = source.Peek(i);
+			}
+
+			return length;
+		}
+
+		// Assumes that source is at an invalid start position.
+		private void FindValidStartOn(FastStream source)
+		{
+			while (!this.parser.IsEndOfSample(source))
+			{
+				source.MoveNext();
+			}
+		}
+
+		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
+		private object internFrameLock = new object();
+		private object internCallStackLock = new object();
+
+		private object bufferLock = new object();
+		private const int bufferDivider = 4;
+
+		private const int MaxThreadCount = 4;
+		#endregion
+	}
+
+	public class LinuxPerfScriptStackSource : InternStackSource
+	{
+		public LinuxPerfScriptStackSource(string path, bool doThreadTime)
 		{
 			this.doThreadTime = doThreadTime;
 			this.currentStackIndex = 0;
@@ -44,6 +262,11 @@ namespace Diagnostics.Tracing.StackSources
 			}
 			archive?.Dispose();
 		}
+
+		public static readonly string[] PerfDumpSuffixes = new string[]
+		{
+			".data.dump", ".data.txt", ".trace.zip"
+		};
 
 		public double GetTotalBlockedTime()
 		{
@@ -94,14 +317,27 @@ namespace Diagnostics.Tracing.StackSources
 			this.SampleEndTime = samples.Last().TimeRelativeMSec;
 		}
 
+		protected virtual void DoInterning()
+		{
+			foreach (var linuxEvent in this.parser.Parse(this.masterSource))
+			{
+				this.AddSample(this.GetSampleFor(linuxEvent));
+			}
+		}
+
+		protected virtual StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
+		{
+			return this.Interner.CallStackIntern(frameIndex, stackIndex);
+		}
+
+		protected virtual StackSourceFrameIndex InternFrame(string displayName)
+		{
+			return this.Interner.FrameIntern(displayName);
+		}
+
 		protected readonly LinuxPerfScriptEventParser parser;
 		protected readonly FastStream masterSource;
 		protected readonly bool doThreadTime;
-
-		protected abstract void DoInterning();
-		protected abstract StackSourceFrameIndex InternFrame(string displayName);
-		protected abstract StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex);
-
 		protected readonly int BufferSize = 262144;
 
 		#region private
@@ -264,253 +500,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		private StackSourceCallStackIndex currentStackIndex;
 		#endregion
-	}
-	public class ParallelLinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
-	{
-		public ParallelLinuxPerfScriptStackSource(string path, bool doThreadTime = false) : base(path, doThreadTime)
-		{
-		}
-
-		protected override void DoInterning()
-		{
-			int threadCount = this.doThreadTime ? 1 : MaxThreadCount;
-
-			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
-
-			this.parser.SkipPreamble(masterSource);
-
-			Task[] tasks = new Task[threadCount];
-			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
-
-			for (int i = 0; i < tasks.Length; i++)
-			{
-				threadSamples[i] = new List<StackSourceSample>();
-				tasks[i] = new Task((object givenArrayIndex) =>
-				{
-					int length;
-					byte[] buffer = new byte[this.BufferSize];
-					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
-					{
-						// We don't need a gigantic buffer now, so we reduce the size by 16 times
-						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
-						FastStream bufferPart = new FastStream(buffer, length);
-
-						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
-						{
-							StackSourceSample sample = this.GetSampleFor(linuxEvent);
-							threadSamples[(int)givenArrayIndex].Add(sample);
-						}
-					}
-				}, i);
-
-				tasks[i].Start();
-			}
-
-			Task.WaitAll(tasks);
-
-			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
-			foreach (var samples in threadSamples)
-			{
-				if (allSamplesEnumerator == null)
-				{
-					allSamplesEnumerator = samples;
-				}
-				else
-				{
-					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
-				}
-			}
-
-			this.AddSamples(allSamplesEnumerator);
-		}
-
-		protected override StackSourceFrameIndex InternFrame(string displayName)
-		{
-			StackSourceFrameIndex frameIndex;
-			if (!frames.TryGetValue(displayName, out frameIndex))
-			{
-				lock (internFrameLock)
-				{
-					frameIndex = this.Interner.FrameIntern(displayName);
-					frames[displayName] = frameIndex;
-				}
-			}
-
-			return frameIndex;
-		}
-
-		protected override StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
-		{
-			lock (internCallStackLock)
-			{
-				return this.Interner.CallStackIntern(frameIndex, stackIndex);
-			}
-		}
-
-		#region private
-		// If the length returned is -1, then there's no more stream in the
-		//   master source, otherwise, buffer should be valid with the length returned
-		// Note: This needs to be thread safe
-		private int GetNextBuffer(FastStream source, byte[] buffer)
-		{
-			lock (bufferLock)
-			{
-				if (source.EndOfStream)
-				{
-					return -1;
-				}
-
-				uint startLook = (uint)this.BufferSize / 4;
-				uint length;
-
-				bool truncated;
-				bool truncate = false;
-				double portion = 1;
-
-				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer, truncate, out length))
-				{
-					if (truncate)
-					{
-						break;
-					}
-
-					if (portion < 0.5)
-					{
-						truncate = true;
-					}
-
-					portion *= 0.8;
-				}
-
-				length = (uint)source.CopyBytes((int)length, buffer);
-
-				source.Skip(length);
-
-				if (truncated)
-				{
-					this.FindValidStartOn(source);
-					byte[] truncatedMessage = Encoding.ASCII.GetBytes(TruncateString);
-					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
-									 dst: buffer, dstOffset: (int)length, count: truncatedMessage.Length);
-
-					length += (uint)truncatedMessage.Length;
-				}
-
-				source.SkipWhiteSpace();
-
-				return (int)length;
-			}
-		}
-
-		private const string TruncateString = "0 truncate (truncate)";
-		
-		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
-		{
-			Contract.Requires(source != null, nameof(source));
-			Contract.Requires(buffer != null, nameof(buffer));
-
-			length = startLook;
-
-			if (source.Peek(startLook) == 0)
-			{
-				return false;
-			}
-
-			int maxLength = buffer.Length - TruncateString.Length;
-
-			uint lastNewLine = 0;
-
-			while (true)
-			{
-				if (length >= maxLength)
-				{
-					length = lastNewLine;
-
-					if (!truncate)
-					{
-						return true;
-					}
-
-					break;
-				}
-
-				byte current = source.Peek(length);
-
-				if (this.parser.IsEndOfSample(source, current, source.Peek(length + 1)))
-				{
-					break;
-				}
-
-				if (current == '\n')
-				{
-					lastNewLine = length;
-				}
-				length++;
-			}
-
-			return truncate;
-		}
-
-		private uint PeekBytes(FastStream source, uint length, byte[] buffer)
-		{
-			Contract.Requires(length <= buffer.Length, nameof(length));
-
-			for (uint i = 0; i < length; i++)
-			{
-				if (source.Peek(i) == 0)
-				{
-					return i;
-				}
-
-				buffer[i] = source.Peek(i);
-			}
-
-			return length;
-		}
-
-		// Assumes that source is at an invalid start position.
-		private void FindValidStartOn(FastStream source)
-		{
-			while (!this.parser.IsEndOfSample(source))
-			{
-				source.MoveNext();
-			}
-		}
-
-		private ConcurrentDictionary<string, StackSourceFrameIndex> frames;
-		private object internFrameLock = new object();
-		private object internCallStackLock = new object();
-
-		private object bufferLock = new object();
-		private const int bufferDivider = 4;
-
-		private const int MaxThreadCount = 4;
-		#endregion
-	}
-
-	public class LinuxPerfScriptStackSource : AbstractLinuxPerfScriptStackSource
-	{
-		public LinuxPerfScriptStackSource(string path, bool doThreadTime) : base(path, doThreadTime)
-		{
-		}
-
-		protected override void DoInterning()
-		{
-			foreach (var linuxEvent in this.parser.Parse(this.masterSource))
-			{
-				this.AddSample(this.GetSampleFor(linuxEvent));
-			}
-		}
-
-		protected override StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
-		{
-			return this.Interner.CallStackIntern(frameIndex, stackIndex);
-		}
-
-		protected override StackSourceFrameIndex InternFrame(string displayName)
-		{
-			return this.Interner.FrameIntern(displayName);
-		}
 	}
 
 	public static class StringExtension
