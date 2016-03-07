@@ -46,10 +46,20 @@ namespace PerfView.Utilities
 		{
 			this.stream = Stream.Null;
 			this.streamReadIn = (uint)length;
+
+			//					 History length	    \0  the amount "read" in 
 			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
-			this.buffer = new byte[this.bufferFillPos];
-			this.bufferIndex = MaxRestoreLength;
-			Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+
+			bool usingGivenBuffer = buffer.Length > MaxRestoreLength && start > 0;
+
+			this.buffer = usingGivenBuffer ? buffer : new byte[this.bufferFillPos];
+			this.bufferIndex = usingGivenBuffer ? (uint)start - 1 : MaxRestoreLength;
+
+			if (!usingGivenBuffer)
+			{
+				Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+			}
+
 			this.buffer[this.bufferIndex] = 0;
 			this.streamPosition = this.streamReadIn;
 		}
@@ -366,12 +376,12 @@ namespace PerfView.Utilities
 			this.bufferIndex += amount;
 		}
 
-		public int CopyPeek(int length, byte[] buffer)
+		public int CopyBytes(int length, byte[] buffer, int offset)
 		{
-			return this.CopyBytes(0, length, buffer);
+			return this.CopyBytes(0, length, buffer, offset);
 		}
 
-		public int CopyBytes(int start, int length, byte[] buffer)
+		public int CopyBytes(int start, int length, byte[] buffer, int offset)
 		{
 			if (this.bufferIndex + start + length >= this.bufferFillPos)
 			{
@@ -383,7 +393,7 @@ namespace PerfView.Utilities
 				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
 			}
 
-			Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
+			Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, offset, length);
 
 			return length;
 		}

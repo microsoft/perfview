@@ -39,8 +39,6 @@ namespace Diagnostics.Tracing.StackSources
 					byte[] buffer = new byte[this.BufferSize];
 					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
 					{
-						// We don't need a gigantic buffer now, so we reduce the size by 16 times
-						//   i.e. instead of 256kb of unconditional allocated memory, now its 16kb
 						FastStream bufferPart = new FastStream(buffer, length);
 
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
@@ -115,7 +113,7 @@ namespace Diagnostics.Tracing.StackSources
 				bool truncate = false;
 				double portion = 1;
 
-				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer, truncate, out length))
+				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer.Length - TruncateString.Length, truncate, out length))
 				{
 					if (truncate)
 					{
@@ -130,7 +128,7 @@ namespace Diagnostics.Tracing.StackSources
 					portion *= 0.8;
 				}
 
-				length = (uint)source.CopyPeek((int)length, buffer);
+				length = (uint)source.CopyBytes((int)length, buffer, 0);
 
 				source.Skip(length);
 
@@ -152,10 +150,9 @@ namespace Diagnostics.Tracing.StackSources
 
 		private const string TruncateString = "0 truncate (truncate)";
 
-		private bool TryGetCompleteBuffer(FastStream source, uint startLook, byte[] buffer, bool truncate, out uint length)
+		private bool TryGetCompleteBuffer(FastStream source, uint startLook, int maxLength, bool truncate, out uint length)
 		{
 			Contract.Requires(source != null, nameof(source));
-			Contract.Requires(buffer != null, nameof(buffer));
 
 			length = startLook;
 
@@ -163,8 +160,6 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				return false;
 			}
-
-			int maxLength = buffer.Length - TruncateString.Length;
 
 			uint lastNewLine = 0;
 
