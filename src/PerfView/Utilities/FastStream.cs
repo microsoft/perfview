@@ -66,6 +66,7 @@ namespace PerfView.Utilities
 			this.streamPosition = this.bufferFillPos;
 			this.buffer[this.bufferIndex] = 0;
 			this.streamPosition = this.streamReadIn;
+			this.IsDisposed = false;
 		}
 
 		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
@@ -77,6 +78,7 @@ namespace PerfView.Utilities
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
 			this.streamPosition = 0;
+			this.IsDisposed = false;
 		}
 
 		public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
@@ -157,6 +159,8 @@ namespace PerfView.Utilities
 		}
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
+
+		public bool IsDisposed { get; private set; }
 
 		public byte ReadChar()
 		{
@@ -450,6 +454,8 @@ namespace PerfView.Utilities
 
 			FastStream subStream = new FastStream(this.buffer, (int)this.bufferIndex, length);
 
+			this.AddChild(subStream);
+
 			this.buffer = newBuffer;
 			this.bufferIndex = MaxRestoreLength;
 			this.bufferFillPos = this.streamReadIn + MaxRestoreLength;
@@ -464,6 +470,8 @@ namespace PerfView.Utilities
 				this.stream?.Dispose();
 				this.stream = null;
 			}
+
+			this.IsDisposed = true;
 		}
 
 		/// <summary>
@@ -486,10 +494,42 @@ namespace PerfView.Utilities
 		}
 
 		#region privateMethods
+		private void AddChild(FastStream child)
+		{
+			if (this.next != null)
+			{
+				child.next = this.next;
+			}
+
+			this.next = child;
+		}
 
 		// Will later be changed to find a used buffer from faststream children
 		private byte[] GetUsedBuffer()
 		{
+			FastStream prev = null;
+			FastStream next = this.next;
+
+			while (next != null)
+			{
+				if (next.IsDisposed)
+				{
+					if (prev == null)
+					{
+						this.next = next.next;
+					}
+					else
+					{
+						prev.next = next.next;
+					}
+
+					return next.buffer;
+				}
+
+				prev = next;
+				next = next.next;
+			}
+
 			return new byte[this.buffer.Length];
 		}
 
@@ -544,6 +584,7 @@ namespace PerfView.Utilities
 		private uint bufferIndex;      // The next character to read
 		private long streamPosition;
 		private bool closeStream;
+		private FastStream next;
 
 #if DEBUG
         string nextChars;

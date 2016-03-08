@@ -43,6 +43,8 @@ namespace Diagnostics.Tracing.StackSources
 							StackSourceSample sample = this.GetSampleFor(linuxEvent);
 							threadSamples[(int)givenArrayIndex].Add(sample);
 						}
+
+						bufferPart.Dispose();
 					}
 				}, i);
 
