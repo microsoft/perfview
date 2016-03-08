@@ -3194,6 +3194,7 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
         /// <summary>
         /// PrintSerializedExceptionFromProcessDump
         /// </summary>
@@ -3248,8 +3249,9 @@ namespace PerfViewExtensibility
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
             }
         }
+#endif
 
-#if false 
+#if false
         public void Test()
         {
             LogFile.WriteLine("Starting Listener thread.");
@@ -3272,9 +3274,9 @@ namespace PerfViewExtensibility
             }
             Trace.WriteLine("Done.");
         }
-#endif 
+#endif
 
-        #region private
+#region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -3570,7 +3572,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-        #endregion
+#endregion
     }
 }
 

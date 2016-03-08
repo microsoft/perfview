@@ -343,6 +343,14 @@ namespace ClrMemory
             }
         }
 
+        public override int TypeIndexLimit
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();

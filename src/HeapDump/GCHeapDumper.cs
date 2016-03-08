@@ -671,7 +671,11 @@ public class GCHeapDumper
         DataTarget target;
         ClrRuntime runtime;
         InitializeClrRuntime(inputSpec, out target, out runtime);
-        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
+#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
+        IEnumerable<ClrException> serializedExceptions runtime.EnumerateSerializedExceptions();
+#else 
+        IEnumerable<ClrException> serializedExceptions = null; //  runtime.EnumerateSerializedExceptions();
+#endif 
         bool flag7 = serializedExceptions == null || Enumerable.Count<ClrException>(serializedExceptions) == 0;
         if (flag7)
         {
@@ -733,7 +737,7 @@ public class GCHeapDumper
         }
     }
 
-    #region private
+#region private
 
     /// <summary>
     /// Gets the list of directories containing the app domain config files for the runtime
@@ -1903,7 +1907,7 @@ public class GCHeapDumper
         proc = null;
     }
 
-#if DebuggerFuncEval 
+#if DebuggerFuncEval
     private void DoGC(int processID)    // FIX NOW use or remove. 
     {
         m_log.WriteLine("Attaching debugger.");
@@ -2265,7 +2269,7 @@ public class GCHeapDumper
             }
         }
 
-        #region private
+#region private
         public override void CreateProcess(ICorDebugProcess pProcess)
         {
             Console.WriteLine("CreateProcess");
@@ -2297,7 +2301,7 @@ public class GCHeapDumper
         private DateTime m_LastCallBackTimeUtc;
         private int m_ThreadsLoaded;
         private int m_AssembliesLoaded;
-        #endregion
+#endregion
     }
 
     private int m_processID;
@@ -2337,7 +2341,7 @@ public class GCHeapDumper
     public static void DebugWriteLine(string format, params object[] args)
     {
         //#if DEBUG
-#if false 
+#if false
         if (m_debugLog == null)
             m_debugLog = File.CreateText("HeapDumpDebugLog.txt");
 
@@ -2382,7 +2386,7 @@ public class GCHeapDumper
 #if false
     private static TextWriter m_debugLog;
 #endif
-    #endregion
+#endregion
 }
 
 #region internal classes
@@ -2884,7 +2888,7 @@ internal static class GCRootNames
         return false;
     }
 
-    #region private
+#region private
     /// <summary>
     /// Stores a context needed to resolve a thread-static variable.  Basically it is a pair appdomain-thread.   
     /// The context is a ICorDebugFrame that has that appdomain-thread combination.  
@@ -2912,9 +2916,9 @@ internal static class GCRootNames
             public ICorDebugFrame Frame;
         }
 
-        #region private
+#region private
         Dictionary<string, ThreadContext> m_contexts = new Dictionary<string, ThreadContext>();
-        #endregion
+#endregion
     }
 
     const Address DoNotContinueError = 2;
@@ -3028,7 +3032,7 @@ internal static class GCRootNames
         return className;
     }
 
-    #endregion
+#endregion
 }
 
 /// <summary>
