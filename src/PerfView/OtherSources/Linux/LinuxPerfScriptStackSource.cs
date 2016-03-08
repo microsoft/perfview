@@ -35,12 +35,9 @@ namespace Diagnostics.Tracing.StackSources
 				threadSamples[i] = new List<StackSourceSample>();
 				tasks[i] = new Task((object givenArrayIndex) =>
 				{
-					int length;
-					byte[] buffer = new byte[this.BufferSize];
-					while ((length = this.GetNextBuffer(masterSource, buffer)) != -1)
+					FastStream bufferPart;
+					while ((bufferPart = this.GetNextSubStream(masterSource)) != null)
 					{
-						FastStream bufferPart = new FastStream(buffer, length);
-
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
 							StackSourceSample sample = this.GetSampleFor(linuxEvent);
@@ -97,60 +94,46 @@ namespace Diagnostics.Tracing.StackSources
 		// If the length returned is -1, then there's no more stream in the
 		//   master source, otherwise, buffer should be valid with the length returned
 		// Note: This needs to be thread safe
-		private int GetNextBuffer(FastStream source, byte[] buffer)
+		private FastStream GetNextSubStream(FastStream source)
 		{
 			lock (bufferLock)
 			{
 				if (source.EndOfStream)
 				{
-					return -1;
+					return null;
 				}
 
-				uint startLook = (uint)this.BufferSize / 4;
+				uint startLook = (uint)this.BufferSize * 3 / 4;
 				uint length;
 
-				bool truncated;
-				bool truncate = false;
+				bool isComplete;
 				double portion = 1;
-
-				while (truncated = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), buffer.Length - TruncateString.Length, truncate, out length))
+				while (!(isComplete = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), source.MaxPeek - TruncateString.Length, out length)))
 				{
-					if (truncate)
-					{
-						break;
-					}
-
 					if (portion < 0.5)
 					{
-						truncate = true;
+						break;
 					}
 
 					portion *= 0.8;
 				}
 
-				length = (uint)source.CopyBytes((int)length, buffer, 0);
+				FastStream subStream = source.ReadSubStream((int)length, trail: (!isComplete ? TruncateString : null));
 
-				source.Skip(length);
-
-				if (truncated)
+				if (!isComplete)
 				{
 					this.FindValidStartOn(source);
-					byte[] truncatedMessage = Encoding.ASCII.GetBytes(TruncateString);
-					Buffer.BlockCopy(src: truncatedMessage, srcOffset: 0,
-									 dst: buffer, dstOffset: (int)length, count: truncatedMessage.Length);
-
-					length += (uint)truncatedMessage.Length;
 				}
 
 				source.SkipWhiteSpace();
 
-				return (int)length;
+				return subStream;
 			}
 		}
 
 		private const string TruncateString = "0 truncate (truncate)";
 
-		private bool TryGetCompleteBuffer(FastStream source, uint startLook, int maxLength, bool truncate, out uint length)
+		private bool TryGetCompleteBuffer(FastStream source, uint startLook, int maxLength, out uint length)
 		{
 			Contract.Requires(source != null, nameof(source));
 
@@ -158,10 +141,10 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (source.Peek(startLook) == 0)
 			{
-				return false;
+				return true;
 			}
 
-			uint lastNewLine = 0;
+			uint lastNewLine = startLook;
 
 			while (true)
 			{
@@ -169,12 +152,7 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					length = lastNewLine;
 
-					if (!truncate)
-					{
-						return true;
-					}
-
-					break;
+					return false;
 				}
 
 				byte current = source.Peek(length);
@@ -191,24 +169,7 @@ namespace Diagnostics.Tracing.StackSources
 				length++;
 			}
 
-			return truncate;
-		}
-
-		private uint PeekBytes(FastStream source, uint length, byte[] buffer)
-		{
-			Contract.Requires(length <= buffer.Length, nameof(length));
-
-			for (uint i = 0; i < length; i++)
-			{
-				if (source.Peek(i) == 0)
-				{
-					return i;
-				}
-
-				buffer[i] = source.Peek(i);
-			}
-
-			return length;
+			return true;
 		}
 
 		// Assumes that source is at an invalid start position.

@@ -47,19 +47,23 @@ namespace PerfView.Utilities
 			this.stream = Stream.Null;
 			this.streamReadIn = (uint)length;
 
-			//					 History length	    \0  the amount "read" in 
-			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
-
 			bool usingGivenBuffer = buffer.Length > MaxRestoreLength && start > 0;
 
-			this.buffer = usingGivenBuffer ? buffer : new byte[this.bufferFillPos];
-			this.bufferIndex = usingGivenBuffer ? (uint)start - 1 : MaxRestoreLength;
-
-			if (!usingGivenBuffer)
+			if (usingGivenBuffer)
 			{
-				Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+				this.bufferIndex = (uint)start - 1;
+				this.bufferFillPos = MaxRestoreLength + this.streamReadIn;
+				this.buffer = buffer;
+			}
+			else
+			{
+				this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+				this.buffer = new byte[this.bufferFillPos];
+				this.bufferIndex = MaxRestoreLength;
+				Buffer.BlockCopy(buffer, start, this.buffer, (int)this.bufferIndex + 1, length);
 			}
 
+			this.streamPosition = this.bufferFillPos;
 			this.buffer[this.bufferIndex] = 0;
 			this.streamPosition = this.streamReadIn;
 		}
@@ -101,7 +105,7 @@ namespace PerfView.Utilities
 			}
 
 #if DEBUG
-            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
+            nextChars = Encoding.Default.GetString(buffer, (int)this.bufferIndex, Math.Min(40, buffer.Length - (int)bufferIndex));
 #endif
 			return ret;
 		}
@@ -376,28 +380,6 @@ namespace PerfView.Utilities
 			this.bufferIndex += amount;
 		}
 
-		public int CopyBytes(int length, byte[] buffer, int offset)
-		{
-			return this.CopyBytes(0, length, buffer, offset);
-		}
-
-		public int CopyBytes(int start, int length, byte[] buffer, int offset)
-		{
-			if (this.bufferIndex + start + length >= this.bufferFillPos)
-			{
-				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
-			}
-
-			if (this.bufferFillPos - (this.bufferIndex + start) < length)
-			{
-				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
-			}
-
-			Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, offset, length);
-
-			return length;
-		}
-
 		public int ReadHex()
 		{
 			int value = 0;
@@ -436,6 +418,45 @@ namespace PerfView.Utilities
 			}
 		}
 
+		public FastStream ReadSubStream(int length, string trail = null)
+		{
+			if (this.bufferFillPos - this.bufferIndex < length)
+			{
+				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+			}
+
+			length = (int)Math.Min(this.bufferFillPos - this.bufferIndex, length);
+
+			this.streamReadIn = (uint)(this.bufferFillPos - (this.bufferIndex + length));
+
+			byte[] newBuffer = this.GetUsedBuffer();
+			int newStart = (int)(this.bufferIndex + length);
+			int restoreAmount = (int)Math.Min(newStart, MaxRestoreLength);
+
+			Buffer.BlockCopy(
+				this.buffer, newStart - restoreAmount,
+				newBuffer, (int)(MaxRestoreLength - restoreAmount),
+				(int)this.streamReadIn + restoreAmount);
+
+			if (trail != null)
+			{
+				Buffer.BlockCopy(
+					Encoding.ASCII.GetBytes(trail), 0,
+					this.buffer, newStart,
+					Math.Min(trail.Length, this.buffer.Length - newStart));
+
+				length += trail.Length;
+			}
+
+			FastStream subStream = new FastStream(this.buffer, (int)this.bufferIndex, length);
+
+			this.buffer = newBuffer;
+			this.bufferIndex = MaxRestoreLength;
+			this.bufferFillPos = this.streamReadIn + MaxRestoreLength;
+
+			return subStream;
+		}
+
 		public void Dispose()
 		{
 			if (this.closeStream)
@@ -465,6 +486,13 @@ namespace PerfView.Utilities
 		}
 
 		#region privateMethods
+
+		// Will later be changed to find a used buffer from faststream children
+		private byte[] GetUsedBuffer()
+		{
+			return new byte[this.buffer.Length];
+		}
+
 		private uint FillBufferFromStreamPosition(uint keepLast = 0)
 		{
 			// This is so the first 'keepFromBack' integers are read in again.
