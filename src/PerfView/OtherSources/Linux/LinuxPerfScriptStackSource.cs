@@ -109,9 +109,8 @@ namespace Diagnostics.Tracing.StackSources
 				uint length;
 
 				bool isComplete;
-				double portion = 1;
 
-				isComplete = this.TryGetCompleteBuffer(source, startLook, portion, source.MaxPeek - TruncateString.Length, out length);
+				isComplete = this.TryGetCompleteBuffer(source, startLook, 1, source.MaxPeek - TruncateString.Length, out length);
 
 				FastStream subStream = source.ReadSubStream((int)length, trail: (!isComplete ? TruncateString : null));
 
@@ -141,36 +140,29 @@ namespace Diagnostics.Tracing.StackSources
 
 			uint lastNewLine = length;
 
-			while (true)
+			for (uint i = length; i < maxLength; i++)
 			{
-				if (length >= maxLength)
+				byte current = source.Peek(i);
+
+				if (this.parser.IsEndOfSample(source, current, source.Peek(i + 1)))
 				{
-					length = lastNewLine;
-
-					if (portion < 0.5)
-					{
-						return false;
-					}
-
-					return this.TryGetCompleteBuffer(source, startLook, portion * 0.8, maxLength, out length);
-				}
-
-				byte current = source.Peek(length);
-
-				if (this.parser.IsEndOfSample(source, current, source.Peek(length + 1)))
-				{
-					break;
+					length = i;
+					return true;
 				}
 
 				if (current == '\n')
 				{
 					lastNewLine = length;
 				}
-
-				length++;
 			}
 
-			return true;
+			if (portion < 0.5)
+			{
+				length = lastNewLine;
+				return false;
+			}
+
+			return this.TryGetCompleteBuffer(source, startLook, portion * 0.8, maxLength, out length);
 		}
 
 		// Assumes that source is at an invalid start position.
