@@ -110,15 +110,8 @@ namespace Diagnostics.Tracing.StackSources
 
 				bool isComplete;
 				double portion = 1;
-				while (!(isComplete = this.TryGetCompleteBuffer(source, (uint)(startLook * portion), source.MaxPeek - TruncateString.Length, out length)))
-				{
-					if (portion < 0.5)
-					{
-						break;
-					}
 
-					portion *= 0.8;
-				}
+				isComplete = this.TryGetCompleteBuffer(source, startLook, portion, source.MaxPeek - TruncateString.Length, out length);
 
 				FastStream subStream = source.ReadSubStream((int)length, trail: (!isComplete ? TruncateString : null));
 
@@ -135,18 +128,18 @@ namespace Diagnostics.Tracing.StackSources
 
 		private const string TruncateString = "0 truncate (truncate)";
 
-		private bool TryGetCompleteBuffer(FastStream source, uint startLook, int maxLength, out uint length)
+		private bool TryGetCompleteBuffer(FastStream source, uint startLook, double portion, int maxLength, out uint length)
 		{
 			Contract.Requires(source != null, nameof(source));
 
-			length = startLook;
+			length = (uint)(startLook * portion);
 
 			if (source.Peek(startLook) == 0)
 			{
 				return true;
 			}
 
-			uint lastNewLine = startLook;
+			uint lastNewLine = length;
 
 			while (true)
 			{
@@ -154,7 +147,12 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					length = lastNewLine;
 
-					return false;
+					if (portion < 0.5)
+					{
+						return false;
+					}
+
+					return this.TryGetCompleteBuffer(source, startLook, portion * 0.8, maxLength, out length);
 				}
 
 				byte current = source.Peek(length);
@@ -168,6 +166,7 @@ namespace Diagnostics.Tracing.StackSources
 				{
 					lastNewLine = length;
 				}
+
 				length++;
 			}
 
