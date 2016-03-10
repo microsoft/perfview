@@ -225,10 +225,7 @@ namespace Diagnostics.Tracing.StackSources
 			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
 			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
 
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
-
 			var sample = new StackSourceSample(this);
-			sample.StackIndex = stackIndex;
 			sample.TimeRelativeMSec = linuxEvent.Time;
 			sample.Metric = 1;
 
@@ -237,6 +234,9 @@ namespace Diagnostics.Tracing.StackSources
 				// If doThreadTime is true this is running on a single thread.
 				this.blockedTimeAnalyzer.AddThreadState(linuxEvent, sample);
 			}
+
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
+			sample.StackIndex = stackIndex;
 
 			return sample;
 		}
@@ -444,7 +444,8 @@ namespace Diagnostics.Tracing.StackSources
 			if (linuxEvent.Kind == EventKind.Scheduler)
 			{
 				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
-				if (this.EndingStates.ContainsKey(schedEvent.Switch.PreviousThreadID)) // Blocking
+				if (this.EndingStates.ContainsKey(schedEvent.Switch.PreviousThreadID) &&
+					this.EndingStates[schedEvent.Switch.PreviousThreadID].Key == LinuxThreadState.CPU_TIME) // Blocking
 				{
 					sampleInfo = this.EndingStates[schedEvent.Switch.PreviousThreadID];
 
