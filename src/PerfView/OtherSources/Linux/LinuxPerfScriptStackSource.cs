@@ -232,7 +232,7 @@ namespace Diagnostics.Tracing.StackSources
 			if (this.doThreadTime)
 			{
 				// If doThreadTime is true this is running on a single thread.
-				this.blockedTimeAnalyzer.AddThreadState(linuxEvent, sample);
+				this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent, sample);
 			}
 
 			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
@@ -395,7 +395,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.TotalBlockedTime = 0;
 		}
 
-		public void AddThreadState(LinuxEvent linuxEvent, StackSourceSample sample)
+		public void UpdateThreadState(LinuxEvent linuxEvent, StackSourceSample sample)
 		{
 			if (this.TimeStamp < sample.TimeRelativeMSec)
 			{
@@ -438,6 +438,11 @@ namespace Diagnostics.Tracing.StackSources
 		private void DoMetrics(LinuxEvent linuxEvent, StackSourceSample sample)
 		{
 			KeyValuePair<LinuxThreadState, StackSourceSample> sampleInfo;
+
+			if (this.EndingStates.TryGetValue(linuxEvent.ThreadID, out sampleInfo))
+			{
+				sample.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+			}
 
 			// This is check for completed scheduler events, ones that start with prev_comm and have 
 			//   corresponding next_comm.
