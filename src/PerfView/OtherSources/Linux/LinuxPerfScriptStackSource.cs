@@ -21,42 +21,56 @@ namespace Diagnostics.Tracing.StackSources
 
 		protected override void DoInterning()
 		{
-			if (this.doThreadTime)
-			{
-				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
-			}
-
-
-
-			int threadCount = this.doThreadTime ? 1 : MaxThreadCount;
+			int threadCount = MaxThreadCount;
 
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
 
 			this.parser.SkipPreamble(masterSource);
 
 			Task[] tasks = new Task[threadCount];
+
+			List<BlockedTimeAnalyzer>[] threadBlockedTimeAnalyzers = null;
+			if (this.doThreadTime)
+			{
+				threadBlockedTimeAnalyzers = new List<BlockedTimeAnalyzer>[tasks.Length];
+			}
+
 			List<StackSourceSample>[] threadSamples = new List<StackSourceSample>[tasks.Length];
 
 			for (int i = 0; i < tasks.Length; i++)
 			{
 				threadSamples[i] = new List<StackSourceSample>();
+				
+				if (threadBlockedTimeAnalyzers != null)
+				{
+					threadBlockedTimeAnalyzers[i] = new List<BlockedTimeAnalyzer>();
+				}
+
 				tasks[i] = new Task((object givenArrayIndex) =>
 				{
 					FastStream bufferPart;
 					while ((bufferPart = this.GetNextSubStream(masterSource)) != null)
 					{
-						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
+						BlockedTimeAnalyzer blockedTimeAnalyzer = null;
+						if (threadBlockedTimeAnalyzers != null)
 						{
-							if (this.doThreadTime)
-							{
-								// If doThreadTime is true this is running on a single thread.
-								this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
-							}
-							StackSourceSample sample = this.GetSampleFor(linuxEvent);
-							threadSamples[(int)givenArrayIndex].Add(sample);
+							blockedTimeAnalyzer = new BlockedTimeAnalyzer();
+							threadBlockedTimeAnalyzers[(int)givenArrayIndex].Add(blockedTimeAnalyzer);
 						}
 
+						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
+						{
+							// If doThreadTime is true this is running on a single thread.
+							blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
+
+							StackSourceSample sample = this.GetSampleFor(linuxEvent, blockedTimeAnalyzer);
+							threadSamples[(int)givenArrayIndex].Add(sample);
+
+							blockedTimeAnalyzer?.LinuxEventSampleAssociation(linuxEvent, sample);
+						}
 						bufferPart.Dispose();
+
+						blockedTimeAnalyzer?.FinishAnaylizing();
 					}
 				}, i);
 
@@ -65,27 +79,62 @@ namespace Diagnostics.Tracing.StackSources
 
 			Task.WaitAll(tasks);
 
-			if (this.doThreadTime)
+			if (threadBlockedTimeAnalyzers != null)
 			{
-				this.blockedTimeAnalyzer.FinishAnaylizing();
-				// TODO: Sort things in blocked time anaylizer
-				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
-			}
-
-			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
-			foreach (var samples in threadSamples)
-			{
-				if (allSamplesEnumerator == null)
+				List<BlockedTimeAnalyzer> allBlockedTimeAnalyzers = CustomExtensions.ConcatListsOfLists(threadBlockedTimeAnalyzers).ToList();
+				this.FixBlockedTimes(allBlockedTimeAnalyzers);
+				foreach (var blockedTimeAnalyzer in allBlockedTimeAnalyzers)
 				{
-					allSamplesEnumerator = samples;
-				}
-				else
-				{
-					allSamplesEnumerator = allSamplesEnumerator.Concat(samples);
+					this.TotalBlockedTime += blockedTimeAnalyzer.TotalBlockedTime;
 				}
 			}
+			else
+			{
+				this.TotalBlockedTime = -1;
+			}
 
-			this.AddSamples(allSamplesEnumerator);
+			IEnumerable<StackSourceSample> allSamples = CustomExtensions.ConcatListsOfLists(threadSamples);
+
+			this.AddSamples(allSamples);
+		}
+
+		private void FixBlockedTimes(List<BlockedTimeAnalyzer> analyzers)
+		{
+			analyzers.Sort((x, y) => x.TimeStamp.CompareTo(y.TimeStamp));
+
+			for (int i = 0; i < analyzers.Count - 1; i++)
+			{
+				var endingStates = analyzers[i].EndingStates;
+
+				foreach (int threadId in endingStates.Keys)
+				{
+					for (int j = i + 1; j < analyzers.Count; j++)
+					{
+						var beginningStates = analyzers[j].BeginningStates;
+
+						if (beginningStates.ContainsKey(threadId))
+						{
+							var beforeEvent = endingStates[threadId].Value;
+							var afterEvent = beginningStates[threadId].Value;
+
+							if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
+							{
+								double period = afterEvent.Time - beforeEvent.Time;
+								analyzers[i].LinuxEventSamples[afterEvent].Metric =
+									(float)period;
+
+								if (endingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME &&
+									beginningStates[threadId].Key == LinuxThreadState.CPU_TIME)
+								{
+									analyzers[i].TotalBlockedTime += period;
+								}
+							}
+
+							break;
+						}
+					}
+				}
+			}
 		}
 
 		protected override StackSourceFrameIndex InternFrame(string displayName)
@@ -229,12 +278,9 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public double GetTotalBlockedTime()
-		{
-			return this.blockedTimeAnalyzer.TotalBlockedTime;
-		}
+		public double TotalBlockedTime { get; set; }
 
-		public StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
+		public StackSourceSample GetSampleFor(LinuxEvent linuxEvent, BlockedTimeAnalyzer blockedTimeAnalyzer)
 		{
 			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
 			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
@@ -243,7 +289,7 @@ namespace Diagnostics.Tracing.StackSources
 			sample.TimeRelativeMSec = linuxEvent.Time;
 			sample.Metric = (float)linuxEvent.Period;
 
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.blockedTimeAnalyzer);
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, blockedTimeAnalyzer);
 			sample.StackIndex = stackIndex;
 
 			return sample;
@@ -267,27 +313,19 @@ namespace Diagnostics.Tracing.StackSources
 
 		protected virtual void DoInterning()
 		{
-			if (this.doThreadTime)
-			{
-				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
-			}
+			BlockedTimeAnalyzer blockedTimeAnalyzer = doThreadTime ? new BlockedTimeAnalyzer() : null;
 
 			foreach (var linuxEvent in this.parser.Parse(this.masterSource))
 			{
-				if (this.doThreadTime)
-				{
-					this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
-				}
-
-				this.AddSample(this.GetSampleFor(linuxEvent));
+				blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
+				this.AddSample(this.GetSampleFor(linuxEvent, blockedTimeAnalyzer));
 			}
 
-			if (this.doThreadTime)
-			{
-				this.blockedTimeAnalyzer.FinishAnaylizing();
-				// TODO: Sort things in blocked time anaylizer
-				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
-			}
+			blockedTimeAnalyzer?.FinishAnaylizing();
+			// TODO: Sort things in blocked time anaylizer
+			// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+
+			this.TotalBlockedTime = blockedTimeAnalyzer != null ? blockedTimeAnalyzer.TotalBlockedTime : -1;
 		}
 
 		protected virtual StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
@@ -304,8 +342,6 @@ namespace Diagnostics.Tracing.StackSources
 		protected readonly FastStream masterSource;
 		protected readonly bool doThreadTime;
 		protected readonly int BufferSize = 262144;
-
-		protected BlockedTimeAnalyzer blockedTimeAnalyzer;
 
 		#region private
 		private void InternAllLinuxEvents(Stream stream)
@@ -400,10 +436,10 @@ namespace Diagnostics.Tracing.StackSources
 		public double TimeStamp { get; private set; }
 		public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> BeginningStates { get; }
 		public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> EndingStates { get; }
-		public Dictionary<LinuxEvent, StackSourceSample> LinuxEventSamples { get;}
+		public Dictionary<LinuxEvent, StackSourceSample> LinuxEventSamples { get; }
 		public Dictionary<int, int> EndingCpuUsage { get; }
 
-		public double TotalBlockedTime { get; private set; }
+		public double TotalBlockedTime { get; set; }
 
 		public BlockedTimeAnalyzer()
 		{
@@ -431,6 +467,11 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.DoMetrics(linuxEvent);
+		}
+
+		public void LinuxEventSampleAssociation(LinuxEvent linuxEvent, StackSourceSample sample)
+		{
+			this.LinuxEventSamples[linuxEvent] = sample;
 		}
 
 		public bool IsThreadBlocked(int threadId)
@@ -485,8 +526,8 @@ namespace Diagnostics.Tracing.StackSources
 					this.EndingStates[schedEvent.Switch.NextThreadID] =
 						new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
 
-					sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
-					this.TotalBlockedTime += sampleInfo.Value.Period;
+					// sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
+					this.TotalBlockedTime += linuxEvent.Time - sampleInfo.Value.Time;
 				}
 
 			}
@@ -522,7 +563,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
-	public static class StringExtension
+	public static class CustomExtensions
 	{
 		public static bool EndsWithOneOf(this string path, string[] suffixes, StringComparison stringComparison = StringComparison.Ordinal)
 		{
@@ -535,6 +576,26 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			return false;
+		}
+
+		public static IEnumerable<T> ConcatListsOfLists<T>(IEnumerable<T>[] objects)
+		{
+			Contract.Requires(objects != null, nameof(objects));
+
+			IEnumerable<T> allObjects = null;
+			foreach (var o in objects)
+			{
+				if (allObjects == null)
+				{
+					allObjects = o;
+				}
+				else
+				{
+					allObjects = allObjects.Concat(o);
+				}
+			}
+
+			return allObjects;
 		}
 	}
 }

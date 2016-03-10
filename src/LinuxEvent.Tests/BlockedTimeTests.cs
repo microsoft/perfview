@@ -24,7 +24,7 @@ namespace LinuxTracing.Tests
 
 			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
 
-			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());
+			Assert.Equal(expectedTotalBlockedPeriod, stackSource.TotalBlockedTime);
 		}
 
 		[Fact]
