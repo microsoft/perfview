@@ -46,12 +46,27 @@ namespace PerfView.Utilities
 		{
 			this.stream = Stream.Null;
 			this.streamReadIn = (uint)length;
-			this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
-			this.buffer = new byte[this.bufferFillPos];
-			this.bufferIndex = MaxRestoreLength;
-			Buffer.BlockCopy(src: buffer, srcOffset: start, dst: this.buffer, dstOffset: (int)this.bufferIndex + 1, count: length);
+
+			bool usingGivenBuffer = buffer.Length > MaxRestoreLength && start > 0;
+
+			if (usingGivenBuffer)
+			{
+				this.bufferIndex = (uint)start - 1;
+				this.bufferFillPos = MaxRestoreLength + this.streamReadIn;
+				this.buffer = buffer;
+			}
+			else
+			{
+				this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+				this.buffer = new byte[this.bufferFillPos];
+				this.bufferIndex = MaxRestoreLength;
+				Buffer.BlockCopy(buffer, start, this.buffer, (int)this.bufferIndex + 1, length);
+			}
+
+			this.streamPosition = this.bufferFillPos;
 			this.buffer[this.bufferIndex] = 0;
 			this.streamPosition = this.streamReadIn;
+			this.IsDisposed = false;
 		}
 
 		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
@@ -63,6 +78,7 @@ namespace PerfView.Utilities
 			this.bufferIndex = 0;
 			this.streamReadIn = 1;
 			this.streamPosition = 0;
+			this.IsDisposed = false;
 		}
 
 		public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
@@ -91,7 +107,7 @@ namespace PerfView.Utilities
 			}
 
 #if DEBUG
-            nextChars = Encoding.Default.GetString(buffer, (int)bufferReadPos, Math.Min(40, buffer.Length - (int)bufferReadPos));
+            nextChars = Encoding.Default.GetString(buffer, (int)this.bufferIndex, Math.Min(40, buffer.Length - (int)bufferIndex));
 #endif
 			return ret;
 		}
@@ -143,6 +159,8 @@ namespace PerfView.Utilities
 		}
 
 		public byte Current { get { return buffer[this.bufferIndex]; } }
+
+		public bool IsDisposed { get; private set; }
 
 		public byte ReadChar()
 		{
@@ -366,28 +384,6 @@ namespace PerfView.Utilities
 			this.bufferIndex += amount;
 		}
 
-		public int CopyBytes(int length, byte[] buffer)
-		{
-			return this.CopyBytes(0, length, buffer);
-		}
-
-		public int CopyBytes(int start, int length, byte[] buffer)
-		{
-			if (this.bufferIndex + start + length >= this.bufferFillPos)
-			{
-				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
-			}
-
-			if (this.bufferFillPos - (this.bufferIndex + start) < length)
-			{
-				length = (int)(this.bufferFillPos - (this.bufferIndex + start));
-			}
-
-			System.Buffer.BlockCopy(this.buffer, (int)this.bufferIndex + start, buffer, 0, length);
-
-			return length;
-		}
-
 		public int ReadHex()
 		{
 			int value = 0;
@@ -426,12 +422,118 @@ namespace PerfView.Utilities
 			}
 		}
 
+		public FastStream ReadSubStream(int length, string trail = null)
+		{
+			if (this.bufferFillPos - this.bufferIndex < length)
+			{
+				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+			}
+
+			length = (int)Math.Min(this.bufferFillPos - this.bufferIndex, length);
+
+			this.streamReadIn = (uint)(this.bufferFillPos - (this.bufferIndex + length));
+
+			byte[] newBuffer = this.GetUsedBuffer();
+			int newStart = (int)(this.bufferIndex + length);
+			int restoreAmount = (int)Math.Min(newStart, MaxRestoreLength);
+
+			Buffer.BlockCopy(
+				this.buffer, newStart - restoreAmount,
+				newBuffer, (int)(MaxRestoreLength - restoreAmount),
+				(int)this.streamReadIn + restoreAmount);
+
+			if (trail != null)
+			{
+				Buffer.BlockCopy(
+					Encoding.ASCII.GetBytes(trail), 0,
+					this.buffer, newStart,
+					Math.Min(trail.Length, this.buffer.Length - newStart));
+
+				length += trail.Length;
+			}
+
+			FastStream subStream = new FastStream(this.buffer, (int)this.bufferIndex, length);
+
+			this.AddChild(subStream);
+
+			this.buffer = newBuffer;
+			this.bufferIndex = MaxRestoreLength;
+			this.bufferFillPos = this.streamReadIn + MaxRestoreLength;
+
+			return subStream;
+		}
+
+		public void Dispose()
+		{
+			if (this.closeStream)
+			{
+				this.stream?.Dispose();
+				this.stream = null;
+			}
+
+			this.IsDisposed = true;
+		}
+
 		/// <summary>
-		/// Fills the buffer starting from the current position on the stream.
+		/// Gets a string from the position to the length indicated (for debugging)
 		/// </summary>
-		/// <param name="keepLast">The amount of characters you want ot keep from the end.</param>
-		/// <returns>Returns the index in which the next buffer starts anew.</returns>
-		public uint FillBufferFromStreamPosition(uint keepLast = 0)
+		internal string PeekString(int length)
+		{
+			return this.PeekString(0, length);
+		}
+
+		internal string PeekString(int start, int length)
+		{
+			StringBuilder sb = new StringBuilder();
+			for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
+			{
+				sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
+			}
+
+			return sb.ToString();
+		}
+
+		#region privateMethods
+		private void AddChild(FastStream child)
+		{
+			if (this.next != null)
+			{
+				child.next = this.next;
+			}
+
+			this.next = child;
+		}
+
+		// Will later be changed to find a used buffer from faststream children
+		private byte[] GetUsedBuffer()
+		{
+			FastStream prev = null;
+			FastStream next = this.next;
+
+			while (next != null)
+			{
+				if (next.IsDisposed)
+				{
+					if (prev == null)
+					{
+						this.next = next.next;
+					}
+					else
+					{
+						prev.next = next.next;
+					}
+
+					return next.buffer;
+				}
+
+				prev = next;
+				next = next.next;
+			}
+
+			return new byte[this.buffer.Length];
+		}
+
+		private uint FillBufferFromStreamPosition(uint keepLast = 0)
 		{
 			// This is so the first 'keepFromBack' integers are read in again.
 			uint preamble = MaxRestoreLength + keepLast;
@@ -456,35 +558,6 @@ namespace PerfView.Utilities
 			return MaxRestoreLength;
 		}
 
-		public void Dispose()
-		{
-			if (this.closeStream)
-			{
-				this.stream?.Dispose();
-				this.stream = null;
-			}
-		}
-
-		/// <summary>
-		/// Gets a string from the position to the length indicated (for debugging)
-		/// </summary>
-		internal string PeekString(int length)
-		{
-			return this.PeekString(0, length);
-		}
-
-		internal string PeekString(int start, int length)
-		{
-			StringBuilder sb = new StringBuilder();
-			for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
-			{
-				sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
-			}
-
-			return sb.ToString();
-		}
-
-		#region privateMethods
 		private bool MoveNextHelper()
 		{
 			this.bufferIndex = this.FillBufferFromStreamPosition();
@@ -511,6 +584,7 @@ namespace PerfView.Utilities
 		private uint bufferIndex;      // The next character to read
 		private long streamPosition;
 		private bool closeStream;
+		private FastStream next;
 
 #if DEBUG
         string nextChars;

@@ -131,7 +131,7 @@ namespace Diagnostics.Tracing.StackSources
 
 		public bool IsEndOfSample(FastStream source, byte current, byte peek1)
 		{
-			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || source.EndOfStream;
+			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || current == 0 || source.EndOfStream;
 		}
 
 		internal void ParseSymbolFile(Stream stream, Mapper mapper)
