@@ -40,6 +40,11 @@ namespace Diagnostics.Tracing.StackSources
 					{
 						foreach (LinuxEvent linuxEvent in this.parser.ParseSamples(bufferPart))
 						{
+							if (this.doThreadTime)
+							{
+								// If doThreadTime is true this is running on a single thread.
+								this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
+							}
 							StackSourceSample sample = this.GetSampleFor(linuxEvent);
 							threadSamples[(int)givenArrayIndex].Add(sample);
 						}
@@ -192,11 +197,6 @@ namespace Diagnostics.Tracing.StackSources
 			this.doThreadTime = doThreadTime;
 			this.currentStackIndex = 0;
 
-			if (this.doThreadTime)
-			{
-				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
-			}
-
 			ZipArchive archive;
 			using (Stream stream = this.GetPerfScriptStream(path, out archive))
 			{
@@ -215,7 +215,7 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public float GetTotalBlockedTime()
+		public double GetTotalBlockedTime()
 		{
 			return this.blockedTimeAnalyzer.TotalBlockedTime;
 		}
@@ -227,13 +227,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			var sample = new StackSourceSample(this);
 			sample.TimeRelativeMSec = linuxEvent.Time;
-			sample.Metric = 1;
-
-			if (this.doThreadTime)
-			{
-				// If doThreadTime is true this is running on a single thread.
-				this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent, sample);
-			}
+			sample.Metric = (float)linuxEvent.Period;
 
 			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
 			sample.StackIndex = stackIndex;
@@ -259,8 +253,18 @@ namespace Diagnostics.Tracing.StackSources
 
 		protected virtual void DoInterning()
 		{
+			if (this.doThreadTime)
+			{
+				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
+			}
+
 			foreach (var linuxEvent in this.parser.Parse(this.masterSource))
 			{
+				if (this.doThreadTime)
+				{
+					this.blockedTimeAnalyzer.UpdateThreadState(linuxEvent);
+				}
+
 				this.AddSample(this.GetSampleFor(linuxEvent));
 			}
 		}
@@ -279,6 +283,8 @@ namespace Diagnostics.Tracing.StackSources
 		protected readonly FastStream masterSource;
 		protected readonly bool doThreadTime;
 		protected readonly int BufferSize = 262144;
+
+		protected BlockedTimeAnalyzer blockedTimeAnalyzer;
 
 		#region private
 		private void InternAllLinuxEvents(Stream stream)
@@ -366,8 +372,6 @@ namespace Diagnostics.Tracing.StackSources
 
 		private double? SampleEndTime;
 
-		private BlockedTimeAnalyzer blockedTimeAnalyzer;
-
 		private StackSourceCallStackIndex currentStackIndex;
 		#endregion
 	}
@@ -381,37 +385,39 @@ namespace Diagnostics.Tracing.StackSources
 	public class BlockedTimeAnalyzer
 	{
 		public double TimeStamp { get; private set; }
-		public Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>> BeginningStates { get; }
-		public Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>> EndingStates { get; }
+		public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> BeginningStates { get; }
+		public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> EndingStates { get; }
+		public Dictionary<LinuxEvent, StackSourceSample> LinuxEventSamples { get;}
 		public Dictionary<int, int> EndingCpuUsage { get; }
 
-		public float TotalBlockedTime { get; private set; }
+		public double TotalBlockedTime { get; private set; }
 
 		public BlockedTimeAnalyzer()
 		{
-			this.BeginningStates = new Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>>();
-			this.EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>>();
+			this.BeginningStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
+			this.EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
+			this.LinuxEventSamples = new Dictionary<LinuxEvent, StackSourceSample>();
 			this.EndingCpuUsage = new Dictionary<int, int>();
 			this.TotalBlockedTime = 0;
 		}
 
-		public void UpdateThreadState(LinuxEvent linuxEvent, StackSourceSample sample)
+		public void UpdateThreadState(LinuxEvent linuxEvent)
 		{
-			if (this.TimeStamp < sample.TimeRelativeMSec)
+			if (this.TimeStamp < linuxEvent.Time)
 			{
-				this.TimeStamp = sample.TimeRelativeMSec;
+				this.TimeStamp = linuxEvent.Time;
 			}
 
 			if (!this.BeginningStates.ContainsKey(linuxEvent.ThreadID))
 			{
 				this.BeginningStates.Add(
 					linuxEvent.ThreadID,
-					new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample));
+					new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent));
 
 				this.EndingStates[linuxEvent.ThreadID] = this.BeginningStates[linuxEvent.ThreadID];
 			}
 
-			this.DoMetrics(linuxEvent, sample);
+			this.DoMetrics(linuxEvent);
 		}
 
 		public bool IsThreadBlocked(int threadId)
@@ -430,18 +436,18 @@ namespace Diagnostics.Tracing.StackSources
 			{
 				if (this.EndingStates[threadid].Key == LinuxThreadState.BLOCKED_TIME)
 				{
-					this.TotalBlockedTime += (float)(this.TimeStamp - this.EndingStates[threadid].Value.TimeRelativeMSec);
+					this.TotalBlockedTime += this.TimeStamp - this.EndingStates[threadid].Value.Time;
 				}
 			}
 		}
 
-		private void DoMetrics(LinuxEvent linuxEvent, StackSourceSample sample)
+		private void DoMetrics(LinuxEvent linuxEvent)
 		{
-			KeyValuePair<LinuxThreadState, StackSourceSample> sampleInfo;
+			KeyValuePair<LinuxThreadState, LinuxEvent> sampleInfo;
 
 			if (this.EndingStates.TryGetValue(linuxEvent.ThreadID, out sampleInfo))
 			{
-				sample.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+				linuxEvent.Period = linuxEvent.Time - sampleInfo.Value.Time;
 			}
 
 			// This is check for completed scheduler events, ones that start with prev_comm and have 
@@ -455,18 +461,19 @@ namespace Diagnostics.Tracing.StackSources
 					sampleInfo = this.EndingStates[schedEvent.Switch.PreviousThreadID];
 
 					this.EndingStates[schedEvent.Switch.PreviousThreadID] =
-						new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.BLOCKED_TIME, sample);
+						new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.BLOCKED_TIME, linuxEvent);
 
-					sample.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+					linuxEvent.Period = linuxEvent.Time - sampleInfo.Value.Time;
 				}
 
-				if (this.EndingStates.TryGetValue(schedEvent.Switch.NextThreadID, out sampleInfo)) // Unblocking
+				if (this.EndingStates.TryGetValue(schedEvent.Switch.NextThreadID, out sampleInfo) &&
+					sampleInfo.Key == LinuxThreadState.BLOCKED_TIME) // Unblocking
 				{
 					this.EndingStates[schedEvent.Switch.NextThreadID] =
-						new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample);
+						new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
 
-					sampleInfo.Value.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
-					this.TotalBlockedTime += sampleInfo.Value.Metric;
+					sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
+					this.TotalBlockedTime += sampleInfo.Value.Period;
 				}
 
 			}
@@ -478,9 +485,9 @@ namespace Diagnostics.Tracing.StackSources
 					if (this.EndingStates.TryGetValue(threadid, out sampleInfo))
 					{
 						this.EndingStates[threadid] =
-							new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample);
-						sampleInfo.Value.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
-						this.TotalBlockedTime += sampleInfo.Value.Metric;
+							new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
+						sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
+						this.TotalBlockedTime += sampleInfo.Value.Period;
 					}
 				}
 			}
