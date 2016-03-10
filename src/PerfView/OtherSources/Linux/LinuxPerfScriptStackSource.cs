@@ -296,19 +296,6 @@ namespace Diagnostics.Tracing.StackSources
 			CPU_TIME
 		}
 
-		private class ThreadPeriod
-		{
-			internal double StartTime { get; }
-			internal double EndTime { get; }
-			internal double Period { get { return this.EndTime - this.StartTime; } }
-
-			internal ThreadPeriod(double startTime, double endTime)
-			{
-				this.StartTime = startTime;
-				this.EndTime = endTime;
-			}
-		}
-
 		private void InternAllLinuxEvents(Stream stream)
 		{
 			this.DoInterning();
@@ -449,6 +436,109 @@ namespace Diagnostics.Tracing.StackSources
 
 		private StackSourceCallStackIndex currentStackIndex;
 		#endregion
+	}
+
+	public enum LinuxThreadState
+	{
+		BLOCKED_TIME,
+		CPU_TIME
+	}
+
+	public class BlockedTimeAnalyzer
+	{
+		public double TimeStamp { get; private set; }
+		public Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>> BeginningStates { get; }
+		public Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>> EndingStates { get; }
+		public Dictionary<int, int> EndingCpuUsage { get; }
+
+		public float TotalBlockedTime { get; private set; }
+
+		public BlockedTimeAnalyzer()
+		{
+			this.BeginningStates = new Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>>();
+			this.EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, StackSourceSample>>();
+			this.EndingCpuUsage = new Dictionary<int, int>();
+			this.TotalBlockedTime = 0;
+		}
+
+		public void AddThreadState(LinuxEvent linuxEvent, LinuxThreadState state, StackSourceSample sample)
+		{
+			if (this.TimeStamp < sample.TimeRelativeMSec)
+			{
+				this.TimeStamp = sample.TimeRelativeMSec;
+			}
+
+			if (!this.BeginningStates.ContainsKey(linuxEvent.ThreadID))
+			{
+				this.BeginningStates.Add(
+					linuxEvent.ThreadID,
+					new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample));
+
+				this.EndingStates[linuxEvent.ThreadID] = this.BeginningStates[linuxEvent.ThreadID];
+			}
+
+			this.DoMetrics(linuxEvent, sample);
+		}
+
+		private void DoMetrics(LinuxEvent linuxEvent, StackSourceSample sample)
+		{
+			KeyValuePair<LinuxThreadState, StackSourceSample> sampleInfo;
+
+			// This is check for completed scheduler events, ones that start with prev_comm and have 
+			//   corresponding next_comm.
+			if (linuxEvent.Kind == EventKind.Scheduler)
+			{
+				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
+				if (this.EndingStates.ContainsKey(schedEvent.Switch.PreviousThreadID)) // Blocking
+				{
+					sampleInfo = this.EndingStates[schedEvent.Switch.PreviousThreadID];
+
+					this.EndingStates[schedEvent.Switch.PreviousThreadID] =
+						new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.BLOCKED_TIME, sample);
+
+					sample.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+				}
+
+				if (this.EndingStates.TryGetValue(schedEvent.Switch.NextThreadID, out sampleInfo)) // Unblocking
+				{
+					this.EndingStates[schedEvent.Switch.NextThreadID] =
+						new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample);
+
+					sampleInfo.Value.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+					this.TotalBlockedTime += sampleInfo.Value.Metric;
+				}
+
+			}
+			else if (linuxEvent.Kind == EventKind.Cpu)
+			{
+				int threadid;
+				if (this.EndingCpuUsage.TryGetValue(linuxEvent.Cpu, out threadid) && threadid != linuxEvent.ThreadID) // Unblocking
+				{
+					if (this.EndingStates.TryGetValue(threadid, out sampleInfo))
+					{
+						this.EndingStates[threadid] =
+							new KeyValuePair<LinuxThreadState, StackSourceSample>(LinuxThreadState.CPU_TIME, sample);
+						sampleInfo.Value.Metric = (float)(sample.TimeRelativeMSec - sampleInfo.Value.TimeRelativeMSec);
+						this.TotalBlockedTime += sampleInfo.Value.Metric;
+					}
+				}
+			}
+
+			this.EndingCpuUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
+		}
+	}
+
+	public class ThreadPeriod
+	{
+		internal double StartTime { get; }
+		internal double EndTime { get; }
+		internal double Period { get { return this.EndTime - this.StartTime; } }
+
+		internal ThreadPeriod(double startTime, double endTime)
+		{
+			this.StartTime = startTime;
+			this.EndTime = endTime;
+		}
 	}
 
 	public static class StringExtension
