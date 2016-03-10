@@ -18,11 +18,19 @@ namespace LinuxTracing.Tests
 	/// </summary>
 	public class BlockedTimeTests
 	{
-		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
+		public static int? StartLook = null;
+		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod, bool concurrentTest = false)
 		{
 			Constants.WaitUntilFileIsReady(source);
 
+			if (concurrentTest)
+			{
+				StartLook = 10;
+			}
+
 			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
+
+			StartLook = null;
 
 			Assert.Equal(expectedTotalBlockedPeriod, stackSource.TotalBlockedTime);
 		}

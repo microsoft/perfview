@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 
+
+
 namespace Diagnostics.Tracing.StackSources
 {
 	public class ParallelLinuxPerfScriptStackSource : LinuxPerfScriptStackSource
@@ -98,45 +100,6 @@ namespace Diagnostics.Tracing.StackSources
 			this.AddSamples(allSamples);
 		}
 
-		private void FixBlockedTimes(List<BlockedTimeAnalyzer> analyzers)
-		{
-			analyzers.Sort((x, y) => x.TimeStamp.CompareTo(y.TimeStamp));
-
-			for (int i = 0; i < analyzers.Count - 1; i++)
-			{
-				var endingStates = analyzers[i].EndingStates;
-
-				foreach (int threadId in endingStates.Keys)
-				{
-					for (int j = i + 1; j < analyzers.Count; j++)
-					{
-						var beginningStates = analyzers[j].BeginningStates;
-
-						if (beginningStates.ContainsKey(threadId))
-						{
-							var beforeEvent = endingStates[threadId].Value;
-							var afterEvent = beginningStates[threadId].Value;
-
-							if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
-							{
-								double period = afterEvent.Time - beforeEvent.Time;
-								analyzers[i].LinuxEventSamples[afterEvent].Metric =
-									(float)period;
-
-								if (endingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME &&
-									beginningStates[threadId].Key == LinuxThreadState.CPU_TIME)
-								{
-									analyzers[i].TotalBlockedTime += period;
-								}
-							}
-
-							break;
-						}
-					}
-				}
-			}
-		}
-
 		protected override StackSourceFrameIndex InternFrame(string displayName)
 		{
 			StackSourceFrameIndex frameIndex;
@@ -174,6 +137,7 @@ namespace Diagnostics.Tracing.StackSources
 				}
 
 				uint startLook = (uint)this.BufferSize * 3 / 4;
+
 				uint length;
 
 				bool isComplete;
@@ -239,6 +203,45 @@ namespace Diagnostics.Tracing.StackSources
 			while (!this.parser.IsEndOfSample(source))
 			{
 				source.MoveNext();
+			}
+		}
+
+		private void FixBlockedTimes(List<BlockedTimeAnalyzer> analyzers)
+		{
+			analyzers.Sort((x, y) => x.TimeStamp.CompareTo(y.TimeStamp));
+
+			for (int i = 0; i < analyzers.Count - 1; i++)
+			{
+				var endingStates = analyzers[i].EndingStates;
+
+				foreach (int threadId in endingStates.Keys)
+				{
+					for (int j = i + 1; j < analyzers.Count; j++)
+					{
+						var beginningStates = analyzers[j].BeginningStates;
+
+						if (beginningStates.ContainsKey(threadId))
+						{
+							var beforeEvent = endingStates[threadId].Value;
+							var afterEvent = beginningStates[threadId].Value;
+
+							if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
+							{
+								double period = afterEvent.Time - beforeEvent.Time;
+								analyzers[i].LinuxEventSamples[afterEvent].Metric =
+									(float)period;
+
+								if (endingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME &&
+									beginningStates[threadId].Key == LinuxThreadState.CPU_TIME)
+								{
+									analyzers[i].TotalBlockedTime += period;
+								}
+							}
+
+							break;
+						}
+					}
+				}
 			}
 		}
 
