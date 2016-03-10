@@ -21,6 +21,13 @@ namespace Diagnostics.Tracing.StackSources
 
 		protected override void DoInterning()
 		{
+			if (this.doThreadTime)
+			{
+				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
+			}
+
+
+
 			int threadCount = this.doThreadTime ? 1 : MaxThreadCount;
 
 			this.frames = new ConcurrentDictionary<string, StackSourceFrameIndex>();
@@ -57,6 +64,13 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			Task.WaitAll(tasks);
+
+			if (this.doThreadTime)
+			{
+				this.blockedTimeAnalyzer.FinishAnaylizing();
+				// TODO: Sort things in blocked time anaylizer
+				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
 
 			IEnumerable<StackSourceSample> allSamplesEnumerator = null;
 			foreach (var samples in threadSamples)
@@ -229,7 +243,7 @@ namespace Diagnostics.Tracing.StackSources
 			sample.TimeRelativeMSec = linuxEvent.Time;
 			sample.Metric = (float)linuxEvent.Period;
 
-			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.doThreadTime);
+			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, this.blockedTimeAnalyzer);
 			sample.StackIndex = stackIndex;
 
 			return sample;
@@ -267,6 +281,13 @@ namespace Diagnostics.Tracing.StackSources
 
 				this.AddSample(this.GetSampleFor(linuxEvent));
 			}
+
+			if (this.doThreadTime)
+			{
+				this.blockedTimeAnalyzer.FinishAnaylizing();
+				// TODO: Sort things in blocked time anaylizer
+				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+			}
 		}
 
 		protected virtual StackSourceCallStackIndex InternCallerStack(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex stackIndex)
@@ -290,23 +311,15 @@ namespace Diagnostics.Tracing.StackSources
 		private void InternAllLinuxEvents(Stream stream)
 		{
 			this.DoInterning();
-
-			if (this.doThreadTime)
-			{
-				this.blockedTimeAnalyzer.FinishAnaylizing();
-				// TODO: Sort things in blocked time anaylizer
-				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
-			}
-
 			this.Interner.DoneInterning();
 		}
 
-		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int processID, int? threadid = null, bool doThreadTime = false)
+		private StackSourceCallStackIndex InternFrames(IEnumerator<Frame> frameIterator, StackSourceCallStackIndex stackIndex, int processID, int? threadid = null, BlockedTimeAnalyzer blockedTimeAnalyzer = null)
 		{
 			// We shouldn't advance the iterator if thread time is enabled because we need 
 			//   to add an extra frame to the caller stack that is not in the frameIterator.
 			//   i.e. Short-circuiting prevents the frameIterator from doing MoveNext :)
-			if (!doThreadTime && !frameIterator.MoveNext())
+			if (blockedTimeAnalyzer == null && !frameIterator.MoveNext())
 			{
 				return StackSourceCallStackIndex.Invalid;
 			}
@@ -314,12 +327,12 @@ namespace Diagnostics.Tracing.StackSources
 			StackSourceFrameIndex frameIndex;
 			string frameDisplayName;
 
-			if (doThreadTime)
+			if (blockedTimeAnalyzer != null)
 			{
 				// If doThreadTime is true, then we need to make sure that threadid is not null
 				Contract.Requires(threadid != null, nameof(threadid));
 
-				if (this.blockedTimeAnalyzer.IsThreadBlocked((int)threadid))
+				if (blockedTimeAnalyzer.IsThreadBlocked((int)threadid))
 				{
 					frameDisplayName = LinuxThreadState.BLOCKED_TIME.ToString();
 				}
