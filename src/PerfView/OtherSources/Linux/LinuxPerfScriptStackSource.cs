@@ -194,9 +194,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			if (this.doThreadTime)
 			{
-				this.blockedThreads = new Dictionary<int, double>();
-				this.threadBlockedPeriods = new List<ThreadPeriod>();
-				this.cpuThreadUsage = new Dictionary<int, int>();
+				this.blockedTimeAnalyzer = new BlockedTimeAnalyzer();
 			}
 
 			ZipArchive archive;
@@ -217,26 +215,13 @@ namespace Diagnostics.Tracing.StackSources
 			".data.dump", ".data.txt", ".trace.zip"
 		};
 
-		public double GetTotalBlockedTime()
+		public float GetTotalBlockedTime()
 		{
-			Contract.Requires(this.threadBlockedPeriods != null, nameof(threadBlockedPeriods));
-			double timeBlocked = 0;
-			foreach (ThreadPeriod period in this.threadBlockedPeriods)
-			{
-				timeBlocked += period.Period;
-			}
-
-			return timeBlocked;
+			return this.blockedTimeAnalyzer.TotalBlockedTime;
 		}
 
 		public StackSourceSample GetSampleFor(LinuxEvent linuxEvent)
 		{
-			if (this.doThreadTime)
-			{
-				// If doThreadTime is true this is running on a single thread.
-				this.AnalyzeSampleForBlockedTime(linuxEvent);
-			}
-
 			IEnumerable<Frame> frames = linuxEvent.CallerStacks;
 			StackSourceCallStackIndex stackIndex = this.currentStackIndex;
 
@@ -246,6 +231,12 @@ namespace Diagnostics.Tracing.StackSources
 			sample.StackIndex = stackIndex;
 			sample.TimeRelativeMSec = linuxEvent.Time;
 			sample.Metric = 1;
+
+			if (this.doThreadTime)
+			{
+				// If doThreadTime is true this is running on a single thread.
+				this.blockedTimeAnalyzer.AddThreadState(linuxEvent, sample);
+			}
 
 			return sample;
 		}
@@ -290,20 +281,15 @@ namespace Diagnostics.Tracing.StackSources
 		protected readonly int BufferSize = 262144;
 
 		#region private
-		private enum StateThread
-		{
-			BLOCKED_TIME,
-			CPU_TIME
-		}
-
 		private void InternAllLinuxEvents(Stream stream)
 		{
 			this.DoInterning();
 
 			if (this.doThreadTime)
 			{
-				this.FlushBlockedThreadsAt((double)this.SampleEndTime);
-				this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+				this.blockedTimeAnalyzer.FinishAnaylizing();
+				// TODO: Sort things in blocked time anaylizer
+				// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 			}
 
 			this.Interner.DoneInterning();
@@ -327,13 +313,13 @@ namespace Diagnostics.Tracing.StackSources
 				// If doThreadTime is true, then we need to make sure that threadid is not null
 				Contract.Requires(threadid != null, nameof(threadid));
 
-				if (this.blockedThreads.ContainsKey((int)threadid))
+				if (this.blockedTimeAnalyzer.IsThreadBlocked((int)threadid))
 				{
-					frameDisplayName = StateThread.BLOCKED_TIME.ToString();
+					frameDisplayName = LinuxThreadState.BLOCKED_TIME.ToString();
 				}
 				else
 				{
-					frameDisplayName = StateThread.CPU_TIME.ToString();
+					frameDisplayName = LinuxThreadState.CPU_TIME.ToString();
 				}
 			}
 			else
@@ -346,56 +332,6 @@ namespace Diagnostics.Tracing.StackSources
 			stackIndex = this.InternCallerStack(frameIndex, this.InternFrames(frameIterator, stackIndex, processID));
 
 			return stackIndex;
-		}
-
-		private void FlushBlockedThreadsAt(double endTime)
-		{
-			foreach (int threadid in this.blockedThreads.Keys)
-			{
-				double startTime = this.blockedThreads[threadid];
-				this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, endTime));
-			}
-
-			this.blockedThreads.Clear();
-		}
-
-		private void AnalyzeSampleForBlockedTime(LinuxEvent linuxEvent)
-		{
-			// This is check for completed scheduler events, ones that start with prev_comm and have 
-			//   corresponding next_comm.
-			if (linuxEvent.Kind == EventKind.Scheduler)
-			{
-				SchedulerEvent schedEvent = (SchedulerEvent)linuxEvent;
-				if (!this.blockedThreads.ContainsKey(schedEvent.Switch.PreviousThreadID))
-				{
-					this.blockedThreads.Add(schedEvent.Switch.PreviousThreadID, schedEvent.Time);
-				}
-
-				double startTime;
-				if (this.blockedThreads.TryGetValue(schedEvent.Switch.NextThreadID, out startTime))
-				{
-					this.blockedThreads.Remove(schedEvent.Switch.NextThreadID);
-					this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, schedEvent.Time));
-				}
-
-			}
-			// This is for induced blocked time, if the thread that has already been blocked is
-			//   somehow now unblocked but we didn't get a scheduled event for it.
-			else if (linuxEvent.Kind == EventKind.Cpu)
-			{
-				int threadid;
-				if (this.cpuThreadUsage.TryGetValue(linuxEvent.Cpu, out threadid) && threadid != linuxEvent.ThreadID)
-				{
-					double startTime;
-					if (this.blockedThreads.TryGetValue(threadid, out startTime))
-					{
-						this.blockedThreads.Remove(threadid);
-						this.threadBlockedPeriods.Add(new ThreadPeriod(startTime, linuxEvent.Time));
-					}
-				}
-			}
-
-			this.cpuThreadUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
 
 		private Stream GetPerfScriptStream(string path, out ZipArchive archive)
@@ -428,11 +364,9 @@ namespace Diagnostics.Tracing.StackSources
 			throw new Exception("Not a valid input file");
 		}
 
-		private readonly Dictionary<int, double> blockedThreads;
-		private readonly List<ThreadPeriod> threadBlockedPeriods;
-		private readonly Dictionary<int, int> cpuThreadUsage;
-
 		private double? SampleEndTime;
+
+		private BlockedTimeAnalyzer blockedTimeAnalyzer;
 
 		private StackSourceCallStackIndex currentStackIndex;
 		#endregion
@@ -461,7 +395,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.TotalBlockedTime = 0;
 		}
 
-		public void AddThreadState(LinuxEvent linuxEvent, LinuxThreadState state, StackSourceSample sample)
+		public void AddThreadState(LinuxEvent linuxEvent, StackSourceSample sample)
 		{
 			if (this.TimeStamp < sample.TimeRelativeMSec)
 			{
@@ -478,6 +412,27 @@ namespace Diagnostics.Tracing.StackSources
 			}
 
 			this.DoMetrics(linuxEvent, sample);
+		}
+
+		public bool IsThreadBlocked(int threadId)
+		{
+			return this.EndingStates.ContainsKey(threadId) && this.EndingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME;
+		}
+
+		public void FinishAnaylizing()
+		{
+			this.FlushBlockedThreadsAt(this.TimeStamp);
+		}
+
+		private void FlushBlockedThreadsAt(double endTime)
+		{
+			foreach (int threadid in this.EndingStates.Keys)
+			{
+				if (this.EndingStates[threadid].Key == LinuxThreadState.BLOCKED_TIME)
+				{
+					this.TotalBlockedTime += (float)(this.TimeStamp - this.EndingStates[threadid].Value.TimeRelativeMSec);
+				}
+			}
 		}
 
 		private void DoMetrics(LinuxEvent linuxEvent, StackSourceSample sample)
