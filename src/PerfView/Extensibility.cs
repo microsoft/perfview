@@ -3213,7 +3213,7 @@ namespace PerfViewExtensibility
                 try
                 {
                     log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
-                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, trueArch);
                     return; // Yeah! success the first time
                 }
                 catch (Exception e)

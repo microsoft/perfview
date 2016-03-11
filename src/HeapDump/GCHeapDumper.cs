@@ -672,7 +672,7 @@ public class GCHeapDumper
         ClrRuntime runtime;
         InitializeClrRuntime(inputSpec, out target, out runtime);
 #if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
-        IEnumerable<ClrException> serializedExceptions runtime.EnumerateSerializedExceptions();
+        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
 #else 
         IEnumerable<ClrException> serializedExceptions = null; //  runtime.EnumerateSerializedExceptions();
 #endif 
