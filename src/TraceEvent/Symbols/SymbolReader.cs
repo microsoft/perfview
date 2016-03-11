@@ -419,10 +419,47 @@ namespace Microsoft.Diagnostics.Symbols
             if (File.Exists(pdbPath))
                 return pdbPath;
 
+            var options = new CommandOptions();
+            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", symReader.SymbolPath);
+            options.AddOutputStream(log);
+            options.AddNoThrow();
+
             string privateRuntimeVerString;
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, log, out privateRuntimeVerString);
             if (clrDir == null)
-                return null;
+            {
+                // CoreCLR case. 
+                var imageDir = Path.GetDirectoryName(ngenImageFullPath);
+                string crossGen = Path.Combine(imageDir, "crossGen.exe");
+
+                log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
+                if (!File.Exists(crossGen))
+                    return null;            // Not the crossGen case.  
+
+                string pdbDir = Path.GetDirectoryName(pdbPath);
+                Directory.CreateDirectory(pdbDir);
+                var cmdLine = Command.Quote(crossGen) + " /CreatePdb " +
+                    Command.Quote(pdbDir) + " " +
+                    Command.Quote(ngenImageFullPath);
+
+                var winDir = Environment.GetEnvironmentVariable("winDir");
+                if (winDir == null)
+                    return null;
+
+                // Needs diasymreader.dll to be on the path.  
+                var newPath1 = winDir + @"\Microsoft.NET\Framework\v4.0.30319" + ";" +
+                    winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
+                options.AddEnvironmentVariable("PATH", newPath1);
+
+                log.WriteLine("*** CrossGen cmdline: {0}\r\n", cmdLine);
+                var cmd = Command.Run(cmdLine, options);
+                if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
+                {
+                    log.WriteLine("CrossGen failed error code {0}", cmd.ExitCode);
+                    return null;
+                }
+                return pdbPath;
+            }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
             var lineNumberArg = "";
@@ -461,6 +498,12 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                     }
 
+                    // TODO FIX NOW:  In V4.6.1 of the runtime we no longer need /lines to get line number 
+                    // information (the native to IL mapping is always put in the NGEN image and that
+                    // is sufficient to look up line numbers later (not at NGEN pdb creation time).  
+                    // Thus this code could be removed once we really don't care about the case where
+                    // it is a V4.5.* runtime but not a V4.6.1+ runtime AND we care about line numbers.  
+                    // After 12/2016 we can probably pull this code.  
                     if (isV4_5Runtime)
                     {
                         log.WriteLine("Is a V4.5 Runtime or beyond");
@@ -478,17 +521,13 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
 
-            var options = new CommandOptions();
             options.AddEnvironmentVariable("COMPLUS_NGenEnableCreatePdb", "1");
 
             // NGenLocalWorker is needed for V4.0 runtimes but interferes on V4.5 runtimes.  
             if (!isV4_5Runtime)
                 options.AddEnvironmentVariable("COMPLUS_NGenLocalWorker", "1");
-            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", symReader.SymbolPath);
             var newPath = "%PATH%;" + clrDir;
             options.AddEnvironmentVariable("PATH", newPath);
-            options.AddOutputStream(log);
-            options.AddNoThrow();
 
             // For Win8 Store Auto-NGEN images we need to use a location where the app can write the PDB file
             var outputPdbPath = pdbPath;
@@ -516,7 +555,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             try
             {
-                for (; ; ) // Loop for retrying without /lines 
+                for (;;) // Loop for retrying without /lines 
                 {
                     if (!string.IsNullOrEmpty(privateRuntimeVerString))
                     {
@@ -538,7 +577,6 @@ namespace Microsoft.Diagnostics.Symbols
                     log.WriteLine("set PATH=" + newPath);
                     log.WriteLine("set _NT_SYMBOL_PATH={0}", symReader.SymbolPath);
                     log.WriteLine("*** NGEN  CREATEPDB cmdline: {0}\r\n", cmdLine);
-                    options.AddOutputStream(log);
                     var cmd = Command.Run(cmdLine, options);
                     log.WriteLine("*** NGEN CREATEPDB returns: {0}", cmd.ExitCode);
 
@@ -602,7 +640,7 @@ namespace Microsoft.Diagnostics.Symbols
             string assemblyDir = Path.Combine(windir, "Assembly");
             foreach (string nicBase in Directory.GetDirectories(assemblyDir, "NativeImages_v4*"))
             {
-                foreach(string file in Directory.EnumerateFiles(nicBase, ngenFileName, SearchOption.AllDirectories))
+                foreach (string file in Directory.EnumerateFiles(nicBase, ngenFileName, SearchOption.AllDirectories))
                 {
                     long fileLen = (new FileInfo(file)).Length;
                     if (fileLen == ngenFileSize)
@@ -636,22 +674,26 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge)
         {
-            if (File.Exists(filePath))
+            try
             {
-                if (pdbGuid == Guid.Empty)
+                if (File.Exists(filePath))
                 {
-                    m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
-                    return true;
+                    if (pdbGuid == Guid.Empty)
+                    {
+                        m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
+                        return true;
+                    }
+                    SymbolModule module = this.OpenSymbolFile(filePath);
+                    if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
+                        return true;
+                    else
+                        m_log.WriteLine("FindSymbolFilePath: PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
+                            filePath, module.PdbGuid, module.PdbAge, pdbGuid, pdbAge);
                 }
-                SymbolModule module = this.OpenSymbolFile(filePath);
-                if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
-                    return true;
                 else
-                    m_log.WriteLine("FindSymbolFilePath: PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
-                        filePath, module.PdbGuid, module.PdbAge, pdbGuid, pdbAge);
+                    m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
             }
-            else
-                m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
+            catch { }
             return false;
         }
 
@@ -703,7 +745,11 @@ namespace Microsoft.Diagnostics.Symbols
                             if (!canceled)
                             {
                                 using (var fromStream = response.GetResponseStream())
-                                    CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled);
+                                    if (CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled) == 0)
+                                    {
+                                        File.Delete(fullDestPath);
+                                        throw new InvalidOperationException("Illegal Zero sized file " + fullDestPath);
+                                    }
                                 successful = true;
                             }
                         }
@@ -737,7 +783,11 @@ namespace Microsoft.Diagnostics.Symbols
                             if (!canceled)
                             {
                                 using (var fromStream = File.OpenRead(fullSrcPath))
-                                    CopyStreamToFile(fromStream, fullSrcPath, fullDestPath, ref canceled);
+                                    if (CopyStreamToFile(fromStream, fullSrcPath, fullDestPath, ref canceled) == 0)
+                                    {
+                                        File.Delete(fullDestPath);
+                                        throw new InvalidOperationException("Illegal Zero sized file " + fullDestPath);
+                                    }
                                 successful = true;
                             }
                         }
@@ -797,9 +847,10 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// This just copies a stream to a file path with logging.  
         /// </summary>
-        private void CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
+        private int CopyStreamToFile(Stream fromStream, string fromUri, string fullDestPath, ref bool canceled)
         {
             bool completed = false;
+            int byteCount = 0;
             var copyToFileName = fullDestPath + ".new";
             try
             {
@@ -809,11 +860,10 @@ namespace Microsoft.Diagnostics.Symbols
                 var sw = Stopwatch.StartNew();
                 int lastMeg = 0;
                 int last10K = 0;
-                int byteCount = 0;
                 using (Stream toStream = File.Create(copyToFileName))
                 {
                     byte[] buffer = new byte[8192];
-                    for (; ; )
+                    for (;;)
                     {
                         int count = fromStream.Read(buffer, 0, buffer.Length);
                         if (count == 0)
@@ -861,6 +911,7 @@ namespace Microsoft.Diagnostics.Symbols
                     FileUtilities.ForceDelete(copyToFileName);
                 }
             }
+            return byteCount;
         }
 
         /// <summary>
@@ -1023,10 +1074,7 @@ namespace Microsoft.Diagnostics.Symbols
                         bitness = m.Groups[1].Value;
                     }
                     else
-                    {
-                        log.WriteLine("Warning: Could not deduce CLR version from path of NGEN image, skipping {0}", ngenImagePath);
                         return null;
-                    }
                 }
             }
 
@@ -1286,7 +1334,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 bool prefixMatchFound = false;
                 Regex prefixMatch = new Regex(@"\$(\d+)_");
-                ret = prefixMatch.Replace(ret, delegate(Match m)
+                ret = prefixMatch.Replace(ret, delegate (Match m)
                 {
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
@@ -1356,8 +1404,8 @@ namespace Microsoft.Diagnostics.Symbols
                     sourceLocs.Next(1, out sourceLoc, out fetchCount);
                     if (fetchCount == 1)
                     {
-                       // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
-                       // from the name mangling of the method symbol, so look that up.  
+                        // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
+                        // from the name mangling of the method symbol, so look that up.  
                         m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, looking for V4.6.1 mangled names");
 
                         IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
@@ -1369,7 +1417,7 @@ namespace Microsoft.Diagnostics.Symbols
                             string name = method.name;
                             if (name != null)
                             {
-                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with mangled name {0}", name);
+                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with 4.6.1 mangled name {0}", name);
                                 int suffixIdx = name.LastIndexOf("$#");
                                 if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
                                 {
@@ -1468,7 +1516,7 @@ namespace Microsoft.Diagnostics.Symbols
             int lineNum;
             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
             // and take the next valid line
-            for (; ; )
+            for (;;)
             {
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
@@ -1574,7 +1622,9 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present.  
+        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present. 
+        /// 
+        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
         /// </summary>
         internal string GetSrcSrvStream()
         {
@@ -1825,7 +1875,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             uint fetchCount;
             var ret = new List<Symbol>();
-            for (; ; )
+            for (;;)
             {
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
@@ -1974,7 +2024,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var curIdx = 0;
-            for (; ; )
+            for (;;)
             {
                 var sepIdx = BuildTimeFilePath.IndexOf('\\', curIdx);
                 if (sepIdx < 0)
@@ -2059,7 +2109,7 @@ namespace Microsoft.Diagnostics.Symbols
             var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var cacheDir = m_symbolModule.m_reader.SourceCacheDirectory;
             vars.Add("targ", cacheDir);
-            for (; ; )
+            for (;;)
             {
                 var line = reader.ReadLine();
                 if (line == null)
@@ -2141,24 +2191,24 @@ namespace Microsoft.Diagnostics.Symbols
                                 else
 #endif
                                     if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    var tfExe = Command.FindOnPath("tf.exe");
+                                    if (tfExe == null)
                                     {
-                                        var tfExe = Command.FindOnPath("tf.exe");
+                                        tfExe = FindTfExe();
                                         if (tfExe == null)
                                         {
-                                            tfExe = FindTfExe();
-                                            if (tfExe == null)
-                                            {
-                                                log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
-                                                return null;
-                                            }
-                                            addToPath = Path.GetDirectoryName(tfExe);
+                                            log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
+                                            return null;
                                         }
+                                        addToPath = Path.GetDirectoryName(tfExe);
                                     }
-                                    else
-                                    {
-                                        log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
-                                        return null;
-                                    }
+                                }
+                                else
+                                {
+                                    log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
+                                    return null;
+                                }
                                 Directory.CreateDirectory(Path.GetDirectoryName(target));
                                 fetchCmdStr = "cmd /c " + fetchCmdStr;
                                 var options = new CommandOptions().AddOutputStream(log).AddNoThrow();
@@ -2249,20 +2299,20 @@ namespace Microsoft.Diagnostics.Symbols
             if (0 <= result.IndexOf('%'))
             {
                 // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms680641(v=vs.85).aspx for details on the %fn* variables 
-                result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate (Match m)
                 {
                     return SourceServerFetchVar(SourceServerEvaluate(m.Groups[1].Value, vars), vars);
                 });
-                result = Regex.Replace(result, @"%fnbksl%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnbksl%\((.*?)\)", delegate (Match m)
                 {
                     return SourceServerEvaluate(m.Groups[1].Value, vars).Replace('/', '\\');
                 });
-                result = Regex.Replace(result, @"%fnfile%\((.*?)\)", delegate(Match m)
+                result = Regex.Replace(result, @"%fnfile%\((.*?)\)", delegate (Match m)
                 {
                     return Path.GetFileName(SourceServerEvaluate(m.Groups[1].Value, vars));
                 });
                 // Normal variable substitution
-                result = Regex.Replace(result, @"%(\w+)%", delegate(Match m)
+                result = Regex.Replace(result, @"%(\w+)%", delegate (Match m)
                 {
                     return SourceServerFetchVar(m.Groups[1].Value, vars);
                 });

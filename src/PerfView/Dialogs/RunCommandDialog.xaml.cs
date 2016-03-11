@@ -122,6 +122,8 @@ namespace PerfView
                 DotNetAllocSampledCheckBox.IsChecked = true;
             if (args.DotNetCalls)
                 DotNetCallsCheckBox.IsChecked = true;
+            if (args.JITInlining)
+                JITInliningCheckBox.IsChecked = true;
             if ((args.ClrEvents & ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh) != 0)
                 ETWDotNetAllocSampledCheckBox.IsChecked = true;
             if (args.NetworkCapture)
@@ -389,6 +391,12 @@ namespace PerfView
                 else
                     m_args.ClrEvents &= ~ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh;
 
+                m_args.JITInlining = JITInliningCheckBox.IsChecked ?? false;
+                if (m_args.JITInlining)
+                {
+                    m_args.ClrEvents |= ClrTraceEventParser.Keywords.JitTracing;
+                }
+
                 m_args.NetMonCapture = NetMonCheckBox.IsChecked ?? false;
                 m_args.NetworkCapture = NetCaptureCheckBox.IsChecked ?? false;
 
@@ -461,6 +469,7 @@ namespace PerfView
                 }
 
                 m_args.DumpHeap = HeapSnapshotCheckBox.IsChecked ?? false;
+                m_args.Finalizers = FinalizersCheckBox.IsChecked ?? false;
 
                 if (providers.Length > 0)
                     m_args.Providers = providers.Split(',');

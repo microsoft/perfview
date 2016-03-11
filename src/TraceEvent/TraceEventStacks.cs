@@ -61,7 +61,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(m_log == null);
             if (events != null)
                 m_log = events.Log;
-                m_goodTopModuleIndex = ModuleFileIndex.Invalid;
+            m_goodTopModuleIndex = ModuleFileIndex.Invalid;
             m_curSample = new StackSourceSample(this);
             m_curSample.Metric = (float)events.Log.SampleProfileInterval.TotalMilliseconds;
             m_events = events;
@@ -101,7 +101,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             var totalCount = 0;
 
             // Compute for each stack, the set of inclusive modules for that stack
-            stackSource.ForEach(delegate(StackSourceSample sample)
+            stackSource.ForEach(delegate (StackSourceSample sample)
             {
                 stackCounts[(int)sample.StackIndex]++;
                 totalCount++;
@@ -635,8 +635,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 (x, y) =>
                 {
                     int res = x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec);
-                    if (res != 0) return res; 
-                    else return x.StackIndex.CompareTo(y.StackIndex); 
+                    if (res != 0) return res;
+                    else return x.StackIndex.CompareTo(y.StackIndex);
                 });
             for (int i = 0; i < m_samples.Count; i++)
                 m_samples[i].SampleIndex = (StackSourceSampleIndex)i;

@@ -864,7 +864,7 @@ namespace FastSerialization
             writer.Dispose();
             if (log != null)
             {
-                log.Close();
+                log.Dispose();
                 log = null;
             }
         }
@@ -1600,7 +1600,7 @@ namespace FastSerialization
             if (log != null)
             {
                 Log("</Deserialize>");
-                log.Close();
+                log.Dispose();
                 log = null;
             }
         }

@@ -105,6 +105,7 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Management" />
     <Reference Include="System.Printing" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
@@ -119,6 +120,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="OtherSources\Linux\LinuxPerfScriptEventParser.cs" />
+    <Compile Include="OtherSources\Linux\LinuxPerfScriptStackSource.cs" />
     <Compile Include="sigparser.cs">
       <Link>Utilities\sigparser.cs</Link>
     </Compile>
@@ -276,6 +279,7 @@
     <Compile Include="Utilities\commandLine.cs" />
     <Compile Include="Utilities\CommandLineUtilities.cs" />
     <Compile Include="Utilities\ExceptionMessage.cs" />
+    <Compile Include="Utilities\FastStream.cs" />
     <Compile Include="Utilities\ProcessTree.cs" />
     <Compile Include="Utilities\SupportFiles.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
@@ -412,6 +416,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -434,6 +439,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\x86\KernelTraceControl.Win61.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
@@ -533,7 +543,7 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="..\PerfView\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -680,15 +690,10 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\MemoryCollection.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\AspNetThreadTime.png">
+    <EmbeddedResource Include="SupportDlls\Images\ThreadTimeWithStartStop.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\Images\AspNetThreadTime.png</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\ServerRequestThreadTime.png">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Images\ServerRequestThreadTime.png</LogicalName>
+      <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -727,9 +732,6 @@
     <Resource Include="images\VSProject_schema.png" />
     <Resource Include="images\VSProject_html.png" />
     <Resource Include="images\Chart.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="SupportDlls\Images\ServerRequestThreadTime.PNG" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />

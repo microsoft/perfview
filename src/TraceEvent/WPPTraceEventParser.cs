@@ -104,7 +104,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 string providerName = null;
                 Guid providerGuid = Guid.Empty;
                 Match m;
-                for (; ; )
+                for (;;)
                 {
                     var line = tmfData.ReadLine();
                     if (line == null)
@@ -126,7 +126,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 {
                                     using (var mofFile = File.OpenText(mofFilePath))
                                     {
-                                        for (; ; )
+                                        for (;;)
                                         {
                                             var mofLine = mofFile.ReadLine();
                                             if (mofLine == null)
@@ -167,7 +167,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (formatStr.Contains("%!"))
                             {
                                 var tail = m.Groups[5].Value;
-                                for (; ; )
+                                for (;;)
                                 {
                                     var m1 = Regex.Match(formatStr, @"%!(\w+)!");
                                     if (!m1.Success)
@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                             parameterTypes.Clear();
 
-                            for (; ; )
+                            for (;;)
                             {
                                 line = tmfData.ReadLine();
                                 if (line == null)
@@ -218,7 +218,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                         type = typeof(int);
                                         // By making map non-null we indicate that this is a enum, but we don't add any enum
                                         // mappings, which makes it print as Hex.  Thus we are just saying 'print as hex'  
-                                        map = new SortedList<long, string>(0);
+                                        map = new SortedDictionary<long, string>();
                                     }
                                     else if (typeStr == "Double")
                                         type = typeof(double);
@@ -267,14 +267,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
 
                             formatStr = formatStr.Replace("%0", "");    // TODO What is this?  Why is it here?  
-                            formatStr = Regex.Replace(formatStr, @"%(\d+)!(\w?)\w*!", delegate(Match match)
+                            formatStr = Regex.Replace(formatStr, @"%(\d+)!(\w?)\w*!", delegate (Match match)
                             {
                                 var argNum = int.Parse(match.Groups[1].Value) - 10;     // 0 first arg ...
 
                                 // If it has a !x qualifer after it change th map so it will be decoded as hex.  
                                 if (match.Groups[2].Value == "x" && 0 <= argNum && argNum < template.payloadFetches.Length &&
                                     template.payloadFetches[argNum].Map == null)
-                                    template.payloadFetches[argNum].Map = new SortedList<long, string>(0);
+                                    template.payloadFetches[argNum].Map = new SortedDictionary<long, string>();
 
                                 return "%" + (argNum + 1).ToString();
                             });

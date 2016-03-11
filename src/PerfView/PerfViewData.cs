@@ -247,6 +247,39 @@ namespace PerfView
     }
 
     /// <summary>
+    /// A PerfViewTreeGroup simply groups other Items.  Thus it has a name, and you use the Children
+    /// to add Child nodes to the group.  
+    /// </summary>
+    public class PerfViewTreeGroup : PerfViewTreeItem
+    {
+        public PerfViewTreeGroup(string name)
+        {
+            Name = name;
+            m_Children = new List<PerfViewTreeItem>();
+        }
+
+        public PerfViewTreeGroup AddChild(PerfViewTreeItem child)
+        {
+            m_Children.Add(child);
+            return this;
+        }
+
+        // Groups do no semantic action.   All the work is in the visual GUI part.  
+        public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
+        {
+            if (doAfter != null)
+                doAfter();
+        }
+        public override void Close() { }
+
+        public override IList<PerfViewTreeItem> Children { get { return m_Children; } }
+
+        public override string HelpAnchor { get { return Name.Replace(" ", ""); } }   
+
+        public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FolderOpenBitmapImage"] as ImageSource; } }
+    }
+
+    /// <summary>
     /// PerfViewData is an abstraction of something that PerfViewGui knows how to display.   It is 
     /// </summary>
     public abstract class PerfViewFile : PerfViewTreeItem
@@ -494,6 +527,16 @@ namespace PerfView
                     var asStackSource = child as PerfViewStackSource;
                     if (asStackSource != null && asStackSource.SourceName == sourceName)
                         return asStackSource;
+                    var asGroup = child as PerfViewTreeGroup;
+                    if (asGroup != null && asGroup.Children != null)
+                    {
+                        foreach(var groupChild in asGroup.Children)
+                        {
+                            asStackSource = groupChild as PerfViewStackSource;
+                            if (asStackSource != null && asStackSource.SourceName == sourceName)
+                                return asStackSource;
+                        }
+                    }
                 }
             }
             else if (m_singletonStackSource != null)
@@ -726,7 +769,8 @@ namespace PerfView
             new ScenarioSetPerfViewFile(),
             new OffProfPerfViewFile(),
             new DiagSessionPerfViewFile(),
-            new LinuxPerfViewData()
+            new LinuxPerfViewData(),
+            new PerfScriptPerfViewFile()
         };
 
         #region private
@@ -1938,6 +1982,23 @@ namespace PerfView
                     return "Opening CSV " + csvFile;
                 }
             }
+            else if (command.StartsWith("excelFinalization/"))
+            {
+                var processId = int.Parse(command.Substring(18));
+                GCProcess gcProc;
+                if (m_gcStats.TryGetByID(processId, out gcProc))
+                {
+                    var csvFile = CacheFiles.FindFile(FilePath, ".gcStats.Finalization." + processId.ToString() + ".csv");
+                    if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                    {
+                        gcProc.ToCsvFinalization(csvFile);
+                    }
+                    Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                    return "Opening CSV " + csvFile;
+                }
+            }
             else if (command.StartsWith("xml/"))
             {
                 var processId = int.Parse(command.Substring(4));
@@ -1969,7 +2030,7 @@ namespace PerfView
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             var source = dataFile.Events.GetSource();
-            m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
+            m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds, null, null, false, dataFile);
             m_gcStats.ToHtml(writer, fileName, "GCStats", null, true);
         }
 
@@ -1992,6 +2053,22 @@ namespace PerfView
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
                         jitProc.ToCsv(csvFile);
+                    Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+                    System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
+                    return "Opening CSV " + csvFile;
+                }
+            }
+            else if (command.StartsWith("excelInlining/"))
+            {
+                var rest = command.Substring(14);
+                var processId = int.Parse(rest);
+                JitProcess jitProc;
+                if (m_jitStats.TryGetByID(processId, out jitProc))
+                {
+                    var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
+                    if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        jitProc.ToInliningCsv(csvFile);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -2566,11 +2643,7 @@ namespace PerfView
             var eventSource = events.GetSource();
             var sample = new StackSourceSample(stackSource);
 
-            if (streamName == "Blocked Time (deprecated)")
-            {
-                return eventLog.BlockedTimeStacks();
-            }
-            else if (streamName == "Thread Time (with Tasks)")
+            if (streamName == "Thread Time (with Tasks)")
             {
                 return eventLog.ThreadTimeWithTasksStacks();
             }
@@ -2585,7 +2658,7 @@ namespace PerfView
                 else
                     return eventLog.ThreadTimeAspNetStacks();
             }
-            else if (streamName == "Thread Time (with StartStop Tasks)")
+            else if (streamName == "Thread Time (with StartStop Activities)")
             {
                 var startStopSource = new MutableTraceEventStackSource(eventLog);
 
@@ -3206,8 +3279,8 @@ namespace PerfView
                 StartStopActivityComputer startStopComputer = null;
                 bool isAnyTaskTree = (streamName == "Any TaskTree");
                 bool isAnyWithTasks = (streamName == "Any Stacks (with Tasks)");
-                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Tasks)");          // These have the call stacks 
-                bool isAnyStartStopTreeNoCallStack = (streamName == "Any StartStopTree");               // These have just the start-stop tasks.  
+                bool isAnyWithStartStop = (streamName == "Any Stacks (with StartStop Activities)");          // These have the call stacks 
+                bool isAnyStartStopTreeNoCallStack = (streamName == "Any StartStopTree");               // These have just the start-stop activities.  
                 if (isAnyTaskTree || isAnyWithTasks || isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                 {
                     activityComputer = new ActivityComputer(eventSource, GetSymbolReader(log));
@@ -3228,7 +3301,7 @@ namespace PerfView
                         }
                         else if (isAnyStartStopTreeNoCallStack)
                         {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
                         }
                         else
                         {
@@ -3251,6 +3324,7 @@ namespace PerfView
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
                 }
 
+                StackSourceFrameIndex blockingFrame = stackSource.Interner.FrameIntern("Event Kernel/Thread/BLOCKING CSwitch");
                 StackSourceFrameIndex cswitchEventFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/Thread/CSwitch");
                 StackSourceFrameIndex readyThreadEventFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/Dispatcher/ReadyThread");
                 StackSourceFrameIndex sampledProfileFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/PerfInfo/Sample");
@@ -3272,7 +3346,7 @@ namespace PerfView
                         }
                         else if (isAnyStartStopTreeNoCallStack)
                         {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread), thread.Process);
+                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
                         }
                         else
                         {
@@ -3288,25 +3362,45 @@ namespace PerfView
                     {
                         // Normal case, get the calls stack of frame names.  
                         var callStackIdx = data.CallStackIndex();
-                        if (callStackIdx == CallStackIndex.Invalid)
-                            return;
-                        stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        if (callStackIdx != CallStackIndex.Invalid)
+                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        else
+                            stackIndex = StackSourceCallStackIndex.Invalid;
                     }
 
                     var asCSwitch = data as CSwitchTraceData;
                     if (asCSwitch != null)
                     {
+                        if (activityComputer == null)  // Just a plain old any-stacks
+                        {
+                            var callStackIdx = asCSwitch.BlockingStack();
+                            if (callStackIdx != CallStackIndex.Invalid)
+                            {
+                                // Make an entry for the blocking stacks as well.  
+                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                sample.Metric = 1;
+                                stackSource.AddSample(sample);
+                            }
+                        }
 
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                        if (stackIndex != StackSourceCallStackIndex.Invalid)
+                        {
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
+                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
+                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                        }
                         goto ADD_SAMPLE;
                     }
+
+                    if (stackIndex == StackSourceCallStackIndex.Invalid)
+                        return;
 
                     var asSampledProfile = data as SampledProfileTraceData;
                     if (asSampledProfile != null)
                     {
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
                         goto ADD_SAMPLE;
                     }
@@ -4412,7 +4506,7 @@ namespace PerfView
         {
             ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
 
-            if (stackSourceName.Contains("(with Tasks)"))
+            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
                 var taskFoldPatBase = "ntoskrnl!%ServiceCopyEnd;mscorlib%!System.Runtime.CompilerServices.Async%MethodBuilder";
                 var taskFoldPat = taskFoldPatBase + ";^STARTING TASK";
@@ -4423,13 +4517,15 @@ namespace PerfView
                 if (taskFoldPat.StartsWith(stackWindow.FoldRegExTextBox.Text))
                     stackWindow.FoldRegExTextBox.Text = taskFoldPat;
 
-                var excludePat = "!System.Threading.Tasks.Task.Wait";
+                stackWindow.GroupRegExTextBox.Items.Insert(0, @"[Nuget] System.%!=>OTHER;Microsoft.%!=>OTHER;mscorlib%=>OTHER;v4.0.30319%\%!=>OTHER;system32\*!=>OTHER;syswow64\*!=>OTHER");
+
+                var excludePat = "LAST_BLOCK";
                 stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
+                stackWindow.ExcludeRegExTextBox.Items.Add("LAST_BLOCK;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage.BeginEvent;Microsoft.Owin.Host.SystemWeb!*IntegratedPipelineContextStage*RunApp");
                 stackWindow.ExcludeRegExTextBox.Text = excludePat;
             }
 
-            if (stackSourceName == "CPU" || stackSourceName.StartsWith("Blocked Time") ||
-                stackSourceName.Contains("Thread Time"))
+            if (stackSourceName == "CPU" || stackSourceName.Contains("Thread Time"))
             {
                 if (m_traceLog != null)
                     stackWindow.ExtraTopStats += " TotalProcs " + this.m_traceLog.NumberOfProcessors;
@@ -4598,10 +4694,10 @@ namespace PerfView
                 }
             }
 
+            var advanced = new PerfViewTreeGroup("Advanced Group");
+            var memory = new PerfViewTreeGroup("Memory Group");
+            var obsolete = new PerfViewTreeGroup("Old Group");
             m_Children = new List<PerfViewTreeItem>();
-            m_Children.Add(new PerfViewTraceInfo(this));
-            m_Children.Add(new PerfViewProcesses(this));
-            m_Children.Add(new PerfViewEventSource(this));
 
             bool hasCPUStacks = false;
             bool hasDllStacks = false;
@@ -4698,73 +4794,77 @@ namespace PerfView
                 }
             }
 
+            m_Children.Add(new PerfViewTraceInfo(this));
+            m_Children.Add(new PerfViewProcesses(this));
+
             if (hasCPUStacks)
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
             if (hasCSwitchStacks)
             {
-                m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
-                if (hasReadyThreadStacks)
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
                 if (hasTplStacks)
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
-
+                {
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
+                }
+                else
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
+                if (hasReadyThreadStacks)
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
             }
 
-            if (hasCSwitchStacks && AppLog.InternalUser)
-                m_Children.Add(new PerfViewStackSource(this, "Blocked Time (deprecated)"));
-
             if (hasDiskStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Disk I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
             if (hasFileStacks)
-                m_Children.Add(new PerfViewStackSource(this, "File I/O"));
+                advanced.Children.Add(new PerfViewStackSource(this, "File I/O"));
 
             if (hasHeapStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Net OS Heap Alloc"));
+                memory.Children.Add(new PerfViewStackSource(this, "Net OS Heap Alloc"));
             if (hasVirtAllocStacks)
             {
-                m_Children.Add(new PerfViewStackSource(this, "Net Virtual Alloc"));
-                m_Children.Add(new PerfViewStackSource(this, "Net Virtual Reserve"));
+                memory.Children.Add(new PerfViewStackSource(this, "Net Virtual Alloc"));
+                memory.Children.Add(new PerfViewStackSource(this, "Net Virtual Reserve"));
             }
             if (hasGCAllocationTicks)
             {
                 if (hasObjectUpdate)
-                    m_Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem (Coarse Sampling)"));
-                m_Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free (Coarse Sampling)"));
+                    memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem (Coarse Sampling)"));
+                memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free (Coarse Sampling)"));
             }
             if (hasMemAllocStacks)
             {
-                m_Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem"));
-                m_Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free"));
-                m_Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths"));
+                memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem"));
+                memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free"));
+                memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths"));
             }
 
             if (hasDllStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Image Load"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Image Load"));
             if (hasManagedLoads)
-                m_Children.Add(new PerfViewStackSource(this, "Managed Load"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Managed Load"));
             if (hasExceptions)
-                m_Children.Add(new PerfViewStackSource(this, "Exceptions"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Exceptions"));
             if (hasGCHandleStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Pinning"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Pinning"));
             if (hasPinObjectAtGCTime)
-                m_Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
 
             if (hasGCEvents && hasCPUStacks && AppLog.InternalUser)
-                m_Children.Add(new PerfViewStackSource(this, "Server GC"));
+                memory.Children.Add(new PerfViewStackSource(this, "Server GC"));
 
             if (hasCCWRefCountStacks)
-                m_Children.Add(new PerfViewStackSource(this, "CCW Ref Count"));
+                advanced.Children.Add(new PerfViewStackSource(this, "CCW Ref Count"));
 
             if (hasWindowsRefCountStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Windows Handle Ref Count"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Windows Handle Ref Count"));
 
             if (hasGCHandleStacks && hasMemAllocStacks)
             {
                 bool matchingHeapSnapshotExists = GCPinnedObjectAnalyzer.ExistsMatchingHeapSnapshot(this.FilePath);
                 if (matchingHeapSnapshotExists)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
-                    m_Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinned Object Allocation"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinned Object Allocation"));
                 }
             }
 
@@ -4772,27 +4872,32 @@ namespace PerfView
             {
                 if (hasCPUStacks)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
+                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request CPU"));
                 }
                 if (hasCSwitchStacks)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
+                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Thread Time"));
                 }
                 if (hasGCAllocationTicks)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
+                    obsolete.Children.Add(new PerfViewStackSource(this, "Server Request Managed Allocation"));
                 }
             }
 
+
+
             if (hasAnyStacks)
             {
-                m_Children.Add(new PerfViewStackSource(this, "Any"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Any"));
                 if (hasTpl)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Tasks)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
+                    if (hasCSwitchStacks)
+                    {
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with Tasks)"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any Stacks (with StartStop Activities)"));
+                        advanced.Children.Add(new PerfViewStackSource(this, "Any StartStopTree"));
+                    }
+                    advanced.Children.Add(new PerfViewStackSource(this, "Any TaskTree"));
                 }
             }
 
@@ -4804,34 +4909,40 @@ namespace PerfView
                     var name = "ASP.NET Thread Time";
                     if (hasCSwitchStacks && hasTplStacks)
                     {
-                        m_Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
+                        obsolete.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
                     }
                     else
                         name += " (CPU ONLY)";
-                    m_Children.Add(new PerfViewStackSource(this, name));
+                    obsolete.Children.Add(new PerfViewStackSource(this, name));
                 }
             }
 
-            if (hasCSwitchStacks && hasTplStacks && AppLog.InternalUser)
-                m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Tasks)"));
-
             if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
             {
-                m_Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Execution Tracing"));
             }
 
-            m_Children.Add(new PerfViewGCStats(this));
+            memory.Children.Add(new PerfViewGCStats(this));
 
             // TODO currently this is experimental enough that we don't show it publicly.  
             if (AppLog.InternalUser)
-                m_Children.Add(new MemoryAnalyzer(this));
+                memory.Children.Add(new MemoryAnalyzer(this));
 
             if (hasJSHeapDumps || hasDotNetHeapDumps)
-                m_Children.Add(new PerfViewHeapSnapshots(this));
+                memory.Children.Add(new PerfViewHeapSnapshots(this));
 
-            m_Children.Add(new PerfViewJitStats(this));
+            advanced.Children.Add(new PerfViewJitStats(this));
 
-            m_Children.Add(new PerfViewEventStats(this));
+            advanced.Children.Add(new PerfViewEventStats(this));
+
+            m_Children.Add(new PerfViewEventSource(this));
+
+            if (0 < memory.Children.Count)
+                m_Children.Add(memory);
+            if (0 < advanced.Children.Count)
+                m_Children.Add(advanced);
+            if (0 < obsolete.Children.Count)
+                m_Children.Add(obsolete);
 
             return null;
         }
@@ -4930,7 +5041,7 @@ namespace PerfView
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer    to avoid this in future traces.";
             }
             else
             {
@@ -5103,7 +5214,7 @@ namespace PerfView
     class XmlPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "PerfView XML FILE"; } }
-        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip" }; } }
 
         protected internal override StackSource OpenStackSourceImpl(TextWriter log)
         {
@@ -5257,7 +5368,7 @@ namespace PerfView
                     Children = new List<MemoryNode>();
 
                 // Search backwards for efficiency.  
-                for (int i = Children.Count; 0 < i; )
+                for (int i = Children.Count; 0 < i;)
                 {
                     var child = Children[--i];
                     if (child.Address <= newNode.Address && newNode.End <= child.End)
@@ -5476,6 +5587,68 @@ namespace PerfView
         {
             ConfigureAsMemoryWindow(stackSourceName, stackWindow);
         }
+    }
+
+    class PerfScriptPerfViewFile : PerfViewFile
+    {
+        public override string FormatName { get { return "Linux events through PerfScript"; } }
+
+        public override string[] FileExtensions { get { return ParallelLinuxPerfScriptStackSource.PerfDumpSuffixes; } }
+
+        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+        {
+            string xmlPath;
+            bool doThreadTime = false;
+
+            if (streamName == "Thread Time (experimental)")
+            {
+                xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
+                doThreadTime = true;
+            }
+            else
+            {
+                xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
+            }
+
+            if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
+            {
+                XmlStackSourceWriter.WriteStackViewAsZippedXml(
+                    new ParallelLinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
+            }
+
+            return new XmlStackSource(xmlPath);
+        }
+
+        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+        {
+            if (AppLog.InternalUser)
+            {
+                m_Children = new List<PerfViewTreeItem>(2);
+
+                m_Children.Add(new PerfViewStackSource(this, "Cpu"));
+                m_Children.Add(new PerfViewStackSource(this, "Thread Time (experimental)"));
+
+                return null;
+            }
+            return delegate(Action doAfter)
+            {
+                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
+                m_singletonStackSource = new PerfViewStackSource(this, "");
+                m_singletonStackSource.Open(parentWindow, worker);
+                if (doAfter != null)
+                    doAfter();
+            };
+        }
+
+        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+        {
+            stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
+            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+            // stackWindow.GroupRegExTextBox.AddItem(stackWindow.Group);
+        }
+
+
     }
 
     class HeapDumpPerfViewFile : PerfViewFile

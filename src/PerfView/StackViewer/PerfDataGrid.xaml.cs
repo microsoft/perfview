@@ -164,15 +164,23 @@ namespace PerfView
         }
         public void RemoveColumn(string columnName)
         {
+            int col = GetColumnIndex(columnName);
+            if (0 <= col)
+                Grid.Columns.RemoveAt(col);
+        }
+
+        public int GetColumnIndex(string columnName)
+        {
             int i = 0;
             while (i < Grid.Columns.Count)
             {
                 var name = ((TextBlock)Grid.Columns[i].Header).Name;
                 if (name == columnName)
-                    Grid.Columns.RemoveAt(i);
+                    return i;
                 else
                     i++;
             }
+            return -1;
         }
         public List<string> ColumnNames()
         {
@@ -243,6 +251,27 @@ namespace PerfView
         }
         public static string GetCellStringValue(DataGridCellInfo cell)
         {
+            CallTreeNodeBase model = cell.Item as CallTreeNodeBase;
+            if (model != null)
+            {
+                switch (((TextBlock)cell.Column.Header).Name)
+                {
+                    case "NameColumn": return model.DisplayName;
+                    case "IncPercentColumn": return model.InclusiveMetricPercent.ToString("n1");
+                    case "IncColumn": return model.InclusiveMetric.ToString("n1");
+                    case "IncAvgColumn": return model.AverageInclusiveMetric.ToString("n1");
+                    case "IncCountColumn": return model.InclusiveCount.ToString("n0");
+                    case "ExcPercentColumn": return model.ExclusiveMetricPercent.ToString("n1");
+                    case "ExcColumn": return model.ExclusiveMetric.ToString("n0");
+                    case "ExcCountColumn": return model.ExclusiveCount.ToString("n0");
+                    case "FoldColumn": return model.ExclusiveFoldedMetric.ToString("n0");
+                    case "FoldCountColumn": return model.ExclusiveFoldedCount.ToString("n0");
+                    case "TimeHistogramColumn": return model.InclusiveMetricByTimeString;
+                    case "ScenarioHistogramColumn": return model.InclusiveMetricByScenarioString;
+                    case "FirstColumn": return model.FirstTimeRelativeMSec.ToString("n3");
+                    case "LastColumn": return model.LastTimeRelativeMSec.ToString("n3");
+                }
+            }
             var frameworkElement = cell.Column.GetCellContent(cell.Item);
             if (frameworkElement == null)
                 return "";

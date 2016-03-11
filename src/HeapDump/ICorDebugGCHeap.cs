@@ -93,8 +93,6 @@ namespace ClrMemory
             }
         }
         
-        [Obsolete]
-        public override int TypeIndexLimit { get { return m_types.Count; } }
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
         public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
 
@@ -345,6 +343,15 @@ namespace ClrMemory
             }
         }
 
+#if !ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO remove when CLRMD has been updated. 
+        public override int TypeIndexLimit
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+#endif
         public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
@@ -386,7 +393,7 @@ namespace ClrMemory
         public override ClrHeap Heap { get { return m_heap; } }
         public override int ProcessorAffinity { get { return m_heapNum; } }
 
-        public override IEnumerable<Address> EnumerateObjects()
+        public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
         }
@@ -567,6 +574,16 @@ namespace ClrMemory
         public ICorDebugClrModule(string fn)
         {
             m_filename = fn;
+        }
+
+        public override ClrRuntime Runtime
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public override PdbInfo Pdb
+        {
+            get { throw new NotImplementedException(); }
         }
 
         public override string AssemblyName

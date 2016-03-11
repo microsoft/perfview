@@ -23,8 +23,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public ServerRequestComputer(TraceEventDispatcher source)
         {
-            var aspNetParser = new AspNetTraceEventParser(source);
-            var WCFParser = new ApplicationServerTraceEventParser(source);
         }
         /// <summary>
         /// The server request that we currently processing

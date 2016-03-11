@@ -21,6 +21,18 @@ using Address = System.UInt64;
 
 // #Introduction
 // 
+// Note that TraceEvent lives in a Nuget package.   See 
+// http://blogs.msdn.com/b/vancem/archive/2014/03/15/walk-through-getting-started-with-etw-traceevent-nuget-samples-package.aspx
+// and 
+//  http://blogs.msdn.com/b/vancem/archive/2013/08/15/traceevent-etw-library-published-as-a-nuget-package.aspx
+// 
+// For more details.  In particular the second blog post will contain the TraceEventProgrammersGuide.docx, which has
+// more background.
+//
+// Finally if you are interested in creating your own TraceEventParsers for your ETW provider, inside Microsoft you can access
+// the TraceParserGen tool at http://toolbox/TraceParserGen.   There is also a copy available externally at http://1drv.ms/1Rxk2iD 
+// in the TraceParserGen.zip file and the TraceParserGen.src.zip file.   
+//
 // The the heart of the ETW reader are two important classes.
 // 
 //     * TraceEventSource which is an abstract represents the stream of events as a whole. Thus it
@@ -418,7 +430,11 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(_QPCFreq != 0);
             long ret = (long)((time.Ticks - _syncTimeUTC.Ticks) / 10000000.0 * _QPCFreq) + _syncTimeQPC;
-            Debug.Assert((QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
+
+            // The sessionEndTimeQPC == 0  effectively means 'called during trace startup' and we use it here to disable the 
+            // assert.   During that time we get a wrong QPC we only use this to initialize sessionStartTimeQPC and 
+            // sessionEndTimeQPC and we fix these up when we see the first event (see kernelParser.EventTraceHeader += handler).  
+            Debug.Assert(sessionEndTimeQPC == 0 || (QPCTimeToDateTimeUTC(ret) - time).TotalMilliseconds < 1);
             return ret;
         }
 
@@ -427,10 +443,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal DateTime QPCTimeToDateTimeUTC(long QPCTime)
         {
-            if (QPCTime == long.MaxValue)   // We maxvalue as a special case.  
+            if (QPCTime == long.MaxValue)   // We treat maxvalue as a special case.  
                 return DateTime.MaxValue;
 
-            Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
+            // We expect all the time variables used to compute this to be set.   
+            Debug.Assert(_syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq);
             var ret = new DateTime(_syncTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
             return ret;
@@ -453,7 +470,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert((ulong)extendedData > 0x10000);          // Make sure this looks like a pointer.  
             for (int i = 0; i < eventRecord->ExtendedDataCount; i++)
                 if (extendedData[i].ExtType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_RELATED_ACTIVITYID)
-                    return *((Guid*)extendedData->DataPtr);
+                    return *((Guid*)extendedData[i].DataPtr);
             return Guid.Empty;
         }
         #endregion
@@ -867,13 +884,13 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     DateTime asDateTime = (DateTime)value;
                     string ret;
-                    if (source.SessionStartTime <= asDateTime)
+                    if (formatProvider == null && source.SessionStartTime <= asDateTime)
                     {
                         ret = asDateTime.ToString("HH:mm:ss.ffffff");
                         ret += " (" + (asDateTime - source.SessionStartTime).TotalMilliseconds.ToString("n3") + " MSec)";
                     }
                     else
-                        ret = asDateTime.ToString();
+                        ret = asDateTime.ToString(formatProvider);
 
                     return ret;
                 }
@@ -1087,7 +1104,15 @@ namespace Microsoft.Diagnostics.Tracing
             string[] payloadNames = PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
-                XmlAttrib(sb, payloadNames[i], PayloadString(i, formatProvider));
+                string payloadName = payloadNames[i];
+
+                // XML does not allow you to repeat attributes, so we need change the name if that happens.   
+                // Note that this is not perfect, but avoids the likley cases
+                if (payloadName == "ProviderName" || payloadName == "FormattedMessage" || payloadName == "MSec" ||
+                    payloadName == "PID" || payloadName == "PName" || payloadName == "TID" || payloadName == "ActivityID")
+                    payloadName = "_" + payloadName;
+
+                XmlAttrib(sb, payloadName, PayloadString(i, formatProvider));
             }
             sb.Append("/>");
             return sb;
@@ -1099,7 +1124,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public string Dump(bool includePrettyPrint = false, bool truncateDump = false)
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(); 
             Prefix(sb);
             sb.AppendLine().Append(" ");
             XmlAttrib(sb, "TimeStamp", TimeStamp.ToString("MM/dd/yy HH:mm:ss.ffffff"));
@@ -1343,7 +1368,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // TODO review. 
                 if ((c < ' ' || c > '~') && !char.IsWhiteSpace(c))
                 {
-                    Console.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
+                    Debug.WriteLine("Warning: Found unprintable chars in string truncating to " + sb.ToString());
                     break;
                 }
 #endif
@@ -1831,7 +1856,6 @@ namespace Microsoft.Diagnostics.Tracing
         // If False we are using ProviderGuid and EventId
         internal bool lookupAsClassic;          // Use the TaskGuid and Opcode to look things up
         internal bool lookupAsWPP;              // Variation on classic where you lookup on TaskGuid and EventID
-
         internal bool containsSelfDescribingMetadata;
 
         // These are constant over the TraceEvent's lifetime (after setup) (except for the UnhandledTraceEvent
@@ -2201,7 +2225,7 @@ namespace Microsoft.Diagnostics.Tracing
             var enumSet = new SortedDictionary<string, string>();
 
             // Make sure that we have all the event we should have 
-            EnumerateTemplates(null, delegate(TraceEvent template)
+            EnumerateTemplates(null, delegate (TraceEvent template)
             {
                 // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
                 // we'll "special case" project N templates and ignore them...
@@ -2263,7 +2287,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 #endif
             // Convert the eventNameFilter to the more generic filter that take a provider name as well.   
-            Func<string, string, EventFilterResponse> eventsToObserve = delegate(string pName, string eName)
+            Func<string, string, EventFilterResponse> eventsToObserve = delegate (string pName, string eName)
             {
                 if (pName != GetProviderName())
                     return EventFilterResponse.RejectProvider;
@@ -2279,7 +2303,7 @@ namespace Microsoft.Diagnostics.Tracing
             var newSubscription = new SubscriptionRequest(eventsToObserve, callback, subscriptionId);
             m_subscriptionRequests.Add(newSubscription);
             var templateState = StateObject;
-            EnumerateTemplates(eventsToObserve, delegate(TraceEvent template)
+            EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
             {
                 if (template is T)
                     Subscribe(newSubscription, template, templateState, false);
@@ -2298,7 +2322,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(providerName != null);
             AddCallbackForProviderEvents(
-                delegate(string pName, string eName)
+                delegate (string pName, string eName)
                 {
                     if (pName != providerName)
                         return EventFilterResponse.RejectProvider;
@@ -2353,7 +2377,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_subscriptionRequests.Add(newSubscription);
 
             var templateState = StateObject;
-            EnumerateTemplates(eventsToObserve, delegate(TraceEvent template)
+            EnumerateTemplates(eventsToObserve, delegate (TraceEvent template)
             {
                 Subscribe(newSubscription, template, templateState, false);
             });
@@ -2395,15 +2419,16 @@ namespace Microsoft.Diagnostics.Tracing
 
         #region protected
         /// <summary>
-        /// All TraceEventParsers invoke this constructor. 
+        /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source. 
         /// </summary>
-        protected TraceEventParser(TraceEventSource source)
+        protected TraceEventParser(TraceEventSource source, bool dontRegister = false)
         {
             Debug.Assert(source != null);
             this.source = source;
             this.stateKey = @"parsers\" + this.GetType().FullName;
 
-            this.source.RegisterParser(this);
+            if (!dontRegister)
+                this.source.RegisterParser(this);
         }
 
         /// <summary>
@@ -2830,7 +2855,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (anEvent.next != null)
             {
                 TraceEvent nextEvent = anEvent;
-                for (; ; )
+                for (;;)
                 {
                     nextEvent = nextEvent.next;
                     if (nextEvent == null)
@@ -2856,8 +2881,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
-                Console.WriteLine("Exception: " + e.Message);
+                Debug.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
+                Debug.WriteLine("Exception: " + e.Message);
             }
 #endif
         }
@@ -2869,7 +2894,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-        RetryLookup:
+            RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -2891,7 +2916,7 @@ namespace Microsoft.Diagnostics.Tracing
             // inlined, and is replicated in TraceEventDispatcher.Insert
             int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -2936,7 +2961,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (!entry->inUse)
                     break;
 
-                // Console.Write("Collision " + *asGuid + " opcode " + opcode + " and " + templatesInfo[hash].providerGuid + " opcode " + templatesInfo[hash].opcode);
+                // Trace.Write("Collision " + *asGuid + " opcode " + opcode + " and " + templatesInfo[hash].providerGuid + " opcode " + templatesInfo[hash].opcode);
                 hash = (hash + (int)eventID * 2 + 1) & templatesLengthMask;
             }
             unhandledEventTemplate.eventRecord = eventRecord;
@@ -2982,7 +3007,7 @@ namespace Microsoft.Diagnostics.Tracing
             ushort eventID = (ushort)eventID_;
             int* guidPtr = (int*)&guid;
             int hash = (*guidPtr + ((ushort)eventID) * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3113,7 +3138,7 @@ namespace Microsoft.Diagnostics.Tracing
             int* guidPtr = (int*)&eventGuid;
             int hash = (*guidPtr + (int)eventID * 9) & templatesLengthMask;
             TemplateEntry* entry;
-            for (; ; )
+            for (;;)
             {
                 entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3129,10 +3154,27 @@ namespace Microsoft.Diagnostics.Tracing
                         // in that case templates[hash] == null and we don't go down this branch.  
                         Debug.Assert(template.next == null);
 
-                        // Goto the end of the list (preserve order of adding events).
-                        while (curTemplate.next != null)
-                            curTemplate = curTemplate.next;
-                        curTemplate.next = template;
+                        // Normally goto the end of the list (callbacks happen
+                        // in the order of registration).
+                        if (template.Target != null)
+                        {
+                            while (curTemplate.next != null)
+                                curTemplate = curTemplate.next;
+                            curTemplate.next = template;
+                        }
+                        else
+                        {
+                            // However the template is null, this is the 'canonical' template 
+                            // and should be first (so that adding callbacks does not change the
+                            // canonical template)  There is no point in having more than one
+                            // so ignore it if there already was one, but otherwise put it in 
+                            // the front of the list 
+                            if (curTemplate.Target != null)
+                            {
+                                template.next = curTemplate;
+                                templates[hash] = template;
+                            }
+                        }
                     }
                     else
                         templates[hash] = template;
@@ -3261,7 +3303,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int* guidPtr = (int*)&providerGuid;
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (; ; )
+            for (;;)
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3771,7 +3813,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static IObservable<TraceEvent> Observe(this TraceEventParser parser, string providerName, string eventName)
         {
-            return parser.Observe(delegate(string pName, string eName)
+            return parser.Observe(delegate (string pName, string eName)
             {
                 if (pName != providerName)
                     return EventFilterResponse.RejectProvider;
@@ -3839,7 +3881,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Implement IObservable<T>
             public IDisposable Subscribe(IObserver<T> observer)
             {
-                return new TraceEventSubscription(delegate(T data) { observer.OnNext((T)data.Clone()); }, observer.OnCompleted, this);
+                return new TraceEventSubscription(delegate (T data) { observer.OnNext((T)data.Clone()); }, observer.OnCompleted, this);
             }
 
             #region private

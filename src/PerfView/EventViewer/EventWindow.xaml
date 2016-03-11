@@ -232,19 +232,22 @@
                     AlternatingRowBackground="#FFF2F1A4" RowBackground="#FFCACAE2">
                     <WPFToolKit:DataGrid.Columns>
                         <WPFToolKit:DataGridTextColumn 
+                        x:Name="EventNameColumn"
                         Header="Event Name" 
                         Binding="{Binding EventName}" 
                         MinWidth="60"
                         IsReadOnly="True"
                         HeaderStyle="{StaticResource CenterAlign}" />
                         <WPFToolKit:DataGridTextColumn 
+                        x:Name="TimeMSecColumn"
                         Header="Time MSec" 
                         Binding="{Binding TimeStampRelatveMSec, StringFormat={}{0:n3}}" 
                         MinWidth="60"
                         IsReadOnly="True"                        
                         HeaderStyle="{StaticResource CenterAlign}"
-                        ElementStyle="{StaticResource RightAlign}"/>
-                        <WPFToolKit:DataGridTextColumn 
+                        ElementStyle="{StaticResource RightAlign}" />
+                        <WPFToolKit:DataGridTextColumn
+                        x:Name="ProcessNameColumn" 
                         Header="Process Name" 
                         Binding="{Binding ProcessName}" 
                         MinWidth="60"

@@ -608,9 +608,9 @@ namespace Microsoft.Diagnostics.Tracing
             VOLUME_MAPPING = 0x04,
             WINSAT = 0x08,
             EVENT_METADATA = 0x10,
-            PERFTRACK_METADATA =0x20,  
-            NETWORK_INTERFACE= 0x40,
-            NGEN_PDB = 0x80,  
+            PERFTRACK_METADATA = 0x20,
+            NETWORK_INTERFACE = 0x40,
+            NGEN_PDB = 0x80,
             COMPRESS_TRACE = 0x10000000,
         }
         #endregion
@@ -693,7 +693,7 @@ namespace Microsoft.Diagnostics.Tracing
            [In, MarshalAs(UnmanagedType.Bool)]bool DisableAllPrivileges,
            [In] ref TOKEN_PRIVILEGES NewState,
            [In] UInt32 BufferLength,
-            // [Out] out TOKEN_PRIVILEGES PreviousState,
+           // [Out] out TOKEN_PRIVILEGES PreviousState,
            [In] IntPtr NullParam,
            [In] IntPtr ReturnLength);
 

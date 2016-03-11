@@ -60,7 +60,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="options">Additional flags that influence behavior.  Note that the 'Create' option is implied for file mode sessions. </param>
         public TraceEventSession(string sessionName, string fileName, TraceEventSessionOptions options = TraceEventSessionOptions.Create)
         {
-            this.EnableProviderTimeoutMSec = 0;         // Don't wait for provider before returning.
+            this.EnableProviderTimeoutMSec = 0;         // Currently by default it is async (TODO change to 10000? by default)
             this.m_BufferSizeMB = Math.Max(64, System.Environment.ProcessorCount * 2);       // The default size.  
             this.m_BufferQuantumKB = 64;
             this.m_SessionHandle = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
@@ -86,7 +86,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// to an existing session. </param>
         public TraceEventSession(string sessionName, TraceEventSessionOptions options = TraceEventSessionOptions.Create)
         {
-            this.EnableProviderTimeoutMSec = 0; // Don't wait for provider before returning. 
+            this.EnableProviderTimeoutMSec = 0;         // Currently by default it is async (TODO change to 10000? by default)
             this.m_SessionId = -1;
             this.m_BufferQuantumKB = 64;
             this.m_CpuSampleIntervalMSec = 1.0F;
@@ -395,7 +395,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
                             eventControlCode, (byte)providerLevel,
-                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);     // Operate synchronously 10 second timeout.  
+                            matchAnyKeywords, matchAllKeywords, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -706,7 +706,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
                             m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);            // 10 second timeout
+                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);         
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -761,7 +761,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 ResetWindowsHeapTracingFlags(noThrow);
 #endif
 
-                if (hr != TraceEventNativeMethods.ERROR_WMI_INSTANCE_NOT_FOUND)     // Instance name not found.  This means we did not start
+                if (hr != 0 && hr != TraceEventNativeMethods.ERROR_WMI_INSTANCE_NOT_FOUND)     // Instance name not found.  This means we did not start
                 {
                     if (!noThrow)
                         Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
@@ -947,8 +947,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);         // 10 second timeout.  
-
+                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);     
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
@@ -968,10 +967,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // These properties can be set both before and after a provider has been enabled in the session.  
 
         /// <summary>
-        /// When you issue a EnableProvider command, on windows 8 and above it can be done synchronously (that is you know that because 
+        /// When you issue a EnableProvider command, on windows 7 and above it can be done synchronously (that is you know that because 
         /// the EnableProvider returned that the provider actually got the command).   However synchronous behavior means that
         /// you may wait forever.   This is the time EnableProvider waits until it gives up.   Setting this
-        /// to 0 means asynchronous (fire and forget).   This is the default (fire and forget) Before windows 8 EnableProvider is always asynchronous.  
+        /// to 0 means asynchronous (fire and forget).   The default is 10000 (wait 10 seconds) 
+        /// Before windows 7 EnableProvider is always asynchronous.  
         /// </summary>
         public int EnableProviderTimeoutMSec { get; set; }
         /// <summary>
@@ -1264,7 +1264,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.EVENT_METADATA |
                     TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.VOLUME_MAPPING;
 
-                if ((options | TraceEventMergeOptions.Compress) != 0)
+                if ((options & TraceEventMergeOptions.Compress) != 0)
                     flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
 
                 int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
@@ -1723,9 +1723,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             // TODO FIX NOW.  there are races associated with this.  
             List<TraceEventNativeMethods.TRACE_ENABLE_INFO> infos = TraceEventProviders.SessionInfosForProvider(providerGuid, 0);
-            for (int i = 47; ; --i)
+            for (int i = 44; ; i++)
             {
-                if (i < 44)
+                if (i > 47)
                     throw new NotSupportedException("Error enabling provider " + providerGuid + ": Exceeded the maximum of 4 sessions can simultaneously use provider key-value arguments on a single provider simultaneously");
 
                 long bit = ((long)1) << i;
@@ -2616,6 +2616,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             c = (short)((c & 0x0FFF) | 0x5000);   // Set high 4 bits of octet 7 to 5, as per RFC 4122
             Guid guid = new Guid(a, b, c, hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]);
+
+            Debug.Assert(TraceEventProviders.MaybeAnEventSource(guid));
             return guid;
         }
         /// <summary>
@@ -2637,7 +2639,13 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public static bool MaybeAnEventSource(Guid providerGuid)
         {
             byte octet7 = providerGuid.ToByteArray()[7];
-            return (octet7 & 0xF0) == 0x50;
+            if ((octet7 & 0xF0) == 0x50)
+                return true;
+            // FrameworkEventSource predated the Guid selection convention that most eventSources use.  
+            // Opt it in explicity 
+            if (providerGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                return true;
+            return false;
         }
 
         // Enumerating PUBLISHED providers (that is providers with manifests registered with wevtutil) 
@@ -2723,7 +2731,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             int buffSize = 256;     // An initial guess that probably works most of the time.  
             byte* buffer;
-            for (; ; )
+            for (;;)
             {
                 var space = stackalloc byte[buffSize];
                 buffer = space;
@@ -2854,7 +2862,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 {
                     var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL();
                     var profileSource = (TraceEventNativeMethods.PROFILE_SOURCE_INFO*)buffer;
-                    for (; ; )
+                    for (;;)
                     {
                         char* namePtr = (char*)&profileSource[1];       // points off the end of the array;
 

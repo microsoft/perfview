@@ -202,10 +202,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Summary statistics on the events in the ETX file.  
         /// </summary>
         public TraceEventStats Stats { get { return stats; } }
-        /// <summary>
-        /// TraceActvitites is a collection of all the activities on in the trace as a whole.  
-        /// </summary>
-        public TraceActivities Activities { get { return activities; } }
 
         // operations on events
         /// <summary>
@@ -295,12 +291,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public DateTime BootTime { get { if (bootTime100ns == 0) return DateTime.MaxValue; return DateTime.FromFileTime(bootTime100ns); } }
         /// <summary>
-         /// This is the number of minutes between the local time where the data was collected and UTC time.  
+        /// This is the number of minutes between the local time where the data was collected and UTC time.  
         /// It is negative if your time zone is WEST of Greenwich.  This DOES take Daylights savings time into account
         /// but might be a daylight savings time transition happens inside the trace.  
         /// May be unknown, in which case it returns null.
         /// </summary>
-        public int? UTCOffsetMinutes { get { return utcOffsetMinutes;  } }
+        public int? UTCOffsetMinutes { get { return utcOffsetMinutes; } }
         /// <summary>
         /// When an ETL file is 'merged', for every DLL in the trace information is added that allows the symbol
         /// information (PDBS) to be identified unambiguously on a symbol server.   This property returns true
@@ -441,7 +437,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.moduleFiles = new TraceModuleFiles(this);
             this.codeAddresses = new TraceCodeAddresses(this, this.moduleFiles);
             this.callStacks = new TraceCallStacks(this, this.codeAddresses);
-            this.activities = new TraceActivities(this);
             this.parsers = new Dictionary<string, TraceEventParser>();
             this.stats = new TraceEventStats(this);
             this.machineName = "";
@@ -508,6 +503,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     RemoveAllButLastEntries(ref this.eventsToStacks, 60);
                 if (this.eventsToCodeAddresses.Count > 5000)
                     RemoveAllButLastEntries(ref this.eventsToCodeAddresses, 60);
+                if (this.cswitchBlockingEventsToStacks.Count > 5000)
+                    RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, 60);
 
                 // Optimization.  if we are running on Win7 (this.rawKernelEventSource != null) you don't need to take a lock
                 // here because we are already under lock for the whole dispatch.   
@@ -577,7 +574,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var nowTicks = Environment.TickCount;
                 // TODO review.  
-                for (; ; )
+                for (;;)
                 {
                     var count = realTimeQueue.Count;
                     if (count == 0)
@@ -682,6 +679,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     File.Delete(etlxTempPath);
             }
         }
+        
+        /// <summary>
+        /// Given a eventIndex for a CSWTICH event, return the call stack index for the thread
+        /// that LOST the processor (the normal callStack is for the thread that GOT the CPU)
+        /// </summary>
+        internal CallStackIndex GetCallStackIndexForCSwitchBlockingEventIndex(EventIndex eventIndex)
+        {
+            // TODO optimize for sequential access.  
+            lazyCswitchBlockingEventsToStacks.FinishRead();
+            int index;
+            if (cswitchBlockingEventsToStacks.BinarySearch(eventIndex, out index, stackComparer))
+                return cswitchBlockingEventsToStacks[index].CallStackIndex;
+            return CallStackIndex.Invalid;
+        }
 
         // TODO expose this publicly?
         /// <summary>
@@ -751,7 +762,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // a ETLX file does not need anything outside itself to resolve any events.  All of that is done 
             // at file creation time.    
             var kernelParser = Kernel;
-            var dynamicParser = Dynamic;
             var clrParser = Clr;
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);
@@ -770,6 +780,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new ImmersiveShellTraceEventParser(newLog);
             new XamlTraceEventParser(newLog);
 #endif
+            var dynamicParser = Dynamic;
             registeringStandardParsers = false;
 
         }
@@ -780,7 +791,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (eventRecord->ExtendedDataCount == 1)
             {
                 int idIndex = (int)eventRecord->ExtendedData;
-                if ((uint) idIndex < (uint) relatedActivityIDs.Count)
+                if ((uint)idIndex < (uint)relatedActivityIDs.Count)
                     return relatedActivityIDs[idIndex];
             }
             return Guid.Empty;
@@ -800,16 +811,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return thread.ThreadID;
         }
 
-        private void AddServerGCThread(int threadID, long timeStamp)
+        private void AddMarkThread(int threadID, long timeStamp, int heapNum)
         {
             var thread = Threads.GetThread(threadID, timeStamp);
             if (thread == null)
                 return;
             if (thread.threadInfo != null)
                 return;
-            thread.process.numMarkTheadsInGC++;
-            if (thread.process.isServerGC)
-                thread.threadInfo = ".NET Server GC Thread";
+
+            if (thread.process.shouldCheckIsServerGC)
+                thread.process.markThreadsInGC[threadID] = heapNum;
         }
         /// <summary>
         /// SetupCallbacks installs all the needed callbacks for TraceLog Processing (stacks, process, thread, summaries etc)
@@ -866,15 +877,19 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.EventTraceHeader += delegate(EventTraceHeaderTraceData data)
             {
                 bootTime100ns = data.BootTime100ns;
-                utcOffsetMinutes = -data.UTCOffsetMinutes;
-                if (SessionStartTime.IsDaylightSavingTime())
-                    utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
 
                 if (_syncTimeQPC == 0)
                 {   // This is for the TraceLog, not just for the ETWTraceEventSource
                     _syncTimeQPC = data.TimeStampQPC;
                     sessionStartTimeQPC += data.TimeStampQPC;
                     sessionEndTimeQPC += data.TimeStampQPC;
+                }
+
+                if (!utcOffsetMinutes.HasValue)
+                {
+                    utcOffsetMinutes = -data.UTCOffsetMinutes;
+                    if (SessionStartTime.IsDaylightSavingTime())
+                        utcOffsetMinutes += 60;         // Compensate for Daylight savings time.  
                 }
             };
 
@@ -909,7 +924,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             kernelParser.ThreadStartGroup += delegate(ThreadTraceData data)
             {
                 TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start);
+                TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process, data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.DataCollectionStart);
                 thread.startTimeQPC = data.TimeStampQPC;
                 thread.userStackBase = data.UserStackBase;
                 if (data.Opcode == TraceEventOpcode.DataCollectionStart)
@@ -946,13 +961,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     thread.endTimeQPC = sessionEndTimeQPC;
                     bookKeepingEvent = true;
                     bookeepingEventThatMayHaveStack = true;
-                }
-                // update end times for thread activities, omitting the default activity
-                for (int i = 1; i < thread.activityIds.Count; ++i)
-                {
-                    TraceActivity act = Activities[thread.activityIds[i]];
-                    if (act != null && act.startTimeQPC != 0 && act.endTimeQPC == 0)
-                        act.endTimeQPC = thread.endTimeQPC;
                 }
             };
 
@@ -1096,7 +1104,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 bookKeepingEvent = true;
             };
 
-            this.Activities.SubscribeToActivityTracingEvents(rawEvents, true);
 
             Action<MethodLoadUnloadVerboseTraceData> onMethodDCStop = delegate(MethodLoadUnloadVerboseTraceData data)
             {
@@ -1154,7 +1161,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 int i = 0;
                 // Look for the previous CLR event on this same thread.  
-                for (PastEventInfoIndex prevEventIndex = pastEventInfo.CurrentIndex; ; )
+                for (PastEventInfoIndex prevEventIndex = pastEventInfo.CurrentIndex; ;)
                 {
                     i++;
                     Debug.Assert(i < 20000);
@@ -1167,6 +1174,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                     if (pastEventInfo.IsClrEvent(prevEventIndex))
                     {
+                        if (pastEventInfo.HasStack(prevEventIndex))
+                        {
+                            DebugWarn(false, "CLR Stack trying to be given to same event twice (can happen with lost events)", data);
+                            return;
+                        }
+                        pastEventInfo.SetHasStack(prevEventIndex);
+
                         var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                         var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
 
@@ -1217,14 +1231,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(timeStampQPC,
                         data.InstructionPointers, data.FrameCount, data.PointerSize, thread, CallStackIndex.Invalid);
 
+                    var lastEmitStackOnExitFromKernelQPC = thread.lastEmitStackOnExitFromKernelQPC;
                     var loggedUserStack = false;    // Have we logged this stack at all
                     // If this fragment starts in user mode, then we assume that it is on the 'boundary' of kernel and users mode
                     // and we use this as the 'top' of the stack for all kernel fragments on this thread.  
                     if (!IsKernelAddress(data.InstructionPointer(0), data.PointerSize))
+                    {
                         loggedUserStack = EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, stackIndex, stackInfo);
-                    
+                        thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
+                    }
+
+                    // If we have not logged the stack of the code above, then log it as a stand alone user stack.  
+                    // We don't do this for events that have already been processed by and EmitStackOnExitFromKernelQPC 
                     if (!loggedUserStack && stackInfo != null)
-                        stackInfo.LogUserStackFragment(stackIndex, this);
+                    {
+                        if (data.EventTimeStampQPC < lastEmitStackOnExitFromKernelQPC)
+                            DebugWarn(false, "Warning: Trying to attach a user stack to a stack already processed by EmitStackOnExitFromKernel.  Ignoring data", data);
+                        else
+                            stackInfo.LogUserStackFragment(stackIndex, this);
+                    }
                 }
             };
 
@@ -1279,7 +1304,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var process = Processes.GetProcess(data.ProcessID, data.TimeStampQPC);
                 if (process == null)
                     return;
-                process.numMarkTheadsInGC = 0;
+
+                if ((process.markThreadsInGC.Count == 0) && (process.shouldCheckIsServerGC == false))
+                    process.shouldCheckIsServerGC = true;
 
                 // TODO this is a hack. can be removed when we fix V4.5.1 to not emit two events.    
                 // If in the process we see a version 2 event, then strip out 
@@ -1301,18 +1328,31 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var process = Processes.GetProcess(data.ProcessID, data.TimeStampQPC);
                 if (process == null)
                     return;
-                if (!process.isServerGC && process.numMarkTheadsInGC > 1)
+
+                if (process.markThreadsInGC.Count > 0)
+                    process.shouldCheckIsServerGC = false;
+
+                if (!process.isServerGC && (process.markThreadsInGC.Count > 1))
+                {
                     process.isServerGC = true;
+                    foreach (var thread in process.Threads)
+                    {
+                        if (process.markThreadsInGC.ContainsKey(thread.ThreadID))
+                        {
+                            thread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[thread.ThreadID] + ")";
+                        }
+                    }
+                }
             };
 #if !NUGET
             rawEvents.Clr.GCMarkWithType += delegate(GCMarkWithTypeTraceData data)
             {
                 if (data.Type == (int)MarkRootType.MarkHandles)
-                    AddServerGCThread(data.ThreadID, data.TimeStampQPC);
+                    AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
             clrPrivate.GCMarkHandles += delegate(GCMarkTraceData data)
             {
-                AddServerGCThread(data.ThreadID, data.TimeStampQPC);
+                AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
 #endif
 
@@ -1685,6 +1725,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 return (int)x.EventIndex - (int)y.EventIndex;
             });
+            this.cswitchBlockingEventsToStacks.Sort(delegate(EventsToStackIndex x, EventsToStackIndex y)
+            {
+                return (int)x.EventIndex - (int)y.EventIndex;
+            });
 
 #if DEBUG
             // Confirm that the CPU stats make sense.  
@@ -1710,7 +1754,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             options.ConversionLog.WriteLine("  {0,8:n0} total code address instances. (stacks or other)", codeAddresses.TotalCodeAddresses);
             options.ConversionLog.WriteLine("  {0,8:n0} unique code addresses. ", codeAddresses.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique stacks.", callStacks.Count);
-            options.ConversionLog.WriteLine("  {0,8:n0} unique activities.", activities.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} unique managed methods parsed.", codeAddresses.Methods.Count);
             options.ConversionLog.WriteLine("  {0,8:n0} CLR method event records.", codeAddresses.ManagedMethodRecordCount);
             this.options.ConversionLog.WriteLine("[Conversion complete {0:n0} events.  Conversion took {1:n0} sec.]",
@@ -1801,7 +1844,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (m_orphanedStacks < 1000)
                 {
                     // We don't warn if the time is too close to the start of the file.  
-                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100, "Could not find event with QPC time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4"), stackEvent);
+                    DebugWarn(stackEvent.TimeStampRelativeMSec < 100, "Stack refers to event with time " + QPCTimeToRelMSec(eventTimeStampQPC).ToString("f4") + " MSec that could not be found", stackEvent);
                     if (m_orphanedStacks == 999)
                         DebugWarn(true, "Last message about missing events.", stackEvent);
                 }
@@ -1820,7 +1863,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     TraceProcess process = Processes.GetOrCreateProcess(stackEvent.ProcessID, stackEvent.TimeStampQPC);
                     TraceThread thread = Threads.GetOrCreateThread(stackEvent.ThreadID, stackEvent.TimeStampQPC, process);
 
-                    stackInfo = AllocateIncompleteStack(eventIndex, thread);
+                    stackInfo = AllocateIncompleteStack(eventIndex, thread, pastEventInfo.GetBlockingEventIndex(pastEventIndex));
                     pastEventInfo.SetEventStackInfo(pastEventIndex, stackInfo);     // Remember that we have info about this event.  
                     pastEventInfo.GetEventCounts(pastEventIndex).m_stackCount++;
                 }
@@ -1838,10 +1881,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #if DEBUG
             int cnt = 0;
 #endif
-            for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null; )
+            for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null;)
             {
 #if DEBUG
-                Debug.Assert((++cnt % 4096) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
+                Debug.Assert((++cnt % 8192) != 0, cnt.ToString() + " incomplete stacks");          // Not strictly true, but worthy of investigation if it is violated.  
 #endif
                 var nextPtr = ptr.PrevKernelEventOnSameThread;
                 ptr.PrevKernelEventOnSameThread = null;         // Remove it from the list.  
@@ -1867,7 +1910,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #if DEBUG
             int cnt = 0;
 #endif
-            for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null; )
+            for (IncompleteStack ptr = listOfIncompleteKernelStacks; ptr != null;)
             {
 #if DEBUG
                 Debug.Assert(cnt++ < 4096);          // Not strictly true, but worthy of investigation if it is violated.
@@ -1966,7 +2009,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        private IncompleteStack AllocateIncompleteStack(EventIndex eventIndex, TraceThread thread)
+        private IncompleteStack AllocateIncompleteStack(EventIndex eventIndex, TraceThread thread, EventIndex blockingEventIndex)
         {
             Debug.Assert(eventIndex != EventIndex.Invalid);
             var ret = freeEventStackInfos;
@@ -1977,7 +2020,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 freeEventStackInfos = ret.NextEventWithKernelKey;
                 ret.Clear();
             }
-            ret.Initialize(eventIndex, thread);
+            ret.Initialize(eventIndex, thread, blockingEventIndex);
             return ret;
         }
         private void FreeIncompleteStack(IncompleteStack toFree)
@@ -2004,6 +2047,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         internal class IncompleteStack
         {
+            /// <summary>
+            /// Clear clears entires that typically don't get set when we only have 1 frame fragment
+            /// We can recycle the entries without setting these in that case.   
+            /// </summary>
             public void Clear()
             {
                 Debug.Assert(IsDead);
@@ -2015,12 +2062,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 PrevKernelEventOnSameThread = null;
                 WaitingToLeaveKernel = false;
             }
-            public void Initialize(EventIndex eventIndex, TraceThread thread)
+
+            /// <summary>
+            /// Clear all entries that can potentially change every time.
+            /// </summary>
+            public void Initialize(EventIndex eventIndex, TraceThread thread, EventIndex blockingEventIndex)
             {
                 Debug.Assert(IsDead);
                 UserModeStackIndex = CallStackIndex.Invalid;
                 EventIndex = eventIndex;
                 Thread = thread;
+                BlockingEventIndex = blockingEventIndex;
                 Debug.Assert(PrevKernelEventOnSameThread == null);
                 Debug.Assert(!WaitingToLeaveKernel);
                 Debug.Assert(NextEventWithKernelKey == null);
@@ -2157,8 +2209,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         Debug.Assert(UserModeStackIndex >= 0);
 
                         if (UserModeStackIndex >= 0)
-                        {    // Failsafe if the assert fails, drop the stack since it is just the thread and process anyway.  
+                        {
+                            // Failsafe if the assert fails, drop the stack since it is just the thread and process anyway.  
                             eventLog.AddStackToEvent(EventIndex, UserModeStackIndex);
+                            if (BlockingEventIndex != Tracing.EventIndex.Invalid)
+                                eventLog.cswitchBlockingEventsToStacks.Add(new EventsToStackIndex(BlockingEventIndex, UserModeStackIndex));
+
                             // Trace.WriteLine("Writing Stack " + UserModeStackIndex + " for Event " + EventIndex);
                         }
 
@@ -2202,6 +2258,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Stuff about the event itself.  
             internal EventIndex EventIndex { get; private set; } // We remember the event index for this stack mostly so we can know when this entry is 
+
+            /// <summary>
+            /// We track the stacks for when CSwitches block, this is the CSWITCH event where that blocking happened.  
+            /// </summary>
+            internal EventIndex BlockingEventIndex { get; set; }
+
             // invalid because it has been reused for another event.   
             internal TraceThread Thread { get; private set; }    // Needed to compute very top of call stack. 
 
@@ -2326,7 +2388,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         // If this is a kernel event, we have to defer making the stack (it is incomplete).  
                         // Make a new IncompleteStack to track that (unlike other stack events we don't need to go looking for it.  
-                        IncompleteStack stackInfo = AllocateIncompleteStack(eventIndex, thread);
+                        IncompleteStack stackInfo = AllocateIncompleteStack(eventIndex, thread, EventIndex.Invalid);    // Blocking stack can be invalid because CSWitches don't use this path.  
+                        Debug.Assert(!(data is CSwitchTraceData));        // CSwtiches don't use this form of call stacks.  When they do set setackInfo.IsCSwitch.  
 
                         // Remember the kernel frames 
                         if (!stackInfo.LogKernelStackFragment(addresses, addressesCount, pointerSize, data.TimeStampQPC, this))
@@ -2348,6 +2411,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         {
                             isBookkeepingEvent = true;
                             EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, callStackIndex, null);
+                            thread.lastEmitStackOnExitFromKernelQPC = data.TimeStampQPC;
                         }
                         else
                         {
@@ -2627,8 +2691,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.RegisterFactory(typeof(TraceProcesses), delegate { return new TraceProcesses(null); });
             deserializer.RegisterFactory(typeof(TraceThreads), delegate { return new TraceThreads(null); });
             deserializer.RegisterFactory(typeof(TraceThread), delegate { return new TraceThread(0, null, (ThreadIndex)0); });
-            deserializer.RegisterFactory(typeof(TraceActivities), delegate { return new TraceActivities(); });
-            deserializer.RegisterFactory(typeof(TraceActivity), delegate { return new TraceActivity(ActivityIndex.Invalid, null, EventIndex.Invalid, CallStackIndex.Invalid, 0, 0, false, false, TraceActivities.ActivityKind.Invalid); });
+            deserializer.RegisterFactory(typeof(TraceActivity), delegate { return new TraceActivity(ActivityIndex.Invalid, null, EventIndex.Invalid, CallStackIndex.Invalid, 0, 0, false, false, TraceActivity.ActivityKind.Invalid); });
             deserializer.RegisterFactory(typeof(TraceModuleFiles), delegate { return new TraceModuleFiles(null); });
             deserializer.RegisterFactory(typeof(TraceModuleFile), delegate { return new TraceModuleFile(null, 0, 0); });
             deserializer.RegisterFactory(typeof(TraceMethods), delegate { return new TraceMethods(null); });
@@ -2752,7 +2815,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(stats);
             serializer.Write(callStacks);
             serializer.Write(moduleFiles);
-            serializer.Write(activities);
 
             serializer.Log("<WriteCollection name=\"eventPages\" count=\"" + eventPages.Count + "\">\r\n");
             serializer.Write(eventPages.Count);
@@ -2778,6 +2840,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     serializer.Write((int)eventToStack.CallStackIndex);
                 }
                 serializer.Write(eventsToStacks.Count);             // Redundant as a checksum
+                serializer.Log("</WriteCollection>\r\n");
+            });
+
+            serializer.Log("<Marker Name=\"cswitchBlockingEventsToStacks\"/>");
+            lazyEventsToStacks.Write(serializer, delegate
+            {
+                serializer.Log("<WriteCollection name=\"cswitchBlockingEventsToStacks\" count=\"" + cswitchBlockingEventsToStacks.Count + "\">\r\n");
+                serializer.Write(cswitchBlockingEventsToStacks.Count);
+                for (int i = 0; i < cswitchBlockingEventsToStacks.Count; i++)
+                {
+                    EventsToStackIndex eventToStack = cswitchBlockingEventsToStacks[i];
+                    Debug.Assert(i == 0 || cswitchBlockingEventsToStacks[i - 1].EventIndex <= cswitchBlockingEventsToStacks[i].EventIndex, "event list not sorted");
+                    serializer.Write((int)eventToStack.EventIndex);
+                    serializer.Write((int)eventToStack.CallStackIndex);
+                }
+                serializer.Write(cswitchBlockingEventsToStacks.Count);             // Redundant as a checksum
                 serializer.Log("</WriteCollection>\r\n");
             });
 
@@ -2857,7 +2935,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out stats);
             deserializer.Read(out callStacks);
             deserializer.Read(out moduleFiles);
-            deserializer.Read(out activities);
 
             deserializer.Log("<Marker Name=\"eventPages\"/>");
             int count = deserializer.ReadInt();
@@ -2890,9 +2967,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 int stackCheckCount = deserializer.ReadInt();
                 if (stackCount != stackCheckCount)
                     throw new SerializationException("Redundant count check fail.");
-
             });
             lazyEventsToStacks.FinishRead();        // TODO REMOVE
+
+            lazyCswitchBlockingEventsToStacks.Read(deserializer, delegate
+            {
+                int stackCount = deserializer.ReadInt();
+                deserializer.Log("<Marker Name=\"lazyCswitchBlockingEventsToStacks\" count=\"" + stackCount + "\"/>");
+                cswitchBlockingEventsToStacks = new GrowableArray<EventsToStackIndex>(stackCount + 1);
+                EventsToStackIndex eventToStackIndex = new EventsToStackIndex();
+                for (int i = 0; i < stackCount; i++)
+                {
+                    eventToStackIndex.EventIndex = (EventIndex)deserializer.ReadInt();
+                    Debug.Assert((int)eventToStackIndex.EventIndex < eventCount);
+                    eventToStackIndex.CallStackIndex = (CallStackIndex)deserializer.ReadInt();
+                    cswitchBlockingEventsToStacks.Add(eventToStackIndex);
+                }
+                int stackCheckCount = deserializer.ReadInt();
+                if (stackCount != stackCheckCount)
+                    throw new SerializationException("Redundant count check fail.");
+            });
+            lazyCswitchBlockingEventsToStacks.FinishRead();        // TODO REMOVE
 
             lazyEventsToCodeAddresses.Read(deserializer, delegate
             {
@@ -2948,7 +3043,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 54; }
+            get { return 58; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -2982,7 +3077,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private string machineName;
         private TraceProcesses processes;
         private TraceThreads threads;
-        private TraceActivities activities;
         private TraceCallStacks callStacks;
         private TraceCodeAddresses codeAddresses;
         private TraceEventStats stats;
@@ -2990,6 +3084,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private DeferedRegion lazyRawEvents;
         private DeferedRegion lazyEventsToStacks;
         private DeferedRegion lazyEventsToCodeAddresses;
+        private DeferedRegion lazyCswitchBlockingEventsToStacks;
         private TraceEvents events;
         private GrowableArray<EventPageEntry> eventPages;   // The offset offset of a page
         private int eventCount;                             // Total number of events
@@ -3007,6 +3102,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceModuleFiles moduleFiles;
         private GrowableArray<EventsToStackIndex> eventsToStacks;
+        /// <summary>
+        /// The context switch event gives the stack of the thread GETTING the CPU, but it is also very useful
+        /// to have this stack at the point of blocking.   cswitchBlockingEventsToStacks gives this stack.  
+        /// </summary>
+        private GrowableArray<EventsToStackIndex> cswitchBlockingEventsToStacks;
         private GrowableArray<EventsToCodeAddressIndex> eventsToCodeAddresses;
 
         private TraceEventDispatcher freeLookup;    // Try to reused old ones. 
@@ -3072,7 +3172,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
  || data.ProviderGuid == ClrPrivateTraceEventParser.ProviderGuid
 #endif
 );
+                pastEventInfo[curPastEventInfo].hasAStack = false;
+                pastEventInfo[curPastEventInfo].BlockingEventIndex = EventIndex.Invalid;
+                // Remember the eventIndex of where the current thread blocks.  
+                CSwitchTraceData asCSwitch = data as CSwitchTraceData;
+                if (asCSwitch != null)
+                {
+                    TraceThread newThread = log.Threads.GetOrCreateThread(asCSwitch.ThreadID, asCSwitch.TimeStampQPC, null);
+                    pastEventInfo[curPastEventInfo].BlockingEventIndex = newThread.lastBlockingCSwitchEventIndex;
 
+                    TraceThread oldThread = log.Threads.GetOrCreateThread(asCSwitch.OldThreadID, asCSwitch.TimeStampQPC, null);
+                    oldThread.lastBlockingCSwitchEventIndex = eventIndex;
+                }
                 curPastEventInfo = (curPastEventInfo + 1) & (historySize - 1);
             }
 
@@ -3080,10 +3191,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             /// Returns the previous Event on the 'threadID'.  Events with -1 thread IDs are also always returned.   
             /// Returns PastEventInfoIndex.Invalid if there are not more events to consider.  
             /// </summary>
-            public PastEventInfoIndex GetPreviousEventIndex(PastEventInfoIndex start, int threadID, bool exactMatch = false, EventIndex minIdx = (EventIndex) 0)
+            public PastEventInfoIndex GetPreviousEventIndex(PastEventInfoIndex start, int threadID, bool exactMatch = false, EventIndex minIdx = (EventIndex)0)
             {
                 int idx = (int)start;
-                for (; ; )
+                for (;;)
                 {
                     // Event numbers should decrease.  
                     Debug.Assert(idx == curPastEventInfo || idx == 0 || pastEventInfo[idx - 1].EventIndex == EventIndex.Invalid ||
@@ -3117,7 +3228,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var ret = PastEventInfoIndex.Invalid;
                 bool exactMatch = false;
                 bool updateThread = false;
-                for (; ; )
+                for (;;)
                 {
                     // We match timestamps.  This is the main criteria 
                     if (QPCTime == pastEventInfo[idx].QPCTime)
@@ -3166,8 +3277,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             public PastEventInfoIndex CurrentIndex { get { return (PastEventInfoIndex)curPastEventInfo; } }
             public bool IsClrEvent(PastEventInfoIndex index) { return pastEventInfo[(int)index].isClrEvent; }
+            public bool HasStack(PastEventInfoIndex index) { return pastEventInfo[(int)index].hasAStack; }
+            public void SetHasStack(PastEventInfoIndex index) { pastEventInfo[(int)index].hasAStack = true; }
             public int GetThreadID(PastEventInfoIndex index) { return pastEventInfo[(int)index].ThreadID; }
             public EventIndex GetEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].EventIndex; }
+            public EventIndex GetBlockingEventIndex(PastEventInfoIndex index) { return pastEventInfo[(int)index].BlockingEventIndex; }
             public TraceEventCounts GetEventCounts(PastEventInfoIndex index) { return pastEventInfo[(int)index].CountForEvent; }
             public long GetQPCTime(PastEventInfoIndex index) { return pastEventInfo[(int)index].QPCTime; }
             public IncompleteStack GetEventStackInfo(PastEventInfoIndex index)
@@ -3192,12 +3306,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 public double TimeStampRelativeMSec(PastEventInfo pastEventInfo)
                 { return pastEventInfo.log.QPCTimeToRelMSec(QPCTime); }
 #endif
+                public bool hasAStack;
                 public bool isClrEvent;
                 public long QPCTime;
                 public int ThreadID;
 
                 public IncompleteStack EventStackInfo;   // If this event actually had a stack, this holds info about it.  
                 public EventIndex EventIndex;            // This can be EventIndex.Invalid for events that are going to be removed from the stream.  
+                public EventIndex BlockingEventIndex;    // This is non-Invalid for CSwitches and repsrensets the other thread the blocked.  
                 public TraceEventCounts CountForEvent;
             }
 
@@ -3251,6 +3367,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
             }
+            // For non-realtime session we simply insert it at the end because we will sort by eventIndex as a 
+            // post-processing step.  see eventsToStacks.Sort in CopyRawEvents().  
 #if DEBUG
             for (int i = 1; i < 8; i++)
             {
@@ -3260,7 +3378,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // If this assert fires, it means that we added a stack to the same event twice.   This
                 // means we screwed up which event a stack belongs to.   This can happen among other reasons
                 // because we complete an incomplete stack before we should and when the other stack component
-                // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.    
+                // comes in we end up logging it as if it were a unrelated stack giving two stacks to the same event.   
+                // Note many of these issues are reasonably benign, (e.g. we lose the kernel part of a stack)
+                // so don't sweat this too much.    Because the source that we do later is not stable, which
+                // of the two equal entries gets chosen will be random.  
                 Debug.Assert(eventsToStacks[idx].EventIndex != eventIndex);
             }
 #endif
@@ -3306,9 +3427,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
-        private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the que
+        private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
         // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
-        private Timer realTimeFlushTimer;                           // Insures the queue gets flushed even if there are no incomming events.  
+        private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         #endregion
     }
 
@@ -3376,7 +3497,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 while (enumerator.MoveNext())
                 {
-
                     Dispatch(enumerator.Current);
                     if (stopProcessing)
                     {
@@ -4038,7 +4158,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             public bool MoveNext()
             {
-                for (; ; )
+                for (;;)
                 {
                     current = GetNext();
                     if (current.TimeStampQPC == long.MaxValue || current.TimeStampQPC > events.endTimeQPC)
@@ -4066,7 +4186,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             public bool MoveNext()
             {
-                for (; ; )
+                for (;;)
                 {
                     if (indexOnPage == 0)
                     {
@@ -4672,7 +4792,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal bool anyThreads;
 
         internal bool isServerGC;
-        internal byte numMarkTheadsInGC;   // Used during collection to determine if we are server GC or not. 
+        // We only set this in the GCStart event because we want to make sure we are seeing a complete GC.
+        // After we have seen a complete GC we set this to FALSE.
+        internal bool shouldCheckIsServerGC = false;
+        internal Dictionary<int, int> markThreadsInGC = new Dictionary<int, int>(); // Used during collection to determine if we are server GC or not. 
 
         private TraceLoadedModules loadedModules;
 
@@ -4792,7 +4915,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 jitMethods.UnderlyingArray[index].Add(onInsert());
             }
 
-        RETURN: ;
+            RETURN:;
 #if DEBUG
             // Confirm that we did not break anything.  
             if (s_skipCount == 0)
@@ -5186,31 +5309,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.threadIndex = threadIndex;
             this.process = process;
             this.endTimeQPC = long.MaxValue;
-            if (process != null)
-                this.activityIds.Add(process.Log.Activities.AddThreadFirstActivity(this));
+            this.lastBlockingCSwitchEventIndex = EventIndex.Invalid;
         }
 
-        /// <summary>
-        /// Returns the activity ID index for the activity that is "current" at time "timeQPC"
-        /// </summary>
-        internal ActivityIndex GetActivityIndex(long timeQPC)
-        {
-            TraceActivities actIds = process.Log.Activities;
-            // optimize for scanning (in that case we generally need to return the highest index
-            int highIndex = this.activityIds.Count - 1;
-            if (highIndex >= 0 && timeQPC >= actIds[this.activityIds[highIndex]].startTimeQPC)
-                return this.activityIds[highIndex];
-
-            int index;
-            activityIds.BinarySearch(timeQPC, out index, (time, idIndex) => Math.Sign(time - actIds[idIndex].startTimeQPC));
-            if (index == -1 || actIds[this.activityIds[index]].endTimeQPC < timeQPC)
-            {
-                // If 'time' occurs before all activities on this thread, or if it is not between StartTimeQPC and EndTimeQPC
-                // the we'll return the initial/synthesized activity for this thread
-                return this.activityIds[0];
-            }
-            return this.activityIds[index];
-        }
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -5269,6 +5370,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // user mode event on leaving can use the same user mode stack.   This keeps track of this entry
         // into the kernel.   
         internal TraceLog.IncompleteStack lastEntryIntoKernel;
+        // as an extra validation after we flush all the kernel entries with EmitStackOnExitFromKernel
+        // we remember the QPC timestamp when we did this.  Any user mode stacks that are trying to 
+        // associated themselves with events before this time should be ignored.   
+        internal long lastEmitStackOnExitFromKernelQPC;
+
+        /// <summary>
+        /// We want to have the stack for when CSwtichs BLOCK as well as when they unblock.
+        /// this variable keeps track of the last blocking CSWITCH on this thread so that we can
+        /// compute this.   It is only used during generation of a TraceLog file.  
+        /// </summary>
+        internal EventIndex lastBlockingCSwitchEventIndex;
         #endregion
     }
 
@@ -5458,11 +5570,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 module.nativeModule = GetLoadedModule(data.ModuleNativePath, data.TimeStampQPC);
             if (module.ModuleFile.fileName == null)
                 process.Log.ModuleFiles.SetModuleFileName(module.ModuleFile, data.ModuleILPath);
-            if (data.ManagedPdbSignature != Guid.Empty && module.ModuleFile.pdbSignature == Guid.Empty)
+            if (module.ModuleFile.pdbSignature == Guid.Empty)
             {
-                module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
-                module.ModuleFile.pdbAge = data.ManagedPdbAge;
-                module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                // CoreCLR uses the native image as the only managed image.   If present, use that. 
+                if (data.NativePdbSignature != Guid.Empty && data.ModuleILPath == data.ModuleNativePath)
+                {
+                    module.ModuleFile.pdbSignature = data.NativePdbSignature;
+                    module.ModuleFile.pdbAge = data.NativePdbAge;
+                    module.ModuleFile.pdbName = data.NativePdbBuildPath;
+                }
+                else if (data.ManagedPdbSignature != Guid.Empty)
+                {
+                    module.ModuleFile.pdbSignature = data.ManagedPdbSignature;
+                    module.ModuleFile.pdbAge = data.ManagedPdbAge;
+                    module.ModuleFile.pdbName = data.ManagedPdbBuildPath;
+                }
             }
             if (module.NativeModule != null)
             {
@@ -5863,7 +5985,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         #region Private
         internal TraceManagedModule(TraceProcess process, TraceModuleFile moduleFile, long moduleID)
-            : base(process, moduleFile, moduleID) { }
+            : base(process, moduleFile, moduleID)
+        { }
 
         // TODO use or remove
         internal TraceLoadedModule nativeModule;        // non-null for IL managed modules
@@ -6396,7 +6519,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Skip to the addresses in this module 
             var codeAddrEnum = codeAddrs.GetEnumerator();
-            for (; ; )
+            for (;;)
             {
                 if (!codeAddrEnum.MoveNext())
                     return;
@@ -6462,15 +6585,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     if (ret == null && ilAssemblyName != null)
                     {
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
-                        // Look up the IL PDB needed and 
+                        // Look up the IL PDB needed
 
-                        // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
-                        if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                        reader.m_log.WriteLine("GetSourceLine: Found mapping from Native to IL assmebly {0} Token {1:x} offset {2}",
+                            ilAssemblyName, ilMetaDataToken, ilMethodOffset);
+                        if (moduleFile.ManagedModule != null)
                         {
-                            TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                            SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
-                            ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                            // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
+                            if (string.Compare(moduleFile.ManagedModule.Name, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
+                            {
+                                TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
+                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
+                                ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                            }
                         }
+                        else
+                            reader.m_log.WriteLine("GetSourceLine: Could not find managed module for NGEN image {0}", moduleFile.FilePath);
+
                     }
 
                     // TODO FIX NOW, deal with this rather than simply warn. 
@@ -6931,7 +7062,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             MethodIndex currentMethodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             Address currentMethodEnd = 0;
             Address endModule = moduleFile.ImageEnd;
-            for (; ; )
+            for (;;)
             {
                 // options.ConversionLog.WriteLine("Code address = " + Address(codeAddressIndexCursor.Current).ToString("x"));
                 totalAddressCount++;
@@ -7067,7 +7198,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (moduleFile.PdbSignature == Guid.Empty && !isCurrentMachine)
                 {
                     if (log.PointerSize == 8 && moduleFile.FilePath.IndexOf(@"\windows\System32", StringComparison.OrdinalIgnoreCase) >= 0)
-                        symReader.m_log.WriteLine("WARNINGing: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?");
+                        symReader.m_log.WriteLine("WARNING: could not find PDB signature of a 64 bit OS DLL.  Did you collect with a 32 bit version of XPERF?");
                     else
                     {
                         symReader.m_log.WriteLine("WARNING: The log file does not contain exact PDB signature information for {0} and the collection machine != current machine.", moduleFile.FilePath);
@@ -8189,7 +8320,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public int CodeAddressesInModule { get { return codeAddressesInModule; } }
         /// <summary>
-        /// If the module file was a managed module, this is the IL file associated with it.  
+        /// If the module file was a managed native image, this is the IL file associated with it.  
         /// </summary>
         public TraceModuleFile ManagedModule { get { return managedModule; } }
 
@@ -8283,106 +8414,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     }
 
     /// <summary>
-    /// An instance of this class represents the list of the activities in the trace.
+    /// Representation of an Activity. An activity can be thought of as a unit of execution associated with
+    /// a task or workitem; it executes on one thread, and has a start and end time. An activity keeps track
+    /// of its "creator" or "caller" -- which is the activity that scheduled it. Using the "creator" link a
+    /// user can determine the chain of activities that led up to the current one.
     /// 
-    /// TODO:
-    ///    1. Ensure GC-bound activity IDs get their "Original ID" updated when a GC 
-    ///       occurs
-    ///    2. Ensure activity IDs from unrelated components reside in separate 
-    ///       "namespaces". IOW, if there were two sources of "activities", that 
-    ///       identified their instances using monotonically increasing integers/longs,
-    ///       we would need to ensure they live in separate "containers" so that an ID 
-    ///       from one source would not be confused with an ID from another. The current 
-    ///       approach of a single namespace works b/c until now all IDs represent memory
-    ///       addresses.
+    /// Given an event you can get the Activity for the event using the Activity() extension method.  
     /// </summary>
-    public sealed class TraceActivities : IFastSerializable, IEnumerable<TraceActivity>
+    public sealed class TraceActivity : IFastSerializable
     {
-        /// <summary>
-        /// Number of activities present in the trace. Use this if you need to 
-        /// build a side-table to track activity specific data
-        /// </summary>
-        public int Count { get { return activityIds.Count; } }
-
-        /// <summary>
-        /// Indexer in the table of activities present in the trace
-        /// </summary>
-        [Obsolete("Likely to be removed Replaced by ActivityComputer[AcivityIndex]")]
-        public TraceActivity this[ActivityIndex idx]
-        {
-            get
-            {
-                throw new InvalidOperationException("Don't use activities right now");
-            }
-        }
-
-        #region private
-        // constructor used by the serialization logic
-        internal TraceActivities() { }
-
-        internal TraceActivities(TraceLog log)
-        {
-            this.log = log;
-        }
-
-        internal void SubscribeToActivityTracingEvents(TraceEventDispatcher rawEvents, bool doSubscriptions)
-        {
-            // TODO FIX NOW. 
-
-        }
-
-        /// <summary>
-        /// Creates the "default" or "initial" activity on a thread 
-        /// (see ActivityKind.Initial for more)
-        /// </summary>
-        internal ActivityIndex AddThreadFirstActivity(TraceThread thread)
-        {
-            ActivityIndex result = (ActivityIndex)activityIds.Count;
-            TraceActivity newActivity = new TraceActivity(result, null, EventIndex.Invalid, CallStackIndex.Invalid,
-                                                                    thread.startTimeQPC, (Address)0xFFFFFFFFFFFFFFFF, false, false, ActivityKind.Initial);
-            newActivity.Thread = thread;
-            activityIds.Add(newActivity);
-            return result;
-        }
-
-
-
-        IEnumerator<TraceActivity> IEnumerable<TraceActivity>.GetEnumerator()
-        {
-            foreach (var activityId in activityIds)
-                yield return activityId;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
-
-        void IFastSerializable.ToStream(Serializer serializer)
-        {
-            serializer.Write(log);
-            serializer.Log("<WriteCollection count=\"" + activityIds.Count + "\">\r\n");
-            serializer.Write(activityIds.Count);
-            for (int i = 0; i < activityIds.Count; i++)
-                serializer.Write(activityIds[i]);
-            serializer.Log("</WriteCollection>\r\n");
-        }
-        void IFastSerializable.FromStream(Deserializer deserializer)
-        {
-            deserializer.Read(out log);
-            Debug.Assert(activityIds.Count == 0);
-            int count; deserializer.Read(out count);
-            for (int i = 0; i < count; i++)
-            {
-                TraceActivity elem;
-                deserializer.Read(out elem);
-                activityIds.Add(elem);
-            }
-        }
-
-        private TraceLog log;
-        private GrowableArray<TraceActivity> activityIds;               // populated at collection time, serialized
-        // false at collection time / true at replay
         /// <summary>
         /// Describes the kinds of known Activities (used for descriptive purposes alone)
         /// </summary>
@@ -8422,6 +8462,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             FxAsyncIO = 11,
             /// <summary>WinRT Dispatched workitem</summary>
             FxWinRTDispatch = 12,
+            /// <summary>
+            /// Used when we make up ones because we know that have to be there but we don't know enough to do more than that. 
+            /// </summary>
+            Implied = 13,
+
 
             // AutoComplete codes. 
             /// <summary>
@@ -8434,19 +8479,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             FxTimer = 34, // FxTransfer + kind(1)
         }
 
-        #endregion
-    }
-
-    /// <summary>
-    /// Representation of an Activity. An activity can be thought of as a unit of execution associated with
-    /// a task or workitem; it executes on one thread, and has a start and end time. An activity keeps track
-    /// of its "creator" or "caller" -- which is the activity that scheduled it. Using the "creator" link a
-    /// user can determine the chain of activities that led up to the current one.
-    /// 
-    /// Given an event you can get the Activity for the event using the Activity() extension method.  
-    /// </summary>
-    public sealed class TraceActivity : IFastSerializable
-    {
         /// <summary>A trace-wide unique id identifying an activity</summary>
         public ActivityIndex Index { get { return activityIndex; } }
         /// <summary>The activity that initiated or caused the current one</summary>
@@ -8463,10 +8495,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 uint truncatedRawId = ((uint)rawID);
                 if (truncatedRawId == 0xFFFFFFFF)
-                    return Index.ToString();
-                string creatorIndex = (Creator != null) ? ((int) Creator.Index).ToString() : "$";
+                {
+                    if (kind == ActivityKind.Implied)
+                        return "Implied/TID=" + Thread.ThreadID + "/S=" + StartTimeRelativeMSec.ToString("f3");
+                    return "Thread/TID=" + Thread.ThreadID;
+                }
                 string rawIdString = (truncatedRawId < 0x1000000) ? truncatedRawId.ToString() : ("0x" + truncatedRawId.ToString("x"));
-                return Index.ToString() + "/" + creatorIndex + "#" + rawIdString;
+                return "C=" + CreationTimeRelativeMSec.ToString("f3") + "/S=" + StartTimeRelativeMSec.ToString("f3") + "/R=" + rawIdString;
             }
         }
 
@@ -8519,7 +8554,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return thread.Process.Log.QPCTimeToRelMSec(startTimeQPC);
             }
         }
-        /// <summary>Time from beginning of trace (in msec) when activity completed execution</summary>
+        /// <summary>Time from beginning of trace (in msec) when activity completed execution.  Does not include children.</summary>
         public double EndTimeRelativeMSec
         {
             get
@@ -8555,7 +8590,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         #region private
         internal TraceActivity(ActivityIndex activityIndex, TraceActivity creator, EventIndex creationEventIndex,
-            CallStackIndex creationCallStackIndex, long creationTimeQPC, Address rawID, bool multiTrigger, bool gcBound, TraceActivities.ActivityKind kind)
+            CallStackIndex creationCallStackIndex, long creationTimeQPC, Address rawID, bool multiTrigger, bool gcBound, TraceActivity.ActivityKind kind)
         {
             this.activityIndex = activityIndex;
             this.creator = creator;
@@ -8568,24 +8603,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.kind = kind;
             this.rawID = rawID;
         }
-        /// <summary>
-        /// Create an ActivityId for the second, third, or later triggered activity, based on prevFiredActId.
-        /// This copies all the data associated with the scheduling activity from prevFiredActId
-        /// </summary>
-        internal TraceActivity(ActivityIndex activityIndex, TraceActivity prevFiredActId)
-        {
-            Debug.Assert(prevFiredActId.multiTrigger);
 
-            this.activityIndex = activityIndex;
-            this.creator = prevFiredActId.creator;
-            this.creationCallStackIndex = prevFiredActId.creationCallStackIndex;
-            this.creationEventIndex = prevFiredActId.creationEventIndex;
-            this.creationTimeQPC = prevFiredActId.creationTimeQPC;
-            this.multiTrigger = prevFiredActId.multiTrigger;
-            this.gcBound = prevFiredActId.gcBound;
-            this.kind = prevFiredActId.kind;
-            this.rawID = prevFiredActId.rawID;
-        }
 
         internal static unsafe Address GuidToLongId(ref Guid guid)
         {
@@ -8622,7 +8640,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out endTimeQPC);
             deserializer.Read(out multiTrigger);
             deserializer.Read(out gcBound);
-            short kind; deserializer.Read(out kind); this.kind = (TraceActivities.ActivityKind)kind;
+            short kind; deserializer.Read(out kind); this.kind = (TraceActivity.ActivityKind)kind;
         }
 
         private ActivityIndex activityIndex;
@@ -8635,10 +8653,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal long endTimeQPC;
         private bool multiTrigger;                  // True if there may be multiple activities that were initiated by caller (e.g. managed Timers)
         private bool gcBound;
-        internal TraceActivities.ActivityKind kind;
+        internal TraceActivity.ActivityKind kind;
         internal Address rawID;                      // ID used to identify this activity before we normalized it.  
         internal TraceActivity prevActivityOnThread; // We can have a stack of active activities on a given thread.  This points to the one we preempted.  
-        // This is only used in the ActivityComputer.      
+                                                     // This is only used in the ActivityComputer.      
         #endregion
     }
 
@@ -8801,6 +8819,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (log == null)
                 return Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid;
             return log.GetCallStackIndexForEvent(anEvent);
+        }
+        /// <summary>
+        /// Finds the CallStack index associated the blocking thread for CSwitch event
+        /// </summary>
+        public static CallStackIndex BlockingStack(this CSwitchTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (log == null)
+                return Microsoft.Diagnostics.Tracing.Etlx.CallStackIndex.Invalid;
+            return log.GetCallStackIndexForCSwitchBlockingEventIndex(anEvent.EventIndex);
         }
         /// <summary>
         /// Finds the TraceCallStacks associated with a TraceEvent.  

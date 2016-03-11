@@ -177,7 +177,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// Recommend default flags (good compromise on verbosity).  
             /// </summary>
-            Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen 
+            Default = GC | Type | GCHeapSurvivalAndMovement | Binder | Loader | Jit | NGen | SupressNGen
                          | StopEnumeration | Security | AppDomainResourceManagement | Exception | Threading | Contention | Stack | JittedMethodILToNativeMap
                          | ThreadTransfer | GCHeapAndTypeNames | Codesymbols,
 
@@ -4627,7 +4627,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 {
                     return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(7));
                 }
-                    
+
                 return -1;
             }
         }
@@ -4775,7 +4775,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         LastJoin = 0,
         Join = 1,
-        Restart = 2
+        Restart = 2,
+        FirstJoin = 3
     }
 
     public enum GcJoinTime : int
@@ -4784,18 +4785,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         End = 1
     }
 
+    public enum GcJoinID : int
+    {
+        Restart = -1,
+        Invalid = ~(int)0xff
+    }
+
     public sealed class GCJoinTraceData : TraceEvent
     {
         public int Heap { get { return GetInt32At(0); } }
         public GcJoinTime JoinTime { get { return (GcJoinTime)GetInt32At(4); } }
         public GcJoinType JoinType { get { return (GcJoinType)GetInt32At(8); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(12); return 0; } }
-        public int GCID { get { if (Version >= 2) return GetInt32At(14); return 0; } }
-
-        public bool HasGCID()
-        {
-            return (Version >= 2);
-        }
+        public int GCID { get { if (Version >= 2) return GetInt32At(14); return (int)(GcJoinID.Invalid); } }
 
         #region Private
         internal GCJoinTraceData(Action<GCJoinTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -4825,6 +4827,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "JoinTime", JoinTime);
             XmlAttrib(sb, "JoinType", JoinType);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttrib(sb, "ID", GCID);
             sb.Append("/>");
             return sb;
         }
@@ -4834,7 +4837,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Heap", "JoinTime", "JoinType", "ClrInstanceID" };
+                {
+                    payloadNames = new string[] { "Heap", "JoinTime", "JoinType", "ClrInstanceID", "ID" };
+                }
                 return payloadNames;
             }
         }
@@ -4851,6 +4856,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return JoinType;
                 case 3:
                     return ClrInstanceID;
+                case 4:
+                    return GCID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -5359,7 +5366,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     m_valueSize = 44;
                     // Project N rounds up on 64 bit It did go out for build in 4/2014 but soon we won't care.  
                     if (EventDataLength == (Count * 48) + 6)
-                    {  
+                    {
                         Debug.Assert(PointerSize == 8);
                         m_valueSize = 48;
                     }
@@ -6331,13 +6338,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttribHex(sb, "NativeOverlapped", NativeOverlapped);
-             XmlAttribHex(sb, "Overlapped", Overlapped);
-             XmlAttrib(sb, "MultiDequeues", MultiDequeues);
-             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttribHex(sb, "NativeOverlapped", NativeOverlapped);
+            XmlAttribHex(sb, "Overlapped", Overlapped);
+            XmlAttrib(sb, "MultiDequeues", MultiDequeues);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -8308,14 +8315,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
         public RuntimeSku Sku { get { return (RuntimeSku)GetInt16At(2); } }
-        public int BclMajorVersion { get { return (ushort) GetInt16At(4); } }
+        public int BclMajorVersion { get { return (ushort)GetInt16At(4); } }
         public int BclMinorVersion { get { return (ushort)GetInt16At(6); } }
-        public int BclBuildNumber { get { return (ushort) GetInt16At(8); } }
-        public int BclQfeNumber { get { return (ushort) GetInt16At(10); } }
-        public int VMMajorVersion { get { return (ushort) GetInt16At(12); } }
-        public int VMMinorVersion { get { return (ushort) GetInt16At(14); } }
-        public int VMBuildNumber { get { return (ushort) GetInt16At(16); } }
-        public int VMQfeNumber { get { return (ushort) GetInt16At(18); } }
+        public int BclBuildNumber { get { return (ushort)GetInt16At(8); } }
+        public int BclQfeNumber { get { return (ushort)GetInt16At(10); } }
+        public int VMMajorVersion { get { return (ushort)GetInt16At(12); } }
+        public int VMMinorVersion { get { return (ushort)GetInt16At(14); } }
+        public int VMBuildNumber { get { return (ushort)GetInt16At(16); } }
+        public int VMQfeNumber { get { return (ushort)GetInt16At(18); } }
         public StartupFlags StartupFlags { get { if (Version != TraceEvent.SplitEventVersion) return (StartupFlags)GetInt32At(20); return StartupFlags.None; } }
         public StartupMode StartupMode { get { if (Version != TraceEvent.SplitEventVersion) return (StartupMode)GetByteAt(24); return StartupMode.None; } }
         public string CommandLine { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(25); return ""; } }

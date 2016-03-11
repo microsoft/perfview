@@ -223,7 +223,7 @@ namespace PerfView
                             if (!(ex is ThreadInterruptedException))
                             {
                                 bool userLevel;
-                                var errorMessage = Utilities.ExceptionMessage.GetUserMessage(ex, out userLevel);
+                                var errorMessage = ExceptionMessage.GetUserMessage(ex, out userLevel);
                                 if (userLevel)
                                     LogError(errorMessage);
                                 else

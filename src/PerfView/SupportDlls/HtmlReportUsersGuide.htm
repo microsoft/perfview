@@ -1,4 +1,4 @@
-<html>
+﻿<html>
 <head>
     <title>Understand Perf Reports</title>
     <meta charset="UTF-8">
@@ -33,10 +33,36 @@
         pause time to allow you to confirm that this bad GC behavior is not happening.&nbsp;&nbsp;&nbsp; </p>
     <hr />
     <h3>
+        <a id="UnderstandingFinalization">Understanding Finalization Performance Data</a>
+    </h3>
+    <p>
+        By enabling the Finalizers option, PerfView causes the Runtime to log an event
+        every time a managed object is finalized, meaning that its finalizer (denoted in C#
+        with the ~ syntax) is executed.  For a detailed look at the costs involved in
+        finalization, see this <a href="http://blogs.msdn.com/b/cbrumme/archive/2004/02/20/77460.aspx">blog post</a>.
+    </p>
+    <p>
+        PerfView is unable to determine the stack that allocated a finalizable object,
+        but it is able to accurately report each type of object that had a finalizer executed
+        along with the number of instances of that type that were finalized.  This data is shown
+        on the GC Stats report in the Finalized Object Counts table.
+    </p>
+    <p>
+        In an ideal application implementation, all finalizable objects would be cleaned up deterministically
+        via an object's IDisposable.Dispose implementation, which should suppress the finalization
+        of the object.  Not deterministically disposing of finalizable objects can lead to degredation
+        of both the reliability and performance of the app.  You can examine the counts reported
+        in the Finalized Object Counts table to determine whether any types have significant numbers
+        of instances being left for finalization.  Based on that, you can examine code that creates instances
+        of these types and determine why those instances are being left for non-deterministic cleanup
+        rather than being cleaned up deterministically with Dispose.
+    </p>
+    <hr />
+    <h3>
         <a id="UnderstandingJITPerf">Understanding Just In Time 
         Compiler Performance Data</a></h3>
     <p>
-        PerfMonitior tracks detailed information of what methods 
+        PerfView tracks detailed information of what methods 
         were Just In Time compiled.&nbsp;&nbsp; This data is mostly useful for 
         optimizing startup (because that is when most methods get JIT compiled).&nbsp; 
         If large numbers of methods are being compiled it can noticeably affect startup 
@@ -46,6 +72,18 @@
         <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">NGen 
         Tool</a> can be used to precompile the code, and thus eliminate most of this 
         overhead at startup.&nbsp; </p>
+    <p>
+        As an additional option enabled with the JITInlining feature, PerfView can track
+        all of the decisions made by the JIT about whether to inline or not at every call site.  
+        For very hot paths, the overhead of invoking methods has the potential to add measurable 
+        cost, and it's typical for developers to attempt to streamline their code as much as possible,
+        with the intent that small methods and properties will be inlined in order to avoid these overheads.
+        The information provided by PerfView and the JIT can be valuable in understanding when and where 
+        such attempts fail, with the JIT providing the reason it chose not to inline a particular call site,
+        e.g. the callee had exception handling that prevented inlining, the callee was too big,
+        the callee was explicitly annotated to prevent inlining, etc.  Such information can then be used
+        by the developer to tweak their code in pursuit of a faster outcome.
+    </p>
     <hr />
      <h3>
         <a id="UnderstandingBackgroundJIT">Understanding Background JIT compilation</a></h3>

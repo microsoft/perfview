@@ -58,13 +58,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             for (int i = 0; i < workerQueues.Length; i++)
             {
                 workerQueues[i] = new BlockingCollection<StackSourceSample[]>(3);
-                var worker = workers[i] = new Thread(delegate(object workQueueObj)
+                var worker = workers[i] = new Thread(delegate (object workQueueObj)
                 {
                     // Set me priority lower so that the producer can always outrun the consumer.  
                     // The cure may be worse than the disease.   
                     // Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
                     var workQueue = (BlockingCollection<StackSourceSample[]>)workQueueObj;
-                    for (; ; )
+                    for (;;)
                     {
                         StackSourceSample[] readerSampleBlock;
                         // Trace.WriteLine("Task " + Task.CurrentId + " fetching work");
@@ -84,7 +84,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             var curIdx = 0;
             StackSourceSample[] writerSampleBlock = null;
-            ForEach(delegate(StackSourceSample sample)
+            ForEach(delegate (StackSourceSample sample)
             {
                 if (writerSampleBlock == null)
                 {
@@ -201,7 +201,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             writer.WriteLine("<StackSource>");
             writer.WriteLine(" <Samples>");
-            ForEach(delegate(StackSourceSample sample)
+            ForEach(delegate (StackSourceSample sample)
             {
                 writer.Write("  ");
                 writer.WriteLine(this.ToString(sample));
@@ -549,7 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public static CopyStackSource Clone(StackSource source)
         {
             var ret = new CopyStackSource(source);
-            source.ForEach(delegate(StackSourceSample sample)
+            source.ForEach(delegate (StackSourceSample sample)
             {
                 ret.AddSample(sample);
             });
@@ -796,7 +796,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         internal void ReadAllSamples(StackSource source, StackSourceStacks stackLookup, float scaleFactor)
         {
             var ctr = 0;
-            source.ForEach(delegate(StackSourceSample sample)
+            source.ForEach(delegate (StackSourceSample sample)
             {
                 var sampleCopy = new StackSourceSample(sample);
                 if (scaleFactor != 1.0F)
@@ -824,7 +824,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// the intern stack source (interning along the way of course).   Logically baseCallStackIndex has NOTHING to do with any of the
         /// call stack indexes in the intern stack source.  
         /// </summary>
-        private StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth=1000)
+        private StackSourceCallStackIndex InternFullStackFromSource(StackSourceCallStackIndex baseCallStackIndex, StackSourceStacks source, int maxDepth = 1000)
         {
             // To avoid stack overflows.  
             if (maxDepth < 0)
@@ -848,7 +848,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             var myModuleIndex = Interner.ModuleIntern(moduleName);
             var myFrameIndex = Interner.FrameIntern(frameName, myModuleIndex);
-            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth-1));
+            var ret = Interner.CallStackIntern(myFrameIndex, InternFullStackFromSource(baseCaller, source, maxDepth - 1));
             return ret;
         }
         #endregion
@@ -874,6 +874,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_moduleIntern = new Dictionary<string, StackSourceModuleIndex>(estNumModules);
             m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
             m_callStackIntern = new Dictionary<CallStackInfo, StackSourceCallStackIndex>(estNumCallStacks);
+
+            if (frameStartIndex < StackSourceFrameIndex.Start)
+                frameStartIndex = StackSourceFrameIndex.Start;
+            if (callStackStartIndex < StackSourceCallStackIndex.Start)
+                callStackStartIndex = StackSourceCallStackIndex.Start;
+            if (moduleStackStartIndex < StackSourceModuleIndex.Start)
+                moduleStackStartIndex = StackSourceModuleIndex.Start;
 
             m_frameStartIndex = frameStartIndex;
             m_callStackStartIndex = callStackStartIndex;
@@ -1027,7 +1034,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             FrameInfo newFrame = new FrameInfo(newName, frame.ModuleIndex);
             m_frames[(int)relFrameIndex] = newFrame;
             if (!m_frameIntern.ContainsKey(newFrame))
-                m_frameIntern.Add(newFrame, (StackSourceFrameIndex) relFrameIndex);
+                m_frameIntern.Add(newFrame, (StackSourceFrameIndex)relFrameIndex);
         }
 
         /// <summary>

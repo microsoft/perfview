@@ -45,7 +45,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // make a registeredParser to resolve self-describing events (and more).  
-            registeredParser = new RegisteredTraceEventParser(source);
+            registeredParser = new RegisteredTraceEventParser(source, true);
             // But cause any of its new definitions to work on my subscriptions.  
             registeredParser.NewEventDefinition = OnNewEventDefintion;
         }
@@ -81,7 +81,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             // Register the new definitions. 
-            providerManifest.ParseProviderEvents(delegate(DynamicTraceEventData template)
+            providerManifest.ParseProviderEvents(delegate (DynamicTraceEventData template)
             {
                 return OnNewEventDefintion(template, prevManifest != null);
             }, noThrowOnError);
@@ -91,7 +91,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // Register the manifest event with myself so that I continue to get updated manifests.  
             // TODO we are 'leaking' these today.  Clean them up on Dispose.  
-            var callback = new DynamicManifestTraceEventData(delegate(TraceEvent data) { CheckForDynamicManifest(data); }, providerManifest);
+            var callback = new DynamicManifestTraceEventData(delegate (TraceEvent data) { CheckForDynamicManifest(data); }, providerManifest);
             source.RegisterEventTemplate(callback);
 
             // Raise the event that says we found a new provider.   
@@ -229,7 +229,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             foreach (var provider in state.providers.Values)
             {
-                provider.ParseProviderEvents(delegate(DynamicTraceEventData template)
+                provider.ParseProviderEvents(delegate (DynamicTraceEventData template)
                 {
                     if (eventsToObserve != null)
                     {
@@ -237,11 +237,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (response != EventFilterResponse.AcceptEvent)
                             return response;
                     }
-                    callback(template);
+
+                    // We should only return a particular template at most once.   
+                    // However registredParser can overlap with dynamicParser 
+                    // (this can happen if the ETL was merged and has KernelTraceControler events for the provider
+                    // or someone registers an EventSource with the OS).     
+                    // Since we will Enumerate all the events the registeredParser knows
+                    // about below, we filter out any duplicates here. 
+                    if (!registeredParser.HasDefinitionForTemplate(template))
+                        callback(template);
                     return EventFilterResponse.AcceptEvent;
                 }, true);
             }
-
             // also enumerate any events from the registeredParser.  
             registeredParser.EnumerateTemplates(eventsToObserve, callback);
         }
@@ -326,7 +333,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 provider.ISDynamic = true;
                 return provider;
 
-            Fail:
+                Fail:
                 Chunks = null;
                 return null;
             }
@@ -490,7 +497,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Confirm that the serialization 'adds up'
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
             Debug.Assert(computedSize <= this.EventDataLength);
-            if ((int) ID != 0xFFFE) // If it is not a manifest event
+            if ((int)ID != 0xFFFE) // If it is not a manifest event
             {
                 // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
                 Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
@@ -593,6 +600,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                             else
                                 return "[CANT PARSE STRING]";
+
+                            if (!isAnsi)
+                                size = (ushort)(size / 2);        // Size was a byte count, turn it into a char count. 
                         }
                         else if (size > 0x8000)
                         {
@@ -602,7 +612,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (isAnsi)
                             return GetFixedAnsiStringAt(size, offset);
                         else
-                            return GetFixedUnicodeStringAt(size / 2, offset);
+                            return GetFixedUnicodeStringAt(size, offset);
                     }
                 case TypeCode.Boolean:
                     return GetByteAt(offset) != 0;
@@ -794,7 +804,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return "";
 
                 long asLong = (long)((IConvertible)value).ToInt64(formatProvider);
-                if (map is SortedList<long, string>)
+                if (map is SortedDictionary<long, string>)
                 {
                     StringBuilder sb = new StringBuilder();
                     // It is a bitmap, compute the bits from the bitmap.  
@@ -866,7 +876,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
-            return Regex.Replace(MessageFormat, @"%(\d+)", delegate(Match m)
+            return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
             {
                 int index = int.Parse(m.Groups[1].Value) - 1;
 
@@ -984,6 +994,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return offset + GetInt32At(offset - 4);
                 else if ((size & ~IS_ANSI) == SIZE16_PRECEEDS)
                     return offset + (ushort)GetInt16At(offset - 2);
+                else if ((size & ~IS_ANSI) == SIZE32_PREFIX)
+                    return offset + GetInt32At(offset) + 4;
                 else if ((size & ~IS_ANSI) == SIZE16_PREFIX)
                     return offset + (ushort)(GetInt16At(offset) + 2);
                 else
@@ -1030,9 +1042,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // SIZE32_PRECEEDS | IS_ANSI == MaxValue - 2
         internal const ushort SIZE32_PRECEEDS = ushort.MaxValue - 3;   // binary, BYTE Count is a 32 bit int directly before
         // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 4
-        internal const ushort SIZE16_PRECEEDS = ushort.MaxValue - 5;   // string, BYTE Count is a 16 bit uint directly before this offset
+        internal const ushort SIZE16_PRECEEDS = ushort.MaxValue - 5;   // binary, BYTE Count is a 16 bit uint directly before this offset
         // SIZE16_PREFIX | IS_ANSI == MaxValue - 6
-        internal const ushort SIZE16_PREFIX = ushort.MaxValue - 7;     // string/binary, BYTE Count is a 16 bit uint at this offset followed by data
+        internal const ushort SIZE16_PREFIX = ushort.MaxValue - 7;     // binary/strings BYTE Count is a 16 bit uint at this offset followed by data.  ALso used for arrays, where it is the COUNT of elements.  
         // SIZE16_PREFIX | IS_ANSI == MaxValue - 8
         internal const ushort SIZE32_PREFIX = ushort.MaxValue - 9;     // binary BYTE Count is a 32 bit int at this offset followed by data. 
         // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 10
@@ -1282,7 +1294,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 var map = Map;
                 if (map != null)
                 {
-                    var asSortedList = map as SortedList<long, string>;
+                    var asSortedList = map as SortedDictionary<long, string>;
                     if (asSortedList != null)
                         serializer.Write((byte)1);
                     else
@@ -1332,7 +1344,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     IDictionary<long, string> map = null;
                     int mapCount = deserializer.ReadInt();
                     if (fetchType == 1)
-                        map = new SortedList<long, string>(mapCount);
+                        map = new SortedDictionary<long, string>();
                     else
                         map = new Dictionary<long, string>(mapCount);
 
@@ -1771,7 +1783,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                                     // This will be looked up in the string table in a second pass.  
                                     eventTemplate.MessageFormat = reader.GetAttribute("message");
-                                } break;
+                                }
+                                break;
                             case "template":
                                 {
                                     string templateName = reader.GetAttribute("tid");
@@ -1780,7 +1793,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     {
                                         templates[templateName] = ComputeFieldInfo(template, maps);
                                     }
-                                } break;
+                                }
+                                break;
                             case "opcode":
                                 // TODO use message for opcode if it is available so it is localized.  
                                 opcodes[reader.GetAttribute("name")] = int.Parse(reader.GetAttribute("value"));
@@ -1793,14 +1807,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (guidString != null)
                                         info.guid = new Guid(guidString);
                                     tasks[reader.GetAttribute("name")] = info;
-                                } break;
+                                }
+                                break;
                             case "valueMap":
-                                map = new Dictionary<long, string>();    // value maps use dictionaries
+                                map = new Dictionary<long, string>();           // value maps use dictionaries
                                 goto DoMap;
                             case "bitMap":
-                                map = new SortedList<long, string>();    // Bitmaps stored as sorted lists
+                                map = new SortedDictionary<long, string>();    // Bitmaps stored as sorted dictionaries
                                 goto DoMap;
-                            DoMap:
+                                DoMap:
                                 string name = reader.GetAttribute("name");
                                 using (var mapValues = reader.ReadSubtree())
                                 {
@@ -1837,7 +1852,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             alreadyReadMyCulture = true;
                                         cultureBeingRead = reader.GetAttribute("culture");
                                     }
-                                } break;
+                                }
+                                break;
                             case "string":
                                 if (!alreadyReadMyCulture)
                                     strings[reader.GetAttribute("id")] = reader.GetAttribute("value");
@@ -1915,7 +1931,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 error = e;
             }
 
-        THROW:
+            THROW:
             if (!noThrowOnError && error != null)
                 throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
         }

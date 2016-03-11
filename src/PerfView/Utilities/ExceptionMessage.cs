@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Utilities
 {
-    class ExceptionMessage
+    public class ExceptionMessage
     {
         /// <summary>
         /// Figures out a good user message for the exception 'e'   For things that directly
@@ -17,7 +17,9 @@ namespace Utilities
                 || ex is IOException || ex is UnauthorizedAccessException || ex is CommandLineParserException
                 || ex is System.Xml.XmlException
                 || ex is NotSupportedException 
-                || ex is ArgumentException && ex.Message.StartsWith("Illegal characters in path", StringComparison.OrdinalIgnoreCase)
+                || ex is ArgumentException && 
+                    (ex.Message.StartsWith("Illegal characters in path", StringComparison.OrdinalIgnoreCase) || 
+                    (ex.Message.StartsWith("parsing", StringComparison.OrdinalIgnoreCase)))     // regex error message 
                 || ex.GetType().Name == "SerializationException") // We do this to avoid loading the FastSerialziation DLL (which may fail)
             {
                 userLevel = true;

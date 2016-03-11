@@ -145,7 +145,7 @@ namespace PEFile
         public void Dispose()
         {
             // This method can only be called once on a given object.  
-            m_stream.Close();
+            m_stream.Dispose();
             m_headerBuff.Dispose();
             if (m_freeBuff != null)
                 m_freeBuff.Dispose();

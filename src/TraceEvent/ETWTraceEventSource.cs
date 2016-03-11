@@ -226,7 +226,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Get the name of all DLLS (in the file, and the set of all address-process pairs in the file.   
             using (var source = new ETWTraceEventSource(etlFile))
             {
-                source.Kernel.ImageGroup += delegate(ImageLoadTraceData data)
+                source.Kernel.ImageGroup += delegate (ImageLoadTraceData data)
                 {
                     var fileName = data.FileName;
                     if (fileName.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) < 0)
@@ -236,7 +236,7 @@ namespace Microsoft.Diagnostics.Tracing
                     images.Add(new ImageData(processId, fileName, data.ImageBase, data.ImageSize));
                 };
 
-                source.Kernel.StackWalkStack += delegate(StackWalkStackTraceData data)
+                source.Kernel.StackWalkStack += delegate (StackWalkStackTraceData data)
                 {
                     if (data.ProcessID == 0)
                         return;
@@ -248,7 +248,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 };
 
-                source.Clr.ClrStackWalk += delegate(ClrStackWalkTraceData data)
+                source.Clr.ClrStackWalk += delegate (ClrStackWalkTraceData data)
                 {
                     var processId = data.ProcessID;
                     for (int i = 0; i < data.FrameCount; i++)
@@ -258,7 +258,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 };
 
-                source.Kernel.PerfInfoSample += delegate(SampledProfileTraceData data)
+                source.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
                 {
                     if (data.ProcessID == 0)
                         return;
@@ -419,6 +419,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                 sessionStartTimeQPC = nowQPC - _QPCFreq / 10;           // Subtract 1/10 sec to keep now and nowQPC in sync.  
                 sessionEndTimeQPC = long.MaxValue;                      // Represents infinity.      
+
+                Debug.Assert(SessionStartTime < SessionEndTime);
             }
             else
             {
@@ -429,10 +431,7 @@ namespace Microsoft.Diagnostics.Tracing
                 sessionStartTimeQPC = this.UTCDateTimeToQPC(minSessionStartTimeUTC);
                 sessionEndTimeQPC = this.UTCDateTimeToQPC(maxSessionEndTimeUTC);
             }
-
-            Debug.Assert(sessionStartTimeQPC != 0 && sessionEndTimeQPC != 0 && SessionStartTime < SessionEndTime);
             Debug.Assert(_QPCFreq != 0);
-
             if (pointerSize == 0)       // Real time does not set this (grrr). 
             {
                 pointerSize = sizeof(IntPtr);
@@ -457,7 +456,7 @@ namespace Microsoft.Diagnostics.Tracing
             processNameForID = new Dictionary<int, string>();
 
             var kernelParser = new KernelTraceEventParser(this, KernelTraceEventParser.ParserTrackingOptions.None);
-            kernelParser.ProcessStartGroup += delegate(ProcessTraceData data)
+            kernelParser.ProcessStartGroup += delegate (ProcessTraceData data)
             {
                 // Get just the file name without the extension.  Can't use the 'Path' class because
                 // it tests to make certain it does not have illegal chars etc.  Since KernelImageFileName
@@ -473,11 +472,11 @@ namespace Microsoft.Diagnostics.Tracing
                     endIdx = path.Length;
                 processNameForID[data.ProcessID] = path.Substring(startIdx, endIdx - startIdx);
             };
-            kernelParser.ProcessEndGroup += delegate(ProcessTraceData data)
+            kernelParser.ProcessEndGroup += delegate (ProcessTraceData data)
             {
                 processNameForID.Remove(data.ProcessID);
             };
-            kernelParser.EventTraceHeader += delegate(EventTraceHeaderTraceData data)
+            kernelParser.EventTraceHeader += delegate (EventTraceHeaderTraceData data)
             {
                 if (_syncTimeQPC == 0)
                 {   // In merged files there can be more of these, we only set the QPC time on the first one 
@@ -519,7 +518,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // correct synchronization.  
                 DateTime start = DateTime.UtcNow;
                 long lastQPC = Stopwatch.GetTimestamp();
-                for (; ; )
+                for (;;)
                 {
                     var next = DateTime.UtcNow;
                     m_timeAsQPC = Stopwatch.GetTimestamp();

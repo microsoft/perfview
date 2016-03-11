@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// We have the problem with French making bad numbers in the HeapDUmp output because the Command run does not recognise the data from the process as being UTF8.  This seems to need a framework update.
 // Make 'DumpEvent' in the 'events' view work on a range of values.  Allow it to be dumped. as EXCEL?   
 // Provide a method of getting at things like EventIndex, DataTime, ... from the 'events' view.  
 // Win10 kernel event support.  
@@ -1102,6 +1103,16 @@ namespace PerfView
         /// </summary>
         public void OpenPath(string path, bool force = false)
         {
+            // If someone holds down shift, right clicks on a file and selects "Copy as path" it will
+            // contain a starting and ending quote (e.g. "e:\trace.etl" as apposed to e:\trace.etl). If
+            // they then paste this into the MainWindow's directory HistoryComboBox without removing 
+            // the quotes and press enter, an exception will be thrown here. Remove these quotes so 
+            // it doesn't need to be manually done.
+            if (path.StartsWith("\"") && path.EndsWith("\"") && path.Length >= 2)
+            {
+                path = path.Substring(1, path.Length - 2);
+            }
+
             if (System.IO.Directory.Exists(path))
             {
                 var fullPath = App.MakeUniversalIfPossible(Path.GetFullPath(path));
@@ -1424,7 +1435,10 @@ namespace PerfView
                     if (canSendFeedback)
                     {
                         // FeedbackButton.Visibility = System.Windows.Visibility.Visible;
-                        WikiButton.Visibility = System.Windows.Visibility.Visible;
+
+                        // TODO Currently even the internal Wiki is now a broken link, so simply give up for now.
+                        // When we go open source we can use GitHub for this.   
+                        // WikiButton.Visibility = System.Windows.Visibility.Visible;
                     }
                     if (pdbScopeExists)
                         ImageSizeMenuItem.Visibility = System.Windows.Visibility.Visible;

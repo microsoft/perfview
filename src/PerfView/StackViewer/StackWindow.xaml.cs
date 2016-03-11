@@ -21,14 +21,13 @@ using Graphs;
 using PerfView.Dialogs;
 using PerfViewModel;
 using Microsoft.Diagnostics.Symbols;
-using Utilities;
 using Address = System.UInt64;
 using Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using PerfView.GuiUtilities;
-
+using Utilities;
 
 namespace PerfView
 {
@@ -866,6 +865,9 @@ namespace PerfView
                 // Use the same configuration as the base window.  
                 DataSource.DataFile.ConfigureStackWindow("", stackWindow);
             }
+
+            stackWindow.GuiState = GuiState;
+
             stackWindow.Show();
 
             stackWindow.StatusBar.StartWork("Computing " + dataFile.Name, delegate()
@@ -1895,7 +1897,7 @@ namespace PerfView
             }
 
             //create the list of module names to look up
-            var moduleNames = new List<string>();
+            var moduleNames = new HashSet<string>();
             var success = DoForSelectedModules(delegate(string moduleName)
             {
                 moduleNames.Add(moduleName);
@@ -2009,7 +2011,7 @@ namespace PerfView
                         StatusBar.Log("Viewing line " + sourceLocation.LineNumber + " in " + logicalSourcePath);
 
                         // TODO FIX NOW this is a hack
-                        var notepad2 = Utilities.Command.FindOnPath("notepad2.exe");
+                        var notepad2 = Command.FindOnPath("notepad2.exe");
                         if (notepad2 == null && AppLog.InternalUser)
                         {
                             var clrMainNotepad2 = @"\\clrmain\tools\x86\notepad2.exe";
@@ -2019,8 +2021,8 @@ namespace PerfView
 
                         Window dialogParentWindow = this;
                         if (notepad2 != null)
-                            Utilities.Command.Run(Utilities.Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
-                                + Utilities.Command.Quote(sourcePathToOpen), new Utilities.CommandOptions().AddStart());
+                            Command.Run(Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
+                                + Command.Quote(sourcePathToOpen), new CommandOptions().AddStart());
                         else
                         {
                             StatusBar.Log("Opening editor on " + sourcePathToOpen);
@@ -2710,19 +2712,19 @@ namespace PerfView
             ByNameDataGrid.Grid.CanUserSortColumns = true;
             var columns = ByNameDataGrid.Grid.Columns;
 
-            Debug.Assert(((TextBlock)columns[1].Header).Name == "IncPercentColumn");
-            Debug.Assert(((TextBlock)columns[2].Header).Name == "IncColumn");
-            Debug.Assert(((TextBlock)columns[3].Header).Name == "IncAvgColumn");
-            Debug.Assert(((TextBlock)columns[4].Header).Name == "IncCountColumn");
-            Debug.Assert(((TextBlock)columns[5].Header).Name == "ExcPercentColumn");
-            Debug.Assert(((TextBlock)columns[6].Header).Name == "ExcColumn");
-            Debug.Assert(((TextBlock)columns[7].Header).Name == "ExcCountColumn");
-            Debug.Assert(((TextBlock)columns[8].Header).Name == "FoldColumn");
-            Debug.Assert(((TextBlock)columns[9].Header).Name == "FoldCountColumn");
 
-            columns.Move(5, 1);             // move exc% first
-            columns.Move(6, 2);             // move exc second
-            columns.Move(7, 3);             // move exc count third
+            // Put the exlusive columns first if they are not already there.  
+            var col = ByNameDataGrid.GetColumnIndex("ExcPercentColumn");
+            if (0 <= col && col != 1)
+                ByNameDataGrid.Grid.Columns.Move(col, 1);
+
+            col = ByNameDataGrid.GetColumnIndex("ExcColumn");
+            if (0 <= col && col != 2)
+                ByNameDataGrid.Grid.Columns.Move(col, 2);
+
+            col = ByNameDataGrid.GetColumnIndex("ExcCountColumn");
+            if (0 <= col && col != 3)
+                ByNameDataGrid.Grid.Columns.Move(col, 3);
 
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
@@ -3166,12 +3168,11 @@ namespace PerfView
                 bool firstCell = true;
                 foreach (var cell in cells)
                 {
-                    var content = cell.Column.GetCellContent(cell.Item);
-                    var asTextBlock = content as TextBlock;
-                    if (asTextBlock != null)
+                    var content = PerfDataGrid.GetCellStringValue(cell);
+                    if (content != null)
                     {
                         double num;
-                        if (double.TryParse(asTextBlock.Text, out num))
+                        if (double.TryParse(content, out num))
                         {
                             if (count == 0)
                                 first = num;

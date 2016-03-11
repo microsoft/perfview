@@ -1328,15 +1328,21 @@ namespace PerfViewExtensibility
             // Find all the ones that are in user extension dlls.  
             foreach (var extensionDllPath in GetExtensionDlls())
             {
-                var assembly = Assembly.LoadFrom(extensionDllPath);
-                var commandType = assembly.GetType("Commands");
-                if (commandType != null)
+                try
                 {
-                    methods = commandType.GetMethods(
-                        BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                    foreach (var method in methods)
-                        ret.Add(method);
+                    var assembly = Assembly.LoadFrom(extensionDllPath);
+                    var commandType = assembly.GetType("Commands");
+                    if (commandType != null)
+                    {
+                        methods = commandType.GetMethods(
+                            BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                        foreach (var method in methods)
+                            ret.Add(method);
+                    }
                 }
+                catch (Exception) {
+                    App.CommandProcessor.LogFile.WriteLine("Dll " + extensionDllPath + "could not be loaded, assuming it has no user commands");
+                }     
             }
 
             return ret;
@@ -2556,29 +2562,36 @@ namespace PerfViewExtensibility
                 // Add callbacks for any EventSource Events to print them to the Text window
                 Action<TraceEvent> onAnyEvent = delegate(TraceEvent data)
                 {
-                    String str = data.TimeStamp.ToString("HH:mm:ss.fff ");
-                    str += data.EventName;
-                    str += "\\" + data.ProviderName + " ";
-                    for (int i = 0; i < data.PayloadNames.Length; i++)
+                    try
                     {
-                        var payload = data.PayloadNames[i];
-                        if (i != 0)
-                            str += ",";
-                        str += String.Format("{0}=\"{1}\"", payload, data.PayloadByName(payload));
-                    }
-
-                    if (App.CommandLineArgs.NoGui)
-                        App.CommandProcessor.LogFile.WriteLine("{0}", str);
-                    else
-                    {
-                        GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                        String str = data.TimeStamp.ToString("HH:mm:ss.fff ");
+                        str += data.EventName;
+                        str += "\\" + data.ProviderName + " ";
+                        for (int i = 0; i < data.PayloadNames.Length; i++)
                         {
+                            var payload = data.PayloadNames[i];
+                            if (i != 0)
+                                str += ",";
+                            str += String.Format("{0}=\"{1}\"", payload, data.PayloadByName(payload));
+                        }
+
+                        if (App.CommandLineArgs.NoGui)
+                            App.CommandProcessor.LogFile.WriteLine("{0}", str);
+                        else
+                        {
+                            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                            {
                             // This should be null because the BeginInvoke above came before this 
                             // and both are constrained to run in the same thread, so this has to
                             // be after it (and thus it is initialized).  
                             Debug.Assert(listenTextEditorWriter != null);
-                            listenTextEditorWriter.WriteLine("{0}", str);
-                        });
+                                listenTextEditorWriter.WriteLine("{0}", str);
+                            });
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        App.CommandProcessor.LogFile.WriteLine("Error: Exception during event processing of event {0}: {1}", data.EventName, e.Message);
                     }
                 };
 
@@ -2650,6 +2663,31 @@ namespace PerfViewExtensibility
                     GuiApp.MainWindow.OpenNext(outputFileName);
             }
         }
+
+		/// <summary>
+		/// Creates a .perfView.xml.zip that represents the profiling data from a perf script output dump. Adding a
+		/// --threadtime tag enables blocked time investigations on the perf script dump.
+		/// </summary>
+		/// <param name="path">The path to the perf script dump, right now, either a file with suffix perf.data.dump,
+		/// .trace.zip or .data.txt will be accepted.</param>
+		/// <param name="threadTime">Option to turn on thread time on the perf script dump.</param>
+		public void PerfScript(string path, string threadTime = null)
+		{
+			bool doThreadTime = threadTime != null && threadTime == "--threadtime";
+
+			var perfScriptStackSource = new ParallelLinuxPerfScriptStackSource(path, doThreadTime);
+			string outputFileName = Path.ChangeExtension(path, ".perfView.xml.zip");
+
+			XmlStackSourceWriter.WriteStackViewAsZippedXml(perfScriptStackSource, outputFileName);
+
+			if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+			{
+				if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+				{
+					GuiApp.MainWindow.OpenNext(outputFileName);
+				}
+			}
+		}
 
         /// <summary>
         /// Creates a stack source out of the textFileName where each line is a frame (which is directly rooted)
@@ -2815,11 +2853,6 @@ namespace PerfViewExtensibility
 
             class CodeSymbolState
             {
-                int m_moduleId;
-                string m_pdbName;
-                int m_chunksReadSoFar;
-                int m_totalChunks;
-                byte[][] m_chunks;
                 string m_pdbIndexPath;
                 MemoryStream m_stream;
                 private ModuleLoadUnloadTraceData m_moduleData;
@@ -2951,6 +2984,29 @@ namespace PerfViewExtensibility
         }
 
         /// <summary>
+        /// Outputs some detailed Server GC analysis to a file.
+        /// </summary>
+        public void ServerGCReport(string etlFile)
+        {
+            if (PerfView.AppLog.InternalUser)
+            {
+                ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
+                TraceLog source = TraceLog.OpenOrConvert(etlFile);
+
+                var gcStats = Stats.GCProcess.Collect(source.Events.GetSource(), 1, null, null, true, source);
+
+                var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
+                using (var output = File.CreateText(outputFileName))
+                {
+                    LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
+                    gcStats.ToHtml(output, outputFileName, "GCStats", null);
+                }
+                if (!App.CommandLineArgs.NoGui)
+                    OpenHtmlReport(outputFileName, "GCStats report");
+            }
+        }
+
+        /// <summary>
         /// Computes the JITStats HTML report for etlFile.  
         /// </summary>
         public void JITStats(string etlFile)
@@ -2978,6 +3034,26 @@ namespace PerfViewExtensibility
             if (!App.CommandLineArgs.NoGui)
                 OpenHtmlReport(outputFileName, "JITStats report");
         }
+
+        /// <summary>
+        /// Given a PDB file, dump the source server information in the PDB file.
+        /// </summary>
+        //public void DumpSourceServerStream(string pdbFile)
+        //{
+        //    SymbolReader reader = new SymbolReader(LogFile);
+        //    SymbolModule module = reader.OpenSymbolFile(pdbFile);
+
+        //    string srcsrvData = module.GetSrcSrvStream();
+        //    if (srcsrvData == null)
+        //        LogFile.WriteLine("[No source server information on {0}]", pdbFile);
+        //    else
+        //    {
+        //        LogFile.WriteLine("Source Server Data for {0}", pdbFile);
+        //        LogFile.Write(srcsrvData);
+        //        LogFile.WriteLine();
+        //        LogFile.WriteLine("[Source Server Data Dumped into log for {0}]", pdbFile);
+        //    }
+        //}
 
 #if CAP
         /// <summary>
@@ -3118,7 +3194,64 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
-#if false 
+#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
+        /// <summary>
+        /// PrintSerializedExceptionFromProcessDump
+        /// </summary>
+        /// <param name="inputDumpFile">inputDumpFile</param>
+        public void PrintSerializedExceptionFromProcessDump(string inputDumpFile)
+        {
+            TextWriter log = LogFile;
+            if (!App.IsElevated)
+                throw new ApplicationException("Must be Administrator (elevated).");
+
+            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+            var trueArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
+            if (trueArch != null)
+            {
+                // TODO FIX NOW.   Find a way of determing which architecture a dump is
+                try
+                {
+                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
+                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, trueArch);
+                    return; // Yeah! success the first time
+                }
+                catch (Exception e)
+                {
+                    // It might have failed because this was a 32 bit dump, if so try again.  
+                    if (e is ApplicationException)
+                    {
+                        log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
+                        PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+                        return;
+                    }
+                    throw;
+                }
+            }
+            PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+
+        }
+
+        private void PrintSerializedExceptionFromProcessDumpThroughHeapDump(string inputDumpFile, TextWriter log, string arch)
+        {
+            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, arch + @"\HeapDump.exe");
+            var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
+            options.AddOutputStream(LogFile);
+
+            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", App.SymbolPath);
+            log.WriteLine("set _NT_SYMBOL_PATH={0}", App.SymbolPath);
+
+            var commandLine = string.Format("\"{0}\" {1} \"{2}\"", heapDumpExe, "/dumpSerializedException:", inputDumpFile);
+            log.WriteLine("Exec: {0}", commandLine);
+            var cmd = Command.Run(commandLine, options);
+            if (cmd.ExitCode != 0)
+            {
+                throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
+            }
+        }
+#endif
+
+#if false
         public void Test()
         {
             LogFile.WriteLine("Starting Listener thread.");
@@ -3135,16 +3268,15 @@ namespace PerfViewExtensibility
                     delegate(TraceEvent data)
                     {
                         Trace.WriteLine("Testing " + data.ToString());
-                        GC.KeepAlive("");
                     }
                     );
                 source.Process();
             }
             Trace.WriteLine("Done.");
         }
-#endif 
+#endif
 
-        #region private
+#region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -3440,7 +3572,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-        #endregion
+#endregion
     }
 }
 
@@ -3459,17 +3591,6 @@ public static class TraceEventStackSourceExtensions
         traceStackSource.ShowUnknownAddresses = showUnknownAddresses;
         // We clone the samples so that we don't have to go back to the ETL file from here on.  
         return CopyStackSource.Clone(traceStackSource);
-    }
-    public static MutableTraceEventStackSource BlockedTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
-    {
-        var stackSource = new MutableTraceEventStackSource(eventLog);
-        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-        var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
-        computer.BlockedTimeOnly = true;
-        computer.GenerateThreadTimeStacks(stackSource);
-
-        return stackSource;
     }
     public static MutableTraceEventStackSource ThreadTimeStacks(this TraceLog eventLog, TraceProcess process = null, bool showUnknownAddresses = false)
     {

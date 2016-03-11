@@ -22,7 +22,7 @@ namespace Utilities
     /// <summary>
     /// CommandOptions is a helper class for the Command class.  It stores options
     /// that affect the behavior of the execution of ETWCommands and is passes as a 
-    /// parapeter to the constuctor of a Command.  
+    /// parameter to the constructor of a Command.  
     /// 
     /// It is useful for these options be be on a separate class (rather than 
     /// on Command itself), because it is reasonably common to want to have a set
@@ -574,7 +574,7 @@ namespace Utilities
 
             // If we created the output stream, we should close it.  
             if (outputStream != null && options.outputFile != null)
-                outputStream.Close();
+                outputStream.Dispose();
             outputStream = null;
 
             if (waitReturned && killed) 
@@ -662,7 +662,7 @@ namespace Utilities
 
             // If we created the output stream, we should close it.  
             if (outputStream != null && options.outputFile != null)
-                outputStream.Close();
+                outputStream.Dispose();
             outputStream = null;
         }
 

@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Triggers;
+using Utilities;
 using EventSource = EventSources.EventSource;
 
 namespace PerfView
@@ -123,14 +124,14 @@ namespace PerfView
                 var startStopRecords = new Dictionary<StartStopKey, double>(10);
 
                 // Figure out if you need m_activityComputer or not 
-                if (ColumnsToDisplay == null || ColumnsToDisplay.Count == 0)
-                    m_needsComputers = true;
-                else
+                // Because it is moderately expensive, and not typically used, we only include the activity stuff 
+                // when you explicitly ask for it 
+                m_needsComputers = false;
+                if (ColumnsToDisplay != null)
                 {
-                    m_needsComputers = false;
                     foreach (string column in ColumnsToDisplay)
                     {
-                        if (column == "*" || column == "TaskIndex" || column == "StartStopActvity" || column == "TaskCreationMSec")
+                        if (column == "*" || column == "ActivityInfo" || column == "StartStopActivity")
                         {
                             m_needsComputers = true;
                             break;
@@ -396,14 +397,13 @@ namespace PerfView
                         columnsForSelectedEvents[fieldName] = fieldName;
                 }
             }
-            columnsForSelectedEvents["TaskIndex"] = "TaskIndex";
+            columnsForSelectedEvents["ActivityInfo"] = "ActivityInfo";
             columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
-            columnsForSelectedEvents["TaskCreationMSec"] = "TaskCreationMSec";
             columnsForSelectedEvents["ThreadID"] = "ThreadID";
             columnsForSelectedEvents["ActivityID"] = "ActivityID";
-            // columnsForSelectedEvents["ActivityIndex"] = "ActivityIndex";
             columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
             columnsForSelectedEvents["HasStack"] = "HasStack";
+            columnsForSelectedEvents["HasBlockedStack"] = "HasBlockedStack";
             columnsForSelectedEvents["DURATION_MSEC"] = "DURATION_MSEC";
             columnsForSelectedEvents["FormattedMessage"] = "FormattedMessage";
             return columnsForSelectedEvents.Keys;
@@ -460,6 +460,10 @@ namespace PerfView
                 if (hasStack)
                     AddField("HasStack", hasStack.ToString(), columnOrder, restString);
 
+                var asCSwitch = data as CSwitchTraceData;
+                if (asCSwitch != null)
+                    AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString);
+
                 AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
 
                 var message = data.FormattedMessage;
@@ -493,20 +497,24 @@ namespace PerfView
                     TraceThread thread = data.Thread();
                     if (thread != null)
                     {
-                        var activity = source.m_activityComputer.GetCurrentActivity(thread);
+                        TraceActivity activity = source.m_activityComputer.GetCurrentActivity(thread);
                         if (activity != null)
                         {
                             string id = activity.ID;
                             if (Math.Abs(activity.StartTimeRelativeMSec - m_timeStampRelativeMSec) < .0005)
                                 id = "^" + id;              // Indicates it is at the start of the task. 
-                            AddField("TaskIndex", id, columnOrder, restString);
-                            if (activity.Creator != null)
-                                AddField("TaskCreationMSec", activity.CreationTimeRelativeMSec.ToString("n3"), columnOrder, restString);
-                        }
+                            AddField("ActivityInfo", id, columnOrder, restString);
+                         }
 
-                        var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread);
+                        var startStopActivity = source.m_startStopActivityComputer.GetCurrentStartStopActivity(thread, data);
                         if (startStopActivity != null)
-                            AddField("StartStopActivity", startStopActivity.Name, columnOrder, restString);
+                        {
+                            string name = startStopActivity.Name;
+                            string parentName = "$";
+                            if (startStopActivity.Creator != null)
+                                parentName = startStopActivity.Creator.Name;
+                            AddField("StartStopActivity", name + "/P=" + parentName, columnOrder, restString);
+                        }
                     }
                 }
 
@@ -556,7 +564,7 @@ namespace PerfView
                     }
                 }
                 if (putInRest)
-                    restString.Append(fieldName).Append("=").Append(Utilities.Command.Quote(fieldValue)).Append(' ');
+                    restString.Append(fieldName).Append("=").Append(Command.Quote(fieldValue)).Append(' ');
             }
 
             /// <summary>

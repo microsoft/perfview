@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Markup;
+using Utilities;
 
 namespace PerfView
 {
@@ -110,7 +111,7 @@ namespace PerfView
         private void OnGuiUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             bool userLevel;
-            string message = Utilities.ExceptionMessage.GetUserMessage(e.Exception, out userLevel);
+            string message = ExceptionMessage.GetUserMessage(e.Exception, out userLevel);
             if (userLevel)
             {
                 // TODO FIX NOW would really like to find the window with focus, and not always use the main window...
