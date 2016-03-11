@@ -216,7 +216,8 @@ namespace Diagnostics.Tracing.StackSources
 
 				if (i < analyzers.Count - 1)
 				{
-					foreach (int threadId in endingStates.Keys)
+					List<int> threadIds = endingStates.Keys.ToList();
+					foreach (int threadId in threadIds)
 					{
 						for (int j = i + 1; j < analyzers.Count; j++)
 						{
@@ -224,13 +225,8 @@ namespace Diagnostics.Tracing.StackSources
 
 							if (beginningStates.ContainsKey(threadId))
 							{
-								var beforeEvent = endingStates[threadId].Value;
 								var afterEvent = beginningStates[threadId].Value;
-
-								if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
-								{
-									analyzers[i].UpdateThreadState(afterEvent);
-								}
+								analyzers[i].UpdateThreadState(afterEvent);
 
 								break;
 							}

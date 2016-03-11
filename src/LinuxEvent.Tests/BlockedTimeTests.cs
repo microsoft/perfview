@@ -76,5 +76,16 @@ namespace LinuxTracing.Tests
 			string path = Constants.GetTestingPerfDumpPath("mixed_switches");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 8.0);
 		}
+
+		[Fact]
+		public void ConcurrentBlockedTime()
+		{
+			string path = Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\helloworld.trace.zip");
+			var linearStackSource = new LinuxPerfScriptStackSource(path, true);
+			Constants.WaitUntilFileIsReady(path);
+			var parallelStackSource = new ParallelLinuxPerfScriptStackSource(path, true);
+
+			Assert.Equal(linearStackSource.TotalBlockedTime, parallelStackSource.TotalBlockedTime);
+		}
 	}
 }
