@@ -42,7 +42,7 @@ namespace Diagnostics.Tracing.StackSources
 			for (int i = 0; i < tasks.Length; i++)
 			{
 				threadSamples[i] = new List<StackSourceSample>();
-				
+
 				if (threadBlockedTimeAnalyzers != null)
 				{
 					threadBlockedTimeAnalyzers[i] = new List<BlockedTimeAnalyzer>();
@@ -71,8 +71,6 @@ namespace Diagnostics.Tracing.StackSources
 							blockedTimeAnalyzer?.LinuxEventSampleAssociation(linuxEvent, sample);
 						}
 						bufferPart.Dispose();
-
-						blockedTimeAnalyzer?.FinishAnaylizing();
 					}
 				}, i);
 
@@ -210,38 +208,37 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			analyzers.Sort((x, y) => x.TimeStamp.CompareTo(y.TimeStamp));
 
-			for (int i = 0; i < analyzers.Count - 1; i++)
+			double lastTimeStamp = analyzers[analyzers.Count - 1].TimeStamp;
+
+			for (int i = 0; i < analyzers.Count; i++)
 			{
 				var endingStates = analyzers[i].EndingStates;
 
-				foreach (int threadId in endingStates.Keys)
+				if (i < analyzers.Count - 1)
 				{
-					for (int j = i + 1; j < analyzers.Count; j++)
+					foreach (int threadId in endingStates.Keys)
 					{
-						var beginningStates = analyzers[j].BeginningStates;
-
-						if (beginningStates.ContainsKey(threadId))
+						for (int j = i + 1; j < analyzers.Count; j++)
 						{
-							var beforeEvent = endingStates[threadId].Value;
-							var afterEvent = beginningStates[threadId].Value;
+							var beginningStates = analyzers[j].BeginningStates;
 
-							if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
+							if (beginningStates.ContainsKey(threadId))
 							{
-								double period = afterEvent.Time - beforeEvent.Time;
-								analyzers[i].LinuxEventSamples[afterEvent].Metric =
-									(float)period;
+								var beforeEvent = endingStates[threadId].Value;
+								var afterEvent = beginningStates[threadId].Value;
 
-								if (endingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME &&
-									beginningStates[threadId].Key == LinuxThreadState.CPU_TIME)
+								if (analyzers[i].LinuxEventSamples.ContainsKey(afterEvent))
 								{
-									analyzers[i].TotalBlockedTime += period;
+									analyzers[i].UpdateThreadState(afterEvent);
 								}
-							}
 
-							break;
+								break;
+							}
 						}
 					}
 				}
+
+				analyzers[i].FinishAnalyizing(lastTimeStamp);
 			}
 		}
 
@@ -324,7 +321,7 @@ namespace Diagnostics.Tracing.StackSources
 				this.AddSample(this.GetSampleFor(linuxEvent, blockedTimeAnalyzer));
 			}
 
-			blockedTimeAnalyzer?.FinishAnaylizing();
+			blockedTimeAnalyzer?.FinishAnalyizing();
 			// TODO: Sort things in blocked time anaylizer
 			// this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 
@@ -441,8 +438,21 @@ namespace Diagnostics.Tracing.StackSources
 		public Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>> EndingStates { get; }
 		public Dictionary<LinuxEvent, StackSourceSample> LinuxEventSamples { get; }
 		public Dictionary<int, int> EndingCpuUsage { get; }
+		public List<ThreadPeriod> BlockedThreadPeriods { get; }
 
-		public double TotalBlockedTime { get; set; }
+		public double TotalBlockedTime
+		{
+			get
+			{
+				double totalTime = 0;
+				foreach (var threadPeriod in this.BlockedThreadPeriods)
+				{
+					totalTime += threadPeriod.Period;
+				}
+
+				return totalTime;
+			}
+		}
 
 		public BlockedTimeAnalyzer()
 		{
@@ -450,7 +460,7 @@ namespace Diagnostics.Tracing.StackSources
 			this.EndingStates = new Dictionary<int, KeyValuePair<LinuxThreadState, LinuxEvent>>();
 			this.LinuxEventSamples = new Dictionary<LinuxEvent, StackSourceSample>();
 			this.EndingCpuUsage = new Dictionary<int, int>();
-			this.TotalBlockedTime = 0;
+			this.BlockedThreadPeriods = new List<ThreadPeriod>();
 		}
 
 		public void UpdateThreadState(LinuxEvent linuxEvent)
@@ -482,18 +492,23 @@ namespace Diagnostics.Tracing.StackSources
 			return this.EndingStates.ContainsKey(threadId) && this.EndingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME;
 		}
 
-		public void FinishAnaylizing()
+		public void FinishAnalyizing(double endTime)
 		{
-			this.FlushBlockedThreadsAt(this.TimeStamp);
+			this.FlushBlockedThreadsAt(endTime);
 		}
 
-		private void FlushBlockedThreadsAt(double endTime)
+		public void FinishAnalyizing()
+		{
+			this.FinishAnalyizing(this.TimeStamp);
+		}
+
+		public void FlushBlockedThreadsAt(double endTime)
 		{
 			foreach (int threadid in this.EndingStates.Keys)
 			{
 				if (this.EndingStates[threadid].Key == LinuxThreadState.BLOCKED_TIME)
 				{
-					this.TotalBlockedTime += this.TimeStamp - this.EndingStates[threadid].Value.Time;
+					this.AddThreadPeriod(threadid, this.EndingStates[threadid].Value.Time, TimeStamp);
 				}
 			}
 		}
@@ -530,7 +545,7 @@ namespace Diagnostics.Tracing.StackSources
 						new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
 
 					// sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
-					this.TotalBlockedTime += linuxEvent.Time - sampleInfo.Value.Time;
+					this.AddThreadPeriod(linuxEvent.ThreadID, sampleInfo.Value.Time, linuxEvent.Time);
 				}
 
 			}
@@ -544,23 +559,30 @@ namespace Diagnostics.Tracing.StackSources
 						this.EndingStates[threadid] =
 							new KeyValuePair<LinuxThreadState, LinuxEvent>(LinuxThreadState.CPU_TIME, linuxEvent);
 						sampleInfo.Value.Period = linuxEvent.Time - sampleInfo.Value.Time;
-						this.TotalBlockedTime += sampleInfo.Value.Period;
+						this.AddThreadPeriod(linuxEvent.ThreadID, sampleInfo.Value.Time, linuxEvent.Time);
 					}
 				}
 			}
 
 			this.EndingCpuUsage[linuxEvent.Cpu] = linuxEvent.ThreadID;
 		}
+
+		private void AddThreadPeriod(int threadId, double startTime, double endTime)
+		{
+			this.BlockedThreadPeriods.Add(new ThreadPeriod(threadId, startTime, endTime));
+		}
 	}
 
 	public class ThreadPeriod
 	{
-		internal double StartTime { get; }
-		internal double EndTime { get; }
-		internal double Period { get { return this.EndTime - this.StartTime; } }
+		public int ThreadID { get; }
+		public double StartTime { get; }
+		public double EndTime { get; set; }
+		public double Period { get { return this.EndTime - this.StartTime; } }
 
-		internal ThreadPeriod(double startTime, double endTime)
+		internal ThreadPeriod(int threadId, double startTime, double endTime)
 		{
+			this.ThreadID = threadId;
 			this.StartTime = startTime;
 			this.EndTime = endTime;
 		}
