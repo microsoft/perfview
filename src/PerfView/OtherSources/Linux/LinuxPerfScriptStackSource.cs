@@ -495,6 +495,7 @@ namespace Diagnostics.Tracing.StackSources
 		public void FinishAnalyizing(double endTime)
 		{
 			this.FlushBlockedThreadsAt(endTime);
+			this.BlockedThreadPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 		}
 
 		public void FinishAnalyizing()
@@ -577,7 +578,7 @@ namespace Diagnostics.Tracing.StackSources
 	{
 		public int ThreadID { get; }
 		public double StartTime { get; }
-		public double EndTime { get; set; }
+		public double EndTime { get; }
 		public double Period { get { return this.EndTime - this.StartTime; } }
 
 		internal ThreadPeriod(int threadId, double startTime, double endTime)
