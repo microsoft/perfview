@@ -589,7 +589,7 @@ namespace PerfView
 
                             // Turn on Power stuff
                             EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5F);
+                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
                             EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
                             EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
 

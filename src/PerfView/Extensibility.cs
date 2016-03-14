@@ -3194,7 +3194,64 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
-#if false 
+#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
+        /// <summary>
+        /// PrintSerializedExceptionFromProcessDump
+        /// </summary>
+        /// <param name="inputDumpFile">inputDumpFile</param>
+        public void PrintSerializedExceptionFromProcessDump(string inputDumpFile)
+        {
+            TextWriter log = LogFile;
+            if (!App.IsElevated)
+                throw new ApplicationException("Must be Administrator (elevated).");
+
+            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+            var trueArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
+            if (trueArch != null)
+            {
+                // TODO FIX NOW.   Find a way of determing which architecture a dump is
+                try
+                {
+                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
+                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, trueArch);
+                    return; // Yeah! success the first time
+                }
+                catch (Exception e)
+                {
+                    // It might have failed because this was a 32 bit dump, if so try again.  
+                    if (e is ApplicationException)
+                    {
+                        log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
+                        PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+                        return;
+                    }
+                    throw;
+                }
+            }
+            PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+
+        }
+
+        private void PrintSerializedExceptionFromProcessDumpThroughHeapDump(string inputDumpFile, TextWriter log, string arch)
+        {
+            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, arch + @"\HeapDump.exe");
+            var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
+            options.AddOutputStream(LogFile);
+
+            options.AddEnvironmentVariable("_NT_SYMBOL_PATH", App.SymbolPath);
+            log.WriteLine("set _NT_SYMBOL_PATH={0}", App.SymbolPath);
+
+            var commandLine = string.Format("\"{0}\" {1} \"{2}\"", heapDumpExe, "/dumpSerializedException:", inputDumpFile);
+            log.WriteLine("Exec: {0}", commandLine);
+            var cmd = Command.Run(commandLine, options);
+            if (cmd.ExitCode != 0)
+            {
+                throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
+            }
+        }
+#endif
+
+#if false
         public void Test()
         {
             LogFile.WriteLine("Starting Listener thread.");
@@ -3217,9 +3274,9 @@ namespace PerfViewExtensibility
             }
             Trace.WriteLine("Done.");
         }
-#endif 
+#endif
 
-        #region private
+#region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -3515,7 +3572,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-        #endregion
+#endregion
     }
 }
 

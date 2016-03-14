@@ -93,8 +93,6 @@ namespace ClrMemory
             }
         }
         
-        [Obsolete]
-        public override int TypeIndexLimit { get { return m_types.Count; } }
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
         public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
 
@@ -345,6 +343,15 @@ namespace ClrMemory
             }
         }
 
+#if !ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO remove when CLRMD has been updated. 
+        public override int TypeIndexLimit
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+#endif
         public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();

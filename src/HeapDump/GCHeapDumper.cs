@@ -253,7 +253,38 @@ public class GCHeapDumper
     {
         m_sw = Stopwatch.StartNew();
         m_gcHeapDump = new GCHeapDump((MemoryGraph)null);
-        DataTarget target = DataTarget.LoadCrashDump(processDumpFile);
+        DataTarget target;
+        ClrRuntime runtime;
+        InitializeClrRuntime(processDumpFile, out target, out runtime);
+
+        ICorDebugProcess proc = null;
+        try
+        {
+            m_log.WriteLine("Trying to get a ICorDebugProcess object.");
+            proc = Profiler.Debugger.GetDebuggerHandleFromProcessDump(processDumpFile, 0L);
+        }
+        catch (Exception e)
+        {
+            m_log.WriteLine("Warning: Failed to get a V4.0 debugger Message: {0}", e.Message);
+            m_log.WriteLine("Continuing with less accurate GC root information.");
+        }
+
+        DumpDotNetHeapData(runtime.GetHeap(), ref proc, true);
+        WriteData(logLiveStats: false);
+
+        var collectionMetadata = new CollectionMetadata()
+        {
+            Source = TargetSource.MiniDumpFile,
+            Is64BitSource = (target.PointerSize == 8),
+            ConfigurationDirectories = GetConfigurationDirectoryPaths(runtime)
+        };
+
+        return collectionMetadata;
+    }
+
+    private void InitializeClrRuntime(string processDumpFile, out DataTarget target, out ClrRuntime runtime)
+    {
+        target = DataTarget.LoadCrashDump(processDumpFile);
         if (target.PointerSize != IntPtr.Size)
         {
             if (IntPtr.Size == 8)
@@ -265,8 +296,7 @@ public class GCHeapDumper
         if (target.ClrVersions.Count == 0)
             throw new HeapDumpException("Could not find a .NET Runtime in the process dump " + processDumpFile, HR.NoDotNetRuntimeFound);
 
-        ClrRuntime runtime = null;
-
+        runtime = null;
         m_log.WriteLine("Enumerating over {0} detected runtimes...", target.ClrVersions.Count);
         var symbolReader = new SymbolReader(m_log, null);
         if (symbolReader.SymbolPath.Length == 0)
@@ -341,30 +371,6 @@ public class GCHeapDumper
 
         if (runtime == null)
             throw new HeapDumpException("Could not open DAC", HR.CouldNotAccessDac);
-
-        ICorDebugProcess proc = null;
-        try
-        {
-            m_log.WriteLine("Trying to get a ICorDebugProcess object.");
-            proc = Profiler.Debugger.GetDebuggerHandleFromProcessDump(processDumpFile, 0L);
-        }
-        catch (Exception e)
-        {
-            m_log.WriteLine("Warning: Failed to get a V4.0 debugger Message: {0}", e.Message);
-            m_log.WriteLine("Continuing with less accurate GC root information.");
-        }
-
-        DumpDotNetHeapData(runtime.GetHeap(), ref proc, true);
-        WriteData(logLiveStats: false);
-
-        var collectionMetadata = new CollectionMetadata()
-        {
-            Source = TargetSource.MiniDumpFile,
-            Is64BitSource = (target.PointerSize == 8),
-            ConfigurationDirectories = GetConfigurationDirectoryPaths(runtime)
-        };
-
-        return collectionMetadata;
     }
 
     /// <summary>
@@ -660,7 +666,78 @@ public class GCHeapDumper
     /// </summary>
     public int BadObjectCount { get; private set; }
 
-    #region private
+    internal void DumpSerializedExceptionFromProcessDump(string inputSpec, string outputFile)
+    {
+        DataTarget target;
+        ClrRuntime runtime;
+        InitializeClrRuntime(inputSpec, out target, out runtime);
+#if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
+        IEnumerable<ClrException> serializedExceptions = runtime.EnumerateSerializedExceptions();
+#else 
+        IEnumerable<ClrException> serializedExceptions = null; //  runtime.EnumerateSerializedExceptions();
+#endif 
+        bool flag7 = serializedExceptions == null || Enumerable.Count<ClrException>(serializedExceptions) == 0;
+        if (flag7)
+        {
+            Console.WriteLine("No exceptions");
+        }
+        int num2 = 0;
+        foreach (ClrException current3 in serializedExceptions)
+        {
+            Console.WriteLine(string.Format("Exception #{0}", ++num2));
+            Console.WriteLine(FormatException(current3, 0));
+        }
+    }
+
+    private static string FormatException(ClrException ex, int indentLevel)
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("Type: {0}", ex.Type), indentLevel);
+        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("Address: {0:X}", ex.Address), indentLevel);
+        StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("HResult: {0:X}", ex.HResult), indentLevel);
+        bool flag = ex.StackTrace != null;
+        if (flag)
+        {
+            stringBuilder.AppendLine();
+            StringBuilderIndentExtension.AppendLine(stringBuilder, "Stacktrace", indentLevel);
+            StringBuilderIndentExtension.AppendLine(stringBuilder, "------------------------", indentLevel);
+            foreach (ClrStackFrame current in ex.StackTrace)
+            {
+                StringBuilderIndentExtension.AppendLine(stringBuilder, string.Format("[{0:X}] {1}", current.InstructionPointer, current.DisplayString), indentLevel);
+            }
+            stringBuilder.AppendLine();
+        }
+        bool flag2 = ex.Inner != null;
+        if (flag2)
+        {
+            StringBuilderIndentExtension.AppendLine(stringBuilder, "Inner Exception", indentLevel);
+            StringBuilderIndentExtension.AppendLine(stringBuilder, "------------------------", indentLevel);
+            stringBuilder.AppendLine(string.Format("{0}", FormatException(ex.Inner, indentLevel + 1)));
+        }
+        return stringBuilder.ToString();
+    }
+    public static class StringBuilderIndentExtension
+    {
+        public static void Append(StringBuilder sb, string str, int indentLevel)
+        {
+            sb.Append(string.Format("{0}{1}", StringBuilderIndentExtension.getIndent(indentLevel), str));
+        }
+        public static void AppendLine(StringBuilder sb, string str, int indentLevel)
+        {
+            sb.AppendLine(string.Format("{0}{1}", StringBuilderIndentExtension.getIndent(indentLevel), str));
+        }
+        private static string getIndent(int indentLevel)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (int i = 0; i < indentLevel; i++)
+            {
+                stringBuilder.Append("\t");
+            }
+            return stringBuilder.ToString();
+        }
+    }
+
+#region private
 
     /// <summary>
     /// Gets the list of directories containing the app domain config files for the runtime
@@ -1830,7 +1907,7 @@ public class GCHeapDumper
         proc = null;
     }
 
-#if DebuggerFuncEval 
+#if DebuggerFuncEval
     private void DoGC(int processID)    // FIX NOW use or remove. 
     {
         m_log.WriteLine("Attaching debugger.");
@@ -2192,7 +2269,7 @@ public class GCHeapDumper
             }
         }
 
-        #region private
+#region private
         public override void CreateProcess(ICorDebugProcess pProcess)
         {
             Console.WriteLine("CreateProcess");
@@ -2224,7 +2301,7 @@ public class GCHeapDumper
         private DateTime m_LastCallBackTimeUtc;
         private int m_ThreadsLoaded;
         private int m_AssembliesLoaded;
-        #endregion
+#endregion
     }
 
     private int m_processID;
@@ -2264,7 +2341,7 @@ public class GCHeapDumper
     public static void DebugWriteLine(string format, params object[] args)
     {
         //#if DEBUG
-#if false 
+#if false
         if (m_debugLog == null)
             m_debugLog = File.CreateText("HeapDumpDebugLog.txt");
 
@@ -2309,7 +2386,7 @@ public class GCHeapDumper
 #if false
     private static TextWriter m_debugLog;
 #endif
-    #endregion
+#endregion
 }
 
 #region internal classes
@@ -2811,7 +2888,7 @@ internal static class GCRootNames
         return false;
     }
 
-    #region private
+#region private
     /// <summary>
     /// Stores a context needed to resolve a thread-static variable.  Basically it is a pair appdomain-thread.   
     /// The context is a ICorDebugFrame that has that appdomain-thread combination.  
@@ -2839,9 +2916,9 @@ internal static class GCRootNames
             public ICorDebugFrame Frame;
         }
 
-        #region private
+#region private
         Dictionary<string, ThreadContext> m_contexts = new Dictionary<string, ThreadContext>();
-        #endregion
+#endregion
     }
 
     const Address DoNotContinueError = 2;
@@ -2955,7 +3032,7 @@ internal static class GCRootNames
         return className;
     }
 
-    #endregion
+#endregion
 }
 
 /// <summary>
