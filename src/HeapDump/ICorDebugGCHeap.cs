@@ -343,6 +343,7 @@ namespace ClrMemory
             }
         }
 
+#if !ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO remove when CLRMD has been updated. 
         public override int TypeIndexLimit
         {
             get
@@ -350,7 +351,7 @@ namespace ClrMemory
                 throw new NotImplementedException();
             }
         }
-
+#endif
         public override IEnumerable<Address> EnumerateObjectAddresses()
         {
             throw new NotImplementedException();
