@@ -15,80 +15,86 @@ namespace Tests
         [TestMethod]
         public void GCAllocationTick()
         {
-            //string path = Path.Combine(TestPath, "auto-20160204-132425.lttng.zip");
-            string path = Path.Combine(TestPath, "auto-20151103-132930.lttng.zip");
-            //string path = Path.Combine(TestPath, "auto-20160204-162218.lttng.zip");
+            string[] files = new string[] { "auto-20160204-132425.lttng.zip", "auto-20151103-132930.lttng.zip", "auto-20160204-162218.lttng.zip" };
 
-            using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+            foreach (string file in files)
             {
-
-                int allocTicks = 0, allocTicksFromAll = 0;
-
-                ctfSource.AllEvents += delegate(TraceEvent obj)
-                {
-                    string s = obj.ToString();
-                    var d = obj.TimeStamp;
-                    if (obj is GCAllocationTickTraceData)
-                        allocTicksFromAll++;
-                };
-
-                ctfSource.Clr.RuntimeStart += delegate(RuntimeInformationTraceData d)
+                string path = Path.Combine(TestPath, file);
+                using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
                 {
 
-                };
+                    int allocTicks = 0, allocTicksFromAll = 0;
+
+                    ctfSource.AllEvents += delegate (TraceEvent obj)
+                    {
+                        string s = obj.ToString();
+                        var d = obj.TimeStamp;
+                        if (obj is GCAllocationTickTraceData)
+                            allocTicksFromAll++;
+                    };
+
+                    ctfSource.Clr.GCCreateSegment += delegate (GCCreateSegmentTraceData d)
+                    {
+                    };
+
+                    ctfSource.Clr.RuntimeStart += delegate (RuntimeInformationTraceData d)
+                    {
+
+                    };
 
 
-                ctfSource.Clr.LoaderModuleLoad += delegate(ModuleLoadUnloadTraceData d)
-                {
+                    ctfSource.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData d)
+                    {
 
-                };
+                    };
 
-                ctfSource.Clr.MethodInliningFailed += delegate(MethodJitInliningFailedTraceData d)
-                {
+                    ctfSource.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData d)
+                    {
 
-                };
-
-
-
-                ctfSource.Clr.MethodTailCallSucceeded += delegate (MethodJitTailCallSucceededTraceData d)
-                {
-
-                };
+                    };
 
 
-                ctfSource.Clr.GCHeapStats += delegate (GCHeapStatsTraceData d)
-                {
-                };
 
-                ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
-                {
-                };
+                    ctfSource.Clr.MethodTailCallSucceeded += delegate (MethodJitTailCallSucceededTraceData d)
+                    {
+
+                    };
 
 
-                ctfSource.Clr.GCStop += delegate (GCEndTraceData d)
-                {
-                };
+                    ctfSource.Clr.GCHeapStats += delegate (GCHeapStatsTraceData d)
+                    {
+                    };
 
-                ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 d)
-                {
-                };
+                    ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
+                    {
+                    };
 
-                ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
-                {
 
-                };
+                    ctfSource.Clr.GCStop += delegate (GCEndTraceData d)
+                    {
+                    };
 
-                ctfSource.Clr.MethodILToNativeMap += delegate(MethodILToNativeMapTraceData d)
-                {
+                    ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 d)
+                    {
+                    };
 
-                };
+                    ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
+                    {
 
-                ctfSource.Clr.GCAllocationTick += delegate(GCAllocationTickTraceData o) { allocTicks++; };
+                    };
 
-                ctfSource.Process();
+                    ctfSource.Clr.MethodILToNativeMap += delegate (MethodILToNativeMapTraceData d)
+                    {
 
-                Assert.IsTrue(allocTicks > 0);
-                Assert.AreEqual(allocTicks, allocTicksFromAll);
+                    };
+
+                    ctfSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData o) { allocTicks++; };
+
+                    ctfSource.Process();
+
+                    Assert.IsTrue(allocTicks > 0);
+                    Assert.AreEqual(allocTicks, allocTicksFromAll);
+                }
             }
         }
 
