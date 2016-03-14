@@ -107,10 +107,10 @@ namespace LinuxTracing.Tests
 			this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>>
 			{
 				new List<string> { "mscorlib!dynamicClass::IL_STUB_PInvoke(int32,native int,int32,int32,class System.Text.StringBuilder,int32,native int)", "Thread (0)", "first_symbol", null },
-				new List<string> { "module!symbol", "Thread (0)", "no_file_association", null },
+				new List<string> { "unknown!something.map", "Thread (0)", "no_file_association", null },
 				new List<string> { "mscorlib!System.BadImageFormatException::.ctor(string,string)", "Thread (0)", "middle_symbol", null },
 				new List<string> { "mscorlib!System.Collections.Generic.Dictionary`2+Enumerator[System.UInt64,System.__Canon]::.ctor(class System.Collections.Generic.Dictionary`2<!0,!1>,int32)", "Thread (0)", "last_symbol", null },
-				new List<string> { "module!symbol", "Thread (0)", "out_of_range", null }
+				new List<string> { "unknown!something.map", "Thread (0)", "out_of_range", null }
 			});
 		}
 

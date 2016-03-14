@@ -313,7 +313,7 @@ namespace Diagnostics.Tracing.StackSources
 			while (!this.IsEndOfSample(source, source.Current, source.Peek(1)))
 			{
 				StackFrame stackFrame = this.ReadFrame(source);
-				if (this.mapper != null && stackFrame.Address.Length > 1 && stackFrame.Address[0] == '0' && stackFrame.Address[1] == 'x')
+				if (this.mapper != null && (stackFrame.Module == "unknown" || stackFrame.Symbol == "unknown"))
 				{
 					string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame);
 					stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
