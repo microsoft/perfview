@@ -1060,10 +1060,15 @@ namespace PerfView
             if (!string.IsNullOrEmpty(docsDir))
                 Directory.AddToHistory(docsDir);
 
+            // Make sure the location is sane so it can be displayed. 
+            var top = App.ConfigData.GetDouble("MainWindowTop", Top);
+            Top = Math.Min(Math.Max(top, 0), System.Windows.SystemParameters.PrimaryScreenHeight - 200);
+
+            var left = App.ConfigData.GetDouble("MainWindowLeft", Left);
+            Left = Math.Min(Math.Max(left, 0), System.Windows.SystemParameters.PrimaryScreenWidth - 200);
+
             Height = App.ConfigData.GetDouble("MainWindowHeight", Height);
             Width = App.ConfigData.GetDouble("MainWindowWidth", Width);
-            Top = App.ConfigData.GetDouble("MainWindowTop", Top);
-            Left = App.ConfigData.GetDouble("MainWindowLeft", Left);
 
             Loaded += delegate(object sender1, RoutedEventArgs e2)
             {
