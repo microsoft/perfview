@@ -43,6 +43,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private GCHandle _handle;
         private int _bitOffset;
         private int _bufferLength;
+        private bool _readHeader;
 
         public int BufferLength { get { return _bufferLength; } }
         public byte[] Buffer { get { return _buffer; } }
@@ -91,10 +92,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             StringBuilder processName = new StringBuilder();
             while (!_eof)
             {
+                if (_readHeader)
+                    throw new InvalidOperationException("Must read an events data before reading the header again.");
+
                 _header.Clear();
                 ResetBuffer();
 
                 object[] result = ReadStruct(header);
+                if (_eof)
+                    break;
+
                 ulong timestamp;
                 CtfEnum en = (CtfEnum)header.GetField("id").Type;
                 uint event_id = header.GetFieldValue<uint>(result, "id");
@@ -138,7 +145,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                     _header.ProcessName = processName.ToString();
                 }
-                
+
+                _readHeader = true;
                 yield return _header;
             }
         }
@@ -152,12 +160,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         public object[] ReadEvent(CtfEvent evt)
         {
+            if (!_readHeader)
+                throw new InvalidOperationException("Must read an event's header before reading an event's data.");
+
             ResetBuffer();
 
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
                 PreFixupPerHeapHistory(evt);
 
             object[] result = ReadStruct(evt.Fields);
+            _readHeader = false;
 
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
                 PostFixupPerHeapHistory(evt);
@@ -167,6 +179,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         
         internal void ReadEventIntoBuffer(CtfEvent evt)
         {
+            if (!_readHeader)
+                throw new InvalidOperationException("Must read an event's header before reading an event's data.");
+
             ResetBuffer();
 
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
@@ -177,9 +192,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             else
                 ReadStruct(evt.Fields);
 
+            _readHeader = false;
+
             if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
                 PostFixupPerHeapHistory(evt);
         }
+
+        int _perHeapLenOffset = -1;
+        int _perHeapStructPointerOffset = -1;
 
         private void PostFixupPerHeapHistory(CtfEvent evt)
         {
@@ -188,8 +208,37 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
 
             int baseOffset = _perHeapHistoryEvent.Size / 8;
-            int start = evt.GetFieldOffset("_Arg15_Struct_Len_") / 8;
-            int end = evt.GetFieldOffset("_Arg15_Struct_Pointer_") / 8;
+
+            if (_perHeapLenOffset == -1)
+            {
+                int lenOffset = -1;
+                int ptrOffset = -1;
+
+                int offset = 0;
+                for (int i = 0; i < evt.Fields.Fields.Length; i++)
+                {
+                    var field = evt.Fields.Fields[i];
+                    if (field.Name.EndsWith("_Struct_Len_"))
+                    {
+                        Debug.Assert(lenOffset == -1);
+                        lenOffset = offset;
+                    }
+                    else if (field.Name.EndsWith("_Struct_Pointer_"))
+                    {
+                        Debug.Assert(ptrOffset == -1);
+                        ptrOffset = offset;
+                    }
+
+                    int tmp = field.Type.GetSize();
+                    offset += tmp;
+                }
+
+                _perHeapLenOffset = lenOffset / 8;
+                _perHeapStructPointerOffset = ptrOffset / 8;
+            }
+
+            int start = _perHeapLenOffset;
+            int end = _perHeapStructPointerOffset;
             int len = _bufferLength - end;
 
             System.Buffer.BlockCopy(_buffer, baseOffset + end, _buffer, baseOffset + start, len);

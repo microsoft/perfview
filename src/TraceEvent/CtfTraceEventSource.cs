@@ -38,6 +38,10 @@ namespace Microsoft.Diagnostics.Tracing
         private TraceEventNativeMethods.EVENT_RECORD* _header;
         private Dictionary<string, ETWMapping> _eventMapping;
 
+#if DEBUG
+        private StreamWriter _debugOut;
+#endif
+
         public CtfTraceEventSource(string fileName)
         {
             _filename = fileName;
@@ -69,6 +73,12 @@ namespace Microsoft.Diagnostics.Tracing
             _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
 
             _eventMapping = InitEventMap();
+
+#if DEBUG
+            // Uncomment for debug output.
+            // _debugOut = File.CreateText("debug.txt");
+            // _debugOut.AutoFlush = true;
+#endif
         }
         
         private static Dictionary<string, ETWMapping> InitEventMap()
@@ -479,8 +489,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (stopProcessing)
                     break;
-
-
+                
                 CtfEventHeader header = entry.Current;
 
                 // Despite the content length field in packets, LTTng still seems to put some "null value"
@@ -491,9 +500,23 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
 
                 CtfEvent evt = header.Event;
+#if DEBUG
+                if (_debugOut != null)
+                {
+                    _debugOut.WriteLine($"[{evt.Name}]");
+                    _debugOut.WriteLine($"    Process: {header.ProcessName}");
+                    _debugOut.WriteLine($"    File: {entry.FileName}");
+                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
+                    _debugOut.WriteLine($"    Event #{events}");
+                    object[] result = entry.Reader.ReadEvent(evt);
+                    evt.WriteLine(_debugOut, result, 4);
+                }
+                else
+#endif
+
                 entry.Reader.ReadEventIntoBuffer(evt);
                 events++;
-
+                
                 ETWMapping etw = GetTraceEvent(evt);
 
                 if (etw.IsNull)
@@ -618,6 +641,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         class ChannelListEnumerator : IEnumerator<ChannelEntry>
         {
+            bool _first = true;
             List<ChannelEntry> _channels;
             int _current;
 
@@ -664,6 +688,12 @@ namespace Microsoft.Diagnostics.Tracing
                 if (_current == -1)
                     return false;
 
+                if (_first)
+                {
+                    _first = false;
+                    return _channels.Count > 0;
+                }
+
                 bool hasMore = _channels[_current].MoveNext();
                 if (!hasMore)
                 {
@@ -683,6 +713,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         class ChannelEntry : IDisposable
         {
+            public string FileName { get; private set; }
             public CtfChannel Channel { get; private set; }
             public CtfReader Reader { get; private set; }
             public CtfEventHeader Current { get { return _events.Current; } }
@@ -692,6 +723,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             public ChannelEntry(ZipArchiveEntry zip, CtfMetadata metadata)
             {
+                FileName = zip.FullName;
                 _stream = zip.Open();
                 Channel = new CtfChannel(_stream, metadata);
                 Reader = new CtfReader(Channel, metadata, Channel.CtfStream);

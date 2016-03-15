@@ -15,16 +15,14 @@ namespace Tests
         [TestMethod]
         public void GCAllocationTick()
         {
-            string[] files = new string[] { "auto-20160204-132425.lttng.zip", "auto-20151103-132930.lttng.zip", "auto-20160204-162218.lttng.zip" };
+            int allocTicks = 0, allocTicksFromAll = 0;
 
+            string[] files = new string[] { "auto-20160204-132425.lttng.zip", "auto-20151103-132930.lttng.zip" , "auto-20160204-162218.lttng.zip" };
             foreach (string file in files)
             {
                 string path = Path.Combine(TestPath, file);
                 using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
                 {
-
-                    int allocTicks = 0, allocTicksFromAll = 0;
-
                     ctfSource.AllEvents += delegate (TraceEvent obj)
                     {
                         string s = obj.ToString();
@@ -91,11 +89,11 @@ namespace Tests
                     ctfSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData o) { allocTicks++; };
 
                     ctfSource.Process();
-
-                    Assert.IsTrue(allocTicks > 0);
-                    Assert.AreEqual(allocTicks, allocTicksFromAll);
                 }
             }
+
+            Assert.IsTrue(allocTicks > 0);
+            Assert.AreEqual(allocTicks, allocTicksFromAll);
         }
 
         [TestMethod]

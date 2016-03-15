@@ -7,10 +7,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 {
     sealed class CtfChannel : Stream
     {
+        static readonly int s_headerSize = Marshal.SizeOf(typeof(CtfStreamHeader)) + Marshal.SizeOf(typeof(CtfPacketContext));
         private CtfMetadata _metadata;
         private CtfStream _ctfStream;
         private Stream _stream;
-        private byte[] _buffer = new byte[CtfPacketContext.Size];
+        private byte[] _buffer = new byte[Math.Max(128, CtfPacketContext.Size)];
         private GCHandle _handle;
         private long _packetSize;
         private long _contentSize;
@@ -32,10 +33,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _metadata = metadata;
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
 
-            CtfStreamHeader header = ReadStruct<CtfStreamHeader>();
-            Debug.Assert(header.Magic == 0xc1fc1fc1);
-            _ctfStream = metadata.Streams[(int)header.Stream];
-
             ReadContext();
         }
 
@@ -50,24 +47,34 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             do
             {
-                if (_packetSize != 0)
+                while (_packetSize > 0)
                 {
-                    byte[] tmp = new byte[_packetSize];
-                    int offs = _stream.Read(tmp, 0, tmp.Length);
+                    // Zip filestream can't seek, we have to read the rest of the packet.
 
+                    int curr = _buffer.Length < _packetSize ? _buffer.Length : (int)_packetSize;
+                    _stream.Read(_buffer, 0, curr);
+                    _packetSize -= curr;
 #if DEBUG
-                    _fileOffset += offs;
+                    _fileOffset += curr;
 #endif
                 }
+                
+                CtfStreamHeader header;
+                CtfPacketContext context;
 
-                CtfPacketContext context = ReadStruct<CtfPacketContext>();
-                _packetSize = (long)context.PacketSize / 8;
-                _contentSize = (long)context.ContextSize / 8;
+                if (!ReadStruct<CtfStreamHeader>(out header))
+                    return false;
+
+                Debug.Assert(header.Magic == 0xc1fc1fc1);
+                _ctfStream = _metadata.Streams[(int)header.Stream];
+                
+                if (!ReadStruct<CtfPacketContext>(out context))
+                    return false;
+
+                _packetSize = (long)context.PacketSize / 8 - s_headerSize;
+                _contentSize = (long)context.ContextSize / 8 - s_headerSize;
                 StartTimestamp = context.TimestampBegin;
                 EndTimestamp = context.TimestampEnd;
-                
-                if (_packetSize == 0)
-                    return false;
             } while (_contentSize == 0);
 
             return true;
@@ -78,7 +85,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             int bytes = _metadata.Streams[0].EventHeader.GetSize();
         }
 
-        private T ReadStruct<T>() where T : struct
+        private bool ReadStruct<T>(out T result) where T : struct
         {
             int size = Marshal.SizeOf(typeof(T));
             int read = _stream.Read(_buffer, 0, size);
@@ -88,9 +95,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 #endif
 
             if (size != read)
-                return default(T);
+            {
+                result = default(T);
+                return false;
+            }
 
-            return (T)Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(T));
+            result = (T)Marshal.PtrToStructure(_handle.AddrOfPinnedObject(), typeof(T));
+            return true;
         }
 
         public override bool CanRead
