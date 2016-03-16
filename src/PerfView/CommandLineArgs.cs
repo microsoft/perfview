@@ -247,7 +247,7 @@ namespace PerfView
                 "Trigger a stop of a collect command if there is a AppFabric request is longer than the given number of MSec.");
 
             parser.DefineOptionalQualifier("StopOnException", ref StopOnException,
-                "Where the text is a regular expression that will be used to match the full name of the .NET Exception thrown." +
+                "Where the text is a regular expression that will be used to match the full name and message of the .NET Exception thrown." +
                 "The empty string represents any exception.");
             parser.DefineOptionalQualifier("StopOnGen2GC", ref StopOnGen2GC,
                 "This will stop on any non-background Gen2 GC from the given process (can be a process ID or a process Name (exe file name without path or extension) or * (any process)");

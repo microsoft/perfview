@@ -363,7 +363,7 @@ namespace ClrProfiler
 							angleBracketsScope++;
 
 						sb.Append((char)c);
-						c = stream.ReadChar();
+						c = stream.ReadByte();
 
 						if (c == '>' && angleBracketsScope > 0)
 							angleBracketsScope--;
@@ -377,10 +377,10 @@ namespace ClrProfiler
 						sb.Append((char)c);
 						if (c == ')')
 						{
-							c = stream.ReadChar();
+							c = stream.ReadByte();
 							break;
 						}
-						c = stream.ReadChar();
+						c = stream.ReadByte();
 					}
 					string signature = sb.ToString();
 					Address address = (Address)stream.ReadULong();

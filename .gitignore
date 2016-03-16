@@ -190,3 +190,4 @@ FakesAssemblies/
 BuildDate.txt
 Global.dll
 PerfView.exe
+/src/TraceEvent/EventCounterHandler.cs

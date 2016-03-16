@@ -2814,10 +2814,15 @@ namespace PerfView
 
             if (StackWindows.Count == 1)
             {
+                // Make sure the location is sane so it can be displayed. 
+                var top = App.ConfigData.GetDouble("StackWindowTop", Top);
+                Top = Math.Min(Math.Max(top, 0), System.Windows.SystemParameters.PrimaryScreenHeight - 200);
+
+                var left = App.ConfigData.GetDouble("StackWindowLeft", Left);
+                Left = Math.Min(Math.Max(left, 0), System.Windows.SystemParameters.PrimaryScreenWidth - 200);
+
                 Height = App.ConfigData.GetDouble("StackWindowHeight", Height);
                 Width = App.ConfigData.GetDouble("StackWindowWidth", Width);
-                Top = App.ConfigData.GetDouble("StackWindowTop", Top);
-                Left = App.ConfigData.GetDouble("StackWindowLeft", Left);
             }
         }
 

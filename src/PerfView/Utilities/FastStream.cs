@@ -29,46 +29,11 @@ namespace PerfView.Utilities
 	/// </summary>
 	public sealed class FastStream : IDisposable
 	{
-		public const uint MaxRestoreLength = 256;
-
+        // construction 
 		public FastStream(string filePath)
 			: this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
 		{
 		}
-
-		// Allows for a byte array while keeping a stream
-		public FastStream(byte[] buffer, int length) :
-			this(buffer, 0, length)
-		{
-		}
-
-		public FastStream(byte[] buffer, int start, int length)
-		{
-			this.stream = Stream.Null;
-			this.streamReadIn = (uint)length;
-
-			bool usingGivenBuffer = buffer.Length > MaxRestoreLength && start > 0;
-
-			if (usingGivenBuffer)
-			{
-				this.bufferIndex = (uint)start - 1;
-				this.bufferFillPos = MaxRestoreLength + this.streamReadIn;
-				this.buffer = buffer;
-			}
-			else
-			{
-				this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
-				this.buffer = new byte[this.bufferFillPos];
-				this.bufferIndex = MaxRestoreLength;
-				Buffer.BlockCopy(buffer, start, this.buffer, (int)this.bufferIndex + 1, length);
-			}
-
-			this.streamPosition = this.bufferFillPos;
-			this.buffer[this.bufferIndex] = 0;
-			this.streamPosition = this.streamReadIn;
-			this.IsDisposed = false;
-		}
-
 		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
 		{
 			this.stream = stream;
@@ -80,23 +45,357 @@ namespace PerfView.Utilities
 			this.streamPosition = 0;
 			this.IsDisposed = false;
 		}
+        public FastStream(byte[] buffer, int start, int length)
+        {
+            this.stream = Stream.Null;
+            this.streamReadIn = (uint)length;
 
-		public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
+            bool usingGivenBuffer = buffer.Length > MaxRestoreLength && start > 0;
 
-		/// <summary>
-		/// For efficient reads, we allow you to read Current past the end of the stream.  You will
-		/// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
-		/// there is a better 'rare' value to use as an end of stream marker.  
-		/// </summary>
-		public byte Sentinal = 0;
-		public long Position
-		{
-			get
-			{
-				return this.streamPosition - (this.streamReadIn - (this.bufferIndex - MaxRestoreLength));
-			}
-		}
+            if (usingGivenBuffer)
+            {
+                this.bufferIndex = (uint)start - 1;
+                this.bufferFillPos = MaxRestoreLength + this.streamReadIn;
+                this.buffer = buffer;
+            }
+            else
+            {
+                this.bufferFillPos = MaxRestoreLength + 1 + this.streamReadIn;
+                this.buffer = new byte[this.bufferFillPos];
+                this.bufferIndex = MaxRestoreLength;
+                Buffer.BlockCopy(buffer, start, this.buffer, (int)this.bufferIndex + 1, length);
+            }
 
+            this.streamPosition = this.bufferFillPos;
+            this.buffer[this.bufferIndex] = 0;
+            this.streamPosition = this.streamReadIn;
+            this.IsDisposed = false;
+        }
+
+        // reading
+        /// <summary>
+        /// For efficient reads, we allow you to read Current past the end of the stream.  You will
+        /// get the 'Sentinal' value in that case.  This defaults to 0, but you can change it if 
+        /// there is a better 'rare' value to use as an end of stream marker.  
+        /// </summary>
+        public byte Sentinal = 0;
+        public byte ReadByte()
+        {
+            this.MoveNext();
+            return Current;
+        }
+        public int ReadInt()
+        {
+            byte c = Current;
+            while (c == ' ')
+                c = ReadByte();
+            bool negative = false;
+            if (c == '-')
+            {
+                negative = true;
+                c = ReadByte();
+            }
+            if (c >= '0' && c <= '9')
+            {
+                int value = 0;
+                if (c == '0')
+                {
+                    c = ReadByte();
+                    if (c == 'x' || c == 'X')
+                    {
+                        MoveNext();
+                        value = ReadIntHex();
+                    }
+                }
+                while (c >= '0' && c <= '9')
+                {
+                    value = value * 10 + c - '0';
+                    c = ReadByte();
+                }
+
+                if (negative)
+                    value = -value;
+                return value;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        public int ReadIntHex()
+        {
+            int value = 0;
+            while (true)
+            {
+                int digit = Current;
+                if (digit >= '0' && digit <= '9')
+                    digit -= '0';
+                else if (digit >= 'a' && digit <= 'f')
+                    digit -= 'a' - 10;
+                else if (digit >= 'A' && digit <= 'F')
+                    digit -= 'A' - 10;
+                else
+                    return value;
+                MoveNext();
+                value = value * 16 + digit;
+            }
+        }
+        public uint ReadUInt()
+        {
+            return (uint)ReadInt();
+        }
+        public long ReadLong()
+        {
+            byte c = Current;
+            while (c == ' ')
+                c = ReadByte();
+            bool negative = false;
+            if (c == '-')
+            {
+                negative = true;
+                c = ReadByte();
+            }
+            if (c >= '0' && c <= '9')
+            {
+                long value = 0;
+                if (c == '0')
+                {
+                    c = ReadByte();
+                    if (c == 'x' || c == 'X')
+                    {
+                        MoveNext();
+                        value = ReadLongHex();
+                    }
+                }
+                while (c >= '0' && c <= '9')
+                {
+                    value = value * 10 + c - '0';
+                    c = ReadByte();
+                }
+
+                if (negative)
+                    value = -value;
+                return value;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        public long ReadLongHex()
+        {
+            long value = 0;
+            while (true)
+            {
+                int digit = Current;
+                if (digit >= '0' && digit <= '9')
+                    digit -= '0';
+                else if (digit >= 'a' && digit <= 'f')
+                    digit -= 'a' - 10;
+                else if (digit >= 'A' && digit <= 'F')
+                    digit -= 'A' - 10;
+                else
+                    return value;
+                MoveNext();
+                value = value * 16 + digit;
+            }
+        }
+        public ulong ReadULong()
+        {
+            return (ulong)ReadLong();
+        }
+        public void ReadAsciiStringUpTo(char endMarker, StringBuilder sb)
+        {
+            for (;;)
+            {
+                byte c = Current;
+                if (c == endMarker)
+                    break;
+                sb.Append((char)c);
+                if (!MoveNext())
+                    break;
+            }
+        }
+        public void ReadAsciiStringUpTo(string endMarker, StringBuilder sb)
+        {
+            Debug.Assert(0 < endMarker.Length);
+            for (;;)
+            {
+                ReadAsciiStringUpTo(endMarker[0], sb);
+                uint markerIdx = 1;
+                for (;;)
+                {
+                    if (markerIdx >= endMarker.Length)
+                        return;
+                    if (Peek(markerIdx) != endMarker[(int)markerIdx])
+                        break;
+                    markerIdx++;
+                }
+                MoveNext();
+            }
+        }
+        /// <summary>
+        /// Reads the string into the stringBuilder until a byte is read that
+        /// is one of the characters in 'endMarkers'.  
+        /// </summary>
+        public void ReadAsciiStringUpToAny(string endMarkers, StringBuilder sb)
+        {
+            for (;;)
+            {
+                byte c = Current;
+                for (int i = 0; i < endMarkers.Length; i++)
+                    if (c == endMarkers[i])
+                        return;
+                sb.Append((char)c);
+                if (!MoveNext())
+                    break;
+            }
+        }
+        /// <summary>
+        /// Reads the stream into the string builder until the last end marker on the line is hit.
+        /// </summary>
+        public void ReadAsciiStringUpToLastBeforeTrue(char endMarker, StringBuilder sb, Func<byte, bool> predicate)
+        {
+            StringBuilder buffer = new StringBuilder();
+            MarkedPosition mp = this.MarkPosition();
+
+            while (predicate(this.Current) && !this.EndOfStream)
+            {
+                if (this.Current == endMarker)
+                {
+                    sb.Append(buffer);
+                    buffer.Clear();
+                    mp = this.MarkPosition();
+                }
+
+                buffer.Append((char)this.Current);
+                this.MoveNext();
+            }
+
+            this.RestoreToMark(mp);
+        }
+        /// <summary>
+        /// Reads the stream in the string builder until the given predicate function is false.
+        /// </summary>
+        public void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> predicate)
+        {
+            while (predicate(this.Current))
+            {
+                sb.Append((char)this.Current);
+                if (!this.MoveNext())
+                {
+                    break;
+                }
+            }
+        }
+
+        // peeking (not moving the read cursor)
+        /// <summary>
+        /// Returns a number of bytes ahead without advancing the pointer. 
+        /// Peek(0) is the same as calling Current.  
+        /// </summary>
+        /// <param name="bytesAhead"></param>
+        /// <returns></returns>
+        public byte Peek(uint bytesAhead)
+        {
+            uint peekIndex = bytesAhead + this.bufferIndex;
+            if (peekIndex >= this.bufferFillPos)
+            {
+                peekIndex = this.PeekHelper(bytesAhead);
+            }
+
+            return this.buffer[peekIndex];
+        }
+        public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
+
+        // skipping 
+        public void Skip(uint amount)
+        {
+            while (amount >= this.bufferFillPos - this.bufferIndex)
+            {
+                if (this.EndOfStream)
+                {
+                    return;
+                }
+                amount -= this.bufferFillPos - this.bufferIndex;
+                this.bufferIndex = this.FillBufferFromStreamPosition();
+            }
+
+            this.bufferIndex += amount;
+        }
+        public void SkipUpTo(char endMarker)
+        {
+            while (Current != endMarker)
+            {
+                if (!MoveNext())
+                    break;
+            }
+        }
+        public void SkipSpace()
+        {
+            while (Current == ' ')
+                MoveNext();
+        }
+        public void SkipWhiteSpace()
+        {
+            while (Char.IsWhiteSpace((char)Current))
+                MoveNext();
+        }
+        public void SkipUpToFalse(Func<byte, bool> predicate)
+        {
+            while (predicate(this.Current))
+            {
+                if (!MoveNext())
+                {
+                    break;
+                }
+            }
+        }
+
+        // Substreams
+        public FastStream ReadSubStream(int length, string trail = null)
+        {
+            if (this.bufferFillPos - this.bufferIndex < length)
+            {
+                this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+            }
+
+            length = (int)Math.Min(this.bufferFillPos - this.bufferIndex, length);
+
+            this.streamReadIn = (uint)(this.bufferFillPos - (this.bufferIndex + length));
+
+            byte[] newBuffer = this.GetUsedBuffer();
+            int newStart = (int)(this.bufferIndex + length);
+            int restoreAmount = (int)Math.Min(newStart, MaxRestoreLength);
+
+            Buffer.BlockCopy(
+                this.buffer, newStart - restoreAmount,
+                newBuffer, (int)(MaxRestoreLength - restoreAmount),
+                (int)this.streamReadIn + restoreAmount);
+
+            if (trail != null)
+            {
+                Buffer.BlockCopy(
+                    Encoding.ASCII.GetBytes(trail), 0,
+                    this.buffer, newStart,
+                    Math.Min(trail.Length, this.buffer.Length - newStart));
+
+                length += trail.Length;
+            }
+
+            FastStream subStream = new FastStream(this.buffer, (int)this.bufferIndex, length);
+
+            this.AddChild(subStream);
+
+            this.buffer = newBuffer;
+            this.bufferIndex = MaxRestoreLength;
+            this.bufferFillPos = this.streamReadIn + MaxRestoreLength;
+
+            return subStream;
+        }
+
+        // Foreach support.  
+        public byte Current { get { return buffer[this.bufferIndex]; } }
 		public bool MoveNext()
 		{
 			bufferIndex++;
@@ -111,25 +410,11 @@ namespace PerfView.Utilities
 #endif
 			return ret;
 		}
+        public bool EndOfStream { get { return this.streamReadIn == 0; } }
 
-		/// <summary>
-		/// Returns a number of bytes ahead without advancing the pointer. 
-		/// Peek(0) is the same as calling Current.  
-		/// </summary>
-		/// <param name="bytesAhead"></param>
-		/// <returns></returns>
-		public byte Peek(uint bytesAhead)
-		{
-			uint peekIndex = bytesAhead + this.bufferIndex;
-			if (peekIndex >= this.bufferFillPos)
-			{
-				peekIndex = this.PeekHelper(bytesAhead);
-			}
-
-			return this.buffer[peekIndex];
-		}
-
-		public struct MarkedPosition
+        // Mark and restore 
+        public const uint MaxRestoreLength = 256;
+        public struct MarkedPosition
 		{
 			internal long streamPos;
 
@@ -138,12 +423,10 @@ namespace PerfView.Utilities
 				this.streamPos = streamPos;
 			}
 		}
-
 		public MarkedPosition MarkPosition()
 		{
 			return new MarkedPosition(this.Position);
 		}
-
 		public void RestoreToMark(MarkedPosition position)
 		{
 			long delta = this.Position - position.streamPos;
@@ -158,343 +441,47 @@ namespace PerfView.Utilities
 			}
 		}
 
-		public byte Current { get { return buffer[this.bufferIndex]; } }
+        // Misc
+        public long Position
+        {
+            get
+            {
+                return this.streamPosition - (this.streamReadIn - (this.bufferIndex - MaxRestoreLength));
+            }
+        }
 
-		public bool IsDisposed { get; private set; }
+        public void Dispose()
+        {
+            if (this.closeStream)
+            {
+                this.stream?.Dispose();
+                this.stream = null;
+            }
 
-		public byte ReadChar()
-		{
-			this.MoveNext();
-			return Current;
-		}
-		public int ReadInt()
-		{
-			byte c = Current;
-			while (c == ' ')
-				c = ReadChar();
-			bool negative = false;
-			if (c == '-')
-			{
-				negative = true;
-				c = ReadChar();
-			}
-			if (c >= '0' && c <= '9')
-			{
-				int value = 0;
-				if (c == '0')
-				{
-					c = ReadChar();
-					if (c == 'x' || c == 'X')
-					{
-						MoveNext();
-						value = ReadHex();
-					}
-				}
-				while (c >= '0' && c <= '9')
-				{
-					value = value * 10 + c - '0';
-					c = ReadChar();
-				}
+            this.IsDisposed = true;
+        }
 
-				if (negative)
-					value = -value;
-				return value;
-			}
-			else
-			{
-				return -1;
-			}
-		}
-		public uint ReadUInt()
-		{
-			return (uint)ReadInt();
-		}
-		public long ReadLong()
-		{
-			byte c = Current;
-			while (c == ' ')
-				c = ReadChar();
-			bool negative = false;
-			if (c == '-')
-			{
-				negative = true;
-				c = ReadChar();
-			}
-			if (c >= '0' && c <= '9')
-			{
-				long value = 0;
-				if (c == '0')
-				{
-					c = ReadChar();
-					if (c == 'x' || c == 'X')
-					{
-						MoveNext();
-						value = ReadLongHex();
-					}
-				}
-				while (c >= '0' && c <= '9')
-				{
-					value = value * 10 + c - '0';
-					c = ReadChar();
-				}
+        #region privateMethods
+        /// <summary>
+        /// Gets a string from the position to the length indicated (for debugging)
+        /// </summary>
+        internal string PeekString(int length)
+        {
+            return this.PeekString(0, length);
+        }
 
-				if (negative)
-					value = -value;
-				return value;
-			}
-			else
-			{
-				return -1;
-			}
-		}
-		public ulong ReadULong()
-		{
-			return (ulong)ReadLong();
-		}
-		public bool EndOfStream { get { return this.streamReadIn == 0; } }
-		public void ReadAsciiStringUpTo(char endMarker, StringBuilder sb)
-		{
-			for (;;)
-			{
-				byte c = Current;
-				if (c == endMarker)
-					break;
-				sb.Append((char)c);
-				if (!MoveNext())
-					break;
-			}
-		}
-		public void ReadAsciiStringUpTo(string endMarker, StringBuilder sb)
-		{
-			Debug.Assert(0 < endMarker.Length);
-			for (;;)
-			{
-				ReadAsciiStringUpTo(endMarker[0], sb);
-				uint markerIdx = 1;
-				for (;;)
-				{
-					if (markerIdx >= endMarker.Length)
-						return;
-					if (Peek(markerIdx) != endMarker[(int)markerIdx])
-						break;
-					markerIdx++;
-				}
-				MoveNext();
-			}
-		}
-		public void SkipUpTo(char endMarker)
-		{
-			while (Current != endMarker)
-			{
-				if (!MoveNext())
-					break;
-			}
-		}
-		public void SkipSpace()
-		{
-			while (Current == ' ')
-				MoveNext();
-		}
-		public void SkipWhiteSpace()
-		{
-			while (Char.IsWhiteSpace((char)Current))
-				MoveNext();
-		}
+        internal string PeekString(int start, int length)
+        {
+            StringBuilder sb = new StringBuilder();
+            for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
+            {
+                sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
+            }
 
-		public void SkipUpToFalse(Func<byte, bool> predicate)
-		{
-			while (predicate(this.Current))
-			{
-				if (!MoveNext())
-				{
-					break;
-				}
-			}
-		}
+            return sb.ToString();
+        }
 
-		/// <summary>
-		/// Reads the string into the stringBuilder until a byte is read that
-		/// is one of the characters in 'endMarkers'.  
-		/// </summary>
-		public void ReadAsciiStringUpToAny(string endMarkers, StringBuilder sb)
-		{
-			for (;;)
-			{
-				byte c = Current;
-				for (int i = 0; i < endMarkers.Length; i++)
-					if (c == endMarkers[i])
-						return;
-				sb.Append((char)c);
-				if (!MoveNext())
-					break;
-			}
-		}
-
-		/// <summary>
-		/// Reads the stream into the string builder until the last end marker on the line is hit.
-		/// </summary>
-		public void ReadAsciiStringUpToLastBeforeTrue(char endMarker, StringBuilder sb, Func<byte, bool> predicate)
-		{
-			StringBuilder buffer = new StringBuilder();
-			MarkedPosition mp = this.MarkPosition();
-
-			while (predicate(this.Current) && !this.EndOfStream)
-			{
-				if (this.Current == endMarker)
-				{
-					sb.Append(buffer);
-					buffer.Clear();
-					mp = this.MarkPosition();
-				}
-
-				buffer.Append((char)this.Current);
-				this.MoveNext();
-			}
-
-			this.RestoreToMark(mp);
-		}
-
-		/// <summary>
-		/// Reads the stream in the string builder until the given predicate function is false.
-		/// </summary>
-		public void ReadAsciiStringUpToTrue(StringBuilder sb, Func<byte, bool> predicate)
-		{
-			while (predicate(this.Current))
-			{
-				sb.Append((char)this.Current);
-				if (!this.MoveNext())
-				{
-					break;
-				}
-			}
-		}
-
-		public void Skip(uint amount)
-		{
-			while (amount >= this.bufferFillPos - this.bufferIndex)
-			{
-				if (this.EndOfStream)
-				{
-					return;
-				}
-				amount -= this.bufferFillPos - this.bufferIndex;
-				this.bufferIndex = this.FillBufferFromStreamPosition();
-			}
-
-			this.bufferIndex += amount;
-		}
-
-		public int ReadHex()
-		{
-			int value = 0;
-			while (true)
-			{
-				int digit = Current;
-				if (digit >= '0' && digit <= '9')
-					digit -= '0';
-				else if (digit >= 'a' && digit <= 'f')
-					digit -= 'a' - 10;
-				else if (digit >= 'A' && digit <= 'F')
-					digit -= 'A' - 10;
-				else
-					return value;
-				MoveNext();
-				value = value * 16 + digit;
-			}
-		}
-
-		public long ReadLongHex()
-		{
-			long value = 0;
-			while (true)
-			{
-				int digit = Current;
-				if (digit >= '0' && digit <= '9')
-					digit -= '0';
-				else if (digit >= 'a' && digit <= 'f')
-					digit -= 'a' - 10;
-				else if (digit >= 'A' && digit <= 'F')
-					digit -= 'A' - 10;
-				else
-					return value;
-				MoveNext();
-				value = value * 16 + digit;
-			}
-		}
-
-		public FastStream ReadSubStream(int length, string trail = null)
-		{
-			if (this.bufferFillPos - this.bufferIndex < length)
-			{
-				this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
-			}
-
-			length = (int)Math.Min(this.bufferFillPos - this.bufferIndex, length);
-
-			this.streamReadIn = (uint)(this.bufferFillPos - (this.bufferIndex + length));
-
-			byte[] newBuffer = this.GetUsedBuffer();
-			int newStart = (int)(this.bufferIndex + length);
-			int restoreAmount = (int)Math.Min(newStart, MaxRestoreLength);
-
-			Buffer.BlockCopy(
-				this.buffer, newStart - restoreAmount,
-				newBuffer, (int)(MaxRestoreLength - restoreAmount),
-				(int)this.streamReadIn + restoreAmount);
-
-			if (trail != null)
-			{
-				Buffer.BlockCopy(
-					Encoding.ASCII.GetBytes(trail), 0,
-					this.buffer, newStart,
-					Math.Min(trail.Length, this.buffer.Length - newStart));
-
-				length += trail.Length;
-			}
-
-			FastStream subStream = new FastStream(this.buffer, (int)this.bufferIndex, length);
-
-			this.AddChild(subStream);
-
-			this.buffer = newBuffer;
-			this.bufferIndex = MaxRestoreLength;
-			this.bufferFillPos = this.streamReadIn + MaxRestoreLength;
-
-			return subStream;
-		}
-
-		public void Dispose()
-		{
-			if (this.closeStream)
-			{
-				this.stream?.Dispose();
-				this.stream = null;
-			}
-
-			this.IsDisposed = true;
-		}
-
-		/// <summary>
-		/// Gets a string from the position to the length indicated (for debugging)
-		/// </summary>
-		internal string PeekString(int length)
-		{
-			return this.PeekString(0, length);
-		}
-
-		internal string PeekString(int start, int length)
-		{
-			StringBuilder sb = new StringBuilder();
-			for (uint i = this.bufferIndex + (uint)start; i < this.bufferIndex + length + start && i < this.bufferFillPos - 1; i++)
-			{
-				sb.Append((char)this.Peek(i + (uint)start - this.bufferIndex));
-			}
-
-			return sb.ToString();
-		}
-
-		#region privateMethods
-		private void AddChild(FastStream child)
+        private void AddChild(FastStream child)
 		{
 			if (this.next != null)
 			{
@@ -585,6 +572,7 @@ namespace PerfView.Utilities
 		private long streamPosition;
 		private bool closeStream;
 		private FastStream next;
+        private bool IsDisposed;
 
 #if DEBUG
         string nextChars;
@@ -593,6 +581,6 @@ namespace PerfView.Utilities
             return nextChars;
         }
 #endif
-		#endregion
-	}
+        #endregion
+    }
 }
