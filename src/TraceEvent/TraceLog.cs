@@ -1472,7 +1472,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(_syncTimeQPC != 0);         // We should have set this in the Header event (or on session start if it is read time
 #if DEBUG
-                //Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
+                Debug.Assert(lastTimeStamp <= data.TimeStampQPC);     // Insure they are in order
                 lastTimeStamp = data.TimeStampQPC;
 #endif
                 // Show status every 128K events
@@ -2794,7 +2794,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             });
 
             serializer.Log("<Marker name=\"sessionStartTime\"/>");
-            serializer.Write(DateTime.Now.ToFileTimeUtc());  //_syncTimeUTC.ToFileTimeUtc());
+            serializer.Write(_syncTimeUTC.ToFileTimeUtc());
             serializer.Write(pointerSize);
             serializer.Write(numberOfProcessors);
             serializer.Write(cpuSpeedMHz);

@@ -114,9 +114,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 }
                 else
                 {
-                    timestamp = compact.GetFieldValue<ulong>(result, "timestamp") + last;
+                    // TODO:  We do not properly handle compact event headers, so we don't use
+                    //        'compact.GetFieldValue<ulong>(result, "timestamp")' as we should here.
+                    timestamp = last + 1;
                 }
-
 
                 last = timestamp;
 
