@@ -714,6 +714,8 @@ namespace Diagnostics.Tracing.StackSources
 		public string EventProperty { get; }
 		public IEnumerable<Frame> CallerStacks { get; }
 
+		public double Period { get; set; }
+
 		public LinuxEvent(EventKind kind,
 			string comm, int tid, int pid,
 			double time, int timeProp, int cpu,

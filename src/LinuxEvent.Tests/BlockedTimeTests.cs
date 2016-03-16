@@ -18,13 +18,21 @@ namespace LinuxTracing.Tests
 	/// </summary>
 	public class BlockedTimeTests
 	{
-		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod)
+		public static int? StartLook = null;
+		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod, bool concurrentTest = false)
 		{
 			Constants.WaitUntilFileIsReady(source);
 
+			if (concurrentTest)
+			{
+				StartLook = 10;
+			}
+
 			ParallelLinuxPerfScriptStackSource stackSource = new ParallelLinuxPerfScriptStackSource(source, doThreadTime: true);
 
-			Assert.Equal(expectedTotalBlockedPeriod, stackSource.GetTotalBlockedTime());
+			StartLook = null;
+
+			Assert.Equal(expectedTotalBlockedPeriod, stackSource.TotalBlockedTime);
 		}
 
 		[Fact]
@@ -67,6 +75,17 @@ namespace LinuxTracing.Tests
 		{
 			string path = Constants.GetTestingPerfDumpPath("mixed_switches");
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 8.0);
+		}
+
+		[Fact]
+		public void ConcurrentBlockedTime()
+		{
+			string path = Constants.GetTestingFilePath(@"C:\Users\t-lufern\Desktop\Luca\dev\helloworld.trace.zip");
+			var linearStackSource = new LinuxPerfScriptStackSource(path, true);
+			Constants.WaitUntilFileIsReady(path);
+			var parallelStackSource = new ParallelLinuxPerfScriptStackSource(path, true);
+
+			Assert.Equal(linearStackSource.TotalBlockedTime, parallelStackSource.TotalBlockedTime);
 		}
 	}
 }
