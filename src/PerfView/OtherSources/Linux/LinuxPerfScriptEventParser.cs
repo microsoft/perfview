@@ -481,7 +481,7 @@ namespace Diagnostics.Tracing.StackSources
 		public string[] ResolveSymbols(int processID, StackFrame stackFrame)
 		{
 			ulong absoluteLocation = ulong.Parse(
-				stackFrame.Address.Substring(2),
+				stackFrame.Address,
 				System.Globalization.NumberStyles.HexNumber);
 
 			Mapper mapper;
