@@ -167,6 +167,40 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
+		internal void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids)
+		{
+			FastStream source = new FastStream(stream);
+			source.MoveNext();
+			source.SkipWhiteSpace();
+
+			StringBuilder sb = new StringBuilder();
+
+			while (!source.EndOfStream)
+			{
+				source.ReadAsciiStringUpTo(';', sb);
+				source.MoveNext();
+				string command = sb.ToString();
+				sb.Clear();
+
+				if (command == "NILoad") // TODO: NILoad should be a constant maybe?
+				{
+					source.ReadAsciiStringUpTo(';', sb);
+					string path = sb.ToString();
+					sb.Clear();
+					source.MoveNext();
+
+					source.ReadAsciiStringUpTo('\n', sb);
+					string guid = sb.ToString().TrimEnd();
+					sb.Clear();
+
+					guids[Path.GetFileName(path)] = guid;
+				}
+
+				source.SkipUpTo('\n');
+				source.MoveNext();
+			}
+		}
+
 		#region private
 		private void SetDefaultValues()
 		{
@@ -315,7 +349,7 @@ namespace Diagnostics.Tracing.StackSources
 				StackFrame stackFrame = this.ReadFrame(source);
 				if (this.mapper != null && (stackFrame.Module == "unknown" || stackFrame.Symbol == "unknown"))
 				{
-					string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame);
+					string[] moduleSymbol = this.mapper.ResolveSymbols(processID, stackFrame.Module, stackFrame);
 					stackFrame = new StackFrame(stackFrame.Address, moduleSymbol[0], moduleSymbol[1]);
 				}
 				frames.Add(stackFrame);
@@ -466,19 +500,21 @@ namespace Diagnostics.Tracing.StackSources
 	{
 		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
 		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
+		public static readonly Regex PerfInfoPattern = new Regex(@"^perfinfo\-[0-9]+\.map$");
 
 		public LinuxPerfScriptMapper(ZipArchive archive, LinuxPerfScriptEventParser parser)
 		{
 			this.fileSymbolMappers = new Dictionary<string, Mapper>();
+			this.processToFileNameToGuid = new Dictionary<string, Dictionary<string, string>>();
 			this.parser = parser;
 
 			if (archive != null)
 			{
-				this.PopulateSymbolMapper(archive);
+				this.PopulateSymbolMapperAndGuids(archive);
 			}
 		}
 
-		public string[] ResolveSymbols(int processID, StackFrame stackFrame)
+		public string[] ResolveSymbols(int processID, string modulePath, StackFrame stackFrame)
 		{
 			ulong absoluteLocation = ulong.Parse(
 				stackFrame.Address,
@@ -510,7 +546,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		private void PopulateSymbolMapper(ZipArchive archive)
+		private void PopulateSymbolMapperAndGuids(ZipArchive archive)
 		{
 			Contract.Requires(archive != null, nameof(archive));
 
@@ -526,10 +562,20 @@ namespace Diagnostics.Tracing.StackSources
 					}
 					mapper.DoneMapping();
 				}
+				else if (PerfInfoPattern.IsMatch(entry.FullName))
+				{
+					Dictionary<string, string> guids = new Dictionary<string, string>();
+					this.processToFileNameToGuid[Path.GetFileName(entry.FullName)] = guids;
+					using (Stream stream = entry.Open())
+					{
+						this.parser.ParsePerfInfoFile(stream, guids);
+					}
+				}
 			}
 		}
 
 		private readonly Dictionary<string, Mapper> fileSymbolMappers;
+		private readonly Dictionary<string, Dictionary<string, string>> processToFileNameToGuid;
 		private readonly LinuxPerfScriptEventParser parser;
 		#endregion
 	}
