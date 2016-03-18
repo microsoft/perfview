@@ -499,7 +499,6 @@ namespace Diagnostics.Tracing.StackSources
 	internal class LinuxPerfScriptMapper
 	{
 		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
-		public static readonly Regex DllMapFilePattern = new Regex(@"^.+\.ni\.\{.+\}$");
 		public static readonly Regex PerfInfoPattern = new Regex(@"^perfinfo\-[0-9]+\.map$");
 
 		public LinuxPerfScriptMapper(ZipArchive archive, LinuxPerfScriptEventParser parser)
@@ -516,30 +515,31 @@ namespace Diagnostics.Tracing.StackSources
 
 		public string[] ResolveSymbols(int processID, string modulePath, StackFrame stackFrame)
 		{
-			ulong absoluteLocation = ulong.Parse(
-				stackFrame.Address,
-				System.Globalization.NumberStyles.HexNumber);
+			Dictionary<string, string> guids;
 
-			Mapper mapper;
-			if (this.fileSymbolMappers.TryGetValue(
-				string.Format("perf-{0}", processID.ToString()), out mapper))
+			if (this.processToFileNameToGuid.TryGetValue(
+				string.Format("perfinfo-{0}.map", processID.ToString()), out guids))
 			{
-				string symbol;
-				ulong location;
-				if (mapper.TryFindSymbol(absoluteLocation, out symbol, out location))
+				string dllName = Path.ChangeExtension(Path.GetFileNameWithoutExtension(modulePath), "dll");
+
+				string guid;
+				if (guids.TryGetValue(dllName, out guid))
 				{
-					if (DllMapFilePattern.IsMatch(symbol))
+					string mapName = string.Format("{0}.ni.{1}", Path.GetFileNameWithoutExtension(dllName), guid);
+
+					Mapper mapper;
+					if (this.fileSymbolMappers.TryGetValue(mapName, out mapper))
 					{
-						ulong relativeLocation = absoluteLocation - location;
-						if (this.fileSymbolMappers.TryGetValue(symbol, out mapper))
+						string symbol;
+						ulong address;
+						if (mapper.TryFindSymbol(ulong.Parse(stackFrame.Address, System.Globalization.NumberStyles.HexNumber),
+							out symbol, out address))
 						{
-							if (mapper.TryFindSymbol(relativeLocation, out symbol, out location))
-							{
-								return this.parser.GetSymbolFromMicrosoftMap(symbol);
-							}
+							return this.parser.GetSymbolFromMicrosoftMap(symbol);
 						}
 					}
 				}
+
 			}
 
 			return new string[] { stackFrame.Module, stackFrame.Symbol };
