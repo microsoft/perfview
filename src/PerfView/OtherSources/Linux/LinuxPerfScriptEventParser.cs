@@ -504,7 +504,7 @@ namespace Diagnostics.Tracing.StackSources
 		public LinuxPerfScriptMapper(ZipArchive archive, LinuxPerfScriptEventParser parser)
 		{
 			this.fileSymbolMappers = new Dictionary<string, Mapper>();
-			this.processToFileNameToGuid = new Dictionary<string, Dictionary<string, string>>();
+			this.processDllGuids = new Dictionary<string, Dictionary<string, string>>();
 			this.parser = parser;
 
 			if (archive != null)
@@ -517,7 +517,7 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			Dictionary<string, string> guids;
 
-			if (this.processToFileNameToGuid.TryGetValue(
+			if (this.processDllGuids.TryGetValue(
 				string.Format("perfinfo-{0}.map", processID.ToString()), out guids))
 			{
 				string dllName = Path.ChangeExtension(Path.GetFileNameWithoutExtension(modulePath), "dll");
@@ -565,7 +565,7 @@ namespace Diagnostics.Tracing.StackSources
 				else if (PerfInfoPattern.IsMatch(entry.FullName))
 				{
 					Dictionary<string, string> guids = new Dictionary<string, string>();
-					this.processToFileNameToGuid[Path.GetFileName(entry.FullName)] = guids;
+					this.processDllGuids[Path.GetFileName(entry.FullName)] = guids;
 					using (Stream stream = entry.Open())
 					{
 						this.parser.ParsePerfInfoFile(stream, guids);
@@ -575,7 +575,7 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		private readonly Dictionary<string, Mapper> fileSymbolMappers;
-		private readonly Dictionary<string, Dictionary<string, string>> processToFileNameToGuid;
+		private readonly Dictionary<string, Dictionary<string, string>> processDllGuids;
 		private readonly LinuxPerfScriptEventParser parser;
 		#endregion
 	}
