@@ -520,12 +520,12 @@ namespace Diagnostics.Tracing.StackSources
 			if (this.processDllGuids.TryGetValue(
 				string.Format("perfinfo-{0}.map", processID.ToString()), out guids))
 			{
-				string dllName = Path.ChangeExtension(Path.GetFileNameWithoutExtension(modulePath), "dll");
+				string dllName = modulePath;
 
 				string guid;
 				if (guids.TryGetValue(dllName, out guid))
 				{
-					string mapName = string.Format("{0}.ni.{1}", Path.GetFileNameWithoutExtension(dllName), guid);
+					string mapName = Path.ChangeExtension(dllName, guid);
 
 					Mapper mapper;
 					if (this.fileSymbolMappers.TryGetValue(mapName, out mapper))
@@ -562,7 +562,7 @@ namespace Diagnostics.Tracing.StackSources
 					}
 					mapper.DoneMapping();
 				}
-				else if (PerfInfoPattern.IsMatch(entry.FullName))
+				else if (PerfInfoPattern.IsMatch(Path.GetFileName(entry.FullName)))
 				{
 					Dictionary<string, string> guids = new Dictionary<string, string>();
 					this.processDllGuids[Path.GetFileName(entry.FullName)] = guids;

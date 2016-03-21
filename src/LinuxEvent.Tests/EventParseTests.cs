@@ -109,7 +109,7 @@ namespace LinuxTracing.Tests
 				new List<string> { "mscorlib!dynamicClass::IL_STUB_PInvoke(int32,native int,int32,int32,class System.Text.StringBuilder,int32,native int)", "Thread (0)", "first_symbol", null },
 				new List<string> { "mscorlib!System.BadImageFormatException::.ctor(string,string)", "Thread (0)", "middle_symbol", null },
 				new List<string> { "mscorlib!System.Collections.Generic.Dictionary`2+Enumerator[System.UInt64,System.__Canon]::.ctor(class System.Collections.Generic.Dictionary`2<!0,!1>,int32)", "Thread (0)", "last_symbol", null },
-				new List<string> { "mscorlib.dll!unknown", "Thread (0)", "out_of_range", null }
+				new List<string> { "mscorlib.ni.dll!unknown", "Thread (0)", "out_of_range", null }
 			});
 		}
 
