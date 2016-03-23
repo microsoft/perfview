@@ -858,21 +858,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 m_target = (Action<TraceEvent>)value;
             }
         }
-        /// <summary>
-        /// Implements TraceEvent interface
-        /// </summary>
-        public override string FormattedMessage
-        {
-            get
-            {
-                return GetFormattedMessage(null);
-            }
-        }
 
         public override string GetFormattedMessage(IFormatProvider formatProvider)
         {
             if (MessageFormat == null)
-                return null;
+                return base.GetFormattedMessage(formatProvider);
 
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
