@@ -21,10 +21,13 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		/// <summary>
-		/// Gets the total number of samples created.
+		/// Gets an estimated total number of samples created - not thread safe.
 		/// </summary>
 		public int EventCount { get; private set; }
 
+		/// <summary>
+		/// Tries to skip the byte order marks at the beginning of the given fast stream.
+		/// </summary>
 		public void SkipPreamble(FastStream source)
 		{
 			source.MoveNext(); // Skip Sentinal value
@@ -37,27 +40,32 @@ namespace Diagnostics.Tracing.StackSources
 			source.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
 		}
 
-		public IEnumerable<LinuxEvent> Parse(string filename)
-		{
-			return this.Parse(new FastStream(filename));
-		}
-
-		public IEnumerable<LinuxEvent> Parse(Stream stream)
-		{
-			return this.Parse(new FastStream(stream));
-		}
-
 		/// <summary>
-		/// Parses the PerfScript .dump file given, gives one sample at a time
+		/// Parses the given Linux sample data, returning one sample at a time, and
+		/// automatically skips the BOM at the beginning of files.
 		/// </summary>
-		public IEnumerable<LinuxEvent> Parse(FastStream source)
+		public IEnumerable<LinuxEvent> ParseSkippingPreamble(string filename)
+		{
+			return this.ParseSkippingPreamble(new FastStream(filename));
+		}
+
+		public IEnumerable<LinuxEvent> ParseSkippingPreamble(Stream stream)
+		{
+			return this.ParseSkippingPreamble(new FastStream(stream));
+		}
+
+		public IEnumerable<LinuxEvent> ParseSkippingPreamble(FastStream source)
 		{
 			this.SkipPreamble(source);
 
-			return this.ParseSamples(source);
+			return this.Parse(source);
 		}
 
-		public IEnumerable<LinuxEvent> ParseSamples(FastStream source)
+		/// <summary>
+		/// Parse the given Linux sample data, returning one sample at a time, does not try to
+		/// skip through the BOM.
+		/// </summary>
+		public IEnumerable<LinuxEvent> Parse(FastStream source)
 		{
 			if (source.Current == 0 && !source.EndOfStream)
 			{
@@ -92,16 +100,28 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public long MaxSamples { get; set; }
 
+		/// <summary>
+		/// Uses the archive as a resource for symbol resolution when parsing Linux samples.
+		/// </summary>
 		public void SetSymbolFile(ZipArchive archive)
 		{
 			this.mapper = new LinuxPerfScriptMapper(archive, this);
 		}
 
+		/// <summary>
+		/// Uses the path to open an archive with symbol files that are then used for symbol resolution when
+		/// parsing Linux samples.
+		/// </summary>
 		public void SetSymbolFile(string path)
 		{
 			this.SetSymbolFile(new ZipArchive(new FileStream(path, FileMode.Open)));
 		}
 
+		/// <summary>
+		/// Parses a Microsoft symbol as shown on the Linux sample. "entireSymbol" represents the module contract between
+		/// the memory address and the dll path on the Linux sample.
+		/// "mapFileLocation" is the path to the dll given by the Linux sample.
+		/// </summary>
 		public string[] GetSymbolFromMicrosoftMap(string entireSymbol, string mapFileLocation = "")
 		{
 			for (int first = 0; first < entireSymbol.Length;)
@@ -114,7 +134,7 @@ namespace Diagnostics.Tracing.StackSources
 
 				if (entireSymbol[first] == '[' && entireSymbol[last - 1] == ']')
 				{
-					var symbol = entireSymbol.Substring(System.Math.Min(entireSymbol.Length, last + 1));
+					var symbol = entireSymbol.Substring(Math.Min(entireSymbol.Length, last + 1));
 					return new string[2] { entireSymbol.Substring(first + 1, last - first - 2), symbol.Trim() };
 				}
 
@@ -134,7 +154,10 @@ namespace Diagnostics.Tracing.StackSources
 			return (current == '\n' && (peek1 == '\n' || peek1 == '\r' || peek1 == 0)) || current == 0 || source.EndOfStream;
 		}
 
-		internal void ParseSymbolFile(Stream stream, Mapper mapper)
+		/// <summary>
+		/// Given a stream with the symbols, this function parses the stream and stores the contents in the given mapper
+		/// </summary>
+		public void ParseSymbolFile(Stream stream, Mapper mapper)
 		{
 			FastStream source = new FastStream(stream);
 			source.MoveNext(); // Avoid \0 encounter
@@ -167,7 +190,11 @@ namespace Diagnostics.Tracing.StackSources
 			}
 		}
 
-		internal void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids)
+		/// <summary>
+		/// Given a stream that contains PerfInfo commands, parses the stream and stores data in the given dictionary.
+		/// Key: somedll.ni.dll		Value: {some guid}
+		/// </summary>
+		public void ParsePerfInfoFile(Stream stream, Dictionary<string, string> guids)
 		{
 			FastStream source = new FastStream(stream);
 			source.MoveNext();
@@ -496,7 +523,7 @@ namespace Diagnostics.Tracing.StackSources
 	}
 
 	#region Mapper
-	internal class LinuxPerfScriptMapper
+	public class LinuxPerfScriptMapper
 	{
 		public static readonly Regex MapFilePatterns = new Regex(@"^perf\-[0-9]+\.map|.+\.ni\.\{.+\}\.map$");
 		public static readonly Regex PerfInfoPattern = new Regex(@"^perfinfo\-[0-9]+\.map$");
@@ -580,7 +607,7 @@ namespace Diagnostics.Tracing.StackSources
 		#endregion
 	}
 
-	internal class Mapper
+	public class Mapper
 	{
 		public Mapper()
 		{
@@ -686,7 +713,14 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public enum EventKind
 	{
+		/// <summary>
+		/// Represents an event that uses the cpu, and does not do anything special
+		/// </summary>
 		Cpu,
+
+		/// <summary>
+		/// Represents an event that may context switch
+		/// </summary>
 		Scheduler,
 	}
 
@@ -712,6 +746,9 @@ namespace Diagnostics.Tracing.StackSources
 		}
 	}
 
+	/// <summary>
+	/// Stores all relevant information retrieved by a context switch stack frame
+	/// </summary>
 	public class ScheduleSwitch
 	{
 		public string PreviousCommand { get; }
@@ -753,9 +790,8 @@ namespace Diagnostics.Tracing.StackSources
 		public string Command { get; }
 		public int ThreadID { get; }
 		public int ProcessID { get; }
-		public double Time { get; }
-		public int TimeProperty { get; }
-		public int Cpu { get; }
+		public int CpuNumber { get; }
+		public double TimeMSec { get; }
 		public string EventName { get; }
 		public string EventProperty { get; }
 		public IEnumerable<Frame> CallerStacks { get; }
@@ -771,20 +807,37 @@ namespace Diagnostics.Tracing.StackSources
 			this.Command = comm;
 			this.ThreadID = tid;
 			this.ProcessID = pid;
-			this.Time = time;
+			this.TimeMSec = time;
 			this.TimeProperty = timeProp;
-			this.Cpu = cpu;
+			this.CpuNumber = cpu;
 			this.EventName = eventName;
 			this.EventProperty = eventProp;
 			this.CallerStacks = callerStacks;
 		}
+
+		private int TimeProperty { get; }
 	}
 
 	public enum FrameKind
 	{
+		/// <summary>
+		/// An actual stack frame from the simpling data
+		/// </summary>
 		StackFrame,
+
+		/// <summary>
+		/// A stack frame that represents the process of the sample
+		/// </summary>
 		ProcessFrame,
+
+		/// <summary>
+		/// A stack frame that represents the thread of the sample
+		/// </summary>
 		ThreadFrame,
+
+		/// <summary>
+		/// A stack frame that represents either blocked time or cpu time
+		/// </summary>
 		BlockedCPUFrame
 	}
 
@@ -853,9 +906,13 @@ namespace Diagnostics.Tracing.StackSources
 	/// </summary>
 	public struct BlockedCPUFrame : Frame
 	{
+		/// <summary>
+		/// Represents whether the stack frame is BLOCKED_TIME or CPU_TIME
+		/// </summary>
+		public string SubKind { get; }
 		public FrameKind Kind { get { return FrameKind.BlockedCPUFrame; } }
 		public string DisplayName { get { return this.SubKind; } }
-		public string SubKind { get; }
+
 		public int ID { get; }
 
 		public BlockedCPUFrame(int id, string kind)

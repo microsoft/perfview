@@ -53,7 +53,7 @@ namespace LinuxTracing.Tests
 			using (Stream stream = File.Open(source, FileMode.Open))
 			{
 				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
-				List<LinuxEvent> samples = parser.Parse(stream).ToList();
+				List<LinuxEvent> samples = parser.ParseSkippingPreamble(stream).ToList();
 
 				// Need to make sure we have the same amount of samples
 				Assert.Equal(commands.Length, parser.EventCount);
@@ -66,8 +66,8 @@ namespace LinuxTracing.Tests
 					Assert.Equal(commands[i], linuxEvent.Command);
 					Assert.Equal(pids[i], linuxEvent.ProcessID);
 					Assert.Equal(tids[i], linuxEvent.ThreadID);
-					Assert.Equal(cpus[i], linuxEvent.Cpu);
-					Assert.Equal(times[i], linuxEvent.Time);
+					Assert.Equal(cpus[i], linuxEvent.CpuNumber);
+					Assert.Equal(times[i], linuxEvent.TimeMSec);
 					Assert.Equal(timeProperties[i], linuxEvent.TimeProperty);
 					Assert.Equal(events[i], linuxEvent.EventName);
 					Assert.Equal(eventProperties[i], linuxEvent.EventProperty);

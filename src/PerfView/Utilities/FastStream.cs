@@ -308,7 +308,13 @@ namespace PerfView.Utilities
         }
         public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
 
-        // skipping 
+        // skipping
+
+		/// <summary>
+		/// Moves through the FastStream without actually reading data.
+		/// </summary>
+
+		// Skip by a number amount
         public void Skip(uint amount)
         {
             while (amount >= this.bufferFillPos - this.bufferIndex)
@@ -323,6 +329,7 @@ namespace PerfView.Utilities
 
             this.bufferIndex += amount;
         }
+
         public void SkipUpTo(char endMarker)
         {
             while (Current != endMarker)
@@ -353,6 +360,11 @@ namespace PerfView.Utilities
         }
 
         // Substreams
+
+		/// <summary>
+		/// Creates a FastStream with the read in stream with the given length.
+		/// The "trail" is am ASCII string that is attached to the end of the returned FastStream.
+		/// </summary>
         public FastStream ReadSubStream(int length, string trail = null)
         {
             if (this.bufferFillPos - this.bufferIndex < length)
