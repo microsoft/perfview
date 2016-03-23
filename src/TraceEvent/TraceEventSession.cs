@@ -647,20 +647,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 var properties = GetProperties(propertiesBuff);
                 properties->Wnode.Guid = HeapTraceProviderTraceEventParser.ProviderGuid;
 
+                List<ExtensionItem> extensions = new List<ExtensionItem>();
+
                 /* Prep Extensions */
                 // Turn on the Pids feature, selects which process to turn on. 
                 var pids = new ExtensionItem(ExtensionItemTypes.ETW_EXT_PIDS);
                 pids.Data.Add(pid);
-                AddExtensionItem(pids);
+                extensions.Add(pids);
 
                 // Initialize the stack collecting information
                 var stackSpec = new ExtensionItem(ExtensionItemTypes.ETW_EXT_STACKWALK_FILTER);
                 stackSpec.Data.Add(0x1021);       // 10 = HeapProvider 21 = Stack on Alloc (Realloc?)  
                 stackSpec.Data.Add(0x1022);       // 10 = HeapProvider 22 = Stack on Realloc (Alloc?)  
-                AddExtensionItem(stackSpec);
+                extensions.Add(stackSpec);
 
                 /* Save Extensions */
-                SaveExtensions(m_extensionItems, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
+                SaveExtensions(extensions, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
 
                 /* Actually start the session */
                 var dwErr = TraceEventNativeMethods.StartTraceW(out m_SessionHandle, m_SessionName, properties);
@@ -953,17 +955,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
 
-#if false // TODO FIX NOW add these.   
-        public void SendCommand(Guid providerGuid, string command, params string[] values)
-        {
-        }
-        public void SendCommand(Guid providerGuid, string command, params KeyValuePair<string, string>[] values)
-        {
-        }
-        public void SendCommand(Guid providerGuid, string command,  IEnumerable<KeyValuePair<string, string>> values = null)
-        {
-        }
-#endif
         // These properties can be set both before and after a provider has been enabled in the session.  
 
         /// <summary>
@@ -1441,18 +1432,17 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 (KernelTraceEventParser.Keywords.PMCProfile | KernelTraceEventParser.Keywords.ReferenceSet
                 | KernelTraceEventParser.Keywords.ThreadPriority | KernelTraceEventParser.Keywords.IOQueue | KernelTraceEventParser.Keywords.Handle)) != 0)
                 needExtensions = true;
-#if !PUBLIC_ONLY || !NO_HEAP_SUPPORT
-            if (m_extensionItems != null)
-                needExtensions = true;
 
+#if !PUBLIC_ONLY || !NO_HEAP_SUPPORT
             if (needExtensions)
             {
-                PutEnableFlagsIntoExtensions((KernelTraceEventParser.Keywords)properties->EnableFlags);
-                PutStacksIntoExtensions(stackTracingEventIds, cStackTracingEventIds);
-                int len = SaveExtensions(m_extensionItems, null, 0);
+                List<ExtensionItem> extensions = new List<ExtensionItem>();
+                PutEnableFlagsIntoExtensions(extensions, (KernelTraceEventParser.Keywords)properties->EnableFlags);
+                PutStacksIntoExtensions(extensions, stackTracingEventIds, cStackTracingEventIds);
+                int len = SaveExtensions(extensions, null, 0);
                 if (len > MaxExtensionSize)
                     throw new ArgumentOutOfRangeException("Too much ETW extension information specified.");
-                SaveExtensions(m_extensionItems, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
+                SaveExtensions(extensions, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
                 return TraceEventNativeMethods.StartTraceW(out TraceHandle, KernelTraceEventParser.KernelSessionName, properties);
             }
             else
@@ -1550,18 +1540,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
             return lenInBytes;
         }
 
-        private void AddExtensionItem(ExtensionItem item)
-        {
-            if (m_extensionItems == null)
-                m_extensionItems = new List<ExtensionItem>();
-            m_extensionItems.Add(item);
-        }
-        List<ExtensionItem> m_extensionItems;
-
         /// <summary>
         /// The internal API does not use GUIDS but small integer values to represnet the stack hooks.   Do the convesion here. 
         /// </summary>
-        private unsafe void PutStacksIntoExtensions(TraceEventNativeMethods.STACK_TRACING_EVENT_ID* StackTracingEventIds, int cStackTracingEventIds)
+        private static unsafe void PutStacksIntoExtensions(List<ExtensionItem> extensions, TraceEventNativeMethods.STACK_TRACING_EVENT_ID* StackTracingEventIds, int cStackTracingEventIds)
         {
             var converter = new Dictionary<Guid, int>(16);
 
@@ -1587,10 +1569,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 --cStackTracingEventIds;
             }
 
-            AddExtensionItem(stackSpec);
+            extensions.Add(stackSpec);
         }
 
-        private void PutEnableFlagsIntoExtensions(KernelTraceEventParser.Keywords keywords)
+        private static void PutEnableFlagsIntoExtensions(List<ExtensionItem> extensions, KernelTraceEventParser.Keywords keywords)
         {
             var extendedEnableFlags = new ExtensionItem(ExtensionItemTypes.ETW_EXT_ENABLE_FLAGS);
 
@@ -1645,7 +1627,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             extendedEnableFlags.Data.Add(0);
             extendedEnableFlags.Data.Add(0); // group 6
             extendedEnableFlags.Data.Add(0);
-            AddExtensionItem(extendedEnableFlags);
+            extensions.Add(extendedEnableFlags);
         }
 
         /// <summary>
@@ -1688,7 +1670,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             RegistryKey software = hklm.OpenSubKey(@"SOFTWARE", true);
             if (software == null)
-                throw new ApplicationException(@"Could not open HKLM\Softare registry hive on local machine for writing.");
+                throw new ApplicationException(@"Could not open HKLM\Software registry hive on local machine for writing.");
 
             // Mark the fact that we have turned on heap tracing.  
             if (set)
