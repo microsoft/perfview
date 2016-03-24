@@ -8,43 +8,43 @@ using System.Text;
 
 namespace PerfView.Utilities
 {
-	/// <summary>
-	/// The is really what BinaryReader should have been... (sigh)
-	/// 
-	/// We need really fast, byte-by-byte streaming. ReadChar needs to be inliable .... All the routines that
-	/// give back characters assume the bytes are ASCII (The translations from bytes to chars is simply a
-	/// cast).
-	/// 
-	/// The basic model is that of a Enumerator. There is a 'Current' property that represents the current
-	/// byte, and 'MoveNext' that moves to the next byte and returns false if there are no more bytes. Like
-	/// Enumerators 'MoveNext' needs to be called at least once before 'Current' is valid.
-	/// 
-	/// Unlike standard Enumerators, FastStream does NOT consider it an error to read 'Current' is read when
-	/// there are no more characters.  Instead Current returns a Sentinal value (by default this is 0, but
-	/// the 'Sentinal' property allow you to choose it).   This is often more convenient and efficient to
-	/// allow checking end-of-file (which is rare), to happen only at certain points in the parsing logic.  
-	/// 
-	/// Another really useful feature of this stream is that you can peek ahead efficiently a large number
-	/// of bytes (since you read ahead into a buffer anyway).
-	/// </summary>
-	public sealed class FastStream : IDisposable
-	{
+    /// <summary>
+    /// The is really what BinaryReader should have been... (sigh)
+    /// 
+    /// We need really fast, byte-by-byte streaming. ReadChar needs to be inliable .... All the routines that
+    /// give back characters assume the bytes are ASCII (The translations from bytes to chars is simply a
+    /// cast).
+    /// 
+    /// The basic model is that of a Enumerator. There is a 'Current' property that represents the current
+    /// byte, and 'MoveNext' that moves to the next byte and returns false if there are no more bytes. Like
+    /// Enumerators 'MoveNext' needs to be called at least once before 'Current' is valid.
+    /// 
+    /// Unlike standard Enumerators, FastStream does NOT consider it an error to read 'Current' is read when
+    /// there are no more characters.  Instead Current returns a Sentinal value (by default this is 0, but
+    /// the 'Sentinal' property allow you to choose it).   This is often more convenient and efficient to
+    /// allow checking end-of-file (which is rare), to happen only at certain points in the parsing logic.  
+    /// 
+    /// Another really useful feature of this stream is that you can peek ahead efficiently a large number
+    /// of bytes (since you read ahead into a buffer anyway).
+    /// </summary>
+    public sealed class FastStream : IDisposable
+    {
         // construction 
-		public FastStream(string filePath)
-			: this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-		{
-		}
-		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
-		{
-			this.stream = stream;
-			this.closeStream = closeStream;
-			this.buffer = new byte[bufferSize];
-			this.bufferFillPos = 1;
-			this.bufferIndex = 0;
-			this.streamReadIn = 1;
-			this.streamPosition = 0;
-			this.IsDisposed = false;
-		}
+        public FastStream(string filePath)
+            : this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+        {
+        }
+        public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
+        {
+            this.stream = stream;
+            this.closeStream = closeStream;
+            this.buffer = new byte[bufferSize];
+            this.bufferFillPos = 1;
+            this.bufferIndex = 0;
+            this.streamReadIn = 1;
+            this.streamPosition = 0;
+            this.IsDisposed = false;
+        }
         public FastStream(byte[] buffer, int start, int length)
         {
             this.stream = Stream.Null;
@@ -396,50 +396,50 @@ namespace PerfView.Utilities
 
         // Foreach support.  
         public byte Current { get { return buffer[this.bufferIndex]; } }
-		public bool MoveNext()
-		{
-			bufferIndex++;
-			bool ret = true;
-			if (this.bufferIndex >= this.bufferFillPos)
-			{
-				ret = this.MoveNextHelper();
-			}
+        public bool MoveNext()
+        {
+            bufferIndex++;
+            bool ret = true;
+            if (this.bufferIndex >= this.bufferFillPos)
+            {
+                ret = this.MoveNextHelper();
+            }
 
 #if DEBUG
             nextChars = Encoding.Default.GetString(buffer, (int)this.bufferIndex, Math.Min(40, buffer.Length - (int)bufferIndex));
 #endif
-			return ret;
-		}
+            return ret;
+        }
         public bool EndOfStream { get { return this.streamReadIn == 0; } }
 
         // Mark and restore 
         public const uint MaxRestoreLength = 256;
         public struct MarkedPosition
-		{
-			internal long streamPos;
+        {
+            internal long streamPos;
 
-			public MarkedPosition(long streamPos)
-			{
-				this.streamPos = streamPos;
-			}
-		}
-		public MarkedPosition MarkPosition()
-		{
-			return new MarkedPosition(this.Position);
-		}
-		public void RestoreToMark(MarkedPosition position)
-		{
-			long delta = this.Position - position.streamPos;
-			if (delta > MaxRestoreLength)
-			{
-				this.stream.Position = this.streamPosition = position.streamPos;
-				this.FillBufferFromStreamPosition();
-			}
-			else
-			{
-				this.bufferIndex -= (uint)delta;
-			}
-		}
+            public MarkedPosition(long streamPos)
+            {
+                this.streamPos = streamPos;
+            }
+        }
+        public MarkedPosition MarkPosition()
+        {
+            return new MarkedPosition(this.Position);
+        }
+        public void RestoreToMark(MarkedPosition position)
+        {
+            long delta = this.Position - position.streamPos;
+            if (delta > MaxRestoreLength)
+            {
+                this.stream.Position = this.streamPosition = position.streamPos;
+                this.FillBufferFromStreamPosition();
+            }
+            else
+            {
+                this.bufferIndex -= (uint)delta;
+            }
+        }
 
         // Misc
         public long Position
@@ -482,96 +482,96 @@ namespace PerfView.Utilities
         }
 
         private void AddChild(FastStream child)
-		{
-			if (this.next != null)
-			{
-				child.next = this.next;
-			}
+        {
+            if (this.next != null)
+            {
+                child.next = this.next;
+            }
 
-			this.next = child;
-		}
+            this.next = child;
+        }
 
-		// Will later be changed to find a used buffer from faststream children
-		private byte[] GetUsedBuffer()
-		{
-			FastStream prev = null;
-			FastStream next = this.next;
+        // Will later be changed to find a used buffer from faststream children
+        private byte[] GetUsedBuffer()
+        {
+            FastStream prev = null;
+            FastStream next = this.next;
 
-			while (next != null)
-			{
-				if (next.IsDisposed)
-				{
-					if (prev == null)
-					{
-						this.next = next.next;
-					}
-					else
-					{
-						prev.next = next.next;
-					}
+            while (next != null)
+            {
+                if (next.IsDisposed)
+                {
+                    if (prev == null)
+                    {
+                        this.next = next.next;
+                    }
+                    else
+                    {
+                        prev.next = next.next;
+                    }
 
-					return next.buffer;
-				}
+                    return next.buffer;
+                }
 
-				prev = next;
-				next = next.next;
-			}
+                prev = next;
+                next = next.next;
+            }
 
-			return new byte[this.buffer.Length];
-		}
+            return new byte[this.buffer.Length];
+        }
 
-		private uint FillBufferFromStreamPosition(uint keepLast = 0)
-		{
-			// This is so the first 'keepFromBack' integers are read in again.
-			uint preamble = MaxRestoreLength + keepLast;
-			for (int i = 0; i < preamble; i++)
-			{
-				if (this.bufferFillPos - (preamble - i) < 0)
-				{
-					buffer[i] = 0;
-					continue;
-				}
+        private uint FillBufferFromStreamPosition(uint keepLast = 0)
+        {
+            // This is so the first 'keepFromBack' integers are read in again.
+            uint preamble = MaxRestoreLength + keepLast;
+            for (int i = 0; i < preamble; i++)
+            {
+                if (this.bufferFillPos - (preamble - i) < 0)
+                {
+                    buffer[i] = 0;
+                    continue;
+                }
 
-				this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
-			}
+                this.buffer[i] = this.buffer[bufferFillPos - (preamble - i)];
+            }
 
-			this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
-			this.bufferFillPos = this.streamReadIn + preamble;
-			this.streamReadIn += keepLast;
-			this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
-			if (this.bufferFillPos < this.buffer.Length)
-				this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
+            this.streamReadIn = (uint)stream.Read(this.buffer, (int)preamble, this.buffer.Length - (int)preamble);
+            this.bufferFillPos = this.streamReadIn + preamble;
+            this.streamReadIn += keepLast;
+            this.streamPosition += this.streamReadIn > 0 ? this.streamReadIn : 1;
+            if (this.bufferFillPos < this.buffer.Length)
+                this.buffer[this.bufferFillPos] = this.Sentinal;    // we define 0 as the value you get after EOS.
 
-			return MaxRestoreLength;
-		}
+            return MaxRestoreLength;
+        }
 
-		private bool MoveNextHelper()
-		{
-			this.bufferIndex = this.FillBufferFromStreamPosition();
-			return (this.streamReadIn > 0);
-		}
+        private bool MoveNextHelper()
+        {
+            this.bufferIndex = this.FillBufferFromStreamPosition();
+            return (this.streamReadIn > 0);
+        }
 
-		private uint PeekHelper(uint bytesAhead)
-		{
-			if (bytesAhead >= this.buffer.Length - MaxRestoreLength)
-				throw new Exception("Can only peek ahead the length of the buffer");
+        private uint PeekHelper(uint bytesAhead)
+        {
+            if (bytesAhead >= this.buffer.Length - MaxRestoreLength)
+                throw new Exception("Can only peek ahead the length of the buffer");
 
-			// We keep everything above the index.
-			this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
+            // We keep everything above the index.
+            this.bufferIndex = this.FillBufferFromStreamPosition(keepLast: this.bufferFillPos - this.bufferIndex);
 
-			return bytesAhead + this.bufferIndex;
-		}
+            return bytesAhead + this.bufferIndex;
+        }
 
-		#endregion
-		#region privateState
-		private byte[] buffer;
-		private uint bufferFillPos;
-		private uint streamReadIn;
-		private Stream stream;
-		private uint bufferIndex;      // The next character to read
-		private long streamPosition;
-		private bool closeStream;
-		private FastStream next;
+        #endregion
+        #region privateState
+        private byte[] buffer;
+        private uint bufferFillPos;
+        private uint streamReadIn;
+        private Stream stream;
+        private uint bufferIndex;      // The next character to read
+        private long streamPosition;
+        private bool closeStream;
+        private FastStream next;
         private bool IsDisposed;
 
 #if DEBUG
