@@ -79,7 +79,7 @@ using System.Collections.Generic;
 /* EXTERNAL REPORTS */
 // Localization bug Windows 102699  
 //          Hi, In PerfView you can select cells in the data view and it will sum up the values in the bottom of the window. Problem is, it converts the numbers for displaying using American culture (eg. 1,234.56), while the sum functionality interprets the formatted numbers using the local culture (in my case danish: 1.234,56). I took a screenshot: imgur.com/GbYEL The values selected are 95 and 2.9 and they get summed up to 979. Similarly, when I select 4717 and 142 they get summed up to 146.717. I also found the same problem in the event window. If you select a time cell in the data view and right click -> Open Any Stacks, you will get a CPU stack window where the start and end time has been set to the wrong number. Example: I select the time 319.879 and when the cpu stack window opens, it's empty and the start and end time has been set to 319879. This is again because the data view doesn't use the local culture, while everything else does.
- 
+
 // *** VIDEOS needed
 // Catching Intermittent issues Using the /StopOnPerfCounter* and /StopOnRequestMSec* options. (this is probably 2 or 3 videos).  
 // Using Diffing to investigate regressions.  
@@ -1070,12 +1070,12 @@ namespace PerfView
             Height = App.ConfigData.GetDouble("MainWindowHeight", Height);
             Width = App.ConfigData.GetDouble("MainWindowWidth", Width);
 
-            Loaded += delegate(object sender1, RoutedEventArgs e2)
+            Loaded += delegate (object sender1, RoutedEventArgs e2)
             {
                 FileFilterTextBox.Focus();
             };
 
-            Closing += delegate(object sender, CancelEventArgs e)
+            Closing += delegate (object sender, CancelEventArgs e)
             {
                 if (NumWindowsNeedingSaving != 0)
                 {
@@ -1181,7 +1181,7 @@ namespace PerfView
         /// </summary>
         public void OpenStacks(string dataFileName, PerfViewFile format = null, string stackSourceName = null)
         {
-            Open(dataFileName, null, delegate()
+            Open(dataFileName, null, delegate ()
             {
                 var data = PerfViewFile.Get(dataFileName);
                 if (data.Children != null)
@@ -1243,10 +1243,10 @@ namespace PerfView
                 worker = StatusBar;
 
             App.CommandProcessor.LogFile = worker.LogWriter;
-            worker.StartWork(statusMessage, delegate()
+            worker.StartWork(statusMessage, delegate ()
             {
                 command(App.CommandLineArgs);
-                worker.EndWork(delegate()
+                worker.EndWork(delegate ()
                 {
                     // Refresh directory view 
                     RefreshCurrentDirectory();
@@ -1270,7 +1270,7 @@ namespace PerfView
         // The file menu callbacks
         internal void DoSetSymbolPath(object sender, RoutedEventArgs e)
         {
-            var symPathDialog = new SymbolPathDialog(App.SymbolPath, "Symbol", delegate(string newPath)
+            var symPathDialog = new SymbolPathDialog(App.SymbolPath, "Symbol", delegate (string newPath)
             {
                 App.SymbolPath = newPath;
             });
@@ -1357,10 +1357,10 @@ namespace PerfView
                 throw new ApplicationException("File " + inputName + " not a zipped .ETL file");
 
             // TODO make a command
-            StatusBar.StartWork("Unzipping " + inputName, delegate()
+            StatusBar.StartWork("Unzipping " + inputName, delegate ()
             {
                 PerfView.ETLPerfViewData.UnZipIfNecessary(ref inputName, StatusBar.LogWriter, false);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     // Refresh the directory view
                     RefreshCurrentDirectory();
@@ -1376,7 +1376,7 @@ namespace PerfView
         {
             if (m_UserDefineCommandDialog == null)
             {
-                m_UserDefineCommandDialog = new UserCommandDialog(delegate(string commandAndArgs)
+                m_UserDefineCommandDialog = new UserCommandDialog(delegate (string commandAndArgs)
                 {
                     App.CommandLineArgs.CommandAndArgs = ParseWordsOrQuotedStrings(commandAndArgs).ToArray();
                     bool commandSuccessful = false;
@@ -1435,7 +1435,7 @@ namespace PerfView
                 string ilSizeFile = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "ILSize.dll");
                 bool ilSizeExists = File.Exists(ilSizeFile);
 
-                Dispatcher.BeginInvoke((Action)delegate()
+                Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     if (canSendFeedback)
                     {
@@ -1487,7 +1487,7 @@ namespace PerfView
         {
             if (AppLog.CanSendFeedback)
             {
-                var feedbackDialog = new PerfView.Dialogs.FeedbackDialog(delegate(string message)
+                var feedbackDialog = new PerfView.Dialogs.FeedbackDialog(delegate (string message)
                 {
                     if (string.IsNullOrWhiteSpace(message))
                     {
@@ -1627,7 +1627,7 @@ namespace PerfView
             if (selectedItem == null)
                 throw new ApplicationException("No item selected.");
 
-            selectedItem.Open(this, StatusBar, delegate()
+            selectedItem.Open(this, StatusBar, delegate ()
             {
 #if false // TODO FIX NOW this causes undesirable side effects of closing any opened tree nodes.    Remove permanently.
                 // The item was expanded after it was opened, refresh the current directory
@@ -1937,7 +1937,7 @@ namespace PerfView
                     s_Browser = null;
                 };
 
-                s_Browser.Browser.Navigating += delegate(object sender, NavigatingCancelEventArgs e)
+                s_Browser.Browser.Navigating += delegate (object sender, NavigatingCancelEventArgs e)
                 {
                     if (e.Uri != null && e.Uri.Host.Length > 0)
                     {
@@ -2015,4 +2015,3 @@ namespace PerfView
         string m_openNextFileName;
     }
 }
-
