@@ -9,6 +9,7 @@
 # VS 2015 stuff
 .vs/
 *.VC.opendb
+*.VC.db
 
 # Build results
 [Dd]ebug/
