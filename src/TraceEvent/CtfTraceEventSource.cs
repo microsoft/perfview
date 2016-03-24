@@ -75,9 +75,9 @@ namespace Microsoft.Diagnostics.Tracing
             _eventMapping = InitEventMap();
 
 #if DEBUG
-            // Uncomment for debug output.
-            // _debugOut = File.CreateText("debug.txt");
-            // _debugOut.AutoFlush = true;
+            //// Uncomment for debug output.
+            //_debugOut = File.CreateText("debug.txt");
+            //_debugOut.AutoFlush = true;
 #endif
         }
         
@@ -491,15 +491,8 @@ namespace Microsoft.Diagnostics.Tracing
                     break;
                 
                 CtfEventHeader header = entry.Current;
-
-                // Despite the content length field in packets, LTTng still seems to put some "null value"
-                // packets at the end of a data stream.  This check simply discards those null events.  There
-                // never seems to be anything after them in the event stream, but we'll continue processing
-                // just in case.
-                if (header.Event.ID == 0 && header.Tid == 0 && header.Pid == 0 && header.Timestamp == 0)
-                    continue;
-
                 CtfEvent evt = header.Event;
+
 #if DEBUG
                 if (_debugOut != null)
                 {

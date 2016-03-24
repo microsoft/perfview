@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public int BufferLength { get { return _bufferLength; } }
         public byte[] Buffer { get { return _buffer; } }
         public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
-
+        
         public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
@@ -87,7 +87,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfStruct extended = (CtfStruct)v.GetVariant("extended").Type;
             CtfStruct compact = (CtfStruct)v.GetVariant("compact").Type;
 
-            ulong last = 0;
+            ulong lowMask = 0, highMask = 0, overflowBit = 0;
+            ulong lastTimestamp = 0;
 
             StringBuilder processName = new StringBuilder();
             while (!_eof)
@@ -108,18 +109,35 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 result = header.GetFieldValue<object[]>(result, "v");
                 if (en.GetName((int)event_id) == "extended")
-                { 
+                {
                     event_id = extended.GetFieldValue<uint>(result, "id");
                     timestamp = extended.GetFieldValue<ulong>(result, "timestamp");
                 }
                 else
                 {
-                    // TODO:  We do not properly handle compact event headers, so we don't use
-                    //        'compact.GetFieldValue<ulong>(result, "timestamp")' as we should here.
-                    timestamp = last + 1;
+                    if (overflowBit == 0)
+                    {
+                        CtfInteger compactTimestamp = (CtfInteger)compact.GetField("timestamp").Type;
+                        overflowBit = (1ul << compactTimestamp.Size);
+                        lowMask = overflowBit - 1;
+                        highMask = ~lowMask;
+                    }
+
+                    ulong uint27timestamp = compact.GetFieldValue<ulong>(result, "timestamp");
+                    ulong prevLowerBits = lastTimestamp & lowMask;
+                    
+                    if (prevLowerBits < uint27timestamp)
+                    {
+                        timestamp = (lastTimestamp & highMask) | uint27timestamp;
+                    }
+                    else
+                    {
+                        timestamp = (lastTimestamp & highMask) | uint27timestamp;
+                        timestamp += overflowBit;
+                    }
                 }
 
-                last = timestamp;
+                lastTimestamp = timestamp;
 
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
                 _header.Event = evt;
@@ -375,34 +393,19 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return BitConverter.ToUInt16(_buffer, byteOffset);
             }
 
+
+
             // Sloooow path for misaligned integers
             int bits = ctfInt.Size;
-            int end = bitOffset + bits;
-            int leading = end - IntHelpers.AlignDown(end, 8);
-            int trailing = IntHelpers.AlignUp(bitOffset, 8) - bitOffset;
-
             ulong value = 0;
-            if (trailing > 0)
-            {
-                byte endByte = _buffer[IntHelpers.AlignDown(trailing, 8) / 8];
 
-                if (trailing > bits)
-                    trailing = bits;
+            int byteLen = IntHelpers.AlignUp(bits, 8) / 8;
 
-                value = (ulong)(endByte >> (8 - trailing));
-            }
+            for (int i = 0; i < byteLen; i++)
+                value = unchecked((value << 8) | _buffer[byteOffset + byteLen - i - 1]);
 
-            Debug.Assert((bits - trailing - leading) % 8 == 0);
-
-            int len = (bits - trailing - leading) / 8;
-            for (int i = 0; i < len; i++)
-                value = unchecked((value << 8) | _buffer[len - i - 1]);
-
-            if (leading != 0)
-            {
-                byte leadingByte = _buffer[IntHelpers.AlignDown(bitOffset, 8) / 8];
-                value = (value << leading) | (uint)(leadingByte & ((1 << leading) - 1));
-            }
+            value >>= bitOffset;
+            value &= (ulong)((1 << bits) - 1);
 
             if (ctfInt.Signed)
             {
