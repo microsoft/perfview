@@ -881,7 +881,10 @@ namespace PerfView
                 if (m_source.ColumnsToDisplay != null && i < m_source.ColumnsToDisplay.Count)
                 {
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Visible;
-                    m_userDefinedColumns[i].Header = m_source.ColumnsToDisplay[i];
+                    // For some reason underscores in the name of the column header get removed
+                    // (it probably means something special to the Grid), we fix this by replacing
+                    // them with __.  
+                    m_userDefinedColumns[i].Header = m_source.ColumnsToDisplay[i].Replace("_", "__");
                 }
                 else
                     m_userDefinedColumns[i].Visibility = System.Windows.Visibility.Hidden;

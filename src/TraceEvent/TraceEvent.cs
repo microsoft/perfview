@@ -771,7 +771,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// FormattedMessage returns this string with the values of the payload filled in at the appropriate places.
         /// <para>It will return null if the event provider did not define a 'message'  for this event</para>
         /// </summary>
-        public virtual string FormattedMessage { get { return null; } }
+        public virtual string FormattedMessage { get { return GetFormattedMessage(null); } }
 
         /// <summary>
         /// Creates and returns the value of the 'message' for the event with payload values substituted.
@@ -779,6 +779,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public virtual string GetFormattedMessage(IFormatProvider formatProvider)
         {
+            // This lets simple string payloads be shown as the FormattedMessage.  
+            if (IsEventWriteString ||
+               (eventRecord->EventHeader.Id == 0 && eventRecord->EventHeader.Opcode == 0 && eventRecord->EventHeader.Task == 0))
+                return EventDataAsString();
             return null;
         }
 
@@ -979,7 +983,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (0 <= index)
                 return PayloadValue(index);
             return null;
-        }
+        }   
         // Raw payload bytes
         /// <summary>
         /// The size of the event-specific data payload.  (see EventData)
@@ -1124,7 +1128,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public string Dump(bool includePrettyPrint = false, bool truncateDump = false)
         {
-            StringBuilder sb = new StringBuilder(); 
+            StringBuilder sb = new StringBuilder();
             Prefix(sb);
             sb.AppendLine().Append(" ");
             XmlAttrib(sb, "TimeStamp", TimeStamp.ToString("MM/dd/yy HH:mm:ss.ffffff"));
@@ -1204,6 +1208,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// EventTypeUserData is a field users get to use to attach their own data on a per-event-type basis.    
         /// </summary>
         public object EventTypeUserData;
+
+        /// <summary>
+        /// Version number for LTTng "split" events;
+        /// </summary>
+        public const int SplitEventVersion = 255;
 
         #region Protected
         /// <summary>
@@ -2889,7 +2898,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-            RetryLookup:
+        RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -3608,19 +3617,6 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(false);
             return null;
-        }
-        /// <summary>
-        /// implementation of TraceEvent Interface. 
-        /// </summary>
-        public override string FormattedMessage
-        {
-            get
-            {
-                if (IsEventWriteString ||
-                   (eventRecord->EventHeader.Id == 0 && eventRecord->EventHeader.Opcode == 0 && eventRecord->EventHeader.Task == 0))
-                    return EventDataAsString();
-                return null;
-            }
         }
 
         internal event Action<TraceEvent> Action;

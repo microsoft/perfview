@@ -308,7 +308,7 @@ namespace PerfView.Utilities
         }
         public int MaxPeek => this.buffer.Length - (int)MaxRestoreLength;
 
-        // skipping
+        // skipping 
 
 		/// <summary>
 		/// Moves through the FastStream without actually reading data.

@@ -23,7 +23,7 @@ namespace LinuxTracing.Tests
 				var sample = stackSource.GetSampleByIndex((StackSourceSampleIndex)i);
 
 				var stackIndex = sample.StackIndex;
-				for (int j = 0;  (int)stackIndex != -1; j++)
+                for (int j = 0; (int)stackIndex != -1; j++)
 				{
 					var frameIndex = stackSource.GetFrameIndex(stackIndex);
 					Assert.Equal(callerStacks[i][j], stackSource.GetFrameName(frameIndex, false));

@@ -792,6 +792,7 @@ namespace Diagnostics.Tracing.StackSources
 		public int ProcessID { get; }
 		public int CpuNumber { get; }
 		public double TimeMSec { get; }
+		public int TimeProperty { get; }
 		public string EventName { get; }
 		public string EventProperty { get; }
 		public IEnumerable<Frame> CallerStacks { get; }
@@ -814,8 +815,6 @@ namespace Diagnostics.Tracing.StackSources
 			this.EventProperty = eventProp;
 			this.CallerStacks = callerStacks;
 		}
-
-		private int TimeProperty { get; }
 	}
 
 	public enum FrameKind

@@ -340,7 +340,7 @@ namespace PerfView
             string rundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".clrRundown.etl");
             string kernelRundownFileName = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
             // Insure that old data is gone
-            var fileNames = new string[] { zipFileName, userFileName, kernelFileName, rundownFileName, kernelRundownFileName };
+            var fileNames = new string[] { zipFileName, userFileName, kernelFileName, heapFileName, rundownFileName, kernelRundownFileName };
             try
             {
                 foreach (var fileName in fileNames)
