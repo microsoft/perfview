@@ -220,7 +220,7 @@ namespace Diagnostics.Tracing.StackSources
 					string guid = sb.ToString().TrimEnd();
 					sb.Clear();
 
-					guids[Path.GetFileName(path)] = guid;
+					guids[GetFileName(path)] = guid;
 				}
 
 				source.SkipUpTo('\n');
@@ -229,7 +229,36 @@ namespace Diagnostics.Tracing.StackSources
 		}
 
 		#region private
-		private void SetDefaultValues()
+
+        /// <summary>
+        /// Can't use Path.GetFileName because it fails on illegal Linux file characters.  
+        /// Can remove when this changes. 
+        /// </summary>
+        internal static string GetFileName(string path)
+        {
+            var index = path.LastIndexOfAny(pathSeparators);
+            if (index < 0)
+                return path;
+            return path.Substring(index + 1);
+        }
+        static char[] pathSeparators = new char[] { '/', '\\' };
+
+        internal static string GetFileNameWithoutExtension(string path)
+        {
+            var start = path.LastIndexOfAny(pathSeparators);
+            if (start < 0)
+                start = 0;
+            else
+                start++;
+
+            var end = path.LastIndexOf('.');
+            if (end < start)
+                end = path.Length;
+            return path.Substring(start, end - start);
+        }
+
+
+        private void SetDefaultValues()
 		{
 			this.EventCount = 0;
 			this.Pattern = null;
@@ -430,7 +459,8 @@ namespace Diagnostics.Tracing.StackSources
 				actualModule = moduleSymbol[0];
 			}
 
-			actualModule = Path.GetFileName(actualModule);
+            // Can't use Path.GetFileName Because it throws on illegal Windows characters 
+			actualModule = GetFileName(actualModule);
 
 			return new StackFrame(address, actualModule, actualSymbol);
 		}
@@ -582,17 +612,17 @@ namespace Diagnostics.Tracing.StackSources
 				if (MapFilePatterns.IsMatch(entry.FullName))
 				{
 					Mapper mapper = new Mapper();
-					this.fileSymbolMappers[Path.GetFileNameWithoutExtension(entry.FullName)] = mapper;
+					this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName)] = mapper;
 					using (Stream stream = entry.Open())
 					{
 						this.parser.ParseSymbolFile(stream, mapper);
 					}
 					mapper.DoneMapping();
 				}
-				else if (PerfInfoPattern.IsMatch(Path.GetFileName(entry.FullName)))
+				else if (PerfInfoPattern.IsMatch(LinuxPerfScriptEventParser.GetFileName(entry.FullName)))
 				{
 					Dictionary<string, string> guids = new Dictionary<string, string>();
-					this.processDllGuids[Path.GetFileName(entry.FullName)] = guids;
+					this.processDllGuids[LinuxPerfScriptEventParser.GetFileName(entry.FullName)] = guids;
 					using (Stream stream = entry.Open())
 					{
 						this.parser.ParsePerfInfoFile(stream, guids);

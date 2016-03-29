@@ -3043,7 +3043,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 58; }
+            get { return 59; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -5572,8 +5572,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 process.Log.ModuleFiles.SetModuleFileName(module.ModuleFile, data.ModuleILPath);
             if (module.ModuleFile.pdbSignature == Guid.Empty)
             {
+                var ilPath = data.ModuleILPath;
                 // CoreCLR uses the native image as the only managed image.   If present, use that. 
-                if (data.NativePdbSignature != Guid.Empty && data.ModuleILPath == data.ModuleNativePath)
+                if (data.NativePdbSignature != Guid.Empty && (
+                    ilPath.EndsWith(".ni.dll", StringComparison.OrdinalIgnoreCase) ||
+                    ilPath.EndsWith(".ni.exe", StringComparison.OrdinalIgnoreCase)))
                 {
                     module.ModuleFile.pdbSignature = data.NativePdbSignature;
                     module.ModuleFile.pdbAge = data.NativePdbAge;
@@ -7218,7 +7221,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
                 {
-                    symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.");
+                    symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
                     return null;
                 }
                 symbolReaderModule.ExePath = moduleFile.FilePath;
@@ -7635,7 +7638,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// Conceptually a TraceCodeAddress represents a particular point of execution within a particular 
     /// line of code in some source code.    As a practical matter, they are represented two ways
     /// depending on whether the code is managed or not.
-    /// <para>* For native code (or NGened code), it is represented as a virtual address along with the loaded native
+    /// <para>* For native code (or NGened code), it is represented as a virtual addresis along with the loaded native
     /// module that includes that address along with its load address.  A code address does NOT 
     /// know its process because they can be shared among all processes that load a particular module
     /// at a particular location.   These code addresses will not have methods associated with them
