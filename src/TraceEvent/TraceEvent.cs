@@ -2188,84 +2188,6 @@ namespace Microsoft.Diagnostics.Tracing
             AddCallbackForEvents<T>(eventNameFilter, null, callback);
         }
 
-#if DEBUG
-        /// <summary>
-        /// Debug-only code  Confirm that some did not add an event, but forgot to add it to the enumeration.  
-        /// </summary>
-        bool m_ConfirmedAllEventsAreInEnumeration;
-        void ConfirmAllEventsAreInEnumeration()
-        {
-            var declaredSet = new SortedDictionary<string, string>();
-
-            // Use reflection to see what events have declared 
-            MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            for (int i = 0; i < methods.Length; i++)
-            {
-                var addMethod = methods[i];
-                if (!addMethod.IsSpecialName)
-                    continue;
-
-                var addMethodName = addMethod.Name;
-                if (!addMethodName.StartsWith("add_"))
-                    continue;
-
-                var eventName = addMethodName.Substring(4);
-
-                if (eventName.EndsWith("Group"))
-                    continue;
-
-                ParameterInfo[] paramInfos = addMethod.GetParameters();
-                if (paramInfos.Length != 1)
-                    continue;
-
-                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
-                    continue;
-                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
-                    continue;
-
-                declaredSet.Add(eventName, eventName);
-            }
-
-            var enumSet = new SortedDictionary<string, string>();
-
-            // Make sure that we have all the event we should have 
-            EnumerateTemplates(null, delegate (TraceEvent template)
-            {
-                // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
-                // we'll "special case" project N templates and ignore them...
-                if (template.ProviderGuid == ClrTraceEventParser.NativeProviderGuid)
-                    return;
-                var eventName = template.EventName.Replace("/", "");
-                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
-                    return;
-                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
-                    return;
-                if (eventName == "FileIO")
-                    eventName = "FileIOName";       // They use opcode 0 which gets truncated.  
-                if (eventName == "EventTrace")
-                    eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.  
-                if (eventName == "Jscript_GC_IdleCollect")
-                    eventName = eventName + template.OpcodeName;  // They use opcode 0 which gets truncated.
-
-                // We register the same name for old classic and manifest for some old GC events (
-                if (eventName.StartsWith("GC") && template.ID == (TraceEventID)0xFFFF &&
-                    (template.ProviderGuid == ClrTraceEventParser.ProviderGuid || template.providerGuid == ClrTraceEventParser.NativeProviderGuid))
-                    return;
-
-                if (declaredSet.ContainsKey(eventName))
-                    declaredSet.Remove(eventName);
-                else
-                {
-                    Debug.Assert(!enumSet.ContainsKey(eventName));
-                    enumSet[eventName] = eventName;
-                }
-            });
-
-            // As this point any events that are both in the declared set and the static set represent a mismatch
-            Debug.Assert(enumSet.Count == 0 || declaredSet.Count == 0, "The provider " + GetProviderName() + " has Event methods that are not in the 'A'' enumeration");
-        }
-#endif
-
         /// <summary>
         /// Causes 'callback' to be called for any event in the provider associated with this parser (ProviderName) whose type is compatible with T and 
         /// whose eventName will pass 'eventNameFilter'.    The eventNameFilter parameter can be null, in which case all events that are compatible 
@@ -2282,14 +2204,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (GetProviderName() == null)
                 throw new InvalidOperationException("Need to use AddCalbackForProviderEvents for Event Parsers that handle more than one provider");
-#if DEBUG
-            Debug.Assert(GetProviderName() != null);
-            if (!m_ConfirmedAllEventsAreInEnumeration)
-            {
-                ConfirmAllEventsAreInEnumeration();
-                m_ConfirmedAllEventsAreInEnumeration = true;
-            }
-#endif
+
             // Convert the eventNameFilter to the more generic filter that take a provider name as well.   
             Func<string, string, EventFilterResponse> eventsToObserve = delegate (string pName, string eName)
             {
@@ -2370,13 +2285,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public virtual void AddCallbackForProviderEvents(Func<string, string, EventFilterResponse> eventsToObserve, object subscriptionId, Action<TraceEvent> callback)
         {
-#if DEBUG
-            if (!m_ConfirmedAllEventsAreInEnumeration && GetProviderName() != null)
-            {
-                ConfirmAllEventsAreInEnumeration();
-                m_ConfirmedAllEventsAreInEnumeration = true;
-            }
-#endif
             var newSubscription = new SubscriptionRequest(eventsToObserve, callback, subscriptionId);
             m_subscriptionRequests.Add(newSubscription);
 
@@ -2433,6 +2341,14 @@ namespace Microsoft.Diagnostics.Tracing
 
             if (!dontRegister)
                 this.source.RegisterParser(this);
+
+#if DEBUG
+            if (GetProviderName() != null && !m_ConfirmedAllEventsAreInEnumeration)
+            {
+                ConfirmAllEventsAreInEnumeration();
+                m_ConfirmedAllEventsAreInEnumeration = true;
+            }
+#endif
         }
 
         /// <summary>
@@ -2474,6 +2390,109 @@ namespace Microsoft.Diagnostics.Tracing
 
         #endregion
         #region private
+
+#if DEBUG
+        /// <summary>
+        /// Debug-only code  Confirm that some did not add an event, but forgot to add it to the enumeration that EnumerateTemplates 
+        /// returns.  
+        /// </summary>
+        bool m_ConfirmedAllEventsAreInEnumeration;
+        void ConfirmAllEventsAreInEnumeration()
+        {
+            var declaredSet = new SortedDictionary<string, string>();
+
+            // Use reflection to see what events have declared 
+            MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var addMethod = methods[i];
+                if (!addMethod.IsSpecialName)
+                    continue;
+
+                var addMethodName = addMethod.Name;
+                if (!addMethodName.StartsWith("add_"))
+                    continue;
+
+                var eventName = addMethodName.Substring(4);
+
+                if (eventName.EndsWith("Group"))
+                    continue;
+
+                ParameterInfo[] paramInfos = addMethod.GetParameters();
+                if (paramInfos.Length != 1)
+                    continue;
+
+                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                    continue;
+                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                    continue;
+
+                declaredSet.Add(eventName, eventName);
+            }
+
+            var enumSet = new SortedDictionary<string, string>();
+
+            // Make sure that we have all the event we should have 
+            EnumerateTemplates(null, delegate (TraceEvent template)
+            {
+                // the CLR provider calls this callback twice. Rather then refactoring EnumerateTemplates for all parsers
+                // we'll "special case" project N templates and ignore them...
+                if (template.ProviderGuid == ClrTraceEventParser.NativeProviderGuid)
+                    return;
+                var eventName = template.EventName.Replace("/", "");
+                if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
+                    return;
+                if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                    return;
+                if (eventName == "FileIO")
+                    eventName = "FileIOName";       // They use opcode 0 which gets truncated.  
+                if (eventName == "EventTrace")
+                    eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.  
+                if (eventName == "Jscript_GC_IdleCollect")
+                    eventName = eventName + template.OpcodeName;  // They use opcode 0 which gets truncated.
+
+                // We register the same name for old classic and manifest for some old GC events (
+                if (eventName.StartsWith("GC") && template.ID == (TraceEventID)0xFFFF &&
+                    (template.ProviderGuid == ClrTraceEventParser.ProviderGuid || template.providerGuid == ClrTraceEventParser.NativeProviderGuid))
+                    return;
+
+                if (declaredSet.ContainsKey(eventName))
+                    declaredSet.Remove(eventName);
+                else
+                {
+                    Debug.Assert(!enumSet.ContainsKey(eventName));
+                    enumSet[eventName] = eventName;
+                }
+            });
+
+            // As this point any events that are both in the declared set and the static set represent a mismatch
+            if (0 < enumSet.Count)
+            {
+                var provider = GetProviderName();
+                var typeName = this.GetType().FullName;
+                foreach (var methodName in enumSet.Keys)
+                {
+                    Debug.Assert(false, "The template " + methodName + 
+                        " for the parser " + typeName + 
+                        " for provider " + provider + 
+                        " exists in EnumerateTemplates enumeration but not as a C# event, please add it.");
+                }
+            }
+            if (0 < declaredSet.Count)
+            {
+                var provider = GetProviderName();
+                var typeName = this.GetType().FullName;
+                foreach (var methodName in declaredSet.Keys)
+                {
+                    Debug.Assert(false, "The C# event " + methodName +
+                        " for the parser " + typeName +
+                        " for provider " + provider +
+                        " does NOT exist in the EnumerateTemplates enumeration, please add it.");
+                }
+            }
+        }
+#endif
+
 
         /// <summary>
         /// If the parser can change over time (it can add new definitions),  It needs to support this interface.  See EnumerateDynamicTemplates for details.

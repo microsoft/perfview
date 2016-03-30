@@ -52,5 +52,5 @@ using System.Windows;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.9.5.0")]
+[assembly: AssemblyFileVersion("1.9.6.0")]
 [assembly:  InternalsVisibleTo("PerfViewTests")]

@@ -961,7 +961,14 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 // Decompress it
                 m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
-                Command.Run("Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath));
+                var commandline = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
+                var options = new CommandOptions().AddNoThrow();
+                var command = Command.Run(commandline, options);
+                if (command.ExitCode != 0)
+                {
+                    m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandline);
+                    return null;
+                }
                 File.Delete(compressedFilePath);
                 return targetPath;
             }

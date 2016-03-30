@@ -1639,7 +1639,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[106];
+                var templates = new TraceEvent[114];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1734,7 +1734,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[91] = new GCBulkRCWTraceData(null, 37, 1, "GC", GCTaskGuid, 39, "BulkRCW", ProviderGuid, ProviderName);
                 templates[92] = new GCBulkRootStaticVarTraceData(null, 38, 1, "GC", GCTaskGuid, 40, "BulkRootStaticVar", ProviderGuid, ProviderName);
                 templates[93] = new ThreadPoolWorkerThreadTraceData(null, 57, 16, "ThreadPoolWorkerThread", Guid.Empty, 90, "Wait", ProviderGuid, ProviderName);
-                templates[94] = new GCMarkWithTypeTraceData(null, 202, 1, "GC", GCTaskGuid, 202, "Mark", ProviderGuid, ProviderName);
+                templates[94] = new GCMarkWithTypeTraceData(null, 202, 1, "GC", GCTaskGuid, 202, "MarkWithType", ProviderGuid, ProviderName);
                 templates[95] = new GCJoinTraceData(null, 203, 1, "GC", GCTaskGuid, 203, "Join", ProviderGuid, ProviderName);
                 templates[96] = new GCPerHeapHistoryTraceData3(null, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName);
                 templates[97] = new GCGlobalHeapHistoryTraceData(null, 205, 1, "GC", GCTaskGuid, 205, "GlobalHeapHistory", ProviderGuid, ProviderName);
@@ -1748,6 +1748,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[103] = ExceptionFilterStopTemplate(null);
                 templates[104] = ExceptionStopTemplate(null);
                 templates[105] = CodeSymbolsStartTemplate(null);
+
+                // Some more old style 
+                templates[106] = new ThreadStartWorkTraceData(null, 70, 24, "Thread", ThreadTaskGuid, 11, "Creating", ProviderGuid, ProviderName);
+                templates[107] = new ThreadStartWorkTraceData(null, 71, 24, "Thread", ThreadTaskGuid, 12, "Running", ProviderGuid, ProviderName);
+                templates[108] = new ThreadPoolWorkingThreadCountTraceData(null, 60, 22, "ThreadPoolWorkingThreadCount", ThreadPoolWorkingThreadCountTaskGuid, 1, "Start", ProviderGuid, ProviderName);
+                templates[109] = new ThreadPoolWorkTraceData(null, 61, 23, "ThreadPool", ThreadPoolTaskGuid, 11, "Enqueue", ProviderGuid, ProviderName);
+                templates[110] = new ThreadPoolWorkTraceData(null, 62, 23, "ThreadPool", ThreadPoolTaskGuid, 12, "Dequeue", ProviderGuid, ProviderName);
+                templates[111] = new ThreadPoolIOWorkEnqueueTraceData(null, 63, 23, "ThreadPool", ThreadPoolTaskGuid, 13, "IOEnqueue", ProviderGuid, ProviderName);
+                templates[112] = new ThreadPoolIOWorkTraceData(null, 64, 23, "ThreadPool", ThreadPoolTaskGuid, 14, "IODequeue", ProviderGuid, ProviderName);
+                templates[113] = new ThreadPoolIOWorkTraceData(null, 65, 23, "ThreadPool", ThreadPoolTaskGuid, 15, "IOPack", ProviderGuid, ProviderName);
 
                 s_templates = templates;
             }

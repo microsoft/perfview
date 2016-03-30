@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public TplEtwProviderTraceEventParser(TraceEventSource source) : base(source) {}
 
-        public event Action<AwaitTaskContinuationScheduledArgs> AwaitTaskContinuationScheduled
+        public event Action<AwaitTaskContinuationScheduledArgs> AwaitTaskContinuationScheduledSend
         {
             add
             {
