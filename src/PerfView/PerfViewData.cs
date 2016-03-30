@@ -5935,9 +5935,16 @@ namespace PerfView
             m_Children = new List<PerfViewTreeItem>();
             m_Children.Add(new PerfViewTraceInfo(this));
             m_Children.Add(new PerfViewProcesses(this));
-            
+
+			var traceApi = new CtfTraceEventSource(this.m_filePath);
+			var reader = new DotNetHeapDumpGraphReader(worker.LogWriter);
+			MemoryGraph graph = new MemoryGraph(10000);
+			reader.Append(graph, traceApi);
+
+			// m_Children.Add(new PerfViewHeapSnapshots());
+
             // Enable once this file type supports the event view.
-             m_Children.Add(new PerfViewEventSource(this));
+            m_Children.Add(new PerfViewEventSource(this));
 
             return null;
         }

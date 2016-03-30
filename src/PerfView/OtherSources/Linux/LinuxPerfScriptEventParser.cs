@@ -209,14 +209,14 @@ namespace Diagnostics.Tracing.StackSources
 				string command = sb.ToString();
 				sb.Clear();
 
-				if (command == "NILoad") // TODO: NILoad should be a constant maybe?
+				if (command == "ImageLoad") // TODO: should be a constant maybe?
 				{
 					source.ReadAsciiStringUpTo(';', sb);
 					string path = sb.ToString();
 					sb.Clear();
 					source.MoveNext();
 
-					source.ReadAsciiStringUpTo('\n', sb);
+					source.ReadAsciiStringUpTo(';', sb);
 					string guid = sb.ToString().TrimEnd();
 					sb.Clear();
 
