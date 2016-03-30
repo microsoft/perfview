@@ -8905,7 +8905,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             /// </summary>
             CodeSymbolsRundown = 0x80000000,
 
-            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Threading + Loader + CodeSymbolsRundown,
+            Default = ForceEndRundown + NGen + Jit + SupressNGen + JittedMethodILToNativeMap + Loader + CodeSymbolsRundown,
         };
 
         public ClrRundownTraceEventParser(TraceEventSource source) : base(source) { }

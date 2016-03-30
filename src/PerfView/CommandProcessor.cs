@@ -2599,8 +2599,15 @@ namespace PerfView
                             foreach (var parsedProvider in parsedProviders)
                             {
                                 // turn it on in the Rundown Session, this will dump the manifest into the rundown information. 
-                                EnableUserProvider(clrRundownSession, parsedProvider.Name, parsedProvider.Guid,
-                                    TraceEventLevel.Critical, 0);
+
+                                if (TraceEventProviders.MaybeAnEventSource(parsedProvider.Guid))
+                                {
+                                    // We don't use 0 for the keywords because that means 'provider default' which is typically
+                                    // everything.  Thus we use an obscure keyword we hope is not to volumous (we are really
+                                    // relying on the critical event level to filter things).  
+                                    EnableUserProvider(clrRundownSession, parsedProvider.Name, parsedProvider.Guid,
+                                        TraceEventLevel.Critical, 0x1000000000000000);
+                                }
                             }
                         }
                     }
