@@ -86,7 +86,7 @@ namespace Microsoft.Diagnostics.Tracing
             };
 
             // Async support.    ContinueationScheduled are not like beginWait and endWait pairs, so they use the IsScheduled ID.  
-            tplParser.AwaitTaskContinuationScheduled += delegate (AwaitTaskContinuationScheduledArgs data)
+            tplParser.AwaitTaskContinuationScheduledSend += delegate (AwaitTaskContinuationScheduledArgs data)
             {
                 OnCreated(data, GetTPLRawID(data, data.ContinuationId, IDType.TplScheduledTask), TraceActivity.ActivityKind.AwaitTaskScheduled);
             };

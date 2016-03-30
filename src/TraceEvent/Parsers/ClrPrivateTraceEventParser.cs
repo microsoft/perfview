@@ -1894,7 +1894,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[118];
+                var templates = new TraceEvent[132];
                 templates[0] = new GCDecisionTraceData(null, 1, 1, "GC", GCTaskGuid, 132, "Decision", ProviderGuid, ProviderName);
                 templates[1] = new GCSettingsTraceData(null, 2, 1, "GC", GCTaskGuid, 14, "Settings", ProviderGuid, ProviderName);
                 templates[2] = new GCOptimizedTraceData(null, 3, 1, "GC", GCTaskGuid, 16, "Optimized", ProviderGuid, ProviderName);
@@ -2013,6 +2013,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[115] = new ThreadPoolIOWorkTraceData(null, 304, 21, "ThreadPool", ThreadPoolTaskGuid, 14, "IODequeue", ProviderGuid, ProviderName);
                 templates[116] = new ThreadPoolIOWorkTraceData(null, 305, 21, "ThreadPool", ThreadPoolTaskGuid, 15, "IOPack", ProviderGuid, ProviderName);
                 templates[117] = new LoaderHeapAllocRequestTraceData(null, 310, 16, "LoaderHeap", LoaderHeapTaskGuid, 97, "AllocRequest", ProviderGuid, ProviderName);
+                templates[118] = new DynamicTypeUsePrivateTraceData(null, 400, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 11, "IInspectableRuntimeClassName", ProviderGuid, ProviderName);
+                templates[119] = new DynamicTypeUseTwoParametersPrivateTraceData(null, 401, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 12, "WinRTUnbox", ProviderGuid, ProviderName);
+                templates[120] = new DynamicTypeUsePrivateTraceData(null, 402, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 13, "CreateRCW", ProviderGuid, ProviderName);
+                templates[121] = new DynamicTypeUsePrivateVarianceTraceData(null, 403, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 14, "RCWVariance", ProviderGuid, ProviderName);
+                templates[122] = new DynamicTypeUseTwoParametersPrivateTraceData(null, 404, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 15, "RCWIEnumerableCasting", ProviderGuid, ProviderName);
+                templates[123] = new DynamicTypeUsePrivateTraceData(null, 405, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 16, "CreateCCW", ProviderGuid, ProviderName);
+                templates[124] = new DynamicTypeUsePrivateVarianceTraceData(null, 406, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 17, "CCWVariance", ProviderGuid, ProviderName);
+                templates[125] = new DynamicTypeUseStringAndIntPrivateTraceData(null, 407, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 18, "ObjectVariantMarshallingToNative", ProviderGuid, ProviderName);
+                templates[126] = new DynamicTypeUseTwoParametersPrivateTraceData(null, 408, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 19, "GetTypeFromGUID", ProviderGuid, ProviderName);
+                templates[127] = new DynamicTypeUseTwoParametersPrivateTraceData(null, 409, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 20, "GetTypeFromProgID", ProviderGuid, ProviderName);
+                templates[128] = new DynamicTypeUseTwoParametersPrivateTraceData(null, 410, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 21, "ConvertToCallbackEtw", ProviderGuid, ProviderName);
+                templates[129] = new DynamicTypeUseNoParametersPrivateTraceData(null, 411, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 22, "BeginCreateManagedReference", ProviderGuid, ProviderName);
+                templates[130] = new DynamicTypeUseNoParametersPrivateTraceData(null, 412, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 23, "EndCreateManagedReference", ProviderGuid, ProviderName);
+                templates[131] = new DynamicTypeUseStringAndIntPrivateTraceData(null, 413, 22, "ClrDynamicTypeUsage", ClrDynamicTypeUsageTaskGuid, 24, "ObjectVariantMarshallingToManaged", ProviderGuid, ProviderName);
+
                 s_templates = templates;
             }
             foreach (var template in s_templates)

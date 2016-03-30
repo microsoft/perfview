@@ -142,43 +142,12 @@ namespace Microsoft.Diagnostics.Symbols
             string pdbIndexPath = null;
             string pdbSimpleName = Path.GetFileName(pdbFileName);        // Make sure the simple name is really a simple name
 
-            SymbolPath path = new SymbolPath(this.SymbolPath);
-            foreach (SymbolPathElement element in path.Elements)
-            {
-                // TODO can do all of these concurrently now.   
-                if (element.IsSymServer)
-                {
-                    if (pdbIndexPath == null)
-                        pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
-                    string cache = element.Cache;
-                    if (cache == null)
-                        cache = path.DefaultSymbolCache();
-
-                    pdbPath = GetFileFromServer(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
-                }
-                else
-                {
-                    string filePath = Path.Combine(element.Target, pdbSimpleName);
-                    if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
-                    {
-                        // TODO can stall if the path is a remote path.   
-                        if (PdbMatches(filePath, pdbIndexGuid, pdbIndexAge))
-                            pdbPath = filePath;
-                    }
-                    else
-                        m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
-                }
-                if (pdbPath != null)
-                    break;
-            }
-
-            // We check these last because they may be hostile PDBs and we have to ask the user about them.
             // If we have a dllPath, look right beside it, or in a directory symbols.pri\retail\dll
             if (pdbPath == null && dllFilePath != null)        // Check next to the file. 
             {
                 m_log.WriteLine("FindSymbolFilePath: Checking relative to DLL path {0}", dllFilePath);
                 string pdbPathCandidate = Path.ChangeExtension(dllFilePath, ".pdb");
-                if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge) && CheckSecurity(pdbPathCandidate))
+                if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                     pdbPath = pdbPathCandidate;
 
                 // Also try the symbols.pri\retail\dll convention that windows and devdiv use
@@ -187,7 +156,7 @@ namespace Microsoft.Diagnostics.Symbols
                     pdbPathCandidate = Path.Combine(
                         Path.GetDirectoryName(dllFilePath), @"symbols.pri\retail\dll\" +
                         Path.GetFileNameWithoutExtension(dllFilePath) + ".pdb");
-                    if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge) && CheckSecurity(pdbPathCandidate))
+                    if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                         pdbPath = pdbPathCandidate;
                 }
 
@@ -196,7 +165,7 @@ namespace Microsoft.Diagnostics.Symbols
                     pdbPathCandidate = Path.Combine(
                         Path.GetDirectoryName(dllFilePath), @"symbols\retail\dll\" +
                         Path.GetFileNameWithoutExtension(dllFilePath) + ".pdb");
-                    if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge) && CheckSecurity(pdbPathCandidate))
+                    if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                         pdbPath = pdbPathCandidate;
                 }
             }
@@ -204,8 +173,42 @@ namespace Microsoft.Diagnostics.Symbols
             // If the pdbPath is a full path, see if it exists 
             if (pdbPath == null && 0 < pdbFileName.IndexOf('\\'))
             {
-                if (PdbMatches(pdbFileName, pdbIndexGuid, pdbIndexAge) && CheckSecurity(pdbFileName))
+                if (PdbMatches(pdbFileName, pdbIndexGuid, pdbIndexAge))
                     pdbPath = pdbFileName;
+            }
+
+            // Did not find it locally, 
+            if (pdbPath == null)
+            {
+                SymbolPath path = new SymbolPath(this.SymbolPath);
+                foreach (SymbolPathElement element in path.Elements)
+                {
+                    // TODO can do all of these concurrently now.   
+                    if (element.IsSymServer)
+                    {
+                        if (pdbIndexPath == null)
+                            pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
+                        string cache = element.Cache;
+                        if (cache == null)
+                            cache = path.DefaultSymbolCache();
+
+                        pdbPath = GetFileFromServer(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
+                    }
+                    else
+                    {
+                        string filePath = Path.Combine(element.Target, pdbSimpleName);
+                        if ((Options & SymbolReaderOptions.CacheOnly) == 0 || !element.IsRemote)
+                        {
+                            // TODO can stall if the path is a remote path.   
+                            if (PdbMatches(filePath, pdbIndexGuid, pdbIndexAge, false))
+                                pdbPath = filePath;
+                        }
+                        else
+                            m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
+                    }
+                    if (pdbPath != null)
+                        break;
+                }
             }
 
             if (pdbPath != null)
@@ -672,12 +675,15 @@ namespace Microsoft.Diagnostics.Symbols
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
         /// </summary>
-        private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge)
+        private bool PdbMatches(string filePath, Guid pdbGuid, int pdbAge, bool checkSecurity = true)
         {
             try
             {
                 if (File.Exists(filePath))
                 {
+                    if (checkSecurity && !CheckSecurity(filePath))
+                        return false;
+
                     if (pdbGuid == Guid.Empty)
                     {
                         m_log.WriteLine("FindSymbolFilePath: No PDB Guid = Guid.Empty provided, assuming an unsafe PDB match for {0}", filePath);
@@ -687,7 +693,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if ((module.PdbGuid == pdbGuid) && (module.PdbAge == pdbAge))
                         return true;
                     else
-                        m_log.WriteLine("FindSymbolFilePath: PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
+                        m_log.WriteLine("FindSymbolFilePath: ************ FOUND PDB File {0} has Guid {1} age {2} != Desired Guid {3} age {4}",
                             filePath, module.PdbGuid, module.PdbAge, pdbGuid, pdbAge);
                 }
                 else
@@ -955,7 +961,14 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 // Decompress it
                 m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
-                Command.Run("Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath));
+                var commandline = "Expand " + Command.Quote(compressedFilePath) + " " + Command.Quote(targetPath);
+                var options = new CommandOptions().AddNoThrow();
+                var command = Command.Run(commandline, options);
+                if (command.ExitCode != 0)
+                {
+                    m_log.WriteLine("FindSymbolFilePath: Failure executing: {0}", commandline);
+                    return null;
+                }
                 File.Delete(compressedFilePath);
                 return targetPath;
             }

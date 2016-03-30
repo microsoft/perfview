@@ -356,7 +356,7 @@ namespace Controls
                                 if (logData.Length < maxLengthInViewer)
                                     logData = m_textEditorControl.Text + logData;
 
-                                var newLogData = @"***** See %temp%\PerfView\PerfViewLogFile.txt for complete log. ******\r\n";
+                                var newLogData = @"***** See " + PerfView.App.LogFileName + " for complete log. ******\r\n";
                                 var dataLen = Math.Min(maxLengthInViewer, logData.Length);
                                 newLogData += logData.Substring(logData.Length - dataLen, dataLen);
                                 m_textEditorControl.Text = newLogData;

@@ -454,20 +454,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        [Obsolete("Use ProcessStop instead")]
-        public event Action<ProcessTraceData> ProcessEnd
-        {
-            add
-            {
-                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new ProcessTraceData(value, 0xFFFF, 1, "Process", ProcessTaskGuid, 2, "Stop", ProviderGuid, ProviderName, State));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 2, ProcessTaskGuid);
-            }
-        }
-
         public event Action<ProcessTraceData> ProcessStop
         {
             add

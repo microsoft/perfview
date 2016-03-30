@@ -8046,6 +8046,35 @@
         </li>
         -->
         <li>
+            Version 1.9.6 3/28/16
+            <ul>
+                <li>Fix asserts associated with keeping EnumerateTemplates in sync with TraceEventParser events. </li>
+                <li>Made PDB expansion logic a bit more robust.</li>
+            </ul>
+        </li><li>
+            Version 1.9.5 3/28/16
+            <ul>
+                <li>Make the heap dumper retry with a smaller maxObjectCount if it runs out of memory</li>
+                <li>Tuned the CLR rundown to avoid unnecessary events (in high volume scnearios)</li>
+            </ul>
+        </li>
+        <li>
+            Version 1.9.4 3/28/16
+            <ul>
+                <li>Fixed failure to load NGEN images in .NET Core scenarios</li>
+                <li>Change it so that PDBS that are in the build location or next to the DLL are checked first </li>
+                <li>(thus no network operations if you build locally)</li>
+            </ul>
+        </li>
+        <li>
+            Version 1.9.3 3/28/16
+            <ul>
+                <li>
+                    Fixed failure reading Linux traces that have unusual characters in their path name.   
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 1.9.1 2/22/16
             <ul>
                 <li>

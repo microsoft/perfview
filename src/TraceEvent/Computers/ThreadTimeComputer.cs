@@ -125,7 +125,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // We can provide a bit of extra value (and it is useful for debugging) if we immediately log a CPU 
                 // sample when we schedule or start a task.  That we we get the very instant it starts.  
                 var tplProvider = new TplEtwProviderTraceEventParser(eventSource);
-                tplProvider.AwaitTaskContinuationScheduled += OnSampledProfile;
+                tplProvider.AwaitTaskContinuationScheduledSend += OnSampledProfile;
                 tplProvider.TaskScheduledSend += OnSampledProfile;
                 tplProvider.TaskExecuteStart += OnSampledProfile;
                 tplProvider.TaskWaitSend += OnSampledProfile;
