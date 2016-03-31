@@ -758,6 +758,10 @@ namespace Microsoft.Diagnostics.Tracing
                     m_threadToCurrentActivity[(int)thread.ThreadIndex] = cur.prevActivityOnThread;
                     break;
                 }
+                if (cur.kind == TraceActivity.ActivityKind.Initial)
+                {
+                    break;
+                }
                 if (activity != null)
                 {
                     if (!NeedsImplicitCompletion(cur.kind))
