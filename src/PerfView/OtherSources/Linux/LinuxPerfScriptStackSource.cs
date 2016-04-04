@@ -286,7 +286,7 @@ namespace Diagnostics.Tracing.StackSources
 
 			var sample = new StackSourceSample(this);
 			sample.TimeRelativeMSec = linuxEvent.TimeMSec;
-			sample.Metric = (float)linuxEvent.Period;
+			sample.Metric = 1;// (float)linuxEvent.Period;
 
 			stackIndex = this.InternFrames(frames.GetEnumerator(), stackIndex, linuxEvent.ProcessID, linuxEvent.ThreadID, blockedTimeAnalyzer);
 			sample.StackIndex = stackIndex;

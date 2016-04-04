@@ -5593,7 +5593,7 @@ namespace PerfView
     {
         public override string FormatName { get { return "Linux events through PerfScript"; } }
 
-        public override string[] FileExtensions { get { return ParallelLinuxPerfScriptStackSource.PerfDumpSuffixes; } }
+        public override string[] FileExtensions { get { return LinuxPerfScriptStackSource.PerfDumpSuffixes; } }
 
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
