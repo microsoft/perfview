@@ -57,7 +57,7 @@ public class DotNetHeapDumpGraphReader
     public DotNetHeapInfo DotNetHeapInfo
     {
         get { return m_dotNetHeapInfo; }
-        set { m_dotNetHeapInfo = value; } 
+        set { m_dotNetHeapInfo = value; }
     }
 
     #region private
@@ -98,7 +98,7 @@ public class DotNetHeapDumpGraphReader
         }
 
         // Remember the module IDs too.              
-        Action<ModuleLoadUnloadTraceData> moduleCallback = delegate(ModuleLoadUnloadTraceData data)
+        Action<ModuleLoadUnloadTraceData> moduleCallback = delegate (ModuleLoadUnloadTraceData data)
         {
             if (data.ProcessID != m_processId)
                 return;
@@ -114,14 +114,14 @@ public class DotNetHeapDumpGraphReader
 
         DbgIDRSDSTraceData lastDbgData = null;
         var symbolParser = new SymbolTraceEventParser(source);
-        symbolParser.ImageIDDbgID_RSDS += delegate(DbgIDRSDSTraceData data)
+        symbolParser.ImageIDDbgID_RSDS += delegate (DbgIDRSDSTraceData data)
         {
             if (data.ProcessID != m_processId)
                 return;
             lastDbgData = (DbgIDRSDSTraceData)data.Clone();
         };
 
-        source.Kernel.ImageGroup += delegate(ImageLoadTraceData data)
+        source.Kernel.ImageGroup += delegate (ImageLoadTraceData data)
         {
             if (m_processId == 0)
                 return;
@@ -142,7 +142,7 @@ public class DotNetHeapDumpGraphReader
         };
 
         // TODO this does not work in the circular case
-        source.Kernel.ProcessGroup += delegate(ProcessTraceData data)
+        source.Kernel.ProcessGroup += delegate (ProcessTraceData data)
         {
             if (0 <= m_processId || m_processName == null)
                 return;
@@ -156,7 +156,7 @@ public class DotNetHeapDumpGraphReader
                 m_log.WriteLine("Found process {0} but does not match {1}", data.ProcessName, processNameOrId);
         };
 
-        Action<TraceEvent, GCReason, int> onStart = delegate(TraceEvent data, GCReason reason, int gcID)
+        source.Clr.GCStart += delegate (GCStartTraceData data)
         {
             // If this GC is not part of a heap dump, ignore it.  
             // TODO FIX NOW if (data.ClientSequenceNumber == 0)
@@ -211,8 +211,6 @@ public class DotNetHeapDumpGraphReader
         {
             onStart(data, data.Reason, -1);
         };
-
-        source.Clr.GCStop += delegate(GCEndTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -237,7 +235,7 @@ public class DotNetHeapDumpGraphReader
                 m_log.WriteLine("Found a GC Stop at {0:n3} but id {1} != {2} Target ID", data.TimeStampRelativeMSec, data.Count, m_gcID);
         };
 
-        source.Clr.TypeBulkType += delegate(GCBulkTypeTraceData data)
+        source.Clr.TypeBulkType += delegate (GCBulkTypeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -245,7 +243,7 @@ public class DotNetHeapDumpGraphReader
             m_typeBlocks.Enqueue((GCBulkTypeTraceData)data.Clone());
         };
 
-        source.Clr.GCBulkNode += delegate(GCBulkNodeTraceData data)
+        source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -253,14 +251,14 @@ public class DotNetHeapDumpGraphReader
             m_nodeBlocks.Enqueue((GCBulkNodeTraceData)data.Clone());
         };
 
-        source.Clr.GCBulkEdge += delegate(GCBulkEdgeTraceData data)
+        source.Clr.GCBulkEdge += delegate (GCBulkEdgeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
             m_edgeBlocks.Enqueue((GCBulkEdgeTraceData)data.Clone());
         };
 
-        source.Clr.GCBulkRootEdge += delegate(GCBulkRootEdgeTraceData data)
+        source.Clr.GCBulkRootEdge += delegate (GCBulkRootEdgeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -327,7 +325,7 @@ public class DotNetHeapDumpGraphReader
             }
         };
 
-        source.Clr.GCBulkRCW += delegate(GCBulkRCWTraceData data)
+        source.Clr.GCBulkRCW += delegate (GCBulkRCWTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -339,21 +337,21 @@ public class DotNetHeapDumpGraphReader
             }
         };
 
-        source.Clr.GCBulkRootCCW += delegate(GCBulkRootCCWTraceData data)
+        source.Clr.GCBulkRootCCW += delegate (GCBulkRootCCWTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
             m_ccwBlocks.Enqueue((GCBulkRootCCWTraceData)data.Clone());
         };
 
-        source.Clr.GCBulkRootStaticVar += delegate(GCBulkRootStaticVarTraceData data)
+        source.Clr.GCBulkRootStaticVar += delegate (GCBulkRootStaticVarTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
             m_staticVarBlocks.Enqueue((GCBulkRootStaticVarTraceData)data.Clone());
         };
 
-        source.Clr.GCBulkRootConditionalWeakTableElementEdge += delegate(GCBulkRootConditionalWeakTableElementEdgeTraceData data)
+        source.Clr.GCBulkRootConditionalWeakTableElementEdge += delegate (GCBulkRootConditionalWeakTableElementEdgeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -370,7 +368,7 @@ public class DotNetHeapDumpGraphReader
             }
         };
 
-        source.Clr.GCGenerationRange += delegate(GCGenerationRangeTraceData data)
+        source.Clr.GCGenerationRange += delegate (GCGenerationRangeTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -566,7 +564,7 @@ public class DotNetHeapDumpGraphReader
         GCBulkNodeUnsafeNodes nodeStorage = new GCBulkNodeUnsafeNodes();
 
         // Process all the node and edge nodes we have collected.  
-        for (; ; )
+        for (;;)
         {
             GCBulkNodeUnsafeNodes* node = GetNextNode(&nodeStorage);
             if (node == null)
