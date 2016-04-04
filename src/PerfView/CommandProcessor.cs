@@ -491,6 +491,21 @@ namespace PerfView
                             EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-EventTracing",
                                 new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
 
+                            // Turn on File Create (open) logging as it is useful for investigations and lightweight. 
+                            // Don't bother if the Kernel FileIOInit evens are on because they are strictly better
+                            // and you end up with annoying redundancy.  
+                            if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.FileIOInit) == 0)
+                            {
+                                // 0x10 =  Process  
+                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
+                                    new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
+                            }
+
+                            // Turn on the user-mode Process start events.  This allows you to get the stack of create-process calls
+                            // 0x10 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
+                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
+                                new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
+
                             // Default CLR events also means ASP.NET and private events. 
                             // Turn on ASP.NET at informational by default.
                             EnableUserProvider(userModeSession, "ASP.NET", AspNetTraceEventParser.ProviderGuid,

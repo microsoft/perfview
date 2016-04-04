@@ -376,12 +376,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public double TimeRelativeMSec { get; set; }
 
         /// <summary>
-        /// The time associated with the sample.  (can be left 0)
-        /// </summary>
-        [Obsolete("Use TimeRelativeMSec")]
-        public double TimeRelMSec { get { return TimeRelativeMSec; } set { TimeRelativeMSec = value; } }
-
-        /// <summary>
         /// Normally the count of a sample is 1, however when you take a statistical sample, and you also have 
         /// other constraints (like you do when you are going a sample of heap memory),  you may need to have the
         /// count adjusted to something else.

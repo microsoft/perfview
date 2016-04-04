@@ -84,11 +84,23 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     if (data.ID == (TraceEventID)1)
                     {
-                        string extraStartInfo = data.PayloadByName("RequestURL") as string;
-                        OnStart(data, extraStartInfo, null, null, null, "IISRequest");
+                        // TODO HACK.  We have seen IIS Start and stop events that only have a 
+                        // context ID and no more.  They also seem to be some sort of nested event
+                        // It really looks like a bug that they were emitted.  Ignore them. 
+                        if (16 < data.EventDataLength)
+                        {
+                            string extraStartInfo = data.PayloadByName("RequestURL") as string;
+                            OnStart(data, extraStartInfo, null, null, null, "IISRequest");
+                        }
                     }
                     else if (data.ID == (TraceEventID)2)
-                        OnStop(data);
+                    {
+                        // TODO HACK.  We have seen IIS Start and stop events that only have a 
+                        // context ID and no more.  They also seem to be some sort of nested event
+                        // It really looks like a bug that they were emitted.  Ignore them.
+                        if (16 < data.EventDataLength)
+                            OnStop(data);
+                    }
                 }
 #if HTTP_SERVICE_EVENTS
                 else if (data.Task == (TraceEventTask)1 && data.ProviderGuid == MicrosoftWindowsHttpService)

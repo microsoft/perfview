@@ -372,7 +372,7 @@ namespace Stats
                 GCProcess stats = perProc[data];
 
                 // We need to filter the scenario where we get 2 GCStart events for each GC.
-                if ((stats.suspendThreadIDGC > 0) &&
+                if ((stats.suspendThreadIDGC > 0 || stats.suspendThreadIDOther > 0) &&
                     !((stats.events.Count > 0) && stats.events[stats.events.Count - 1].GCNumber == data.Count))
                 {
                     GCEvent _event = new GCEvent(stats);

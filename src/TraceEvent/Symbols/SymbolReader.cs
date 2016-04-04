@@ -1487,13 +1487,13 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset)
         {
-            m_reader.m_log.WriteLine("SourceLocationForManaged Looking up method token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
+            m_reader.m_log.WriteLine("SourceLocationForManaged: Looking up method token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
 
             IDiaSymbol methodSym;
             m_session.findSymbolByToken(methodMetadataToken, SymTagEnum.SymTagFunction, out methodSym);
             if (methodSym == null)
             {
-                m_reader.m_log.WriteLine("SourceLocationForManaged No symbol for token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
+                m_reader.m_log.WriteLine("SourceLocationForManaged: No symbol for token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
                 return null;
             }
 
@@ -1521,7 +1521,7 @@ namespace Microsoft.Diagnostics.Symbols
             sourceLocs.Next(1, out sourceLoc, out fetchCount);
             if (fetchCount == 0)
             {
-                m_reader.m_log.WriteLine("SourceLocationForManaged No lines for token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
+                m_reader.m_log.WriteLine("SourceLocationForManaged: No lines for token {0:x} ilOffset {1:x}", methodMetadataToken, ilOffset);
                 return null;
             }
 

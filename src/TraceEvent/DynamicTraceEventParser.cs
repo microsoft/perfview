@@ -493,6 +493,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override object PayloadValue(int index)
         {
+            try
+            {
 #if DEBUG
             // Confirm that the serialization 'adds up'
             var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
@@ -503,13 +505,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
             }
 #endif
-            int offset = payloadFetches[index].Offset;
-            if (offset == ushort.MaxValue)
-                offset = SkipToField(payloadFetches, index, 0, EventDataLength);
+                int offset = payloadFetches[index].Offset;
+                if (offset == ushort.MaxValue)
+                    offset = SkipToField(payloadFetches, index, 0, EventDataLength);
 
-            Debug.Assert(offset < this.EventDataLength);
+                Debug.Assert(offset < this.EventDataLength);
 
-            return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
+                return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
+            }
+            catch (Exception e)
+            {
+                return "<<<EXCEPTION_DURING_VALUE_LOOKUP " + e.GetType().Name + ">>>";
+            }
         }
 
         private object GetPayloadValueAt(ref PayloadFetch payloadFetch, int offset, int payloadLength)

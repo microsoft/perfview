@@ -93,6 +93,7 @@
     <Compile Include="Parsers\ClrPrivateTraceEventParser.cs" />
     <Compile Include="Parsers\ClrTraceEventParser.cs" />
     <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
+    <Compile Include="Parsers\Microsoft-Windows-Kernel-File.cs" />
     <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
     <Compile Include="CtfTraceEventSource.cs" />
     <Compile Include="Stacks\AggregateStackSource.cs" />

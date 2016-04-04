@@ -3054,8 +3054,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 ret &= ~(ParserTrackingOptions.DiskIOServiceTime | ParserTrackingOptions.RegistryNameToObject);
             return ret;
         }
-
-        KernelTraceEventParserState State
+        internal KernelTraceEventParserState State
         {
             get
             {
