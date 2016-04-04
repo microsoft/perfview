@@ -156,7 +156,7 @@ public class DotNetHeapDumpGraphReader
                 m_log.WriteLine("Found process {0} but does not match {1}", data.ProcessName, processNameOrId);
         };
 
-        source.Clr.GCStart += delegate (GCStartTraceData data)
+        Action<TraceEvent, GCReason, int> onStart = delegate (TraceEvent data, GCReason reason, int gcID)
         {
             // If this GC is not part of a heap dump, ignore it.  
             // TODO FIX NOW if (data.ClientSequenceNumber == 0)
@@ -211,6 +211,8 @@ public class DotNetHeapDumpGraphReader
         {
             onStart(data, data.Reason, -1);
         };
+
+        source.Clr.GCStop += delegate (GCEndTraceData data)
         {
             if (m_ignoreEvents || data.ProcessID != m_processId)
                 return;
@@ -842,4 +844,3 @@ public class DotNetHeapDumpGraphReader
     private DotNetHeapInfo m_dotNetHeapInfo;
     #endregion
 }
-
