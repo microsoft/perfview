@@ -2272,24 +2272,6 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Wrote gcDump file {0}]", gcDumpOutputFileName);
         }
 
-		/// <summary>
-		/// Generate a GCDumpFile of a DotNet heap from an LTTng heap dump.
-		/// </summary>
-		public void DotNetGCDumpFromLTTng(string zipPath, string processNameOrId = null, string gcDumpOutputFileName = null)
-		{
-			if (gcDumpOutputFileName == null)
-			{
-				gcDumpOutputFileName = PerfViewFile.ChangeExtension(zipPath, ".gcDump");
-			}
-
-			var dispatcher = new CtfTraceEventSource(zipPath);
-			var reader = new DotNetHeapDumpGraphReader(LogFile);
-
-			var graph = reader.Read(dispatcher, processNameOrId);
-			GCHeapDump.WriteMemoryGraph(graph, gcDumpOutputFileName);
-			LogFile.WriteLine("[Wrote gcLinuxDump file {0}", gcDumpOutputFileName);
-		}
-
         /// <summary>
         /// Pretty prints the raw .NET GC dump events (GCBulk*) with minimal processing as XML.   This is mostly
         /// useful for debugging, to see if the raw data sane if there is a question on why something is not showing

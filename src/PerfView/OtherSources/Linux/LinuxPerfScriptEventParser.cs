@@ -314,7 +314,7 @@ namespace Diagnostics.Tracing.StackSources
 				source.SkipWhiteSpace();
 				source.ReadAsciiStringUpTo(':', sb);
 
-				double time = double.Parse(sb.ToString());
+				double time = double.Parse(sb.ToString()) * 1000; // To convert to MSec
 				sb.Clear();
 				source.MoveNext(); // Move past ":"
 
