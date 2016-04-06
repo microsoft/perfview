@@ -39,6 +39,14 @@ public class DotNetHeapDumpGraphReader
         ret.AllowReading();
         return ret;
     }
+
+	public MemoryGraph Read(TraceEventDispatcher source, string processNameOrId = null, double startTimeRelativeMSec = 0)
+	{
+		var ret = new MemoryGraph(10000);
+		Append(ret, source, processNameOrId, startTimeRelativeMSec);
+		ret.AllowReading();
+		return ret;
+	}
     public void Append(MemoryGraph memoryGraph, string etlName, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {
         using (var source = new ETWTraceEventSource(etlName))
