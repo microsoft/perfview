@@ -353,7 +353,7 @@ namespace PerfView
 
                     //TODO Currently, people may have recursive tasks that are not marked (because they can't if they want it to work before V4.6)
                     // For now we don't try to correlate with activity IDS.  
-                    if (false && StartStopActivityComputer.IsActivityPath(data.ActivityID))
+                    if (false && StartStopActivityComputer.IsActivityPath(data.ActivityID, data.ProcessID))
                     {
                         int guidHash = data.ActivityID.GetHashCode();
                         // Make up a correlater that is the combination of both the value and the Activity ID, the tail is arbitrary 
@@ -519,11 +519,11 @@ namespace PerfView
                 }
 
                 if (data.ActivityID != Guid.Empty)
-                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString);
+                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID, data.ProcessID), columnOrder, restString);
 
                 Guid relatedActivityID = data.RelatedActivityID;
                 if (relatedActivityID != Guid.Empty)
-                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
+                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID, data.ProcessID), columnOrder, restString);
 
 
                 m_asText = restString.ToString();

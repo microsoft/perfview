@@ -1150,12 +1150,12 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (ActivityID != Guid.Empty)
                 {
-                    XmlAttrib(sb, "ActivityID", StartStopActivityComputer.ActivityPathString(ActivityID));
-                    if (StartStopActivityComputer.IsActivityPath(ActivityID))        // Also print out the raw GUID
+                    XmlAttrib(sb, "ActivityID", StartStopActivityComputer.ActivityPathString(ActivityID, ProcessID));
+                    if (StartStopActivityComputer.IsActivityPath(ActivityID, ProcessID))        // Also print out the raw GUID
                         XmlAttrib(sb, "RawActivityID", ActivityID);
                 }
                 if (RelatedActivityID != Guid.Empty)
-                    XmlAttrib(sb, "RelatedActivityID", StartStopActivityComputer.ActivityPathString(RelatedActivityID));
+                    XmlAttrib(sb, "RelatedActivityID", StartStopActivityComputer.ActivityPathString(RelatedActivityID, ProcessID));
                 sb.AppendLine().Append(" ");
             }
 #endif

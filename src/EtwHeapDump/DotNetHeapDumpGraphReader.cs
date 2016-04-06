@@ -207,10 +207,10 @@ public class DotNetHeapDumpGraphReader
             onStart(data, data.Reason, data.Count);
         };
 
-        source.Clr.GCTriggered += delegate (GCTriggeredTraceData data)
-        {
-            onStart(data, data.Reason, -1);
-        };
+        //source.Clr.GCTriggered += delegate (GCTriggeredTraceData data)
+        //{
+        //    onStart(data, data.Reason, -1);
+        //};
 
         source.Clr.GCStop += delegate (GCEndTraceData data)
         {

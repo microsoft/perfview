@@ -5993,7 +5993,7 @@
     </ul>
     <p>
         Indicates that PerfView should collect data until the _Global_ instance (which represents
-        maximum of any process on the system) of the '% Time in GC' for the '.NET CLR Memory'
+        sum of all GC heaps for all processes on the system) of the '% Time in GC' for the '.NET CLR Memory'
         category is greater than 20%. Thus this specification will trigger when GC time
         is high. By default the 'collect' runs in 'circular buffer mode' with a default
         size of 500MB. Thus the command above will only collect 500MB of data (typically
@@ -8045,6 +8045,13 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.8 4/5/16
+            <ul>
+                <li>Added TotalHeapSize TotalPromotedSIze and Depth fields to the GC/HeapStats event.  This is 
+                    useful for /StopOnEtwEvent uses (e.g. stop when the GC heap gets too big)   </li>
+            </ul>
+        </li>
         <li>
             Version 1.9.7 4/4/16
             <ul>
