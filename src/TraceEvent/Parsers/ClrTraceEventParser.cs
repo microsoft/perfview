@@ -2032,6 +2032,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         // The sizes INCLUDE fragmentation (holes in the segement)
 
         // The TotalPromotedSize0 is the amount that SURVIVED Gen0 (thus it is now in Gen1, thus TotalPromoted0 <= GenerationSize1)
+        public long TotalHeapSize { get { return GenerationSize0 + GenerationSize1 + GenerationSize2 + GenerationSize3; } }
+        public long TotalPromoted { get { return TotalPromotedSize0 + TotalPromotedSize1 + TotalPromotedSize2 + TotalPromotedSize3; } }
+        /// <summary>
+        /// Note that this field is derived from teh TotalPromotedSize* fields.  If nothing was promoted, it is possible
+        /// that this could give a number that is smaller than what GC/Start or GC/Stop would indicate.  
+        /// </summary>
+        public int Depth
+        {
+            get
+            {
+                if (TotalPromotedSize2 != 0)
+                    return 2;
+                if (TotalPromotedSize1 != 0)
+                    return 1;
+                return 0;
+            }
+        }
+
         public long GenerationSize0 { get { return GetInt64At(0); } }
         public long TotalPromotedSize0 { get { return GetInt64At(8); } }
         public long GenerationSize1 { get { return GetInt64At(16); } }
@@ -2072,6 +2090,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
+            XmlAttribHex(sb, "TotalPromoted", TotalPromoted);
+            XmlAttribHex(sb, "TotalHeapSize", TotalHeapSize);
+            XmlAttribHex(sb, "Depth", Depth);
             XmlAttribHex(sb, "GenerationSize0", GenerationSize0);
             XmlAttribHex(sb, "TotalPromotedSize0", TotalPromotedSize0);
             XmlAttribHex(sb, "GenerationSize1", GenerationSize1);
@@ -2095,7 +2116,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID" };
+                    payloadNames = new string[] { "TotalHeapSize", "TotalPromoted", "Depth", "GenerationSize0", "TotalPromotedSize0", "GenerationSize1", "TotalPromotedSize1", "GenerationSize2", "TotalPromotedSize2", "GenerationSize3", "TotalPromotedSize3", "FinalizationPromotedSize", "FinalizationPromotedCount", "PinnedObjectCount", "SinkBlockCount", "GCHandleCount", "ClrInstanceID" };
                 return payloadNames;
             }
         }
@@ -2105,32 +2126,38 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             switch (index)
             {
                 case 0:
-                    return GenerationSize0;
+                    return TotalHeapSize;
                 case 1:
-                    return TotalPromotedSize0;
+                    return TotalPromoted;
                 case 2:
-                    return GenerationSize1;
+                    return Depth;
                 case 3:
-                    return TotalPromotedSize1;
+                    return GenerationSize0;
                 case 4:
-                    return GenerationSize2;
+                    return TotalPromotedSize0;
                 case 5:
-                    return TotalPromotedSize2;
+                    return GenerationSize1;
                 case 6:
-                    return GenerationSize3;
+                    return TotalPromotedSize1;
                 case 7:
-                    return TotalPromotedSize3;
+                    return GenerationSize2;
                 case 8:
-                    return FinalizationPromotedSize;
+                    return TotalPromotedSize2;
                 case 9:
-                    return FinalizationPromotedCount;
+                    return GenerationSize3;
                 case 10:
-                    return PinnedObjectCount;
+                    return TotalPromotedSize3;
                 case 11:
-                    return SinkBlockCount;
+                    return FinalizationPromotedSize;
                 case 12:
-                    return GCHandleCount;
+                    return FinalizationPromotedCount;
                 case 13:
+                    return PinnedObjectCount;
+                case 14:
+                    return SinkBlockCount;
+                case 15:
+                    return GCHandleCount;
+                case 16:
                     return ClrInstanceID;
                 default:
                     Debug.Assert(false, "Bad field index");

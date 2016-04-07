@@ -1015,7 +1015,7 @@ namespace Triggers
             
             // If the activity ID is a Activity path, then we accept that.  
             var activityID = data.ActivityID;
-            if (StartStopActivityComputer.IsActivityPath(activityID))
+            if (StartStopActivityComputer.IsActivityPath(activityID, data.ProcessID))
                 return activityID;
 
             if (value == null)
