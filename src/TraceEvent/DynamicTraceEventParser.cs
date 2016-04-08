@@ -605,6 +605,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 size = (ushort)GetInt16At(offset);
                                 offset += 2;
                             }
+                            else if (format == DynamicTraceEventData.SIZE32_PREFIX)
+                            {
+                                size = (ushort)GetInt32At(offset);
+                                offset += 4;
+                            }
                             else
                                 return "[CANT PARSE STRING]";
 
