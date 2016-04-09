@@ -876,17 +876,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (MessageFormat == null)
                 return base.GetFormattedMessage(formatProvider);
 
+            int numRemovedArguments = 0;
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
             return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
             {
-                int index = int.Parse(m.Groups[1].Value) - 1;
+                int index = int.Parse(m.Groups[1].Value) - 1 - numRemovedArguments;
 
-                // If there are byte[] values, we hide the argument for the size that is in the manifest.
-                // Thus we remove it here as well.  
-                for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
-                    if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
-                        --index;
+                // If there are byte[] values or prefixed strings, we hide the argument for the size
+                // that is in the manifest. Thus we remove it here as well.  
+                int i = index - 1;
+                if ((payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX || payloadFetches[i].Size == DynamicTraceEventData.SIZE16_PREFIX) && (payloadFetches[i].Array != null || payloadFetches[i].Type == typeof(string)))
+                {
+                    index--;
+                    numRemovedArguments++;
+                }
 
                 if ((uint)index < (uint)PayloadNames.Length)
                     return PayloadString(index, formatProvider);
