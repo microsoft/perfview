@@ -935,7 +935,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         }
                         else
                         {
-                            propertyFetch.Size = arraySize;
+                            propertyFetch.Size = (ushort)(arraySize | (propertyFetch.Size & DynamicTraceEventData.IS_ANSI));
                             propertyFetch.Offset = arrayFieldOffset;
                         }
 
