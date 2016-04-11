@@ -108,7 +108,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             Dispatcher = 0x00000800,
             /// <summary>
-            /// log file operations when they complete (even ones that do not actually cause Disk I/O).  (Vista+ only)
+            /// log file FileOperationEnd (has status code) when they complete (even ones that do not actually
+            /// cause Disk I/O).  (Vista+ only)
             /// Generally not TOO volumous (typically less than 1K per second) (No stacks associated with these)
             /// </summary>
             FileIO = 0x02000000,
@@ -213,7 +214,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         };
 
         /// <summary>
-        /// These keywords are can't be passed to the OS, they are defined by KernelTraceEventParser
+        /// These keywords can't be passed to the OS, they are defined by KernelTraceEventParser
         /// </summary>
         internal static Keywords NonOSKeywords
         {
@@ -3054,6 +3055,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 ret &= ~(ParserTrackingOptions.DiskIOServiceTime | ParserTrackingOptions.RegistryNameToObject);
             return ret;
         }
+
         internal KernelTraceEventParserState State
         {
             get
@@ -5722,23 +5724,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class RegistryTraceData : TraceEvent
     {
-        public int Status { get { if (Version >= 2) return GetInt32At(8); return (int)GetAddressAt(0); } }
-        public Address KeyHandle { get { if (Version >= 2) return GetAddressAt(16); return GetAddressAt(HostOffset(4, 1)); } }
-        public long ElapsedTime { get { return GetInt64At(HostOffset(8, 2)); } }
+        private long InitialTimeQPC { get { if (Version >= 2) return GetInt64At(0); return 0; } }
+
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
+
+        public int Status { get { if (Version >= 2) GetInt32At(8); return 0; } }
+
+        public int Index { get { if (Version >= 2) GetInt32At(12); return 0; } }
+
+        public Address KeyHandle { get { if (Version >= 2) return GetAddressAt(16); return 0; } }
 
         public string KeyName
         {
-            // TODO: I not certain I have things working properly on the Handle lookup. 
             get
             {
+                if (Version < 2) return "";
+
+                // TODO All of this logic is suspect.   it could use a careful review.  
                 if (NameIsKeyName(Opcode))
                 {
-                    if (Version >= 2) return GetUnicodeStringAt(HostOffset(20, 1));
-                    if (Version >= 1) return GetUnicodeStringAt(HostOffset(20, 2));
-                    return GetUnicodeStringAt(HostOffset(16, 2));
+                    string ret = GetUnicodeStringAt(HostOffset(20, 1));
+                    if (ret.Length != 0)
+                        return ret;
                 }
-                else
-                    return state.FileIDToName(KeyHandle, TimeStampQPC);
+                return state.FileIDToName(KeyHandle, TimeStampQPC);
             }
         }
         public string ValueName
@@ -5751,9 +5760,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     return GetUnicodeStringAt((Version < 2 ? HostOffset(0x14, 2) : HostOffset(0x14, 1)));
             }
         }
-        public int Index { get { if (Version >= 2) return GetInt32At(12); if (Version >= 1) return GetInt32At(HostOffset(16, 2)); return 0; } }
-        long InitialTime100ns { get { if (Version >= 2) return GetInt64At(0); return 0; } }
-        public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
 
         #region Private
         internal RegistryTraceData(Action<RegistryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -5780,10 +5786,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Prefix(sb);
             XmlAttribHex(sb, "Status", Status);
             XmlAttribHex(sb, "KeyHandle", KeyHandle);
-            XmlAttrib(sb, "ElapsedTime", ElapsedTime);
+            XmlAttrib(sb, "ElapsedTimeMSec", ElapsedTimeMSec);
             XmlAttrib(sb, "KeyName", KeyName);
             XmlAttrib(sb, "Index", Index);
-            XmlAttrib(sb, "InitialTime", InitialTime);
             sb.Append("/>");
             return sb;
         }
@@ -5793,7 +5798,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Status", "KeyHandle", "ElapsedTime", "KeyName", "ValueName", "Index", "InitialTime" };
+                    payloadNames = new string[] { "Status", "KeyHandle", "ElapsedTimeMSec", "KeyName", "ValueName", "Index" };
                 return payloadNames;
             }
         }
@@ -5807,15 +5812,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 1:
                     return KeyHandle;
                 case 2:
-                    return ElapsedTime;
+                    return ElapsedTimeMSec;
                 case 3:
                     return KeyName;
                 case 4:
                     return ValueName;
                 case 5:
                     return Index;
-                case 6:
-                    return InitialTime;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -6076,14 +6079,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     public sealed class FileIOCreateTraceData : TraceEvent
     {
         public Address IrpPtr { get { return GetAddressAt(0); } }
-        public Address FileObject { get { return GetAddressAt(Version <= 2 ? HostOffset(8, 2) : HostOffset(4, 1)); } }
+        public Address FileObject { get { return GetAddressAt(LayoutVersion <= 2 ? HostOffset(8, 2) : HostOffset(4, 1)); } }
         // public Address TTID { get { return GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(8, 2)); } }
 
-        // TODO proper enums for these
-        public CreateOptions CreateOptions { get { return (CreateOptions)(ushort)(GetInt32At(Version <= 2 ? HostOffset(12, 3) : HostOffset(12, 2))); } }
-        public FileAttributes FileAttributes { get { return (FileAttributes)(GetInt32At(Version <= 2 ? HostOffset(16, 3) : HostOffset(16, 2))); } }
-        public FileShare ShareAccess { get { return (FileShare)(GetInt32At(Version <= 2 ? HostOffset(20, 3) : HostOffset(20, 2))); } }
-        public string FileName { get { return state.KernelToUser(GetUnicodeStringAt(Version <= 2 ? HostOffset(24, 3) : HostOffset(24, 2))); } }
+        /// <summary>
+        /// See the Windows CreateFile API CreateOptions for this 
+        /// </summary>
+        public CreateOptions CreateOptions { get { return (CreateOptions)((GetInt32At(LayoutVersion <= 2 ? HostOffset(12, 3) : HostOffset(12, 2))) & 0xFFFFFF); } }
+
+        /// <summary>
+        /// See Windows CreateFile API CreateDisposition for this.  
+        /// </summary>
+        public CreateDisposition CreateDispostion { get { return (CreateDisposition)(GetByteAt(LayoutVersion <= 2 ? HostOffset(15, 3) : HostOffset(15, 2))); } }
+        /// <summary>
+        /// See Windows CreateFile API ShareMode parameter
+        /// </summary>
+        public FileAttributes FileAttributes { get { return (FileAttributes)(GetInt32At(LayoutVersion <= 2 ? HostOffset(16, 3) : HostOffset(16, 2))); } }
+
+        /// <summary>
+        /// See windows CreateFile API ShareMode parameter
+        /// </summary>
+        public FileShare ShareAccess { get { return (FileShare)(GetInt32At(LayoutVersion <= 2 ? HostOffset(20, 3) : HostOffset(20, 2))); } }
+        public string FileName { get { return state.KernelToUser(GetUnicodeStringAt(LayoutVersion <= 2 ? HostOffset(24, 3) : HostOffset(24, 2))); } }
         unsafe public override int ProcessID
         {
             get
@@ -6098,6 +6115,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             }
         }
         #region Private
+        // The LayoutVersion is used to determine the field layout.  It is the version as seen by the Kernel
+        // provider, but the Microsoft-Windows-Kernel-File provider has a different numbering scheme.
+        private int LayoutVersion
+        {
+            get
+            {
+                // If it is classic, it is the kernel provider, otherwise it is the Microsoft-Windows-Kernel-File provider.  
+                int ret = Version;
+                if (!IsClassicProvider)
+                    ret += 2;
+                return ret;
+            }
+        }
+
         internal FileIOCreateTraceData(Action<FileIOCreateTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
@@ -6112,9 +6143,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected internal override void Dispatch()
         {
-            Debug.Assert(!(Version == 2 && EventDataLength != SkipUnicodeString(HostOffset(24, 3))));
-            Debug.Assert(!(Version == 3 && EventDataLength != SkipUnicodeString(HostOffset(24, 2))));
-            Debug.Assert(!(Version > 3 && EventDataLength < SkipUnicodeString(HostOffset(24, 2))));
+            Debug.Assert(!(LayoutVersion == 2 && EventDataLength != SkipUnicodeString(HostOffset(24, 3))));
+            Debug.Assert(!(LayoutVersion == 3 && EventDataLength != SkipUnicodeString(HostOffset(24, 2))));
+            Debug.Assert(!(LayoutVersion > 3 && EventDataLength < SkipUnicodeString(HostOffset(24, 2))));
             Action(this);
         }
         public override StringBuilder ToXml(StringBuilder sb)
@@ -6123,6 +6154,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "IrpPtr", IrpPtr);
             XmlAttribHex(sb, "FileObject", FileObject);
             XmlAttrib(sb, "CreateOptions", CreateOptions);
+            XmlAttrib(sb, "CreateDispostion", CreateDispostion);
             XmlAttrib(sb, "FileAttributes", FileAttributes);
             XmlAttrib(sb, "ShareAccess", ShareAccess);
             XmlAttrib(sb, "FileName", FileName);
@@ -6135,7 +6167,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "FileAttributes", "ShareAccess", "FileName" };
+                    payloadNames = new string[] { "IrpPtr", "FileObject", "CreateOptions", "CreateDispostion", "FileAttributes", "ShareAccess", "FileName" };
                 return payloadNames;
             }
         }
@@ -6151,10 +6183,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 2:
                     return CreateOptions;
                 case 3:
-                    return FileAttributes;
+                    return CreateDispostion;
                 case 4:
-                    return ShareAccess;
+                    return FileAttributes;
                 case 5:
+                    return ShareAccess;
+                case 6:
                     return FileName;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -6165,7 +6199,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         internal unsafe override void FixupData()
         {
             if (eventRecord->EventHeader.ThreadId == -1)
-                eventRecord->EventHeader.ThreadId = GetInt32At(Version <= 2 ? HostOffset(4, 1) : HostOffset(8, 2));
+                eventRecord->EventHeader.ThreadId = GetInt32At(LayoutVersion <= 2 ? HostOffset(4, 1) : HostOffset(8, 2));
             if (eventRecord->EventHeader.ProcessId == -1)
                 eventRecord->EventHeader.ProcessId = state.ThreadIDToProcessID(ThreadID, TimeStampQPC);
         }
@@ -6175,26 +6209,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         #endregion
     }
 
+    /// <summary>
+    /// See Windows CreateFile function CreateDispostion parameter.  
+    /// </summary>
+    public enum CreateDisposition
+    {
+        CREATE_NEW = 1,         // Must NOT exist previously, otherwise fails 
+        CREATE_ALWAYS = 2,      // Creates if necessary, trucates 
+        OPEN_EXISING = 3,       // Must exist previously otherwise fails. 
+        OPEN_ALWAYS = 4,        // Create if necessary, leaves data.  
+        TRUNCATE_EXISTING = 5,  // Must Exist previously, otherwise fails, truncates.  MOST WRITE OPENS USE THIS!
+    }
+
+    /// <summary>
+    /// See Windows CreateFile function FlagsAndAttributes parameter. 
+    /// TODO FIX NOW: these have not been validated yet.  
+    /// </summary>
     [Flags]
     public enum CreateOptions
     {
         NONE = 0,
-        FILE_DIRECTORY_FILE = 0x00000001,
-        FILE_WRITE_THROUGH = 0x00000002,
-        FILE_SEQUENTIAL_ONLY = 0x00000004,
-        FILE_NO_INTERMEDIATE_BUFFERING = 0x00000008,
-        FILE_SYNCHRONOUS_IO_ALERT = 0x00000010,
-        FILE_SYNCHRONOUS_IO_NONALERT = 0x00000020,
-        FILE_NON_DIRECTORY_FILE = 0x00000040,
-        FILE_CREATE_TREE_CONNECTION = 0x00000080,
-        FILE_COMPLETE_IF_OPLOCKED = 0x00000100,
-        FILE_NO_EA_KNOWLEDGE = 0x00000200,
-        FILE_OPEN_REMOTE_INSTANCE = 0x00000400,
-        FILE_RANDOM_ACCESS = 0x00000800,
-        FILE_DELETE_ON_CLOSE = 0x00001000,
-        FILE_OPEN_BY_FILE_ID = 0x00002000,
-        FILE_OPEN_FOR_BACKUP_INTENT = 0x00004000,
-        FILE_NO_COMPRESSION = 0x00008000,
+        FILE_ATTRIBUTE_ARCHIVE = (0x20),
+        FILE_ATTRIBUTE_COMPRESSED = (0x800),
+        FILE_ATTRIBUTE_DEVICE = (0x40),
+        FILE_ATTRIBUTE_DIRECTORY = (0x10),
+        FILE_ATTRIBUTE_ENCRYPTED = (0x4000),
+        FILE_ATTRIBUTE_HIDDEN = (0x2),
+        FILE_ATTRIBUTE_INTEGRITY_STREAM = (0x8000),
+        FILE_ATTRIBUTE_NORMAL = (0x80),
+        FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = (0x2000),
+        FILE_ATTRIBUTE_NO_SCRUB_DATA = (0x20000),
+        FILE_ATTRIBUTE_OFFLINE = (0x1000),
+        FILE_ATTRIBUTE_READONLY = (0x1),
+        FILE_ATTRIBUTE_REPARSE_POINT = (0x400),
+        FILE_ATTRIBUTE_SPARSE_FILE = (0x200),
+        FILE_ATTRIBUTE_SYSTEM = (0x4),
+        FILE_ATTRIBUTE_TEMPORARY = (0x100),
+        FILE_ATTRIBUTE_VIRTUAL = (0x10000),
     };
 
     public sealed class FileIOSimpleOpTraceData : TraceEvent
