@@ -1411,17 +1411,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal protected Guid GetGuidAt(int offset)
         {
-            return new Guid(GetInt32At(offset),
-                (short)GetInt16At(offset + 4),
-                (short)GetInt16At(offset + 6),
-                (byte)GetByteAt(offset + 8),
-                (byte)GetByteAt(offset + 9),
-                (byte)GetByteAt(offset + 10),
-                (byte)GetByteAt(offset + 11),
-                (byte)GetByteAt(offset + 12),
-                (byte)GetByteAt(offset + 13),
-                (byte)GetByteAt(offset + 14),
-                (byte)GetByteAt(offset + 15));
+            return TraceEventRawReaders.ReadGuid(DataStart, offset);
         }
         /// <summary>
         /// Get the DateTime that serialized (as a windows FILETIME) at 'offset' in the payload bytes. 
