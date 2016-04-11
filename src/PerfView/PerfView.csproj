@@ -53,7 +53,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>3</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
@@ -67,7 +67,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>3</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
@@ -572,6 +572,11 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\TraceEvent\OSExtensions.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\OSExtensions.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\Interop.Dia2Lib.dll">
       <Type>Non-Resx</Type>

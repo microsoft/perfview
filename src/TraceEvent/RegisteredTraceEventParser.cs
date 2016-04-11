@@ -8,9 +8,10 @@ using System.Text.RegularExpressions;
 using FastSerialization;
 using System.Diagnostics.Eventing;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Extensions;
 using System.IO;
-using System.Text;
 using System.Threading;
+
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -48,7 +49,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public static string GetManifestForRegisteredProvider(Guid providerGuid)
         {
-#if !PUBLIC_ONLY || PERFVIEW
             int buffSize = 84000;       // Still in the small object heap.  
             byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
             byte* enumBuffer = null;
@@ -97,7 +97,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 for (;;)
                 {
                     int dummy;
-                    status = TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out dummy, out count, buffer, ref buffSize);
+                    status = ETWParsing.TdhGetAllEventsInformation(&eventRecord, IntPtr.Zero, out dummy, out count, buffer, ref buffSize);
                     if (status != 122 || 20000000 < buffSize) // 122 == Insufficient buffer keep it under 2Meg
                         break;
                     Marshal.FreeHGlobal((IntPtr)buffer);
@@ -391,9 +391,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             manifest.WriteLine("</instrumentationManifest>");
             return manifest.ToString(); ;
-#else
-            throw new NotImplementedException("Getting manifest for registered providers not supported on this version.");
-#endif
         }
 
         #region private
@@ -473,7 +470,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
             {
                 var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
-                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH ||
+                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
                     extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
                 {
                     hasETWEventInformation = true;
@@ -1007,16 +1004,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             byte* pBuffer,
             int* pBufferSize);
 
-#if !PUBLIC_ONLY || PERFVIEW
-        [DllImport("tdh.dll", CharSet = CharSet.Unicode)]
-        internal static extern unsafe int TdhGetAllEventsInformation(
-            TraceEventNativeMethods.EVENT_RECORD* pEvent,
-            IntPtr mustBeZero,
-            out int index,
-            out int count,
-            byte* pBuffer,
-            ref int pBufferSize);
-#endif
 
         [DllImport("tdh.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
         internal static extern int TdhGetEventMapInformation(

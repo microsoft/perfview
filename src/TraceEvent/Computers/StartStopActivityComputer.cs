@@ -570,29 +570,54 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// Returns true if 'guid' follow the EventSouce style activity ID for the process with ID processID.  
+        /// You can pass a process ID of 0 to this routine and it will do the best it can, but the possibility
+        /// of error is signficiantly higher (but still under .1%)
         /// </summary>
         public static unsafe bool IsActivityPath(Guid guid, int processID)
         {
             uint* uintPtr = (uint*)&guid;
 
             uint sum = uintPtr[0] + uintPtr[1] + uintPtr[2] + 0x599D99AD;
-            if (sum + (uint)processID == uintPtr[3])
-                return true;
+            if (processID == 0)
+            {
+                // We guess that the process ID is < 16 bits and because it was xored
+                // with the lower bits, the upper 16 bits should be independent of the
+                // particular process, so we can at least confirm that the upper bits
+                // match. 
+                return ((sum & 0xFFFF0000) == (uintPtr[3] & 0xFFFF0000));
+            }
+
+            if ((sum ^ (uint)processID) == uintPtr[3])  // This is the new style 
+                    return true;
             return (sum == uintPtr[3]);         // THis is old style where we don't make the ID unique machine wide.  
         }
 
         /// <summary>
-        /// returns a string representation for the activity path.  If the GUID is not an activity path then it returns
-        /// the normal string representation for a GUID.  The process ID is needed to determine if the GUID is 
-        /// an activityPath or not.  If you pass 0 for this parameter we assume the GUID is a activity path without checking
+        /// Assuming guid is an Activity Path, extract the process ID from it.   
         /// </summary>
-        public static unsafe string ActivityPathString(Guid guid, int processID)
+        public static unsafe int ActivityPathProcessID(Guid guid)
         {
-            if (processID != 0 && !IsActivityPath(guid, processID))
+            uint* uintPtr = (uint*)&guid;
+            uint sum = uintPtr[0] + uintPtr[1] + uintPtr[2] + 0x599D99AD;
+            return (int) (sum ^ uintPtr[3]);
+        }
+
+        /// <summary>
+        /// returns a string representation for the activity path.  If the GUID is not an activity path then it returns
+        /// the normal string representation for a GUID.  
+        /// </summary>
+        public static unsafe string ActivityPathString(Guid guid)
+        {
+            if (!IsActivityPath(guid, 0))
                 return guid.ToString();
 
+            var processID = ActivityPathProcessID(guid);
             StringBuilder sb = new StringBuilder();
-            sb.Append('/'); // Use // to start to make it easy to anchor 
+            if (processID != 0)
+            {
+                sb.Append("/#");    // Use /# to mark the fact that the first number is a process ID.   
+                sb.Append(processID);
+            }
             byte* bytePtr = (byte*)&guid;
             byte* endPtr = bytePtr + 12;
             char separator = '/';
@@ -701,7 +726,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     creator = GetActiveStartStopActivityTable(data.RelatedActivityID, data.ProcessID);
                     if (creator == null)
-                        Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID, data.ProcessID));
+                        Trace.WriteLine(data.TimeStampRelativeMSec.ToString("n3") + " Warning: Could not find creator Activity " + StartStopActivityComputer.ActivityPathString(data.RelatedActivityID));
                 }
                 // If there is no RelatedActivityID, or the activity ID we have is 'bad' (dead), fall back to the activity we track.  
                 if (creator == null && useCurrentActivityForCreatorAsFallback)
@@ -939,7 +964,7 @@ namespace Microsoft.Diagnostics.Tracing
                         if (fixedActivityID != activityID)
                         {
                             // Also add the old activity path to the extraStartInfo, which is needed ServiceProfiler versioning between the monitor and the detailed file.  
-                            extraStartInfo = StartStopActivityComputer.ActivityPathString(activityID, data.ProcessID) + "," + extraStartInfo;
+                            extraStartInfo = StartStopActivityComputer.ActivityPathString(activityID) + "," + extraStartInfo;
                             unfixedActivityID = activityID;     // remember this one as well so we can look up by it as well.   
                             activityID = fixedActivityID;       // Make the fixed key the 'offiical' one.
                         }
@@ -1065,7 +1090,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                string activityString = StartStopActivityComputer.ActivityPathString(ActivityID, ProcessID);
+                string activityString = StartStopActivityComputer.ActivityPathString(ActivityID);
                 if (!activityString.StartsWith("//"))
                 {
                     if (activityString.EndsWith("0607-08090a0b0c0d"))   // Http Command)

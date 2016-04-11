@@ -402,6 +402,8 @@ namespace PerfView
 
                 if (OSHeapExeTextBox.Text.Length > 0)
                     m_args.OSHeapExe = OSHeapExeTextBox.Text;
+                else
+                    m_args.OSHeapExe = null;
 
                 if (OSHeapProcessTextBox.Text.Length > 0)
                 {
@@ -411,6 +413,8 @@ namespace PerfView
                         return;
                     }
                 }
+                else
+                    m_args.OSHeapProcess = 0;
 
                 // TODO this logic is cloned.  We need it in only one place. 
                 if (GCOnlyCheckBox.IsChecked ?? false)

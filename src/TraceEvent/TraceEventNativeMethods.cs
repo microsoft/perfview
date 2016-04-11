@@ -390,8 +390,10 @@ namespace Microsoft.Diagnostics.Tracing
         internal const ushort EVENT_HEADER_EXT_TYPE_PEBS_INDEX = 0x0007;
         internal const ushort EVENT_HEADER_EXT_TYPE_PMC_COUNTERS = 0x0008;
         internal const ushort EVENT_HEADER_EXT_TYPE_PSM_KEY = 0x0009;
-        internal const ushort EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH = 0x000A;
+        internal const ushort EVENT_HEADER_EXT_TYPE_EVENT_KEY = 0x000A;
         internal const ushort EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL = 0x000B;
+        internal const ushort EVENT_HEADER_EXT_TYPE_PROV_TRAITS = 0x000C;
+        internal const ushort EVENT_HEADER_EXT_TYPE_PROCESS_START_KEY = 0x000D;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct EVENT_HEADER_EXTENDED_DATA_ITEM
@@ -533,6 +535,13 @@ namespace Microsoft.Diagnostics.Tracing
         internal const uint EVENT_ENABLE_PROPERTY_SID = 0x00000001;
         internal const uint EVENT_ENABLE_PROPERTY_TS_ID = 0x00000002;
         internal const uint EVENT_ENABLE_PROPERTY_STACK_TRACE = 0x00000004;
+        internal const uint EVENT_ENABLE_PROPERTY_PSM_KEY = 0x00000008;
+        internal const uint EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0 = 0x00000010;
+        internal const uint EVENT_ENABLE_PROPERTY_PROVIDER_GROUP = 0x00000020;
+        internal const uint EVENT_ENABLE_PROPERTY_ENABLE_KEYWORD_0 = 0x00000040;
+        internal const uint EVENT_ENABLE_PROPERTY_PROCESS_START_KEY = 0x00000080;
+        internal const uint EVENT_ENABLE_PROPERTY_EVENT_KEY = 0x00000100;
+        internal const uint EVENT_ENABLE_PROPERTY_EXCLUDE_INPRIVATE = 0x00000200;
 
         internal const uint EVENT_CONTROL_CODE_DISABLE_PROVIDER = 0;
         internal const uint EVENT_CONTROL_CODE_ENABLE_PROVIDER = 1;
@@ -557,63 +566,6 @@ namespace Microsoft.Diagnostics.Tracing
             uint controlCode);
 
         #endregion // ETW tracing functions
-
-        #region ETW Tracing from KernelTraceControl.h (from XPERF distribution)
-
-        /// <summary>
-        /// Used in StartKernelTrace to indicate the kernel events that should have stack traces
-        /// collected for them.
-        /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct STACK_TRACING_EVENT_ID
-        {
-            public Guid EventGuid;
-            public byte Type;
-            byte Reserved1;
-            byte Reserved2;
-            byte Reserved3;
-            byte Reserved4;
-            byte Reserved5;
-            byte Reserved6;
-            byte Reserved7;
-        }
-
-        [DllImport("KernelTraceControl.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
-        internal extern static int StartKernelTrace(
-            out UInt64 TraceHandle,
-            EVENT_TRACE_PROPERTIES* Properties,
-            STACK_TRACING_EVENT_ID* StackTracingEventIds,       // Actually an array of  STACK_TRACING_EVENT_ID
-            int cStackTracingEventIds);
-
-        [DllImport("KernelTraceControl.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
-        internal extern static int CreateMergedTraceFile(
-            string wszMergedFileName,
-            string[] wszTraceFileNames,
-            int cTraceFileNames,
-            EVENT_TRACE_MERGE_EXTENDED_DATA dwExtendedDataFlags);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern int Wow64DisableWow64FsRedirection(ref IntPtr ptr);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern int Wow64RevertWow64FsRedirection(IntPtr ptr);
-
-        // Flags to save extended information to the ETW trace file
-        [Flags]
-        internal enum EVENT_TRACE_MERGE_EXTENDED_DATA
-        {
-            NONE = 0x00,
-            IMAGEID = 0x01,
-            BUILDINFO = 0x02,
-            VOLUME_MAPPING = 0x04,
-            WINSAT = 0x08,
-            EVENT_METADATA = 0x10,
-            PERFTRACK_METADATA = 0x20,
-            NETWORK_INTERFACE = 0x40,
-            NGEN_PDB = 0x80,
-            COMPRESS_TRACE = 0x10000000,
-        }
-        #endregion
 
         #region Security Entry Points
 
@@ -794,79 +746,7 @@ namespace Microsoft.Diagnostics.Tracing
             return (int)((0 != dwErr) ? (0x80070000 | ((uint)dwErr & 0xffff)) : 0);
         }
 
-#if PUBLIC_ONLY
-        internal static bool CanSetCpuSamplingRate() { return false; }
-        internal static bool SetCpuSamplingRate(int interval100ns) { return false; }
-        internal static void EnableStackCaching(ulong traceHandle) { }
-#else
-        internal static bool CanSetCpuSamplingRate() { return true; }
-        internal static bool SetCpuSamplingRate(int interval100ns)
-        {
-            var info = new EVENT_TRACE_TIME_PROFILE_INFORMATION();
-            info.EventTraceInformationClass = EVENT_TRACE_INFORMATION_CLASS.EventTraceTimeProfileInformation;
-            info.ProfileInterval = interval100ns;
 
-            var hr = NtSetSystemInformation(SYSTEM_INFORMATION_CLASS.SystemPerformanceTraceInformation, &info,
-                sizeof(EVENT_TRACE_TIME_PROFILE_INFORMATION));
-            return hr == 0;
-        }
-
-        /// <summary>
-        /// Turns on compressed stacks (and Win8 feature).  
-        /// </summary>
-        internal static void EnableStackCaching(ulong traceHandle)
-        {
-            var info = new EVENT_TRACE_STACK_CACHING_INFORMATION();
-
-            info.EventTraceInformationClass = EVENT_TRACE_INFORMATION_CLASS.EventTraceStackCachingInformation;
-            info.TraceHandle = traceHandle;
-            info.Enabled = true;
-
-            int hr = NtSetSystemInformation(SYSTEM_INFORMATION_CLASS.SystemPerformanceTraceInformation, &info,
-                sizeof(EVENT_TRACE_STACK_CACHING_INFORMATION));
-
-            if (hr != 0)
-                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
-        }
-
-        enum SYSTEM_INFORMATION_CLASS
-        {
-            // There are others, but we don't care...
-            SystemPerformanceTraceInformation = 31,
-        };
-
-        enum EVENT_TRACE_INFORMATION_CLASS
-        {
-            // There are others, but we don't care...
-            EventTraceTimeProfileInformation = 3,
-            EventTraceStackCachingInformation = 16,
-        };
-
-        struct EVENT_TRACE_TIME_PROFILE_INFORMATION
-        {
-            public EVENT_TRACE_INFORMATION_CLASS EventTraceInformationClass;
-            public int ProfileInterval; 		// Units are 100nsec.  
-        };
-
-        struct EVENT_TRACE_STACK_CACHING_INFORMATION
-        {
-            public EVENT_TRACE_INFORMATION_CLASS EventTraceInformationClass;
-            public UInt64 TraceHandle;
-            public bool Enabled;
-            public byte Reserved1;
-            public byte Reserved2;
-            public byte Reserved3;
-            public int CacheSize;
-            public int BucketCount;
-        };
-
-        // To get the info SystemPerformanceTraceInformation = 31 from probably NtQuerySystemInformation
-        [DllImport("ntdll.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
-        static extern int NtSetSystemInformation(
-            SYSTEM_INFORMATION_CLASS SystemInformationClass,
-            void* SystemInformation,
-            int SystemInformationLength);
-#endif
         internal struct TRACE_PROVIDER_INFO
         {
             public Guid ProviderGuid;

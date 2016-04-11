@@ -518,13 +518,13 @@ namespace PerfView
                     }
                 }
 
+                // We pass 0 as the process ID for creating the activityID because we want uniform syntax.  
                 if (data.ActivityID != Guid.Empty)
-                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID, data.ProcessID), columnOrder, restString);
+                    AddField("ActivityID", StartStopActivityComputer.ActivityPathString(data.ActivityID), columnOrder, restString);
 
                 Guid relatedActivityID = data.RelatedActivityID;
                 if (relatedActivityID != Guid.Empty)
-                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID, data.ProcessID), columnOrder, restString);
-
+                    AddField("RelatedActivityID", StartStopActivityComputer.ActivityPathString(data.RelatedActivityID), columnOrder, restString);
 
                 m_asText = restString.ToString();
             }

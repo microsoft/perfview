@@ -11,11 +11,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using Utilities;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Extensions;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
 
 namespace Microsoft.Diagnostics.Tracing.Session
@@ -380,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         parameters.EnableFilterDesc = filterDescrPtr;
 
                         if (options.StacksEnabled || options.EventIDStacksToEnable != null || options.EventIDStacksToDisable != null)
-                            parameters.EnableProperty = TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
+                            parameters.EnableProperty |= TraceEventNativeMethods.EVENT_ENABLE_PROPERTY_STACK_TRACE;
 
                         if (etwFilteringSupported)      // If we are on 8.1 we can use the newer API.  
                             parameters.Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION_2;
@@ -531,8 +529,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
                 if (m_SessionName != KernelTraceEventParser.KernelSessionName)
                 {
-                    if ((flags & (KernelTraceEventParser.Keywords.PMCProfile | KernelTraceEventParser.Keywords.ReferenceSet)) != 0)
-                        throw new NotSupportedException("PMCProfile and ReferencesSet are only supported on the " + KernelTraceEventParser.KernelSessionName + " session.");
+                    if ((flags & KernelTraceEventParser.NonOSKeywords) != 0)
+                        throw new NotSupportedException("Keyword specified this is only supported on the " + KernelTraceEventParser.KernelSessionName + " session.");
 
                     if (version < 62)
                     {
@@ -553,17 +551,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if ((flags & (KernelTraceEventParser.Keywords.Profile | KernelTraceEventParser.Keywords.PMCProfile)) != 0)
                 {
                     TraceEventNativeMethods.SetPrivilege(TraceEventNativeMethods.SE_SYSTEM_PROFILE_PRIVILEGE);
-                    // TODO FIX NOW never fails.  
-                    if (CpuSampleIntervalMSec != 1)
-                    {
-                        if (!TraceEventNativeMethods.CanSetCpuSamplingRate())
-                            throw new ApplicationException("Changing the CPU sampling rate is currently not supported on this OS.");
-                    }
                     var cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
                     // The API seems to have an upper bound of 1 second.  
                     if (cpu100ns >= int.MaxValue || ((int)cpu100ns) > 10000000)
                         throw new ApplicationException("CPU Sampling rate is too high.");
-                    var succeeded = TraceEventNativeMethods.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
+                    var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
                     if (!succeeded && CpuSampleIntervalMSec != 1.0F)
                         throw new InvalidOperationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
                 }
@@ -574,7 +566,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 // Initialize the stack collecting information
                 const int stackTracingIdsMax = 96;      // As of 2/2015, we have a max of 56 so we are in good shape.  
                 int numIDs = 0;
-                var stackTracingIds = stackalloc TraceEventNativeMethods.STACK_TRACING_EVENT_ID[stackTracingIdsMax];
+                var stackTracingIds = stackalloc STACK_TRACING_EVENT_ID[stackTracingIdsMax];
 #if DEBUG
                 // Try setting all flags, if we overflow an assert in SetStackTraceIds will fire.  
                 SetStackTraceIds((KernelTraceEventParser.Keywords)(-1), stackTracingIds, stackTracingIdsMax);
@@ -592,7 +584,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     dwErr = TraceEventNativeMethods.TraceSetInformation(m_SessionHandle,
                                                                         TraceEventNativeMethods.TRACE_INFO_CLASS.TraceStackTracingInfo,
                                                                         stackTracingIds,
-                                                                        (numIDs * sizeof(TraceEventNativeMethods.STACK_TRACING_EVENT_ID)));
+                                                                        (numIDs * sizeof(STACK_TRACING_EVENT_ID)));
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
 
                     ulong* systemTraceFlags = stackalloc ulong[1];
@@ -609,14 +601,14 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     properties->Wnode.Guid = KernelTraceEventParser.ProviderGuid;
                     properties->EnableFlags = (uint)flags;
 
-                    dwErr = StartKernelTrace(out m_SessionHandle, properties, stackTracingIds, numIDs);
+                    dwErr = ETWKernelControl.StartKernelSession(out m_SessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
                     if (dwErr == 0xB7) // STIERR_HANDLEEXISTS
                     {
                         ret = true;
                         Stop();
                         m_Stopped = false;
                         Thread.Sleep(100);  // Give it some time to stop. 
-                        dwErr = StartKernelTrace(out m_SessionHandle, properties, stackTracingIds, numIDs);
+                        dwErr = ETWKernelControl.StartKernelSession(out m_SessionHandle, properties, PropertiesSize, stackTracingIds, numIDs);
                     }
                 }
 
@@ -626,7 +618,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 m_IsActive = true;
 
                 if (version >= 62 && StackCompression)
-                    TraceEventNativeMethods.EnableStackCaching(m_SessionHandle);
+                    ETWControl.EnableStackCaching(m_SessionHandle);
                 return ret;
             }
         }
@@ -637,42 +629,16 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public void EnableWindowsHeapProvider(int pid)
         {
-            lock (this)
-            {
-#if !NO_HEAP_SUPPORT
-                if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                    throw new ApplicationException("Heap Provider can only be used in its own session.");
+            if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                throw new ApplicationException("Heap Provider can only be used in its own session.");
 
-                var propertiesBuff = stackalloc byte[PropertiesSize];
-                var properties = GetProperties(propertiesBuff);
-                properties->Wnode.Guid = HeapTraceProviderTraceEventParser.ProviderGuid;
+            var propertiesBuff = stackalloc byte[PropertiesSize];
+            var properties = GetProperties(propertiesBuff);
 
-                List<ExtensionItem> extensions = new List<ExtensionItem>();
+            int dwErr = ETWKernelControl.StartWindowsHeapSession(out m_SessionHandle, properties, PropertiesSize, pid);
+            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
 
-                /* Prep Extensions */
-                // Turn on the Pids feature, selects which process to turn on. 
-                var pids = new ExtensionItem(ExtensionItemTypes.ETW_EXT_PIDS);
-                pids.Data.Add(pid);
-                extensions.Add(pids);
-
-                // Initialize the stack collecting information
-                var stackSpec = new ExtensionItem(ExtensionItemTypes.ETW_EXT_STACKWALK_FILTER);
-                stackSpec.Data.Add(0x1021);       // 10 = HeapProvider 21 = Stack on Alloc (Realloc?)  
-                stackSpec.Data.Add(0x1022);       // 10 = HeapProvider 22 = Stack on Realloc (Alloc?)  
-                extensions.Add(stackSpec);
-
-                /* Save Extensions */
-                SaveExtensions(extensions, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
-
-                /* Actually start the session */
-                var dwErr = TraceEventNativeMethods.StartTraceW(out m_SessionHandle, m_SessionName, properties);
-                Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
-
-                m_IsActive = true;
-#else
-            throw new NotSupportedException("This version of PerfView does not support collection of OS Heap events.");
-#endif
-            }
+            m_IsActive = true;
         }
         /// <summary>
         /// Turn on windows heap logging for a particular EXE file name (just the file name, no directory, but it DOES include the .exe extension)
@@ -681,15 +647,16 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="exeFileName"></param>
         public void EnableWindowsHeapProvider(string exeFileName)
         {
-            lock (this)
-            {
-#if !NO_HEAP_SUPPORT
-                SetImageTracingFlags(exeFileName, true);
-                EnableWindowsHeapProvider(0);
-#else
-            throw new NotSupportedException("This version of PerfView does not support collection of OS Heap events.");
-#endif
-            }
+            if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                throw new ApplicationException("Heap Provider can only be used in its own session.");
+
+            var propertiesBuff = stackalloc byte[PropertiesSize];
+            var properties = GetProperties(propertiesBuff);
+
+            int dwErr = ETWKernelControl.StartWindowsHeapSession(out m_SessionHandle, properties, PropertiesSize, exeFileName);
+            Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
+
+            m_IsActive = true;
         }
 
         /// <summary>
@@ -755,13 +722,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 catch (Exception) { Debug.Assert(false); }
 
-                TraceEventNativeMethods.SetCpuSamplingRate(10000);      // Set sample rate back to default 1 Msec 
+                ETWControl.SetCpuSamplingRate(10000);      // Set sample rate back to default 1 Msec 
                 var propertiesBuff = stackalloc byte[PropertiesSize];
                 var properties = GetProperties(propertiesBuff);
                 int hr = TraceEventNativeMethods.ControlTrace(0UL, m_SessionName, properties, TraceEventNativeMethods.EVENT_TRACE_CONTROL_STOP);
-#if !NO_HEAP_SUPPORT
-                ResetWindowsHeapTracingFlags(noThrow);
-#endif
+                ETWKernelControl.ResetWindowsHeapTracingFlags(m_SessionName, noThrow);
 
                 if (hr != 0 && hr != TraceEventNativeMethods.ERROR_WMI_INSTANCE_NOT_FOUND)     // Instance name not found.  This means we did not start
                 {
@@ -1234,40 +1199,19 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// <param name="options">Optional Additional options for the Merge (seeTraceEventMergeOptions) </param>
         public static void Merge(string[] inputETLFileNames, string outputETLFileName, TraceEventMergeOptions options = TraceEventMergeOptions.None)
         {
-            if (!s_KernelTraceControlLoaded)
-            {
-                NativeDlls.LoadNative("KernelTraceControl.dll");
-                s_KernelTraceControlLoaded = true;
-            }
+            EVENT_TRACE_MERGE_EXTENDED_DATA flags =
+                EVENT_TRACE_MERGE_EXTENDED_DATA.IMAGEID |
+                EVENT_TRACE_MERGE_EXTENDED_DATA.BUILDINFO |
+                EVENT_TRACE_MERGE_EXTENDED_DATA.WINSAT |
+                EVENT_TRACE_MERGE_EXTENDED_DATA.EVENT_METADATA |
+                EVENT_TRACE_MERGE_EXTENDED_DATA.VOLUME_MAPPING;
 
-            IntPtr state = IntPtr.Zero;
+            if ((options & TraceEventMergeOptions.Compress) != 0)
+                flags |= EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
 
-            // If we happen to be in the WOW, disable file system redirection as you don't get the System32 dlls otherwise. 
-            bool disableRedirection = TraceEventNativeMethods.Wow64DisableWow64FsRedirection(ref state) != 0;
-            try
-            {
-                Debug.Assert(disableRedirection || System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8);
-
-                TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA flags =
-                    TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.IMAGEID |
-                    TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.BUILDINFO |
-                    TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.WINSAT |
-                    TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.EVENT_METADATA |
-                    TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.VOLUME_MAPPING;
-
-                if ((options & TraceEventMergeOptions.Compress) != 0)
-                    flags |= TraceEventNativeMethods.EVENT_TRACE_MERGE_EXTENDED_DATA.COMPRESS_TRACE;
-
-                int retValue = TraceEventNativeMethods.CreateMergedTraceFile(outputETLFileName, inputETLFileNames, inputETLFileNames.Length, flags);
-                if (retValue != 0 && retValue != 0x7A)      // 0x7A means ERROR_INSUFFICIENT_BUFFER and means events were lost.   This is OK as the file indicates this as welll 
-                    throw new ApplicationException("Merge operation failed return code 0x" + retValue.ToString("x"));
-            }
-            finally
-            {
-                if (disableRedirection)
-                    TraceEventNativeMethods.Wow64RevertWow64FsRedirection(state);
-            }
+            ETWKernelControl.Merge(inputETLFileNames, outputETLFileName, flags);
         }
+
         /// <summary>
         /// This variation of the Merge command takes the 'primary' etl file name (X.etl)
         /// and will merge in any files that match .clr*.etl .user*.etl. and .kernel.etl.  
@@ -1417,289 +1361,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         static SortedDictionary<string, Guid> s_providersByName;
         static Dictionary<Guid, string> s_providerNames;
-
-        /// <summary>
-        /// We wrap this because sadly the PMC support is private, so we have to do it a different way if that is present.
-        /// </summary>
-        int StartKernelTrace(
-            out UInt64 TraceHandle,
-            TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties,
-            TraceEventNativeMethods.STACK_TRACING_EVENT_ID* stackTracingEventIds,
-            int cStackTracingEventIds)
-        {
-            bool needExtensions = false;
-            if ((((KernelTraceEventParser.Keywords)properties->EnableFlags) &
-                (KernelTraceEventParser.Keywords.PMCProfile | KernelTraceEventParser.Keywords.ReferenceSet
-                | KernelTraceEventParser.Keywords.ThreadPriority | KernelTraceEventParser.Keywords.IOQueue | KernelTraceEventParser.Keywords.Handle)) != 0)
-                needExtensions = true;
-
-#if !PUBLIC_ONLY || !NO_HEAP_SUPPORT
-            if (needExtensions)
-            {
-                List<ExtensionItem> extensions = new List<ExtensionItem>();
-                PutEnableFlagsIntoExtensions(extensions, (KernelTraceEventParser.Keywords)properties->EnableFlags);
-                PutStacksIntoExtensions(extensions, stackTracingEventIds, cStackTracingEventIds);
-                int len = SaveExtensions(extensions, null, 0);
-                if (len > MaxExtensionSize)
-                    throw new ArgumentOutOfRangeException("Too much ETW extension information specified.");
-                SaveExtensions(extensions, properties, properties->LogFileNameOffset + MaxNameSize * sizeof(char));
-                return TraceEventNativeMethods.StartTraceW(out TraceHandle, KernelTraceEventParser.KernelSessionName, properties);
-            }
-            else
-#else
-            if (needExtensions)
-                throw new ApplicationException("CPU Counter profiling not supported.");
-#endif
-                // Load up KernelTraceControl so we can access Kernel Stacks on Win7 (not needed on Win8 or above)
-                try
-                {
-                    if (!s_KernelTraceControlLoaded)
-                    {
-                        NativeDlls.LoadNative("KernelTraceControl.dll");
-                        s_KernelTraceControlLoaded = true;
-                    }
-                }
-                catch (BadImageFormatException)
-                {
-                    // We use a small native DLL called KernelTraceControl that needs to be 
-                    // in the same directory as the EXE that used TraceEvent.dll.  Unlike IL
-                    // Native DLLs are specific to a processor type (32 or 64 bit) so the easiestC:\Users\vancem\Documents\etw\traceEvent\TraceEventSession.cs
-                    // way to insure this is that the EXE that uses TraceEvent is built for 32 bit
-                    // and that you use the 32 bit version of KernelTraceControl.dll
-                    throw new BadImageFormatException("Could not load KernelTraceControl.dll (likely 32-64 bit process mismatch)");
-                }
-                catch (DllNotFoundException)
-                {
-                    // In order to start kernel session, we need a support DLL called KernelTraceControl.dll
-                    // This DLL is available by downloading the XPERF.exe tool (see 
-                    // http://msdn.microsoft.com/en-us/performance/cc825801.aspx for instructions)
-                    // It is recommended that you get the 32 bit version of this (it works on 64 bit machines)
-                    // and build your EXE that uses TraceEvent to launch as a 32 bit application (This is
-                    // the default for VS 2010 projects).  
-                    throw new DllNotFoundException("KernelTraceControl.dll missing from distribution.");
-                }
-
-            properties->EnableFlags = properties->EnableFlags & (uint)~KernelTraceEventParser.NonOSKeywords;
-            return TraceEventNativeMethods.StartKernelTrace(out TraceHandle, properties, stackTracingEventIds, cStackTracingEventIds);
-        }
-
-#if !PUBLIC_ONLY || !NO_HEAP_SUPPORT
-        private enum ExtensionItemTypes
-        {
-            ETW_EXT_ENABLE_FLAGS = 1,
-            ETW_EXT_PIDS = 2,
-            ETW_EXT_STACKWALK_FILTER = 3,
-            ETW_EXT_POOLTAG_FILTER = 4,
-            ETW_EXT_STACK_CACHING = 5
-        }
-
-        struct ExtensionItem
-        {
-            public ExtensionItem(ExtensionItemTypes type) { Type = type; Data = new List<int>(); }
-            public ExtensionItemTypes Type;
-            public List<int> Data;
-        }
-
-        /// <summary>
-        /// Saves the given extensions to the Properties structure.  'properties' and returns the length that it emitted.
-        /// You can pass null for properties and writeLocation, in which case it computes the length needed.  
-        /// </summary>
-        unsafe private static int SaveExtensions(List<ExtensionItem> extensions,
-            TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties, uint writeOffset)
-        {
-            // Compute the total length
-            int lenInBytes = 4;                                 // For the header (count and length)
-            foreach (var extension in extensions)
-                lenInBytes += 4 + extension.Data.Count * 4;     // 4 bytes for the header and the data itself
-            Debug.Assert(lenInBytes < 0x10000 * 4);
-
-            if (properties != null && writeOffset != 0)
-            {
-                uint byteOffsetToExtensions = writeOffset;
-                Debug.Assert(byteOffsetToExtensions < 0x10000);
-
-                // Indicate that we have extensions
-                properties->EnableFlags = (uint)0x80FF0000 | byteOffsetToExtensions;
-
-                // Write the extension header
-                int* ptr = (int*)(((byte*)properties) + writeOffset);
-                *ptr++ = (lenInBytes / 4) + (extensions.Count << 16);       // First WORD is total len in DWORDS, next is Extension Count
-
-                foreach (var extension in extensions)
-                {
-                    // Write the item header
-                    // First WORD is len (including header) in DWORDS, next is Type
-                    *ptr++ = (extension.Data.Count + 1) + (((int)extension.Type) << 16);
-
-                    // Write the data 
-                    for (int i = 0; i < extension.Data.Count; i++)
-                        *ptr++ = extension.Data[i];
-                }
-                Debug.Assert(((byte*)ptr) - ((byte*)properties) == writeOffset + lenInBytes);
-            }
-            return lenInBytes;
-        }
-
-        /// <summary>
-        /// The internal API does not use GUIDS but small integer values to represnet the stack hooks.   Do the convesion here. 
-        /// </summary>
-        private static unsafe void PutStacksIntoExtensions(List<ExtensionItem> extensions, TraceEventNativeMethods.STACK_TRACING_EVENT_ID* StackTracingEventIds, int cStackTracingEventIds)
-        {
-            var converter = new Dictionary<Guid, int>(16);
-
-            // See ntwmi.h  
-            converter[KernelTraceEventParser.DiskIOTaskGuid] = 0x1;         // EVENT_TRACE_GROUP_IO
-            converter[KernelTraceEventParser.VirtualAllocTaskGuid] = 0x2;   // EVENT_TRACE_GROUP_MEMORY
-            converter[KernelTraceEventParser.MemoryTaskGuid] = 0x2;
-            converter[KernelTraceEventParser.ProcessTaskGuid] = 0x3;
-            converter[KernelTraceEventParser.FileIOTaskGuid] = 0x4;         // EVENT_TRACE_GROUP_FILE 
-            converter[KernelTraceEventParser.ThreadTaskGuid] = 0x5;
-            converter[KernelTraceEventParser.RegistryTaskGuid] = 0x9;       // EVENT_TRACE_GROUP_REGISTRY 
-            converter[KernelTraceEventParser.PerfInfoTaskGuid] = 0xF;       // EVENT_TRACE_GROUP_PERFINFO     
-            converter[KernelTraceEventParser.ObjectTaskGuid] = 0x11;        // EVENT_TRACE_GROUP_OBJECT
-
-            // TODO FIX Put in Heap and Crit Section stacks 
-
-            var stackSpec = new ExtensionItem(ExtensionItemTypes.ETW_EXT_STACKWALK_FILTER);
-            while (cStackTracingEventIds > 0)
-            {
-                int val = (converter[StackTracingEventIds->EventGuid] << 8) + StackTracingEventIds->Type;
-                stackSpec.Data.Add(val);
-                StackTracingEventIds++;
-                --cStackTracingEventIds;
-            }
-
-            extensions.Add(stackSpec);
-        }
-
-        private static void PutEnableFlagsIntoExtensions(List<ExtensionItem> extensions, KernelTraceEventParser.Keywords keywords)
-        {
-            var extendedEnableFlags = new ExtensionItem(ExtensionItemTypes.ETW_EXT_ENABLE_FLAGS);
-
-            // TODO, confirm that all keywords in group1 are the same as KernelTraceEventParser.Keywords
-            if ((keywords & KernelTraceEventParser.Keywords.ReferenceSet) != 0)     // RefereneSet includes VAMap.  
-                keywords |= KernelTraceEventParser.Keywords.VAMap | KernelTraceEventParser.Keywords.VirtualAlloc;
-            int group0 = ((int)keywords & (int)~KernelTraceEventParser.NonOSKeywords);
-            extendedEnableFlags.Data.Add(group0);
-
-            int group1 = 0;
-            if ((keywords & KernelTraceEventParser.Keywords.PMCProfile) != 0)
-                group1 |= 0x400;
-            if ((keywords & KernelTraceEventParser.Keywords.Profile) != 0)
-                group1 |= 0x002;
-            if ((keywords & KernelTraceEventParser.Keywords.ReferenceSet) != 0)
-            {
-                // We turn on what XPERF calls 'ReferenceSet'. 
-
-                //#define PERF_MEMORY          0x20000001   // High level WS manager activities, PFN changes  
-                //#define PERF_FOOTPRINT       0x20000008   // Flush WS on every mark_with_flush  
-                //#define PERF_MEMINFO         0x20080000  
-                //#define PERF_MEMINFO_WS      0x20800000   // Logs Workingset/Commit information on MemInfo DPC 
-                //#define PERF_SESSION         0x20400000  
-                //#define PERF_REFSET          0x20000020   // PERF_FOOTPRINT + log AutoMark on trace start/stop.  
-
-                group1 |= 0xC80029;
-            }
-            if ((keywords & KernelTraceEventParser.Keywords.IOQueue) != 0)
-            {
-                // #define PERF_KERNEL_QUEUE    0x21000000  
-                group1 |= 0x1000000;
-            }
-
-            if ((keywords & KernelTraceEventParser.Keywords.ThreadPriority) != 0)
-            {
-                // #define PERF_PRIORITY        0x20002000   // Logs changing of thread priority.  
-                group1 |= 0x2000;
-            }
-
-            extendedEnableFlags.Data.Add(group1);
-
-            int group4 = 0;
-            if ((keywords & KernelTraceEventParser.Keywords.Handle) != 0)
-            {
-                // #define PERF_OB_HANDLE       0x80000040 
-                group4 |= 0x40;
-            }
-
-            extendedEnableFlags.Data.Add(0); // group 2
-            extendedEnableFlags.Data.Add(0);
-            extendedEnableFlags.Data.Add(group4); // group 4
-            extendedEnableFlags.Data.Add(0);
-            extendedEnableFlags.Data.Add(0); // group 6
-            extendedEnableFlags.Data.Add(0);
-            extensions.Add(extendedEnableFlags);
-        }
-
-        /// <summary>
-        /// Resets any windows heap tracing flags that might be set.   Called during Stop.   
-        /// </summary>
-        private void ResetWindowsHeapTracingFlags(bool noThrow = false)
-        {
-            try
-            {
-                // Mark the fact that we have turned on heap tracing.  
-                RegistryKey perfViewHeapTraceKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\TraceEvent\HeapTracing", true);
-                if (perfViewHeapTraceKey != null)
-                {
-                    var exeFileName = perfViewHeapTraceKey.GetValue(m_SessionName) as string;
-                    if (exeFileName != null)
-                    {
-                        SetImageTracingFlags(exeFileName, false);
-                        perfViewHeapTraceKey.DeleteValue(m_SessionName);
-                    }
-                    perfViewHeapTraceKey.Close();
-                }
-            }
-            catch (Exception)
-            {
-                if (!noThrow)
-                    throw;
-            }
-        }
-
-        /// <summary>
-        /// Helper function used to implement EnableWindowsHeapProvider
-        /// </summary>
-        private void SetImageTracingFlags(string exeFileName, bool set)
-        {
-            // We use the OpenRemoteBaseKey so that we get the native architecture (even if we are in the WOW. 
-            RegistryKey hklm = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, Environment.MachineName);
-            if (hklm == null)
-                throw new ApplicationException("Could not open HKLM registry hive on local machine.");
-
-
-            RegistryKey software = hklm.OpenSubKey(@"SOFTWARE", true);
-            if (software == null)
-                throw new ApplicationException(@"Could not open HKLM\Software registry hive on local machine for writing.");
-
-            // Mark the fact that we have turned on heap tracing.  
-            if (set)
-            {
-                using (RegistryKey perfViewKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\TraceEvent\HeapTracing"))
-                {
-                    var prevValue = perfViewKey.GetValue(m_SessionName, null);
-                    // Remove any old values.  
-                    if (prevValue != null)
-                        ResetWindowsHeapTracingFlags();
-                    perfViewKey.SetValue(m_SessionName, exeFileName, RegistryValueKind.String);
-                }
-            }
-
-            // Windows itself will clone these to the Wow3264Node registry keys so we only have to do it once.  
-            var imageOptionsKeyName = @"Microsoft\Windows NT\CurrentVersion\Image File Execution Options\" + exeFileName;
-            using (RegistryKey imageOptions = software.CreateSubKey(imageOptionsKeyName))
-            {
-                if (set)
-                    imageOptions.SetValue("TracingFlags", 1, RegistryValueKind.DWord);
-                else
-                    imageOptions.DeleteValue("TracingFlags", false);
-            }
-
-            software.Close();
-            hklm.Close();
-        }
-#endif
-        private const int maxStackTraceProviders = 256;
 
         private static int FindFreeSessionKeyword(Guid providerGuid)
         {
@@ -1867,7 +1528,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Given a mask of kernel flags, set the array stackTracingIds of size stackTracingIdsMax to match.
         /// It returns the number of entries in stackTracingIds that were filled in.
         /// </summary>
-        private static unsafe int SetStackTraceIds(KernelTraceEventParser.Keywords stackCapture, TraceEventNativeMethods.STACK_TRACING_EVENT_ID* stackTracingIds, int stackTracingIdsMax)
+        private static unsafe int SetStackTraceIds(KernelTraceEventParser.Keywords stackCapture, STACK_TRACING_EVENT_ID* stackTracingIds, int stackTracingIdsMax)
         {
             int curID = 0;
 
@@ -2310,8 +1971,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // When we do that, we don't need this.  
         private readonly Dictionary<Guid, ulong> m_enabledProviders = new Dictionary<Guid, ulong>();
 
-
-        static bool s_KernelTraceControlLoaded;
         #endregion
     }
 

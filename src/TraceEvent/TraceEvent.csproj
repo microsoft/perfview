@@ -38,7 +38,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>0649 0618</NoWarn>
@@ -53,7 +53,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE;COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>3</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>0649 0618</NoWarn>
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -131,6 +131,10 @@
       <SpecificVersion>False</SpecificVersion>
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <HintPath>Interop.Dia2Lib.dll</HintPath>
+    </Reference>
+    <Reference Include="OSExtensions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\OSExtensions.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
