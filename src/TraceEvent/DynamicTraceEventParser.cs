@@ -618,6 +618,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                 size = (ushort)GetInt16At(offset);
                                 offset += 2;
                             }
+                            else if (format == DynamicTraceEventData.SIZE32_PREFIX)
+                            {
+                                size = (ushort)GetInt32At(offset);
+                                offset += 4;
+                            }
                             else
                                 return "[CANT PARSE STRING]";
 
@@ -884,17 +889,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (MessageFormat == null)
                 return base.GetFormattedMessage(formatProvider);
 
+            int numRemovedArguments = 0;
+            int lastIndex = -1;
             // TODO is this error handling OK?  
             // Replace all %N with the string value for that parameter.  
             return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
             {
-                int index = int.Parse(m.Groups[1].Value) - 1;
+                int index = int.Parse(m.Groups[1].Value) - 1 - numRemovedArguments;
 
-                // If there are byte[] values, we hide the argument for the size that is in the manifest.
-                // Thus we remove it here as well.  
-                for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
-                    if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
-                        --index;
+                // If there are byte[] values or prefixed strings, we hide the argument for the size
+                // that is in the manifest. Thus we remove it here as well.  
+                // Note: This only works if the fields are accessed in numeric order (%1 %2 %3...)
+                // If the fields are accessed out of order, it will throw off the check for length prefixed strings
+                int i = index - 1;
+                if (i != lastIndex)
+                {
+                    ushort format = (ushort)(payloadFetches[i].Size & ~IS_ANSI);
+                    if ((format == DynamicTraceEventData.SIZE32_PREFIX || format == DynamicTraceEventData.SIZE16_PREFIX) && (payloadFetches[i].Array != null || payloadFetches[i].Type == typeof(string)))
+                    {
+                        index--;
+                        numRemovedArguments++;
+                    }
+                }
+                lastIndex = index;
 
                 if ((uint)index < (uint)PayloadNames.Length)
                     return PayloadString(index, formatProvider);
@@ -943,16 +960,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             var arrayCount = arrayInfo.FixedCount;
             if (arrayCount == 0)
             {
-                if (payloadFetch.Size == DynamicTraceEventData.SIZE16_PREFIX)
+                ushort format = (ushort)(payloadFetch.Size & ~IS_ANSI);
+                if (format == DynamicTraceEventData.SIZE16_PREFIX)
                 {
                     arrayCount = (ushort)GetInt16At(offset);
                     offset += 2;
                 }
-                else if ((payloadFetch.Size == DynamicTraceEventData.SIZE16_PRECEEDS))
+                else if ((format == DynamicTraceEventData.SIZE16_PRECEEDS))
                     arrayCount = (ushort)GetInt16At(offset - 2);
-                else if (payloadFetch.Size == DynamicTraceEventData.SIZE32_PRECEEDS)
+                else if (format == DynamicTraceEventData.SIZE32_PRECEEDS)
                     arrayCount = GetInt32At(offset - 4);
-                else if ((payloadFetch.Size == DynamicTraceEventData.SIZE32_PREFIX))
+                else if ((format == DynamicTraceEventData.SIZE32_PREFIX))
                 {
                     arrayCount = GetInt32At(offset);
                     offset += 4;
