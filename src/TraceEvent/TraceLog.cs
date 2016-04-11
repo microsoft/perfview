@@ -444,6 +444,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.osName = "";
             this.osBuild = "";
             this.sampleProfileInterval100ns = 10000;    // default is 1 msec
+            this.fnAddAddressToCodeAddressMap = AddAddressToCodeAddressMap;
         }
 
         /// <summary>
@@ -1598,7 +1599,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             return;
                     }
                     else // Remember any code address in the event.  
-                        data.LogCodeAddresses(AddAddressToCodeAddressMap);
+                        data.LogCodeAddresses(fnAddAddressToCodeAddressMap);
                 }
 
                 if (numberOnPage >= eventsPerPage)
@@ -3442,6 +3443,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
         // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
+        private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
         #endregion
     }
 
