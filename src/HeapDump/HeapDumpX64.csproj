@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{31850F14-F02B-4A7D-9779-CF583FD8F739}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HeapDump</RootNamespace>
+    <AssemblyName>HeapDump</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\$(Platform)\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;IN_PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\$(Platform)\</OutputPath>
+    <DefineConstants>TRACE;IN_PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\$(Platform)\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;STANDALONE_EXE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\Release\$(Platform)\</OutputPath>
+    <DefineConstants>TRACE;STANDALONE_EXE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
+      <HintPath>..\perfView\SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\MemoryGraph\graph.cs">
+      <Link>MemoryGraph\graph.cs</Link>
+    </Compile>
+    <Compile Include="..\MemoryGraph\MemoryGraph.cs">
+      <Link>MemoryGraph\MemoryGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\EnvironmentUtilities.cs">
+      <Link>Utilities\EnvironmentUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\StringUtilities.cs">
+      <Link>Utilities\StringUtilities.cs</Link>
+    </Compile>
+    <Compile Include="CollectionMetadata.cs" />
+    <Compile Include="CrossGenerationLiveness\CrossGenerationLivenessCollector.cs" />
+    <Compile Include="CrossGenerationLiveness\Debugger.cs" />
+    <Compile Include="CrossGenerationLiveness\DebuggerCallbacks.cs" />
+    <Compile Include="CrossGenerationLiveness\DebuggerOutputCallbacks.cs" />
+    <Compile Include="CrossGenerationLiveness\IDebugClient.cs" />
+    <Compile Include="Debugger\ICLRProfiling.cs" />
+    <Compile Include="Debugger\DumpDebugging\DumpReader.cs" />
+    <Compile Include="Debugger\DumpDebugging\HResults.cs" />
+    <Compile Include="Debugger\DumpDebugging\LibraryProvider.cs" />
+    <Compile Include="Debugger\DumpDebugging\MetadataLocator.cs" />
+    <Compile Include="Debugger\DumpDebugging\NativeImports.cs" />
+    <Compile Include="Debugger\DumpDebugging\pipeline.cs" />
+    <Compile Include="Debugger\DumpDebugging\utility.cs" />
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
+    <Compile Include="..\PerfView\PerfViewEventSource.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\Utilities\TeeTextWriter.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+    <Compile Include="..\Utilities\FileUtilities.cs" />
+    <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\Utilities\XmlUtilities.cs" />
+    <Compile Include="Debugger\MetaDataReader.cs" />
+    <Compile Include="GCHeapDump.cs" />
+    <Compile Include="GCHeapDumper.cs" />
+    <Compile Include="HeapDumpException.cs" />
+    <Compile Include="HeapDumpHResult.cs" />
+    <Compile Include="ICorDebugGCHeap.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Debugger\Debugger.cs" />
+    <Compile Include="Debugger\ICorDebugWrappers.cs" />
+    <Compile Include="Debugger\IMetadataImport.cs" />
+    <Compile Include="Debugger\NativeApi.cs" />
+    <Compile Include="Silverlight.cs" />
+    <Compile Include="Utilities\commandLine.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
+      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
+      <Name>FastSerialization</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
+      <Project>{B68F4968-A7CF-41CC-AD6E-373DB5E67944}</Project>
+      <Name>TraceEvent</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

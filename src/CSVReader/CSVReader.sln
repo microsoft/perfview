@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSVReader", "CSVReader.csproj", "{F7D0F851-9B0D-4224-91AB-7FC12477F206}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent", "..\traceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

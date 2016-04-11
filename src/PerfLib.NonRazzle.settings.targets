@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- default project values when not supplied -->
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
+    <Platform Condition="'$(Platform)'==''">AnyCPU</Platform>
+  </PropertyGroup>
+  
+  <!-- determine the actual cpu architecture being targeted -->
+  <PropertyGroup>
+    <!-- It appears that any use of the 'Platform' property outside use in 
+         setting the Platform property causes Visual Studio to get angry
+         and attempt to alter all managed projects.  As a work around use the
+         Platform property to set a property and then use that.
+      -->
+    <VSBugWhenUsingPlatform>$(Platform)</VSBugWhenUsingPlatform>
+    <CpuArchitecture>unknown_architecture</CpuArchitecture>
+    <CpuArchitecture Condition="'$(VSBugWhenUsingPlatform)'=='Win32' Or '$(VSBugWhenUsingPlatform)'=='x86' Or '$(VSBugWhenUsingPlatform)'=='AnyCPU' ">x86</CpuArchitecture>
+    <CpuArchitecture Condition="'$(VSBugWhenUsingPlatform)'=='x64' Or '$(VSBugWhenUsingPlatform)'=='amd64'">amd64</CpuArchitecture>
+    <CpuArchitecture Condition="'$(VSBugWhenUsingPlatform)'=='ARM' Or '$(VSBugWhenUsingPlatform)'=='arm'">arm</CpuArchitecture>
+    <VSBugWhenUsingPlatform></VSBugWhenUsingPlatform>
+  </PropertyGroup>
+
+  <!-- common project targets that should be included relative to Microsoft.Common.targets -->
+  <PropertyGroup>
+    <OutputPath Condition="'$(CpuArchitecture)'=='x86'">$(SolutionDir)bin\$(Configuration)\</OutputPath>
+    <OutputPath Condition="'$(CpuArchitecture)'!='x86'">$(SolutionDir)bin\$(Platform)\$(Configuration)  </OutputPath>
+  </PropertyGroup>
+  
+  <PropertyGroup Label="non-razzle properties">
+    <!-- When the VS version number is incremented this needs to change -->
+    <VSSDKRoot>$(VSSDK120Install)</VSSDKRoot>
+    
+    <!-- razzle properties used in non-razzle build -->
+    <ExternalAPIsPath>$(PerfLibRootPath)\..\ExternalApis</ExternalAPIsPath>
+    <InternalAPIsPath>$(PerfLibRootPath)\..\InternalApis</InternalAPIsPath>
+    <SdkLibPath>$(VSSDKRoot)VisualStudioIntegration\Common\Lib\$(CpuArchitecture)</SdkLibPath>
+    <IntraPartitionAPIsPath>$(PerfLibRootPath)\$(Configuration)\$(CpuArchitecture)\IntraPartitionAPIs</IntraPartitionAPIsPath>
+    <IntermediateOutputPath Condition="'$(ProjectCodeType)'=='managed'">obj\$(Configuration)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(ProjectCodeType)'=='native'">$(IntDir)</IntermediateOutputPath>
+    <ArchFlavorSubPath Condition="'$(Configuration)'!='Release'">chk\$(CpuArchitecture)</ArchFlavorSubPath>
+    <ArchFlavorSubPath Condition="'$(Configuration)'=='Release'">ret\$(CpuArchitecture)</ArchFlavorSubPath>
+    <FrameworkFlavorSubPath Condition="'$(Configuration)'!='Release'">$(TargetFrameworkVersion)\chk</FrameworkFlavorSubPath>
+    <FrameworkFlavorSubPath Condition="'$(Configuration)'=='Release'">$(TargetFrameworkVersion)\ret</FrameworkFlavorSubPath>
+    <BuildSuffix Condition="'$(Configuration)'!='Release'">d</BuildSuffix>
+
+    <!-- razzle partitions properties using in non-razzle build -->
+    
+    <ClrIncPath>$(InternalAPIsPath)\clr\inc</ClrIncPath>
+    <ClrLibPath>$(InternalAPIsPath)\clr\lib\$(ArchFlavorSubPath)</ClrLibPath>
+    <ClrRefPath>$(InternalAPIsPath)\clr\ref\$(FrameworkFlavorSubPath)</ClrRefPath>
+      
+    <ConfigIncPath>$(InternalAPIsPath)\config\inc</ConfigIncPath>
+
+  </PropertyGroup>  
+  
+</Project>
