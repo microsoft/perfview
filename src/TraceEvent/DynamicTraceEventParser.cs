@@ -175,6 +175,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // This parser covers more than one provider, so the convention is that you return null for the provider name. 
             return null;
         }
+
         /// <summary>
         /// Called on unhandled events to look for manifests.    Returns true if we added a new manifest (which may have updated the lookup table)
         /// </summary>
@@ -195,7 +196,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 partialManifests.Add(data.ProviderGuid, partialManifestsForGuid);
             }
 
-            var partialManifest = partialManifestsForGuid.Find(e => data.ProcessID == e.ProcessID && data.ThreadID == e.ThreadID);
+            PartialManifestInfo partialManifest = null;
+            // PERF: Expansion of 
+            //    partialManifest = partialManifestsForGuid.Find(e => data.ProcessID == e.ProcessID && data.ThreadID == e.ThreadID);
+            // that avoids the delegate allocation.
+            foreach (var p in partialManifestsForGuid)
+            {
+                if (p.ProcessID == data.ProcessID && p.ThreadID == data.ThreadID)
+                {
+                    partialManifest = p;
+                    break;
+                }
+            }
+
             if (partialManifest == null)
             {
                 partialManifest = new PartialManifestInfo() { ProcessID = data.ProcessID, ThreadID = data.ThreadID };
