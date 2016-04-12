@@ -3679,14 +3679,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #if DEBUG
             if (data.IsClassicProvider)
             {
-                Debug.Assert(countsForEvent.m_classicProvider);
+                Debug.Assert(countsForEvent.IsClassic);
                 Debug.Assert(countsForEvent.TaskGuid == data.taskGuid);
                 if (!data.lookupAsWPP)
                     Debug.Assert(countsForEvent.Opcode == data.Opcode || data.Opcode == TraceEventOpcode.Info);
             }
             else
             {
-                Debug.Assert(!countsForEvent.m_classicProvider);
+                Debug.Assert(!countsForEvent.IsClassic);
                 Debug.Assert(countsForEvent.ProviderGuid == data.ProviderGuid);
                 Debug.Assert(countsForEvent.EventID == data.ID);
             }
