@@ -77,9 +77,11 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
             CtfClock clock = _channels.First().Item2.Clocks.First();
 
+            long firstEventTimestamp = (long)new ChannelList(_channels).First().Current.Timestamp;
+
             _QPCFreq = (long)clock.Frequency;
-            sessionStartTimeQPC = 1;
-            _syncTimeQPC = 1;
+            sessionStartTimeQPC = firstEventTimestamp;
+            _syncTimeQPC = firstEventTimestamp;
             _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
 
             _eventMapping = InitEventMap();
@@ -493,6 +495,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
+            ulong lastTimestamp = 0;
             int events = 0;
             ChannelList list = new ChannelList(_channels);
             foreach (ChannelEntry entry in list)
@@ -502,6 +505,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 CtfEventHeader header = entry.Current;
                 CtfEvent evt = header.Event;
+                lastTimestamp = header.Timestamp;
 
 #if DEBUG
                 if (_debugOut != null)
@@ -533,6 +537,8 @@ namespace Microsoft.Diagnostics.Tracing
                 traceEvent.DebugValidate();
                 Dispatch(traceEvent);
             }
+
+            sessionEndTimeQPC = (long)lastTimestamp;
 
             return true;
         }
