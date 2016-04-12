@@ -31,6 +31,7 @@ using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing.Etlx
 {
@@ -3666,11 +3667,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var countsForEvent = data.EventTypeUserData as TraceEventCounts;
             if (countsForEvent == null)
             {
-                TraceEventCounts key = new TraceEventCounts(this, data);
+                TraceEventCountsKey key = new TraceEventCountsKey(data);
                 if (!m_counts.TryGetValue(key, out countsForEvent))
                 {
-                    countsForEvent = key;
-                    m_counts.Add(key, key);
+                    countsForEvent = new TraceEventCounts(this, data);
+                    m_counts.Add(key, countsForEvent);
                 }
                 if (!(data is UnhandledTraceEvent))
                     data.EventTypeUserData = countsForEvent;
@@ -3698,7 +3699,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             serializer.Write(m_log);
             serializer.Write(m_counts.Count);
-            foreach (var counts in m_counts.Keys)
+            foreach (var counts in m_counts.Values)
                 serializer.Write(counts);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
@@ -3709,32 +3710,90 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (int i = 0; i < count; i++)
             {
                 TraceEventCounts elem; deserializer.Read(out elem);
-                m_counts.Add(elem, elem);
+                m_counts.Add(elem.m_key, elem);
             }
         }
 
         IEnumerator<TraceEventCounts> IEnumerable<TraceEventCounts>.GetEnumerator()
         {
-            return m_counts.Keys.GetEnumerator();
+            return m_counts.Values.GetEnumerator();
         }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw new NotImplementedException(); }
         internal TraceEventStats(TraceLog log)
         {
-            m_counts = new Dictionary<TraceEventCounts, TraceEventCounts>();
+            m_counts = new Dictionary<TraceEventCountsKey, TraceEventCounts>();
             m_log = log;
         }
 
-        Dictionary<TraceEventCounts, TraceEventCounts> m_counts;      // really a set. 
+        Dictionary<TraceEventCountsKey, TraceEventCounts> m_counts;
         internal TraceLog m_log;
         #endregion
     }
+
+    [StructLayout(LayoutKind.Auto)]
+    internal struct TraceEventCountsKey : IEquatable<TraceEventCountsKey>
+    {
+        public readonly bool m_classicProvider;     // This changes the meaning of m_providerGuid and m_eventId;
+        public readonly Guid m_providerGuid;        // If classic this is task Guid
+        public readonly TraceEventID m_eventId;              // If classic this is the opcode
+
+        unsafe public TraceEventCountsKey(TraceEvent data)
+        {
+            m_classicProvider = data.IsClassicProvider;
+            if (m_classicProvider)
+            {
+                m_providerGuid = data.taskGuid;
+
+                // We use the sum of the opcode and eventID so that it works with WPP as well as classic.  
+                Debug.Assert(data.eventRecord->EventHeader.Id == 0 || data.eventRecord->EventHeader.Opcode == 0);
+                m_eventId = (TraceEventID)(data.eventRecord->EventHeader.Id + data.eventRecord->EventHeader.Opcode);
+            }
+            else
+            {
+                m_providerGuid = data.ProviderGuid;
+                m_eventId = data.ID;
+            }
+        }
+
+        internal TraceEventCountsKey(Deserializer deserializer)
+        {
+            deserializer.Read(out m_providerGuid);
+            m_eventId = (TraceEventID)deserializer.ReadInt();
+            deserializer.Read(out m_classicProvider);
+        }
+
+        public bool Equals(TraceEventCountsKey other)
+        {
+            return m_eventId == other.m_eventId &&
+                   m_classicProvider == other.m_classicProvider &&
+                   m_providerGuid == other.m_providerGuid;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is TraceEventCountsKey && Equals((TraceEventCountsKey)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return unchecked(m_providerGuid.GetHashCode() + (int)m_eventId);
+        }
+
+        public void Serialize(Serializer serializer)
+        {
+            serializer.Write(m_providerGuid);
+            serializer.Write((int)m_eventId);
+            serializer.Write(m_classicProvider);
+        }
+    }
+
     /// <summary>
     /// TraceEventCount holds number of events (Counts) and the number of events with call stacks associated with them (StackCounts) for a particular event type.   
     /// <para>It also has properties for looking up the event and provider names, but this information can only be complete if all the TraceEventParsers needed
     /// were associated with the TraceLog instance.  
     /// </para>
     /// </summary>
-    public sealed class TraceEventCounts : IFastSerializable, IEquatable<TraceEventCounts>
+    public sealed class TraceEventCounts : IFastSerializable
     {
         /// <summary>
         /// Returns a provider name for events in this TraceEventCounts.   It may return a string with a GUID or even
@@ -3747,12 +3806,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var template = Template;
                 if (template == null)
                 {
-                    var name = ((ITraceParserServices)m_stats.m_log).ProviderNameForGuid(m_providerGuid);
+                    var name = ((ITraceParserServices)m_stats.m_log).ProviderNameForGuid(m_key.m_providerGuid);
                     if (name != null)
                         return name;
-                    if (m_classicProvider)
+                    if (m_key.m_classicProvider)
                         return "UnknownProvider";
-                    return "Provider(" + m_providerGuid.ToString() + ")";
+                    return "Provider(" + m_key.m_providerGuid.ToString() + ")";
                 }
                 return template.ProviderName;
             }
@@ -3768,18 +3827,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var template = Template;
                 if (template == null)
                 {
-                    if (m_classicProvider)
+                    if (m_key.m_classicProvider)
                     {
-                        var taskName = ((ITraceParserServices)m_stats.m_log).TaskNameForGuid(m_providerGuid);
+                        var taskName = ((ITraceParserServices)m_stats.m_log).TaskNameForGuid(m_key.m_providerGuid);
                         if (taskName == null)
-                            taskName = "Task(" + m_providerGuid.ToString() + ")";
-                        if (m_eventId == 0)
+                            taskName = "Task(" + m_key.m_providerGuid.ToString() + ")";
+                        if (m_key.m_eventId == 0)
                             return taskName;
-                        return taskName + "/Opcode(" + ((int)m_eventId).ToString() + ")";
+                        return taskName + "/Opcode(" + ((int)m_key.m_eventId).ToString() + ")";
                     }
-                    if (m_eventId == 0)
+                    if (m_key.m_eventId == 0)
                         return "EventWriteString";
-                    return "EventID(" + ((int)m_eventId).ToString() + ")";
+                    return "EventID(" + ((int)m_key.m_eventId).ToString() + ")";
                 }
                 return template.EventName;
             }
@@ -3801,24 +3860,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Returns true the provider associated with this TraceEventCouts is a classic (not manifest based) ETW provider.  
         /// </summary>
-        public bool IsClassic { get { return m_classicProvider; } }
+        public bool IsClassic { get { return m_key.m_classicProvider; } }
 
         /// <summary>
         /// Returns the provider GUID of the events in this TraceEventCounts.  Returns Guid.Empty if IsClassic
         /// </summary>
-        public Guid ProviderGuid { get { if (m_classicProvider) return Guid.Empty; else return m_providerGuid; } }
+        public Guid ProviderGuid { get { if (m_key.m_classicProvider) return Guid.Empty; else return m_key.m_providerGuid; } }
         /// <summary>
         /// Returns the event ID of the events in this TraceEventCounts.  Returns TraceEventID.Illegal if IsClassic
         /// </summary>
-        public TraceEventID EventID { get { if (m_classicProvider) return TraceEventID.Illegal; else return m_eventId; } }
+        public TraceEventID EventID { get { if (m_key.m_classicProvider) return TraceEventID.Illegal; else return m_key.m_eventId; } }
         /// <summary>
         /// Returns the Task GUID of the events in this TraceEventCounts.  Returns Guid.Empty if not IsClassic
         /// </summary>
-        public Guid TaskGuid { get { if (m_classicProvider) return m_providerGuid; else return Guid.Empty; } }
+        public Guid TaskGuid { get { if (m_key.m_classicProvider) return m_key.m_providerGuid; else return Guid.Empty; } }
         /// <summary>
         /// Returns the Opcode of the events in the TraceEventCounts.  Returns TraceEventOpcode.Info if not IsClassic
         /// </summary>
-        public TraceEventOpcode Opcode { get { if (m_classicProvider) return (TraceEventOpcode)m_eventId; else return TraceEventOpcode.Info; } }
+        public TraceEventOpcode Opcode { get { if (m_key.m_classicProvider) return (TraceEventOpcode)m_key.m_eventId; else return TraceEventOpcode.Info; } }
 
         /// <summary>
         /// Returns the average size of the event specific payload data (not the whole event) for all events in the TraceEventsCounts.  
@@ -3866,7 +3925,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (!m_templateInited)
                 {
                     var lookup = m_stats.m_log.AllocLookup();
-                    m_template = lookup.LookupTemplate(m_providerGuid, m_eventId);
+                    m_template = lookup.LookupTemplate(m_key.m_providerGuid, m_key.m_eventId);
                     m_stats.m_log.FreeLookup(lookup);
                     m_templateInited = true;
                 }
@@ -3879,45 +3938,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (data == null)       // This happens in the deserialization case.  
                 return;
             m_stats = stats;
-
-            if (data.IsClassicProvider)
-            {
-                m_providerGuid = data.taskGuid;
-
-                // We use the sum of the opcode and eventID so that it works with WPP as well as classic.  
-                Debug.Assert(data.eventRecord->EventHeader.Id == 0 || data.eventRecord->EventHeader.Opcode == 0);
-                m_eventId = (TraceEventID)(data.eventRecord->EventHeader.Id + data.eventRecord->EventHeader.Opcode);
-                m_classicProvider = true;
-            }
-            else
-            {
-                m_providerGuid = data.ProviderGuid;
-                m_eventId = data.ID;
-            }
+            m_key = new TraceEventCountsKey(data);
         }
 
-        bool IEquatable<TraceEventCounts>.Equals(TraceEventCounts other)
-        {
-            if (m_eventId != other.m_eventId)
-                return false;
-            if (m_classicProvider != other.m_classicProvider)
-                return false;
-            return (m_providerGuid == other.m_providerGuid);
-        }
         /// <summary>
         /// GetHashCode
         /// </summary>
         public override int GetHashCode()
         {
-            return m_providerGuid.GetHashCode() + (int)m_eventId;
+            return m_key.GetHashCode();
         }
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
             serializer.Write(m_stats);
-            serializer.Write(m_providerGuid);
-            serializer.Write((int)m_eventId);
-            serializer.Write(m_classicProvider);
+            m_key.Serialize(serializer);
             serializer.Write(m_count);
             serializer.Write(m_stackCount);
             serializer.Write(m_eventDataLenTotal);
@@ -3925,18 +3960,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
             deserializer.Read(out m_stats);
-            deserializer.Read(out m_providerGuid);
-            m_eventId = (TraceEventID)deserializer.ReadInt();
-            deserializer.Read(out m_classicProvider);
+            m_key = new TraceEventCountsKey(deserializer);
             deserializer.Read(out m_count);
             deserializer.Read(out m_stackCount);
             deserializer.Read(out m_eventDataLenTotal);
         }
 
         TraceEventStats m_stats;             // provides the context to get the template (more info about event like its name)
-        internal bool m_classicProvider;     // This changes the meaning of m_providerGuid and m_eventId;
-        internal Guid m_providerGuid;        // If classic this is task Guid
-        TraceEventID m_eventId;              // If classic this is the opcode
+        internal TraceEventCountsKey m_key;
 
         internal long m_eventDataLenTotal;
         internal int m_count;
