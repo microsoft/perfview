@@ -31,30 +31,51 @@ namespace Microsoft.Diagnostics.Tracing
 
     public unsafe sealed class CtfTraceEventSource : TraceEventDispatcher, IDisposable
     {
+        private string _filename;
+        private ZipArchive _zip;
+        private List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
+        private TraceEventNativeMethods.EVENT_RECORD* _header;
+        private Dictionary<string, ETWMapping> _eventMapping;
+
+#if DEBUG
+        private StreamWriter _debugOut;
+#endif
+
         public CtfTraceEventSource(string fileName)
         {
             _filename = fileName;
             _zip = ZipFile.Open(fileName, ZipArchiveMode.Read);
-            ZipArchiveEntry metadataArchive = _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata").Single();
-            
-            string path = Path.GetDirectoryName(metadataArchive.FullName);
-            _channels = (from entry in _zip.Entries
-                         where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
-                         select entry).ToArray();
-                
-            CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
-            _metadata = new CtfMetadata(parser);
 
-            pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
+            _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
+            foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
+            {
+                CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
+                CtfMetadata metadata = new CtfMetadata(parser);
+
+                string path = Path.GetDirectoryName(metadataArchive.FullName);
+                _channels.AddRange(from entry in _zip.Entries
+                                   where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
+                                   select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
+
+                pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
+            }
 
 
             IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
             _header = (TraceEventNativeMethods.EVENT_RECORD*)mem;
 
-            numberOfProcessors = _channels.Length;
+            int processors = (from entry in _channels
+                              let filename = entry.Item1.FullName
+                              let i = filename.LastIndexOf('_')
+                              let processor = filename.Substring(i + 1)
+                              select int.Parse(processor)
+                             ).Max() + 1;
 
-            CtfClock clock = _metadata.Clocks.First();
+            numberOfProcessors = processors;
+
+            // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
+            CtfClock clock = _channels.First().Item2.Clocks.First();
 
             _QPCFreq = (long)clock.Frequency;
             sessionStartTimeQPC = 1;
@@ -69,221 +90,6 @@ namespace Microsoft.Diagnostics.Tracing
             //_debugOut.AutoFlush = true;
 #endif
         }
-
-        public override int EventsLost
-        {
-            get { return 0; }
-        }
-
-        public override bool Process()
-        {
-            int events = 0;
-            ChannelList list = new ChannelList(_channels, _metadata);
-            foreach (ChannelEntry entry in list)
-            {
-                if (stopProcessing)
-                    break;
-                
-                CtfEventHeader header = entry.Current;
-                CtfEvent evt = header.Event;
-
-#if DEBUG
-                if (_debugOut != null)
-                {
-                    _debugOut.WriteLine($"[{evt.Name}]");
-                    _debugOut.WriteLine($"    Process: {header.ProcessName}");
-                    _debugOut.WriteLine($"    File: {entry.FileName}");
-                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
-                    _debugOut.WriteLine($"    Event #{events}");
-                    object[] result = entry.Reader.ReadEvent(evt);
-                    evt.WriteLine(_debugOut, result, 4);
-                }
-                else
-#endif
-
-                entry.Reader.ReadEventIntoBuffer(evt);
-                events++;
-                
-                ETWMapping etw = GetTraceEvent(evt);
-
-                if (etw.IsNull)
-                    continue;
-
-                var hdr = InitEventRecord(header, entry.Reader, etw);
-                TraceEvent traceEvent = Lookup(hdr);
-                traceEvent.eventRecord = hdr;
-                traceEvent.userData = entry.Reader.BufferPtr;
-
-                traceEvent.DebugValidate();
-                Dispatch(traceEvent);
-            }
-
-            return true;
-        }
-
-        public void ParseMetadata()
-        {
-            // We don't get this data in LTTng traces (unless we decide to emit them as events later).
-            osVersion = new Version("0.0.0.0");
-            cpuSpeedMHz = 10;
-
-            int processors = (from entry in _channels
-                                let filename = entry.FullName
-                                let i = filename.LastIndexOf('_')
-                                let processor = filename.Substring(i + 1)
-                                select int.Parse(processor)
-                                ).Max() + 1;
-
-            numberOfProcessors = processors;
-
-            // TODO:  This is not IFastSerializable
-            /*
-            var env = _metadata.Environment;
-            var trace = _metadata.Trace;
-            userData["hostname"] = env.HostName;
-            userData["tracer_name"] = env.TracerName;
-            userData["tracer_version"] = env.TracerMajor + "." + env.TracerMinor;
-            userData["uuid"] = trace.UUID;
-            userData["ctf version"] = trace.Major + "." + trace.Minor;
-            */
-        }
-
-        // Each file has streams which have sets of events.  These classes help merge those channels
-        // into one chronological stream of events.
-        #region Enumeration Helper
-
-        class ChannelList : IEnumerable<ChannelEntry>
-        {
-            ZipArchiveEntry[] _channels;
-            CtfMetadata _metadata;
-
-            public ChannelList(ZipArchiveEntry[] channels, CtfMetadata metadata)
-            {
-                _channels = channels;
-                _metadata = metadata;
-            }
-
-            public IEnumerator<ChannelEntry> GetEnumerator()
-            {
-                return new ChannelListEnumerator(_channels, _metadata);
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                return new ChannelListEnumerator(_channels, _metadata);
-            }
-        }
-
-        class ChannelListEnumerator : IEnumerator<ChannelEntry>
-        {
-            bool _first = true;
-            List<ChannelEntry> _channels;
-            int _current;
-
-            public ChannelListEnumerator(ZipArchiveEntry[] channels, CtfMetadata metadata)
-            {
-                _channels = new List<ChannelEntry>(channels.Select(channel => new ChannelEntry(channel, metadata)).Where(channel => channel.MoveNext()));
-                _current = GetCurrent();
-            }
-
-            private int GetCurrent()
-            {
-                if (_channels.Count == 0)
-                    return -1;
-
-                int min = 0;
-
-                for (int i = 1; i < _channels.Count; i++)
-                    if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
-                        min = i;
-
-                return min;
-            }
-
-            public ChannelEntry Current
-            {
-                get { return _current != -1 ? _channels[_current] : null; }
-            }
-
-            public void Dispose()
-            {
-                foreach (var channel in _channels)
-                    channel.Dispose();
-
-                _channels = null;
-            }
-
-            object System.Collections.IEnumerator.Current
-            {
-                get { return Current; }
-            }
-
-            public bool MoveNext()
-            {
-                if (_current == -1)
-                    return false;
-
-                if (_first)
-                {
-                    _first = false;
-                    return _channels.Count > 0;
-                }
-
-                bool hasMore = _channels[_current].MoveNext();
-                if (!hasMore)
-                {
-                    _channels[_current].Dispose();
-                    _channels.RemoveAt(_current);
-                }
-
-                _current = GetCurrent();
-                return _current != -1;
-            }
-
-            public void Reset()
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        class ChannelEntry : IDisposable
-        {
-            public string FileName { get; private set; }
-            public CtfChannel Channel { get; private set; }
-            public CtfReader Reader { get; private set; }
-            public CtfEventHeader Current { get { return _events.Current; } }
-
-            private Stream _stream;
-            private IEnumerator<CtfEventHeader> _events;
-
-            public ChannelEntry(ZipArchiveEntry zip, CtfMetadata metadata)
-            {
-                FileName = zip.FullName;
-                _stream = zip.Open();
-                Channel = new CtfChannel(_stream, metadata);
-                Reader = new CtfReader(Channel, metadata, Channel.CtfStream);
-                _events = Reader.EnumerateEventHeaders().GetEnumerator();
-            }
-
-            public void Dispose()
-            {
-                Reader.Dispose();
-                Channel.Dispose();
-                _stream.Dispose();
-
-                IDisposable enumerator = _events as IDisposable;
-                if (enumerator != null)
-                    enumerator.Dispose();
-            }
-
-            public bool MoveNext()
-            {
-                return _events.MoveNext();
-            }
-        }
-        #endregion
-
-        #region private
 
         private static Dictionary<string, ETWMapping> InitEventMap()
         {
@@ -680,18 +486,56 @@ namespace Microsoft.Diagnostics.Tracing
             Dispose(false);
         }
 
-        protected override void Dispose(bool disposing)
+        public override int EventsLost
         {
-            if (disposing)
-                _zip.Dispose();
-
-            // TODO
-            //Marshal.FreeHGlobal(new IntPtr(_header));
-            base.Dispose(disposing);
-
-            GC.SuppressFinalize(this);
+            get { return 0; }
         }
 
+        public override bool Process()
+        {
+            int events = 0;
+            ChannelList list = new ChannelList(_channels);
+            foreach (ChannelEntry entry in list)
+            {
+                if (stopProcessing)
+                    break;
+
+                CtfEventHeader header = entry.Current;
+                CtfEvent evt = header.Event;
+
+#if DEBUG
+                if (_debugOut != null)
+                {
+                    _debugOut.WriteLine($"[{evt.Name}]");
+                    _debugOut.WriteLine($"    Process: {header.ProcessName}");
+                    _debugOut.WriteLine($"    File: {entry.FileName}");
+                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
+                    _debugOut.WriteLine($"    Event #{events}");
+                    object[] result = entry.Reader.ReadEvent(evt);
+                    evt.WriteLine(_debugOut, result, 4);
+                }
+                else
+#endif
+
+                    entry.Reader.ReadEventIntoBuffer(evt);
+                events++;
+
+                ETWMapping etw = GetTraceEvent(evt);
+
+                if (etw.IsNull)
+                    continue;
+
+                var hdr = InitEventRecord(header, entry.Reader, etw);
+                TraceEvent traceEvent = Lookup(hdr);
+                traceEvent.eventRecord = hdr;
+                traceEvent.userData = entry.Reader.BufferPtr;
+
+                traceEvent.DebugValidate();
+                Dispatch(traceEvent);
+            }
+
+            return true;
+        }
 
         private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw)
         {
@@ -733,16 +577,167 @@ namespace Microsoft.Diagnostics.Tracing
             return result;
         }
 
-        private string _filename;
-        private ZipArchive _zip;
-        private CtfMetadata _metadata;
-        private ZipArchiveEntry[] _channels;
-        private TraceEventNativeMethods.EVENT_RECORD* _header;
-        private Dictionary<string, ETWMapping> _eventMapping;
+        public void ParseMetadata()
+        {
+            // We don't get this data in LTTng traces (unless we decide to emit them as events later).
+            osVersion = new Version("0.0.0.0");
+            cpuSpeedMHz = 10;
 
-#if DEBUG
-        private StreamWriter _debugOut;
-#endif
-        #endregion 
+            // TODO:  This is not IFastSerializable
+            /*
+            var env = _metadata.Environment;
+            var trace = _metadata.Trace;
+            userData["hostname"] = env.HostName;
+            userData["tracer_name"] = env.TracerName;
+            userData["tracer_version"] = env.TracerMajor + "." + env.TracerMinor;
+            userData["uuid"] = trace.UUID;
+            userData["ctf version"] = trace.Major + "." + trace.Minor;
+            */
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                _zip.Dispose();
+
+            // TODO
+            //Marshal.FreeHGlobal(new IntPtr(_header));
+            base.Dispose(disposing);
+
+            GC.SuppressFinalize(this);
+        }
+
+        // Each file has streams which have sets of events.  These classes help merge those channels
+        // into one chronological stream of events.
+        #region Enumeration Helper
+
+        class ChannelList : IEnumerable<ChannelEntry>
+        {
+            List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
+
+            public ChannelList(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
+            {
+                _channels = channels;
+            }
+
+            public IEnumerator<ChannelEntry> GetEnumerator()
+            {
+                return new ChannelListEnumerator(_channels);
+            }
+
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            {
+                return new ChannelListEnumerator(_channels);
+            }
+        }
+
+        class ChannelListEnumerator : IEnumerator<ChannelEntry>
+        {
+            bool _first = true;
+            List<ChannelEntry> _channels;
+            int _current;
+
+            public ChannelListEnumerator(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
+            {
+                _channels = new List<ChannelEntry>(channels.Select(tuple => new ChannelEntry(tuple.Item1, tuple.Item2)).Where(channel => channel.MoveNext()));
+                _current = GetCurrent();
+            }
+
+            private int GetCurrent()
+            {
+                if (_channels.Count == 0)
+                    return -1;
+
+                int min = 0;
+
+                for (int i = 1; i < _channels.Count; i++)
+                    if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
+                        min = i;
+
+                return min;
+            }
+
+            public ChannelEntry Current
+            {
+                get { return _current != -1 ? _channels[_current] : null; }
+            }
+
+            public void Dispose()
+            {
+                foreach (var channel in _channels)
+                    channel.Dispose();
+
+                _channels = null;
+            }
+
+            object System.Collections.IEnumerator.Current
+            {
+                get { return Current; }
+            }
+
+            public bool MoveNext()
+            {
+                if (_current == -1)
+                    return false;
+
+                if (_first)
+                {
+                    _first = false;
+                    return _channels.Count > 0;
+                }
+
+                bool hasMore = _channels[_current].MoveNext();
+                if (!hasMore)
+                {
+                    _channels[_current].Dispose();
+                    _channels.RemoveAt(_current);
+                }
+
+                _current = GetCurrent();
+                return _current != -1;
+            }
+
+            public void Reset()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        class ChannelEntry : IDisposable
+        {
+            public string FileName { get; private set; }
+            public CtfChannel Channel { get; private set; }
+            public CtfReader Reader { get; private set; }
+            public CtfEventHeader Current { get { return _events.Current; } }
+
+            private Stream _stream;
+            private IEnumerator<CtfEventHeader> _events;
+
+            public ChannelEntry(ZipArchiveEntry zip, CtfMetadata metadata)
+            {
+                FileName = zip.FullName;
+                _stream = zip.Open();
+                Channel = new CtfChannel(_stream, metadata);
+                Reader = new CtfReader(Channel, metadata, Channel.CtfStream);
+                _events = Reader.EnumerateEventHeaders().GetEnumerator();
+            }
+
+            public void Dispose()
+            {
+                Reader.Dispose();
+                Channel.Dispose();
+                _stream.Dispose();
+
+                IDisposable enumerator = _events as IDisposable;
+                if (enumerator != null)
+                    enumerator.Dispose();
+            }
+
+            public bool MoveNext()
+            {
+                return _events.MoveNext();
+            }
+        }
+        #endregion
     }
 }
