@@ -1,4 +1,5 @@
 ﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
+#define USE_OS_DYNAMIC_EVENT_PARSING    // TODO REMOVE 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -478,6 +479,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
+#if USE_OS_DYNAMIC_EVENT_PARSING
             // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
             // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
             // that happens this path where we parse the TraceLogging data explicitly will become 
@@ -492,6 +494,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         return ret;
                     }
                 }
+#endif 
 
             // TODO cache the buffer?, handle more types, handle structs...
             int buffSize = 9000;
@@ -513,6 +516,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             return ret;
         }
+
+#if USE_OS_DYNAMIC_EVENT_PARSING
 
         /*************************** TraceLogging format Support ********************************/
         /// <summary>
@@ -668,7 +673,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (countFlags != 0 || inType == TdhInputType.Binary)
                     {
                         payloadFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(fieldOffset, payloadFetch, fixedCount);
-                        payloadFetch.Size = DynamicTraceEventData.SIZE16_PREFIX;    // It is not an explicit field beforehand, but a prefix. 
+                        payloadFetch.Size = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.ELEM_COUNT; // 16 bit, Unicode, does not consume field. 
                     }
 
                     var size = payloadFetch.Size;
@@ -695,7 +700,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
             }
 
-            #region private
+        #region private
 
             // TODO we may not need all of these.  
             internal const byte InTypeTypeMask = 31;
@@ -711,13 +716,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TraceEvent data;
             int offset;
             int eventMetaDataEnd;
-            #endregion // private
+        #endregion // private
         }
 
-        /*************************** End TraceLogging format Support *****************************/
+#endif
 
         /// <summary>
-        /// TdhEvenParser takes the Trace Diagnostics Helper (TDH) TRACE_EVENT_INFO structure and
+        /// TdhEventParser takes the Trace Diagnostics Helper (TDH) TRACE_EVENT_INFO structure and
         /// (passed as a byte*) and converts it to a DynamicTraceEventData which which 
         /// can be used to parse events of that type.   You first create TdhEventParser and then
         /// call ParseEventMetaData to do the parsing.  
@@ -899,11 +904,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             if (countOrCountIndex == startField + curField - 1)
                             {
                                 var lastFieldIdx = fieldFetches.Count - 1;
+                                arraySize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.CONSUMES_FIELD + DynamicTraceEventData.ELEM_COUNT;
                                 if (fieldFetches[lastFieldIdx].Size == 4)
-                                    arraySize = DynamicTraceEventData.SIZE32_PREFIX;    // TODO we can probably remove this...
-                                else if (fieldFetches[lastFieldIdx].Size == 2)
-                                    arraySize = DynamicTraceEventData.SIZE16_PREFIX;
-                                else
+                                    arraySize += DynamicTraceEventData.BIT_32;
+                                else if (fieldFetches[lastFieldIdx].Size != 2)
                                 {
                                     Trace.WriteLine("WARNING: Unexpected dynamic length size, giving up");
                                     goto Exit;
@@ -922,18 +926,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             }
                         }
 
-                        // Strings are treated specially (we don't treat them as an array of chars.
+                        // Strings are treated specially (we don't treat them as an array of chars).  
                         // They don't need an arrayFetch but DO need set the size and offset appropriately
-                        if (propertyFetch.Type != typeof(string))
+                        if (propertyFetch.Type == typeof(string))
+                        {
+                            // This is a string with its size determined by another field.   Set the size
+                            // based on 'arraySize' but preserver the IS_ANSI that we got from looking at the tdhInType.  
+                            propertyFetch.Size = (ushort)(arraySize | (propertyFetch.Size & DynamicTraceEventData.IS_ANSI));
+                            propertyFetch.Offset = arrayFieldOffset;
+                        }
+                        else 
                         {
                             Debug.WriteLine("     Field is an array of size " + ((fixedCount != 0) ? fixedCount.ToString() : "VARIABLE") + " of type " + ((propertyFetch.Type ?? typeof(void))) + " at offset " + arrayFieldOffset.ToString("x"));
-                            propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, fixedCount);
-                            propertyFetch.Size = arraySize;
-                        }
-                        else
-                        {
-                            propertyFetch.Size = arraySize;
-                            propertyFetch.Offset = arrayFieldOffset;
+                            propertyFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(arrayFieldOffset, propertyFetch, arraySize, fixedCount);
                         }
 
                         fieldOffset = ushort.MaxValue;           // Indicate that the next offset must be computed at run time. 
@@ -987,13 +992,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return map;
             }
 
-            #region private
+#region private
             TRACE_EVENT_INFO* eventInfo;
             TraceEventNativeMethods.EVENT_RECORD* eventRecord;
             Dictionary<MapKey, IDictionary<long, string>> mapTable;     // table of enums that have defined. 
             EVENT_PROPERTY_INFO* propertyInfos;
             byte* eventBuffer;                           // points at the eventInfo, but in increments of bytes 
-            #endregion // private
+#endregion // private
         }
 
         [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
@@ -1097,7 +1102,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             // Normally Count is 1 (thus every field in an array, it is just that most array have fixed size of 1)
             public ushort CountOrCountIndex;                // Flags & ParamFixedLength determines if it count, otherwise countIndex 
-            // Normally Length is the size of InType (thus is fixed), but can be variable for blobs.
+                                                            // Normally Length is the size of InType (thus is fixed), but can be variable for blobs.
             public ushort LengthOrLengthIndex;              // Flags & ParamLength determines if it lengthIndex otherwise it is the length InType
             public int Reserved;
         }
@@ -1153,7 +1158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             HexDump,
             WbemSID
         };
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1181,11 +1186,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
 
-                    // Uncomment this if you want to see the template in the debugger at this point
-                    // template.source = data.source;
-                    // template.eventRecord = data.eventRecord;
-                    // template.userData = data.userData;  
-                    m_state.m_templates[template] = template;
+                // Uncomment this if you want to see the template in the debugger at this point
+                // template.source = data.source;
+                // template.eventRecord = data.eventRecord;
+                // template.userData = data.userData;  
+                m_state.m_templates[template] = template;
                 };
 
                 // Try to parse bitmap and value map information.  
@@ -1210,8 +1215,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
-                    // See if we already have this definition 
-                    DynamicTraceEventData parsedTemplate = null;
+                // See if we already have this definition 
+                DynamicTraceEventData parsedTemplate = null;
 
                     if (!m_state.m_templates.TryGetValue(unknown, out parsedTemplate))
                     {
@@ -1222,17 +1227,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     if (parsedTemplate == null)
                         return false;
 
-                    // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
-                    // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
-                    // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
-                    // only add the event definition once.  
-                    if (!parsedTemplate.registeredWithTraceEventSource)
+                // registeredWithTraceEventSource is a fail safe.   Basically if you added yourself to the table
+                // (In OnNewEventDefinition) then you should not come back as unknown, however because of dual events
+                // and just general fragility we don't want to rely on that.  So we keep a bit and insure that we
+                // only add the event definition once.  
+                if (!parsedTemplate.registeredWithTraceEventSource)
                     {
                         parsedTemplate.registeredWithTraceEventSource = true;
                         bool ret = OnNewEventDefintion(parsedTemplate, false) == EventFilterResponse.AcceptEvent;
 
-                        // If we have subscribers, notify them as well.  
-                        var newEventDefinition = NewEventDefinition;
+                    // If we have subscribers, notify them as well.  
+                    var newEventDefinition = NewEventDefinition;
                         if (newEventDefinition != null)
                             ret |= (NewEventDefinition(parsedTemplate, false) == EventFilterResponse.AcceptEvent);
                         return ret;
@@ -1247,7 +1252,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override bool IsStatic { get { return false; } }
 
-        #region private
+#region private
         internal Func<DynamicTraceEventData, bool, EventFilterResponse> NewEventDefinition;
 
         /// <summary>
@@ -1316,10 +1321,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
         Dictionary<MapKey, IDictionary<long, string>> m_maps;       // Any maps (enums or bitsets) defined by KernelTraceControl events.  
 
-        #endregion
+#endregion
     }
 
-    #region internal classes
+#region internal classes
     /// <summary>
     /// Used to look up Enums (provider x enumName);  Very boring class.  
     /// </summary>
@@ -1404,7 +1409,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        #region IFastSerializable Members
+#region IFastSerializable Members
         /// <summary>
         /// Implements IFastSerializable interface
         /// </summary>
@@ -1447,8 +1452,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 m_templates.Add(template, template);
             }
         }
-        #endregion
+#endregion
     }
 
-    #endregion
+#endregion
 }

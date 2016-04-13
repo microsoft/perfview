@@ -983,7 +983,19 @@ namespace Microsoft.Diagnostics.Tracing
             if (0 <= index)
                 return PayloadValue(index);
             return null;
-        }   
+        }
+        /// <summary>
+        /// PayloadStringByName functions the same as PayloadByName, but uses PayloadString instead of PayloadValue. 
+        /// <para>It will return null if propertyName is not found.</para>
+        /// <para>This method is not intended to be used in performance critical code.</para>
+        /// </summary>
+        public string PayloadStringByName(string propertyName, IFormatProvider formatProvider = null)
+        {
+            int index = PayloadIndex(propertyName);
+            if (0 <= index)
+                return PayloadString(index, formatProvider);
+            return null;
+        }
         // Raw payload bytes
         /// <summary>
         /// The size of the event-specific data payload.  (see EventData)
