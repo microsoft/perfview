@@ -894,10 +894,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                 // for some array and string values, we remove the length field.  Account
                 // for that when we are resolving the %X qualifers.   
-                for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
+                for (int i = 0; i < payloadFetches.Length; i++)
                 {
-                    if ((payloadFetches[i].Size & DynamicTraceEventData.CONSUMES_FIELD) != 0)
+                    if ((payloadFetches[i].Size & DynamicTraceEventData.CONSUMES_FIELD) != 0 && (payloadFetches[i].Array != null || payloadFetches[i].Type == typeof(string)))
                         --index;
+                    if (i == index)
+                        break;
                 }
 
                 if ((uint)index < (uint)PayloadNames.Length)
@@ -1075,11 +1077,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
         internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceeded the data, bits above tell more.   
 
-        // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
-        internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   
+        // Size 0xFFE1 is NULL_TERMINATED | IS_ANSI
+        internal const ushort NULL_TERMINATED = 0xFFE0; // value is a null terminated string.   
 
-        internal const ushort POINTER_SIZE = 0xFFED;        // It is the pointer size of the target machine. 
-        internal const ushort UNKNOWN_SIZE = 0xFFEC;        // Generic unknown.
+        internal const ushort POINTER_SIZE = 0xFFD0;        // It is the pointer size of the target machine. 
+        internal const ushort UNKNOWN_SIZE = 0xFFC0;        // Generic unknown.
         internal const ushort SPECIAL_SIZES = UNKNOWN_SIZE; // This is always the smallest size as an unsiged number.    
 
         internal struct PayloadFetch
