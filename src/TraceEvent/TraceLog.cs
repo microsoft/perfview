@@ -735,7 +735,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // Any parser that has state we need to turn on during the conversion so that the the state will build up
-            // (we copy it out below).   To date there are only three parsers that do this.   
+            // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic 
+            // (which includes registered), an kernel)   
             // TODO add an option that allows users to add their own here.   
             var dynamicParser = source.Dynamic;
             var kernelParser = source.Kernel;
@@ -879,6 +880,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // methods associated with them.  There are enough of these that I did not want to do them one by one (mostly because of fragility)
             // Also kernel events have the potential for being before the process start event, and we need to see these to fix this.  (mostly memory / virtual alloc events).  
             kernelParser.All += doNothing;
+
+            // We want high volume events to be looked up properly since GetEventCount() is slower thant we want.  
+            rawEvents.Clr.GCAllocationTick += doNothing;
+            rawEvents.Clr.GCJoin += doNothing;
+            rawEvents.Clr.GCFinalizeObject += doNothing;
+            rawEvents.Clr.MethodJittingStarted += doNothing;
 
             //kernelParser.AddCallbackForEvents<PageFaultTraceData>(doNothing);        // Lots of page fault ones
             //kernelParser.AddCallbackForEvents<PageAccessTraceData>(doNothing);
