@@ -17,7 +17,7 @@ PerfView is designed to build in Visual Studio 2013 or later.
 * One of the unusual things about PerfView is that it incoperates its support DLL into the EXE itself, and these get unpacked on first launch.  This means that there are tricky dependencies in the build that are not typical.    You will see errors that certain DLLs can't be found if there were build problems earlier in the build.   Typially you can fix this simply by doing a nonrmal (non-clean) build, since the missing file will be present from the last compilation.     If this does not fix things, See if the DLL being looked for actualy exist (if it does, then rebuilding should fix it).   it can make sense to go down the project one by one and build them individuallly to see which one fails 'first'.  
 * Another unusual thing about PerfView is that it includes an extention mechanism complete with samples of using that.   This extenions is the 'Global' project (Called that because it is the Global Extension whose commands don't have a 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found' issues in the 'Global' project.  These can be ignored until you get every other part of the build working. 
 
-###Code Organization
+###Code Organization 
 The code is broken in several main sections:
   * TraceEvent - Library that understands how to decode Event Tracing for Windows (ETW) which is used to actually collect the data for many investgations
   * PerfView - GUI part of the application
