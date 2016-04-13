@@ -496,14 +496,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             try
             {
 #if DEBUG
-            // Confirm that the serialization 'adds up'
-            var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
-            Debug.Assert(computedSize <= this.EventDataLength);
-            if ((int)ID != 0xFFFE) // If it is not a manifest event
-            {
-                // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
-                Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
-            }
+                // Confirm that the serialization 'adds up'
+                var computedSize = SkipToField(payloadFetches, payloadFetches.Length, 0, EventDataLength);
+                Debug.Assert(computedSize <= this.EventDataLength);
+                if ((int)ID != 0xFFFE) // If it is not a manifest event
+                {
+                    // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
+                    Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
+                }
 #endif
                 int offset = payloadFetches[index].Offset;
                 if (offset == ushort.MaxValue)
@@ -587,31 +587,33 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         if (size >= SPECIAL_SIZES)
                         {
                             isAnsi = ((size & IS_ANSI) != 0);
-
-                            var format = (size & ~IS_ANSI);
-                            if (format == NULL_TERMINATED)
+                            if (IsNullTerminated(size))
                             {
-                                if ((size & IS_ANSI) != 0)
+                                if (isAnsi)
                                     return GetUTF8StringAt(offset);
                                 else
                                     return GetUnicodeStringAt(offset);
                             }
-                            else if (format == DynamicTraceEventData.SIZE32_PRECEEDS)
-                                size = (ushort)GetInt32At(offset - 4);
-                            else if (format == DynamicTraceEventData.SIZE16_PRECEEDS)
-                                size = (ushort)GetInt16At(offset - 2);
-                            else if (format == DynamicTraceEventData.SIZE16_PREFIX)
+                            else if (IsCountedSize(size))
                             {
-                                size = (ushort)GetInt16At(offset);
-                                offset += 2;
+                                bool unicodeByteCountString = !isAnsi && (size & ELEM_COUNT) == 0;
+                                if (((size & BIT_32) != 0))
+                                {
+                                    size = (ushort)GetInt32At(offset);
+                                    offset += 4;        // skip size;
+                                }
+                                else
+                                {
+                                    size = (ushort)GetInt16At(offset);
+                                    offset += 2;        // skip size;
+                                }
+                                if (unicodeByteCountString)
+                                    size /= 2;     // Unicode string with BYTE count.   Element count is half that.  
                             }
                             else
                                 return "[CANT PARSE STRING]";
-
-                            if (!isAnsi)
-                                size = (ushort)(size / 2);        // Size was a byte count, turn it into a char count. 
                         }
-                        else if (size > 0x8000)
+                        else if (size > 0x8000)     // What is this? looks like a hack.  
                         {
                             size -= 0x8000;
                             isAnsi = true;
@@ -877,11 +879,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 int index = int.Parse(m.Groups[1].Value) - 1;
 
-                // If there are byte[] values, we hide the argument for the size that is in the manifest.
-                // Thus we remove it here as well.  
+                // for some array and string values, we remove the length field.  Account
+                // for that when we are resolving the %X qualifers.   
                 for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
-                    if (payloadFetches[i].Size == DynamicTraceEventData.SIZE32_PREFIX && payloadFetches[i].Array != null)
+                {
+                    if ((payloadFetches[i].Size & DynamicTraceEventData.CONSUMES_FIELD) != 0)
                         --index;
+                }
 
                 if ((uint)index < (uint)PayloadNames.Length)
                     return PayloadString(index, formatProvider);
@@ -930,19 +934,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             var arrayCount = arrayInfo.FixedCount;
             if (arrayCount == 0)
             {
-                if (payloadFetch.Size == DynamicTraceEventData.SIZE16_PREFIX)
+                // Arrays are not strings and thus should not have the ANSI bit set.  
+                Debug.Assert((payloadFetch.Size & IS_ANSI) == 0);
+                // Arrays never use a byte count.  
+                Debug.Assert((payloadFetch.Size & ELEM_COUNT) != 0);
+
+                if (DynamicTraceEventData.IsCountedSize(payloadFetch.Size))
                 {
-                    arrayCount = (ushort)GetInt16At(offset);
-                    offset += 2;
-                }
-                else if ((payloadFetch.Size == DynamicTraceEventData.SIZE16_PRECEEDS))
-                    arrayCount = (ushort)GetInt16At(offset - 2);
-                else if (payloadFetch.Size == DynamicTraceEventData.SIZE32_PRECEEDS)
-                    arrayCount = GetInt32At(offset - 4);
-                else if ((payloadFetch.Size == DynamicTraceEventData.SIZE32_PREFIX))
-                {
-                    arrayCount = GetInt32At(offset);
-                    offset += 4;
+                    if (((payloadFetch.Size & DynamicTraceEventData.BIT_32) != 0))
+                    {
+                        arrayCount = GetInt32At(offset);
+                        offset += 4;
+                    }
+                    else
+                    {
+                        arrayCount = GetInt16At(offset);
+                        offset += 2;
+                    }
                 }
                 else
                 {
@@ -987,14 +995,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     return SkipUTF8String(offset);
                 else if (size == POINTER_SIZE)
                     return offset + PointerSize;
-                else if ((size & ~IS_ANSI) == SIZE32_PRECEEDS)
-                    return offset + GetInt32At(offset - 4);
-                else if ((size & ~IS_ANSI) == SIZE16_PRECEEDS)
-                    return offset + (ushort)GetInt16At(offset - 2);
-                else if ((size & ~IS_ANSI) == SIZE32_PREFIX)
-                    return offset + GetInt32At(offset) + 4;
-                else if ((size & ~IS_ANSI) == SIZE16_PREFIX)
-                    return offset + (ushort)(GetInt16At(offset) + 2);
+                else if (IsCountedSize(size) && payloadFetch.Type == typeof(string))
+                {
+                    int elemSize;
+                    if (((size & BIT_32) != 0))
+                    {
+                        elemSize = GetInt32At(offset);
+                        offset += 4;        // skip size;
+                    }
+                    else
+                    {
+                        elemSize = GetInt16At(offset);
+                        offset += 2;        // skip size;
+                    }
+                    if ((size & IS_ANSI) == 0 && (size & ELEM_COUNT) != 0)
+                        elemSize *= 2;     // Counted (not byte counted) unicode string. chars are 2 wide. 
+                    return offset + elemSize;
+                }
                 else
                     return ushort.MaxValue;     // Something sure to fail 
             }
@@ -1033,22 +1050,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        internal const ushort IS_ANSI = 1;                              // A bit mask that represents the string is ASCII 
-        // NULL_TERMINATED | IS_ANSI == MaxValue 
-        internal const ushort NULL_TERMINATED = ushort.MaxValue - 1;
-        // SIZE32_PRECEEDS | IS_ANSI == MaxValue - 2
-        internal const ushort SIZE32_PRECEEDS = ushort.MaxValue - 3;   // binary, BYTE Count is a 32 bit int directly before
-        // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 4
-        internal const ushort SIZE16_PRECEEDS = ushort.MaxValue - 5;   // binary, BYTE Count is a 16 bit uint directly before this offset
-        // SIZE16_PREFIX | IS_ANSI == MaxValue - 6
-        internal const ushort SIZE16_PREFIX = ushort.MaxValue - 7;     // binary/strings BYTE Count is a 16 bit uint at this offset followed by data.  ALso used for arrays, where it is the COUNT of elements.  
-        // SIZE16_PREFIX | IS_ANSI == MaxValue - 8
-        internal const ushort SIZE32_PREFIX = ushort.MaxValue - 9;     // binary BYTE Count is a 32 bit int at this offset followed by data. 
-        // SIZE16_PRECEEDS | IS_ANSI == MaxValue - 10
+        // The following 4 bits are used to modify the 'VARSIZE' constant 
+        internal const ushort IS_ANSI = 1;        // If set the string is ASCII, unset is UNICODE 
+        internal const ushort BIT_32 = 2;         // If set the count is a 32 bit number.  unset is 16 bit
+        internal const ushort CONSUMES_FIELD = 4; // If set there was a explicit count field in the manifest, unset means no explicit field 
+        internal const ushort ELEM_COUNT = 8;     // If set count is a char/element count.  unset means count is a count of BYTES.  Does not include the size prefix itself  
 
-        internal const ushort POINTER_SIZE = ushort.MaxValue - 14;      // It is the pointer size of the target machine. 
-        internal const ushort UNKNOWN_SIZE = ushort.MaxValue - 15;      // Generic unknown.
-        internal const ushort SPECIAL_SIZES = ushort.MaxValue - 15;     // Some room for growth.  
+        internal static bool IsNullTerminated(ushort size) { return (size & ~IS_ANSI) == NULL_TERMINATED; }
+        internal static bool IsCountedSize(ushort size) { return size >= COUNTED_SIZE; }
+        // These are special sizes 
+        // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
+        internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceeded the data, bits above tell more.   
+
+        // Size 0xFFEF is NULL_TERMINATED | IS_ANSI
+        internal const ushort NULL_TERMINATED = 0xFFEE; // value is a null terminated string.   
+
+        internal const ushort POINTER_SIZE = 0xFFED;        // It is the pointer size of the target machine. 
+        internal const ushort UNKNOWN_SIZE = 0xFFEC;        // Generic unknown.
+        internal const ushort SPECIAL_SIZES = UNKNOWN_SIZE; // This is always the smallest size as an unsiged number.    
 
         internal struct PayloadFetch
         {
@@ -1147,12 +1166,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     case RegisteredTraceEventParser.TdhInputType.CountedUtf16String:
                     case RegisteredTraceEventParser.TdhInputType.CountedString:
                         Type = typeof(string);
-                        Size = DynamicTraceEventData.SIZE16_PREFIX;
+                        Size = DynamicTraceEventData.COUNTED_SIZE;  // Unicode, 16 bit, byteCount
                         break;
                     case RegisteredTraceEventParser.TdhInputType.CountedAnsiString:
                     case RegisteredTraceEventParser.TdhInputType.CountedMbcsString:
                         Type = typeof(string);
-                        Size = DynamicTraceEventData.SIZE16_PREFIX | DynamicTraceEventData.IS_ANSI;
+                        Size = DynamicTraceEventData.COUNTED_SIZE | DynamicTraceEventData.IS_ANSI + DynamicTraceEventData.ELEM_COUNT; // 16 Bit. 
                         break;
                     case RegisteredTraceEventParser.TdhInputType.Struct:
                         Type = typeof(DynamicTraceEventData.StructValue);
@@ -1172,11 +1191,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// Returns a payload fetch for a Array.   If you know the count, then you can give it. 
             /// </summary>
-            public static PayloadFetch ArrayPayloadFetch(ushort offset, PayloadFetch element, ushort fixedCount = 0)
+            public static PayloadFetch ArrayPayloadFetch(ushort offset, PayloadFetch element, ushort size, ushort fixedCount = 0)
             {
                 var ret = new PayloadFetch();
                 ret.Offset = offset;
-                ret.Size = DynamicTraceEventData.SIZE16_PRECEEDS;
+                ret.Size = size;
                 ret.info = new PayloadFetchArrayInfo() { Element = element, FixedCount = fixedCount };
                 return ret;
             }
@@ -2000,8 +2019,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             ret.payloadNames.RemoveAt(prevFieldIdx);
                             ret.payloadFetches.RemoveAt(prevFieldIdx);
 
-                            fieldFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, fieldFetch);
-                            size = fieldFetch.Size = DynamicTraceEventData.SIZE32_PREFIX;      // Now the length is a prefix to the bytes. 
+                            // Now the length is a prefix to the bytes. 
+                            ushort fetchSize = DynamicTraceEventData.COUNTED_SIZE + DynamicTraceEventData.BIT_32 + DynamicTraceEventData.CONSUMES_FIELD + DynamicTraceEventData.ELEM_COUNT;
+                            fieldFetch = DynamicTraceEventData.PayloadFetch.ArrayPayloadFetch(offset, fieldFetch, fetchSize);
+                            size = fieldFetch.Size;
                         }
                         else
                         {
