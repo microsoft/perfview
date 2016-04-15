@@ -1071,15 +1071,15 @@ namespace FastSerialization
         /// <summary>
         /// Read a Guid from the stream
         /// </summary>
-        public void Read(out Guid ret)
+        public unsafe void Read(out Guid ret)
         {
 #if DEBUG
             StreamLabel label = reader.Current;
 #endif
-            byte[] bytes = new byte[16];
-            for (int i = 0; i < bytes.Length; i++)
+            byte* bytes = stackalloc byte[16];
+            for (int i = 0; i < 16; i++)
                 bytes[i] = reader.ReadByte();
-            ret = new Guid(bytes);
+            ret = *((Guid*)bytes);
 #if DEBUG
             Log("<ReadGuid Value=\"" + ret.ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
