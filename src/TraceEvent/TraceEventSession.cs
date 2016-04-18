@@ -2277,9 +2277,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// Returns true if 'providerGuid' can be an eventSource.   If it says true, there is a 1/16 chance it is not.  
         /// However if it returns false, it is definitely not following EventSource Guid generation conventions.
         /// </summary>
-        public static bool MaybeAnEventSource(Guid providerGuid)
+        public unsafe static bool MaybeAnEventSource(Guid providerGuid)
         {
-            byte octet7 = providerGuid.ToByteArray()[7];
+            byte octet7 = ((byte*)(&providerGuid))[7];
             if ((octet7 & 0xF0) == 0x50)
                 return true;
             // FrameworkEventSource predated the Guid selection convention that most eventSources use.  
