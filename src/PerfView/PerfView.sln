@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent", "..\traceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
 EndProject
@@ -16,9 +16,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Zip", "..\Zip\Zip.csproj", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4068F9B-607A-4531-98A8-DE9B392C2D2C}"
 	ProjectSection(SolutionItems) = preProject
+		..\..\CONTRIBUTING.md = ..\..\CONTRIBUTING.md
 		Local.testsettings = Local.testsettings
-		PerfView2.vsmdi = PerfView2.vsmdi
 		..\..\README.md = ..\..\README.md
+		..\..\STANDARDS.md = ..\..\STANDARDS.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpInterface", "..\HeapDumpInterface\HeapDumpInterface.csproj", "{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}"
