@@ -72,5 +72,5 @@ When in doubt, make your code look like the code around it.   You can't
 go too far wrong if you do that.   
 
 ## See Also
-* [PerfView ReadMe](README.md)
-* [PerfView Contribution Guide](CONTRIBUTING.md)
+* [PerfView ReadMe](../README.md)
+* [PerfView Contribution Guide](../CONTRIBUTING.md)
