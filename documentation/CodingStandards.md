@@ -71,6 +71,6 @@ to keep it that way.  Here is what is expected.
 When in doubt, make your code look like the code around it.   You can't
 go too far wrong if you do that.   
 
-## See Also
-* [PerfView ReadMe](README.md)
-* [PerfView Contribution Guide](CONTRIBUTING.md)
+#### See Also
+* [PerfView ReadMe](../README.md)
+* [PerfView Contribution Guide](../CONTRIBUTING.md)
