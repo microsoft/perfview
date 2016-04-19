@@ -46,8 +46,7 @@ You can get a lot of value out of the source code base simply by being able to b
 through it or make add a local, specialized feature.    But the real power of open source software happens when
 you contribute back to shared code base and thus help the community as a whole.   **while we encourage this it 
 requires significantly more effort on your part**.   If you are interested in stepping up, see the 
-[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](STANDARDS.md) before you start.   
-
+[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start.  
 ###Code Organization 
 
 The code is broken in several main sections:

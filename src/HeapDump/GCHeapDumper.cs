@@ -1108,7 +1108,7 @@ public class GCHeapDumper
                 if (retryScale != 1)
                 {
                     m_maxNodeCount = m_maxNodeCount / retryScale;
-                    m_log.WriteLine("We are REtrying the dump so we scale the max by {0} to the value {1}}", retryScale, m_maxNodeCount);
+                    m_log.WriteLine("We are retrying the dump so we scale the max by {0} to the value {1}", retryScale, m_maxNodeCount);
                 }
 
                 // We assume that object on average are 8 object pointers.      
