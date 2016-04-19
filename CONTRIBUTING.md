@@ -63,7 +63,7 @@ there was.    There is more work than just modifying the code.
 
 ##Coding Standards
 
-See [PerfView Coding Standards](STANDARDS.md). 
+See [PerfView Coding Standards](documentation/CodingStandards.md). 
 
 ##Testing and Contributing tests
 
