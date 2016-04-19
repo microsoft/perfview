@@ -867,7 +867,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_callStacks = new GrowableArray<CallStackInfo>(estNumCallStacks);
             m_moduleIntern = new Dictionary<string, StackSourceModuleIndex>(estNumModules);
             m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
-            m_callStackIntern = new Dictionary<CallStackInfo, StackSourceCallStackIndex>(estNumCallStacks);
+            m_callStackIntern = new CallStackInternMap(OnCallStackInterned);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
                 frameStartIndex = StackSourceFrameIndex.Start;
@@ -1056,15 +1056,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceCallStackIndex CallStackIntern(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex callerIndex)
         {
-            StackSourceCallStackIndex ret;
-            CallStackInfo callStack = new CallStackInfo(frameIndex, callerIndex);
-            if (!m_callStackIntern.TryGetValue(callStack, out ret))
-            {
-                ret = (StackSourceCallStackIndex)(m_callStacks.Count + m_callStackStartIndex);
-                m_callStacks.Add(callStack);
-                m_callStackIntern.Add(callStack, ret);
-            }
-            return ret;
+            return m_callStackIntern.GetOrAdd(frameIndex, callerIndex) + m_callStackStartIndex;
+        }
+
+        private void OnCallStackInterned(CallStackInfo info)
+        {
+            m_callStacks.Add(info);
         }
 
         /// <summary>
@@ -1125,7 +1122,177 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 return frameIndex == other.frameIndex && callerIndex == other.callerIndex;
             }
-        };
+        }
+
+        /// <summary>
+        /// A specialized dictionary for interning call-stacks (recognizing when we've seen them before).
+        /// Its distilled from the implementation of <see cref="Dictionary{TKey, TValue}"/> but with several
+        /// key optimizations:
+        /// 1. We don't store the hashcode on each entry since the key is a trivial pair of ints which can
+        ///    be compared quickly. The only downside to that is that the hash codes must be recomputed
+        ///    whenever the map is resized.
+        /// 2. We supply a single "GetOrAdd" method (instead of a TryGetValue followed by an Add) so that
+        ///    a hashcode computation is saved in the case of a "miss".
+        /// 3. We don't support removal. Which means we don't need to keep track of a free list and neither
+        ///    do we need sentinel values. This also allows us to use all 32 bits of the hash-code (where
+        ///    <see cref="Dictionary{TKey, TValue}"/> uses only 31 bits, reserving -1 to indicate a free
+        ///    entry.
+        /// 4. We don't actually store a value! As it happens, the values stored for each key is just an
+        ///    index into a parallel CallStacks array. Since entries are never removed, the value is just
+        ///    the index into the <see cref="_entries"/> array.
+        /// </summary>
+        private class CallStackInternMap
+        {
+            public CallStackInternMap(Action<CallStackInfo> callStackAdder)
+            {
+                _stackAdder = callStackAdder;
+                Resize(HashHelpers.ExpandPrime(0));
+            }
+
+            public int GetOrAdd(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex callerIndex)
+            {
+                int hashCode = (int)frameIndex ^ (int)callerIndex;
+                int targetBucket = hashCode % _buckets.Length;
+                int index;
+                for (index = _buckets[targetBucket]; index >= 0; index = _entries[index]._next)
+                {
+                    if (_entries[index]._frameIndex == frameIndex && _entries[index]._callerIndex == callerIndex)
+                    {
+                        // Found
+                        return index;
+                    }
+                }
+
+                // Not found
+                _stackAdder(new CallStackInfo(frameIndex, callerIndex));
+
+                // Grow if necessary
+                if (_count == _entries.Length)
+                {
+                    Resize();
+                    targetBucket = hashCode % _buckets.Length;
+                }
+
+                index = _count++;
+                _entries[index]._frameIndex = frameIndex;
+                _entries[index]._callerIndex = callerIndex;
+                _entries[index]._next = _buckets[targetBucket];
+                _buckets[targetBucket] = index;
+                return index;
+            }
+
+            private void Resize()
+            {
+                Resize(HashHelpers.ExpandPrime(_count));
+            }
+
+            private void Resize(int newSize)
+            {
+                var newBuckets = new int[newSize];
+                for (int i = 0; i < newBuckets.Length; i++)
+                {
+                    newBuckets[i] = -1;
+                }
+
+                var newEntries = new Entry[newSize];
+                if (_entries != null)
+                {
+                    Array.Copy(_entries, 0, newEntries, 0, _count);
+                    for (int i = 0; i < _count; i++)
+                    {
+                        int hashCode = (int)newEntries[i]._frameIndex ^ (int)newEntries[i]._callerIndex;
+                        int bucket = hashCode % newSize;
+                        newEntries[i]._next = newBuckets[bucket];
+                        newBuckets[bucket] = i;
+                    }
+                }
+
+                _buckets = newBuckets;
+                _entries = newEntries;
+            }
+
+            private static class HashHelpers
+            {
+                public static int ExpandPrime(int oldSize)
+                {
+                    int newSize = 2 * oldSize;
+
+                    // Allow the hashtables to grow to maximum possible size (~2G elements) before encoutering capacity overflow.
+                    // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
+                    if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
+                    {
+                        return MaxPrimeArrayLength;
+                    }
+
+                    return GetPrime(newSize);
+                }
+
+                /// <summary>
+                /// Prime numbers such that each value is definitely larger then 2 times its predecessor (supports geometric growth)
+                /// </summary>
+                private static readonly int[] s_primes =
+                {
+                    7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353, 75431, 156437, 324449, 672827, 1395263, 2893249, 5999471
+                };
+
+                // This is the maximum prime smaller than Array.MaxArrayLength
+                private const int MaxPrimeArrayLength = 0x7FEFFFFD;
+                private const int HashPrime = 101;
+
+                private static bool IsPrime(int candidate)
+                {
+                    if ((candidate & 1) != 0)
+                    {
+                        int limit = (int)Math.Sqrt(candidate);
+                        for (int divisor = 3; divisor <= limit; divisor += 2)
+                        {
+                            if ((candidate % divisor) == 0)
+                                return false;
+                        }
+                        return true;
+                    }
+                    return (candidate == 2);
+                }
+
+                /// <summary>
+                /// Returns a prime number at least as large as <paramref name="min"/>
+                /// </summary>
+                /// <param name="min">The minimum size of the requested prime number.</param>
+                /// <returns>A prime number greater than or equal to <paramref name="min"/>.</returns>
+                private static int GetPrime(int min)
+                {
+                    foreach (var prime in s_primes)
+                    {
+                        if (prime >= min)
+                        {
+                            return prime;
+                        }
+                    }
+
+                    //outside of our predefined table. 
+                    //compute the hard way. 
+                    for (int i = (min | 1); i < Int32.MaxValue; i += 2)
+                    {
+                        if (IsPrime(i) && ((i - 1) % HashPrime != 0))
+                            return i;
+                    }
+
+                    return min;
+                }
+            }
+
+            private struct Entry
+            {
+                public StackSourceFrameIndex _frameIndex;
+                public StackSourceCallStackIndex _callerIndex;
+                public int _next;        // Index of next entry, -1 if last
+            }
+
+            private int[] _buckets;
+            private Entry[] _entries;
+            private int _count;
+            private readonly Action<CallStackInfo> _stackAdder;
+        }
 
         // maps (moduleIndex - m_moduleStackStartIndex) to module name 
         private GrowableArray<string> m_modules;
@@ -1136,16 +1303,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         // Only needed during reading
         // Given a Call Stack index, return the list of call stack indexes that that routine calls.  
-        private Dictionary<CallStackInfo, StackSourceCallStackIndex> m_callStackIntern;
+        private CallStackInternMap m_callStackIntern;
         private Dictionary<FrameInfo, StackSourceFrameIndex> m_frameIntern;
         private Dictionary<string, StackSourceModuleIndex> m_moduleIntern;
         StackSourceModuleIndex m_emptyModuleIdx;
 
         // To allow the interner to 'open' an existing stackSource, we make it flexible about where indexes start.
         // The typical case these are all 0.  
-        private StackSourceFrameIndex m_frameStartIndex;
-        private StackSourceCallStackIndex m_callStackStartIndex;
-        private StackSourceModuleIndex m_moduleStackStartIndex;
+        private readonly StackSourceFrameIndex m_frameStartIndex;
+        private readonly StackSourceCallStackIndex m_callStackStartIndex;
+        private readonly StackSourceModuleIndex m_moduleStackStartIndex;
         #endregion
     }
 }
