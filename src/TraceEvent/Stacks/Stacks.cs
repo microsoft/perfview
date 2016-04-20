@@ -864,10 +864,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             m_modules = new GrowableArray<string>(estNumModules);
             m_frames = new GrowableArray<FrameInfo>(estNumFrames);
-            m_callStacks = new GrowableArray<CallStackInfo>(estNumCallStacks);
             m_moduleIntern = new Dictionary<string, StackSourceModuleIndex>(estNumModules);
             m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
-            m_callStackIntern = new CallStackInternMap(OnCallStackInterned);
+            m_callStackIntern = new CallStackInternMap(estNumCallStacks);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
                 frameStartIndex = StackSourceFrameIndex.Start;
@@ -889,7 +888,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             m_moduleIntern = null;
             m_frameIntern = null;
-            m_callStackIntern = null;
+            m_callStackIntern.DoneInterning();
         }
 
         /// <summary>
@@ -908,7 +907,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex)
         {
-            return m_callStacks[callStackIndex - m_callStackStartIndex].callerIndex;
+            return m_callStackIntern[callStackIndex - m_callStackStartIndex].callerIndex;
         }
         /// <summary>
         /// Given a StackSourceCallStackIndex return the StackSourceFrameIndex for the Frame associated
@@ -916,7 +915,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex)
         {
-            return m_callStacks[callStackIndex - m_callStackStartIndex].frameIndex;
+            return m_callStackIntern[callStackIndex - m_callStackStartIndex].frameIndex;
         }
         /// <summary>
         /// Get a name from a frame index.  If the frame index is a 
@@ -1056,12 +1055,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceCallStackIndex CallStackIntern(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex callerIndex)
         {
-            return m_callStackIntern.GetOrAdd(frameIndex, callerIndex) + m_callStackStartIndex;
-        }
-
-        private void OnCallStackInterned(CallStackInfo info)
-        {
-            m_callStacks.Add(info);
+            return m_callStackIntern.Intern(new CallStackInfo(frameIndex, callerIndex)) + m_callStackStartIndex;
         }
 
         /// <summary>
@@ -1071,7 +1065,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The current number of unique call stacks that have been interned so far
         /// </summary>
-        public int CallStackCount { get { return m_callStacks.Count; } }
+        public int CallStackCount { get { return m_callStackIntern.Count; } }
 
         #region private
         private struct FrameInfo : IEquatable<FrameInfo>
@@ -1125,85 +1119,156 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
-        /// A specialized dictionary for interning call-stacks (recognizing when we've seen them before).
-        /// Its distilled from the implementation of <see cref="Dictionary{TKey, TValue}"/> but with several
-        /// key optimizations:
+        /// A specialized hash table for interning call-stacks (recognizing when we've seen them before).
+        /// It loosely follows the implementation of <see cref="Dictionary{TKey, TValue}"/> but with
+        /// several key allowances for the known usage:
         /// 1. We don't store the hashcode on each entry since the key is a trivial pair of ints which can
-        ///    be compared quickly. The only downside to that is that the hash codes must be recomputed
-        ///    whenever the map is resized.
-        /// 2. We supply a single "GetOrAdd" method (instead of a TryGetValue followed by an Add) so that
-        ///    a hashcode computation is saved in the case of a "miss".
-        /// 3. We don't support removal. Which means we don't need to keep track of a free list and neither
+        ///    be compared quickly. The downside to that is that the hash codes must be recomputed
+        ///    whenever the map is resized, but that is very cheap.
+        /// 2. We supply a single <see cref="Intern(CallStackInfo)"/> method (instead of a TryGetValue
+        ///    followed by an Add) so that a hashcode computation is saved in the case of a "miss".
+        /// 3. We don't support removal. This means we don't need to keep track of a free list and neither
         ///    do we need sentinel values. This also allows us to use all 32 bits of the hash-code (where
-        ///    <see cref="Dictionary{TKey, TValue}"/> uses only 31 bits, reserving -1 to indicate a free
-        ///    entry.
-        /// 4. We don't actually store a value! As it happens, the values stored for each key is just an
-        ///    index into a parallel CallStacks array. Since entries are never removed, the value is just
-        ///    the index into the <see cref="_entries"/> array.
+        ///    <see cref="Dictionary{TKey, TValue}"/> uses only 31 bits, reserving -1 to indicate a freed
+        ///    entry. The only sentinel value is in the <see cref="_buckets"/> array to indicate a free
+        ///    bucket.
+        /// 4. We return an index (of the interned item) to the caller which can be used for constant-time
+        ///    look-up in the table via <see cref="this[int]"/>.
+        /// 5. To free up memory, the caller can call <see cref="DoneInterning"/>. The entries themselves
+        ///    are stored separately from the indexing parts of the table so that the latter can be dropped
+        ///    easily.
         /// </summary>
         private class CallStackInternMap
         {
-            public CallStackInternMap(Action<CallStackInfo> callStackAdder)
+            /// <summary>
+            /// Construct the intern map
+            /// </summary>
+            /// <param name="initialCapacity">The estimated capacity of the map.</param>
+            public CallStackInternMap(int initialCapacity = 0)
             {
-                _stackAdder = callStackAdder;
-                Resize(HashHelpers.ExpandPrime(0));
+                Resize(desiredSize: initialCapacity);
             }
 
-            public int GetOrAdd(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex callerIndex)
+            /// <summary>
+            /// Count of interned call stack infos.
+            /// </summary>
+            public int Count
             {
-                int hashCode = (int)frameIndex ^ (int)callerIndex;
-                int targetBucket = hashCode % _buckets.Length;
-                int index;
-                for (index = _buckets[targetBucket]; index >= 0; index = _entries[index]._next)
+                get { return _count; }
+            }
+
+            /// <summary>
+            /// Access a <see cref="CallStackInfo"/> by index.
+            /// </summary>
+            /// <param name="index">The zero-based index of the desired entry.</param>
+            /// <returns>The entry at the requested index.</returns>
+            /// <remarks>For performance, in Release mode we do no range checking on <paramref name="index"/>, so it is possible to
+            /// access an entry beyond <see cref="Count"/> but prior to the maximum capacity of the array.</remarks>
+            /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> was less than zero or greater than the capacity.</exception>
+            public CallStackInfo this[int index]
+            {
+                get
                 {
-                    if (_entries[index]._frameIndex == frameIndex && _entries[index]._callerIndex == callerIndex)
+                    Debug.Assert(index < _count);
+                    return _entries[index];
+                }
+            }
+
+            /// <summary>
+            /// Intern a <see cref="CallStackInfo"/>. If the same value has been seen before
+            /// then this returns the index of the previously seen entry. If not, a new entry
+            /// is added and this returns the index of the newly added entry.
+            /// </summary>
+            /// <param name="info">The candidate value.</param>
+            /// <returns>The index of the interned entry.</returns>
+            /// <exception cref="NullReferenceException">This routine was called after calling <see cref="DoneInterning"/>.</exception>
+            public int Intern(CallStackInfo info)
+            {
+                int targetBucket = BucketNumberFromInfo(info);
+                int index;
+                for (index = _buckets[targetBucket]._entry; index >= 0; index = _buckets[index]._nextBucket)
+                {
+                    if (_entries[index].Equals(info))
                     {
                         // Found
                         return index;
                     }
                 }
 
-                // Not found
-                _stackAdder(new CallStackInfo(frameIndex, callerIndex));
-
                 // Grow if necessary
                 if (_count == _entries.Length)
                 {
-                    Resize();
-                    targetBucket = hashCode % _buckets.Length;
+                    Resize(_count * 2); // Simple doubling (geometric growth)
+                    targetBucket = BucketNumberFromInfo(info);
                 }
 
                 index = _count++;
-                _entries[index]._frameIndex = frameIndex;
-                _entries[index]._callerIndex = callerIndex;
-                _entries[index]._next = _buckets[targetBucket];
-                _buckets[targetBucket] = index;
+                _entries[index] = info;
+                _buckets[index]._nextBucket = _buckets[targetBucket]._entry;
+                _buckets[targetBucket]._entry = index;
                 return index;
             }
 
-            private void Resize()
+            /// <summary>
+            /// As an optimization, if you are done calling <see cref="Intern(CallStackInfo)"/>, then you can call this
+            /// to free up some memory.
+            /// </summary>
+            /// <remarks>After calling this, you can still call <see cref="this[int]"/>. However, if you try to
+            /// call <see cref="Intern(CallStackInfo)"/> you will get a <see cref="NullReferenceException"/>.</remarks>
+            public void DoneInterning()
             {
-                Resize(HashHelpers.ExpandPrime(_count));
+                _buckets = null;
+
+                // Trim _entries if it's less than 75% full.
+                if (_count < (_entries.LongLength * 3L / 4L))
+                {
+                    Array.Resize(ref _entries, _count);
+                }
             }
 
-            private void Resize(int newSize)
+            private int BucketNumberFromInfo(CallStackInfo info)
             {
-                var newBuckets = new int[newSize];
-                for (int i = 0; i < newBuckets.Length; i++)
+                return BucketNumberFromInfo(info, _buckets.Length);
+            }
+
+            private static int BucketNumberFromInfo(CallStackInfo info, int bucketCount)
+            {
+                int hashCode = info.GetHashCode();
+                uint targetBucket = (uint)hashCode % (uint)bucketCount;
+                return (int)targetBucket;
+            }
+
+            private void Resize(int desiredSize)
+            {
+                // This is the maximum prime smaller than Array.MaxArrayLength
+                const int MaxPrimeArrayLength = 0x7FEFFFFD;
+
+                int newSize;
+                if ((uint)desiredSize > MaxPrimeArrayLength && MaxPrimeArrayLength > _count)
                 {
-                    newBuckets[i] = -1;
+                    newSize = MaxPrimeArrayLength;
+                }
+                else
+                {
+                    newSize = HashHelpers.GetPrime(desiredSize);
                 }
 
-                var newEntries = new Entry[newSize];
+                var newBuckets = new Bucket[newSize];
+                for (int i = 0; i < newBuckets.Length; i++)
+                {
+                    newBuckets[i]._entry = -1;
+                }
+
+                var newEntries = new CallStackInfo[newSize];
                 if (_entries != null)
                 {
                     Array.Copy(_entries, 0, newEntries, 0, _count);
+                    // Regenerate the index
                     for (int i = 0; i < _count; i++)
                     {
-                        int hashCode = (int)newEntries[i]._frameIndex ^ (int)newEntries[i]._callerIndex;
-                        int bucket = hashCode % newSize;
-                        newEntries[i]._next = newBuckets[bucket];
-                        newBuckets[bucket] = i;
+                        int bucket = BucketNumberFromInfo(newEntries[i], newSize);
+                        newBuckets[i]._nextBucket = newBuckets[bucket]._entry;
+                        newBuckets[bucket]._entry = i;
                     }
                 }
 
@@ -1213,30 +1278,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             private static class HashHelpers
             {
-                public static int ExpandPrime(int oldSize)
-                {
-                    int newSize = 2 * oldSize;
-
-                    // Allow the hashtables to grow to maximum possible size (~2G elements) before encoutering capacity overflow.
-                    // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-                    if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
-                    {
-                        return MaxPrimeArrayLength;
-                    }
-
-                    return GetPrime(newSize);
-                }
-
-                /// <summary>
-                /// Prime numbers such that each value is definitely larger then 2 times its predecessor (supports geometric growth)
-                /// </summary>
-                private static readonly int[] s_primes =
-                {
-                    7, 17, 37, 89, 197, 431, 919, 1931, 4049, 8419, 17519, 36353, 75431, 156437, 324449, 672827, 1395263, 2893249, 5999471
+                // Table of prime numbers to use as hash table sizes. 
+                private static readonly int[] s_primes = {
+                    3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
+                    1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591,
+                    17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437,
+                    187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263,
+                    1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369
                 };
 
-                // This is the maximum prime smaller than Array.MaxArrayLength
-                private const int MaxPrimeArrayLength = 0x7FEFFFFD;
                 private const int HashPrime = 101;
 
                 private static bool IsPrime(int candidate)
@@ -1259,7 +1309,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 /// </summary>
                 /// <param name="min">The minimum size of the requested prime number.</param>
                 /// <returns>A prime number greater than or equal to <paramref name="min"/>.</returns>
-                private static int GetPrime(int min)
+                public static int GetPrime(int min)
                 {
                     foreach (var prime in s_primes)
                     {
@@ -1281,29 +1331,26 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 }
             }
 
-            private struct Entry
+            private struct Bucket
             {
-                public StackSourceFrameIndex _frameIndex;
-                public StackSourceCallStackIndex _callerIndex;
-                public int _next;        // Index of next entry, -1 if last
+                public int _entry; // Index into the _entries table of the head item in this bucket. -1 indicates an empty bucket.
+                public int _nextBucket;  // Index into the _buckets table of the next item.
             }
 
-            private int[] _buckets;
-            private Entry[] _entries;
+            private Bucket[] _buckets;
+            private CallStackInfo[] _entries;
             private int _count;
-            private readonly Action<CallStackInfo> _stackAdder;
         }
 
         // maps (moduleIndex - m_moduleStackStartIndex) to module name 
         private GrowableArray<string> m_modules;
         // maps (frameIndex - m_frameStartIndex) to frame information
         private GrowableArray<FrameInfo> m_frames;
-        // mapx (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)
-        private GrowableArray<CallStackInfo> m_callStacks;
 
-        // Only needed during reading
         // Given a Call Stack index, return the list of call stack indexes that that routine calls.  
-        private CallStackInternMap m_callStackIntern;
+        // Also maps (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)
+        private readonly CallStackInternMap m_callStackIntern;
+
         private Dictionary<FrameInfo, StackSourceFrameIndex> m_frameIntern;
         private Dictionary<string, StackSourceModuleIndex> m_moduleIntern;
         StackSourceModuleIndex m_emptyModuleIdx;
