@@ -206,7 +206,7 @@ namespace FastSerialization
         /// 
         /// Call 'GetBytes' call to get the raw array.  Only the first 'Length' bytes are valid
         /// </summary>
-        public MemoryStreamWriter(int initialSize=64)
+        public MemoryStreamWriter(int initialSize = 64)
         {
             bytes = new byte[initialSize];
         }
@@ -233,7 +233,7 @@ namespace FastSerialization
         /// The the array that holds the serialized data.   
         /// </summary>
         /// <returns></returns>
-        public virtual byte[] GetBytes() { return bytes; } 
+        public virtual byte[] GetBytes() { return bytes; }
 
         /// <summary>
         /// Clears any data that was previously written.  
@@ -381,7 +381,7 @@ namespace FastSerialization
         internal /* protected */ int endPosition;
         #endregion
     }
-#else 
+#else
     /// <summary>
     /// A StreamWriter is an implementation of the IStreamWriter interface that generates a byte[] array. 
     /// </summary>
@@ -651,7 +651,7 @@ namespace FastSerialization
             lock (inputStream)
             {
                 inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
-                for (; ; )
+                for (;;)
                 {
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
                     int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
@@ -687,7 +687,8 @@ namespace FastSerialization
         /// </summary>
         public PinnedStreamReader(string fileName, int bufferSize = defaultBufferSize)
             : this(new FileStream(fileName, FileMode.Open, FileAccess.Read,
-            FileShare.Read | FileShare.Delete), bufferSize) { }
+            FileShare.Read | FileShare.Delete), bufferSize)
+        { }
 
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given System.IO.Stream.  You can optionally set the size of the read buffer.  

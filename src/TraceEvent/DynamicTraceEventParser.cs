@@ -890,20 +890,36 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Replace all %N with the string value for that parameter.  
             return Regex.Replace(MessageFormat, @"%(\d+)", delegate (Match m)
             {
-                int index = int.Parse(m.Groups[1].Value) - 1;
+                int targetIndex = int.Parse(m.Groups[1].Value) - 1;
 
                 // for some array and string values, we remove the length field.  Account
-                // for that when we are resolving the %X qualifers.   
-                for (int i = Math.Min(index, payloadFetches.Length) - 1; 0 <= i; --i)
+                // for that when we are resolving the %X qualifers by searching up from
+                // 0 adjusting along the way for removed fields.  
+                int index = 0;
+                for (int fixedIndex = 0; fixedIndex < payloadFetches.Length; fixedIndex++)
                 {
-                    if ((payloadFetches[i].Size & DynamicTraceEventData.CONSUMES_FIELD) != 0)
-                        --index;
+                    // This field is the length field that was removed from the payloafFetches array. 
+                    if (DynamicTraceEventData.ConsumesFields(payloadFetches[fixedIndex].Size))
+                    {
+                        if (index == targetIndex)
+                        {
+                            // Try to output the correct length by getting the next value and computing its length.  
+                            object obj = PayloadValue(fixedIndex);
+                            string asString = obj as string;
+                            if (asString != null)
+                                return asString.Length.ToString();
+                            Array asArray = obj as Array;
+                            if (asArray != null)
+                                return asArray.Length.ToString();
+                            return ""; // give up and return an empty string.  
+                        }
+                        index++;        // skip the removed field.  
+                    }
+                    if (index == targetIndex)
+                        return PayloadString(fixedIndex, formatProvider);
+                    index++;
                 }
-
-                if ((uint)index < (uint)PayloadNames.Length)
-                    return PayloadString(index, formatProvider);
-                else
-                    return "<<BadFieldIdx>>";
+                return "<<BadFieldIdx>>";
             });
         }
         #endregion
@@ -1063,14 +1079,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        // The following 4 bits are used to modify the 'VARSIZE' constant 
+        // IS_ANSI can be used to modify COUNTED_SIZE as well as NULL_TERMINATED
         internal const ushort IS_ANSI = 1;        // If set the string is ASCII, unset is UNICODE 
+        // The following 3 bits are used to modify the 'COUNTED_SIZE' constant 
         internal const ushort BIT_32 = 2;         // If set the count is a 32 bit number.  unset is 16 bit
         internal const ushort CONSUMES_FIELD = 4; // If set there was a explicit count field in the manifest, unset means no explicit field 
         internal const ushort ELEM_COUNT = 8;     // If set count is a char/element count.  unset means count is a count of BYTES.  Does not include the size prefix itself  
 
         internal static bool IsNullTerminated(ushort size) { return (size & ~IS_ANSI) == NULL_TERMINATED; }
         internal static bool IsCountedSize(ushort size) { return size >= COUNTED_SIZE; }
+
+        internal static bool ConsumesFields(ushort size) { return IsCountedSize(size) && (size & CONSUMES_FIELD) != 0; }
+
         // These are special sizes 
         // sizes from 0xFFF0 through 0xFFFF are variations of VAR_SIZE
         internal const ushort COUNTED_SIZE = 0xFFF0;   // The size is variable.  Size preceeded the data, bits above tell more.   
