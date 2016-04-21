@@ -927,7 +927,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 // Add a frame that shows that we are starting a task 
-                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID);
+                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
                 fullCreationStack = m_outputSource.Interner.CallStackIntern(threadFrameIndex, fullCreationStack);
 
                 // and take the region between creationStackFragment and threadPoolTransition and concatenate it to fullCreationStack.  
