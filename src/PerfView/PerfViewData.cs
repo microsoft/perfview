@@ -6028,7 +6028,11 @@ namespace PerfView
     public partial class LinuxPerfViewData : PerfViewFile
     {
         public override string FormatName { get { return "LTTng"; } }
-        public override string[] FileExtensions { get { return new string[] { ".lttng.zip", ".trace.zip" }; } }
+        /// <summary>
+        ///  TODO FIX NOW, LinuxPerfVIewData needs to be merged with PerfScriptPerfViewFile so there only
+        ///  one thing that knows about a .trace.zip file and 
+        /// </summary>
+        public override string[] FileExtensions { get { return new string[] { ".lttng.zip" /*, ".trace.zip" */ }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
