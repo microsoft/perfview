@@ -1096,6 +1096,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var sb = Utilities.StringBuilderCache.Acquire(64);
 
+                sb.Append(TaskName);
                 sb.Append('(');
                 AppendActivityPath(sb, ActivityID);
 
