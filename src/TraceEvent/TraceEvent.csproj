@@ -123,6 +123,7 @@
     <Compile Include="TraceLog.cs" />
     <Compile Include="Utilities\command.cs" />
     <Compile Include="TraceUtilities\HistoryDictionary.cs" />
+    <Compile Include="Utilities\StringBuilderCache.cs" />
     <Compile Include="WPPTraceEventParser.cs" />
     <Compile Include="ZippedETL.cs" />
     <Compile Include="_README.cs" />
