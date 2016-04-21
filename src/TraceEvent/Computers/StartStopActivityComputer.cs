@@ -534,6 +534,9 @@ namespace Microsoft.Diagnostics.Tracing
             // Get the process, and activity frames. 
             StackSourceCallStackIndex stackIdx = GetStartStopActivityStack(outputStackSource, startStop, topThread.Process);
 
+            // Add "Threads pesudo-node"
+            stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Threads"), stackIdx);
+
             // Add the thread.  
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(topThread.VerboseThreadName), stackIdx);
             return stackIdx;
@@ -588,7 +591,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             if ((sum ^ (uint)processID) == uintPtr[3])  // This is the new style 
-                    return true;
+                return true;
             return (sum == uintPtr[3]);         // THis is old style where we don't make the ID unique machine wide.  
         }
 
@@ -599,7 +602,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             uint* uintPtr = (uint*)&guid;
             uint sum = uintPtr[0] + uintPtr[1] + uintPtr[2] + 0x599D99AD;
-            return (int) (sum ^ uintPtr[3]);
+            return (int)(sum ^ uintPtr[3]);
         }
 
         /// <summary>
@@ -622,6 +625,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 sb.Append("/#");    // Use /# to mark the fact that the first number is a process ID.   
                 sb.Append(processID);
+            }
+            else
+            {
+                sb.Append('/'); // Use // to start to make it easy to anchor
             }
             byte* bytePtr = (byte*)&guid;
             byte* endPtr = bytePtr + 12;
@@ -701,7 +708,7 @@ namespace Microsoft.Diagnostics.Tracing
             return Utilities.StringBuilderCache.GetStringAndRelease(sb);
         }
 
-#region private
+        #region private
         private static readonly Guid MicrosoftWindowsASPNetProvider = new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668");
         private static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
@@ -1064,7 +1071,7 @@ namespace Microsoft.Diagnostics.Tracing
         Dictionary<StartStopKey, StartStopActivity> m_activeStartStopActivities;     // Lookup activities by activityID&ProcessID (we call the start-stop key) at the current time
         int m_nextIndex;                                                             // Used to create unique indexes for StartStopActivity.Index.  
         StartStopActivity m_deferredStop;                                            // We defer doing the stop action until the next event.  This is what remembers to do this.  
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1137,6 +1144,99 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
+
+        private string _knownType = null;
+        /// <summary>
+        /// Known Activity Type
+        /// </summary>
+        public string KnownType
+        {
+            get
+            {
+                if (_knownType == null)
+                {
+                    StringBuilder sb = new StringBuilder();
+
+                    switch (TaskName)
+                    {
+                        case "RecHttp":
+                        case "RecASPRequest":
+                        case "AspNetReq":
+                            {
+                                // ASP.NET
+                                sb.Append("ASP.NET");
+                                break;
+                            }
+                        case "HttpGetRequestStream":
+                        case "HttpGetResponse":
+                            {
+                                // HTTP
+                                sb.Append("HTTP");
+                                if (ExtraInfo != null)
+                                {
+                                    if (ExtraInfo.Contains(".core.windows.net"))
+                                    {
+                                        if (ExtraInfo.Contains(".blob."))
+                                        {
+                                            sb.Append(" (Azure Blob)");
+                                        }
+                                        else if (ExtraInfo.Contains(".table."))
+                                        {
+                                            sb.Append(" (Azure Table)");
+                                        }
+                                        else if (ExtraInfo.Contains(".queue."))
+                                        {
+                                            sb.Append(" (Azure Queue)");
+                                        }
+                                        else if (ExtraInfo.Contains(".file."))
+                                        {
+                                            sb.Append(" (Azure File)");
+                                        }
+                                    }
+                                }
+
+                                break;
+                            }
+                        case "SQLCommand":
+                            {
+                                // SQL
+                                sb.Append("SQL");
+                                if (ExtraInfo != null && ExtraInfo.Contains(".database.windows.net"))
+                                {
+                                    sb.Append(" (Azure Database)");
+                                }
+                                break;
+                            }
+                        case "OperationDispatch":
+                        case "DispatchMessage":
+                        case "WebHostRequest":
+                        case "ClientOperation":
+                            {
+                                // WCF
+                                sb.Append("WCF");
+                                break;
+                            }
+                        case "ActorMethod":
+                        case "ActorSaveState":
+                            {
+                                // Service Fabric
+                                sb.Append("Service Fabric Reliable Actor");
+                                break;
+                            }
+                        default:
+                            {
+                                // Custom
+                                sb.Append(TaskName);
+                                break;
+                            }
+                    }
+
+                    _knownType = sb.Append(" Activities").ToString();
+                }
+
+                return _knownType;
+            }
+        }
         /// <summary>
         /// If the activity has additional information associated with it (e.g. a URL), put it here.  Can be null.
         /// </summary>
@@ -1198,13 +1298,19 @@ namespace Microsoft.Diagnostics.Tracing
         {
             StackSourceCallStackIndex stackIdx = rootStack;
             if (Creator != null)
+            {
                 stackIdx = Creator.GetActivityStack(outputStackSource, stackIdx);
+
+                // Add type name to the list of frames. Skip ASP.NET as it adds unnecessary complexity in most cases
+                if (KnownType != "ASP.NET Activities")
+                    stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(KnownType), stackIdx);
+            }
 
             // Add my name to the list of frames.  
             stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern("Activity " + Name), stackIdx);
             return stackIdx;
         }
-#region private
+        #region private
         /// <summary>
         /// override.   Gives the name and start time.  
         /// </summary>
@@ -1253,7 +1359,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal bool killIfChildDies;            // Used by ASP.NET events in some cases. 
 
         internal Guid unfixedActivityID;          // This can be removed when we don't care about V4.6 runtimes.  
-#endregion
+        #endregion
     };
 
 }

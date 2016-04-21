@@ -332,7 +332,8 @@ namespace Microsoft.Diagnostics.Symbols
                 if (Target == null)
                     return false;
 
-                if (Target.StartsWith("http:/", StringComparison.OrdinalIgnoreCase))
+                if (Target.StartsWith("http:/", StringComparison.OrdinalIgnoreCase)
+                    || Target.StartsWith("https:/", StringComparison.OrdinalIgnoreCase))
                     return true;
                 return false;
             }
