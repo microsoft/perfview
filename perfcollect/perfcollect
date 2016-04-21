@@ -9,6 +9,7 @@
 # ***** HOW TO USE THIS SCRIPT *****
 #
 # This script can be used to collect and view performance data collected with perf_event on Linux.
+
 # It's job is to make it simple to collect performance traces.
 #
 # How to collect a performance trace:
@@ -1209,6 +1210,21 @@ ProcessCollectedData()
 			# in this script when running perf script.
 			chown root $mapFile
 			cp $mapFile .
+
+			local perfinfoFile=${mapFile/perf/perfinfo}
+
+			echo "Attempting to find ${perfinfoFile}"
+
+			if [ -f $perfinfoFile ]
+			then
+				echo "Saving $perfinfoFile"
+				chown root $perfinfoFile
+				cp $perfinfoFile .
+			else
+				RedText
+				echo "Skipping ${perfinfoFile}."
+				ResetText
+			fi
 		else
 			RedText
 			echo "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
@@ -1216,6 +1232,75 @@ ProcessCollectedData()
 		fi
 	done
 	WriteStatus "END: Save perf.map files."
+
+	WriteStatus "START: Generate native image map files"
+
+	# Get the list of loaded images and use the path to libcoreclr.so to find crossgen.
+	# crossgen is expected to sit next to libcoreclr.so.
+	local buildidList=`$perfcmd buildid-list | grep libcoreclr.so | cut -d ' ' -f 2`
+	local crossgenCmd=''
+	local crossgenDir=''
+	for file in $buildidList
+	do
+		crossgenDir=`dirname "${file}"`
+		if [ -f ${crossgenDir}/crossgen ]
+		then
+			crossgenCmd=${crossgenDir}/crossgen
+			echo "Found crossgen at ${crossgenCmd}"
+			break
+		fi
+	done
+
+	OLDIFS=$IFS
+
+	imagePaths=""
+
+	if [ "$crossgenCmd" != "" ]
+	then
+            local perfinfos=`ls . | grep perfinfo | cut -d ' ' -f 2`
+            for perfinfo in $perfinfos
+            do
+                if [ -f $perfinfo ]
+                then
+                    IFS=";"
+                    while read command dll guid; do
+                        if [ $command ]; then
+                            if [ $command = "ImageLoad" ]; then
+                                if [ -f $dll ]; then
+                                    imagePaths="${dll}:${imagePaths}"
+                                fi
+                            fi
+                        fi
+                    done < $perfinfo
+                    IFS=$OLDIFS
+                fi
+            done
+
+            IFS=":"
+            echo "Start generating PerfMaps for native images"
+            for path in $imagePaths
+            do
+                if [ `echo ${path} | grep ^.*\.ni\.dll$` ]
+                then
+                    IFS=""
+                    echo "Generating PerfMap for ${path}"
+                    ${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}
+                    IFS=":"
+                else
+                    echo "Skipping ${path}"
+                fi
+            done
+            echo "Finished generating perfMaps for native images"
+
+	else
+            RedText
+            echo "crossgen not found, skipping native image map generation."
+            ResetText
+	fi
+
+	IFS=$OLDIFS
+
+	WriteStatus "END: Generate native image map files"
 
 	# Create debuginfo files (separate symbols) for all modules in the trace.
 	WriteStatus "START: Save Symbols"
