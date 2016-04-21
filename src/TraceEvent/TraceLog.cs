@@ -1205,7 +1205,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
 
                         CallStackIndex callStackIndex = callStacks.GetStackIndexForStackEvent(
-                            data.TimeStampQPC, data.InstructionPointers, data.FrameCount, data.PointerSize, thread);
+                            data.InstructionPointers, data.FrameCount, data.PointerSize, thread);
                         Debug.Assert(callStacks.Depth(callStackIndex) == data.FrameCount);
                         DebugWarn(pastEventInfo.GetThreadID(prevEventIndex) == data.ThreadID, "Mismatched thread for CLR Stack Trace", data);
 
@@ -1248,7 +1248,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 else
                 {
                     // If we reach here, the fragment ends in user mode.   
-                    CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(timeStampQPC,
+                    CallStackIndex stackIndex = callStacks.GetStackIndexForStackEvent(
                         data.InstructionPointers, data.FrameCount, data.PointerSize, thread, CallStackIndex.Invalid);
 
                     var lastEmitStackOnExitFromKernelQPC = thread.lastEmitStackOnExitFromKernelQPC;
@@ -1677,7 +1677,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Finish off the processing of the ETW compressed stacks.  This means doing all the deferred Kernel stack processing
                 // and connecting all pseudo-callStack indexes into real ones. 
                 if (thread.lastEntryIntoKernel != null)
-                    EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, callStacks.GetRootForThread(thread.ThreadIndex), null);
+                    EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, TraceCallStacks.GetRootForThread(thread.ThreadIndex), null);
 
                 if (thread.process == null)
                 {
@@ -1787,7 +1787,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private bool AddAddressToCodeAddressMap(TraceEvent data, Address address)
         {
             TraceProcess process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-            CodeAddressIndex codeAddressIndex = codeAddresses.GetOrCreateCodeAddressIndex(process, data.TimeStampQPC, address);
+            CodeAddressIndex codeAddressIndex = codeAddresses.GetOrCreateCodeAddressIndex(process, address);
 
             // I require that the list be sorted by event ID.  
             Debug.Assert(eventsToCodeAddresses.Count == 0 ||
@@ -2007,7 +2007,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     userStackKeyToInfo.Remove(data.StackKey);
 
                     // User mode stacks we can convert immediately.  
-                    CallStackIndex callStack = callStacks.GetStackIndexForStackEvent(data.TimeStampQPC,
+                    CallStackIndex callStack = callStacks.GetStackIndexForStackEvent(
                          data.InstructionPointers, data.FrameCount, data.PointerSize, stackInfo.Thread, stackInfo.UserModeStackIndex);
                     while (stackInfo != null)
                     {
@@ -2114,7 +2114,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         address = ((ulong*)addresses)[i];
                     else
                         address = ((uint*)addresses)[i];
-                    KernelStackFrames.Add(eventLog.CallStacks.CodeAddresses.GetOrCreateCodeAddressIndex(Thread.Process, timeStampQPC, address));
+                    KernelStackFrames.Add(eventLog.CallStacks.CodeAddresses.GetOrCreateCodeAddressIndex(Thread.Process, address));
                 }
 
                 // Optimization: because process 0 and 4 never have user mode stacks, don't wait around waiting for 
@@ -2122,7 +2122,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // TODO can be optimized to never allocate the incomplete stack.  
                 var processID = Thread.Process.ProcessID;
                 if (processID == 0 || processID == 4)                   // These processes never have user mode stacks, so complete them aggressively. 
-                    UserModeStackIndex = eventLog.CallStacks.GetRootForThread(Thread.ThreadIndex);
+                    UserModeStackIndex = TraceCallStacks.GetRootForThread(Thread.ThreadIndex);
 
                 return EmitStackForEventIfReady(eventLog);
             }
@@ -2152,7 +2152,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var processID = Thread.Process.ProcessID;
                 if (processID == 0 || processID == 4)
                 {                // These processes never have user mode stacks, so complete them aggressively. 
-                    UserModeStackIndex = eventLog.CallStacks.GetRootForThread(Thread.ThreadIndex);
+                    UserModeStackIndex = TraceCallStacks.GetRootForThread(Thread.ThreadIndex);
                     allFragmentsHaveBeenCollected = true;
                 }
 
@@ -2421,7 +2421,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     else
                     {
                         CallStackIndex callStackIndex = callStacks.GetStackIndexForStackEvent(
-                            data.TimeStampQPC, addresses, addressesCount, pointerSize, thread);
+                            addresses, addressesCount, pointerSize, thread);
                         Debug.Assert(callStacks.Depth(callStackIndex) == addressesCount);
 
                         // Is this the special ETW_TASK_STACK_TRACE/ETW_OPCODE_USER_MODE_STACK_TRACE which is just
@@ -6209,38 +6209,51 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returns an index that represents the 'threads' of the stack.  It encodes the thread which owns this stack into this. 
         /// We encode this as -ThreadIndex - 2 (since -1 is the Invalid node)
         /// </summary>
-        internal CallStackIndex GetRootForThread(ThreadIndex threadIndex)
+        internal static CallStackIndex GetRootForThread(ThreadIndex threadIndex)
         {
             return (CallStackIndex)(-((int)threadIndex) + (int)CallStackIndex.Invalid - 1);
         }
-        private ThreadIndex GetThreadForRoot(CallStackIndex root)
+        private static ThreadIndex GetThreadForRoot(CallStackIndex root)
         {
             ThreadIndex ret = (ThreadIndex)((-((int)root)) + (int)CallStackIndex.Invalid - 1);
             Debug.Assert(ret >= 0);
             return ret;
         }
 
-        unsafe internal CallStackIndex GetStackIndexForStackEvent(long timeStampQPC, void* addresses,
+        unsafe internal CallStackIndex GetStackIndexForStackEvent(void* addresses,
             int addressCount, int pointerSize, TraceThread thread, CallStackIndex start = CallStackIndex.Invalid)
         {
             if (addressCount == 0)
                 return CallStackIndex.Invalid;
 
-            var ret = start;
-            if (ret == CallStackIndex.Invalid)
-                ret = GetRootForThread(thread.ThreadIndex);
-            for (int i = addressCount - 1; 0 <= i; --i)
-            {
-                Address address;
-                if (pointerSize == 8)
-                    address = ((ulong*)addresses)[i];
-                else
-                    address = ((uint*)addresses)[i];
+            if (start == CallStackIndex.Invalid)
+                start = GetRootForThread(thread.ThreadIndex);
 
-                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(thread.Process, timeStampQPC, address);
-                ret = InternCallStackIndex(codeAddress, ret);
+            return (pointerSize == 8) ?
+                GetStackIndexForStackEvent64((ulong*)addresses, addressCount, thread.Process, start) :
+                GetStackIndexForStackEvent32((uint*)addresses, addressCount, thread.Process, start);
+        }
+
+        unsafe private CallStackIndex GetStackIndexForStackEvent32(uint* addresses, int addressCount, TraceProcess process, CallStackIndex start)
+        {
+            for (var it = &addresses[addressCount]; it-- != addresses;)
+            {
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                start = InternCallStackIndex(codeAddress, start);
             }
-            return ret;
+
+            return start;
+        }
+
+        unsafe private CallStackIndex GetStackIndexForStackEvent64(ulong* addresses, int addressCount, TraceProcess process, CallStackIndex start)
+        {
+            for (var it = &addresses[addressCount]; it-- != addresses;)
+            {
+                CodeAddressIndex codeAddress = codeAddresses.GetOrCreateCodeAddressIndex(process, *it);
+                start = InternCallStackIndex(codeAddress, start);
+            }
+
+            return start;
         }
 
         internal CallStackIndex InternCallStackIndex(CodeAddressIndex codeAddressIndex, CallStackIndex callerIndex)
@@ -6259,18 +6272,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 int threadIndex = (int)GetThreadForRoot(callerIndex);
                 if (threadIndex >= threads.Count)
                     threads.Count = threadIndex + 1;
-                frameCallees = threads[threadIndex];
-                if (frameCallees == null)
-                    threads[threadIndex] = frameCallees = new List<CallStackIndex>();
+
+                frameCallees = threads[threadIndex] ?? (threads[threadIndex] = new List<CallStackIndex>());
             }
             else
             {
-                frameCallees = callees[(int)callerIndex];
-                if (frameCallees == null)
-                    callees[(int)callerIndex] = frameCallees = new List<CallStackIndex>(4);
+                frameCallees = callees[(int)callerIndex] ?? (callees[(int)callerIndex] = new List<CallStackIndex>(4));
             }
 
-            // Search backwards, assuming that most reticently added is the most likely hit.  
+            // Search backwards, assuming that most recently added is the most likely hit.
             for (int i = frameCallees.Count - 1; i >= 0; --i)
             {
                 CallStackIndex calleeIndex = frameCallees[i];
@@ -6280,6 +6290,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     return calleeIndex;
                 }
             }
+
             CallStackIndex ret = (CallStackIndex)callStacks.Count;
             callStacks.Add(new CallStackInfo(codeAddressIndex, callerIndex));
             frameCallees.Add(ret);
@@ -6970,7 +6981,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// information is found, however, an entry is created for it, so every unique address has an entry
         /// in this table.  
         /// </summary>
-        internal CodeAddressIndex GetOrCreateCodeAddressIndex(TraceProcess process, long timeQPC, Address address)
+        internal CodeAddressIndex GetOrCreateCodeAddressIndex(TraceProcess process, Address address)
         {
             // See if it is a kernel address, if so use process 0 instead of the current process
             process = ProcessForAddress(process, address);
