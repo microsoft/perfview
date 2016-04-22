@@ -135,6 +135,7 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Interop report in Heap dump seems to be broken disabled for now.  
 // Add ability to use wildcards in the names (at least the instance names) of the StopOnPerfCounter option.   
 // We have the problem with French making bad numbers in the HeapDUmp output because the Command run does not recognise the data from the process as being UTF8.  This seems to need a framework update.
 // Make 'DumpEvent' in the 'events' view work on a range of values.  Allow it to be dumped. as EXCEL?   
