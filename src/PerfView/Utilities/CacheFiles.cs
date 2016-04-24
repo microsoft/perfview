@@ -41,7 +41,11 @@ namespace Utilities
         {
             // TODO FIX NOW add collision detection
             var baseFileName = Path.GetFileName(baseFilePath);
-            int hash = Path.GetFullPath(baseFilePath).GetHashCode();
+            var baseFileInfo = new FileInfo(baseFilePath);
+
+            // The hash is a combination of full path, size and last write timestamp
+            var hashData = new Tuple<string, long, DateTime>(Path.GetFullPath(baseFilePath), baseFileInfo.Length, baseFileInfo.LastWriteTimeUtc);
+            int hash = hashData.GetHashCode();
 
             string ret = Path.Combine(CacheDir, baseFileName + "_" + hash.ToString("x") + extension);
             if (File.Exists(ret))
@@ -49,7 +53,7 @@ namespace Utilities
                 // See if it is up to date. 
                 if (File.Exists(baseFilePath))
                 {
-                    if (File.GetLastWriteTimeUtc(ret) < File.GetLastWriteTimeUtc(baseFilePath))
+                    if (File.GetLastWriteTimeUtc(ret) < baseFileInfo.LastWriteTimeUtc)
                         FileUtilities.ForceDelete(ret);
                     else
                     {
