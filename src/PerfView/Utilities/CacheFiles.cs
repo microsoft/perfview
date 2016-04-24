@@ -44,7 +44,7 @@ namespace Utilities
             var baseFileInfo = new FileInfo(baseFilePath);
 
             // The hash is a combination of full path, size and last write timestamp
-            var hashData = new Tuple<string, long, DateTime>(Path.GetFullPath(baseFilePath), baseFileInfo.Length, baseFileInfo.LastWriteTimeUtc);
+            var hashData = Tuple.Create(Path.GetFullPath(baseFilePath), baseFileInfo.Length, baseFileInfo.LastWriteTimeUtc);
             int hash = hashData.GetHashCode();
 
             string ret = Path.Combine(CacheDir, baseFileName + "_" + hash.ToString("x") + extension);
