@@ -2,19 +2,19 @@
 #Contributing to the PerfView repository. 
 
 First and foremost, we want to thank you for your willingness the help make PerfView better.
-Here we describe a bunch of rules/advice associated with doing so and you may end up 
+Here we describe a bunch of rules/advice associated with doing so. You may end up 
 getting frustrated with the process.   This guide is our attempt to keep that frustration
 as low as possible.   
 
-The simple truth is that no all change is good (big surprise), and because of this, we reserve 
-the right to reject any pull request to this repo. We wont do this without rationale, and 
-our rational is simple at its heart is simple
+The simple truth is that not all change is good (big surprise), and because of this, we reserve 
+the right to reject any pull request to this repo. We won’t do this without rationale, and 
+our rationale is simple at its heart.
 
 1. Complexity is bad.   Changes that add complexity need more careful deliberation 
 to weigh the good that comes along with it. 
 
 2. Consistency is good.   Bugs are basically a kind of inconsistency (the program does 
-not work as a simple understanding would assume), but there are of feature additions
+not work as a simple understanding would assume). There are, of course, feature additions
 that make consistency better, but it is all to easy for new features to NOT be consistent
 with existing features. 
 
@@ -27,14 +27,14 @@ And our golden rule
 *  **When in doubt, ask us by posting an issue or suggestion**
 
 The key here is that from your point of view the new feature you are adding looks like unalloyed 
-good.  But it it very likely increases complexity (point 1) may affect consistency (point 2) 
-and may make other scenarios slower (e.g. startup, etc).   As the keepers of this repo we 
+good.  But it is very likely that it increases complexity (point 1), may affect consistency (point 2) 
+and may make other scenarios slower (e.g. startup, etc.).   As the keepers of this repo we 
 have the responsibility to weigh these other factors, and we may decide that the bad outweighs
 the good.
 
 A rejected pull request is a failure for repo as a whole because it means that multiple people 
 spent time on things that ultimately did not benefit the repo.   We want to avoid that.  There 
-is a simple heuristic that help
+is a simple heuristic that helps:
 
 * **The bigger the change, the more 'pre-vetting' you need**
 
@@ -63,7 +63,7 @@ there was.    There is more work than just modifying the code.
 
 ##Coding Standards
 
-See [PerfView Coding Standards](STANDARDS.md). 
+See [PerfView Coding Standards](documentation/CodingStandards.md). 
 
 ##Testing and Contributing tests
 

@@ -5841,20 +5841,30 @@ namespace PerfView
             if (AppLog.InternalUser)
             {
                 OpenDump(worker.LogWriter);
-                m_Children = new List<PerfViewTreeItem>(4);
-                if (m_gcDump.InteropInfo != null)
-                {
-                    m_Children.Add(new HeapDumpInteropObjects(this));
-                }
+
+                var advanced = new PerfViewTreeGroup("Advanced Group");
+
+                m_Children = new List<PerfViewTreeItem>(2);
 
                 var defaultSource = new PerfViewStackSource(this, DefaultStackSourceName);
                 defaultSource.IsSelected = true;
                 m_Children.Add(defaultSource);
+
+                if (m_gcDump.InteropInfo != null)
+                {
+                    // TODO FIX NOW.   This seems to be broken right now  hiding it for now.  
+                    // advanced.Children.Add(new HeapDumpInteropObjects(this));
+                }
+
                 if (m_gcDump.DotNetHeapInfo != null)
                 {
-                    m_Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
-                    m_Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
+                    advanced.Children.Add(new PerfViewStackSource(this, Gen0WalkableObjectsViewName));
+                    advanced.Children.Add(new PerfViewStackSource(this, Gen1WalkableObjectsViewName));
                 }
+
+                if (advanced.Children.Count > 0)
+                    m_Children.Add(advanced);
+
                 return null;
             }
             return delegate (Action doAfter)
@@ -5930,8 +5940,12 @@ namespace PerfView
                     }
                 }
 
+
                 if (m_gcDump.TimeCollected.Ticks != 0)
                     log.WriteLine("GCDump collected on {0}", m_gcDump.TimeCollected);
+                else
+                    log.WriteLine("GCDump collected from a DMP file no time/machine/process info");
+
                 if (m_gcDump.MachineName != null)
                     log.WriteLine("GCDump collected on Machine {0}", m_gcDump.MachineName);
                 if (m_gcDump.ProcessName != null)
@@ -6028,7 +6042,11 @@ namespace PerfView
     public partial class LinuxPerfViewData : PerfViewFile
     {
         public override string FormatName { get { return "LTTng"; } }
-        public override string[] FileExtensions { get { return new string[] { ".lttng.zip", ".trace.zip" }; } }
+        /// <summary>
+        ///  TODO FIX NOW, LinuxPerfVIewData needs to be merged with PerfScriptPerfViewFile so there only
+        ///  one thing that knows about a .trace.zip file and 
+        /// </summary>
+        public override string[] FileExtensions { get { return new string[] { ".lttng.zip" /*, ".trace.zip" */ }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {

@@ -35,9 +35,8 @@ namespace ClrCap
             EventStats = new EventStats();
         }
 
-        public void WriteToFileXML(string outputFilePath, string suffix = "")
+        public void WriteToFileXML(string outputFilePath)
         {
-            outputFilePath = outputFilePath + suffix + ".xml";
             using (TextWriter WriteFileStream = new StreamWriter(outputFilePath, false))
             {
                 XmlSerializer SerializerObj = new XmlSerializer(GetType());

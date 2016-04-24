@@ -1264,7 +1264,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                             {
                                 // Make up a new table for this node.  
                                 var newCalleeLookup = new ConcurrentDictionary<StackSourceFrameIndex, CallTreeNode>();
-                                foreach (var node in m_callees)
+                                foreach (var node in nodeToAddToCache.m_callees)
                                     newCalleeLookup[node.m_id] = node;
                                 return newCalleeLookup;
                             });

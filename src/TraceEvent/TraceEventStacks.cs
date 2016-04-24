@@ -636,7 +636,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     int res = x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec);
                     if (res != 0) return res;
-                    else return x.StackIndex.CompareTo(y.StackIndex);
+                    else return ((int)(x.StackIndex)).CompareTo((int)(y.StackIndex));
                 });
             for (int i = 0; i < m_samples.Count; i++)
                 m_samples[i].SampleIndex = (StackSourceSampleIndex)i;
