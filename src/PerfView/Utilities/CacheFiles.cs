@@ -2,6 +2,7 @@
 using System;
 using Microsoft.Diagnostics.Utilities;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Utilities
 {
@@ -33,13 +34,20 @@ namespace Utilities
         }
 
         /// <summary>
-        /// Find a path name for the file 'baseFilePath' (which can be a path name to anywhere).  
-        /// which as the extension 'extension'.  It will always return something in 'CacheDir'
-        /// and thus might go away.  
+        /// Find a path name for the file 'baseFilePath' (which can be a path name to anywhere).
+        /// which has the extension 'extension'.  It will always return something in 'CacheDir'
+        /// and thus might go away.
         /// </summary>
+        /// <remarks>
+        /// Note that the file 'baseFilePath' is assumed to exist.
+        /// </remarks>
         public static string FindFile(string baseFilePath, string extension = "")
         {
             // TODO FIX NOW add collision detection
+
+            // We expect the original file to exist
+            Debug.Assert(File.Exists(baseFilePath));
+
             var baseFileName = Path.GetFileName(baseFilePath);
             var baseFileInfo = new FileInfo(baseFilePath);
 
@@ -51,18 +59,15 @@ namespace Utilities
             if (File.Exists(ret))
             {
                 // See if it is up to date. 
-                if (File.Exists(baseFilePath))
+                if (File.GetLastWriteTimeUtc(ret) < baseFileInfo.LastWriteTimeUtc)
+                    FileUtilities.ForceDelete(ret);
+                else
                 {
-                    if (File.GetLastWriteTimeUtc(ret) < baseFileInfo.LastWriteTimeUtc)
-                        FileUtilities.ForceDelete(ret);
-                    else
-                    {
-                        // Set the last access time so we can clean up files based on their last usage.
-                        // However if someone else is actual using the file, we don't want an 'in use' 
-                        // exception, so treat this part as optional.  
-                        try { File.SetLastAccessTimeUtc(ret, DateTime.UtcNow); }
-                        catch (Exception) { }
-                    }
+                    // Set the last access time so we can clean up files based on their last usage.
+                    // However if someone else is actual using the file, we don't want an 'in use' 
+                    // exception, so treat this part as optional.  
+                    try { File.SetLastAccessTimeUtc(ret, DateTime.UtcNow); }
+                    catch (Exception) { }
                 }
             }
             if (!s_didCleanup)
