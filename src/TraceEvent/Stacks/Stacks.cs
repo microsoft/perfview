@@ -862,12 +862,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             StackSourceCallStackIndex callStackStartIndex = StackSourceCallStackIndex.Start,
             StackSourceModuleIndex moduleStackStartIndex = StackSourceModuleIndex.Start)
         {
-            m_modules = new GrowableArray<string>(estNumModules);
-            m_frames = new GrowableArray<FrameInfo>(estNumFrames);
-            m_callStacks = new GrowableArray<CallStackInfo>(estNumCallStacks);
-            m_moduleIntern = new Dictionary<string, StackSourceModuleIndex>(estNumModules);
-            m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
-            m_callStackIntern = new Dictionary<CallStackInfo, StackSourceCallStackIndex>(estNumCallStacks);
+            m_moduleIntern = new InternTable<string>(estNumModules);
+            m_frameIntern = new InternTable<FrameInfo>(estNumFrames);
+            m_callStackIntern = new InternTable<CallStackInfo>(estNumCallStacks);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
                 frameStartIndex = StackSourceFrameIndex.Start;
@@ -887,9 +884,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void DoneInterning()
         {
-            m_moduleIntern = null;
-            m_frameIntern = null;
-            m_callStackIntern = null;
+            m_moduleIntern.DoneInterning();
+            m_frameIntern.DoneInterning();
+            m_callStackIntern.DoneInterning();
         }
 
         /// <summary>
@@ -908,7 +905,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceCallStackIndex GetCallerIndex(StackSourceCallStackIndex callStackIndex)
         {
-            return m_callStacks[callStackIndex - m_callStackStartIndex].callerIndex;
+            return m_callStackIntern[callStackIndex - m_callStackStartIndex].callerIndex;
         }
         /// <summary>
         /// Given a StackSourceCallStackIndex return the StackSourceFrameIndex for the Frame associated
@@ -916,7 +913,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceFrameIndex GetFrameIndex(StackSourceCallStackIndex callStackIndex)
         {
-            return m_callStacks[callStackIndex - m_callStackStartIndex].frameIndex;
+            return m_callStackIntern[callStackIndex - m_callStackStartIndex].frameIndex;
         }
         /// <summary>
         /// Get a name from a frame index.  If the frame index is a 
@@ -924,9 +921,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string GetFrameName(StackSourceFrameIndex frameIndex, bool fullModulePath)
         {
             var frameIndexOffset = (int)(frameIndex - m_frameStartIndex);
-            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frames.Count);
-            var frameName = m_frames[frameIndexOffset].FrameName;
-            var baseFrameIndex = m_frames[frameIndexOffset].BaseFrameIndex;
+            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frameIntern.Count);
+            var frameName = m_frameIntern[frameIndexOffset].FrameName;
+            var baseFrameIndex = m_frameIntern[frameIndexOffset].BaseFrameIndex;
             if (baseFrameIndex != StackSourceFrameIndex.Invalid)
             {
                 string baseName;
@@ -936,7 +933,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     baseName = "Frame " + ((int)baseFrameIndex).ToString();
                 return baseName + " " + frameName;
             }
-            var moduleName = m_modules[m_frames[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
+            var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
                 return frameName;
 
@@ -968,7 +965,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             var framesIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(frameIndex >= 0);
-            return m_frames[framesIndex].ModuleIndex;
+            return m_frameIntern[framesIndex].ModuleIndex;
         }
 
         /// <summary>
@@ -986,14 +983,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceModuleIndex ModuleIntern(string moduleName)
         {
-            StackSourceModuleIndex ret;
-            if (!m_moduleIntern.TryGetValue(moduleName, out ret))
-            {
-                ret = (StackSourceModuleIndex)(m_moduleStackStartIndex + m_modules.Count);
-                m_modules.Add(moduleName);
-                m_moduleIntern.Add(moduleName, ret);
-            }
-            return ret;
+            return m_moduleIntern.Intern(moduleName) + m_moduleStackStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceFrameIndex for frame with the name frameName and the module identified by moduleIndex
@@ -1005,15 +995,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 moduleIndex = m_emptyModuleIdx;
 
             Debug.Assert(frameName != null);
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameName, moduleIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameName, moduleIndex)) + m_frameStartIndex;
         }
 
         /// <summary>
@@ -1024,11 +1006,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             int relFrameIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(relFrameIndex >= 0);
 
-            FrameInfo frame = m_frames[(int)relFrameIndex];
+            FrameInfo frame = m_frameIntern[(int)relFrameIndex];
             FrameInfo newFrame = new FrameInfo(newName, frame.ModuleIndex);
-            m_frames[(int)relFrameIndex] = newFrame;
-            if (!m_frameIntern.ContainsKey(newFrame))
-                m_frameIntern.Add(newFrame, (StackSourceFrameIndex)relFrameIndex);
+            m_frameIntern.Update((int)relFrameIndex, newFrame);
         }
 
         /// <summary>
@@ -1041,40 +1021,24 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(FrameNameLookup != null);
             Debug.Assert(frameSuffix != null);
 
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameSuffix, frameIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameSuffix, frameIndex)) + m_frameStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceCallStackIndex for a call stack with the frame identified frameIndex and caller identified by callerIndex
         /// </summary>
         public StackSourceCallStackIndex CallStackIntern(StackSourceFrameIndex frameIndex, StackSourceCallStackIndex callerIndex)
         {
-            StackSourceCallStackIndex ret;
-            CallStackInfo callStack = new CallStackInfo(frameIndex, callerIndex);
-            if (!m_callStackIntern.TryGetValue(callStack, out ret))
-            {
-                ret = (StackSourceCallStackIndex)(m_callStacks.Count + m_callStackStartIndex);
-                m_callStacks.Add(callStack);
-                m_callStackIntern.Add(callStack, ret);
-            }
-            return ret;
+            return m_callStackIntern.Intern(new CallStackInfo(frameIndex, callerIndex)) + m_callStackStartIndex;
         }
 
         /// <summary>
         /// The current number of unique frames that have been interned so far
         /// </summary>
-        public int FrameCount { get { return m_frames.Count; } }
+        public int FrameCount { get { return m_frameIntern.Count; } }
         /// <summary>
         /// The current number of unique call stacks that have been interned so far
         /// </summary>
-        public int CallStackCount { get { return m_callStacks.Count; } }
+        public int CallStackCount { get { return m_callStackIntern.Count; } }
 
         #region private
         private struct FrameInfo : IEquatable<FrameInfo>
@@ -1127,25 +1091,301 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             }
         };
 
-        // maps (moduleIndex - m_moduleStackStartIndex) to module name 
-        private GrowableArray<string> m_modules;
-        // maps (frameIndex - m_frameStartIndex) to frame information
-        private GrowableArray<FrameInfo> m_frames;
-        // mapx (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)
-        private GrowableArray<CallStackInfo> m_callStacks;
+        /// <summary>
+        /// A specialized hash table for interning call-stacks (recognizing when we've seen them before).
+        /// It loosely follows the implementation of <see cref="Dictionary{TKey, TValue}"/> but with
+        /// several key allowances for the known usage:
+        /// 1. We don't store the hashcode on each entry since the key is a trivial pair of ints which can
+        ///    be compared quickly. The downside to that is that the hash codes must be recomputed
+        ///    whenever the map is resized, but that is very cheap.
+        /// 2. We supply a single <see cref="Intern(T)"/> method (instead of a TryGetValue
+        ///    followed by an Add) so that a hashcode computation is saved in the case of a "miss".
+        /// 3. We don't support removal. This means we don't need to keep track of a free list and neither
+        ///    do we need sentinel values. This also allows us to use all 32 bits of the hash-code (where
+        ///    <see cref="Dictionary{TKey, TValue}"/> uses only 31 bits, reserving -1 to indicate a freed
+        ///    entry. The only sentinel value is in the <see cref="_buckets"/> array to indicate a free
+        ///    bucket.
+        /// 4. We do support efficient (constant time) in-place update (<see cref="Update(int, T)"/>) of
+        ///    an existing value - even if its hashcode changes.
+        /// 5. We return an index (of the interned item) to the caller which can be used for constant-time
+        ///    look-up in the table via <see cref="this[int]"/>.
+        /// 6. To free up memory, the caller can call <see cref="DoneInterning"/>. The entries themselves
+        ///    are stored separately from the indexing parts of the table so that the latter can be dropped
+        ///    easily.
+        /// </summary>
+        private class InternTable<T> where T : IEquatable<T>
+        {
+            /// <summary>
+            /// Construct the intern map
+            /// </summary>
+            /// <param name="initialCapacity">The estimated capacity of the map.</param>
+            public InternTable(int initialCapacity = 0)
+            {
+                Resize(desiredSize: initialCapacity);
+            }
 
-        // Only needed during reading
+            /// <summary>
+            /// Count of interned values.
+            /// </summary>
+            public int Count
+            {
+                get { return _count; }
+            }
+
+            /// <summary>
+            /// Access an element by index.
+            /// </summary>
+            /// <param name="index">The zero-based index of the desired entry.</param>
+            /// <returns>The entry at the requested index.</returns>
+            /// <remarks>For performance, in Release mode we do no range checking on <paramref name="index"/>, so it is possible to
+            /// access an entry beyond <see cref="Count"/> but prior to the maximum capacity of the array.</remarks>
+            /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> was less than zero or greater than the capacity.</exception>
+            public T this[int index]
+            {
+                get
+                {
+                    Debug.Assert(index < _count);
+                    return _entries[index];
+                }
+            }
+
+            /// <summary>
+            /// Intern a value. If the same value has been seen before
+            /// then this returns the index of the previously seen entry. If not, a new entry
+            /// is added and this returns the index of the newly added entry.
+            /// </summary>
+            /// <param name="value">The candidate value.</param>
+            /// <returns>The index of the interned entry.</returns>
+            /// <exception cref="NullReferenceException">This routine was called after calling <see cref="DoneInterning"/>.</exception>
+            public int Intern(T value)
+            {
+                int targetBucket = BucketNumberFromValue(value);
+                int index;
+                for (index = _buckets[targetBucket]._entry; index >= 0; index = _buckets[index]._nextBucket)
+                {
+                    if (_entries[index].Equals(value))
+                    {
+                        // Found
+                        return index;
+                    }
+                }
+
+                // Grow if necessary
+                if (_count == _entries.Length)
+                {
+                    Resize(_count * 2); // Simple doubling (geometric growth)
+                    targetBucket = BucketNumberFromValue(value);
+                }
+
+                index = _count++;
+                _entries[index] = value;
+                _buckets[index]._nextBucket = _buckets[targetBucket]._entry;
+                _buckets[targetBucket]._entry = index;
+                return index;
+            }
+
+            /// <summary>
+            /// Update an existing item.
+            /// </summary>
+            /// <param name="index">The index of the existing item.</param>
+            /// <param name="newValue">The new value.</param>
+            public void Update(int index, T newValue)
+            {
+                if (index < 0 || index >= _count)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                var oldValue = _entries[index];
+                if (oldValue.Equals(newValue))
+                {
+                    return;
+                }
+
+                // Update the value
+                _entries[index] = newValue;
+
+                // Update the hash table if necessary.
+                int oldBucket = BucketNumberFromValue(oldValue);
+                int newBucket = BucketNumberFromValue(newValue);
+                if (oldBucket == newBucket)
+                {
+                    // Nothing changes. The values hash to the same bucket.
+                    return;
+                }
+
+                // Remove the old value from the old bucket. This involves traversing the
+                // linked list to find the predecessor and update it's next pointer.
+                int prev = -1;
+                for (int i = _buckets[oldBucket]._entry; i != index; i = _buckets[i]._nextBucket)
+                {
+                    prev = i;
+                }
+
+                if (prev < 0)
+                {
+                    // Removing the head
+                    _buckets[oldBucket]._entry = _buckets[index]._nextBucket;
+                }
+                else
+                {
+                    // Removing a non-head entry
+                    _buckets[prev]._nextBucket = _buckets[index]._nextBucket;
+                }
+
+                // Add the new value to the head of the new bucket.
+                _buckets[index]._nextBucket = _buckets[newBucket]._entry;
+                _buckets[newBucket]._entry = index;
+            }
+
+            /// <summary>
+            /// As an optimization, if you are done calling <see cref="Intern(T)"/>, then you can call this
+            /// to free up some memory.
+            /// </summary>
+            /// <remarks>After calling this, you can still call <see cref="this[int]"/>. However, if you try to
+            /// call <see cref="Intern(T)"/> you will get a <see cref="NullReferenceException"/>.</remarks>
+            public void DoneInterning()
+            {
+                _buckets = null;
+
+                // Trim _entries if it's less than 75% full.
+                if (_count < (_entries.LongLength * 3L / 4L))
+                {
+                    Array.Resize(ref _entries, _count);
+                }
+            }
+
+            private int BucketNumberFromValue(T value)
+            {
+                return BucketNumberFromValue(value, _buckets.Length);
+            }
+
+            private static int BucketNumberFromValue(T value, int bucketCount)
+            {
+                int hashCode = value.GetHashCode();
+                uint targetBucket = (uint)hashCode % (uint)bucketCount;
+                return (int)targetBucket;
+            }
+
+            private void Resize(int desiredSize)
+            {
+                // This is the maximum prime smaller than Array.MaxArrayLength
+                const int MaxPrimeArrayLength = 0x7FEFFFFD;
+
+                int newSize;
+                if ((uint)desiredSize > MaxPrimeArrayLength && MaxPrimeArrayLength > _count)
+                {
+                    newSize = MaxPrimeArrayLength;
+                }
+                else
+                {
+                    newSize = HashHelpers.GetPrime(desiredSize);
+                }
+
+                var newBuckets = new Bucket[newSize];
+                for (int i = 0; i < newBuckets.Length; i++)
+                {
+                    newBuckets[i]._entry = -1;
+                }
+
+                var newEntries = new T[newSize];
+                if (_entries != null)
+                {
+                    Array.Copy(_entries, 0, newEntries, 0, _count);
+                    // Regenerate the index
+                    for (int i = 0; i < _count; i++)
+                    {
+                        int bucket = BucketNumberFromValue(newEntries[i], newSize);
+                        newBuckets[i]._nextBucket = newBuckets[bucket]._entry;
+                        newBuckets[bucket]._entry = i;
+                    }
+                }
+
+                _buckets = newBuckets;
+                _entries = newEntries;
+            }
+
+            private static class HashHelpers
+            {
+                // Table of prime numbers to use as hash table sizes. 
+                private static readonly int[] s_primes = {
+                    3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
+                    1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591,
+                    17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437,
+                    187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263,
+                    1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369
+                };
+
+                private const int HashPrime = 101;
+
+                private static bool IsPrime(int candidate)
+                {
+                    if ((candidate & 1) != 0)
+                    {
+                        int limit = (int)Math.Sqrt(candidate);
+                        for (int divisor = 3; divisor <= limit; divisor += 2)
+                        {
+                            if ((candidate % divisor) == 0)
+                                return false;
+                        }
+                        return true;
+                    }
+                    return (candidate == 2);
+                }
+
+                /// <summary>
+                /// Returns a prime number at least as large as <paramref name="min"/>
+                /// </summary>
+                /// <param name="min">The minimum size of the requested prime number.</param>
+                /// <returns>A prime number greater than or equal to <paramref name="min"/>.</returns>
+                public static int GetPrime(int min)
+                {
+                    foreach (var prime in s_primes)
+                    {
+                        if (prime >= min)
+                        {
+                            return prime;
+                        }
+                    }
+
+                    //outside of our predefined table. 
+                    //compute the hard way. 
+                    for (int i = (min | 1); i < Int32.MaxValue; i += 2)
+                    {
+                        if (IsPrime(i) && ((i - 1) % HashPrime != 0))
+                            return i;
+                    }
+
+                    return min;
+                }
+            }
+
+            private struct Bucket
+            {
+                public int _entry; // Index into the _entries table of the head item in this bucket. -1 indicates an empty bucket.
+                public int _nextBucket;  // Index into the _buckets table of the next item.
+            }
+
+            private Bucket[] _buckets;
+            private T[] _entries;
+            private int _count;
+        }
+
+        private readonly InternTable<string> m_moduleIntern;
+        private readonly StackSourceModuleIndex m_emptyModuleIdx;
+
+        // maps (frameIndex - m_frameStartIndex) to frame information
+        private readonly InternTable<FrameInfo> m_frameIntern;
+
         // Given a Call Stack index, return the list of call stack indexes that that routine calls.  
-        private Dictionary<CallStackInfo, StackSourceCallStackIndex> m_callStackIntern;
-        private Dictionary<FrameInfo, StackSourceFrameIndex> m_frameIntern;
-        private Dictionary<string, StackSourceModuleIndex> m_moduleIntern;
-        StackSourceModuleIndex m_emptyModuleIdx;
+        // Also maps (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)  
+        private readonly InternTable<CallStackInfo> m_callStackIntern;
 
         // To allow the interner to 'open' an existing stackSource, we make it flexible about where indexes start.
         // The typical case these are all 0.  
-        private StackSourceFrameIndex m_frameStartIndex;
-        private StackSourceCallStackIndex m_callStackStartIndex;
-        private StackSourceModuleIndex m_moduleStackStartIndex;
+        private readonly StackSourceFrameIndex m_frameStartIndex;
+        private readonly StackSourceCallStackIndex m_callStackStartIndex;
+        private readonly StackSourceModuleIndex m_moduleStackStartIndex;
         #endregion
     }
 }
