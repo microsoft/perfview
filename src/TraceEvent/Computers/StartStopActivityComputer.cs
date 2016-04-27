@@ -617,6 +617,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var processID = ActivityPathProcessID(guid);
             StringBuilder sb = Utilities.StringBuilderCache.Acquire();
+            sb.Append('/');
             if (processID != 0)
             {
                 sb.Append("/#");    // Use /# to mark the fact that the first number is a process ID.   

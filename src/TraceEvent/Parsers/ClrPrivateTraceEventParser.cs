@@ -42,6 +42,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         public enum Keywords : long
         {
+            None = 0x0,
             GC = 0x00000001,
             Binding = 0x00000002,
             NGenForceRestore = 0x00000004,

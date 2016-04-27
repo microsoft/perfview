@@ -982,6 +982,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     bookKeepingEvent = true;
                     bookeepingEventThatMayHaveStack = true;
                 }
+
+                // Keep threadIDtoThread table under control by removing old entries.  
+                if (IsRealTime)
+                    this.Threads.threadIDtoThread.Remove((Address)data.ThreadID);
             };
 
             // ModuleFile level events
@@ -5207,7 +5211,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // State variables.  
         private GrowableArray<TraceThread> threads;          // The threads ordered in time. 
         private TraceLog log;
-        private HistoryDictionary<TraceThread> threadIDtoThread;
+        internal HistoryDictionary<TraceThread> threadIDtoThread;
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {

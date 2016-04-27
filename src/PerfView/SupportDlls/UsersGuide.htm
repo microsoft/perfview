@@ -2141,9 +2141,13 @@
                     gives the command line, the start and stop time, the amount of CPU, and other &#39;coarse&#39;
                     information about the processes.
                 </li>
+
+                ""
                 <li>
-                    <strong><a id="CPUStacks">CPU Stacks</a></strong> - Shows CPU time (in milliseconds)
-                    rolled up by the location the stack CPU was consumed.&nbsp;
+                    <strong><a id="Processes/Files/RegistryStacks">Processes / Files / Registry Stacks</a></strong> -
+                    This is a high level view howing the processes in the system.  In this view if on process
+                    spawns another it will be a child of the parent process.   All DLL load and file opens 
+                    are also shown.   If the Registry events are turned on, you will see those as well.  
                 </li>
                 <li>
                     <strong><a id="ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a></strong>
@@ -8046,6 +8050,13 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.8 4/22/16
+            <ul>
+                <li> Added the 'Advanced Group' to .GCDump files and put everything but the heap in it </li>
+                <li> Added a bit more information to the .GCDump log spew. </li>
+            </ul>
+        </li>
         <li>
             Version 1.9.8 4/5/16
             <ul>

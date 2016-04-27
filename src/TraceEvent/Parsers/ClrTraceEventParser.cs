@@ -3175,6 +3175,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public unsafe GCBulkNodeUnsafeNodes* UnsafeNodes(int arrayIdx, GCBulkNodeUnsafeNodes* buffer)
         {
             Debug.Assert(0 <= arrayIdx && arrayIdx < Count);
+            GCBulkNodeUnsafeNodes* ret;
             if (PointerSize != 8)
             {
                 GCBulkNodeUnsafeNodes32* basePtr = (GCBulkNodeUnsafeNodes32*)(((byte*)DataStart) + 10);
@@ -3184,13 +3185,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 buffer->Size = value->Size;
                 buffer->TypeID = value->TypeID;
                 buffer->EdgeCount = value->EdgeCount;
-                return buffer;
+                ret = buffer;
             }
             else
             {
                 GCBulkNodeUnsafeNodes* basePtr = (GCBulkNodeUnsafeNodes*)(((byte*)DataStart) + 10);
-                return basePtr + arrayIdx;
+                ret = basePtr + arrayIdx;
             }
+            Debug.Assert((ret->Address & 0xFF00000000000003L) == 0);
+            Debug.Assert((ret->TypeID & 0xFF00000000000001L) == 0);
+            Debug.Assert(ret->Size < 0x80000000L);
+            Debug.Assert(ret->EdgeCount < 100000);
+            return ret;
         }
         #region Private
         internal GCBulkNodeTraceData(Action<GCBulkNodeTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
