@@ -927,7 +927,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 // Add a frame that shows that we are starting a task 
-                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID);
+                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
                 fullCreationStack = m_outputSource.Interner.CallStackIntern(threadFrameIndex, fullCreationStack);
 
                 // and take the region between creationStackFragment and threadPoolTransition and concatenate it to fullCreationStack.  
@@ -1023,7 +1023,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var frameIdx = m_outputSource.GetFrameIndex(existingStacks);
             var frameName = m_outputSource.GetFrameName(frameIdx, false);
-            if (!frameName.StartsWith("STARTING TASK on Thread"))
+            if (!frameName.StartsWith("STARTING TASK on Thread", StringComparison.Ordinal))
                 return StackSourceFrameIndex.Invalid;
             return frameIdx;
         }
@@ -1101,7 +1101,7 @@ namespace Microsoft.Diagnostics.Tracing
             var curSearchIdx = 22;      // Skips the STARTING TASK ...
             for (;;)
             {
-                var index = frameName.IndexOf(newTaskID, curSearchIdx);
+                var index = frameName.IndexOf(newTaskID, curSearchIdx, StringComparison.Ordinal);
                 if (index < 0)
                     break;
                 curSearchIdx = index + newTaskID.Length;
