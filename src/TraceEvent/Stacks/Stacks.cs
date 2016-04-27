@@ -862,11 +862,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             StackSourceCallStackIndex callStackStartIndex = StackSourceCallStackIndex.Start,
             StackSourceModuleIndex moduleStackStartIndex = StackSourceModuleIndex.Start)
         {
-            m_modules = new GrowableArray<string>(estNumModules);
-            m_frames = new GrowableArray<FrameInfo>(estNumFrames);
-            m_moduleIntern = new Dictionary<string, StackSourceModuleIndex>(estNumModules);
-            m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
-            m_callStackIntern = new CallStackInternMap(estNumCallStacks);
+            m_moduleIntern = new InternTable<string>(estNumModules);
+            m_frameIntern = new InternTable<FrameInfo>(estNumFrames);
+            m_callStackIntern = new InternTable<CallStackInfo>(estNumCallStacks);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
                 frameStartIndex = StackSourceFrameIndex.Start;
@@ -886,8 +884,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void DoneInterning()
         {
-            m_moduleIntern = null;
-            m_frameIntern = null;
+            m_moduleIntern.DoneInterning();
+            m_frameIntern.DoneInterning();
             m_callStackIntern.DoneInterning();
         }
 
@@ -923,9 +921,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string GetFrameName(StackSourceFrameIndex frameIndex, bool fullModulePath)
         {
             var frameIndexOffset = (int)(frameIndex - m_frameStartIndex);
-            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frames.Count);
-            var frameName = m_frames[frameIndexOffset].FrameName;
-            var baseFrameIndex = m_frames[frameIndexOffset].BaseFrameIndex;
+            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frameIntern.Count);
+            var frameName = m_frameIntern[frameIndexOffset].FrameName;
+            var baseFrameIndex = m_frameIntern[frameIndexOffset].BaseFrameIndex;
             if (baseFrameIndex != StackSourceFrameIndex.Invalid)
             {
                 string baseName;
@@ -935,7 +933,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     baseName = "Frame " + ((int)baseFrameIndex).ToString();
                 return baseName + " " + frameName;
             }
-            var moduleName = m_modules[m_frames[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
+            var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
                 return frameName;
 
@@ -967,7 +965,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             var framesIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(frameIndex >= 0);
-            return m_frames[framesIndex].ModuleIndex;
+            return m_frameIntern[framesIndex].ModuleIndex;
         }
 
         /// <summary>
@@ -985,14 +983,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public StackSourceModuleIndex ModuleIntern(string moduleName)
         {
-            StackSourceModuleIndex ret;
-            if (!m_moduleIntern.TryGetValue(moduleName, out ret))
-            {
-                ret = (StackSourceModuleIndex)(m_moduleStackStartIndex + m_modules.Count);
-                m_modules.Add(moduleName);
-                m_moduleIntern.Add(moduleName, ret);
-            }
-            return ret;
+            return m_moduleIntern.Intern(moduleName) + m_moduleStackStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceFrameIndex for frame with the name frameName and the module identified by moduleIndex
@@ -1004,15 +995,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 moduleIndex = m_emptyModuleIdx;
 
             Debug.Assert(frameName != null);
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameName, moduleIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameName, moduleIndex)) + m_frameStartIndex;
         }
 
         /// <summary>
@@ -1023,11 +1006,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             int relFrameIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(relFrameIndex >= 0);
 
-            FrameInfo frame = m_frames[(int)relFrameIndex];
+            FrameInfo frame = m_frameIntern[(int)relFrameIndex];
             FrameInfo newFrame = new FrameInfo(newName, frame.ModuleIndex);
-            m_frames[(int)relFrameIndex] = newFrame;
-            if (!m_frameIntern.ContainsKey(newFrame))
-                m_frameIntern.Add(newFrame, (StackSourceFrameIndex)relFrameIndex);
+            m_frameIntern.Update((int)relFrameIndex, newFrame);
         }
 
         /// <summary>
@@ -1040,15 +1021,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(FrameNameLookup != null);
             Debug.Assert(frameSuffix != null);
 
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameSuffix, frameIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameSuffix, frameIndex)) + m_frameStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceCallStackIndex for a call stack with the frame identified frameIndex and caller identified by callerIndex
@@ -1061,7 +1034,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The current number of unique frames that have been interned so far
         /// </summary>
-        public int FrameCount { get { return m_frames.Count; } }
+        public int FrameCount { get { return m_frameIntern.Count; } }
         /// <summary>
         /// The current number of unique call stacks that have been interned so far
         /// </summary>
@@ -1116,7 +1089,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 return frameIndex == other.frameIndex && callerIndex == other.callerIndex;
             }
-        }
+        };
 
         /// <summary>
         /// A specialized hash table for interning call-stacks (recognizing when we've seen them before).
@@ -1125,32 +1098,34 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// 1. We don't store the hashcode on each entry since the key is a trivial pair of ints which can
         ///    be compared quickly. The downside to that is that the hash codes must be recomputed
         ///    whenever the map is resized, but that is very cheap.
-        /// 2. We supply a single <see cref="Intern(CallStackInfo)"/> method (instead of a TryGetValue
+        /// 2. We supply a single <see cref="Intern(T)"/> method (instead of a TryGetValue
         ///    followed by an Add) so that a hashcode computation is saved in the case of a "miss".
         /// 3. We don't support removal. This means we don't need to keep track of a free list and neither
         ///    do we need sentinel values. This also allows us to use all 32 bits of the hash-code (where
         ///    <see cref="Dictionary{TKey, TValue}"/> uses only 31 bits, reserving -1 to indicate a freed
         ///    entry. The only sentinel value is in the <see cref="_buckets"/> array to indicate a free
         ///    bucket.
-        /// 4. We return an index (of the interned item) to the caller which can be used for constant-time
+        /// 4. We do support efficient (constant time) in-place update (<see cref="Update(int, T)"/>) of
+        ///    an existing value - even if its hashcode changes.
+        /// 5. We return an index (of the interned item) to the caller which can be used for constant-time
         ///    look-up in the table via <see cref="this[int]"/>.
-        /// 5. To free up memory, the caller can call <see cref="DoneInterning"/>. The entries themselves
+        /// 6. To free up memory, the caller can call <see cref="DoneInterning"/>. The entries themselves
         ///    are stored separately from the indexing parts of the table so that the latter can be dropped
         ///    easily.
         /// </summary>
-        private class CallStackInternMap
+        private class InternTable<T> where T : IEquatable<T>
         {
             /// <summary>
             /// Construct the intern map
             /// </summary>
             /// <param name="initialCapacity">The estimated capacity of the map.</param>
-            public CallStackInternMap(int initialCapacity = 0)
+            public InternTable(int initialCapacity = 0)
             {
                 Resize(desiredSize: initialCapacity);
             }
 
             /// <summary>
-            /// Count of interned call stack infos.
+            /// Count of interned values.
             /// </summary>
             public int Count
             {
@@ -1158,14 +1133,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             }
 
             /// <summary>
-            /// Access a <see cref="CallStackInfo"/> by index.
+            /// Access an element by index.
             /// </summary>
             /// <param name="index">The zero-based index of the desired entry.</param>
             /// <returns>The entry at the requested index.</returns>
             /// <remarks>For performance, in Release mode we do no range checking on <paramref name="index"/>, so it is possible to
             /// access an entry beyond <see cref="Count"/> but prior to the maximum capacity of the array.</remarks>
             /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> was less than zero or greater than the capacity.</exception>
-            public CallStackInfo this[int index]
+            public T this[int index]
             {
                 get
                 {
@@ -1175,20 +1150,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             }
 
             /// <summary>
-            /// Intern a <see cref="CallStackInfo"/>. If the same value has been seen before
+            /// Intern a value. If the same value has been seen before
             /// then this returns the index of the previously seen entry. If not, a new entry
             /// is added and this returns the index of the newly added entry.
             /// </summary>
-            /// <param name="info">The candidate value.</param>
+            /// <param name="value">The candidate value.</param>
             /// <returns>The index of the interned entry.</returns>
             /// <exception cref="NullReferenceException">This routine was called after calling <see cref="DoneInterning"/>.</exception>
-            public int Intern(CallStackInfo info)
+            public int Intern(T value)
             {
-                int targetBucket = BucketNumberFromInfo(info);
+                int targetBucket = BucketNumberFromValue(value);
                 int index;
                 for (index = _buckets[targetBucket]._entry; index >= 0; index = _buckets[index]._nextBucket)
                 {
-                    if (_entries[index].Equals(info))
+                    if (_entries[index].Equals(value))
                     {
                         // Found
                         return index;
@@ -1199,22 +1174,76 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (_count == _entries.Length)
                 {
                     Resize(_count * 2); // Simple doubling (geometric growth)
-                    targetBucket = BucketNumberFromInfo(info);
+                    targetBucket = BucketNumberFromValue(value);
                 }
 
                 index = _count++;
-                _entries[index] = info;
+                _entries[index] = value;
                 _buckets[index]._nextBucket = _buckets[targetBucket]._entry;
                 _buckets[targetBucket]._entry = index;
                 return index;
             }
 
             /// <summary>
-            /// As an optimization, if you are done calling <see cref="Intern(CallStackInfo)"/>, then you can call this
+            /// Update an existing item.
+            /// </summary>
+            /// <param name="index">The index of the existing item.</param>
+            /// <param name="newValue">The new value.</param>
+            public void Update(int index, T newValue)
+            {
+                if (index < 0 || index >= _count)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                var oldValue = _entries[index];
+                if (oldValue.Equals(newValue))
+                {
+                    return;
+                }
+
+                // Update the value
+                _entries[index] = newValue;
+
+                // Update the hash table if necessary.
+                int oldBucket = BucketNumberFromValue(oldValue);
+                int newBucket = BucketNumberFromValue(newValue);
+                if (oldBucket == newBucket)
+                {
+                    // Nothing changes. The values hash to the same bucket.
+                    return;
+                }
+
+                // Remove the old value from the old bucket. This involves traversing the
+                // linked list to find the predecessor and update it's next pointer.
+                int prev = -1;
+                for (int i = _buckets[oldBucket]._entry; i != index; i = _buckets[i]._nextBucket)
+                {
+                    prev = i;
+                }
+
+                if (prev < 0)
+                {
+                    // Removing the head
+                    _buckets[oldBucket]._entry = _buckets[index]._nextBucket;
+                }
+                else
+                {
+                    // Removing a non-head entry
+                    _buckets[prev]._nextBucket = _buckets[index]._nextBucket;
+                }
+
+                // Add the new value to the head of the new bucket.
+                _buckets[index]._nextBucket = _buckets[newBucket]._entry;
+                _buckets[newBucket]._entry = index;
+            }
+
+            /// <summary>
+            /// As an optimization, if you are done calling <see cref="Intern(T)"/>, then you can call this
             /// to free up some memory.
             /// </summary>
             /// <remarks>After calling this, you can still call <see cref="this[int]"/>. However, if you try to
-            /// call <see cref="Intern(CallStackInfo)"/> you will get a <see cref="NullReferenceException"/>.</remarks>
+            /// call <see cref="Intern(T)"/> you will get a <see cref="NullReferenceException"/>.</remarks>
             public void DoneInterning()
             {
                 _buckets = null;
@@ -1226,14 +1255,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 }
             }
 
-            private int BucketNumberFromInfo(CallStackInfo info)
+            private int BucketNumberFromValue(T value)
             {
-                return BucketNumberFromInfo(info, _buckets.Length);
+                return BucketNumberFromValue(value, _buckets.Length);
             }
 
-            private static int BucketNumberFromInfo(CallStackInfo info, int bucketCount)
+            private static int BucketNumberFromValue(T value, int bucketCount)
             {
-                int hashCode = info.GetHashCode();
+                int hashCode = value.GetHashCode();
                 uint targetBucket = (uint)hashCode % (uint)bucketCount;
                 return (int)targetBucket;
             }
@@ -1259,14 +1288,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     newBuckets[i]._entry = -1;
                 }
 
-                var newEntries = new CallStackInfo[newSize];
+                var newEntries = new T[newSize];
                 if (_entries != null)
                 {
                     Array.Copy(_entries, 0, newEntries, 0, _count);
                     // Regenerate the index
                     for (int i = 0; i < _count; i++)
                     {
-                        int bucket = BucketNumberFromInfo(newEntries[i], newSize);
+                        int bucket = BucketNumberFromValue(newEntries[i], newSize);
                         newBuckets[i]._nextBucket = newBuckets[bucket]._entry;
                         newBuckets[bucket]._entry = i;
                     }
@@ -1338,22 +1367,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             }
 
             private Bucket[] _buckets;
-            private CallStackInfo[] _entries;
+            private T[] _entries;
             private int _count;
         }
 
-        // maps (moduleIndex - m_moduleStackStartIndex) to module name 
-        private GrowableArray<string> m_modules;
+        private readonly InternTable<string> m_moduleIntern;
+        private readonly StackSourceModuleIndex m_emptyModuleIdx;
+
         // maps (frameIndex - m_frameStartIndex) to frame information
-        private GrowableArray<FrameInfo> m_frames;
+        private readonly InternTable<FrameInfo> m_frameIntern;
 
         // Given a Call Stack index, return the list of call stack indexes that that routine calls.  
-        // Also maps (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)
-        private readonly CallStackInternMap m_callStackIntern;
-
-        private Dictionary<FrameInfo, StackSourceFrameIndex> m_frameIntern;
-        private Dictionary<string, StackSourceModuleIndex> m_moduleIntern;
-        StackSourceModuleIndex m_emptyModuleIdx;
+        // Also maps (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)  
+        private readonly InternTable<CallStackInfo> m_callStackIntern;
 
         // To allow the interner to 'open' an existing stackSource, we make it flexible about where indexes start.
         // The typical case these are all 0.  
