@@ -3075,7 +3075,9 @@ namespace PerfViewExtensibility
 
             var jitStats = jitCollector.Collect();
             ClrCap.CAP.GenerateCAPReport(jitStats, jitCollector.Report, Int32.Parse(methodCount));
-            jitCollector.Report.WriteToFileXML(StripFileExt(etlFile), ".jitstats");
+            var outputFileName = StripFileExt(etlFile) + "jitstats.xml";
+            jitCollector.Report.WriteToFileXML(outputFileName);
+            LogFile.WriteLine("[Output Written to {0}]", outputFileName);
         }
 
         /// <summary>
@@ -3090,7 +3092,15 @@ namespace PerfViewExtensibility
             GcCapCollector gcCollector = new GcCapCollector(source);
             var gcStats = gcCollector.Collect(etlFile, source);
             ClrCap.CAP.GenerateCAPReport(gcStats, gcCollector.Report);
-            gcCollector.Report.WriteToFileXML(StripFileExt(savedEtlFile));
+
+            var outputFileName = StripFileExt(savedEtlFile) + ".xml";
+            gcCollector.Report.WriteToFileXML(outputFileName);
+            LogFile.WriteLine("[Output Written to {0}]", outputFileName);
+            if (!App.CommandLineArgs.NoGui)
+            {
+                LogFile.WriteLine("[Opening XML file in Browser]");
+                Command.Run(Command.Quote(outputFileName), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+            }
         }
 #endif
 

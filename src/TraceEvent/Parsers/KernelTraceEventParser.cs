@@ -330,16 +330,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 };
                 ThreadEndGroup += delegate (ThreadTraceData data)
                 {
-                    // Do we have thread start information for this thread?
                     int processID;
-                    if (!state.threadIDtoProcessID.TryGetValue((Address)data.ThreadID, data.TimeStampQPC, out processID))
+                    if (source.IsRealTime)
                     {
-                        // No, this is likely a circular buffer, remember the thread end information 
-                        if (state.threadIDtoProcessIDRundown == null)
-                            state.threadIDtoProcessIDRundown = new HistoryDictionary<int>(100);
+                        state.threadIDtoProcessID.Remove((Address)data.ThreadID);
+                    }
+                    else
+                    {
+                        // Do we have thread start information for this thread?
+                        if (!state.threadIDtoProcessID.TryGetValue((Address)data.ThreadID, data.TimeStampQPC, out processID))
+                        {
+                            // No, this is likely a circular buffer, remember the thread end information 
+                            if (state.threadIDtoProcessIDRundown == null)
+                                state.threadIDtoProcessIDRundown = new HistoryDictionary<int>(100);
 
-                        // Notice I NEGATE the timestamp, this way HistoryDictionary does the comparison the way I want it.  
-                        state.threadIDtoProcessIDRundown.Add((Address)data.ThreadID, -data.TimeStampQPC, data.ProcessID);
+                            // Notice I NEGATE the timestamp, this way HistoryDictionary does the comparison the way I want it.  
+                            state.threadIDtoProcessIDRundown.Add((Address)data.ThreadID, -data.TimeStampQPC, data.ProcessID);
+                        }
                     }
                 };
             }

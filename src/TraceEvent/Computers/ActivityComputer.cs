@@ -927,7 +927,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 // Add a frame that shows that we are starting a task 
-                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID);
+                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
                 fullCreationStack = m_outputSource.Interner.CallStackIntern(threadFrameIndex, fullCreationStack);
 
                 // and take the region between creationStackFragment and threadPoolTransition and concatenate it to fullCreationStack.  
@@ -1010,10 +1010,10 @@ namespace Microsoft.Diagnostics.Tracing
                 StackSourceFrameIndex newFrameIdx = m_outputSource.GetFrameIndex(newFrameCodeAddressIndex);
                 if (newFrameIdx != existingFrameIdx)
                 {
-                    var existingFrameName = m_outputSource.GetFrameName(m_outputSource.GetFrameIndex(existingStacks), false);
-                    var newFrameMethodIndex = m_eventLog.CodeAddresses.MethodIndex(newFrameCodeAddressIndex);
-                    if (newFrameMethodIndex == MethodIndex.Invalid)
-                        return StackSourceFrameIndex.Invalid;
+                    // Currently we only recognise something as recursive when the frame IDs match.  
+                    // It is true most of the time that names are interned (thus if names match IDs will
+                    // match) but it is not enforced and might not be true all the time.  If this causes
+                    // problems we can revisi.  
                     return StackSourceFrameIndex.Invalid;
                 }
 
@@ -1023,7 +1023,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var frameIdx = m_outputSource.GetFrameIndex(existingStacks);
             var frameName = m_outputSource.GetFrameName(frameIdx, false);
-            if (!frameName.StartsWith("STARTING TASK on Thread"))
+            if (!frameName.StartsWith("STARTING TASK on Thread", StringComparison.Ordinal))
                 return StackSourceFrameIndex.Invalid;
             return frameIdx;
         }
@@ -1101,7 +1101,7 @@ namespace Microsoft.Diagnostics.Tracing
             var curSearchIdx = 22;      // Skips the STARTING TASK ...
             for (;;)
             {
-                var index = frameName.IndexOf(newTaskID, curSearchIdx);
+                var index = frameName.IndexOf(newTaskID, curSearchIdx, StringComparison.Ordinal);
                 if (index < 0)
                     break;
                 curSearchIdx = index + newTaskID.Length;

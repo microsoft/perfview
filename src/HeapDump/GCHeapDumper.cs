@@ -216,6 +216,7 @@ public class GCHeapDumper
             configurationDirectories = GetConfigurationDirectoryPaths(m_runTime);
         }
 
+        m_log.WriteLine("Creating a GC Dump from a liver process {0}", processID);
         WriteData(logLiveStats: true);
 
         var collectionMetadata = new CollectionMetadata()
@@ -257,6 +258,7 @@ public class GCHeapDumper
         ClrRuntime runtime;
         InitializeClrRuntime(processDumpFile, out target, out runtime);
 
+        m_log.WriteLine("Creating a GC Dump from the dump file {0}", processDumpFile);
         ICorDebugProcess proc = null;
         try
         {
@@ -1405,7 +1407,7 @@ public class GCHeapDumper
             m_log.WriteLine("Average Size Multiplier:  {0,6:f2}", m_gcHeapDump.AverageSizeMultiplier);
 
             m_gcHeapDump.MemoryGraph = sampledGraph;
-            m_log.WriteLine("After sampling Object Count {0}K = {1:f1} MB ",
+            m_log.WriteLine("After sampling Object Count {0}K    Total GC Heap Size {1:f1} MB ",
                 m_gcHeapDump.MemoryGraph.NodeCount, m_gcHeapDump.MemoryGraph.TotalSize / 1000000.0);
         }
         else
@@ -1413,6 +1415,7 @@ public class GCHeapDumper
 
         if (logLiveStats)
         {
+            m_log.WriteLine("Dump Created from a live process.");
             m_gcHeapDump.TimeCollected = DateTime.Now;
             m_gcHeapDump.MachineName = Environment.MachineName;
             m_gcHeapDump.ProcessID = m_processID;
@@ -1427,9 +1430,16 @@ public class GCHeapDumper
                 m_log.WriteLine("Dumped process {0} ID {1} TotalProcessCommit {2:n0} MB, TotalProcessWorkingSet {3:n0} MB",
                     m_gcHeapDump.ProcessName, m_gcHeapDump.ProcessID,
                     m_gcHeapDump.TotalProcessCommit / 1000000, m_gcHeapDump.TotalProcessWorkingSet / 1000000);
+
+                m_log.WriteLine("Total GC Size = {0:n0} = {1:n2} % of total working set",
+                m_gcHeapDump.MemoryGraph.TotalSize / 1000000, 
+                m_gcHeapDump.MemoryGraph.TotalSize * 100.0 / m_gcHeapDump.TotalProcessWorkingSet);
             }
             catch (Exception) { }
         }
+        else
+            m_log.WriteLine("Dump Created from a .DMP file, no live statistics");
+
 
         // This code always matches the bitness of the process being dumped.  
         Debug.Assert(EnvironmentUtilities.Is64BitProcess == m_gcHeapDump.MemoryGraph.Is64Bit);
