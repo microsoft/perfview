@@ -1010,7 +1010,6 @@ namespace Microsoft.Diagnostics.Tracing
                 StackSourceFrameIndex newFrameIdx = m_outputSource.GetFrameIndex(newFrameCodeAddressIndex);
                 if (newFrameIdx != existingFrameIdx)
                 {
-                    var existingFrameName = m_outputSource.GetFrameName(m_outputSource.GetFrameIndex(existingStacks), false);
                     var newFrameMethodIndex = m_eventLog.CodeAddresses.MethodIndex(newFrameCodeAddressIndex);
                     if (newFrameMethodIndex == MethodIndex.Invalid)
                         return StackSourceFrameIndex.Invalid;
