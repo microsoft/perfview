@@ -1023,7 +1023,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var frameIdx = m_outputSource.GetFrameIndex(existingStacks);
             var frameName = m_outputSource.GetFrameName(frameIdx, false);
-            if (!frameName.StartsWith("STARTING TASK on Thread"))
+            if (!frameName.StartsWith("STARTING TASK on Thread", StringComparison.Ordinal))
                 return StackSourceFrameIndex.Invalid;
             return frameIdx;
         }
