@@ -3069,6 +3069,9 @@ namespace PerfView
                         sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC Location"), sample.StackIndex);
                     }
 
+                    // Add GC Number
+                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC_NUM " + gcIndex), sample.StackIndex);
+
                     // Duration of the pin. 
                     var pinDuration = "UNKNOWN";
                     if (pinStartTimeRelativeMSec != 0)
@@ -3090,9 +3093,6 @@ namespace PerfView
 
                     // Add the generation.
                     sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Generation " + gcGen), sample.StackIndex);
-
-                    // Add GC
-                    sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC " + gcIndex), sample.StackIndex);
 
                     // _sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Handle 0x" + data.HandleID.ToString("x") +  " Object 0x" + data.ObjectID.ToString("x")), _sample.StackIndex);
 
@@ -4074,7 +4074,7 @@ namespace PerfView
             fileParser.Create += delegate (FileIOCreateTraceData data)
             {
                 StackSourceCallStackIndex stackIdx = GetStackForProcess(data.Process(), traceLog, stackSource, processStackCache);
-                string imageFrameString = string.Format("FileAccess {0}", data.FileName);
+                string imageFrameString = string.Format("FileOpenOrCreate {0}", data.FileName);
                 StackSourceFrameIndex imageFrameIdx = stackSource.Interner.FrameIntern(imageFrameString);
                 stackIdx = stackSource.Interner.CallStackIntern(imageFrameIdx, stackIdx);
 
@@ -4661,7 +4661,7 @@ namespace PerfView
 
             if (stackSourceName == "Pinning At GC Time")
             {
-                string defaultFoldPattern = "^PINNED_FOR";
+                string defaultFoldPattern = "^PINNED_FOR;^GC_NUM";
                 stackWindow.FoldRegExTextBox.Text = defaultFoldPattern;
                 stackWindow.FoldRegExTextBox.Items.Insert(0, defaultFoldPattern);
 

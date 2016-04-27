@@ -135,6 +135,12 @@ using System.Collections.Generic;
 // Versioning of ClrTraceEventParser.Keywords.JittedMethodILToNativeMapEventSources. 
 
 /* UNTRIAGED */
+// Fix 'leak' in KernelTraceEventParser for the following in the TraceLog in monitoring mode.  
+//        internal HistoryDictionary<string> fileIDToName;
+//        internal HistoryDictionary<int> threadIDtoProcessID;
+//        internal HistoryDictionary<int> threadIDtoProcessIDRundown;
+//        TraceLog.threadIDtoThread 
+
 // Interop report in Heap dump seems to be broken disabled for now.  
 // Add ability to use wildcards in the names (at least the instance names) of the StopOnPerfCounter option.   
 // We have the problem with French making bad numbers in the HeapDUmp output because the Command run does not recognise the data from the process as being UTF8.  This seems to need a framework update.
@@ -644,10 +650,7 @@ using System.Collections.Generic;
 // Write blog entry on EventSource.  
 // Ability to see event Providers in a process
 
-// Fix 'leak' in KernelTraceEventParser for 
-//        internal HistoryDictionary<string> fileIDToName;
-//        internal HistoryDictionary<int> threadIDtoProcessID;
-//        internal HistoryDictionary<int> threadIDtoProcessIDRundown;
+
 //
 // *** Exception when you have sorting (by includive in the ByName view) and then set the time range (by selecting a range in the 'When' field
 // 
