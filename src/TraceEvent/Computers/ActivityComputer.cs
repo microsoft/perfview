@@ -1101,7 +1101,7 @@ namespace Microsoft.Diagnostics.Tracing
             var curSearchIdx = 22;      // Skips the STARTING TASK ...
             for (;;)
             {
-                var index = frameName.IndexOf(newTaskID, curSearchIdx);
+                var index = frameName.IndexOf(newTaskID, curSearchIdx, StringComparison.Ordinal);
                 if (index < 0)
                     break;
                 curSearchIdx = index + newTaskID.Length;
