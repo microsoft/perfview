@@ -1010,10 +1010,10 @@ namespace Microsoft.Diagnostics.Tracing
                 StackSourceFrameIndex newFrameIdx = m_outputSource.GetFrameIndex(newFrameCodeAddressIndex);
                 if (newFrameIdx != existingFrameIdx)
                 {
-                    var existingFrameName = m_outputSource.GetFrameName(m_outputSource.GetFrameIndex(existingStacks), false);
-                    var newFrameMethodIndex = m_eventLog.CodeAddresses.MethodIndex(newFrameCodeAddressIndex);
-                    if (newFrameMethodIndex == MethodIndex.Invalid)
-                        return StackSourceFrameIndex.Invalid;
+                    // Currently we only recognise something as recursive when the frame IDs match.  
+                    // It is true most of the time that names are interned (thus if names match IDs will
+                    // match) but it is not enforced and might not be true all the time.  If this causes
+                    // problems we can revisi.  
                     return StackSourceFrameIndex.Invalid;
                 }
 
