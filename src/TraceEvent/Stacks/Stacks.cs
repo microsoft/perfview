@@ -922,7 +922,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string GetFrameName(StackSourceFrameIndex frameIndex, bool fullModulePath)
         {
             var frameIndexOffset = (int)(frameIndex - m_frameStartIndex);
-            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frameIntern.Count);
+            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frames.Count);
             var frameName = m_frames[frameIndexOffset].FrameName;
             var baseFrameIndex = m_frames[frameIndexOffset].BaseFrameIndex;
             if (baseFrameIndex != StackSourceFrameIndex.Invalid)
@@ -1053,7 +1053,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The current number of unique frames that have been interned so far
         /// </summary>
-        public int FrameCount { get { return m_frameIntern.Count; } }
+        public int FrameCount { get { return m_frames.Count; } }
         /// <summary>
         /// The current number of unique call stacks that have been interned so far
         /// </summary>
