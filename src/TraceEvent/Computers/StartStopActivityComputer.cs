@@ -608,11 +608,15 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public static unsafe string ActivityPathString(Guid guid)
         {
-            if (!IsActivityPath(guid, 0))
-                return guid.ToString();
+            return IsActivityPath(guid, 0) ? CreateActivityPathString(guid) : guid.ToString();
+        }
+
+        internal static unsafe string CreateActivityPathString(Guid guid)
+        {
+            Debug.Assert(IsActivityPath(guid, 0));
 
             var processID = ActivityPathProcessID(guid);
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = Utilities.StringBuilderCache.Acquire();
             sb.Append('/');
             if (processID != 0)
             {
@@ -694,7 +698,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             sb.Append('/');
-            return sb.ToString();
+            return Utilities.StringBuilderCache.GetStringAndRelease(sb);
         }
 
 #region private
@@ -1091,23 +1095,48 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                string activityString = StartStopActivityComputer.ActivityPathString(ActivityID);
-                if (!activityString.StartsWith("//"))
+                var sb = Utilities.StringBuilderCache.Acquire(64);
+
+                sb.Append(TaskName);
+                sb.Append('(');
+                AppendActivityPath(sb, ActivityID);
+
+                if (ExtraInfo != null)
                 {
-                    if (activityString.EndsWith("0607-08090a0b0c0d"))   // Http Command)
-                        activityString = "HTTP/Id=" + activityString.Substring(0, 8); // The first bytes are the ID that links the start and stop.
-                    if (activityString.EndsWith("0707-08090a0b0c0d"))   // SQL Command)
-                        activityString = "SQL/Id=" + activityString.Substring(0, 8);  // The first 8 bytes is the ID that links the start and stop.
+                    sb.Append(',');
+                    sb.Append(ExtraInfo);
                 }
 
-                string ret;
-                if (ExtraInfo == null)
-                    ret = TaskName + "(" + activityString + ")";
-                else
-                    ret = TaskName + "(" + activityString + "," + ExtraInfo + ")";
-                return ret;
+                sb.Append(')');
+                return Utilities.StringBuilderCache.GetStringAndRelease(sb);
             }
         }
+
+        private unsafe static StringBuilder AppendActivityPath(StringBuilder sb, Guid guid)
+        {
+            if (StartStopActivityComputer.IsActivityPath(guid, processID: 0))
+            {
+                return sb.Append(StartStopActivityComputer.CreateActivityPathString(guid));
+            }
+
+            // There are a  couple of well-known activity ID patterns:
+            // HTTP Command: xxxxxxxx-yyyy-zzzz-0607-08090a0b0c0d
+            // SQL  Command: xxxxxxxx-yyyy-zzzz-0707-08090a0b0c0d
+            switch (((ulong*)&guid)[1])
+            {
+                case 0x0d0c0b0a09080706: // HTTP Command
+                    // The first bytes are the ID that links the start and stop.
+                    return sb.Append("HTTP/Id=").Append(((uint*)&guid)[0].ToString("x8"));
+
+                case 0x0d0c0b0a09080707: // SQL Command
+                    // The first 8 bytes is the ID that links the start and stop.
+                    return sb.Append("SQL/Id=").Append(((uint*)&guid)[0].ToString("x8"));
+
+                default:
+                    return sb.Append(guid.ToString());
+            }
+        }
+
         /// <summary>
         /// If the activity has additional information associated with it (e.g. a URL), put it here.  Can be null.
         /// </summary>
