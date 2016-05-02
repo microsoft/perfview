@@ -80,7 +80,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// Generate the thread time stacks, outputting to 'stackSource'.  
         /// </summary>
         /// <param name="outputStackSource"></param>
-        public void GenerateThreadTimeStacks(MutableTraceEventStackSource outputStackSource)
+        /// <param name="traceEvents">Optional filtered trace events.</param>
+        public void GenerateThreadTimeStacks(MutableTraceEventStackSource outputStackSource, TraceEvents traceEvents = null)
         {
             this.m_outputStackSource = outputStackSource;
             m_sample = new StackSourceSample(outputStackSource);
@@ -92,8 +93,8 @@ namespace Microsoft.Diagnostics.Tracing
             m_readyFrameIndex = outputStackSource.Interner.FrameIntern("READIED_TIME (waiting for cpu)");
             m_networkFrameIndex = outputStackSource.Interner.FrameIntern("NETWORK_TIME (probably)");
 
-            TraceLogEventSource eventSource = m_eventLog.Events.GetSource();        // TODO: We don't restrict to a range because we don't start up accurately.
-
+            TraceLogEventSource eventSource = traceEvents == null ? m_eventLog.Events.GetSource() :
+                                                                     traceEvents.GetSource();
             if (GroupByStartStopActivity)
                 UseTasks = true;
 

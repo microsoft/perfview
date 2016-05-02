@@ -187,7 +187,8 @@ namespace Microsoft.Diagnostics.Symbols
                     if (element.IsSymServer)
                     {
                         if (pdbIndexPath == null)
-                            pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N") + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
+                            // symbolsource.org and nuget.smbsrc.net only support upper case of pdbIndexGuid
+                            pdbIndexPath = pdbSimpleName + @"\" + pdbIndexGuid.ToString("N").ToUpper() + pdbIndexAge.ToString() + @"\" + pdbSimpleName;
                         string cache = element.Cache;
                         if (cache == null)
                             cache = path.DefaultSymbolCache();
@@ -501,6 +502,9 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                     }
 
+#if Skip_Symbol_Lookup_At_Collection_Time
+                    // Symbol lookup is not required at collection time in .Net Framework 4.6.1 and beyond
+#else
                     // TODO FIX NOW:  In V4.6.1 of the runtime we no longer need /lines to get line number 
                     // information (the native to IL mapping is always put in the NGEN image and that
                     // is sufficient to look up line numbers later (not at NGEN pdb creation time).  
@@ -521,6 +525,7 @@ namespace Microsoft.Diagnostics.Symbols
                         else
                             log.WriteLine("NGEN image did not have IL PDB information, giving up on line number info.");
                     }
+#endif
                 }
             }
 
@@ -739,7 +744,7 @@ namespace Microsoft.Diagnostics.Symbols
                 // This implements a timeout 
                 Task task = Task.Factory.StartNew(delegate
                 {
-                    if (serverPath.StartsWith("http:"))
+                    if (Uri.IsWellFormedUriString(serverPath, UriKind.Absolute))
                     {
                         var fullUri = serverPath + "/" + pdbIndexPath.Replace('\\', '/');
                         try
@@ -951,7 +956,7 @@ namespace Microsoft.Diagnostics.Symbols
                 return targetPath;
 
             // The rest of this compressed file/file pointers stuff is only for remote servers.  
-            if (!urlForServer.StartsWith(@"\\") && !urlForServer.StartsWith("http:"))
+            if (!urlForServer.StartsWith(@"\\") && !Uri.IsWellFormedUriString(urlForServer, UriKind.Absolute))
                 return null;
 
             // See if it is a compressed file by replacing the last character of the name with an _
@@ -2151,7 +2156,7 @@ namespace Microsoft.Diagnostics.Symbols
                             var target = SourceServerFetchVar("SRCSRVTRG", vars);
                             if (!target.StartsWith(cacheDir, StringComparison.OrdinalIgnoreCase))
                             {
-                                if (target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+                                if (Uri.IsWellFormedUriString(target, UriKind.Absolute))
                                 {
                                     log.WriteLine("Fetching file {0} from web.", target);
                                     var url = target;
@@ -2163,7 +2168,7 @@ namespace Microsoft.Diagnostics.Symbols
                                         if (url.StartsWith(prefix))
                                         {
                                             var relPath = url.Substring(prefix.Length);
-                                            var newTarget = cacheDir + @"\" + relPath.Replace('/', '\\');
+                                            var newTarget = Path.Combine(cacheDir, relPath.TrimStart('/').Replace('/', '\\'));
                                             if (m_symbolModule.m_reader.GetPhysicalFileFromServer(prefix, relPath, newTarget))
                                                 target = newTarget;
                                         }
@@ -2171,7 +2176,12 @@ namespace Microsoft.Diagnostics.Symbols
                                             log.WriteLine("target does not have HTTP_ALIAS as a prefix");
                                     }
                                     else
-                                        log.WriteLine("Could not find HTTP_ALIAS");
+                                    {
+                                        var uri = new Uri(url);
+                                        var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
+                                        if (m_symbolModule.m_reader.GetPhysicalFileFromServer(uri.GetLeftPart(UriPartial.Authority), uri.AbsolutePath, newTarget))
+                                            target = newTarget;
+                                    }
 
                                     if (target == null)
                                     {

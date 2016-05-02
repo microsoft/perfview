@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
