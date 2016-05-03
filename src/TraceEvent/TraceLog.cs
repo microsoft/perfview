@@ -4740,7 +4740,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.commandLine = data.CommandLine;
             this.imageFileName = data.ImageFileName;
             this.parentID = data.ParentID;
-            this.parent = log.Processes.GetProcess(data.ParentID, data.TimeStampQPC);
+            this.parent = log.Processes.GetProcess(data.ParentID, this.startTimeQPC);
         }
         internal void ProcessEnd(ProcessTraceData data)
         {
