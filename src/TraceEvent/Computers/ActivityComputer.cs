@@ -41,7 +41,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_symbolReader = reader;
             // m_perActivityStackIndexMaps = new Dictionary<CallStackIndex, StackSourceCallStackIndex>[eventLog.Activities.Count + 1];
             m_threadToCurrentActivity = new TraceActivity[m_eventLog.Threads.Count];
-            m_taskStartFrames = new StackSourceFrameIndex[m_eventLog.Threads.Count];
 
             // Every thread starts out needing auto-start.  Thus the thread activity is really only for the first time.  
             m_threadNeedsToAutoStart = new bool[m_eventLog.Threads.Count];
@@ -922,19 +921,16 @@ namespace Microsoft.Diagnostics.Tracing
                 // If baseStack is recursive with the frame we already have, do nothing.  
                 StackSourceFrameIndex taskMarkerFrame = IsRecursiveTask(baseStack, threadPoolTransition, fullCreationStack);
                 if (taskMarkerFrame != StackSourceFrameIndex.Invalid)
-                {
-                    UpdateTaskMarkerFrame(taskMarkerFrame, activity.Thread.ThreadID.ToString());         // Add the thread ID to the 'STARTING TASK' frame if necessary
                     return fullCreationStack;
-                }
 
                 // Add a frame that shows that we are starting a task 
-                StackSourceFrameIndex threadFrameIndex = m_taskStartFrames[(int)activity.Thread.ThreadIndex];
-                if (threadFrameIndex == default(StackSourceFrameIndex))
-                {
-                    // First time. Synthesize the new frame.
-                    m_taskStartFrames[(int)activity.Thread.ThreadIndex] = threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
-                }
-
+                // We dont like to add the thread ID because it inhibits folding, but it is useful for debugging so we leave it 
+                // in the debug build.   
+#if THREAD_ID_ON_TASK_START
+                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
+#else 
+                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK");
+#endif
                 fullCreationStack = m_outputSource.Interner.CallStackIntern(threadFrameIndex, fullCreationStack);
 
                 // and take the region between creationStackFragment and threadPoolTransition and concatenate it to fullCreationStack.  
@@ -1030,7 +1026,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var frameIdx = m_outputSource.GetFrameIndex(existingStacks);
             var frameName = m_outputSource.GetFrameName(frameIdx, false);
-            if (!frameName.StartsWith("STARTING TASK on Thread", StringComparison.Ordinal))
+            if (!frameName.StartsWith("STARTING TASK", StringComparison.Ordinal))
                 return StackSourceFrameIndex.Invalid;
             return frameIdx;
         }
@@ -1094,29 +1090,6 @@ namespace Microsoft.Diagnostics.Tracing
             }
             // This happens after the of end of the task or on broken stacks.  
             return CallStackIndex.Invalid;
-        }
-
-        /// <summary>
-        /// taskMarkerFrame must be a frame of the form STARTING TASK on Thread NN NN NN ..
-        /// and newTaskID is NNN.   If newTaskID is in that set, then do nothing.  Otherwise update
-        /// that frame node to include NNN.  
-        /// </summary>
-        private void UpdateTaskMarkerFrame(StackSourceFrameIndex taskMarkerFrame, string newTaskID)
-        {
-            var frameName = m_outputSource.GetFrameName(taskMarkerFrame, true);
-            Debug.Assert(frameName.StartsWith("STARTING TASK on Thread"));
-            var curSearchIdx = 22;      // Skips the STARTING TASK ...
-            for (;;)
-            {
-                var index = frameName.IndexOf(newTaskID, curSearchIdx, StringComparison.Ordinal);
-                if (index < 0)
-                    break;
-                curSearchIdx = index + newTaskID.Length;
-                // Already present, we can return. 
-                if (frameName[index - 1] == ' ' && (curSearchIdx == frameName.Length || frameName[curSearchIdx] == ' '))
-                    return;
-            }
-            m_outputSource.Interner.UpdateFrameName(taskMarkerFrame, frameName + " " + newTaskID);
         }
 
         /// <summary>
@@ -1211,9 +1184,8 @@ namespace Microsoft.Diagnostics.Tracing
         private GCReferenceComputer m_gcReferenceComputer;
 
         private CallStackCache m_callStackCache;                  // Speeds things up by remembering previously computed entries. 
-        private StackSourceFrameIndex[] m_taskStartFrames;        // "STARTING TASK" frame index per thread
 
-        #endregion
+#endregion
     }
 
 #if UNUSED
@@ -1244,7 +1216,7 @@ namespace Microsoft.Diagnostics.Tracing
             return GetActivityForThread(ref m_ActivityMap[(int)thread.ThreadIndex], timeStampRelativeMSec, thread);
         }
 
-    #region private
+#region private
 
         private void InsertActivityForThread(ref GrowableArray<ActivityEntry> threadTable, TraceActivity activity)
         {
@@ -1267,7 +1239,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         GrowableArray<ActivityEntry>[] m_ActivityMap;
         ActivityComputer m_computer;
-    #endregion
+#endregion
     }
 #endif
 }
