@@ -863,8 +863,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             StackSourceModuleIndex moduleStackStartIndex = StackSourceModuleIndex.Start)
         {
             m_moduleIntern = new InternTable<string>(estNumModules);
-            m_frames = new GrowableArray<FrameInfo>(estNumFrames);
-            m_frameIntern = new Dictionary<FrameInfo, StackSourceFrameIndex>(estNumFrames);
+            m_frameIntern = new InternTable<FrameInfo>(estNumFrames);
             m_callStackIntern = new InternTable<CallStackInfo>(estNumCallStacks);
 
             if (frameStartIndex < StackSourceFrameIndex.Start)
@@ -886,7 +885,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public void DoneInterning()
         {
             m_moduleIntern.DoneInterning();
-            m_frameIntern = null;
+            m_frameIntern.DoneInterning();
             m_callStackIntern.DoneInterning();
         }
 
@@ -922,9 +921,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string GetFrameName(StackSourceFrameIndex frameIndex, bool fullModulePath)
         {
             var frameIndexOffset = (int)(frameIndex - m_frameStartIndex);
-            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frames.Count);
-            var frameName = m_frames[frameIndexOffset].FrameName;
-            var baseFrameIndex = m_frames[frameIndexOffset].BaseFrameIndex;
+            Debug.Assert(0 <= frameIndexOffset && frameIndexOffset < m_frameIntern.Count);
+            var frameName = m_frameIntern[frameIndexOffset].FrameName;
+            var baseFrameIndex = m_frameIntern[frameIndexOffset].BaseFrameIndex;
             if (baseFrameIndex != StackSourceFrameIndex.Invalid)
             {
                 string baseName;
@@ -934,7 +933,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     baseName = "Frame " + ((int)baseFrameIndex).ToString();
                 return baseName + " " + frameName;
             }
-            var moduleName = m_moduleIntern[m_frames[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
+            var moduleName = m_moduleIntern[m_frameIntern[frameIndexOffset].ModuleIndex - m_moduleStackStartIndex];
             if (moduleName.Length == 0)
                 return frameName;
 
@@ -966,7 +965,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             var framesIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(frameIndex >= 0);
-            return m_frames[framesIndex].ModuleIndex;
+            return m_frameIntern[framesIndex].ModuleIndex;
         }
 
         /// <summary>
@@ -996,15 +995,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 moduleIndex = m_emptyModuleIdx;
 
             Debug.Assert(frameName != null);
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameName, moduleIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameName, moduleIndex)) + m_frameStartIndex;
         }
 
         /// <summary>
@@ -1015,11 +1006,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             int relFrameIndex = frameIndex - m_frameStartIndex;
             Debug.Assert(relFrameIndex >= 0);
 
-            FrameInfo frame = m_frames[(int)relFrameIndex];
+            FrameInfo frame = m_frameIntern[relFrameIndex];
             FrameInfo newFrame = new FrameInfo(newName, frame.ModuleIndex);
-            m_frames[(int)relFrameIndex] = newFrame;
-            if (!m_frameIntern.ContainsKey(newFrame))
-                m_frameIntern.Add(newFrame, frameIndex);
+            m_frameIntern.Update(relFrameIndex, newFrame);
         }
 
         /// <summary>
@@ -1031,16 +1020,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // In order to use this, you must 
             Debug.Assert(FrameNameLookup != null);
             Debug.Assert(frameSuffix != null);
-
-            StackSourceFrameIndex ret;
-            FrameInfo frame = new FrameInfo(frameSuffix, frameIndex);
-            if (!m_frameIntern.TryGetValue(frame, out ret))
-            {
-                ret = (m_frameStartIndex + m_frames.Count);
-                m_frames.Add(frame);
-                m_frameIntern.Add(frame, ret);
-            }
-            return ret;
+            return m_frameIntern.Intern(new FrameInfo(frameSuffix, frameIndex)) + m_frameStartIndex;
         }
         /// <summary>
         /// Lookup or create a StackSourceCallStackIndex for a call stack with the frame identified frameIndex and caller identified by callerIndex
@@ -1053,7 +1033,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The current number of unique frames that have been interned so far
         /// </summary>
-        public int FrameCount { get { return m_frames.Count; } }
+        public int FrameCount { get { return m_frameIntern.Count; } }
         /// <summary>
         /// The current number of unique call stacks that have been interned so far
         /// </summary>
@@ -1199,6 +1179,60 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 _buckets[index]._next = _buckets[targetBucket]._head;
                 _buckets[targetBucket]._head = index;
                 return index;
+            }
+
+            /// <summary>
+            /// Update an existing item.
+            /// </summary>
+            /// <param name="index">The index of the existing item.</param>
+            /// <param name="newValue">The new value.</param>
+            public void Update(int index, T newValue)
+            {
+                if (index < 0 || index >= _count)
+                {
+                    throw new IndexOutOfRangeException();
+                }
+
+                var oldValue = _entries[index];
+                if (oldValue.Equals(newValue))
+                {
+                    return;
+                }
+
+                // Update the value
+                _entries[index] = newValue;
+
+                // Update the hash table if necessary.
+                int oldBucket = BucketNumberFromValue(oldValue);
+                int newBucket = BucketNumberFromValue(newValue);
+                if (oldBucket == newBucket)
+                {
+                    // Nothing changes. The values hash to the same bucket.
+                    return;
+                }
+
+                // Remove the old value from the old bucket. This involves traversing the
+                // linked list to find the predecessor and update it's next pointer.
+                int prev = -1;
+                for (int i = _buckets[oldBucket]._head; i != index; i = _buckets[i]._next)
+                {
+                    prev = i;
+                }
+
+                if (prev < 0)
+                {
+                    // Removing the head
+                    _buckets[oldBucket]._head = _buckets[index]._next;
+                }
+                else
+                {
+                    // Removing a non-head entry
+                    _buckets[prev]._next = _buckets[index]._next;
+                }
+
+                // Add the new value to the head of the new bucket.
+                _buckets[index]._next = _buckets[newBucket]._head;
+                _buckets[newBucket]._head = index;
             }
 
             /// <summary>
@@ -1364,8 +1398,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         private readonly StackSourceModuleIndex m_emptyModuleIdx;
 
         // maps (frameIndex - m_frameStartIndex) to frame information
-        private GrowableArray<FrameInfo> m_frames;
-        private Dictionary<FrameInfo, StackSourceFrameIndex> m_frameIntern;
+        private readonly InternTable<FrameInfo> m_frameIntern;
 
         // Given a Call Stack index, return the list of call stack indexes that that routine calls.  
         // Also maps (callStackIndex - m_callStackStartIndex) to call stack information (frame and caller)  
