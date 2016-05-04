@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
@@ -123,6 +123,7 @@
     <Compile Include="TraceLog.cs" />
     <Compile Include="Utilities\command.cs" />
     <Compile Include="TraceUtilities\HistoryDictionary.cs" />
+    <Compile Include="Utilities\StringBuilderCache.cs" />
     <Compile Include="WPPTraceEventParser.cs" />
     <Compile Include="ZippedETL.cs" />
     <Compile Include="_README.cs" />

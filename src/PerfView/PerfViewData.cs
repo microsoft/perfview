@@ -4127,18 +4127,15 @@ namespace PerfView
         {
             if (process == null)
                 return StackSourceCallStackIndex.Invalid;
-            if (process.ProcessID == 15344)
-                GC.KeepAlive("");
 
-                var ret = processStackCache[(int)process.ProcessIndex];
+            var ret = processStackCache[(int)process.ProcessIndex];
             if (ret == StackSourceCallStackIndex.Invalid)
             {
                 StackSourceCallStackIndex parentStack = StackSourceCallStackIndex.Invalid;
                 // The ID check is because process 0 has itself as a parent, which creates a infinite recursion.      
                 if (process.ProcessID != process.ParentID)
                 {
-                    TraceProcess parent = traceLog.Processes.GetProcess(process.ParentID, process.StartTimeRelativeMsec);
-                    parentStack = GetStackForProcess(parent, traceLog, stackSource, processStackCache);
+                    parentStack = GetStackForProcess(process.Parent, traceLog, stackSource, processStackCache);
                 }
 
                 string processFrameString = string.Format("Process {0} ({1})", process.Name, process.ProcessID);

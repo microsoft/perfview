@@ -4740,7 +4740,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.commandLine = data.CommandLine;
             this.imageFileName = data.ImageFileName;
             this.parentID = data.ParentID;
-            this.parent = log.Processes.GetProcess(data.ParentID, data.TimeStampQPC);
+            this.parent = log.Processes.GetProcess(data.ParentID, this.startTimeQPC);
         }
         internal void ProcessEnd(ProcessTraceData data)
         {
@@ -8563,6 +8563,32 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             FxTimer = 34, // FxTransfer + kind(1)
         }
 
+        private static string ActivityKindToString(ActivityKind kind)
+        {
+            switch (kind)
+            {
+                case ActivityKind.Invalid: return nameof(ActivityKind.Invalid);
+                case ActivityKind.Initial: return nameof(ActivityKind.Initial);
+                case ActivityKind.TaskScheduled: return nameof(ActivityKind.TaskScheduled);
+                case ActivityKind.TaskStarted: return nameof(ActivityKind.TaskStarted);
+                case ActivityKind.AwaitTaskScheduled: return nameof(ActivityKind.AwaitTaskScheduled);
+                case ActivityKind.ClrThreadStart: return nameof(ActivityKind.ClrThreadStart);
+                case ActivityKind.ClrThreadPool: return nameof(ActivityKind.ClrThreadPool);
+                case ActivityKind.ClrIOThreadPool: return nameof(ActivityKind.ClrIOThreadPool);
+                case ActivityKind.FxThreadPool: return nameof(ActivityKind.FxThreadPool);
+                case ActivityKind.FxTransfer: return nameof(ActivityKind.FxTransfer);
+                case ActivityKind.FxAsyncIO: return nameof(ActivityKind.FxAsyncIO);
+                case ActivityKind.FxWinRTDispatch: return nameof(ActivityKind.FxWinRTDispatch);
+                case ActivityKind.Implied: return nameof(ActivityKind.Implied);
+                case ActivityKind.TaskWait: return nameof(ActivityKind.TaskWait);
+                case ActivityKind.TaskWaitSynchronous: return nameof(ActivityKind.TaskWaitSynchronous);
+                case ActivityKind.FxTimer: return nameof(ActivityKind.FxTimer);
+                default:
+                    Debug.Fail("Missing ActivityKind case statement.");
+                    return kind.ToString();
+            }
+        }
+
         /// <summary>A trace-wide unique id identifying an activity</summary>
         public ActivityIndex Index { get { return activityIndex; } }
         /// <summary>The activity that initiated or caused the current one</summary>
@@ -8613,12 +8639,29 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             get
             {
-                string name = IsThreadActivity ? "ThreadActivity" : ((rawID >> 32) & 1) != 0 ? "Activity (concurrent)" : "Activity (continuation)";
-                if (Thread == null)
-                    return string.Format("<{0} Index=\"{1}\" RawID=\"0x{2:x}\"/>", name, (int)Index, rawID);
+                // PERF: Hand-optimized string.Format to minimize allocations
+                var sb = StringBuilderCache.Acquire();
+                sb.Append('<');
+                sb.Append(IsThreadActivity ? "ThreadActivity" : ((rawID >> 32) & 1) != 0 ? "Activity (concurrent)" : "Activity (continuation)");
+                sb.Append(" Index=\"");
+                sb.Append((int)Index);
 
-                return string.Format("<{0} Index=\"{1}\" Thread=\"{2}\" Create=\"{3:f3}\" Start=\"{4:f3}\" kind=\"{5}\" RawID=\"0x{6:x}\"/>",
-                    name, (int)Index, Thread.VerboseThreadName, CreationTimeRelativeMSec, StartTimeRelativeMSec, kind, rawID);
+                if (Thread != null)
+                {
+                    sb.Append("\" Thread=\"");
+                    sb.Append(Thread.VerboseThreadName);
+                    sb.Append("\" Create=\"");
+                    sb.Append(CreationTimeRelativeMSec.ToString("f3"));
+                    sb.Append("\" Start=\"");
+                    sb.Append(StartTimeRelativeMSec.ToString("f3"));
+                    sb.Append("\" kind=\"");
+                    sb.Append(ActivityKindToString(kind));
+                }
+
+                sb.Append("\" RawID=\"0x");
+                sb.Append(rawID.ToString("x"));
+                sb.Append("\"/>");
+                return StringBuilderCache.GetStringAndRelease(sb);
             }
         }
 

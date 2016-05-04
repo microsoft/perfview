@@ -77,7 +77,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Actually do the work specified by the ZippedETLWriter constructors and other methods.  
         /// </summary>
-        public bool WriteArchive()
+        public bool WriteArchive(CompressionLevel compressionLevel = CompressionLevel.Optimal)
         {
             List<string> pdbFileList = PrepForWrite();
 
@@ -95,7 +95,7 @@ namespace Microsoft.Diagnostics.Tracing
                 Log.WriteLine("[Zipping ETL file {0}]", m_etlFilePath);
                 using (var zipArchive = ZipFile.Open(newFileName, ZipArchiveMode.Create))
                 {
-                    zipArchive.CreateEntryFromFile(m_etlFilePath, Path.GetFileName(m_etlFilePath));
+                    zipArchive.CreateEntryFromFile(m_etlFilePath, Path.GetFileName(m_etlFilePath), compressionLevel);
                     if (pdbFileList != null)
                     {
                         Log.WriteLine("[Writing {0} PDBS to Zip file]", pdbFileList.Count);
@@ -113,7 +113,7 @@ namespace Microsoft.Diagnostics.Tracing
                             var archivePath = Path.Combine("symbols", relativePath);
 
                             // log.WriteLine("Writing PDB {0} to archive.", archivePath);
-                            zipArchive.CreateEntryFromFile(pdb, archivePath);
+                            zipArchive.CreateEntryFromFile(pdb, archivePath, compressionLevel);
                         }
                         Log.Flush();
 
@@ -127,7 +127,7 @@ namespace Microsoft.Diagnostics.Tracing
                                 using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                                 {
                                     // Item2 tells you the path in the archive.  
-                                    var entry = zipArchive.CreateEntry(additionalFile.Item2);
+                                    var entry = zipArchive.CreateEntry(additionalFile.Item2, compressionLevel);
                                     using (Stream es = entry.Open())
                                         fs.CopyTo(es);
                                 }

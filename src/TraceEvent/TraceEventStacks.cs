@@ -81,9 +81,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Looks up symbols for all modules that have an inclusive count >= minCount. 
         /// stackSource, if given, can be used to be the filter.  If null, 'this' is used.
-        /// If stackSource is given, it needs to use the same indexes for frames as 'this'
+        /// If stackSource is given, it needs to use the same indexes for frames as 'this'.
+        /// shouldLoadSymbols, if given, can be used to filter the modules.
         /// </summary>
-        public void LookupWarmSymbols(int minCount, SymbolReader reader, StackSource stackSource = null)
+        public void LookupWarmSymbols(int minCount, SymbolReader reader, StackSource stackSource = null, Predicate<TraceModuleFile> shouldLoadSymbols = null)
         {
             if (stackSource == null)
                 stackSource = this;
@@ -131,8 +132,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (moduleCounts[i] >= minCount)
                 {
                     var moduleFile = TraceLog.ModuleFiles[(ModuleFileIndex)i];
-                    reader.Log.WriteLine("Resolving symbols (count={0}) for module {1} ", moduleCounts[i], moduleFile.FilePath);
-                    TraceLog.CallStacks.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
+                    if (shouldLoadSymbols == null || shouldLoadSymbols(moduleFile))
+                    {
+                        reader.Log.WriteLine("Resolving symbols (count={0}) for module {1} ", moduleCounts[i], moduleFile.FilePath);
+                        TraceLog.CallStacks.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
+                    }
                 }
             }
             reader.Log.WriteLine("Done Resolving all symbols for modules with inclusive times > {0}", minCount);
