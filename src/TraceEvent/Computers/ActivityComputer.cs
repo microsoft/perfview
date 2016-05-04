@@ -41,6 +41,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_symbolReader = reader;
             // m_perActivityStackIndexMaps = new Dictionary<CallStackIndex, StackSourceCallStackIndex>[eventLog.Activities.Count + 1];
             m_threadToCurrentActivity = new TraceActivity[m_eventLog.Threads.Count];
+            m_taskStartFrames = new StackSourceFrameIndex[m_eventLog.Threads.Count];
 
             // Every thread starts out needing auto-start.  Thus the thread activity is really only for the first time.  
             m_threadNeedsToAutoStart = new bool[m_eventLog.Threads.Count];
@@ -927,7 +928,13 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
                 // Add a frame that shows that we are starting a task 
-                StackSourceFrameIndex threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
+                StackSourceFrameIndex threadFrameIndex = m_taskStartFrames[(int)activity.Thread.ThreadIndex];
+                if (threadFrameIndex == default(StackSourceFrameIndex))
+                {
+                    // First time. Synthesize the new frame.
+                    m_taskStartFrames[(int)activity.Thread.ThreadIndex] = threadFrameIndex = m_outputSource.Interner.FrameIntern("STARTING TASK on Thread " + activity.Thread.ThreadID.ToString());
+                }
+
                 fullCreationStack = m_outputSource.Interner.CallStackIntern(threadFrameIndex, fullCreationStack);
 
                 // and take the region between creationStackFragment and threadPoolTransition and concatenate it to fullCreationStack.  
@@ -1010,10 +1017,10 @@ namespace Microsoft.Diagnostics.Tracing
                 StackSourceFrameIndex newFrameIdx = m_outputSource.GetFrameIndex(newFrameCodeAddressIndex);
                 if (newFrameIdx != existingFrameIdx)
                 {
-                    // Currently we only recognise something as recursive when the frame IDs match.  
+                    // Currently we only recognize something as recursive when the frame IDs match.  
                     // It is true most of the time that names are interned (thus if names match IDs will
                     // match) but it is not enforced and might not be true all the time.  If this causes
-                    // problems we can revisi.  
+                    // problems we can revisit.
                     return StackSourceFrameIndex.Invalid;
                 }
 
@@ -1204,6 +1211,7 @@ namespace Microsoft.Diagnostics.Tracing
         private GCReferenceComputer m_gcReferenceComputer;
 
         private CallStackCache m_callStackCache;                  // Speeds things up by remembering previously computed entries. 
+        private StackSourceFrameIndex[] m_taskStartFrames;        // "STARTING TASK" frame index per thread
 
         #endregion
     }
