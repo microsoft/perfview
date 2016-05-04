@@ -384,7 +384,8 @@ namespace PerfView
                 // For stack parsing.  
                 KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
-                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
+                            ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
+                            ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCOnly.etl";
             }
