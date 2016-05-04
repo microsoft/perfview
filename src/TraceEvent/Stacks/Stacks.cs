@@ -1111,12 +1111,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         };
 
         /// <summary>
-        /// A specialized hash table for interning call-stacks (recognizing when we've seen them before).
+        /// A specialized hash table for interning.
         /// It loosely follows the implementation of <see cref="Dictionary{TKey, TValue}"/> but with
-        /// several key allowances for the known usage:
-        /// 1. We don't store the hashcode on each entry since the key is a trivial pair of ints which can
-        ///    be compared quickly. The downside to that is that the hash codes must be recomputed
-        ///    whenever the map is resized, but that is very cheap.
+        /// several key allowances for known usage patterns:
+        /// 1. We don't store the hashcode on each entry on the assumption that values can be compared
+        ///    as quickly as recomputing hash codes. The downside to that is that the hash codes must
+        ///    be recomputed whenever the map is resized, but that is very cheap.
         /// 2. We supply a single <see cref="Intern(T)"/> method (instead of a TryGetValue
         ///    followed by an Add) so that a hashcode computation is saved in the case of a "miss".
         /// 3. We don't support removal. This means we don't need to keep track of a free list and neither
@@ -1178,7 +1178,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 int targetBucket = BucketNumberFromValue(value);
                 int index;
-                for (index = _buckets[targetBucket]._entry; index >= 0; index = _buckets[index]._nextBucket)
+                for (index = _buckets[targetBucket]._head; index >= 0; index = _buckets[index]._next)
                 {
                     if (_entries[index].Equals(value))
                     {
@@ -1196,8 +1196,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 index = _count++;
                 _entries[index] = value;
-                _buckets[index]._nextBucket = _buckets[targetBucket]._entry;
-                _buckets[targetBucket]._entry = index;
+                _buckets[index]._next = _buckets[targetBucket]._head;
+                _buckets[targetBucket]._head = index;
                 return index;
             }
 
@@ -1248,7 +1248,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 var newBuckets = new Bucket[newSize];
                 for (int i = 0; i < newBuckets.Length; i++)
                 {
-                    newBuckets[i]._entry = -1;
+                    newBuckets[i]._head = -1;
                 }
 
                 var newEntries = new T[newSize];
@@ -1259,8 +1259,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     for (int i = 0; i < _count; i++)
                     {
                         int bucket = BucketNumberFromValue(newEntries[i], newSize);
-                        newBuckets[i]._nextBucket = newBuckets[bucket]._entry;
-                        newBuckets[bucket]._entry = i;
+                        newBuckets[i]._next = newBuckets[bucket]._head;
+                        newBuckets[bucket]._head = i;
                     }
                 }
 
@@ -1323,10 +1323,36 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 }
             }
 
+            /// <summary>
+            /// Elements representing the structure of the hash table. The structure is
+            /// a collection of singly linked lists, one list per 'bucket' where a
+            /// bucket number is selected by taking the hash code of an incoming item
+            /// and mapping it onto the <see cref="_buckets"/> array (see <see cref="BucketNumberFromValue(T)"/>).
+            /// </summary>
+            /// <remarks>
+            /// Caution: For a given <see cref="Bucket"/>, <see cref="_head"/> and
+            /// <see cref="_next"/> are UNRELATED to each other. Logically, you can
+            /// think of <see cref="_next"/> as being part of a value in the
+            /// <see cref="_entries"/> table. (We don't actually do that in order to
+            /// support <see cref="DoneInterning"/> efficiently.)
+            /// To find the next element in the linked list, you should NOT simply
+            /// look at <see cref="_next"/>. Instead, you should first look up the
+            /// <see cref="Bucket"/> in the <see cref="_buckets"/> array indexed by
+            /// <see cref="_head"/> and look at the <see cref="_next"/> field of that.
+            /// </remarks>
             private struct Bucket
             {
-                public int _entry; // Index into the _entries table of the head item in this bucket. -1 indicates an empty bucket.
-                public int _nextBucket;  // Index into the _buckets table of the next item.
+                /// <summary>
+                /// Index into the <see cref="_entries"/> array of the head item in the linked list or
+                /// -1 to indicate an empty bucket.
+                /// </summary>
+                public int _head;
+
+                /// <summary>
+                /// Index into the <see cref="_buckets"/> array of the next item in the linked list or
+                /// -1 to indicate that this is the last item.
+                /// </summary>
+                public int _next;
             }
 
             private Bucket[] _buckets;
