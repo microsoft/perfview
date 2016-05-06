@@ -7,11 +7,11 @@ getting frustrated with the process.   This guide is our attempt to keep that fr
 as low as possible.   
 
 The simple truth is that not all change is good (big surprise), and because of this, we reserve 
-the right to reject any pull request to this repo. We won’t do this without rationale, and 
+the right to reject any pull request to this repo. We wonâ€™t do this without rationale, and 
 our rationale is simple at its heart.
 
 1. Complexity is bad.   Changes that add complexity need more careful deliberation 
-to weigh the good that comes along with it. 
+to weigh the bad against the good that comes along with it. 
 
 2. Consistency is good.   Bugs are basically a kind of inconsistency (the program does 
 not work as a simple understanding would assume). There are, of course, feature additions
