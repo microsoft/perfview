@@ -52,7 +52,9 @@ In general all features need pre-vetting.   The rule here is simple.  Don't do a
 you 
 
 1. Are willing to throw it away (e.g. it was more effort to get it vetted) OR
-2. You have vetted it with us by creating an issue.   
+2. You have vetted it with us by creating an issue, and got positive confirmation from the 
+   discussion that you are on the right track.   If it is a big change, you should ongoing
+   discussion on the issue to insure that you stay on track.   
 
 Performance improvements are often a point of contention.   Improvements that make the code
 smaller/simpler are great, but often this is not the case.   If you are adding complexity as
