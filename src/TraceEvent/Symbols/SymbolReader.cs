@@ -1406,7 +1406,7 @@ namespace Microsoft.Diagnostics.Symbols
             ilOffset = -1;
             m_reader.m_log.WriteLine("SourceLocationForRva: looking up RVA {0:x} ", rva);
 
-            // First fetch the line number information 'normally'.  (for the non-NGEN case).  
+            // First fetch the line number information 'normally'.  (for the non-NGEN case, and old style NGEN (with /lines)). 
             uint fetchCount;
             IDiaEnumLineNumbers sourceLocs;
             m_session.findLinesByRVA(rva, 0, out sourceLocs);
@@ -1415,58 +1415,70 @@ namespace Microsoft.Diagnostics.Symbols
             if (fetchCount == 0)
             {
                 // We have no native line number information.   See if we are an NGEN image and we can convert the RVA to an IL Offset.   
+                // This should work for V4.6.1 runtimes and beyond.  
                 if (m_pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                 {
-                    m_reader.m_log.WriteLine("SourceLocationForRva: did not find line info but is a NGEN image, looking for IL offsets");
-                    m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
-                    sourceLocs.Next(1, out sourceLoc, out fetchCount);
-                    if (fetchCount == 1)
+                    m_reader.m_log.WriteLine("SourceLocationForRva: did not find line info but is a NGEN image, Looking for mangled symbol name");
+                    IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
+                    if (method != null)
                     {
-                        // OK we have IL offset for the RVA.   But we need the metadata token and assembly.   We get this
-                        // from the name mangling of the method symbol, so look that up.  
-                        m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, looking for V4.6.1 mangled names");
-
-                        IDiaSymbol method = m_symbolsByAddr.symbolByRVA(rva);
-                        if (method != null)
+                        // Check to see if the method name follows the .NET V4.6.1 conventions
+                        // of $#ASSEMBLY#TOKEN.   If so the line number we got back is not a line number at all but
+                        // an ILOffset. 
+                        string name = method.name;
+                        if (name != null)
                         {
-                            // Check to see if the method name follows the .NET V4.6.1 conventions
-                            // of $#ASSEMBLY#TOKEN.   If so the line number we got back is not a line number at all but
-                            // an ILOffset. 
-                            string name = method.name;
-                            if (name != null)
+                            m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with 4.6.1 mangled name {0}", name);
+                            int suffixIdx = name.LastIndexOf("$#");
+                            if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
                             {
-                                m_reader.m_log.WriteLine("SourceLocationForRva: RVA lives in method with 4.6.1 mangled name {0}", name);
-                                int suffixIdx = name.LastIndexOf("$#");
-                                if (0 <= suffixIdx && suffixIdx + 2 < name.Length)
+                                int tokenIdx = name.IndexOf('#', suffixIdx + 2);
+                                if (tokenIdx < 0)
                                 {
-                                    int tokenIdx = name.IndexOf('#', suffixIdx + 2);
-                                    if (tokenIdx < 0)
-                                    {
-                                        m_reader.m_log.WriteLine("SourceLocationForRva: Error parsing method name mangling.  No # separating token");
-                                        return null;
-                                    }
-
-                                    string tokenStr = name.Substring(tokenIdx + 1);
-                                    int token;
-                                    if (!int.TryParse(tokenStr, System.Globalization.NumberStyles.AllowHexSpecifier, null, out token))
-                                    {
-                                        m_reader.m_log.WriteLine("SourceLocationForRva: Could not parse token as a Hex number {0}", tokenStr);
-                                        return null;
-                                    }
-
-                                    // SUCCESS, return the IL information to the caller
-                                    if (tokenIdx == suffixIdx + 2)      // The assembly name is null
-                                    {
-                                        ilAssemblyName = Path.GetFileNameWithoutExtension(m_pdbPath);
-                                        // strip off the .ni
-                                        ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
-                                    }
-                                    else
-                                        ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
-                                    methodMetadataToken = (uint)token;
-                                    ilOffset = (int)sourceLoc.lineNumber;  // The line number was not really the line number but the IL offset.  
-                                    return null;                           // we don't have source information but we did return the IL information. 
+                                    m_reader.m_log.WriteLine("SourceLocationForRva: Error parsing method name mangling.  No # separating token");
+                                    return null;
                                 }
+                                string tokenStr = name.Substring(tokenIdx + 1);
+                                int token;
+                                if (!int.TryParse(tokenStr, System.Globalization.NumberStyles.AllowHexSpecifier, null, out token))
+                                {
+                                    m_reader.m_log.WriteLine("SourceLocationForRva: Could not parse token as a Hex number {0}", tokenStr);
+                                    return null;
+                                }
+
+                                // We need the metadata token and assembly.   We get this from the name mangling of the method symbol, 
+                                // so look that up.  
+                                if (tokenIdx == suffixIdx + 2)      // The assembly name is null
+                                {
+                                    ilAssemblyName = Path.GetFileNameWithoutExtension(m_pdbPath);
+                                    // strip off the .ni
+                                    ilAssemblyName = ilAssemblyName.Substring(0, ilAssemblyName.Length - 3);
+                                }
+                                else
+                                    ilAssemblyName = name.Substring(suffixIdx + 2, tokenIdx - (suffixIdx + 2));
+                                methodMetadataToken = (uint)token;
+                                ilOffset = 0;           // If we don't find an IL offset, we 'guess' an ILOffset of 0
+
+                                m_reader.m_log.WriteLine("SourceLocationForRva: Looking up IL Offset by RVA 0x{0:x}", rva);
+                                m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
+                                // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
+                                // and take the next valid line
+                                for (;;)
+                                {
+                                    sourceLocs.Next(1, out sourceLoc, out fetchCount);
+                                    if (fetchCount == 0)
+                                    {
+                                        m_reader.m_log.WriteLine("SourceLocationForRva: Ran out of IL mappings, guessing 0x{0:x}", ilOffset);
+                                        break;
+                                    }
+                                    ilOffset = (int)sourceLoc.lineNumber;
+                                    if (ilOffset != 0xFEEFEE)
+                                        break;
+                                    m_reader.m_log.WriteLine("SourceLocationForRva: got illegal offset FEEFEE picking next offset.");
+                                    ilOffset = 0;
+                                }
+                                m_reader.m_log.WriteLine("SourceLocationForRva: Found native to IL mappings, IL offset 0x{0:x}", ilOffset);
+                                return null;                           // we don't have source information but we did return the IL information. 
                             }
                         }
                     }
@@ -1477,11 +1489,13 @@ namespace Microsoft.Diagnostics.Symbols
 
             // If we reach here we are in the non-NGEN case, we are not mapping to IL information and 
             IDiaSourceFile diaSrcFile = sourceLoc.sourceFile;
-            var buildTimeSourcePath = diaSrcFile.fileName;
             var lineNum = (int)sourceLoc.lineNumber;
 
             var sourceFile = new SourceFile(this, diaSrcFile);
-            var sourceLocation = new SourceLocation(sourceFile, (int)sourceLoc.lineNumber);
+            if (lineNum == 0xFEEFEE)
+                lineNum = 0;
+            var sourceLocation = new SourceLocation(sourceFile, lineNum);
+            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {0} file {1} ", lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
@@ -1539,12 +1553,14 @@ namespace Microsoft.Diagnostics.Symbols
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
                     break;
+                lineNum = 0;
                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                 if (fetchCount == 0)
                     break;
             }
 
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
+            m_reader.m_log.WriteLine("SourceLocationForManaged: found source linenum {0} file {1}", lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 

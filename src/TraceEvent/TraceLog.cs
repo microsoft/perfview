@@ -592,25 +592,25 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-		private static TraceEventDispatcher GetDispatcherFromFileName(string filePath)
-		{
-			if (filePath.EndsWith(".trace.zip"))
-			{
-				return new CtfTraceEventSource(filePath);
-			}
+        private static TraceEventDispatcher GetDispatcherFromFileName(string filePath)
+        {
+            if (filePath.EndsWith(".trace.zip"))
+            {
+                return new CtfTraceEventSource(filePath);
+            }
 
-			return new ETWTraceEventSource(filePath);
-		}
+            return new ETWTraceEventSource(filePath);
+        }
 
-		/// <summary>
-		/// Given a process's virtual address 'address' and an event which acts as a 
-		/// context (determines which process and what time in that process), return 
-		/// a CodeAddressIndex (which represents a particular location in a particular
-		/// method in a particular DLL). It is possible that different addresses will
-		/// go to the same code address for the same address (in different contexts).
-		/// This is because DLLS where loaded in different places in different processes.
-		/// </summary>  
-		public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
+        /// <summary>
+        /// Given a process's virtual address 'address' and an event which acts as a 
+        /// context (determines which process and what time in that process), return 
+        /// a CodeAddressIndex (which represents a particular location in a particular
+        /// method in a particular DLL). It is possible that different addresses will
+        /// go to the same code address for the same address (in different contexts).
+        /// This is because DLLS where loaded in different places in different processes.
+        /// </summary>  
+        public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
         {
             // TODO optimize for sequential access.  
             EventIndex eventIndex = context.EventIndex;
@@ -6659,8 +6659,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
                         // Look up the IL PDB needed
 
-                            reader.m_log.WriteLine("GetSourceLine: Found mapping from Native to IL assembly {0} Token {1:x} offset {2}",
-                            ilAssemblyName, ilMetaDataToken, ilMethodOffset);
+                        reader.m_log.WriteLine("GetSourceLine:  Found mapping from Native to IL assembly {0} Token 0x{1:x} offset 0x{2:x}",
+                        ilAssemblyName, ilMetaDataToken, ilMethodOffset);
                         if (moduleFile.ManagedModule != null)
                         {
                             // In CoreCLR, the managed image IS the native image, so has a .ni suffix, remove it if present.  
@@ -6827,7 +6827,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             SymbolModule symbolReaderModule;
             if (m_lastModuleFile == moduleFile)
+            {
+                lastNewer = true;
                 symbolReaderModule = m_lastSymbolModule;
+            }
+            else if (m_2lastModuleFile == moduleFile)
+            {
+                symbolReaderModule = m_2lastSymbolModule;
+                lastNewer = false;
+            }
             else
             {
                 symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
@@ -6836,14 +6844,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     reader.m_log.WriteLine("GetSourceLine: Could not open PDB for {0}", moduleFile.FilePath);
                     return null;
                 }
-                m_lastModuleFile = moduleFile;
-                m_lastSymbolModule = symbolReaderModule;
+                if (lastNewer)
+                {
+                    m_2lastModuleFile = moduleFile;
+                    m_2lastSymbolModule = symbolReaderModule;
+                    lastNewer = false;
+                }
+                else
+                {
+                    m_lastModuleFile = moduleFile;
+                    m_lastSymbolModule = symbolReaderModule;
+                    lastNewer = true;
+                }
             }
             return symbolReaderModule;
         }
 
         SymbolModule m_lastSymbolModule;
         TraceModuleFile m_lastModuleFile;
+        // WE keep two because NGEN source lookup needs both the IL and NGEN pdb. 
+        SymbolModule m_2lastSymbolModule;
+        TraceModuleFile m_2lastModuleFile;
+        bool lastNewer;
 
         /// <summary>
         /// Called when JIT CLR Rundown events are processed. It will look if there is any

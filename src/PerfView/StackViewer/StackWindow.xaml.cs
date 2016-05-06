@@ -1997,8 +1997,7 @@ namespace PerfView
                         StatusBar.Log("Resolved source file to " + sourcePathToOpen);
                         if (metricOnLine != null)
                         {
-                            sourcePathToOpen = CacheFiles.FindFile(Path.GetFileNameWithoutExtension(sourcePathToOpen),
-                                Path.GetExtension(sourcePathToOpen));
+                            sourcePathToOpen = CacheFiles.FindFile(sourcePathToOpen, Path.GetExtension(sourcePathToOpen));
                             StatusBar.Log("Annotating source with metric to the file " + sourcePathToOpen);
                             AnnotateLines(logicalSourcePath, sourcePathToOpen, metricOnLine);
                         }
