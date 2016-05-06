@@ -9,8 +9,8 @@ The PerfView executable is ultimately published at the
 [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567). 
 It is a standalone executable file (packaged in a ZIP archive). You can be running it in less than a minute!  
 
-The PerfView user’s guide is part of the application itself, however you can get the .HTM file for it in 
-the user’s guide in the source code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm) or
+The PerfView userâ€™s guide is part of the application itself, however you can get the .HTM file for it in 
+the userâ€™s guide in the source code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm) or
 [the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportDlls/UsersGuide.htm?token=AIEUlpLp2aAS0_OgCbvDPMOz6U6leXDvks5XHMNFwA%3D%3D)
 however it is a significantly better experience if you simply download PerfView and select the Help -> User's Guide menu item.  
 
@@ -27,6 +27,10 @@ PerfView is designed to build in Visual Studio 2013 or later.
   Explorer (on right) and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.   
   (it is annoying that this is not part of the .sln file...).  
 
+###Deploying your new version of Perfview
+You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus first set your build configuration to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
+Next build (Build -> Build Solution (Ctr-Shift-B)).   The result will be that in the src\perfView\bin\Release directory will be among other things  a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
+
 ####Information for build troubleshooting.  
   * One of the unusual things about PerfView is that it incorporates its support DLL into the EXE itself, and these get 
   unpacked on first launch.  This means that there are tricky dependencies in the build that are not typical.    You will 
@@ -35,10 +39,16 @@ PerfView is designed to build in Visual Studio 2013 or later.
   If this does not fix things, see if the DLL being looked for actually exists (if it does, then rebuilding should fix it).   
   It can make sense to go down the project one by one and build them individually to see which one fails 'first'.  
   
-  * Another unusual thing about PerfView is that it includes an extension mechanism complete with samples of using that.   
-  This extensions is the 'Global' project (Called that because it is the Global Extension whose commands don't have a 'scope') 
-  and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found' issues in the 'Global' 
-  project.  These can be ignored until you get every other part of the build working. 
+  * Another unusual thing about PerfView is that it includes an extension mechanism complete with samples.   
+  This extensions is the 'Global' project (Called that because it is the Global Extension whose commands don't have an
+  expliict 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found' 
+  issues in the 'Global' project.  These can be ignored until you get every other part of the build working. 
+
+  * One of the invariants of the repo is that if you are running VS 2015 and you simply sync and build the PerfView.sln
+  file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then we need to
+  either fix the repo or update the advice above.   Thus it is reasonable to open an issue.   If you do this, the goal
+  is to fix the problem, which means you have to put enough information into the issue to do that.   This includes 
+  exactly what you tried, and what the error messages were.   
 
 ### Contributing to PerfView 
 
