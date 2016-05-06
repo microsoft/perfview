@@ -28,7 +28,7 @@ And our golden rule
 
 The key here is that from your point of view the new feature you are adding looks like unalloyed 
 good.  But it is very likely that it increases complexity (point 1), may affect consistency (point 2) 
-and may make other scenarios slower (e.g. startup, etc.).   As the keepers of this repo we 
+and may make other scenarios slower (e.g. startup, etc.) (point 3).   As the keepers of this repo we 
 have the responsibility to weigh these other factors, and we may decide that the bad outweighs
 the good.
 
