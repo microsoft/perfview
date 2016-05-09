@@ -204,7 +204,7 @@ all these changes to bring your fork up to date.   We do this in three steps
   2. Merge the changes from the upstream/master branch into the LOCAL repository's master branch.
   3. Push the changes from the LOCAL repository's master branch into the fork master banch.  
 
- #### Step 1: Fetching All Commits for the Upstream Repository.  
+ ####Step 1: Fetching All Commits for the Upstream Repository.  
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
@@ -215,7 +215,7 @@ all these changes to bring your fork up to date.   We do this in three steps
 	 known remote).    Select 'upstream' and click the 'Fetch' button.  That will fetch all the changes from 'upstream', 
 	 and put them in the LOCAL Github repository.
 
- #### Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
+ ####Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the top bolded header (may say 'Home' or 'Changes', ...) and right click on 'Branches' item which show you
@@ -233,7 +233,7 @@ In most cases this merge operation goes without a hitch and Visual Studio will a
 is a merge conflict with changes that you have made to 'master' (you really should never do that, put changes in some other
 branch (see below)), then you will need to resolve them and commit the merge explicitly.  
 
- #### Step 3: Pushing the LOCAL repository to your GitHub Fork.  
+ ####Step 3: Pushing the LOCAL repository to your GitHub Fork
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
