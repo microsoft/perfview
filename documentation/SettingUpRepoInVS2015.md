@@ -100,7 +100,7 @@ Thus the typical flow for an open source project is
  the maintainers ask for changes.   You update your commit as needed until finally the maintainers accept
  the pull request and it becomes part of the main repository.  
 
- ## To Fork or not to Fork?
+## To Fork or not to Fork?
 
  So there are two different ways you can set up your clone of the repository
 
@@ -145,7 +145,7 @@ At the bottom you will see a list of .SLN files.  There are all the Visual Studi
 makes it convenient to open VS to do a build.  In the case of PerfView, you want the PerfView.sln file.   After opening
 the solution file you can start building (Build -> Build Solution or Ctrl-Shift-B).
 
- ##Setting Up *With* a Fork with Visual Studio 2015 (Option 2)
+##Setting Up *With* a Fork with Visual Studio 2015 (Option 2)
 
  As mentioned, the first option is great if you only want read-only access or you have read-write access to the GitHub repo.
  If you want to be able to submit pull requests, you really should create a fork (which you will have read-write access to)
@@ -189,7 +189,7 @@ What this does is name the original man repository 'upstream'.    This makes it 
 a short name called 'origin' (this is very standard name to use for your 'cloud' repo that your local repo works with).
 'upstream' is a traditional GIT name for the repository that a fork comes from.  
 
- ### Pulling updates from the main (upstream) repository into your Fork
+### Pulling updates from the main (upstream) repository into your Fork
 
  If you go to your fork's GitHub web page (e.g. one that has your user name in it like https://github.com/vancem/perfview)
  you will see that there is a line just before the description of files in the repo like
@@ -204,7 +204,7 @@ all these changes to bring your fork up to date.   We do this in three steps
   2. Merge the changes from the upstream/master branch into the LOCAL repository's master branch.
   3. Push the changes from the LOCAL repository's master branch into the fork master banch.  
 
-#### Step 1: Fetching All Commits for the Upstream Repository.  
+ #### Step 1: Fetching All Commits for the Upstream Repository.  
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
@@ -215,7 +215,7 @@ all these changes to bring your fork up to date.   We do this in three steps
 	 known remote).    Select 'upstream' and click the 'Fetch' button.  That will fetch all the changes from 'upstream', 
 	 and put them in the LOCAL Github repository.
 
-#### Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
+ #### Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the top bolded header (may say 'Home' or 'Changes', ...) and right click on 'Branches' item which show you
@@ -233,7 +233,7 @@ In most cases this merge operation goes without a hitch and Visual Studio will a
 is a merge conflict with changes that you have made to 'master' (you really should never do that, put changes in some other
 branch (see below)), then you will need to resolve them and commit the merge explicitly.  
 
-#### Step 3: Pushing the LOCAL repository to your GitHub Fork.  
+ #### Step 3: Pushing the LOCAL repository to your GitHub Fork.  
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
