@@ -1154,7 +1154,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (_knownType == null)
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = Utilities.StringBuilderCache.Acquire();
 
                     switch (TaskName)
                     {
@@ -1229,8 +1229,8 @@ namespace Microsoft.Diagnostics.Tracing
                                 break;
                             }
                     }
-
-                    _knownType = sb.Append(" Activities").ToString();
+                    sb.Append(" Activities");
+                    _knownType = Utilities.StringBuilderCache.GetStringAndRelease(sb);
                 }
 
                 return _knownType;
