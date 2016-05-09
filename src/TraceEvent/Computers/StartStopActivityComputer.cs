@@ -620,7 +620,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             var processID = ActivityPathProcessID(guid);
             StringBuilder sb = Utilities.StringBuilderCache.Acquire();
-            sb.Append('/');
+
             if (processID != 0)
             {
                 sb.Append("/#");    // Use /# to mark the fact that the first number is a process ID.   
@@ -1155,7 +1155,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (_knownType == null)
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = Utilities.StringBuilderCache.Acquire();
 
                     switch (TaskName)
                     {
@@ -1231,7 +1231,8 @@ namespace Microsoft.Diagnostics.Tracing
                             }
                     }
 
-                    _knownType = sb.Append(" Activities").ToString();
+                    sb.Append(" Activities");
+                    _knownType = Utilities.StringBuilderCache.GetStringAndRelease(sb);
                 }
 
                 return _knownType;
