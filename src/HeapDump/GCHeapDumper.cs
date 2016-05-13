@@ -827,7 +827,7 @@ public class GCHeapDumper
         string myDir = Path.GetDirectoryName(myPath);
         string EtwClrProfilerPath = Path.Combine(myDir, "EtwClrProfiler.dll");
 
-#if DEBUG  // TODO FIX NOW for debugging builds
+#if DEBUG
         if (!File.Exists(EtwClrProfilerPath))
         {
             var buildPath = Path.Combine(myDir, @"..\..\..\..\ETWClrProfiler\Debug\x86\EtwClrProfiler.dll");
