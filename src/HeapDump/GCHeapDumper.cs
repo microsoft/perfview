@@ -657,8 +657,15 @@ public class GCHeapDumper
             (long)(ETWClrProfilerTraceEventParser.Keywords.GCHeap));
 
         m_log.WriteLine("{0,5:n1}s: Requesting .NET Native GC", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
-            (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+        try
+        {
+            session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
+                (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+        }
+        catch {
+            m_log.WriteLine("{0,5:n1}s: .NET Native Capture state failed. OK if this is not a .NET Native scenario.", sw.Elapsed.TotalSeconds);
+        };
+
     }
 #endif
 
@@ -820,10 +827,10 @@ public class GCHeapDumper
         string myDir = Path.GetDirectoryName(myPath);
         string EtwClrProfilerPath = Path.Combine(myDir, "EtwClrProfiler.dll");
 
-#if DEBUG  // TODO FIX NOW for debugging builds
+#if true  // TODO FIX NOW for debugging builds
         if (!File.Exists(EtwClrProfilerPath))
         {
-            var buildPath = Path.Combine(myDir, @"..\..\..\..\ETWClrProfiler\Debug\x86\EtwClrProfiler.dll");
+            var buildPath = Path.Combine(myDir, @"..\..\..\..\ETWClrProfiler\Release\x86\EtwClrProfiler.dll");
             if (File.Exists(buildPath))
                 EtwClrProfilerPath = buildPath;
         }

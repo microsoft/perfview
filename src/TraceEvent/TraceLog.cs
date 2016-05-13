@@ -1331,21 +1331,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 if ((process.markThreadsInGC.Count == 0) && (process.shouldCheckIsServerGC == false))
                     process.shouldCheckIsServerGC = true;
-
-                // TODO this is a hack. can be removed when we fix V4.5.1 to not emit two events.    
-                // If in the process we see a version 2 event, then strip out 
-                // version 1 events.   (we strip the first Version 2 event 
-                if (data.Version == 2)
-                {
-                    if (!process.seenVersion2GCStartEvents)
-                    {
-                        process.seenVersion2GCStartEvents = true;
-                        // Too late to strip the Version 1 GC event, so strip the first Version 2 event 
-                        bookKeepingEvent = true;
-                    }
-                }
-                else if (data.Version == 1 && process.seenVersion2GCStartEvents)
-                    bookKeepingEvent = true;
             };
             rawEvents.Clr.GCStop += delegate (GCEndTraceData data)
             {
