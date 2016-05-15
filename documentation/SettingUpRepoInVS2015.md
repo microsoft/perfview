@@ -11,7 +11,7 @@ well as other IDEs are possible, but not covered here.
 We use the PerfView project https://github.com/Microsoft/perfview as an example but 
 the vast majority of this section applies to any open source GitHub hosted project.  
 
-##Background: GitHub Repos, Forks, Branches and Pull Requests.  
+##Background: GitHub Repos, Commits and GitHub  
 
 The set of all files versioned as a unit by the GIT source code control system is 
 called a repository, or *repo* for short.   Logically a GIT repository contains a 
