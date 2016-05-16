@@ -1,6 +1,9 @@
 #Setting Up *With* a Fork with Visual Studio 2015
 
-See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md). 
+ * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material.  
+ * See also [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for a simpler setup without a fork, 
+   if you only need read-only access.  Note that this information is also relevent to this (more complex)
+   workflow.   
 
  As mentioned, the first option is great if you only want read-only access or you have read-write access to the GitHub repo.
  If you want to be able to submit pull requests, you need to create a fork (which you will have read-write access to)
@@ -18,7 +21,7 @@ See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md).
 	 4. Once that has completed (it does not take long), it will take you to a page that looks VERY similar to 
 	    the original but is in fact a clone.   It should have a URL like https://github.com/vancem/perfview that has  
 		your user name in it.  
-	 5. At this point you can follow the instructions above for setting up a local clone (Option 1).  The only difference is 
+	 5. At this point you can follow the instructions above for [setting up a local clone](SimpleGitWorkflow.md).  The only difference is 
 	    that the GitHub URL will be the *URL of the fork and not the main repository*.   You may also wish to give
 		it a local name that makes it clear that it is a fork (for example the local directory name for my fork is perfview-vancem).
 		Otherwise keeping track of which were direct clones (option 1) and which were not (option2) becomes more difficult.  

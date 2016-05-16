@@ -1,4 +1,4 @@
-#Setting up a Local GitHub repository with Visual Studio 2015. 
+#GitHub Repository Setup with Visual Studio 2015
 
 This section tells you how to set up to build a project that is hosted on GitHub, 
 using Visual Studio 2015.   It also goes through important routine tasks like 
