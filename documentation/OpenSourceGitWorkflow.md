@@ -48,7 +48,7 @@ What this does is name the original main repository 'upstream'.    This makes it
 a short name called 'origin' (this is very standard name to use for your 'cloud' repo that your local repo works with).
 'upstream' is a traditional GIT name for the repository that a fork was created from.  
 
-### Pulling updates from the Main (upstream) Repository into your Fork
+## Pulling updates from the Main (upstream) Repository into your Fork
 
 Sooner or later, the main repo will have updates that you will want to pull into your fork.    This
 section tells you how to do this.  
@@ -116,5 +116,40 @@ At this point you should be able to go to your GitHub web page for the fork and 
 Which says that you have integrated all the changes from the original main repository into your private fork.   
 Congratulations, you have successfully brought your private fork up to date with respect to its upstream master.   
 
+## Creating a pull request to the Main Repository.  
 
+Creating a pull request starts by making the modification in the local repository *in its own branch*.  
+Thus you have to follow the instructions in [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for creating
+a new branch, committing changes to the new branch, and pushing (syncing) those changes to your personal GitHub 
+fork.   Lets assume we did this using the branch name 'TestPullRequest' as the branch name.
 
+One key aspect to syncing is that you must make sure that the new branch name is 'published' to the GitHub fork. 
+This publishing step can be done on the View -> Team Explorer -> Synchronization pane.   You should see at the
+bottom a hyperlink that indicates that you wish to publish the branch 'TestPullRequest'  You will want to click
+that hyperlink.   This insures that the name (and not just the (anonymous) commit) 'TestPullRequest' is copied into
+the GitHub fork.  Otherwise you will not find the new branch in the steps below.   
+
+Once the branch exists in the fork, you can go to the GitHub web page for the fork (in our example this is
+https://github.com/vancem/perfview)
+
+Near the top on the left hand side of the web page, you will find a dropdown menu which selects the 'active'
+branch.  It is likely to be set to the 'master' branch.   Use the dropdown menu to change it to the 'TestPullRequest'
+branch.   Then click on the 'New Pull Request' button that is beside it. 
+
+At this point the page updates to a web page for the pull request.  It prompts you to enter a description
+of the pull request (but populates it with the commit message for the branch)).   You will typically want to change
+this to describe the pull request as a whole as well as a justification why the request should be accepted (its
+advantages etc).   It will show you the delta associated with the pull request, which you can look over.  When
+you are happy with it, you can complete the submission of the pull request.
+
+At that point it is out of your hands.   The pull request will send mail to the maintainers of the repository 
+and they may comment on your change and may require changes.    If you need to make changes, simply make the 
+changes in the branch (in our case TestPullRequest), first locally, then sync to push it to the GitHub fork.  
+Doing so will automatically update the pull request.   Eventually the maintainers will either reject your request
+(by closing it with an explanation), or accept it (in which case it will be merged into the main repository).  
+You can then use the 'Pulling updates' procedure above to pull changes into your GitHub fork, and from there
+you can synchronize to bring it to your local repository.
+
+Once that change is in the main repository, the branch (in our example TestPullRequest) is no longer needed.
+You can go to the View -> Team Explorers -> Branches pane right click on it and select 'delete' to delete it
+The active branch must be on some other branch for the delete to succeed.  
