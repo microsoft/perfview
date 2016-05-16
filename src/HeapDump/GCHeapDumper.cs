@@ -1760,8 +1760,7 @@ public class GCHeapDumper
                 if (m_gcHeapDump.MemoryGraph.NodeCount >= m_maxNodeCount ||
                     m_gcHeapDump.MemoryGraph.DistinctRefCount + m_children.Count > m_maxNodeCount)
                 {
-                    m_log.WriteLine("WARNING, exceeded the maximum number of node allowed {0} (because dump will be larger than 4GB))",
-                        m_maxNodeCount);
+                    m_log.WriteLine("WARNING, exceeded the maximum number of node allowed {0}", m_maxNodeCount);
                     m_log.WriteLine("{0,5:f1}s: Truncating heap dump.", m_sw.Elapsed.TotalSeconds);
                     return;
                 }

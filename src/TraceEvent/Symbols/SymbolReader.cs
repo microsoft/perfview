@@ -746,7 +746,12 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (Uri.IsWellFormedUriString(serverPath, UriKind.Absolute))
                     {
-                        var fullUri = serverPath + "/" + pdbIndexPath.Replace('\\', '/');
+                        var fullUri = serverPath;
+                        var tail = pdbIndexPath.Replace('\\', '/');
+                        if (!tail.StartsWith("/"))
+                            fullUri += "/" + tail;
+                        else
+                            fullUri += tail;
                         try
                         {
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
@@ -1659,6 +1664,8 @@ namespace Microsoft.Diagnostics.Symbols
         /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present. 
         /// 
         /// There is a tool called pdbstr associated with srcsrv that basically does this.  
+        ///     pdbstr -r -s:srcsrv -p:PDBPATH
+        /// will dump it. 
         /// </summary>
         internal string GetSrcSrvStream()
         {
@@ -2115,6 +2122,21 @@ namespace Microsoft.Diagnostics.Symbols
         /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses 
         /// SourceCacheDirectory associated symbol reader for context where to put the file), 
         /// or null if unsuccessful.  
+        /// 
+        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
+        ///     pdbstr -r -s:srcsrv -p:PDBPATH
+        /// will dump it. 
+        ///
+        /// The basic flow is 
+        /// 
+        /// There is a variables section and a files section
+        /// 
+        /// The file section is a list of items separated by *.   The first is the path, the rest are up to you
+        /// 
+        /// You form a command by using the SRCSRVTRG variable and substituting variables %var1 where var1 is the first item in the * separated list
+        /// There are special operators %fnfile%(XXX), etc that manipulate the string XXX (get file name, translate \ to / ...
+        /// 
+        /// If what is at the end is a valid URL it is looked up.   
         /// </summary>
         string GetSourceFromSrcServer()
         {
@@ -2162,7 +2184,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (pieces.Length >= 2)
                     {
                         var buildTimePath = pieces[0];
-                        // log.WriteLine("Found source {0} in the PDB", buildTimePath);
+                        log.WriteLine("Found source {0} in the PDB", buildTimePath);
                         if (string.Compare(BuildTimeFilePath, buildTimePath, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             // Create variables for each of the pieces.  
@@ -2174,7 +2196,6 @@ namespace Microsoft.Diagnostics.Symbols
                             {
                                 if (Uri.IsWellFormedUriString(target, UriKind.Absolute))
                                 {
-                                    log.WriteLine("Fetching file {0} from web.", target);
                                     var url = target;
                                     target = null;
                                     if (vars.ContainsKey("HTTP_ALIAS"))
@@ -2327,9 +2348,15 @@ namespace Microsoft.Diagnostics.Symbols
 
         private string SourceServerFetchVar(string variable, Dictionary<string, string> vars)
         {
+            var log = m_symbolModule.m_reader.m_log;
             string result = "";
             if (vars.TryGetValue(variable, out result))
+            {
+                if (0 <= result.IndexOf('%') )
+                    log.WriteLine("SourceServerFetchVar: Before Evaluation {0} = '{1}'", variable, result);
                 result = SourceServerEvaluate(result, vars);
+            }
+            log.WriteLine("SourceServerFetchVar: {0} = '{1}'", variable, result);
             return result;
         }
 
