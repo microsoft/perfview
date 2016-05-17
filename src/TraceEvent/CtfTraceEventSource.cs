@@ -446,33 +446,15 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntimePrivate:Main_V1"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 136, 88, 1);
             result["DotNETRuntimePrivate:MainEnd"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 137, 89, 0);
             result["DotNETRuntimePrivate:MainEnd_V1"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 137, 89, 1);
-
-            // The following list are special case "split" events:
             result["DotNETRuntime:GCJoin_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 203, 203, 2);
             result["DotNETRuntime:GCBulkSurvivingObjectRanges"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 25, 21, 0);
-
-            result["DotNETRuntime:GCPerHeapHistory_V3"] = new ETWMapping();
             result["DotNETRuntime:GCPerHeapHistory_V3_1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 204, 204, 3);
-
-
-            result["DotNETRuntime:GCHeapStats_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 133, 4, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:GCHeapStats_V1_1"] = new ETWMapping();
-
-            result["DotNETRuntime:RuntimeInformationStart"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 187, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:RuntimeInformationStart_1"] = new ETWMapping();
-
-            result["DotNETRuntime:ModuleLoad_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 33, 152, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:ModuleLoad_V2_1"] = new ETWMapping();
-
-
-            result["DotNETRuntime:MethodJitInliningFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 84, 186, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:MethodJitInliningFailed_1"] = new ETWMapping();
-
-            result["DotNETRuntime:MethodJitTailCallSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 85, 188, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:MethodJitTailCallSucceeded_1"] = new ETWMapping();
-
-            result["DotNETRuntime:MethodJitTailCallFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 86, 189, TraceEvent.SplitEventVersion);
-            result["DotNETRuntime:MethodJitTailCallFailed_1"] = new ETWMapping();
+            result["DotNETRuntime:GCHeapStats_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 133, 4, 1);
+            result["DotNETRuntime:RuntimeInformationStart"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 187, 0);
+            result["DotNETRuntime:ModuleLoad_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 33, 152, 2);
+            result["DotNETRuntime:MethodJitInliningFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 84, 186, 0);
+            result["DotNETRuntime:MethodJitTailCallSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 85, 188, 0);
+            result["DotNETRuntime:MethodJitTailCallFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 86, 189, 0);
 
 
 

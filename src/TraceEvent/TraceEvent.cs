@@ -1225,11 +1225,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public object EventTypeUserData;
 
-        /// <summary>
-        /// Version number for LTTng "split" events;
-        /// </summary>
-        public const int SplitEventVersion = 255;
-
         #region Protected
         /// <summary>
         /// Create a template with the given event meta-data.  Used by TraceParserGen.  

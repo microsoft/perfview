@@ -182,106 +182,55 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             if (!_readHeader)
                 throw new InvalidOperationException("Must read an event's header before reading an event's data.");
 
-            ResetBuffer();
+            object[] result = null;
+            if (evt.IsPacked)
+            {
+                ReadPackedEvent();
+            }
+            else
+            {
+                ResetBuffer();
+                result = ReadStruct(evt.Fields);
+            }
 
-            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
-                PreFixupPerHeapHistory(evt);
-
-            object[] result = ReadStruct(evt.Fields);
             _readHeader = false;
-
-            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
-                PostFixupPerHeapHistory(evt);
-
             return result;
         }
-        
+
         internal void ReadEventIntoBuffer(CtfEvent evt)
         {
             if (!_readHeader)
                 throw new InvalidOperationException("Must read an event's header before reading an event's data.");
 
-            ResetBuffer();
-
-            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
-                PreFixupPerHeapHistory(evt);
-
-            if (evt.IsFixedSize)
-                ReadBits(evt.Size);
+            if (evt.IsPacked)
+            {
+                ReadPackedEvent();
+            }
             else
-                ReadStruct(evt.Fields);
+            {
+                ResetBuffer();
+
+                if (evt.IsFixedSize)
+                    ReadBits(evt.Size);
+                else
+                    ReadStruct(evt.Fields);
+            }
 
             _readHeader = false;
-
-            if (evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1")
-                PostFixupPerHeapHistory(evt);
         }
 
-        int _perHeapLenOffset = -1;
-        int _perHeapStructPointerOffset = -1;
-
-        private void PostFixupPerHeapHistory(CtfEvent evt)
+        private void ReadPackedEvent()
         {
-            Debug.Assert(evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1");
+            Align(8);
+            int offset = ReadBits(32) / 8;
+            ReadBits(32);
 
-            Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
+            int len = BitConverter.ToInt32(_buffer, offset);
 
-            int baseOffset = _perHeapHistoryEvent.Size / 8;
-
-            if (_perHeapLenOffset == -1)
-            {
-                int lenOffset = -1;
-                int ptrOffset = -1;
-
-                int offset = 0;
-                for (int i = 0; i < evt.Fields.Fields.Length; i++)
-                {
-                    var field = evt.Fields.Fields[i];
-                    if (field.Name.EndsWith("_Struct_Len_"))
-                    {
-                        Debug.Assert(lenOffset == -1);
-                        lenOffset = offset;
-                    }
-                    else if (field.Name.EndsWith("_Struct_Pointer_"))
-                    {
-                        Debug.Assert(ptrOffset == -1);
-                        ptrOffset = offset;
-                    }
-
-                    int tmp = field.Type.GetSize();
-                    offset += tmp;
-                }
-
-                _perHeapLenOffset = lenOffset / 8;
-                _perHeapStructPointerOffset = ptrOffset / 8;
-            }
-
-            int start = _perHeapLenOffset;
-            int end = _perHeapStructPointerOffset;
-            int len = _bufferLength - end;
-
-            System.Buffer.BlockCopy(_buffer, baseOffset + end, _buffer, baseOffset + start, len);
-
-            _bufferLength -= end - start;
+            ResetBuffer();
+            ReadBits(8 * len);
         }
 
-        private void PreFixupPerHeapHistory(CtfEvent evt)
-        {
-            Debug.Assert(evt.Name == "DotNETRuntime:GCPerHeapHistory_V3_1");
-            if (_perHeapHistoryEvent == null)
-            {
-                _perHeapHistoryEvent = _streamDefinition.Events.Where(e => e.Name == "DotNETRuntime:GCPerHeapHistory_V3").First();
-                Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
-            }
-
-            Debug.Assert(_perHeapHistoryEvent.IsFixedSize);
-            int len = _perHeapHistoryEvent.Size / 8;
-            _bufferLength = len;
-            _bitOffset = len * 8;
-
-            for (int i = 0; i < len; i++)
-                _buffer[i] = 0;
-        }
 
         public object[] ReadStruct(CtfStruct strct)
         {
