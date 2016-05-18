@@ -96,6 +96,8 @@ namespace Microsoft.Diagnostics.Tracing
         private static Dictionary<string, ETWMapping> InitEventMap()
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
+
+            // Public events
             result["DotNETRuntime:GCStart"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 1, 0);
             result["DotNETRuntime:GCStart_V1"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 1, 1);
             result["DotNETRuntime:GCStart_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 1, 1, 2);
@@ -265,6 +267,7 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:GCPerHeapHistory_V3"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 204, 204, 3);
             result["DotNETRuntime:GCGlobalHeapHistory_V2"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 205, 205, 2);
 
+            // Private events
             result["DotNETRuntimePrivate:ApplyPolicyStart"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 10, 90, 0);
             result["DotNETRuntimePrivate:ApplyPolicyStart_V1"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 10, 90, 1);
             result["DotNETRuntimePrivate:ModuleRangeLoadPrivate"] = new ETWMapping(new Guid("763fd754-7086-4dfe-95eb-c01a46faf4ca"), 10, 158, 0);
@@ -455,12 +458,6 @@ namespace Microsoft.Diagnostics.Tracing
             result["DotNETRuntime:MethodJitInliningFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 84, 186, 0);
             result["DotNETRuntime:MethodJitTailCallSucceeded"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 85, 188, 0);
             result["DotNETRuntime:MethodJitTailCallFailed"] = new ETWMapping(new Guid("47c3ba0c-77f1-4eb0-8d4d-aef447f16a85"), 86, 189, 0);
-
-
-
-            // TODO: This event needs to be fixed in the linux source.
-            result["DotNETRuntime:MethodILToNativeMap"] = new ETWMapping();
-
 
             return result;
         }
