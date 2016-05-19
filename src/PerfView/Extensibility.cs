@@ -2827,6 +2827,17 @@ namespace PerfViewExtensibility
             }
         }
 
+        /// <summary>
+        /// Dumps the PDB signature associated with pdb 'pdbName'
+        /// </summary>
+        public void PdbSignature(string pdbFileName)
+        {
+            var reader = new SymbolReader(LogFile);
+            var module = reader.OpenSymbolFile(pdbFileName);
+            LogFile.WriteLine("[{0} has Signature {1}]", pdbFileName, module.PdbGuid);
+            OpenLog();
+        }
+
         class CodeSymbolListener
         {
             public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)

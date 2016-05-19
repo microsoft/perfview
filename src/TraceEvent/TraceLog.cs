@@ -3052,7 +3052,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 61; }
+            get { return 62; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -5596,7 +5596,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var ilModulePath = data.ModuleILPath;
             var nativeModulePath = data.ModuleNativePath;
 
-            // If the NGEN image is used as the IL image (happend in CoreCLR case), change the name of the
+            // If the NGEN image is used as the IL image (happened in CoreCLR case), change the name of the
             // IL image to be a 'fake' non-nGEN image.  We need this because we need a DISTINCT file that
             // we can hang the PDB signature information on for the IL pdb.  
             if (ilModulePath == nativeModulePath)
@@ -5605,6 +5605,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var nisuffix = ilModulePath.LastIndexOf(".ni.", ilModulePath.Length, 8, StringComparison.OrdinalIgnoreCase);
                 if (0 <= nisuffix)
                     ilModulePath = ilModulePath.Substring(0, nisuffix) + ilModulePath.Substring(nisuffix + 3);
+            }
+            // This is the CoreCLR (First Generation) ready-to-run case.   There still is a native PDB that is distinct
+            // from the IL PDB.   Unlike CoreCLR NGEN, it is logged as a IL file, but it has native code (and thus an NativePdbSignature)
+            // We treat the image as a native image and dummy up a il image to hang the IL PDB information on.  
+            else if (nativeModulePath.Length == 0 && data.NativePdbSignature != Guid.Empty && data.ManagedPdbSignature != Guid.Empty)
+            {        
+                // And make up a fake .il.dll module for the IL 
+                var suffixPos = ilModulePath.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
+                if (0 < suffixPos)
+                {
+                    nativeModulePath = ilModulePath;        // We treat the image as the native path
+                    // and make up a dummy IL path.  
+                    ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
+                }
             }
 
             int index;
@@ -5620,8 +5634,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             process.Log.DebugWarn(module.assemblyID == 0 || module.assemblyID == data.AssemblyID, "Inconsistent Assembly ID previous ID = 0x" + module.assemblyID.ToString("x"), data);
             module.assemblyID = data.AssemblyID;
             module.flags = data.ModuleFlags;
-            if (data.ModuleNativePath.Length > 0)
-                module.nativeModule = GetLoadedModule(data.ModuleNativePath, data.TimeStampQPC);
+            if (nativeModulePath.Length > 0)
+                module.nativeModule = GetLoadedModule(nativeModulePath, data.TimeStampQPC);
             if (module.ModuleFile.fileName == null)
                 process.Log.ModuleFiles.SetModuleFileName(module.ModuleFile, ilModulePath);
 
@@ -6643,14 +6657,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     {
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
                         // Look up the IL PDB needed
-
                         reader.m_log.WriteLine("GetSourceLine:  Found mapping from Native to IL assembly {0} Token 0x{1:x} offset 0x{2:x}",
                         ilAssemblyName, ilMetaDataToken, ilMethodOffset);
                         if (moduleFile.ManagedModule != null)
                         {
                             // In CoreCLR, the managed image IS the native image, so has a .ni suffix, remove it if present.  
                             var moduleFileName = moduleFile.ManagedModule.Name;
-                            if (moduleFileName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase))
+                            if (moduleFileName.EndsWith(".ni", StringComparison.OrdinalIgnoreCase) || moduleFileName.EndsWith(".il", StringComparison.OrdinalIgnoreCase))
                                 moduleFileName = moduleFileName.Substring(0, moduleFileName.Length - 3);
 
                             // TODO FIX NOW work for any assembly, not just he corresponding IL assembly.  
