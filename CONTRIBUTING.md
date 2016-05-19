@@ -7,11 +7,11 @@ getting frustrated with the process.   This guide is our attempt to keep that fr
 as low as possible.   
 
 The simple truth is that not all change is good (big surprise), and because of this, we reserve 
-the right to reject any pull request to this repo. We won’t do this without rationale, and 
+the right to reject any pull request to this repo. We wonâ€™t do this without rationale, and 
 our rationale is simple at its heart.
 
 1. Complexity is bad.   Changes that add complexity need more careful deliberation 
-to weigh the good that comes along with it. 
+to weigh the bad against the good that comes along with it. 
 
 2. Consistency is good.   Bugs are basically a kind of inconsistency (the program does 
 not work as a simple understanding would assume). There are, of course, feature additions
@@ -28,7 +28,7 @@ And our golden rule
 
 The key here is that from your point of view the new feature you are adding looks like unalloyed 
 good.  But it is very likely that it increases complexity (point 1), may affect consistency (point 2) 
-and may make other scenarios slower (e.g. startup, etc.).   As the keepers of this repo we 
+and may make other scenarios slower (e.g. startup, etc.) (point 3).   As the keepers of this repo we 
 have the responsibility to weigh these other factors, and we may decide that the bad outweighs
 the good.
 
@@ -52,7 +52,9 @@ In general all features need pre-vetting.   The rule here is simple.  Don't do a
 you 
 
 1. Are willing to throw it away (e.g. it was more effort to get it vetted) OR
-2. You have vetted it with us by creating an issue.   
+2. You have vetted it with us by creating an issue, and got positive confirmation from the 
+   discussion that you are on the right track.   If it is a big change, you should ongoing
+   discussion on the issue to insure that you stay on track.   
 
 Performance improvements are often a point of contention.   Improvements that make the code
 smaller/simpler are great, but often this is not the case.   If you are adding complexity as

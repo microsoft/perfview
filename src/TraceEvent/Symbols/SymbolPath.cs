@@ -72,17 +72,11 @@ namespace Microsoft.Diagnostics.Symbols
 #if !PUBLIC_ONLY
                     if (ComputerNameExists("symweb.corp.microsoft.com"))
                         s_MicrosoftSymbolServerPath = "SRV*http://symweb.corp.microsoft.com";   // Internal Microsoft location.  
-                    else
-                        s_MicrosoftSymbolServerPath = "SRV*http://msdl.microsoft.com/download/symbols";
-
-                    // TODO Is this a hack? 
-                    if (SymbolPath.ComputerNameExists("ddrps.corp.microsoft.com"))
-                        s_MicrosoftSymbolServerPath = s_MicrosoftSymbolServerPath + ";" + @"SRV*\\ddrps.corp.microsoft.com\symbols";
-                    if (SymbolPath.ComputerNameExists("clrmain"))
-                        s_MicrosoftSymbolServerPath = s_MicrosoftSymbolServerPath + ";" + @"SRV*\\clrmain\symbols";
-#else
-                        s_MicrosoftSymbolServerPath = "SRV*http://msdl.microsoft.com/download/symbols";
 #endif
+                    s_MicrosoftSymbolServerPath = s_MicrosoftSymbolServerPath +
+                        ";" + @"SRV*http://msdl.microsoft.com/download/symbols" +   // Operatig system Symbols
+                        ";" + @"SRV*https://nuget.smbsrc.net" +                     // Nuget symbols
+                        ";" + @"SRV*http://referencesource.microsoft.com/symbols";  // .NET Runtime desktop symbols 
                 }
                 return s_MicrosoftSymbolServerPath;
             }

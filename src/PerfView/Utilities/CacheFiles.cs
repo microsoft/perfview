@@ -48,7 +48,7 @@ namespace Utilities
             // We expect the original file to exist
             Debug.Assert(File.Exists(baseFilePath));
 
-            var baseFileName = Path.GetFileName(baseFilePath);
+            var baseFileName = Path.GetFileNameWithoutExtension(baseFilePath);
             var baseFileInfo = new FileInfo(baseFilePath);
 
             // The hash is a combination of full path, size and last write timestamp

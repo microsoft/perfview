@@ -3,7 +3,7 @@
 
 If you are going to contribute to a codebase, you need to 'follow suit'
 and conform to the standards that are already in place.   Here is what
-PerfView uses.
+PerfView uses.  
 
 ##Indenting and other spacing conventions. 
 

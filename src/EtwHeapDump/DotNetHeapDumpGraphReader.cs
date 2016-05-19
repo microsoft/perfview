@@ -40,13 +40,13 @@ public class DotNetHeapDumpGraphReader
         return ret;
     }
 
-	public MemoryGraph Read(TraceEventDispatcher source, string processNameOrId = null, double startTimeRelativeMSec = 0)
-	{
-		var ret = new MemoryGraph(10000);
-		Append(ret, source, processNameOrId, startTimeRelativeMSec);
-		ret.AllowReading();
-		return ret;
-	}
+    public MemoryGraph Read(TraceEventDispatcher source, string processNameOrId = null, double startTimeRelativeMSec = 0)
+    {
+        var ret = new MemoryGraph(10000);
+        Append(ret, source, processNameOrId, startTimeRelativeMSec);
+        ret.AllowReading();
+        return ret;
+    }
     public void Append(MemoryGraph memoryGraph, string etlName, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {
         using (var source = new ETWTraceEventSource(etlName))
@@ -164,7 +164,7 @@ public class DotNetHeapDumpGraphReader
                 m_log.WriteLine("Found process {0} but does not match {1}", data.ProcessName, processNameOrId);
         };
 
-        Action<TraceEvent, GCReason, int> onStart = delegate (TraceEvent data, GCReason reason, int gcID)
+        source.Clr.GCStart += delegate (GCStartTraceData data)
         {
             // If this GC is not part of a heap dump, ignore it.  
             // TODO FIX NOW if (data.ClientSequenceNumber == 0)
@@ -187,20 +187,6 @@ public class DotNetHeapDumpGraphReader
             if (!IsProjectN && data.ProviderGuid == ClrTraceEventParser.NativeProviderGuid)
                 IsProjectN = true;
 
-            if (!m_seenStart)
-            {
-                m_gcID = gcID;
-                m_log.WriteLine("Found a Gen2 Induced non-background GC Start at {0:n3} msec GC Count {1}", data.TimeStampRelativeMSec, m_gcID);
-                m_ignoreEvents = false;
-                m_seenStart = true;
-                memoryGraph.Is64Bit = (data.PointerSize == 8);
-            }
-            else if (m_gcID < 0)
-                m_gcID = gcID;
-        };
-
-        source.Clr.GCStart += delegate (GCStartTraceData data)
-        {
             if (data.Depth < 2 || data.Type != GCType.NonConcurrentGC)
             {
                 m_log.WriteLine("GC Start found but not a Foreground Gen 2 GC");
@@ -212,13 +198,18 @@ public class DotNetHeapDumpGraphReader
                 m_log.WriteLine("GC Start not induced. Skipping.");
                 return;
             }
-            onStart(data, data.Reason, data.Count);
+
+            if (!m_seenStart)
+            {
+                m_gcID = data.Count;
+                m_log.WriteLine("Found a Gen2 Induced non-background GC Start at {0:n3} msec GC Count {1}", data.TimeStampRelativeMSec, m_gcID);
+                m_ignoreEvents = false;
+                m_seenStart = true;
+                memoryGraph.Is64Bit = (data.PointerSize == 8);
+            }
         };
 
-        //source.Clr.GCTriggered += delegate (GCTriggeredTraceData data)
-        //{
-        //    onStart(data, data.Reason, -1);
-        //};
+
 
         source.Clr.GCStop += delegate (GCEndTraceData data)
         {

@@ -999,19 +999,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         /// <summary>
-        ///  Allows an existing frame to be updated in place (thus all references to the old name go to the new name).  
-        /// </summary>
-        internal void UpdateFrameName(StackSourceFrameIndex frameIndex, string newName)
-        {
-            int relFrameIndex = frameIndex - m_frameStartIndex;
-            Debug.Assert(relFrameIndex >= 0);
-
-            FrameInfo frame = m_frameIntern[relFrameIndex];
-            FrameInfo newFrame = new FrameInfo(newName, frame.ModuleIndex);
-            m_frameIntern.Update(relFrameIndex, newFrame);
-        }
-
-        /// <summary>
         /// You can also create frames out of other frames using this method.  Given an existing frame, and
         /// a suffix 'frameSuffix' 
         /// </summary>
@@ -1170,7 +1157,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // Grow if necessary
                 if (_count == _entries.Length)
                 {
-                    Resize(_count * 2); // Simple doubling (geometric growth)
+                    int newsize = _count * 2 + 1;
+                    if (newsize <= _count)
+                        newsize = int.MaxValue;
+                    if (newsize <= _count)          // _count == int.MaxValue;
+                        throw new OutOfMemoryException();
+
+                    Resize(newsize); // Simple doubling (geometric growth)
                     targetBucket = BucketNumberFromValue(value);
                 }
 
@@ -1179,60 +1172,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 _buckets[index]._next = _buckets[targetBucket]._head;
                 _buckets[targetBucket]._head = index;
                 return index;
-            }
-
-            /// <summary>
-            /// Update an existing item.
-            /// </summary>
-            /// <param name="index">The index of the existing item.</param>
-            /// <param name="newValue">The new value.</param>
-            public void Update(int index, T newValue)
-            {
-                if (index < 0 || index >= _count)
-                {
-                    throw new IndexOutOfRangeException();
-                }
-
-                var oldValue = _entries[index];
-                if (oldValue.Equals(newValue))
-                {
-                    return;
-                }
-
-                // Update the value
-                _entries[index] = newValue;
-
-                // Update the hash table if necessary.
-                int oldBucket = BucketNumberFromValue(oldValue);
-                int newBucket = BucketNumberFromValue(newValue);
-                if (oldBucket == newBucket)
-                {
-                    // Nothing changes. The values hash to the same bucket.
-                    return;
-                }
-
-                // Remove the old value from the old bucket. This involves traversing the
-                // linked list to find the predecessor and update it's next pointer.
-                int prev = -1;
-                for (int i = _buckets[oldBucket]._head; i != index; i = _buckets[i]._next)
-                {
-                    prev = i;
-                }
-
-                if (prev < 0)
-                {
-                    // Removing the head
-                    _buckets[oldBucket]._head = _buckets[index]._next;
-                }
-                else
-                {
-                    // Removing a non-head entry
-                    _buckets[prev]._next = _buckets[index]._next;
-                }
-
-                // Add the new value to the head of the new bucket.
-                _buckets[index]._next = _buckets[newBucket]._head;
-                _buckets[newBucket]._head = index;
             }
 
             /// <summary>
@@ -1266,33 +1205,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             private void Resize(int desiredSize)
             {
-                // This is the maximum prime smaller than Array.MaxArrayLength
-                const int MaxPrimeArrayLength = 0x7FEFFFFD;
-
-                int newSize;
-                if ((uint)desiredSize > MaxPrimeArrayLength && MaxPrimeArrayLength > _count)
-                {
-                    newSize = MaxPrimeArrayLength;
-                }
-                else
-                {
-                    newSize = HashHelpers.GetPrime(desiredSize);
-                }
-
-                var newBuckets = new Bucket[newSize];
+                var newBuckets = new Bucket[desiredSize];
                 for (int i = 0; i < newBuckets.Length; i++)
                 {
                     newBuckets[i]._head = -1;
                 }
 
-                var newEntries = new T[newSize];
+                var newEntries = new T[desiredSize];
                 if (_entries != null)
                 {
                     Array.Copy(_entries, 0, newEntries, 0, _count);
                     // Regenerate the index
                     for (int i = 0; i < _count; i++)
                     {
-                        int bucket = BucketNumberFromValue(newEntries[i], newSize);
+                        int bucket = BucketNumberFromValue(newEntries[i], desiredSize);
                         newBuckets[i]._next = newBuckets[bucket]._head;
                         newBuckets[bucket]._head = i;
                     }
@@ -1300,61 +1226,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                 _buckets = newBuckets;
                 _entries = newEntries;
-            }
-
-            private static class HashHelpers
-            {
-                // Table of prime numbers to use as hash table sizes. 
-                private static readonly int[] s_primes = {
-                    3, 7, 11, 17, 23, 29, 37, 47, 59, 71, 89, 107, 131, 163, 197, 239, 293, 353, 431, 521, 631, 761, 919,
-                    1103, 1327, 1597, 1931, 2333, 2801, 3371, 4049, 4861, 5839, 7013, 8419, 10103, 12143, 14591,
-                    17519, 21023, 25229, 30293, 36353, 43627, 52361, 62851, 75431, 90523, 108631, 130363, 156437,
-                    187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403, 968897, 1162687, 1395263,
-                    1674319, 2009191, 2411033, 2893249, 3471899, 4166287, 4999559, 5999471, 7199369
-                };
-
-                private const int HashPrime = 101;
-
-                private static bool IsPrime(int candidate)
-                {
-                    if ((candidate & 1) != 0)
-                    {
-                        int limit = (int)Math.Sqrt(candidate);
-                        for (int divisor = 3; divisor <= limit; divisor += 2)
-                        {
-                            if ((candidate % divisor) == 0)
-                                return false;
-                        }
-                        return true;
-                    }
-                    return (candidate == 2);
-                }
-
-                /// <summary>
-                /// Returns a prime number at least as large as <paramref name="min"/>
-                /// </summary>
-                /// <param name="min">The minimum size of the requested prime number.</param>
-                /// <returns>A prime number greater than or equal to <paramref name="min"/>.</returns>
-                public static int GetPrime(int min)
-                {
-                    foreach (var prime in s_primes)
-                    {
-                        if (prime >= min)
-                        {
-                            return prime;
-                        }
-                    }
-
-                    //outside of our predefined table. 
-                    //compute the hard way. 
-                    for (int i = (min | 1); i < Int32.MaxValue; i += 2)
-                    {
-                        if (IsPrime(i) && ((i - 1) % HashPrime != 0))
-                            return i;
-                    }
-
-                    return min;
-                }
             }
 
             /// <summary>

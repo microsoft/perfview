@@ -657,8 +657,15 @@ public class GCHeapDumper
             (long)(ETWClrProfilerTraceEventParser.Keywords.GCHeap));
 
         m_log.WriteLine("{0,5:n1}s: Requesting .NET Native GC", sw.Elapsed.TotalSeconds);
-        session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
-            (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+        try
+        {
+            session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
+                (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
+        }
+        catch {
+            m_log.WriteLine("{0,5:n1}s: .NET Native Capture state failed. OK if this is not a .NET Native scenario.", sw.Elapsed.TotalSeconds);
+        };
+
     }
 #endif
 
@@ -820,7 +827,7 @@ public class GCHeapDumper
         string myDir = Path.GetDirectoryName(myPath);
         string EtwClrProfilerPath = Path.Combine(myDir, "EtwClrProfiler.dll");
 
-#if DEBUG  // TODO FIX NOW for debugging builds
+#if DEBUG
         if (!File.Exists(EtwClrProfilerPath))
         {
             var buildPath = Path.Combine(myDir, @"..\..\..\..\ETWClrProfiler\Debug\x86\EtwClrProfiler.dll");
@@ -1753,8 +1760,7 @@ public class GCHeapDumper
                 if (m_gcHeapDump.MemoryGraph.NodeCount >= m_maxNodeCount ||
                     m_gcHeapDump.MemoryGraph.DistinctRefCount + m_children.Count > m_maxNodeCount)
                 {
-                    m_log.WriteLine("WARNING, exceeded the maximum number of node allowed {0} (because dump will be larger than 4GB))",
-                        m_maxNodeCount);
+                    m_log.WriteLine("WARNING, exceeded the maximum number of node allowed {0}", m_maxNodeCount);
                     m_log.WriteLine("{0,5:f1}s: Truncating heap dump.", m_sw.Elapsed.TotalSeconds);
                     return;
                 }

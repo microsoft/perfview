@@ -4074,6 +4074,7 @@ namespace PerfView
             fileParser.Create += delegate (FileIOCreateTraceData data)
             {
                 StackSourceCallStackIndex stackIdx = GetStackForProcess(data.Process(), traceLog, stackSource, processStackCache);
+                stackIdx = stackSource.GetCallStack(data.CallStackIndex(), stackIdx);
                 string imageFrameString = string.Format("FileOpenOrCreate {0}", data.FileName);
                 StackSourceFrameIndex imageFrameIdx = stackSource.Interner.FrameIntern(imageFrameString);
                 stackIdx = stackSource.Interner.CallStackIntern(imageFrameIdx, stackIdx);
@@ -4085,24 +4086,10 @@ namespace PerfView
                 stackSource.AddSample(sample);
             };
 
-            eventSource.Kernel.AddCallbackForEvents(delegate (FileIOReadWriteTraceData data)
-            {
-
-            });
-
-            eventSource.Kernel.AddCallbackForEvents(delegate (ProcessTraceData data)
-            {
-
-            });
-
-            eventSource.Kernel.AddCallbackForEvents(delegate (ProcessCtrTraceData data)
-            {
-
-            });
-
             eventSource.Kernel.AddCallbackForEvents(delegate (ImageLoadTraceData data)
             {
                 StackSourceCallStackIndex stackIdx = GetStackForProcess(data.Process(), traceLog, stackSource, processStackCache);
+                stackIdx = stackSource.GetCallStack(data.CallStackIndex(), stackIdx);
                 string fileCreateFrameString = string.Format("ImageLoad Base 0x{0:x} Size 0x{1:x} Name {2}", data.ImageBase, data.ImageSize, data.FileName);
                 StackSourceFrameIndex fileCreateFrameIdx = stackSource.Interner.FrameIntern(fileCreateFrameString);
                 stackIdx = stackSource.Interner.CallStackIntern(fileCreateFrameIdx, stackIdx);
@@ -4113,11 +4100,6 @@ namespace PerfView
                 sample.StackIndex = stackIdx;
                 stackSource.AddSample(sample);
             });
-
-            fileParser.Create += delegate (FileIOCreateTraceData data)
-            {
-
-            };
 
             eventSource.Process();
             stackSource.DoneAddingSamples();
@@ -4138,9 +4120,14 @@ namespace PerfView
                     parentStack = GetStackForProcess(process.Parent, traceLog, stackSource, processStackCache);
                 }
 
-                string processFrameString = string.Format("Process {0} ({1})", process.Name, process.ProcessID);
+                string parent = "";
                 if (parentStack == StackSourceCallStackIndex.Invalid)
-                    processFrameString += " Parent (" + process.ParentID + ")";
+                    parent += ",Parent=" + process.ParentID;
+
+                string command = process.CommandLine;
+                if (string.IsNullOrWhiteSpace(command))
+                    command = process.ImageFileName;
+                string processFrameString = string.Format("Process({0}{1}): {2}", process.ProcessID, parent, command);
 
                 StackSourceFrameIndex processFrameIdx = stackSource.Interner.FrameIntern(processFrameString);
                 ret = stackSource.Interner.CallStackIntern(processFrameIdx, parentStack);
@@ -4608,11 +4595,21 @@ namespace PerfView
                 allocName = "Alloc >= 32768";
             return allocName;
         }
-        #endregion
+#endregion
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
             ConfigureAsEtwStackWindow(stackWindow, stackSourceName == "CPU");
+
+            if (stackSourceName == "Processes / Files / Registry")
+            {
+                var defaultFold = @"^FileOpenOrCreate*:\Windows\Sys;^ImageLoad*:\Windows\Sys;^Process*conhost";
+                stackWindow.FoldRegExTextBox.Items.Add(defaultFold);
+                stackWindow.FoldRegExTextBox.Text = defaultFold;
+
+                stackWindow.CallTreeTab.IsSelected = true;      // start with the call tree view
+                return;
+            }
 
             if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
@@ -5181,7 +5178,7 @@ namespace PerfView
         }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
 
-        #region private
+#region private
         /// <summary>
         /// See if the log has events from VS providers.  If so we should register the VS providers. 
         /// </summary>
@@ -5259,7 +5256,7 @@ namespace PerfView
         bool m_notifiedAboutLostEvents;
         bool m_notifiedAboutWin8;
         string m_extraTopStats;
-        #endregion
+#endregion
     }
 
     class WTPerfViewFile : PerfViewFile
@@ -5401,7 +5398,7 @@ namespace PerfView
             stackWindow.CallTreeTab.IsSelected = true;
         }
 
-        #region private
+#region private
         [Flags]
         enum PageProtection
         {
@@ -5469,7 +5466,7 @@ namespace PerfView
                 return string.Format("<MemoryNode Name=\"{0}\" Start=\"0x{1:x}\" Length=\"0x{2:x}\"/>", Details, Address, Size);
             }
 
-            #region private
+#region private
 
             private void Insert(MemoryNode newNode)
             {
@@ -5517,7 +5514,7 @@ namespace PerfView
                     ulong.TryParse(attrValue, out ret);
                 return ret;
             }
-            #endregion
+#endregion
         }
 
         class VMMapStackSource : InternStackSource
@@ -5621,7 +5618,7 @@ namespace PerfView
             StackSourceSample m_sample;
 
         }
-        #endregion
+#endregion
     }
 
     class PdbScopePerfViewFile : PerfViewFile
@@ -5885,7 +5882,7 @@ namespace PerfView
             }
         }
 
-        #region private
+#region private
 
         protected internal void OpenDump(TextWriter log)
         {
@@ -6033,7 +6030,7 @@ namespace PerfView
 
         internal protected GCHeapDump m_gcDump;
         string m_extraTopStats;
-        #endregion
+#endregion
     }
 
     public partial class LinuxPerfViewData : PerfViewFile
@@ -6154,9 +6151,9 @@ namespace PerfView
             return m_traceLog;
         }
 
-        #region Private
+#region Private
         TraceLog m_traceLog;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -6391,7 +6388,7 @@ namespace PerfView
             ConfigureAsEtwStackWindow(stackWindow, false, false);
         }
 
-        #region private
+#region private
 
         /// <summary>
         /// Search for scenario data files matching a pattern, and add them to a dictionary.
@@ -6533,7 +6530,7 @@ namespace PerfView
             return pathDict;
         }
 
-        #endregion
+#endregion
     }
 
     /// <summary>
