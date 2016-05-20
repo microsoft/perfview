@@ -1280,7 +1280,7 @@ ProcessCollectedData()
             echo "Start generating PerfMaps for native images"
             for path in $imagePaths
             do
-                if [ `echo ${path} | grep ^.*\.ni\.dll$` ]
+                if [ `echo ${path} | grep ^.*\.dll$` ]
                 then
                     IFS=""
                     echo "Generating PerfMap for ${path}"
@@ -1360,10 +1360,9 @@ ProcessCollectedData()
 	$perfcmd inject -v -s -i perf.data -o $mergedFile
 
 	# There is a breaking change where the capitalization of the -f parameter changed.
-	if [ "$(IsRHEL)" == "1" ]
+	$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+	if [ $? -ne 0 ]
 	then
-		$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
-	else
 		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
 	fi
 
