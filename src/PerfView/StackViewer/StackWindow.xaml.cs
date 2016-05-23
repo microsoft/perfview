@@ -821,9 +821,9 @@ namespace PerfView
             var baselineWindow = menuItem.Tag as StackWindow;
 
             var reportName = "Regression Report between " + Name + " and " + baselineWindow.Name;
-            StatusBar.StartWork("Computing: " + reportName, delegate()
+            StatusBar.StartWork("Computing: " + reportName, delegate ()
             {
-                var htmlReport = CacheFiles.FindFile("OverweightAnalysis." + DateTime.Now.ToString("MM-dd.HH.mm.ss.fff"),  ".html");
+                var htmlReport = Path.Combine(CacheFiles.CacheDir, "OverweightAnalysis." + DateTime.Now.ToString("MM-dd.HH.mm.ss.fff") + ".html");
                 OverWeigthReport.GenerateOverweightReport(htmlReport, this, baselineWindow);
                 StatusBar.EndWork(delegate()
                 {
