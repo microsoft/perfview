@@ -36,7 +36,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private byte[] _buffer = new byte[1024];
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
-        CtfEvent _perHeapHistoryEvent;
         CtfEventHeader _header = new CtfEventHeader();
 
         private bool _eof;
@@ -243,7 +242,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             return result;
         }
-        
 
         private object ReadType(CtfStruct strct, object[] result, CtfMetadataType type)
         {
