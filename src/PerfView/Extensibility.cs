@@ -2263,7 +2263,8 @@ namespace PerfViewExtensibility
             if (gcDumpOutputFileName == null)
                 gcDumpOutputFileName = PerfViewFile.ChangeExtension(etlFileName, ".gcdump");
 
-            ETLPerfViewData.UnZipIfNecessary(ref etlFileName, LogFile);
+            if (!etlFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+                ETLPerfViewData.UnZipIfNecessary(ref etlFileName, LogFile);
 
             // TODO FIX NOW retrieve the process name, ID etc.  
             var reader = new DotNetHeapDumpGraphReader(LogFile);
