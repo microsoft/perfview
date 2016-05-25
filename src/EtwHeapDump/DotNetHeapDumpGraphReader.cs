@@ -100,6 +100,14 @@ public class DotNetHeapDumpGraphReader
         // (Not play for play but it is small).  
         m_modules = new Dictionary<Address, Module>(32);
 
+        if (source is CtfTraceEventSource)
+        {
+            // For now we need to special case CtfTraceEventSource (linux traces) because we don't have Linux kernel events,
+            // which is required for getting the process name and a few other items.  For now we are just calling it "process"
+            // and this unblocks generating .gcdump files.
+            m_processName = "process";
+        }
+
         m_ignoreEvents = true;
         m_ignoreUntilMSec = startTimeRelativeMSec;
 
@@ -255,7 +263,9 @@ public class DotNetHeapDumpGraphReader
 
         source.Clr.TypeBulkType += delegate (GCBulkTypeTraceData data)
         {
-            if (m_ignoreEvents || data.ProcessID != m_processId)
+            // Don't check m_ignoreEvents here, as BulkType events can be emitted by other events...such as the GC allocation event.
+            // This means that when setting m_processId to 0 in the command line may still lose type events.
+            if (data.ProcessID != m_processId)
                 return;
 
             m_typeBlocks.Enqueue((GCBulkTypeTraceData)data.Clone());
