@@ -628,6 +628,66 @@ lttngInstalled=0
 # Set to 1 when the CTRLC_Handler gets invoked.
 handlerInvoked=0
 
+# Log file
+declare logFile
+logFilePrefix='/tmp/perfcollect'
+logEnabled=1
+
+######################################
+## Logging Functions
+######################################
+LogAppend()
+{
+	if (( $logEnabled == 1 ))
+	then
+		echo $* >> $logFile
+	fi
+}
+
+RunSilent()
+{
+	if (( $logEnabled == 1 ))
+	then
+		echo "Running \"$*\"" >> $logFile
+		$* >> $logFile 2>&1
+		echo "" >> $logFile
+	else
+		$* > /dev/null 2>&1
+	fi
+}
+
+InitializeLog()
+{
+	# Pick the log file name.
+	logFile="$logFilePrefix.log"
+	while [ -f $logFile ];
+	do
+	    logFile="$logFilePrefix.$RANDOM.log"
+	done
+
+	# Start the log
+	date=`date`
+	echo "Log started at ${date}" > $logFile
+	echo '' >> $logFile
+
+	# The system information.
+	LogAppend 'Machine info: '  `uname -a`
+	LogAppend 'perf version:'   `perf --version`
+	LogAppend 'LTTng version: ' `lttng --version`
+	LogAppend
+}
+
+CloseLog()
+{
+	LogAppend "END LOG FILE"
+	LogAppend "NOTE: It is normal for the log file to end right before the trace is actually compressed.  This occurs because the log file is part of the archive, and thus can't be written anymore."
+
+	# The log itself doesn't need to be closed,
+	# but we need to tell the script not to log anymore.
+	logEnabled=0
+}
+
+
 ######################################
 ## Helper Functions
 ######################################
@@ -658,6 +718,7 @@ ResetText()
 # $1 == Status message
 WriteStatus()
 {
+        LogAppend $*
 	BlueText
 	echo $1
 	ResetText
@@ -1106,9 +1167,9 @@ CreateLTTngSession()
 SetupLTTngSession()
 {
 	# Setup per-event context information.
-	lttng add-context --userspace --type vpid > /dev/null
-	lttng add-context --userspace --type vtid > /dev/null
-	lttng add-context --userspace --type procname > /dev/null
+	RunSilent "lttng add-context --userspace --type vpid"
+	RunSilent "lttng add-context --userspace --type vtid"
+	RunSilent "lttng add-context --userspace --type procname"
 
 	if [ "$gcCollectOnly" == "1" ]
 	then
@@ -1128,8 +1189,8 @@ SetupLTTngSession()
 		then
 		# Enable All runtime events
 		# TODO:Filter events
-		lttng enable-event --userspace --tracepoint 'DotNETRuntime:*' > /dev/null
-		lttng enable-event --userspace --tracepoint 'DotNETRuntimePrivate:*' > /dev/null
+		RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:*"
+		RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntimePrivate:*"
 		elif [ "$events" == "threading" ]
 		then
 			EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
@@ -1139,7 +1200,7 @@ SetupLTTngSession()
 
 DestroyLTTngSession()
 {
-	lttng destroy $lttngSessionName > /dev/null
+	RunSilent "lttng destroy $lttngSessionName"
 }
 
 StartLTTngCollection()
@@ -1147,12 +1208,12 @@ StartLTTngCollection()
 	CreateLTTngSession
 	SetupLTTngSession
 
-	lttng start $lttngSessionName
+	RunSilent "lttng start $lttngSessionName"
 }
 
 StopLTTngCollection()
 {
-	lttng stop $lttngSessionName
+	RunSilent "lttng stop $lttngSessionName"
 
 	DestroyLTTngSession
 }
@@ -1163,8 +1224,7 @@ EnableLTTngEvents()
 	args=( "$@" )
 	for (( i=0; i<${#args[@]}; i++ ))
 	do
-		cmd="lttng enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
-		$cmd
+		RunSilent "lttng enable-event -s $lttngSessionName -u --tracepoint ${args[$i]}"
 	done
 }
 
@@ -1174,8 +1234,6 @@ EnableLTTngEvents()
 ##
 ProcessCollectedData()
 {
-	WriteStatus "START: Archive collected data."
-	
 	# Make a new target directory.
 	local traceSuffix=".trace"
 	local traceName=$inputTraceName
@@ -1185,55 +1243,49 @@ ProcessCollectedData()
 	# Save LTTng trace files.
 	if [ "$useLTTng" == "1" ]
 	then
-		WriteStatus "START: Save LTTng trace files."
+		LogAppend "Saving LTTng trace files."
 
 		if [ -d $lttngTraceDir ]
 		then
-			mkdir lttngTrace
-			cp -r $lttngTraceDir lttngTrace
+			RunSilent "mkdir lttngTrace"
+			RunSilent "cp -r $lttngTraceDir lttngTrace"
 		fi
-
-		WriteStatus "END: Save LTTng trace files."
 	fi
 
 	# Get any perf-$pid.map files that were used by the
 	# trace and store them alongside the trace.
-	WriteStatus "START: Save perf.map files."
+	LogAppend "Saving perf.map files."
+        RunSilent "$perfcmd buildid-list --with-hits"
 	local mapFiles=`$perfcmd buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
 	for mapFile in $mapFiles
 	do
 		if [ -f $mapFile ]
 		then
-			echo "Saving $mapFile"
+			LogAppend "Saving $mapFile"
 
 			# Change permissions on the file before saving, as perf will need to access the file later
 			# in this script when running perf script.
-			chown root $mapFile
-			cp $mapFile .
+			RunSilent "chown root $mapFile"
+			RunSilent "cp $mapFile ."
 
 			local perfinfoFile=${mapFile/perf/perfinfo}
 
-			echo "Attempting to find ${perfinfoFile}"
+			LogAppend "Attempting to find ${perfinfoFile}"
 
 			if [ -f $perfinfoFile ]
 			then
-				echo "Saving $perfinfoFile"
-				chown root $perfinfoFile
-				cp $perfinfoFile .
+				LogAppend "Saving $perfinfoFile"
+				RunSilent "chown root $perfinfoFile"
+				RunSilent "cp $perfinfoFile ."
 			else
-				RedText
-				echo "Skipping ${perfinfoFile}."
-				ResetText
+				LogAppend "Skipping ${perfinfoFile}."
 			fi
 		else
-			RedText
-			echo "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
-			ResetText
+			LogAppend "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
 		fi
 	done
-	WriteStatus "END: Save perf.map files."
 
-	WriteStatus "START: Generate native image map files"
+	WriteStatus "Generating native image symbol files"
 
 	# Get the list of loaded images and use the path to libcoreclr.so to find crossgen.
 	# crossgen is expected to sit next to libcoreclr.so.
@@ -1246,7 +1298,7 @@ ProcessCollectedData()
 		if [ -f ${crossgenDir}/crossgen ]
 		then
 			crossgenCmd=${crossgenDir}/crossgen
-			echo "Found crossgen at ${crossgenCmd}"
+			LogAppend "Found crossgen at ${crossgenCmd}"
 			break
 		fi
 	done
@@ -1277,37 +1329,35 @@ ProcessCollectedData()
             done
 
             IFS=":"
-            echo "Start generating PerfMaps for native images"
+            LogAppend "Generating PerfMaps for native images"
             for path in $imagePaths
             do
                 if [ `echo ${path} | grep ^.*\.dll$` ]
                 then
                     IFS=""
-                    echo "Generating PerfMap for ${path}"
-                    ${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}
+                    LogAppend "Generating PerfMap for ${path}"
+                    RunSilent "${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}"
                     IFS=":"
                 else
-                    echo "Skipping ${path}"
+                    LogAppend "Skipping ${path}"
                 fi
             done
-            echo "Finished generating perfMaps for native images"
+
+	    WriteStatus "...FINISHED"
 
 	else
-            RedText
-            echo "crossgen not found, skipping native image map generation."
-            ResetText
+            LogAppend "crossgen not found, skipping native image map generation."
+	    WriteStatus "...SKIPPED"
 	fi
 
 	IFS=$OLDIFS
 
-	WriteStatus "END: Generate native image map files"
-
 	# Create debuginfo files (separate symbols) for all modules in the trace.
-	WriteStatus "START: Save Symbols"
+	WriteStatus "Saving native symbols"
 
 	# Get the list of DSOs with hits in the trace file (those that are actually used).
-	# Filter out /tmp/perf-$pid.map files as these are handled separately.
-	local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf-`
+	# Filter out /tmp/perf-$pid.map files and files that end in .dll.
+	local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
 	for dso in $dsosWithHits
 	do
 		# Build up tuples of buildid and binary path.
@@ -1341,61 +1391,83 @@ ProcessCollectedData()
 			local noSymbols=`objdump -t $pathToBinary | grep "no symbols" -c`
 			if [ "$noSymbols" == "0" ]
 			then
-				echo "Generating debuginfo for $binaryName with buildid=$buildid"
-				mkdir -p $destDir
-				objcopy --only-keep-debug $pathToBinary $destPath
+				LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
+				RunSilent "mkdir -p $destDir"
+				RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
 			else
-				echo "Skipping $binaryName with buildid=$buildid.  No symbol information."
+				LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
 			fi
 		fi
 	done
 
-	WriteStatus "END: Save Symbols"
+	WriteStatus "...FINISHED"
 
-	WriteStatus "START: Export perf trace."
+        WriteStatus "Exporting perf.data file"
 
 	# Merge sched_stat and sched_switch events.
 	outputDumpFile="perf.data.txt"
 	mergedFile="perf.data.merged"
-	$perfcmd inject -v -s -i perf.data -o $mergedFile
+	RunSilent "$perfcmd inject -v -s -i perf.data -o $mergedFile"
+
+        # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
+        # when passing the command line to a function.  Thus, this case is hardcoded.
 
 	# There is a breaking change where the capitalization of the -f parameter changed.
-	$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+	LogAppend "Running $perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+	$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+	LogAppend
+
 	if [ $? -ne 0 ]
 	then
-		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile
+		LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+		LogAppend
 	fi
 
 	# If the dump file is zero length, try to collect without the period field, which was added recently.
 	if [ ! -s $outputDumpFile ]
 	then
-		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile
+		LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
+		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+		LogAppend
 	fi
 
-	WriteStatus "END: Export perf trace."
-	
-	WriteStatus "START: Compress data."
+	WriteStatus "...FINISHED"
+
+	WriteStatus "Compressing trace files"
 	
 	# Move all collected files to the new directory.
-	mv * $directoryName > /dev/null 2>&1
+	RunSilent "mv * $directoryName"
+
+	# Close the log - this stops all writing to the log, so that we can move it into the archive.
+	CloseLog
+
+	# Move the log file to the new directory and rename it to the standard log name.
+	RunSilent "mv $logFile $directoryName/perfcollect.log"
 
 	# Compress the data.
 	local archiveSuffix=".zip"
 	local archiveName=$directoryName$archiveSuffix
-	zip -r $archiveName $directoryName
+	RunSilent "zip -r $archiveName $directoryName"
 
 	# Move back to the original directory.
-	popd
+	popd > /dev/null
 
 	# Move the archive.
-	mv $tempDir/$archiveName .
-	
-	WriteStatus "END: Compress data."
+	RunSilent "mv $tempDir/$archiveName ."
+
+	WriteStatus "...FINISHED"
+
+	WriteStatus "Cleaning up artifacts"
 
 	# Delete the temp directory.
-	rm -rf $tempDir	
+	RunSilent "rm -rf $tempDir"
 
-	WriteStatus "END: Archive collected data."
+	WriteStatus "...FINISHED"
+
+	# Tell the user where the trace is.
+	WriteStatus
+	WriteStatus "Trace saved to $archiveName"
 }
 
 ##
@@ -1413,6 +1485,13 @@ EndCollect()
 	then
 		StopLTTngCollection
 	fi
+
+	# Update the user.
+	WriteStatus
+	WriteStatus "...STOPPED."
+	WriteStatus
+	WriteStatus "Starting post-processing.  This may take some time."
+	WriteStatus
 
 	# The user must CTRL+C to stop collection.
 	# When this happens, we catch the signal and finish our work.
@@ -1511,14 +1590,12 @@ DoCollect()
 	# Places the resulting args in $collectionArgs
 	BuildPerfRecordArgs
 
-	# Print status and instructions on how to stop collection.
-	WriteStatus "Starting collection.  Press CTRL+C to stop collection."
-
 	# Trap CTRL+C
 	trap CTRLC_Handler SIGINT
 
 	# Create a temp directory to use for collection.
 	local tempDir=`mktemp -d`
+        LogAppend "Created temp directory $tempDir"
 
 	# Switch to the directory.
 	pushd $tempDir > /dev/null
@@ -1529,13 +1606,21 @@ DoCollect()
 		StartLTTngCollection
 	fi
 
+	# Tell the user that collection has started and how to exit.
+	if [ "$duration" != "" ]
+	then
+		WriteStatus "Collection started. Collection will automatically stop in $duration second(s).  Press CTRL+C to stop early."
+	else
+	        WriteStatus "Collection started. Press CTRL+C to stop."
+	fi
+
 	# Start perf record.
 	if [ "$usePerf" == "1" ]
 	then
-		echo "Running cmd: $perfcmd $collectionArgs $perfOpt"
-		$perfcmd $collectionArgs
+		RunSilent $perfcmd $collectionArgs
 	else
 		# Wait here until CTRL+C handler gets called when user types CTRL+C.
+                LogAppend "Waiting for CTRL+C handler to get called."
 		for (( ; ; ))
 		do
 			if [ "$handlerInvoked" == "1" ]
@@ -1631,6 +1716,9 @@ then
 	InstallLTTng
 	exit 0
 fi
+
+# Initialize the log.
+InitializeLog
 
 # Ensure prerequisites are installed.
 EnsurePrereqsInstalled
