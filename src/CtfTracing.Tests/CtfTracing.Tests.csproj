@@ -59,6 +59,18 @@
       <Name>TraceEvent</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="inputs\net.4.0.x64.etl.zip" />
+    <None Include="inputs\net.4.0.x86.etl.zip" />
+    <None Include="inputs\net.4.5.2.x64.etl.zip" />
+    <None Include="inputs\net.4.5.2.x86.etl.zip" />
+    <None Include="inputs\net.4.5.x64.etl.zip" />
+    <None Include="inputs\net.4.5.x86.etl.zip" />
+    <None Include="inputs\net.4.6.2.x86.etl.zip" />
+    <None Include="inputs\netfx.4.6.1080.0.netfxrel3stage.x64.etl.zip" />
+    <None Include="inputs\netfx.4.6.1080.0.netfxrel3stage.x86.etl.zip" />
+    <None Include="inputs\sl.5.x86.etl.zip" />
+  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>
