@@ -1173,11 +1173,13 @@ SetupLTTngSession()
 
 	if [ "$gcCollectOnly" == "1" ]
 	then
+		usePerf=0
 		EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
 		EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
 		EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
 	elif [ "$gcOnly" == "1" ]
 	then
+		usePerf=0
 		EnableLTTngEvents ${DotNETRuntime_GCKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword[@]}
 		EnableLTTngEvents ${DotNETRuntime_GCHeapSurvivalAndMovementKeyword[@]}
@@ -1252,187 +1254,190 @@ ProcessCollectedData()
 		fi
 	fi
 
-	# Get any perf-$pid.map files that were used by the
-	# trace and store them alongside the trace.
-	LogAppend "Saving perf.map files."
-        RunSilent "$perfcmd buildid-list --with-hits"
-	local mapFiles=`$perfcmd buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
-	for mapFile in $mapFiles
-	do
-		if [ -f $mapFile ]
-		then
-			LogAppend "Saving $mapFile"
-
-			# Change permissions on the file before saving, as perf will need to access the file later
-			# in this script when running perf script.
-			RunSilent "chown root $mapFile"
-			RunSilent "cp $mapFile ."
-
-			local perfinfoFile=${mapFile/perf/perfinfo}
-
-			LogAppend "Attempting to find ${perfinfoFile}"
-
-			if [ -f $perfinfoFile ]
+	if [ "$usePerf" == 1 ]
+	then
+		# Get any perf-$pid.map files that were used by the
+		# trace and store them alongside the trace.
+		LogAppend "Saving perf.map files."
+	        RunSilent "$perfcmd buildid-list --with-hits"
+		local mapFiles=`$perfcmd buildid-list --with-hits | grep /tmp/perf- | cut -d ' ' -f 2`
+		for mapFile in $mapFiles
+		do
+			if [ -f $mapFile ]
 			then
-				LogAppend "Saving $perfinfoFile"
-				RunSilent "chown root $perfinfoFile"
-				RunSilent "cp $perfinfoFile ."
+				LogAppend "Saving $mapFile"
+
+				# Change permissions on the file before saving, as perf will need to access the file later
+				# in this script when running perf script.
+				RunSilent "chown root $mapFile"
+				RunSilent "cp $mapFile ."
+
+				local perfinfoFile=${mapFile/perf/perfinfo}
+
+				LogAppend "Attempting to find ${perfinfoFile}"
+
+				if [ -f $perfinfoFile ]
+				then
+					LogAppend "Saving $perfinfoFile"
+					RunSilent "chown root $perfinfoFile"
+					RunSilent "cp $perfinfoFile ."
+				else
+					LogAppend "Skipping ${perfinfoFile}."
+				fi
 			else
-				LogAppend "Skipping ${perfinfoFile}."
+				LogAppend "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
 			fi
-		else
-			LogAppend "Skipping $mapFile.  Some managed symbols may not be resolvable, but trace is still valid."
-		fi
-	done
+		done
 
-	WriteStatus "Generating native image symbol files"
+		WriteStatus "Generating native image symbol files"
 
-	# Get the list of loaded images and use the path to libcoreclr.so to find crossgen.
-	# crossgen is expected to sit next to libcoreclr.so.
-	local buildidList=`$perfcmd buildid-list | grep libcoreclr.so | cut -d ' ' -f 2`
-	local crossgenCmd=''
-	local crossgenDir=''
-	for file in $buildidList
-	do
-		crossgenDir=`dirname "${file}"`
-		if [ -f ${crossgenDir}/crossgen ]
-		then
-			crossgenCmd=${crossgenDir}/crossgen
-			LogAppend "Found crossgen at ${crossgenCmd}"
-			break
-		fi
-	done
-
-	OLDIFS=$IFS
-
-	imagePaths=""
-
-	if [ "$crossgenCmd" != "" ]
-	then
-            local perfinfos=`ls . | grep perfinfo | cut -d ' ' -f 2`
-            for perfinfo in $perfinfos
-            do
-                if [ -f $perfinfo ]
-                then
-                    IFS=";"
-                    while read command dll guid; do
-                        if [ $command ]; then
-                            if [ $command = "ImageLoad" ]; then
-                                if [ -f $dll ]; then
-                                    imagePaths="${dll}:${imagePaths}"
-                                fi
-                            fi
-                        fi
-                    done < $perfinfo
-                    IFS=$OLDIFS
-                fi
-            done
-
-            IFS=":"
-            LogAppend "Generating PerfMaps for native images"
-            for path in $imagePaths
-            do
-                if [ `echo ${path} | grep ^.*\.dll$` ]
-                then
-                    IFS=""
-                    LogAppend "Generating PerfMap for ${path}"
-                    RunSilent "${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}"
-                    IFS=":"
-                else
-                    LogAppend "Skipping ${path}"
-                fi
-            done
-
-	    WriteStatus "...FINISHED"
-
-	else
-            LogAppend "crossgen not found, skipping native image map generation."
-	    WriteStatus "...SKIPPED"
-	fi
-
-	IFS=$OLDIFS
-
-	# Create debuginfo files (separate symbols) for all modules in the trace.
-	WriteStatus "Saving native symbols"
-
-	# Get the list of DSOs with hits in the trace file (those that are actually used).
-	# Filter out /tmp/perf-$pid.map files and files that end in .dll.
-	local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
-	for dso in $dsosWithHits
-	do
-		# Build up tuples of buildid and binary path.
-		local processEntry=0
-		if [ -f $dso ]
-		then
-			local pathToBinary=$dso
-			processEntry=1
-		else
-			local buildid=$dso
-			pathToBinary=''
-		fi
-
-		# Once we have a tuple for a binary path that exists, process it.
-		if [ "$processEntry" == "1" ]
-		then
-			# Get the binary name without path.
-			local binaryName=`basename $pathToBinary`
-	
-			# Build the debuginfo file name.
-			local destFileName=$binaryName.debuginfo
-
-			# Build the destination directory for the debuginfo file.
-			local currentDir=`pwd`
-			local destDir=$currentDir/debuginfo/$buildid
-
-			# Build the full path to the debuginfo file.
-			local destPath=$destDir/$destFileName
-
-			# Check to see if the DSO contains symbols, and if so, build the debuginfo file.
-			local noSymbols=`objdump -t $pathToBinary | grep "no symbols" -c`
-			if [ "$noSymbols" == "0" ]
+		# Get the list of loaded images and use the path to libcoreclr.so to find crossgen.
+		# crossgen is expected to sit next to libcoreclr.so.
+		local buildidList=`$perfcmd buildid-list | grep libcoreclr.so | cut -d ' ' -f 2`
+		local crossgenCmd=''
+		local crossgenDir=''
+		for file in $buildidList
+		do
+			crossgenDir=`dirname "${file}"`
+			if [ -f ${crossgenDir}/crossgen ]
 			then
-				LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
-				RunSilent "mkdir -p $destDir"
-				RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
-			else
-				LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
+				crossgenCmd=${crossgenDir}/crossgen
+				LogAppend "Found crossgen at ${crossgenCmd}"
+				break
 			fi
+		done
+
+		OLDIFS=$IFS
+
+		imagePaths=""
+
+		if [ "$crossgenCmd" != "" ]
+		then
+	            local perfinfos=`ls . | grep perfinfo | cut -d ' ' -f 2`
+	            for perfinfo in $perfinfos
+	            do
+	                if [ -f $perfinfo ]
+	                then
+	                    IFS=";"
+	                    while read command dll guid; do
+	                        if [ $command ]; then
+	                            if [ $command = "ImageLoad" ]; then
+	                                if [ -f $dll ]; then
+	                                    imagePaths="${dll}:${imagePaths}"
+	                                fi
+	                            fi
+	                        fi
+	                    done < $perfinfo
+	                    IFS=$OLDIFS
+	                fi
+	            done
+
+	            IFS=":"
+	            LogAppend "Generating PerfMaps for native images"
+	            for path in $imagePaths
+	            do
+	                if [ `echo ${path} | grep ^.*\.dll$` ]
+	                then
+	                    IFS=""
+	                    LogAppend "Generating PerfMap for ${path}"
+	                    RunSilent "${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}"
+	                    IFS=":"
+	                else
+	                    LogAppend "Skipping ${path}"
+	                fi
+	            done
+
+		    WriteStatus "...FINISHED"
+
+		else
+	            LogAppend "crossgen not found, skipping native image map generation."
+		    WriteStatus "...SKIPPED"
 		fi
-	done
 
-	WriteStatus "...FINISHED"
+		IFS=$OLDIFS
 
-        WriteStatus "Exporting perf.data file"
+		# Create debuginfo files (separate symbols) for all modules in the trace.
+		WriteStatus "Saving native symbols"
 
-	# Merge sched_stat and sched_switch events.
-	outputDumpFile="perf.data.txt"
-	mergedFile="perf.data.merged"
-	RunSilent "$perfcmd inject -v -s -i perf.data -o $mergedFile"
+		# Get the list of DSOs with hits in the trace file (those that are actually used).
+		# Filter out /tmp/perf-$pid.map files and files that end in .dll.
+		local dsosWithHits=`$perfcmd buildid-list --with-hits | grep -v /tmp/perf- | grep -v .dll$`
+		for dso in $dsosWithHits
+		do
+			# Build up tuples of buildid and binary path.
+			local processEntry=0
+			if [ -f $dso ]
+			then
+				local pathToBinary=$dso
+				processEntry=1
+			else
+				local buildid=$dso
+				pathToBinary=''
+			fi
 
-        # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
-        # when passing the command line to a function.  Thus, this case is hardcoded.
+			# Once we have a tuple for a binary path that exists, process it.
+			if [ "$processEntry" == "1" ]
+			then
+				# Get the binary name without path.
+				local binaryName=`basename $pathToBinary`
 
-	# There is a breaking change where the capitalization of the -f parameter changed.
-	LogAppend "Running $perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-	$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
-	LogAppend
+				# Build the debuginfo file name.
+				local destFileName=$binaryName.debuginfo
 
-	if [ $? -ne 0 ]
-	then
-		LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
-		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+				# Build the destination directory for the debuginfo file.
+				local currentDir=`pwd`
+				local destDir=$currentDir/debuginfo/$buildid
+
+				# Build the full path to the debuginfo file.
+				local destPath=$destDir/$destFileName
+
+				# Check to see if the DSO contains symbols, and if so, build the debuginfo file.
+				local noSymbols=`objdump -t $pathToBinary | grep "no symbols" -c`
+				if [ "$noSymbols" == "0" ]
+				then
+					LogAppend "Generating debuginfo for $binaryName with buildid=$buildid"
+					RunSilent "mkdir -p $destDir"
+					RunSilent "objcopy --only-keep-debug $pathToBinary $destPath"
+				else
+					LogAppend "Skipping $binaryName with buildid=$buildid.  No symbol information."
+				fi
+			fi
+		done
+
+		WriteStatus "...FINISHED"
+
+	        WriteStatus "Exporting perf.data file"
+
+		# Merge sched_stat and sched_switch events.
+		outputDumpFile="perf.data.txt"
+		mergedFile="perf.data.merged"
+		RunSilent "$perfcmd inject -v -s -i perf.data -o $mergedFile"
+
+	        # I've not found a good way to get the behavior that we want here - running the command and redirecting the output
+	        # when passing the command line to a function.  Thus, this case is hardcoded.
+
+		# There is a breaking change where the capitalization of the -f parameter changed.
+		LogAppend "Running $perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+		$perfcmd script -i $mergedFile -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
 		LogAppend
-	fi
 
-	# If the dump file is zero length, try to collect without the period field, which was added recently.
-	if [ ! -s $outputDumpFile ]
-	then
-		LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
-		$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
-		LogAppend
-	fi
+		if [ $? -ne 0 ]
+		then
+			LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile"
+			$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+			LogAppend
+		fi
 
-	WriteStatus "...FINISHED"
+		# If the dump file is zero length, try to collect without the period field, which was added recently.
+		if [ ! -s $outputDumpFile ]
+		then
+			LogAppend "Running $perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile"
+			$perfcmd script -i $mergedFile -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > $outputDumpFile 2>>$logFile
+			LogAppend
+		fi
+
+		WriteStatus "...FINISHED"
+	fi
 
 	WriteStatus "Compressing trace files"
 	
@@ -1621,6 +1626,8 @@ DoCollect()
 	else
 		# Wait here until CTRL+C handler gets called when user types CTRL+C.
                 LogAppend "Waiting for CTRL+C handler to get called."
+
+		waitTime=0
 		for (( ; ; ))
 		do
 			if [ "$handlerInvoked" == "1" ]
@@ -1628,8 +1635,13 @@ DoCollect()
 				break;
 			fi
 
-			# Wait and then check to see if the handler has been invoked.
+			# Wait and then check to see if the handler has been invoked or we've crossed the duration threshold.
 			sleep 1
+			waitTime=$waitTime+1
+			if (( duration > 0 && duration <= waitTime ))
+			then
+				break;
+			fi
 		done
 	fi
 	EndCollect
