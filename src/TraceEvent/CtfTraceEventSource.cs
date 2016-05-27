@@ -550,9 +550,6 @@ namespace Microsoft.Diagnostics.Tracing
         {
             ETWMapping result;
             _eventMapping.TryGetValue(evt.Name, out result);
-
-            Debug.Assert(evt.Name.StartsWith("lttng") || _eventMapping.ContainsKey(evt.Name), evt.Name);
-
             return result;
         }
 

@@ -399,6 +399,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             byte[] buffer = null;
 
             StringBuilder sb = new StringBuilder();
+            sb.AppendLine();
             while (true)
             {
                 if (_stream.Read(headerBufer, 0, headerBufer.Length) != headerBufer.Length)

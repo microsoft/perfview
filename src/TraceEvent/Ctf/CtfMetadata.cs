@@ -312,7 +312,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ID = bag.GetInt("id");
             Name = bag.GetString("name");
             Stream = bag.GetInt("stream_id");
-            LogLevel = bag.GetUInt("loglevel");
+            LogLevel = bag.GetUIntOrNull("loglevel") ?? 0;
 
             Fields = bag.GetStruct("fields");
         }
