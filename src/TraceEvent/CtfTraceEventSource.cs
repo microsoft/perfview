@@ -97,6 +97,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Dictionary<string, ETWMapping> result = new Dictionary<string, ETWMapping>();
 
+            // Kernel events
+            result["sched_process_exec"] = new ETWMapping(Parsers.LinuxKernelTraceEventParser.ProviderGuid, 1, 0, 0);
+
             // Public events
             result["DotNETRuntime:GCStart"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 1, 0);
             result["DotNETRuntime:GCStart_V1"] = new ETWMapping(Parsers.ClrTraceEventParser.ProviderGuid, 1, 1, 1);

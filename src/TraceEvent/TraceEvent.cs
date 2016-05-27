@@ -171,6 +171,16 @@ namespace Microsoft.Diagnostics.Tracing
                 return _Kernel;
             }
         }
+        public LinuxKernelTraceEventParser LinuxKernel
+        {
+            get
+            {
+                if (_LinuxKernel == null)
+                    _LinuxKernel = new LinuxKernelTraceEventParser(this);
+
+                return _LinuxKernel;
+            }
+        }
         /// <summary>
         /// For convenience, we provide a property returns a ClrTraceEventParser that knows 
         /// how to parse all the Common Language Runtime (CLR .NET) events into callbacks.
@@ -389,6 +399,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
         internal /*protected*/ KernelTraceEventParser _Kernel;
+        internal /*protected*/ LinuxKernelTraceEventParser _LinuxKernel;
         internal /*protected*/ ClrTraceEventParser _CLR;
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
