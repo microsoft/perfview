@@ -178,5 +178,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return uint.Parse(_properties[name]);
         }
+
+        internal uint? GetUIntOrNull(string name)
+        {
+            string value;
+            if (!_properties.TryGetValue(name, out value))
+                return null;
+
+            return uint.Parse(value);
+        }
     }
 }

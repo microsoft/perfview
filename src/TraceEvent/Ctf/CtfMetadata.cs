@@ -271,6 +271,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         const int SizeUninitialized = -2;
         internal const int SizeIndeterminate = -1;
 
+        bool? _isPacked;
         int _size = SizeUninitialized;
         
         public bool IsFixedSize { get { return Size != SizeIndeterminate; } }
@@ -292,13 +293,26 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public int Stream { get; private set; }
         public uint LogLevel { get; private set; }
         public CtfStruct Fields { get; private set; }
+        public bool IsPacked
+        {
+            get
+            {
+                if (!_isPacked.HasValue)
+                {
+                    var fields = Fields.Fields;
+                    _isPacked = fields.Length == 3 && fields[2].Name == "___data__";
+                }
+
+                return _isPacked.Value;
+            }
+        }
 
         public CtfEvent(CtfPropertyBag bag)
         {
             ID = bag.GetInt("id");
             Name = bag.GetString("name");
             Stream = bag.GetInt("stream_id");
-            LogLevel = bag.GetUInt("loglevel");
+            LogLevel = bag.GetUIntOrNull("loglevel") ?? 0;
 
             Fields = bag.GetStruct("fields");
         }
