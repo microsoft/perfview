@@ -75,5 +75,5 @@ The code is broken in several main sections:
   * Dialogs - GUI code for a variety of small dialog boxes (although the CollectingDialog is reasonably complex)
   * Memory - Contains code for memory investigations, in particular it defines 'Graph' and 'MemoryGraph' which are used 
   to display node-arc graphs (e.g. GC heaps)
-  * [HtmlJs](src\HtmlJs\Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support).  
+  * [HtmlJs](src/HtmlJs/Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support).  
 s
