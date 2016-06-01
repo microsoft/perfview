@@ -2060,10 +2060,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public long TotalPromotedSize3 { get { return GetInt64At(56); } }
         public long FinalizationPromotedSize { get { return GetInt64At(64); } }
         public long FinalizationPromotedCount { get { return GetInt64At(72); } }
-        public int PinnedObjectCount { get { if (Version != SplitEventVersion) return GetInt32At(80); return 0; } }
-        public int SinkBlockCount { get { if (Version != SplitEventVersion) return GetInt32At(84); return 0; } }
-        public int GCHandleCount { get { if (Version != SplitEventVersion) return GetInt32At(88); return 0; } }
-        public int ClrInstanceID { get { if (Version >= 1 && Version != SplitEventVersion) return GetInt16At(92); return 0; } }
+        public int PinnedObjectCount { get { return GetInt32At(80); } }
+        public int SinkBlockCount { get { return GetInt32At(84); } }
+        public int GCHandleCount { get { return GetInt32At(88); } }
+        public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(92); return 0; } }
 
         #region Private
         internal GCHeapStatsTraceData(Action<GCHeapStatsTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -2084,8 +2084,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Debug.Assert(!(Version == 0 && EventDataLength != 96));          // HAND_MODIFIED C++ pads to 96
             Debug.Assert(!(Version == 1 && EventDataLength != 94));
-            Debug.Assert(Version == SplitEventVersion || !(Version > 1 && EventDataLength < 94));
-            Debug.Assert(!(Version == SplitEventVersion && EventDataLength != 80));
+            Debug.Assert(!(Version > 1 && EventDataLength < 94));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7673,13 +7672,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string ModuleILPath { get { return GetUnicodeStringAt(24); } }
         public string ModuleNativePath { get { return GetUnicodeStringAt(SkipUnicodeString(24)); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(SkipUnicodeString(SkipUnicodeString(24))); return 0; } }
-        public Guid ManagedPdbSignature { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetGuidAt(SkipUnicodeString(SkipUnicodeString(24)) + 2); return Guid.Empty; } }
-        public int ManagedPdbAge { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetInt32At(SkipUnicodeString(SkipUnicodeString(24)) + 18); return 0; } }
-        public string ManagedPdbBuildPath { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(24)) + 22); return ""; } }
+        public Guid ManagedPdbSignature { get { if (Version >= 2) return GetGuidAt(SkipUnicodeString(SkipUnicodeString(24)) + 2); return Guid.Empty; } }
+        public int ManagedPdbAge { get { if (Version >= 2) return GetInt32At(SkipUnicodeString(SkipUnicodeString(24)) + 18); return 0; } }
+        public string ManagedPdbBuildPath { get { if (Version >= 2) return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(24)) + 22); return ""; } }
 
-        public Guid NativePdbSignature { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetGuidAt(GetNativePdbSigStart); return Guid.Empty; } }
-        public int NativePdbAge { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetInt32At(GetNativePdbSigStart + 16); return 0; } }
-        public string NativePdbBuildPath { get { if (Version >= 2 && Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(GetNativePdbSigStart + 20); return ""; } }
+        public Guid NativePdbSignature { get { if (Version >= 2) return GetGuidAt(GetNativePdbSigStart); return Guid.Empty; } }
+        public int NativePdbAge { get { if (Version >= 2) return GetInt32At(GetNativePdbSigStart + 16); return 0; } }
+        public string NativePdbBuildPath { get { if (Version >= 2) return GetUnicodeStringAt(GetNativePdbSigStart + 20); return ""; } }
 
         /// <summary>
         /// This is simply the file name part of the ModuleILPath.  It is a convinience method. 
@@ -7708,7 +7707,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24))));
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(24)) + 2));
             Debug.Assert(!(Version == 2 && EventDataLength != SkipUnicodeString(GetNativePdbSigStart + 20)));
-            Debug.Assert(Version == TraceEvent.SplitEventVersion || !(Version > 2 && EventDataLength < SkipUnicodeString(GetNativePdbSigStart + 20)));
+            Debug.Assert(!(Version > 2 && EventDataLength < SkipUnicodeString(GetNativePdbSigStart + 20)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8263,8 +8262,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string InlineeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))); } }
         public string InlineeNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))); } }
         public bool FailAlways { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
-        public string FailReason { get { if (Version != SplitEventVersion) return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); return ""; } }
-        public int ClrInstanceID { get { if (Version != SplitEventVersion) return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); return 0; } }
+        public string FailReason { get { return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
 
         #region Private
         internal MethodJitInliningFailedTraceData(Action<MethodJitInliningFailedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8283,10 +8282,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            int len = SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4;
-            Debug.Assert(!(Version == SplitEventVersion && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4));
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
-            Debug.Assert(Version == SplitEventVersion || !(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8366,11 +8363,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int VMMinorVersion { get { return (ushort)GetInt16At(14); } }
         public int VMBuildNumber { get { return (ushort)GetInt16At(16); } }
         public int VMQfeNumber { get { return (ushort)GetInt16At(18); } }
-        public StartupFlags StartupFlags { get { if (Version != TraceEvent.SplitEventVersion) return (StartupFlags)GetInt32At(20); return StartupFlags.None; } }
-        public StartupMode StartupMode { get { if (Version != TraceEvent.SplitEventVersion) return (StartupMode)GetByteAt(24); return StartupMode.None; } }
-        public string CommandLine { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(25); return ""; } }
-        public Guid ComObjectGuid { get { if (Version != TraceEvent.SplitEventVersion) return GetGuidAt(SkipUnicodeString(25)); return Guid.Empty; } }
-        public string RuntimeDllPath { get { if (Version != TraceEvent.SplitEventVersion) return GetUnicodeStringAt(SkipUnicodeString(25) + 16); return ""; } }
+        public StartupFlags StartupFlags { get { return (StartupFlags)GetInt32At(20); } }
+        public StartupMode StartupMode { get { return (StartupMode)GetByteAt(24); } }
+        public string CommandLine { get { return GetUnicodeStringAt(25); } }
+        public Guid ComObjectGuid { get { return GetGuidAt(SkipUnicodeString(25)); } }
+        public string RuntimeDllPath { get { return GetUnicodeStringAt(SkipUnicodeString(25) + 16); } }
 
         #region Private
         internal RuntimeInformationTraceData(Action<RuntimeInformationTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8389,9 +8386,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == TraceEvent.SplitEventVersion && EventDataLength != 20));
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(25) + 16)));
-            Debug.Assert(Version == TraceEvent.SplitEventVersion || !(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(25) + 16)));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(25) + 16)));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8480,8 +8476,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string CalleeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))); } }
         public string CalleeNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))); } }
         public bool TailPrefix { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
-        public TailCallType TailCallType { get { if (Version != SplitEventVersion) return (TailCallType)GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); return Clr.TailCallType.Unknown;  } }
-        public int ClrInstanceID { get { if (Version != SplitEventVersion) return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 8); return 0; } }
+        public TailCallType TailCallType { get { return (TailCallType)GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 8); } }
 
         #region Private
         internal MethodJitTailCallSucceededTraceData(Action<MethodJitTailCallSucceededTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8501,8 +8497,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 10));
-            Debug.Assert(Version == SplitEventVersion || !(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 10));
-            Debug.Assert(!(Version == SplitEventVersion && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 10));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8582,8 +8577,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string CalleeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))); } }
         public string CalleeNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))); } }
         public bool TailPrefix { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
-        public string FailReason { get { if (Version != SplitEventVersion) return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); return ""; } }
-        public int ClrInstanceID { get { if (Version != SplitEventVersion) return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); return 0; } }
+        public string FailReason { get { return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
 
         #region Private
         internal MethodJitTailCallFailedTraceData(Action<MethodJitTailCallFailedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8603,8 +8598,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override void Validate()
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
-            Debug.Assert(Version == SplitEventVersion || !(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
-            Debug.Assert(!(Version == SplitEventVersion && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
