@@ -15,6 +15,9 @@ namespace Tests
         [TestMethod]
         public void GCAllocationTick()
         {
+            Assert.Inconclusive();
+            return;
+
             int allocTicks = 0, allocTicksFromAll = 0;
 
             string[] files = new string[] { "auto-20160204-132425.lttng.zip", "auto-20151103-132930.lttng.zip" , "auto-20160204-162218.lttng.zip" };
