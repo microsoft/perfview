@@ -2402,8 +2402,13 @@ namespace Microsoft.Diagnostics.Tracing
         {
             var declaredSet = new SortedDictionary<string, string>();
 
+            // TODO FIX NOW currently we have a hack where we know we are not correct 
+            // for JScriptTraceEventParser.  
+            if (GetType().Name == "JScriptTraceEventParser")
+                return;
+
             // Use reflection to see what events have declared 
-            MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
             {
                 var addMethod = methods[i];
@@ -2440,6 +2445,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // we'll "special case" project N templates and ignore them...
                 if (template.ProviderGuid == ClrTraceEventParser.NativeProviderGuid)
                     return;
+
                 var eventName = template.EventName.Replace("/", "");
                 if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
                     return;

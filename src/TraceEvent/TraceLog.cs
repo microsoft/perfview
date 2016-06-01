@@ -4149,7 +4149,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // Confirm we have a half-way sane event, to catch obvious loss of sync.  
                 Debug.Assert(ret.Level <= (TraceEventLevel)64);
-                Debug.Assert(ret.Version <= 10);
+                Debug.Assert(ret.Version <= 10 || ret.Version == 255);  // some events had a wacky version number
 
 #if false // TODO FIX NOW remove or fix 
                 // TODO 50000000 arbitrary.   Fix underlying problem with merged ETL files.  

@@ -10,7 +10,7 @@ namespace Tests
     [TestClass]
     public class CtfTraceTests
     {
-        static string TestPath = @"C:\Users\leculver\Documents\GitHub\perfview\src\Tests";
+        static string TestDataDirectory = @"..\..\inputs";
 
         [TestMethod]
         public void GCAllocationTick()
@@ -20,7 +20,7 @@ namespace Tests
             string[] files = new string[] { "auto-20160204-132425.lttng.zip", "auto-20151103-132930.lttng.zip" , "auto-20160204-162218.lttng.zip" };
             foreach (string file in files)
             {
-                string path = Path.Combine(TestPath, file);
+                string path = Path.Combine(TestDataDirectory, file);
                 using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
                 {
                     ctfSource.AllEvents += delegate (TraceEvent obj)
@@ -99,7 +99,7 @@ namespace Tests
         [TestMethod]
         public void GCStartStopEvents()
         {
-            string path = Path.Combine(TestPath, "auto-20151103-132930.lttng.zip");
+            string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
             {
