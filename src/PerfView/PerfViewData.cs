@@ -770,7 +770,6 @@ namespace PerfView
             new OffProfPerfViewFile(),
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
-            new PerfScriptPerfViewFile()
         };
 
         #region private
@@ -5702,68 +5701,6 @@ namespace PerfView
         }
     }
 
-    class PerfScriptPerfViewFile : PerfViewFile
-    {
-        public override string FormatName { get { return "Linux events through PerfScript"; } }
-
-        public override string[] FileExtensions { get { return LinuxPerfScriptStackSource.PerfDumpSuffixes; } }
-
-        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
-        {
-            string xmlPath;
-            bool doThreadTime = false;
-
-            if (streamName == "Thread Time (experimental)")
-            {
-                xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
-                doThreadTime = true;
-            }
-            else
-            {
-                xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
-            }
-
-            if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
-            {
-                XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                    new ParallelLinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
-            }
-
-            return new XmlStackSource(xmlPath);
-        }
-
-        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
-        {
-            if (AppLog.InternalUser)
-            {
-                m_Children = new List<PerfViewTreeItem>(2);
-
-                m_Children.Add(new PerfViewStackSource(this, "Cpu"));
-                m_Children.Add(new PerfViewStackSource(this, "Thread Time (experimental)"));
-
-                return null;
-            }
-            return delegate (Action doAfter)
-            {
-                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
-                m_singletonStackSource = new PerfViewStackSource(this, "");
-                m_singletonStackSource.Open(parentWindow, worker);
-                if (doAfter != null)
-                    doAfter();
-            };
-        }
-
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
-            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
-            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
-            // stackWindow.GroupRegExTextBox.AddItem(stackWindow.Group);
-        }
-
-
-    }
-
     class HeapDumpPerfViewFile : PerfViewFile
     {
         internal const string Gen0WalkableObjectsViewName = "Gen 0 Walkable Objects";
@@ -6041,12 +5978,15 @@ namespace PerfView
 
     public partial class LinuxPerfViewData : PerfViewFile
     {
+        private string[] PerfScriptStreams = new string[]
+        {
+            "CPU",
+            "Thread Time (experimental)"
+        };
+
         public override string FormatName { get { return "LTTng"; } }
-        /// <summary>
-        ///  TODO FIX NOW, LinuxPerfVIewData needs to be merged with PerfScriptPerfViewFile so there only
-        ///  one thing that knows about a .trace.zip file and 
-        /// </summary>
-        public override string[] FileExtensions { get { return new string[] { ".lttng.zip" /*, ".trace.zip" */ }; } }
+
+        public override string[] FileExtensions { get { return new string[] { ".lttng.zip", ".trace.zip" }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -6055,6 +5995,30 @@ namespace PerfView
         }
         protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
         {
+            if (PerfScriptStreams.Contains(streamName))
+            {
+                string xmlPath;
+                bool doThreadTime = false;
+
+                if (streamName == "Thread Time (experimental)")
+                {
+                    xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
+                    doThreadTime = true;
+                }
+                else
+                {
+                    xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
+                }
+
+                if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
+                {
+                    XmlStackSourceWriter.WriteStackViewAsZippedXml(
+                        new ParallelLinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
+                }
+
+                return new XmlStackSource(xmlPath);
+            }
+
             return null;
         }
 
@@ -6063,12 +6027,44 @@ namespace PerfView
             // Open the file.
             m_traceLog = GetTraceLog(worker.LogWriter);
 
-            m_Children = new List<PerfViewTreeItem>();
-            m_Children.Add(new PerfViewTraceInfo(this));
-            m_Children.Add(new PerfViewProcesses(this));
+            bool hasGC = false;
+            bool hasJIT = false;
+            if (m_traceLog != null)
+            {
+                foreach (TraceEventCounts eventStats in m_traceLog.Stats)
+                {
+                    if (eventStats.EventName.StartsWith("GC/Start"))
+                        hasGC = true;
+                    else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
+                        hasJIT = true;
+                }
+            }
 
-            // Enable once this file type supports the event view.
-            m_Children.Add(new PerfViewEventSource(this));
+            m_Children = new List<PerfViewTreeItem>();
+            var advanced = new PerfViewTreeGroup("Advanced Group");
+            var memory = new PerfViewTreeGroup("Memory Group");
+
+            m_Children.Add(new PerfViewStackSource(this, "CPU"));
+            if (AppLog.InternalUser)
+                advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
+
+            if (m_traceLog != null)
+            {
+                m_Children.Add(new PerfViewEventSource(this));
+                m_Children.Add(new PerfViewEventStats(this));
+
+                if (hasGC)
+                    memory.AddChild(new PerfViewGCStats(this));
+
+                if (hasJIT)
+                    advanced.AddChild(new PerfViewJitStats(this));
+            }
+
+            if(memory.Children.Count > 0)
+                m_Children.Add(memory);
+
+            if(advanced.Children.Count > 0)
+                m_Children.Add(advanced);
 
             return null;
         }
@@ -6084,6 +6080,12 @@ namespace PerfView
         }
 
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+
+        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+        {
+            stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
+            stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
+        }
 
         public TraceLog GetTraceLog(TextWriter log)
         {
@@ -6122,7 +6124,18 @@ namespace PerfView
             }
 
             log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
-            TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
+
+            try
+            {
+                TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
+            }
+            catch (Exception ex)
+            {
+                log.WriteLine("Exception encountered when building the tracelog.");
+                log.WriteLine(ex.ToString());
+                m_traceLog = null;
+                return m_traceLog;
+            }
 
             var dataFileSize = "Unknown";
             if (File.Exists(dataFileName))
