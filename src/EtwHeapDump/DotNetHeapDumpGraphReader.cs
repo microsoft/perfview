@@ -92,14 +92,6 @@ public class DotNetHeapDumpGraphReader
         // (Not play for play but it is small).  
         m_modules = new Dictionary<Address, Module>(32);
 
-        if (source is CtfTraceEventSource)
-        {
-            // For now we need to special case CtfTraceEventSource (linux traces) because we don't have Linux kernel events,
-            // which is required for getting the process name and a few other items.  For now we are just calling it "process"
-            // and this unblocks generating .gcdump files.
-            m_processName = "process";
-        }
-
         m_ignoreEvents = true;
         m_ignoreUntilMSec = startTimeRelativeMSec;
 
