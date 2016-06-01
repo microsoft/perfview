@@ -72,7 +72,7 @@ namespace Tests
                     {
                     };
 
-                    ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 d)
+                    ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData d)
                     {
                     };
 

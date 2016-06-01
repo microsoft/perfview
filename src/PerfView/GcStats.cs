@@ -494,7 +494,7 @@ namespace Stats
                 stats.ProcessGlobalHistory(data);
             };
 
-            source.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData3 data)
+            source.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData data)
             {
                 GCProcess stats = perProc[data];
                 stats.ProcessPerHeapHistory(data);
@@ -3117,17 +3117,18 @@ namespace Stats
             long currentObjSize = currentGenData.ObjSizeAfter;
             double Allocated;
 
-            if (Version == PerHeapEventVersion.V4_0)
+            if (currentGenData.HasObjSpaceBefore)
+            {
+                Allocated = currentGenData.ObjSpaceBefore - prevObjSize;
+            }
+            else
             {
                 if (survRate == 0)
                     Allocated = EstimateAllocSurv0(HeapIndex, gen);
                 else
                     Allocated = (currentGenData.Out + currentObjSize) * 100 / survRate - prevObjSize;
             }
-            else
-            {
-                Allocated = currentGenData.ObjSpaceBefore - prevObjSize;
-            }
+
 
             return Allocated;
         }
@@ -3328,13 +3329,13 @@ namespace Stats
             if (GCGeneration != YoungerGen)
                 return false;
 
-            if (PerHeapHistories[0].V4_6)
+            if (PerHeapHistories[0].HasFreeListAllocated)
             {
                 Allocated = 0;
                 FreeListConsumed = 0;
                 for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
                 {
-                    GCPerHeapHistoryTraceData3 hist = (GCPerHeapHistoryTraceData3)PerHeapHistories[HeapIndex];
+                    GCPerHeapHistoryTraceData hist = (GCPerHeapHistoryTraceData)PerHeapHistories[HeapIndex];
                     Allocated += hist.FreeListAllocated;
                     FreeListConsumed += hist.FreeListAllocated + hist.FreeListRejected;
                 }
@@ -3353,19 +3354,19 @@ namespace Stats
                 YoungerGenOut += PerHeapGenData[HeapIndex][YoungerGen].Out;
                 GenSizeBefore += PerHeapGenData[HeapIndex][(int)gen].SizeBefore;
                 GenSizeAfter += PerHeapGenData[HeapIndex][(int)gen].SizeAfter;
-                if (Version == PerHeapEventVersion.V4_0)
-                {
-                    // Occasionally I've seen a GC in the middle that simply missed some events,
-                    // some of which are PerHeap hist events so we don't have data.
-                    if (Events[Index - 1].PerHeapGenData == null)
-                        return false;
-                    FreeListBefore += Events[Index - 1].PerHeapGenData[HeapIndex][(int)gen].Fragmentation;
-                    FreeListAfter += PerHeapGenData[HeapIndex][(int)gen].Fragmentation;
-                }
-                else
+                // Occasionally I've seen a GC in the middle that simply missed some events,
+                // some of which are PerHeap hist events so we don't have data.
+                if (Events[Index - 1].PerHeapGenData == null)
+                    return false;
+                if (PerHeapGenData[HeapIndex][(int)gen].HasFreeListSpaceAfter && PerHeapGenData[HeapIndex][(int)gen].HasFreeListSpaceBefore)
                 {
                     FreeListBefore += PerHeapGenData[HeapIndex][(int)gen].FreeListSpaceBefore;
                     FreeListAfter += PerHeapGenData[HeapIndex][(int)gen].FreeListSpaceAfter;
+                }
+                else
+                {
+                    FreeListBefore += Events[Index - 1].PerHeapGenData[HeapIndex][(int)gen].Fragmentation;
+                    FreeListAfter += PerHeapGenData[HeapIndex][(int)gen].Fragmentation;
                 }
             }
 
@@ -3414,7 +3415,7 @@ namespace Stats
         }
         public double GenPinnedSurv(Gens gen)
         {
-            if ((PerHeapHistories == null) || !(PerHeapGenData[0][0].HasPinnedSurv()))
+            if ((PerHeapHistories == null) || !(PerHeapGenData[0][0].HasPinnedSurv))
                 return double.NaN;
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
@@ -3423,7 +3424,7 @@ namespace Stats
         }
         public double GenNonePinnedSurv(Gens gen)
         {
-            if ((PerHeapHistories == null) || !(PerHeapGenData[0][0].HasNonePinnedSurv()))
+            if ((PerHeapHistories == null) || !(PerHeapGenData[0][0].HasNonePinnedSurv))
                 return double.NaN;
             double ret = 0.0;
             for (int HeapIndex = 0; HeapIndex < PerHeapHistories.Count; HeapIndex++)
@@ -3457,25 +3458,6 @@ namespace Stats
             return budget;
         }
 
-        private void GetVersion()
-        {
-            if (Version == PerHeapEventVersion.V0)
-            {
-                if (PerHeapHistories[0].V4_0)
-                    Version = PerHeapEventVersion.V4_0;
-                else if (PerHeapHistories[0].V4_5)
-                {
-                    Version = PerHeapEventVersion.V4_5;
-                    Debug.Assert(PerHeapHistories[0].Version == 2);
-                }
-                else
-                {
-                    Version = PerHeapEventVersion.V4_6;
-                    Debug.Assert(PerHeapHistories[0].Version == 3);
-                }
-            }
-        }
-
         // There's a list of things we need to get from the events we collected. 
         // To increase the efficiency so we don't need to go back to TraceEvent
         // too often we construct the generation data all at once here.
@@ -3485,8 +3467,6 @@ namespace Stats
             {
                 if ((PerHeapHistories != null) && (_PerHeapGenData == null))
                 {
-                    GetVersion();
-
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapGenData = new GCPerHeapHistoryGenData[NumHeaps][];
                     for (int HeapIndex = 0; HeapIndex < NumHeaps; HeapIndex++)
@@ -3509,8 +3489,6 @@ namespace Stats
             {
                 if ((PerHeapHistories != null) && (_PerHeapCondemnedReasons == null))
                 {
-                    GetVersion();
-
                     int NumHeaps = PerHeapHistories.Count;
                     _PerHeapCondemnedReasons = new GCCondemnedReasons[NumHeaps];
 
@@ -3518,12 +3496,12 @@ namespace Stats
                     {
                         _PerHeapCondemnedReasons[HeapIndex] = new GCCondemnedReasons();
                         _PerHeapCondemnedReasons[HeapIndex].EncodedReasons.Reasons = PerHeapHistories[HeapIndex].CondemnReasons0;
-                        if (Version != PerHeapEventVersion.V4_0)
+                        if (PerHeapHistories[HeapIndex].HasCondemnReasons1)
                         {
                             _PerHeapCondemnedReasons[HeapIndex].EncodedReasons.ReasonsEx = PerHeapHistories[HeapIndex].CondemnReasons1;
                         }
                         _PerHeapCondemnedReasons[HeapIndex].CondemnedReasonGroups = new byte[(int)CondemnedReasonGroup.CRG_Max];
-                        _PerHeapCondemnedReasons[HeapIndex].Decode(Version);
+                        _PerHeapCondemnedReasons[HeapIndex].Decode(PerHeapHistories[HeapIndex].Version);
                     }
                 }
 
@@ -3602,18 +3580,20 @@ namespace Stats
                 return GenNumber;
             }
 
-            private bool GetReasonWithCondition(Condemned_Reason_Condition Reason_Condition, PerHeapEventVersion Version)
+            private bool GetReasonWithCondition(Condemned_Reason_Condition Reason_Condition, int Version)
             {
                 bool ConditionIsSet = false;
-                if (Version == PerHeapEventVersion.V4_0)
+                if (Version == 0)
                 {
                     Debug.Assert((int)Reason_Condition < 16);
                     ConditionIsSet = ((EncodedReasons.Reasons & (1 << (int)(Reason_Condition + 16))) != 0);
                 }
-                else
+                else if (Version >= 2)
                 {
                     ConditionIsSet = ((EncodedReasons.ReasonsEx & (1 << (int)Reason_Condition)) != 0);
                 }
+                else Debug.Assert(false, "GetReasonWithCondition invalid version : " + Version);
+
                 return ConditionIsSet;
             }
 
@@ -3624,7 +3604,7 @@ namespace Stats
             /// </summary>
             public byte[] CondemnedReasonGroups;
 
-            public void Decode(PerHeapEventVersion Version)
+            public void Decode(int Version)
             {
                 // First decode the reasons that return us a generation number. 
                 // It's the same in 4.0 and 4.5.
@@ -3937,7 +3917,6 @@ namespace Stats
         public Dictionary<int, MarkInfo> PerHeapMarkTimes;
         private GCPerHeapHistoryGenData[][] _PerHeapGenData;
         private GCCondemnedReasons[] _PerHeapCondemnedReasons;
-        private PerHeapEventVersion Version = PerHeapEventVersion.V0;
         public GCGlobalHeapHistoryTraceData GlobalHeapHistory;
         public GCHeapStatsTraceData HeapStats;
 
@@ -4034,7 +4013,7 @@ namespace Stats
             {
                 writer.WriteLine("      <PerHeapHistories Count=\"{0}\" MemoryLoad=\"{1}\">",
                                  PerHeapHistories.Count,
-                                 (GlobalHeapHistory.HasMemoryPressure() ? GlobalHeapHistory.MemoryPressure : PerHeapHistories[0].MemoryPressure));
+                                 (GlobalHeapHistory.HasMemoryPressure ? GlobalHeapHistory.MemoryPressure : PerHeapHistories[0].MemoryPressure));
                 int HeapNum = 0;
                 foreach (var perHeapHistory in PerHeapHistories)
                 {

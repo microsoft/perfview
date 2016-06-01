@@ -563,12 +563,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 202, GCTaskGuid);
             }
         }
-        public event Action<GCPerHeapHistoryTraceData3> GCPerHeapHistory
+        public event Action<GCPerHeapHistoryTraceData> GCPerHeapHistory
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new GCPerHeapHistoryTraceData3(value, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName));
+                RegisterTemplate(new GCPerHeapHistoryTraceData(value, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -1736,7 +1736,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[93] = new ThreadPoolWorkerThreadTraceData(null, 57, 16, "ThreadPoolWorkerThread", Guid.Empty, 90, "Wait", ProviderGuid, ProviderName);
                 templates[94] = new GCMarkWithTypeTraceData(null, 202, 1, "GC", GCTaskGuid, 202, "MarkWithType", ProviderGuid, ProviderName);
                 templates[95] = new GCJoinTraceData(null, 203, 1, "GC", GCTaskGuid, 203, "Join", ProviderGuid, ProviderName);
-                templates[96] = new GCPerHeapHistoryTraceData3(null, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName);
+                templates[96] = new GCPerHeapHistoryTraceData(null, 204, 1, "GC", GCTaskGuid, 204, "PerHeapHistory", ProviderGuid, ProviderName);
                 templates[97] = new GCGlobalHeapHistoryTraceData(null, 205, 1, "GC", GCTaskGuid, 205, "GlobalHeapHistory", ProviderGuid, ProviderName);
 
                 // New style
@@ -3948,146 +3948,593 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     }
 
     /// <summary>
-    /// This structure is in the ndp\clr\src\vm\gcrecord.h file. 
-    /// The easiest way to get th layout is to do a 'dt' command on the structure (use x command to search)
-    ///
-    /// dt WKS::gc_generation_data 
-    /// dt WKS::gc_history_per_heap
-    /// 
-    /// For Silverlight (X86) 
-    /// 
-    /// 0:014> dt coreclr!WKS::gc_history_per_heap
-    ///    +0x000 gen_data         : [5] WKS::gc_generation_data
-    ///    +0x0c8 mem_pressure     : Uint4B
-    ///    +0x0cc mechanisms       : [2] Uint4B
-    ///    +0x0d4 gen_condemn_reasons : Uint4B
-    ///    +0x0d8 heap_index       : Uint4B
-    /// 0:014> dt coreclr!WKS::gc_generation_data
-    ///    +0x000 size_before      : Uint4B
-    ///    +0x004 size_after       : Uint4B
-    ///    +0x008 current_size     : Uint4B
-    ///    +0x00c previous_size    : Uint4B
-    ///    +0x010 fragmentation    : Uint4B
-    ///    +0x014 in               : Uint4B
-    ///    +0x018 out              : Uint4B
-    ///    +0x01c new_allocation   : Uint4B
-    ///    +0x020 surv             : Uint4B
-    ///    +0x024 growth           : Uint4B
-    ///  
-    /// For 4.5 (X86)
-    /// 0:000> dt clr!WKS::gc_history_per_heap
-    ///    +0x000 gen_data         : [5] WKS::gc_generation_data
-    ///    +0x0c8 gen_to_condemn_reasons : WKS::gen_to_condemn_tuning
-    ///    +0x0d0 mem_pressure     : Uint4B
-    ///    +0x0d4 mechanisms       : [2] Uint4B
-    ///    +0x0dc heap_index       : Uint4B
+    /// Taken from gcrecords.h, used to differentiate heap expansion and compaction reasons
     /// </summary>
-    public class GCPerHeapHistoryTraceData : TraceEvent
+    public enum gc_heap_expand_mechanism : int
     {
+        expand_reuse_normal = 0,
+        expand_reuse_bestfit = 1,
+        expand_new_seg_ep = 2, // new seg with ephemeral promotion
+        expand_new_seg = 3,
+        expand_no_memory = 4, // we can't get a new seg.
+        expand_next_full_gc = 5,
+        max_expand_mechanisms_count = 6,
+        not_specified = 1024
+    }
+    public enum gc_heap_compact_reason : int
+    {
+        compact_low_ephemeral = 0,
+        compact_high_frag = 1,
+        compact_no_gaps = 2,
+        compact_loh_forced = 3,
+        compact_last_gc = 4,
+        compact_induced_compacting = 5,
+        compact_fragmented_gen0 = 6,
+        compact_high_mem_load = 7,
+        compact_high_mem_frag = 8,
+        compact_vhigh_mem_frag = 9,
+        compact_no_gc_mode = 10,
+        max_compact_reasons_count = 11,
+        not_specified = 1024
+    }
+    public enum gc_concurrent_compact_reason : int
+    {
+        concurrent_compact_high_frag = 0,
+        concurrent_compact_c_mark = 1,
+        max_concurrent_compat_reason = 2,
+        not_specified = 1024
+    }
+
+    /// <summary>
+    /// Version 0, PreciseVersion 0.1: Silverlight (x86)
+    /// 0:041> dt -r2 coreclr!WKS::gc_history_per_heap
+    ///    +0x000 gen_data         : [5] WKS::gc_generation_data
+    ///       +0x000 size_before      : Uint4B/8B       : [0 - 40), [40 - 80), [80 - 120), [120 - 160), [160 - 200)
+    ///       +0x004 size_after       : Uint4B/8B
+    ///       +0x008 current_size     : Uint4B/8B
+    ///       +0x00c previous_size    : Uint4B/8B
+    ///       +0x010 fragmentation    : Uint4B/8B
+    ///       +0x014 in               : Uint4B/8B
+    ///       +0x018 out              : Uint4B/8B
+    ///       +0x01c new_allocation   : Uint4B/8B
+    ///       +0x020 surv             : Uint4B/8B
+    ///       +0x024 growth           : Uint4B/8B
+    ///    +0x0c8 mem_pressure        : Uint4B      : 200
+    ///    +0x0cc mechanisms          : [2] Uint4B  : 204 (expand), 208 (compact)
+    ///    +0x0d4 gen_condemn_reasons : Uint4B      : 212
+    ///    +0x0d8 heap_index          : Uint4B      : 216
+    ///  
+    ///    clrInstanceId              : byte        : 220
+    /// 
+    /// Version 0, PreciseVersion 0.2: .NET 4.0
+    /// 0:000> dt -r2 clr!WKS::gc_history_per_heap
+    ///    +0x000 gen_data         : [5] WKS::gc_generation_data
+    ///       +0x000 size_before      : Uint4B/8B      : [0 - 40), [40 - 80), [80 - 120), [120 - 160), [160 - 200)
+    ///       +0x004 size_after       : Uint4B/8B
+    ///       +0x008 current_size     : Uint4B/8B
+    ///       +0x00c previous_size    : Uint4B/8B
+    ///       +0x010 fragmentation    : Uint4B/8B
+    ///       +0x014 in               : Uint4B/8B
+    ///       +0x018 out              : Uint4B/8B
+    ///       +0x01c new_allocation   : Uint4B/8B
+    ///       +0x020 surv             : Uint4B/8B
+    ///       +0x024 growth           : Uint4B/8B
+    ///     +0x0c8 mem_pressure     : Uint4B        : 200
+    ///     +0x0cc mechanisms       : [3] Uint4B    : 204 (expand), 208 (compact), 212 (concurrent_compact)
+    ///    +0x0d8 gen_condemn_reasons : Uint4B      : 216
+    ///    +0x0dc heap_index       : Uint4B         : 220
+    ///    
+    ///    clrInstanceId              : byte        : 224
+    /// 
+    /// vm\gcrecord.h
+    /// Etw_GCDataPerHeapSpecial(...)
+    /// ...
+    ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
+    ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
+    /// 
+    /// Version 1: ???
+    /// 
+    /// Version 2, PreciseVersion 2.1: .NET 4.5 (x86)
+    /// 0:000> dt -r2 WKS::gc_history_per_heap
+    ///  clr!WKS::gc_history_per_heap
+    /// +0x000 gen_data         : [5] WKS::gc_generation_data
+    ///    +0x000 size_before      : Uint4B/8B         : [0 - 40), [40 - 80), [80 - 120), [120 - 160), [160 - 200)
+    ///    +0x004 free_list_space_before : Uint4B/8B
+    ///    +0x008 free_obj_space_before : Uint4B/8B
+    ///    +0x00c size_after       : Uint4B/8B
+    ///    +0x010 free_list_space_after : Uint4B/8B
+    ///    +0x014 free_obj_space_after : Uint4B/8B
+    ///    +0x018 in               : Uint4B/8B
+    ///    +0x01c out              : Uint4B/8B
+    ///    +0x020 new_allocation   : Uint4B/8B
+    ///    +0x024 surv             : Uint4B/8B
+    /// +0x0c8 gen_to_condemn_reasons : WKS::gen_to_condemn_tuning
+    ///    +0x000 condemn_reasons_gen : Uint4B          : 200
+    ///    +0x004 condemn_reasons_condition : Uint4B    : 204
+    /// +0x0d0 mem_pressure     : Uint4B                : 208
+    /// +0x0d4 mechanisms       : [2] Uint4B            : 212 (expand), 216 (compact)
+    /// +0x0dc heap_index       : Uint4B                : 220
+    /// 
+    /// vm\gcrecord.h
+    /// Etw_GCDataPerHeapSpecial(...)
+    /// ...
+    ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
+    ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
+    /// 
+    /// Version 2, PreciseVersion 2.2: .NET 4.5.2 (x86)
+    /// 0:000> dt -r2 WKS::gc_history_per_heap
+    ///  clr!WKS::gc_history_per_heap
+    /// +0x000 gen_data         : [5] WKS::gc_generation_data
+    ///    +0x000 size_before      : Uint4B/8B          : [0 - 40), [40 - 80), [80 - 120), [120 - 160), [160 - 200)
+    ///    +0x004 free_list_space_before : Uint4B/8B
+    ///    +0x008 free_obj_space_before : Uint4B/8B
+    ///    +0x00c size_after       : Uint4B/8B
+    ///    +0x010 free_list_space_after : Uint4B/8B
+    ///    +0x014 free_obj_space_after : Uint4B/8B
+    ///    +0x018 in               : Uint4B/8B
+    ///    +0x01c out              : Uint4B/8B
+    ///    +0x020 new_allocation   : Uint4B/8B
+    ///    +0x024 surv             : Uint4B/8B
+    /// +0x0c8 gen_to_condemn_reasons : WKS::gen_to_condemn_tuning
+    ///    +0x000 condemn_reasons_gen : Uint4B          : 200
+    ///    +0x004 condemn_reasons_condition : Uint4B    : 204
+    /// +0x0d0 mem_pressure     : Uint4B                : 208
+    /// +0x0d4 mechanisms       : [2] Uint4B            : 212 (expand), 216 (compact)
+    /// +0x0dc heap_index       : Uint4B                : 220
+    /// +0x0e0 extra_gen0_committed : Uint8B            : 224
+    /// 
+    /// vm\gcrecord.h
+    /// Etw_GCDataPerHeapSpecial(...)
+    /// ...
+    ///     EventDataDescCreate(EventData[0], gc_data_per_heap, datasize);
+    ///     EventDataDescCreate(EventData[1], ClrInstanceId, sizeof(ClrInstanceId));
+    /// 
+    /// Version 3: .NET 4.6 (x86)
+    /// 0:000> dt -r2 WKS::gc_history_per_heap
+    /// clr!WKS::gc_history_per_heap
+    ///    +0x000 gen_data         : [4]                                
+    ///     WKS::gc_generation_data                                     
+    ///       +0x000 size_before      : Uint4B/8B                          
+    ///       +0x004 free_list_space_before : Uint4B/8B                    
+    ///       +0x008 free_obj_space_before : Uint4B/8B                     
+    ///       +0x00c size_after       : Uint4B/8B                          
+    ///       +0x010 free_list_space_after : Uint4B/8B
+    ///       +0x014 free_obj_space_after : Uint4B/8B
+    ///       +0x018 in               : Uint4B/8B
+    ///       +0x01c pinned_surv      : Uint4B/8B
+    ///       +0x020 npinned_surv     : Uint4B/8B
+    ///       +0x024 new_allocation   : Uint4B/8B
+    ///    +0x0a0 maxgen_size_info : WKS::maxgen_size_increase          
+    ///       +0x000 free_list_allocated : Uint4B/8B                       
+    ///       +0x004 free_list_rejected : Uint4B/8B                        
+    ///       +0x008 end_seg_allocated : Uint4B/8B                         
+    ///       +0x00c condemned_allocated : Uint4B/8B                       
+    ///       +0x010 pinned_allocated : Uint4B/8B                          
+    ///       +0x014 pinned_allocated_advance : Uint4B/8B                  
+    ///       +0x018 running_free_list_efficiency : Uint4B/8B              
+    ///    +0x0bc gen_to_condemn_reasons : WKS::gen_to_condemn_tuning   
+    ///       +0x000 condemn_reasons_gen : Uint4B                       
+    ///       +0x004 condemn_reasons_condition : Uint4B                 
+    ///    +0x0c4 mechanisms       : [2] Uint4B                         
+    ///    +0x0cc machanism_bits   : Uint4B                             
+    ///    +0x0d0 heap_index       : Uint4B                             
+    ///    +0x0d4 extra_gen0_committed : Uint4B/8B                         
+    /// 
+    /// pal\src\eventprovider\lttng\eventprovdotnetruntime.cpp
+    /// FireEtXplatGCPerHeapHistory_V3(...)
+    /// 
+    ///      tracepoint(
+    ///         DotNETRuntime,
+    ///         GCPerHeapHistory_V3,                      x86 offsets
+    ///         ClrInstanceID,                          : 0
+    ///         (const size_t) FreeListAllocated,       : 2
+    ///         (const size_t) FreeListRejected,        : 6
+    ///         (const size_t) EndOfSegAllocated,       : 10
+    ///         (const size_t) CondemnedAllocated,      : 14
+    ///         (const size_t) PinnedAllocated,         : 18
+    ///         (const size_t) PinnedAllocatedAdvance,  : 22
+    ///         RunningFreeListEfficiency,              : 26
+    ///         CondemnReasons0,                        : 30
+    ///         CondemnReasons1                         : 34
+    ///         );
+    ///     tracepoint(
+    ///         DotNETRuntime,
+    ///         GCPerHeapHistory_V3_1,
+    ///         CompactMechanisms,                      : 38
+    ///         ExpandMechanisms,                       : 42
+    ///         HeapIndex,                              : 46
+    ///         (const size_t) ExtraGen0Commit,         : 50
+    ///         Count,                                  : 54 (number of WKS::gc_generation_data's)
+    ///         Arg15_Struct_Len_,                      : ?? not really sent
+    ///         (const int*) Arg15_Struct_Pointer_      : [58 - 98), ...
+    ///         );
+    /// 
+    /// Version 3 is now setup to allow "add to the end" scenarios
+    /// 
+    /// </summary>
+    public sealed class GCPerHeapHistoryTraceData : TraceEvent
+    {
+        public int ClrInstanceID
+        {
+            get
+            {
+                int cid = -1;
+
+                if (Version == 0) cid = GetByteAt(EventDataLength - 1);
+                else if (Version == 2) cid = GetByteAt(EventDataLength - 1);
+                else if (Version >= 3) cid = GetInt16At(0);
+                else Debug.Assert(false, "ClrInstanceId invalid Version : " + Version);
+
+                Debug.Assert(cid >= 0);
+                return cid;
+            }
+        }
+        public long FreeListAllocated
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(2);
+                else Debug.Assert(false, "FreeListAllocated invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasFreeListAllocated { get { return Version >= 3; } }
+        public long FreeListRejected
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(HostOffset(6, 1));
+                else Debug.Assert(false, "FreeListRejected invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasFreeListRejected { get { return Version >= 3; } }
+        public long EndOfSegAllocated
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(HostOffset(10, 2));
+                else Debug.Assert(false, "EndOfSegAllocated invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasEndOfSegAllocated { get { return Version >= 3; } }
+        public long CondemnedAllocated
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(HostOffset(14, 3));
+                else Debug.Assert(false, "CondemnedAllocated invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasCondemnedAllocated { get { return Version >= 3; } }
+        public long PinnedAllocated
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(HostOffset(18, 4));
+                else Debug.Assert(false, "PinnedAllocated invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasPinnedAllocated { get { return Version >= 3; } }
+        public long PinnedAllocatedAdvance
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version >= 3) ret = (long)GetAddressAt(HostOffset(22, 5));
+                else Debug.Assert(false, "PinnedAllocatedAdvance invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasPinnedAllocatedAdvance { get { return Version >= 3; } }
+        public int RunningFreeListEfficiency
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version >= 3) ret = GetInt32At(HostOffset(26, 6));
+                else Debug.Assert(false, "RunningFreeListEfficiency invalid Version : " +Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasRunningFreeListEfficiency { get { return Version >= 3; } }
+        /// <summary>
+        /// Returns the condemned generation number
+        /// </summary>
+        public int CondemnReasons0
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version == 0 && (MinorVersion == 0 || MinorVersion == 1)) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 3);
+                else if (Version == 0 && MinorVersion == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 4);
+                else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData);
+                else if (Version >= 3) ret = GetInt32At(HostOffset(30, 6));
+                else Debug.Assert(false, "CondenReasons0 invalid Version : " + Version + " " + MinorVersion);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        /// <summary>
+        /// Returns the condemned condition
+        /// </summary>
+        public int CondemnReasons1
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int));
+                else if (Version >= 3) ret = GetInt32At(HostOffset(34, 6));
+                else Debug.Assert(false, "CondenReasons1 invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasCondemnReasons1 { get { return (Version == 2 || Version >= 3); } }
+        public gc_heap_compact_reason CompactMechanisms
+        {
+            get
+            {
+                int ret = 0;
+
+                if (Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 2);
+                else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 4);
+                else if (Version >= 3) ret = GetInt32At(HostOffset(38, 6));
+                else Debug.Assert(false, "CompactMechanisms invalid Version : " + Version);
+
+                Debug.Assert(ret <= 0);
+
+                if (ret == 0) return gc_heap_compact_reason.not_specified;
+                int index = IndexOfSetBit(ret);
+                if (index >= 0 && index < (int)gc_heap_compact_reason.max_compact_reasons_count) return (gc_heap_compact_reason)index;
+                Debug.Assert(false, index +" >= 0 && " +  index + " < " + (int)gc_heap_compact_reason.max_compact_reasons_count);
+                return gc_heap_compact_reason.not_specified;
+            }
+        }
+        public gc_heap_expand_mechanism ExpandMechanisms
+        {
+            get
+            {
+                int ret = 0;
+
+                if(Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 1);
+                else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 3);
+                else if (Version >= 3) ret = GetInt32At(HostOffset(42, 6));
+                else Debug.Assert(false, "ExpandMechanisms invalid Version : " + Version);
+
+                Debug.Assert(ret <= 0);
+
+                if (ret == 0) return gc_heap_expand_mechanism.not_specified;
+                int index = IndexOfSetBit(ret);
+                if (index >= 0 && index < (int)gc_heap_expand_mechanism.max_expand_mechanisms_count) return (gc_heap_expand_mechanism)index;
+                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_heap_expand_mechanism.max_expand_mechanisms_count);
+                return gc_heap_expand_mechanism.not_specified;
+            }
+        }
+        public gc_concurrent_compact_reason ConcurrentCompactMechanisms
+        {
+            get
+            {
+                int ret = 0;
+
+                if (Version == 0 && MinorVersion == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 3);
+                else Debug.Assert(false, "ConcurrentCompactMechanisms invalid Version : " + Version + " " + MinorVersion);
+
+                Debug.Assert(ret <= 0);
+
+                if (ret == 0) return gc_concurrent_compact_reason.not_specified;
+                int index = IndexOfSetBit(ret);
+                if (index >= 0 && index < (int)gc_concurrent_compact_reason.max_concurrent_compat_reason) return (gc_concurrent_compact_reason)index;
+                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_concurrent_compact_reason.max_concurrent_compat_reason);
+                return gc_concurrent_compact_reason.not_specified;
+            }
+        }
+        public bool HasConcurrentCompactMechanisms { get { return Version == 0 && MinorVersion == 2; } }
+        public int HeapIndex
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version == 0) ret = GetInt32At(EventDataLength - (sizeof(int) + sizeof(byte)));
+                else if (Version == 2 && (MinorVersion == 0 || MinorVersion == 1)) ret = GetInt32At(EventDataLength - (sizeof(int) + sizeof(Int16)));
+                else if (Version == 2 && MinorVersion == 2) ret = GetInt32At(EventDataLength - (sizeof(int) + sizeof(Int16) + sizeof(Int64)));
+                else if (Version >= 3) ret = GetInt32At(HostOffset(46, 6));
+                else Debug.Assert(false, "HeapIndex invalid Version : " + Version + " " + MinorVersion);
+
+                Debug.Assert(ret >= 0);
+                if (Version >= 0 && Version < 3) Debug.Assert(ret < maxGenData);
+                else if (Version >= 3) Debug.Assert(ret < Count);
+                else Debug.Assert(ret < 6 /* spot check even if we dont have the right version number */);
+
+                if (ret < 0) return 0; // on retail avoid array out of range exceptions
+                else return ret;
+            }
+        }
+        public long ExtraGen0Commit
+        {
+            get
+            {
+                long ret = -1;
+
+                if (Version == 2 && MinorVersion == 2) ret = GetInt32At(EventDataLength - (sizeof(Int16) + sizeof(Int64)));
+                else if (Version >= 3) ret = (long)GetAddressAt(HostOffset(50, 6));
+                else Debug.Assert(false, "ExtraGen0Commit invalid Version : " + Version + " " + MinorVersion);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasExtraGen0Commit { get { return (Version == 2 && MinorVersion == 2) || Version >= 3; } }
+        public int Count
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version >= 3) ret = GetInt32At(HostOffset(54, 7));
+                else Debug.Assert(false, "Count invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+
+                if (ret < 0) return 0; // on retail avoid array out of range exceptions
+                else return ret;
+            }
+        }
+        public bool HasCount { get { return Version >= 3; } }
+        public int MemoryPressure
+        {
+            get
+            {
+                int ret = -1;
+
+                if (Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData);
+                else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(Int32) * 2);
+                else Debug.Assert(false, "MemoryPressure invalid Version : " + Version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
+            }
+        }
+        public bool HasMemoryPressure { get { return Version == 0 || Version == 2; } }
+
         /// <summary>
         /// genNumber is a number from 0 to maxGenData-1.  These are for generation 0, 1, 2, 3 = Large Object Heap
         /// genNumber = 4 is that second pass for Gen 0.  
         /// </summary>
-        public virtual GCPerHeapHistoryGenData GenData(Gens genNumber)
+        public GCPerHeapHistoryGenData GenData(Gens genNumber)
         {
-            Debug.Assert((int)genNumber < maxGenData);
-            // each GenData structure contains 10 pointers sized integers 
-            return new GCPerHeapHistoryGenData(this, SizeOfGenData * (int)genNumber);
-        }
-
-        // if we got the memory pressure in generation_to_condemn, this 
-        // will record that value; otherwise it's 0.
-        public virtual int MemoryPressure
-        {
-            get
+            if (Version == 0 || Version == 2)
             {
-                if (V4_0)
-                {
-                    return GetInt32At(SizeOfGenData * maxGenData);
-                }
-                else
-                {
-                    return GetInt32At(SizeOfGenData * maxGenData + 8);
-                }
+                Debug.Assert((int)genNumber < maxGenData);
+                // each GenData structure contains 10 pointers sized integers 
+                return new GCPerHeapHistoryGenData(Version, GetIntPtrArray( SizeOfGenData * (int)genNumber, EntriesInGenData ) );
+            }
+            else if (Version >= 3)
+            {
+                Debug.Assert((int)genNumber < Count);
+                return new GCPerHeapHistoryGenData(Version, GetIntPtrArray((HostOffset(54, 7) + sizeof(Int32)) + SizeOfGenData * (int)genNumber, EntriesInGenData));
+            }
+            else
+            {
+                Debug.Assert(false, "GenData invalid Version : " + Version);
+                return new GCPerHeapHistoryGenData(Version, GetIntPtrArray(SizeOfGenData * (int)genNumber, EntriesInGenData));
             }
         }
 
-#if false // TODO FIX NOW enable 
-        public GCExpandMechanism MechanismHeapExpand
-        {
-            get
-            {
-                return (GCExpandMechanism)GetInt32At(HostOffset(40 * maxGenData + 4, 10 * maxGenData));
-            }
-        }
-        public GCExpandMechanism MechanismHeapCompact
-        {
-            get
-            {
-                return (GCExpandMechanism)GetInt32At(HostOffset(40 * maxGenData + 8, 10 * maxGenData));
-            }
-        }
-        public int InitialGenCondemned
-        {
-            get
-            {
-                return GetByteAt(HostOffset(40 * maxGenData + 12, 10 * maxGenData)) & 3;
-            }
-        }
-        public int FinalGenCondemned
-        {
-            get
-            {
-                return (GetByteAt(HostOffset(40 * maxGenData + 12, 10 * maxGenData)) >> 2) & 3;
-            }
-        }
-        public int GenWithExceededBudget
-        {
-            get
-            {
-                return (GetByteAt(HostOffset(40 * maxGenData + 12, 10 * maxGenData)) >> 4) & 3;
-            }
-        }
-        public int GenWithTimeTuning
-        {
-            get
-            {
-                return (GetByteAt(HostOffset(40 * maxGenData + 12, 10 * maxGenData)) >> 6) & 3;
-            }
-        }
-#endif
-
-        public virtual int CondemnReasons0
-        {
-            get
-            {
-                // Work from the back because Mechnanism changes for silverlight vs V4.0 
-                if (V4_0)
-                {
-                    return GetInt32At(SizeOfGenData * maxGenData + 4 * (1 + 3));
-                }
-                else
-                {
-                    return GetInt32At(SizeOfGenData * maxGenData);
-                }
-            }
-        }
-
-        public virtual int CondemnReasons1
-        {
-            get
-            {
-                if (V4_0)
-                    return 0;
-                else
-                    return GetInt32At(SizeOfGenData * maxGenData + 4);
-            }
-        }
-
-        public virtual int HeapIndex { get { return GetInt32At(EventDataLength - 5); } }
-        public virtual int ClrInstanceID { get { return GetByteAt(EventDataLength - 1); } }
+        public bool VersionRecognized { get { int ver;  return ParseMinorVersion(out ver); } }
 
         #region Private
+        public int MinorVersion
+        {
+            get
+            {
+                if (m_minorVersion == -1)
+                {
+                    ParseMinorVersion(out m_minorVersion);
+                }
+
+                return m_minorVersion;
+            }
+        }
+        private int m_minorVersion = -1;
+        private bool ParseMinorVersion(out int mversion)
+        {
+            mversion = -1;
+            int size = 0;
+            bool exactMatch = false;
+
+            if (Version == 0)
+            {
+                size = (SizeOfGenData * 5) + 25;
+                // For silverlight, there is one less mechanism.  It only affects the layout of gen_condemended_reasons. 
+                if (base.EventDataLength == (size - sizeof(int))) mversion = 1; // Silverlight
+                else if (base.EventDataLength == size) mversion = 2; // .NET 4.0
+
+                if (mversion > 0) exactMatch = true;
+                else mversion = 0;
+            }
+            else if (Version == 2)
+            {
+                size = (SizeOfGenData * 5) + sizeof(Int32) * 6 + sizeof(byte) + sizeof(Int64);
+                if (base.EventDataLength == (size - sizeof(Int64))) mversion = 1; // .NET 4.5
+                else if (base.EventDataLength == size) mversion = 2; // .NET 4.5.2
+
+                if (mversion > 0) exactMatch = true;
+                else mversion = 0;
+            }
+            else if (Version >= 3)
+            {
+                size = sizeof(Int16) + HostSizePtr(7) + sizeof(Int32) * 7 + SizeOfGenData * 4;
+                // set this check up to enable future versions that "add to the end"
+                if (base.EventDataLength >= size) mversion = 0; // .NET 4.6+
+
+                if (mversion >= 0) exactMatch = true;
+                else mversion = 0;
+            }
+
+            Debug.Assert(exactMatch, "Unrecognized version (" + Version + ") and stream size (" + base.EventDataLength + ") not equal to expected (" + size + ")");
+
+            return exactMatch;
+        }
+
+        private int IndexOfSetBit(int pow2)
+        {
+            int index = 0;
+            while((pow2 & 1) != 1 && pow2 > 0)
+            {
+                pow2 >>= 1;
+                index++;
+            }
+
+            return index;
+        }
+
+        private long[] GetIntPtrArray(int offset, int count)
+        {
+            long[] arr = new long[count];
+            for(int i=0; i< count; i++)
+            {
+                arr[i] = GetIntPtrAt(offset);
+                offset += base.HostSizePtr(1);
+            }
+
+            return arr;
+        }
+
         private const int maxGenData = (int)Gens.Gen0After + 1;
 
         internal GCPerHeapHistoryTraceData(Delegate action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -4102,15 +4549,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         protected internal override Delegate Target
         {
             get { return Action; }
-            //set { Action = (Action<GCPerHeapHistoryTraceData>)value; }
             set { Action = value; }
         }
         internal protected override void Validate()
         {
-            Debug.Assert(VersionRecognized);
+            Debug.Assert( VersionRecognized );
         }
 
-        public virtual int EntriesInGenData
+        public int EntriesInGenData
         {
             get
             {
@@ -4118,7 +4564,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        public virtual int SizeOfGenData
+        public int SizeOfGenData
         {
             get
             {
@@ -4126,76 +4572,32 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        public virtual int TotalSizeOfGenData
-        {
-            get
-            {
-                return (this.SizeOfGenData * 5);
-            }
-        }
-
-        public virtual bool V4_0
-        {
-            get
-            {
-                if (Version == 0)
-                {
-                    int num = (base.HostSizePtr(10) * 5) + 25;
-                    // For silverlight, there is one less mechanism.  It only affects the layout of gen_condemended_reasons. 
-                    return base.EventDataLength == num || base.EventDataLength == num - 4;
-                }
-                return false;
-            }
-        }
-
-        public virtual bool V4_5
-        {
-            get
-            {
-                return (Version == 2);
-            }
-        }
-
-        public virtual bool V4_6
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public virtual bool VersionRecognized
-        {
-            get
-            {
-                if (!this.V4_0)
-                {
-                    return this.V4_5;
-                }
-                return true;
-            }
-        }
-
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "HeapIndex", HeapIndex);
-            sb.AppendLine().Append("  ");
-            XmlAttrib(sb, "MemoryPressure", MemoryPressure);
-#if false // TODO FIX NOW ENABLE
-            XmlAttrib(sb, "MechanismHeapExpand", MechanismHeapExpand);
-            XmlAttrib(sb, "MechanismHeapCompact", MechanismHeapCompact);
-            XmlAttrib(sb, "InitialGenCondemned", InitialGenCondemned);
-            XmlAttrib(sb, "FinalGenCondemned", FinalGenCondemned);
-            XmlAttrib(sb, "GenWithExceededBudget", GenWithExceededBudget);
-            XmlAttrib(sb, "GenWithTimeTuning", GenWithTimeTuning);
-            XmlAttrib(sb, "GenCondemnedReasons", GenCondemnedReasons);
-#endif
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-            sb.AppendLine(">");
+            if (HasFreeListAllocated) XmlAttrib(sb, "FreeListAllocated", FreeListAllocated);
+            if (HasFreeListRejected) XmlAttrib(sb, "FreeListRejected", FreeListRejected);
+            if (HasEndOfSegAllocated) XmlAttrib(sb, "EndOfSegAllocated", EndOfSegAllocated);
+            if (HasCondemnedAllocated) XmlAttrib(sb, "CondemnedAllocated", CondemnedAllocated);
+            if (HasPinnedAllocated) XmlAttrib(sb, "PinnedAllocated", PinnedAllocated);
+            if (HasPinnedAllocatedAdvance) XmlAttrib(sb, "PinnedAllocatedAdvance", PinnedAllocatedAdvance);
+            if (HasRunningFreeListEfficiency) XmlAttrib(sb, "RunningFreeListEfficiency", RunningFreeListEfficiency);
+            XmlAttrib(sb, "CondemnReasons0", CondemnReasons0);
+            if (HasCondemnReasons1) XmlAttrib(sb, "CondemnReasons1", CondemnReasons1);
+            XmlAttrib(sb, "CompactMechanisms", CompactMechanisms);
+            XmlAttrib(sb, "ExpandMechanisms", ExpandMechanisms);
+            if(HasConcurrentCompactMechanisms) XmlAttrib(sb, "ConcurrentCompactMechanisms", ConcurrentCompactMechanisms);
+            XmlAttrib(sb, "HeapIndex", HeapIndex);
+            if(HasExtraGen0Commit) XmlAttrib(sb, "ExtraGen0Commit", ExtraGen0Commit);
+            if (HasCount) XmlAttrib(sb, "Count", Count);
+            if (HasMemoryPressure) XmlAttrib(sb, "MemoryPressure", MemoryPressure);
+            sb.Append("/>");
+            // @TODO the upper bound is not right for >= 3
             for (var gens = Gens.Gen0; gens <= Gens.GenLargeObj; gens++)
                 GenData(gens).ToXml(gens, sb).AppendLine();
             sb.AppendLine("</Event>");
+
             return sb;
         }
 
@@ -4204,9 +4606,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "HeapIndex", "MemoryPressure", "MechanismHeapExpand", "MechanismHeapCompact", "InitialGenCondemned",
-                                            "FinalGenCondemned", "GenWithExceededBudget", "GenWithTimeTuning", "GenCondemnedReasons", "ClrInstanceID",
+                {
+                    payloadNames = new string[] {"ClrInstanceID", "FreeListAllocated", "FreeListRejected", "EndOfSegAllocated", "CondemnedAllocated"
+                        , "PinnedAllocated", "PinnedAllocatedAdvance", "RunningFreeListEfficiency", "CondemnReasons0", "CondemnReasons1", "CompactMechanisms", "ExpandMechanisms"
+                        , "ConcurrentCompactMechanisms", "HeapIndex", "ExtraGen0Commit", "Count", "MemoryPressure"
                     };
+                }
                 return payloadNames;
             }
         }
@@ -4216,29 +4621,53 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             switch (index)
             {
                 case 0:
-                    return HeapIndex;
-                case 1:
-                    return MemoryPressure;
-#if false // TODO FIX NOW enable
-                case 2:
-                    return MechanismHeapExpand;
-                case 3:
-                    return MechanismHeapCompact;
-                case 4:
-                    return InitialGenCondemned;
-                case 5:
-                    return FinalGenCondemned;
-                case 6:
-                    return GenWithExceededBudget;
-                case 7:
-                    return GenWithTimeTuning;
-                case 8:
-                    return GenCondemnedReasons;
-#endif
-                case 9:
                     return ClrInstanceID;
+                case 1:
+                    if (HasFreeListAllocated) return FreeListAllocated;
+                    return null;
+                case 2:
+                    if (HasFreeListRejected) return FreeListRejected;
+                    return null;
+                case 3:
+                    if (HasEndOfSegAllocated) return EndOfSegAllocated;
+                    return null;
+                case 4:
+                    if (HasCondemnedAllocated) return CondemnedAllocated;
+                    else return null;
+                case 5:
+                    if (HasPinnedAllocated) return PinnedAllocated;
+                    else return null;
+                case 6:
+                    if (HasPinnedAllocatedAdvance) return PinnedAllocatedAdvance;
+                    else return null;
+                case 7:
+                    if (HasRunningFreeListEfficiency) return RunningFreeListEfficiency;
+                    else return null;
+                case 8:
+                    return CondemnReasons0;
+                case 9:
+                    if (HasCondemnReasons1) return CondemnReasons1;
+                    else return null;
+                case 10:
+                    return CompactMechanisms;
+                case 11:
+                    return ExpandMechanisms;
+                case 12:
+                    if (HasConcurrentCompactMechanisms) return ConcurrentCompactMechanisms;
+                    else return null;
+                case 13:
+                    return HeapIndex;
+                case 14:
+                    if (HasExtraGen0Commit) return ExtraGen0Commit;
+                    else return null;
+                case 15:
+                    if (HasCount) return Count;
+                    else return null;
+                case 16:
+                    if (HasMemoryPressure) return MemoryPressure;
+                    else return null;
                 default:
-                    //Debug.Assert(false, "Bad field index");
+                    Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
@@ -4246,188 +4675,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private Delegate Action;
         #endregion
     }
-
-    // This is specially treated as it was not a strict "adding to the end" update in the event data.
-    // The version for it is 3.
-    public class GCPerHeapHistoryTraceData3 : GCPerHeapHistoryTraceData
-    {
-        public override int ClrInstanceID { get { return GetInt16At(0); } }
-        public long FreeListAllocated { get { return (long)GetAddressAt(2); } }
-        public long FreeListRejected { get { return (long)GetAddressAt(HostOffset(6, 1)); } }
-        public long EndOfSegAllocated { get { return (long)GetAddressAt(HostOffset(10, 2)); } }
-        public long CondemnedAllocated { get { return (long)GetAddressAt(HostOffset(14, 3)); } }
-        public long PinnedAllocated { get { return (long)GetAddressAt(HostOffset(18, 4)); } }
-        public long PinnedAllocatedAdvance { get { return (long)GetAddressAt(HostOffset(22, 5)); } }
-        public int RunningFreeListEfficiency { get { return GetInt32At(HostOffset(26, 6)); } }
-        public override int CondemnReasons0 { get { return GetInt32At(HostOffset(30, 6)); } }
-        public override int CondemnReasons1 { get { return GetInt32At(HostOffset(34, 6)); } }
-        public int CompactMechanisms { get { return GetInt32At(HostOffset(38, 6)); } }
-        public int ExpandMechanisms { get { return GetInt32At(HostOffset(42, 6)); } }
-        public override int HeapIndex { get { return GetInt32At(HostOffset(46, 6)); } }
-        public long ExtraGen0Commit { get { return (long)GetAddressAt(HostOffset(50, 6)); } }
-        public int Count { get { return GetInt32At(HostOffset(54, 7)); } }
-
-        public override GCPerHeapHistoryGenData GenData(Gens genNumber)
-        {
-            Debug.Assert((int)genNumber < Count);
-            return new GCPerHeapHistoryGenData(this, ((HostOffset(54, 7) + 4) + SizeOfGenData * (int)genNumber));
-        }
-
-        public override int EntriesInGenData
-        {
-            get
-            {
-                return 10;
-            }
-        }
-
-        public override int SizeOfGenData
-        {
-            get
-            {
-                return base.HostSizePtr(this.EntriesInGenData);
-            }
-        }
-
-        public override int TotalSizeOfGenData
-        {
-            get
-            {
-                return (this.SizeOfGenData * Count);
-            }
-        }
-
-        public override bool V4_0
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool V4_5
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool V4_6
-        {
-            get
-            {
-                return (Version == 3);
-            }
-        }
-
-        public override bool VersionRecognized
-        {
-            get
-            {
-                return V4_6;
-            }
-        }
-
-        internal GCPerHeapHistoryTraceData3(Delegate action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(action, eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.Action = action;
-        }
-
-        internal protected override void Dispatch()
-        {
-            ((Action<GCPerHeapHistoryTraceData3>)Action)(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(Version == 3 && EventDataLength == (HostOffset(54, 7) + 4) + TotalSizeOfGenData);
-        }
-        internal protected override Delegate Target
-        {
-            get { return Action; }
-            //set { Action = (Action<GCPerHeapHistoryArgs>)value; }
-            set { Action = value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
-            XmlAttrib(sb, "FreeListAllocated", FreeListAllocated);
-            XmlAttrib(sb, "FreeListRejected", FreeListRejected);
-            XmlAttrib(sb, "EndOfSegAllocated", EndOfSegAllocated);
-            XmlAttrib(sb, "CondemnedAllocated", CondemnedAllocated);
-            XmlAttrib(sb, "PinnedAllocated", PinnedAllocated);
-            XmlAttrib(sb, "PinnedAllocatedAdvance", PinnedAllocatedAdvance);
-            XmlAttrib(sb, "RunningFreeListEfficiency", RunningFreeListEfficiency);
-            XmlAttrib(sb, "CondemnReasons0", CondemnReasons0);
-            XmlAttrib(sb, "CondemnReasons1", CondemnReasons1);
-            XmlAttrib(sb, "CompactMechanisms", CompactMechanisms);
-            XmlAttrib(sb, "ExpandMechanisms", ExpandMechanisms);
-            XmlAttrib(sb, "HeapIndex", HeapIndex);
-            XmlAttrib(sb, "ExtraGen0Commit", ExtraGen0Commit);
-            sb.Append("/>");
-            for (var gens = Gens.Gen0; gens <= Gens.GenLargeObj; gens++)
-                GenData(gens).ToXml(gens, sb).AppendLine();
-            sb.AppendLine("</Event>");
-
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ClrInstanceID", "FreeListAllocated", "EndOfSegAllocated", "CondemnedAllocated", "PinnedAllocated", "PinnedAllocatedAdvance", "FreeListEfficiency", "RunningFreeListEfficiency", "CondemnReasons0", "CondemnReasons1", "CompactMechanisms", "ExpandMechanisms", "HeapIndex", "ExtraGen0Commit" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ClrInstanceID;
-                case 1:
-                    return FreeListAllocated;
-                case 2:
-                    return FreeListRejected;
-                case 3:
-                    return EndOfSegAllocated;
-                case 4:
-                    return CondemnedAllocated;
-                case 5:
-                    return PinnedAllocated;
-                case 6:
-                    return PinnedAllocatedAdvance;
-                case 7:
-                    return RunningFreeListEfficiency;
-                case 8:
-                    return CondemnReasons0;
-                case 9:
-                    return CondemnReasons1;
-                case 10:
-                    return CompactMechanisms;
-                case 11:
-                    return ExpandMechanisms;
-                case 12:
-                    return HeapIndex;
-                case 13:
-                    return ExtraGen0Commit;
-                case 14:
-                    return Count;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        //private event Action<GCPerHeapHistoryTraceData2> Action;
-        private Delegate Action;
-    }
-
+    
     public enum GCExpandMechanism : uint
     {
         None = 0,
@@ -4438,6 +4686,48 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         NoMemory = 0x80000004,
     };
 
+    /// <summary>
+    /// Version 0: Silverlight (x86), .NET 4.0
+    /// [5] WKS::gc_generation_data
+    ///    +0x000 size_before      : Uint4B/8B
+    ///    +0x004 size_after       : Uint4B/8B
+    ///    +0x008 current_size     : Uint4B/8B
+    ///    +0x00c previous_size    : Uint4B/8B
+    ///    +0x010 fragmentation    : Uint4B/8B
+    ///    +0x014 in               : Uint4B/8B
+    ///    +0x018 out              : Uint4B/8B
+    ///    +0x01c new_allocation   : Uint4B/8B
+    ///    +0x020 surv             : Uint4B/8B
+    ///    +0x024 growth           : Uint4B/8B
+    ///    
+    /// Version 1: ???
+    /// 
+    /// Version 2, PreciseVersion 2.1: .NET 4.5 (x86), .NET 4.5.2 (x86)
+    ///  [5] WKS::gc_generation_data
+    ///    +0x000 size_before            : Uint4B/8B
+    ///    +0x004 free_list_space_before : Uint4B/8B
+    ///    +0x008 free_obj_space_before  : Uint4B/8B
+    ///    +0x00c size_after             : Uint4B/8B
+    ///    +0x010 free_list_space_after  : Uint4B/8B
+    ///    +0x014 free_obj_space_after   : Uint4B/8B
+    ///    +0x018 in                     : Uint4B/8B
+    ///    +0x01c out                    : Uint4B/8B
+    ///    +0x020 new_allocation         : Uint4B/8B
+    ///    +0x024 surv                   : Uint4B/8B
+    /// 
+    /// Version 3: .NET 4.6 (x86)
+    /// [4] WKS::gc_generation_data                                     
+    ///    +0x000 size_before            : Uint4B/8B                          
+    ///    +0x004 free_list_space_before : Uint4B/8B                    
+    ///    +0x008 free_obj_space_before  : Uint4B/8B                     
+    ///    +0x00c size_after             : Uint4B/8B                          
+    ///    +0x010 free_list_space_after  : Uint4B/8B
+    ///    +0x014 free_obj_space_after   : Uint4B/8B
+    ///    +0x018 in                     : Uint4B/8B
+    ///    +0x01c pinned_surv            : Uint4B/8B
+    ///    +0x020 npinned_surv           : Uint4B/8B
+    ///    +0x024 new_allocation         : Uint4B/8B
+    /// </summary>
     public sealed class GCPerHeapHistoryGenData
     {
         /// <summary>
@@ -4447,7 +4737,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                return m_container.GetIntPtrAt(m_startOffset + m_container.HostSizePtr(0));
+                long ret = m_genDataArray[0];
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4457,11 +4750,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return m_container.GetIntPtrAt(m_startOffset + m_container.HostSizePtr(3));
-                }
-                return m_container.GetIntPtrAt(m_startOffset + m_container.HostSizePtr(1));
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[1];
+                else if (m_version >= 2) ret = m_genDataArray[3];
+                else Debug.Assert(false, "SizeAfter invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4472,16 +4768,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return (SizeBefore - FreeListSpaceBefore - FreeObjSpaceBefore);
-                }
-                else
-                {
-                    return -1;
-                }
+                long ret = -1;
+
+                if (m_version >= 2) ret = (SizeBefore - FreeListSpaceBefore - FreeObjSpaceBefore);
+                else Debug.Assert(false, "ObjSpaceBefore invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
+        public bool HasObjSpaceBefore { get { return m_version >= 2; } }
         /// <summary>
         /// This is the fragmenation at the end of the GC.
         /// </summary>
@@ -4489,11 +4785,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_0)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(4));
-                }
-                return (FreeListSpaceAfter + FreeObjSpaceAfter);
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[4];
+                else if (m_version >= 2) ret = (FreeListSpaceAfter + FreeObjSpaceAfter);
+                else Debug.Assert(false, "Fragmentation invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4503,7 +4802,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                return SizeAfter - Fragmentation;
+                long ret = SizeAfter - Fragmentation;
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4514,16 +4816,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(1));
-                }
-                else
-                {
-                    return -1;
-                }
+                long ret = -1;
+
+                if (m_version >= 2) ret = m_genDataArray[1];
+                else Debug.Assert(false, "FreeListSpaceBefore invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
+        public bool HasFreeListSpaceBefore { get { return m_version >= 2; } }
         /// <summary>
         /// This is the free obj space (ie, what's free but not threaded onto the free list) at the beginning of the GC.
         /// Only exits on 4.5 RC and beyond.
@@ -4532,16 +4834,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(2));
-                }
-                else
-                {
-                    return -1;
-                }
+                long ret = -1;
+                if (m_version >= 2) ret = m_genDataArray[2];
+                else Debug.Assert(false, "FreeObjSpaceBefore invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
+        public bool HasFreeObjSpaceBefore { get { return m_version >= 2; } }
         /// <summary>
         /// This is the free list space (ie, what's threaded onto the free list) at the end of the GC.
         /// Only exits on 4.5 Beta and beyond.
@@ -4550,16 +4851,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(4));
-                }
-                else
-                {
-                    return -1;
-                }
+                long ret = -1;
+                if (m_version >= 2) ret = m_genDataArray[4];
+                else Debug.Assert(false, "FreeListSpaceAfter invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
+        public bool HasFreeListSpaceAfter { get { return m_version >= 2; } }
         /// <summary>
         /// This is the free obj space (ie, what's free but not threaded onto the free list) at the end of the GC.
         /// Only exits on 4.5 Beta and beyond.
@@ -4568,16 +4868,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(5));
-                }
-                else
-                {
-                    return -1;
-                }
+                long ret = -1;
+
+                if (m_version >= 2) ret = m_genDataArray[5];
+                else Debug.Assert(false, "FreeObjSpaceAfter invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
+        public bool HasFreeObjSpaceAfter { get { return m_version >= 2; } }
         /// <summary>
         /// This is the amount that came into this generation on this GC
         /// </summary>
@@ -4585,14 +4885,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_5 || this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(6));
-                }
-                else
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(5));
-                }
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[5];
+                else if (m_version >= 2) ret = m_genDataArray[6];
+                else Debug.Assert(false, "In invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4602,18 +4902,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_6)
-                {
-                    return (PinnedSurv + NonePinnedSurv);
-                }
-                else if (this.m_container.V4_5)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(7));
-                }
-                else
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(6));
-                }
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[6];
+                else if (m_version == 2) ret = m_genDataArray[7];
+                else if (m_version >= 3) ret = (PinnedSurv + NonePinnedSurv);
+                else Debug.Assert(false, "Out invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4623,15 +4920,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(9));
-                }
-                else if (this.m_container.V4_5)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(8));
-                }
-                return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(7));
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[7];
+                else if (m_version == 2) ret = m_genDataArray[8];
+                else if (m_version >= 3) ret = m_genDataArray[9];
+                else Debug.Assert(false, "Budget invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
         /// <summary>
@@ -4641,23 +4938,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_6)
+                long ret = -1;
+
+                if (m_version == 0) ret = m_genDataArray[8];
+                else if (m_version == 2) ret = m_genDataArray[9];
+                else if (m_version >= 3)
                 {
-                    if (ObjSpaceBefore == 0)
-                        return 0;
-                    else
-                    {
-                        return (long)((double)Out * 100.0 / (double)ObjSpaceBefore);
-                    }
+                    if (ObjSpaceBefore == 0) ret = 0;
+                    else ret = (long)((double)Out * 100.0 / (double)ObjSpaceBefore);
                 }
-                else if (this.m_container.V4_5)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(9));
-                }
-                else
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(8));
-                }
+                else Debug.Assert(false, "SurvRate invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
 
@@ -4665,36 +4958,30 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                if (this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(7));
-                }
+                long ret = -1;
 
-                return -1;
+                if (m_version >= 3) ret = m_genDataArray[7];
+                else Debug.Assert(false, "PinnedSurv invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
-
-        public bool HasPinnedSurv()
-        {
-            return (this.m_container.V4_6);
-        }
-
+        public bool HasPinnedSurv { get { return (m_version >= 3); } }
         public long NonePinnedSurv
         {
             get
             {
-                if (this.m_container.V4_6)
-                {
-                    return this.m_container.GetIntPtrAt(this.m_startOffset + this.m_container.HostSizePtr(8));
-                }
+                long ret = -1;
 
-                return -1;
+                if (m_version >= 3) ret = m_genDataArray[8];
+                else Debug.Assert(false, "NonePinnedSurv invalid version : " + m_version);
+
+                Debug.Assert(ret >= 0);
+                return ret;
             }
         }
-        public bool HasNonePinnedSurv()
-        {
-            return (this.m_container.V4_6);
-        }
+        public bool HasNonePinnedSurv { get { return (m_version >= 3); } }
 
         public StringBuilder ToXml(Gens genName, StringBuilder sb)
         {
@@ -4702,11 +4989,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             TraceEvent.XmlAttrib(sb, "Name", genName);
             TraceEvent.XmlAttrib(sb, "SizeBefore", SizeBefore);
             TraceEvent.XmlAttrib(sb, "SizeAfter", SizeAfter);
+            if (HasObjSpaceBefore) TraceEvent.XmlAttrib(sb, "ObjSpaceBefore", ObjSpaceBefore);
             TraceEvent.XmlAttrib(sb, "Fragmentation", Fragmentation);
+            TraceEvent.XmlAttrib(sb, "ObjSizeAfter", ObjSizeAfter);
+            if (HasFreeListSpaceBefore) TraceEvent.XmlAttrib(sb, "FreeListSpaceBefore", FreeListSpaceBefore);
+            if (HasFreeObjSpaceBefore) TraceEvent.XmlAttrib(sb, "FreeObjSpaceBefore", FreeObjSpaceBefore);
+            if (HasFreeListSpaceAfter) TraceEvent.XmlAttrib(sb, "FreeListSpaceAfter", FreeListSpaceAfter);
+            if (HasFreeObjSpaceAfter) TraceEvent.XmlAttrib(sb, "FreeObjSpaceAfter", FreeObjSpaceAfter);
             TraceEvent.XmlAttrib(sb, "In", In);
             TraceEvent.XmlAttrib(sb, "Out", Out);
-            TraceEvent.XmlAttrib(sb, "NewAllocation", Budget);
+            TraceEvent.XmlAttrib(sb, "NewAllocation", Budget); // not sure why this is not called Budget
             TraceEvent.XmlAttrib(sb, "SurvRate", SurvRate);
+            if (HasPinnedSurv) TraceEvent.XmlAttrib(sb, "PinnedSurv", PinnedSurv);
+            if (HasNonePinnedSurv) TraceEvent.XmlAttrib(sb, "NonePinnedSurv", NonePinnedSurv);
             sb.Append("/>");
             return sb;
         }
@@ -4715,17 +5010,83 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             return ToXml(Gens.Gen0, new StringBuilder()).ToString();
         }
         #region private
-        internal GCPerHeapHistoryGenData(GCPerHeapHistoryTraceData container, int offset)
+        internal GCPerHeapHistoryGenData(int version, long[] genDataArray)
         {
-            m_container = container;
-            m_startOffset = offset;
+            m_version = version;
+            m_genDataArray = genDataArray;
         }
 
-        GCPerHeapHistoryTraceData m_container;
-        int m_startOffset;
+        int m_version;
+        long[] m_genDataArray;
         #endregion
     }
 
+    /// <summary>
+    /// Version 0: ???
+    /// 
+    /// Version 1: Silverlight (x86), .NET 4.0, .NET 4.5, .NET 4.5.2
+    /// VM\gc.cpp
+    /// 0:041> dt -r3 WKS::gc_history_global
+    /// coreclr!WKS::gc_history_global
+    ///    +0x000 final_youngest_desired : Uint4B/8B
+    ///    +0x004 num_heaps        : Uint4B
+    ///    +0x008 condemned_generation : Int4B
+    ///    +0x00c gen0_reduction_count : Int4B
+    ///    +0x010 reason           : 
+    ///     reason_alloc_soh = 0n0
+    ///     reason_induced = 0n1
+    ///     reason_lowmemory = 0n2
+    ///     reason_empty = 0n3
+    ///     reason_alloc_loh = 0n4
+    ///     reason_oos_soh = 0n5
+    ///     reason_oos_loh = 0n6
+    ///     reason_induced_noforce = 0n7
+    ///     reason_gcstress = 0n8
+    ///     reason_max = 0n9
+    ///    +0x014 global_mechanims_p : Uint4B
+    ///   
+    /// FireEtwGCGlobalHeapHistory_V1(gc_data_global.final_youngest_desired, // upcast on 32bit to __int64
+    ///                          gc_data_global.num_heaps,
+    ///                          gc_data_global.condemned_generation,
+    ///                          gc_data_global.gen0_reduction_count,
+    ///                          gc_data_global.reason,
+    ///                          gc_data_global.global_mechanims_p,
+    ///                          GetClrInstanceId());
+    /// Version 2: .NET 4.6
+    /// clr!WKS::gc_history_global
+    ///    +0x000 final_youngest_desired : Uint4B/8B
+    ///    +0x004 num_heaps        : Uint4B
+    ///    +0x008 condemned_generation : Int4B
+    ///    +0x00c gen0_reduction_count : Int4B
+    ///    +0x010 reason           : 
+    ///     reason_alloc_soh = 0n0
+    ///     reason_induced = 0n1
+    ///     reason_lowmemory = 0n2
+    ///     reason_empty = 0n3
+    ///     reason_alloc_loh = 0n4
+    ///     reason_oos_soh = 0n5
+    ///     reason_oos_loh = 0n6
+    ///     reason_induced_noforce = 0n7
+    ///     reason_gcstress = 0n8
+    ///     reason_lowmemory_blocking = 0n9
+    ///     reason_induced_compacting = 0n10
+    ///     reason_lowmemory_host = 0n11
+    ///     reason_max = 0n12
+    ///    +0x014 pause_mode       : Int4B
+    ///    +0x018 mem_pressure     : Uint4B
+    ///    +0x01c global_mechanims_p : Uint4B
+    /// 
+    /// FireEtwGCGlobalHeapHistory_V2(gc_data_global.final_youngest_desired, // upcast on 32bit to __int64
+    ///                          gc_data_global.num_heaps,
+    ///                          gc_data_global.condemned_generation,
+    ///                          gc_data_global.gen0_reduction_count,
+    ///                          gc_data_global.reason,
+    ///                          gc_data_global.global_mechanims_p,
+    ///                          GetClrInstanceId());
+    ///                          gc_data_global.pause_mode, 
+    ///                          gc_data_global.mem_pressure);
+    ///                          
+    /// </summary>
     public sealed class GCGlobalHeapHistoryTraceData : TraceEvent
     {
         public long FinalYoungestDesired { get { return GetInt64At(0); } }
@@ -4735,10 +5096,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public GCReason Reason { get { return (GCReason)GetInt32At(20); } }
         public GCGlobalMechanisms GlobalMechanisms { get { return (GCGlobalMechanisms)GetInt32At(24); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(28); return 0; } }
+        public bool HasClrInstanceID {  get { return Version >= 1; } }
         public int PauseMode { get { if (Version >= 2) return GetInt32At(30); return 0; } }
-        public bool HasPauseMode() { return (Version >= 2); }
+        public bool HasPauseMode { get { return (Version >= 2); } }
         public int MemoryPressure { get { if (Version >= 2) return GetInt32At(34); return 0; } }
-        public bool HasMemoryPressure() { return (Version >= 2); }
+        public bool HasMemoryPressure { get { return (Version >= 2); } }
         #region Private
         internal GCGlobalHeapHistoryTraceData(Action<GCGlobalHeapHistoryTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
@@ -4780,7 +5142,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID" };
+                    payloadNames = new string[] { "FinalYoungestDesired", "NumHeaps", "CondemnedGeneration", "Gen0ReductionCount", "Reason", "GlobalMechanisms", "ClrInstanceID", "PauseMode", "MemoryPressure" };
                 return payloadNames;
             }
         }
@@ -4802,7 +5164,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 case 5:
                     return GlobalMechanisms;
                 case 6:
-                    return ClrInstanceID;
+                    if (HasClrInstanceID) return ClrInstanceID;
+                    else return null;
+                case 7:
+                    if (HasPauseMode) return PauseMode;
+                    else return null;
+                case 8:
+                    if (HasMemoryPressure) return MemoryPressure;
+                    else return null;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
