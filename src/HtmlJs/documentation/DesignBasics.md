@@ -28,6 +28,8 @@ It is also a goal to allow this version to work in two scearios
 
 ## Architecture
 
+The basic 
+
 
 
 

@@ -203,6 +203,15 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        /// Returns true if the Growable array was initialized by the default constructor
+        /// which has no capacity (and thus will cause growth on the first addition).
+        /// This method allows you to lazily set the compacity of your GrowableArray by
+        /// testing if it is of EmtpyCapacity, and if so set it to some useful capacity.
+        /// This avoids unecessary reallocs to get to a reasonable capacity.   
+        /// </summary>
+        public bool EmptyCapacity { get { return array == null; } } 
+
+        /// <summary>
         /// A string representing the array.   Only intended for debugging.  
         /// </summary>
         /// <returns></returns>

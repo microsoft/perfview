@@ -3328,7 +3328,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             get
             {
-                if (_diskEventTimeStamp.Count == 0)
+                if (_diskEventTimeStamp.EmptyCapacity)
                     _diskEventTimeStamp = new GrowableArray<DiskIOTime>(500);
                 return _diskEventTimeStamp;
             }
