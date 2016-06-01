@@ -14,8 +14,8 @@ namespace PEFile
     /// 
     /// It can read both 32 and 64 bit PE files.  
     /// </summary>
-#if PEFILE_PUBLIC 
-    public 
+#if PEFILE_PUBLIC
+    public
 #endif
     unsafe sealed class PEFile : IDisposable
     {
@@ -32,7 +32,7 @@ namespace PEFile
                 goto ThrowBadHeader;
             Header = new PEHeader(ptr);
 
-            if (Header.PEHeaderSize > 1024*64)      // prevent insane numbers;
+            if (Header.PEHeaderSize > 1024 * 64)      // prevent insane numbers;
                 goto ThrowBadHeader;
 
             // We did not read in the complete header, Try again using the right sized buffer.  
@@ -45,7 +45,7 @@ namespace PEFile
             }
             return;
             ThrowBadHeader:
-                throw new InvalidOperationException("Bad PE Header in " + filePath);
+            throw new InvalidOperationException("Bad PE Header in " + filePath);
         }
         /// <summary>
         /// The Header for the PE file.  This contains the infor in a link /dump /headers 
@@ -59,7 +59,7 @@ namespace PEFile
         /// (this is what debuggers do today).   Thus NGEN images put the IL PDB last (which means debuggers 
         /// pick up that one), but we can set it to 'first' if we want the NGEN PDB.
         /// </summary>
-        public bool GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge, bool first=false)
+        public bool GetPdbSignature(out string pdbName, out Guid pdbGuid, out int pdbAge, bool first = false)
         {
             pdbName = null;
             pdbGuid = Guid.Empty;
@@ -86,7 +86,7 @@ namespace PEFile
                             pdbName = info->PdbFileName;
                             ret = true;
                             if (first)
-                                break;  
+                                break;
                         }
                         FreeBuff(stringBuff);
                     }
@@ -111,7 +111,7 @@ namespace PEFile
 
             var buff = AllocBuff();
             byte* bytes = versionNode.FetchData(0, versionNode.DataLength, buff);
-            var ret =  new FileVersionInfo(bytes, versionNode.DataLength);
+            var ret = new FileVersionInfo(bytes, versionNode.DataLength);
 
             FreeBuff(buff);
             return ret;
@@ -140,6 +140,32 @@ namespace PEFile
         }
 
         /// <summary>
+        /// Returns true if this is and NGEN or Ready-to-Run image (it has precompiled native code)
+        /// </summary>
+        public bool HasPrecompiledManagedCode
+        {
+            get
+            {
+                if (!getNativeInfoCalled)
+                    GetNativeInfo();
+                return hasPrecomiledManagedCode;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if file has a managed ready-to-run image.  
+        /// </summary>
+        public bool IsManagedReadyToRun
+        {
+            get
+            {
+                if (!getNativeInfoCalled)
+                    GetNativeInfo();
+                return isManagedReadyToRun;
+            }
+        }
+
+        /// <summary>
         /// Closes any file handles and cleans up resources.  
         /// </summary>
         public void Dispose()
@@ -150,7 +176,7 @@ namespace PEFile
             if (m_freeBuff != null)
                 m_freeBuff.Dispose();
         }
-        
+
         // TODO make public?
         internal ResourceNode GetResources()
         {
@@ -161,6 +187,73 @@ namespace PEFile
         }
 
         #region private
+        bool getNativeInfoCalled;
+        bool hasPrecomiledManagedCode;
+        bool isManagedReadyToRun;
+
+        struct IMAGE_COR20_HEADER
+        {
+            // Header versioning
+            public int cb;
+            public short MajorRuntimeVersion;
+            public short MinorRuntimeVersion;
+
+            // Symbol table and startup information
+            public IMAGE_DATA_DIRECTORY MetaData;
+            public int Flags;
+
+            public int EntryPointToken;
+            public IMAGE_DATA_DIRECTORY Resources;
+            public IMAGE_DATA_DIRECTORY StrongNameSignature;
+
+            public IMAGE_DATA_DIRECTORY CodeManagerTable;
+            public IMAGE_DATA_DIRECTORY VTableFixups;
+            public IMAGE_DATA_DIRECTORY ExportAddressTableJumps;
+
+            // Precompiled image info (internal use only - set to zero)
+            public IMAGE_DATA_DIRECTORY ManagedNativeHeader;
+        }
+
+        const int READYTORUN_SIGNATURE = 0x00525452; // 'RTR'
+
+        struct READYTORUN_HEADER
+        {
+            public int Signature;      // READYTORUN_SIGNATURE
+            public short MajorVersion;   // READYTORUN_VERSION_XXX
+            public short MinorVersion;
+
+            public int Flags;          // READYTORUN_FLAG_XXX
+
+            public int NumberOfSections;
+
+            // Array of sections follows. The array entries are sorted by Type
+            // READYTORUN_SECTION   Sections[];
+        };
+
+        public void GetNativeInfo()
+        {
+            if (getNativeInfoCalled)
+                return;
+
+            if (Header.ComDescriptorDirectory.VirtualAddress != 0 && sizeof(IMAGE_COR20_HEADER) <= Header.ComDescriptorDirectory.Size)
+            {
+                var buff = AllocBuff();
+                var managedHeader = (IMAGE_COR20_HEADER*)FetchRVA(Header.ComDescriptorDirectory.VirtualAddress, sizeof(IMAGE_COR20_HEADER), buff);
+                if (managedHeader->ManagedNativeHeader.VirtualAddress != 0)
+                {
+                    hasPrecomiledManagedCode = true;
+                    if (sizeof(READYTORUN_HEADER) <= managedHeader->ManagedNativeHeader.Size)
+                    {
+                        var r2rHeader = (READYTORUN_HEADER*)FetchRVA(managedHeader->ManagedNativeHeader.VirtualAddress, sizeof(READYTORUN_HEADER), buff);
+                        if (r2rHeader->Signature == READYTORUN_SIGNATURE)
+                            isManagedReadyToRun = true;
+                    }
+                }
+                FreeBuff(buff);
+            }
+        }
+
+
         PEBuffer m_headerBuff;
         PEBuffer m_freeBuff;
         FileStream m_stream;
@@ -181,7 +274,7 @@ namespace PEFile
         {
             if (m_freeBuff != null)
                 buffer.Dispose();           // Get rid of it, since we already have cached one
-            else 
+            else
                 m_freeBuff = buffer;
         }
         #endregion
@@ -192,8 +285,8 @@ namespace PEFile
     /// PEFile are read or mapped into memory, this class can parse it when given a poitner to it. 
     /// It can read both 32 and 64 bit PE files.  
     /// </summary>
-#if PEFILE_PUBLIC 
-    public 
+#if PEFILE_PUBLIC
+    public
 #endif
     unsafe sealed class PEHeader
     {
@@ -217,11 +310,11 @@ namespace PEFile
                 goto ThrowBadHeader;
 
             this.sections = (IMAGE_SECTION_HEADER*)(((byte*)this.ntHeader) + sizeof(IMAGE_NT_HEADERS) + ntHeader->FileHeader.SizeOfOptionalHeader);
-            if (!((byte*) this.sections - (byte*) startOfPEFile < 1024))
+            if (!((byte*)this.sections - (byte*)startOfPEFile < 1024))
                 goto ThrowBadHeader;
 
             return;
-        ThrowBadHeader:
+            ThrowBadHeader:
             throw new InvalidOperationException("Bad PE Header.");
         }
 
@@ -555,8 +648,8 @@ namespace PEFile
     /// <summary>
     /// The Machine types supported by the portable executable (PE) File format
     /// </summary>
-#if PEFILE_PUBLIC 
-    public 
+#if PEFILE_PUBLIC
+    public
 #endif
     enum MachineType : ushort
     {
@@ -585,8 +678,8 @@ namespace PEFile
     /// <summary>
     /// Represents a Portable Executable (PE) Data directory.  This is just a well known optional 'Blob' of memory (has a starting point and size)
     /// </summary>
-#if PEFILE_PUBLIC 
-    public 
+#if PEFILE_PUBLIC
+    public
 #endif
     struct IMAGE_DATA_DIRECTORY
     {
@@ -603,8 +696,8 @@ namespace PEFile
     /// <summary>
     /// FileVersionInfo represents the extended version formation that is optionally placed in the PE file resource area. 
     /// </summary>
-#if PEFILE_PUBLIC 
-    public 
+#if PEFILE_PUBLIC
+    public
 #endif
     unsafe sealed class FileVersionInfo
     {
@@ -612,7 +705,7 @@ namespace PEFile
         /// <summary>
         /// The verison string 
         /// </summary>
-        public string FileVersion { get; private set; }  
+        public string FileVersion { get; private set; }
         #region private 
         internal FileVersionInfo(byte* data, int dataLen)
         {
@@ -624,25 +717,25 @@ namespace PEFile
             byte* stringInfoPtr = data + 0x5c;   // Gets to first StringInfo
 
             // TODO hack, search for FileVersion string ... 
-            string dataAsString = new string((char*) stringInfoPtr, 0, (dataLen-0x5c) / 2);
+            string dataAsString = new string((char*)stringInfoPtr, 0, (dataLen - 0x5c) / 2);
 
             string fileVersionKey = "FileVersion";
             int fileVersionIdx = dataAsString.IndexOf(fileVersionKey);
             if (fileVersionIdx >= 0)
             {
                 int valIdx = fileVersionIdx + fileVersionKey.Length;
-                for(;;)
+                for (;;)
                 {
                     valIdx++;
                     if (valIdx >= dataAsString.Length)
                         return;
-                    if (dataAsString[valIdx] != (char) 0)
+                    if (dataAsString[valIdx] != (char)0)
                         break;
                 }
-                int varEndIdx = dataAsString.IndexOf((char) 0, valIdx);
+                int varEndIdx = dataAsString.IndexOf((char)0, valIdx);
                 if (varEndIdx < 0)
                     return;
-                FileVersion = dataAsString.Substring(valIdx, varEndIdx-valIdx);
+                FileVersion = dataAsString.Substring(valIdx, varEndIdx - valIdx);
             }
         }
 
@@ -650,7 +743,7 @@ namespace PEFile
     }
 
     #region private classes we may want to expose 
-    
+
     /// <summary>
     /// A PEBuffer represents a buffer (efficient) scanner of the 
     /// </summary>
@@ -850,7 +943,7 @@ namespace PEFile
         private int m_dataFileOffset;
         #endregion
     }
-    #endregion 
+    #endregion
 
     #region private classes
     [StructLayout(LayoutKind.Explicit, Size = 64)]
@@ -997,7 +1090,7 @@ namespace PEFile
         COFF = 1,
         CODEVIEW = 2,
         FPO = 3,
-        MISC = 4,   
+        MISC = 4,
         BBT = 10,
     };
 

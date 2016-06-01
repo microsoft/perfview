@@ -1197,22 +1197,32 @@ namespace PerfView
             if (File.Exists(App.LogFileName))
                 etlWriter.AddFile(App.LogFileName, "PerfViewLogFile.txt");
 
+            // remember the .etlx file that would coorespond to the etl file 
+            // that we are about to merge.   It is importnat to do this here
+            // before we modify the timestamp for DataFile.  We will use this
+            string etlxInCache = CacheFiles.FindFile(parsedArgs.DataFile, ".etlx");
+            DateTime etlTimeStamp = File.GetLastWriteTimeUtc(parsedArgs.DataFile);
+
             // Actually create the archive.  
             var success = etlWriter.WriteArchive();
             if (parsedArgs.ShouldZip)
             {
+                // The rest of this is an optimization.   If we have ETL or ETLX
+                // files for the file we just ZIPPed then set it up so that if
+                // we try to open the file it will go down the fast path.  
                 if (success)
                 {
                     // Move the original ETL file to the cache (so we can reuse it)                
                     var etlInCache = CacheFiles.FindFile(etlWriter.ZipArchivePath, ".etl");
                     FileUtilities.ForceMove(parsedArgs.DataFile, etlInCache);
+                    File.SetLastWriteTime(etlInCache, DateTime.Now);   // Touch the file
 
                     // Move the ETLX file (if any) from the original ETL file 
-                    var etlxInCache = CacheFiles.FindFile(parsedArgs.DataFile, ".etlx");
-                    if (File.Exists(etlxInCache))
+                    if (File.Exists(etlxInCache) && etlTimeStamp < File.GetLastWriteTimeUtc(etlxInCache))
                     {
                         var newEtlxInCache = CacheFiles.FindFile(etlInCache, ".etlx");
                         FileUtilities.ForceMove(etlxInCache, newEtlxInCache);
+                        File.SetLastWriteTime(newEtlxInCache, DateTime.Now + new TimeSpan(1));  // Touch the file ensure it is bigger. 
                     }
                 }
                 parsedArgs.DataFile = etlWriter.ZipArchivePath;
@@ -2855,6 +2865,7 @@ namespace PerfView
                             throw new ApplicationException("Could not parse values '" + rest + "'");
                         var key = match.Groups[1].Value;
                         var value = match.Groups[2].Value;
+                        value = value.Replace(@" \n", " \n");   // Allow escaped newlines in values.   
 
                         if (key.StartsWith("@"))
                         {

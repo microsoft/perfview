@@ -7,11 +7,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 {
     sealed class CtfChannel : Stream
     {
-        static readonly int s_headerSize = Marshal.SizeOf(typeof(CtfStreamHeader)) + Marshal.SizeOf(typeof(CtfPacketContext));
         private CtfMetadata _metadata;
         private CtfStream _ctfStream;
         private Stream _stream;
-        private byte[] _buffer = new byte[Math.Max(128, CtfPacketContext.Size)];
+        private byte[] _buffer = new byte[256];
         private GCHandle _handle;
         private long _packetSize;
         private long _contentSize;
@@ -21,9 +20,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         public long FileOffset { get { return _fileOffset; } }
 #endif
-
-        public ulong StartTimestamp { get; private set; }
-        public ulong EndTimestamp { get; private set; }
 
         public CtfStream CtfStream { get { return _ctfStream; } }
 
@@ -58,31 +54,94 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     _fileOffset += curr;
 #endif
                 }
-                
-                CtfStreamHeader header;
-                CtfPacketContext context;
 
-                if (!ReadStruct<CtfStreamHeader>(out header))
+                if (!ReadTraceHeader())
                     return false;
 
-                Debug.Assert(header.Magic == 0xc1fc1fc1);
-                _ctfStream = _metadata.Streams[(int)header.Stream];
-                
-                if (!ReadStruct<CtfPacketContext>(out context))
+                if (!ReadPacketContext())
                     return false;
-
-                _packetSize = (long)context.PacketSize / 8 - s_headerSize;
-                _contentSize = (long)context.ContextSize / 8 - s_headerSize;
-                StartTimestamp = context.TimestampBegin;
-                EndTimestamp = context.TimestampEnd;
             } while (_contentSize == 0);
+
+            return true;
+        }
+
+        private bool ReadTraceHeader()
+        {
+            // Read Trace Header
+            CtfStruct traceHeader = _metadata.Trace.Header;
+
+            int traceHeaderSize = traceHeader.GetSize();
+            if (traceHeaderSize == CtfEvent.SizeIndeterminate)
+                throw new FormatException("Unexpected metadata format.");
+
+            int magicOffset = traceHeader.GetFieldOffset("magic");
+            if (magicOffset < 0)
+                throw new FormatException("Unexpected metadata format: No magic field.");
+
+            int streamIdOffset = traceHeader.GetFieldOffset("stream_id");
+            if (streamIdOffset < 0)
+                throw new FormatException("Unexpected metadata format: No stream_id field.");
+
+            // Convert to bytes instead of bits
+            magicOffset /= 8;
+            streamIdOffset /= 8;
+            traceHeaderSize /= 8;
+
+            if (_stream.Read(_buffer, 0, traceHeaderSize) != traceHeaderSize)
+                return false;
+
+#if DEBUG
+            _fileOffset += traceHeaderSize;
+#endif
+
+            uint magic = BitConverter.ToUInt32(_buffer, magicOffset);
+            if (magic != 0xc1fc1fc1)
+                throw new FormatException("Unknown magic number in trace header.");
+
+            uint streamId = BitConverter.ToUInt32(_buffer, streamIdOffset);
+            _ctfStream = _metadata.Streams[streamId];
+
+            return true;
+        }
+
+        private bool ReadPacketContext()
+        {
+            // Read Packet Context
+            CtfStruct packetContext = _ctfStream.PacketContext;
+            int packetContextSize = packetContext.GetSize();
+            if (packetContextSize == CtfEvent.SizeIndeterminate)
+                throw new FormatException("Unexpected metadata format.");
+
+            int contentSizeOffset = packetContext.GetFieldOffset("content_size");
+            if (contentSizeOffset < 0)
+                throw new FormatException("Unexpected metadata format: No context_size field.");
+
+            int packetSizeOffset = packetContext.GetFieldOffset("packet_size");
+            if (packetSizeOffset < 0)
+                throw new FormatException("Unexpected metadata format: No packet_size field.");
+
+            // Convert to bytes instead of bits
+            packetContextSize /= 8;
+            contentSizeOffset /= 8;
+            packetSizeOffset /= 8;
+
+            if (_stream.Read(_buffer, 0, packetContextSize) != packetContextSize)
+                return false;
+
+#if DEBUG
+            _fileOffset += packetContextSize;
+#endif
+
+            int headerSize = (_metadata.Trace.Header.GetSize() / 8) + packetContextSize;
+            _contentSize = (long)BitConverter.ToUInt64(_buffer, contentSizeOffset) / 8 - headerSize;
+            _packetSize = (long)BitConverter.ToUInt64(_buffer, packetSizeOffset) / 8 - headerSize;
 
             return true;
         }
 
         private void ReadHeader()
         {
-            int bytes = _metadata.Streams[0].EventHeader.GetSize();
+            int bytes = _ctfStream.EventHeader.GetSize();
         }
 
         private bool ReadStruct<T>(out T result) where T : struct
@@ -213,31 +272,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
-        }
-        #endregion
-
-        #region Helper Structs
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct CtfStreamHeader
-        {
-            public static int Size { get { return Marshal.SizeOf(typeof(CtfStreamHeader)); } }
-
-            public uint Magic;
-            public Guid Guid;
-            public uint Stream;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct CtfPacketContext
-        {
-            public static int Size { get { return Marshal.SizeOf(typeof(CtfPacketContext)); } }
-
-            public ulong TimestampBegin;
-            public ulong TimestampEnd;
-            public ulong ContextSize;
-            public ulong PacketSize;
-            public ulong EventsDiscarded;
-            public uint CpuId;
         }
         #endregion
     }

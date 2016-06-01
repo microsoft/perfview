@@ -2838,6 +2838,19 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+        /// <summary>
+        /// Prints a report whether exeFileName is a ready-to-run image.  
+        /// </summary>
+        public void IsReadyToRun(string exeFileName)
+        {
+            using (var pefile = new PEFile.PEFile(exeFileName))
+            {
+                var isReadyToRun = pefile.IsManagedReadyToRun;
+                LogFile.WriteLine("[{0} isReadyToRun = {1}]", exeFileName, isReadyToRun);
+                OpenLog();
+            }
+        }
+
         class CodeSymbolListener
         {
             public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)
@@ -2972,7 +2985,7 @@ namespace PerfViewExtensibility
         {
             ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
 
-            var source = new ETWTraceEventSource(etlFile);
+            var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile);
             var gcStats = Stats.GCProcess.Collect(source, 1);   // TODO we don't know that it is 1 msec sampling.  
 
             var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
@@ -3024,7 +3037,7 @@ namespace PerfViewExtensibility
         {
             ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
 
-            var source = new ETWTraceEventSource(etlFile);
+            var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile);
             var jitStats = Stats.JitProcess.Collect(source);
 
             var outputFileName = Path.ChangeExtension(etlFile, ".jitStats.html");

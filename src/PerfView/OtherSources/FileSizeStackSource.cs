@@ -60,6 +60,13 @@ namespace Diagnostics.Tracing.StackSources
                                     suffix = peFile.Header.IsManaged ? " (MANAGED)" : " (UNMANAGED)";
                                     if (peFile.Header.IsPE64)
                                         suffix += " (64Bit)";
+                                    if (peFile.HasPrecompiledManagedCode)
+                                    {
+                                        if (peFile.IsManagedReadyToRun)
+                                            suffix += " (ReadyToRun)";
+                                        else
+                                            suffix += " (NGEN)";
+                                    }
                                 }
                             }
                             catch (Exception) {
