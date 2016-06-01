@@ -49,16 +49,8 @@ public class DotNetHeapDumpGraphReader
     }
     public void Append(MemoryGraph memoryGraph, string etlName, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {
-        if (etlName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
-        {
-            using (var source = new CtfTraceEventSource(etlName))
-                Append(memoryGraph, source, processNameOrId, startTimeRelativeMSec);
-        }
-        else
-        {
-            using (var source = new ETWTraceEventSource(etlName))
-                Append(memoryGraph, source, processNameOrId, startTimeRelativeMSec);
-        }
+        using (var source = TraceEventDispatcher.GetDispatcherFromFileName(etlName))
+            Append(memoryGraph, source, processNameOrId, startTimeRelativeMSec);
     }
     public void Append(MemoryGraph memoryGraph, TraceEventDispatcher source, string processNameOrId = null, double startTimeRelativeMSec = 0)
     {

@@ -60,7 +60,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             if (etlxFilePath == null)
                 etlxFilePath = Path.ChangeExtension(filePath, ".etlx");
-            using (TraceEventDispatcher source = GetDispatcherFromFileName(filePath))
+            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -592,25 +592,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        private static TraceEventDispatcher GetDispatcherFromFileName(string filePath)
-        {
-            if (filePath.EndsWith(".trace.zip"))
-            {
-                return new CtfTraceEventSource(filePath);
-            }
-
-            return new ETWTraceEventSource(filePath);
-        }
-
-        /// <summary>
-        /// Given a process's virtual address 'address' and an event which acts as a 
-        /// context (determines which process and what time in that process), return 
-        /// a CodeAddressIndex (which represents a particular location in a particular
-        /// method in a particular DLL). It is possible that different addresses will
-        /// go to the same code address for the same address (in different contexts).
-        /// This is because DLLS where loaded in different places in different processes.
-        /// </summary>  
-        public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
+		/// <summary>
+		/// Given a process's virtual address 'address' and an event which acts as a 
+		/// context (determines which process and what time in that process), return 
+		/// a CodeAddressIndex (which represents a particular location in a particular
+		/// method in a particular DLL). It is possible that different addresses will
+		/// go to the same code address for the same address (in different contexts).
+		/// This is because DLLS where loaded in different places in different processes.
+		/// </summary>  
+		public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
         {
             // TODO optimize for sequential access.  
             EventIndex eventIndex = context.EventIndex;

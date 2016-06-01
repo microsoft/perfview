@@ -5203,6 +5203,12 @@ namespace PerfView
 
         internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
         {
+            if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                log.WriteLine($"'{inputFileName}' is a linux trace.");
+                return;
+            }
+
             var extension = Path.GetExtension(inputFileName);
             if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
                 string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
