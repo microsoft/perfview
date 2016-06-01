@@ -59,7 +59,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             if (etlxFilePath == null)
                 etlxFilePath = Path.ChangeExtension(filePath, ".etlx");
-            using (TraceEventDispatcher source = GetDispatcherFromFileName(filePath))
+            using (TraceEventDispatcher source = TraceEventDispatcher.GetDispatcherFromFileName(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -589,16 +589,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             }
         }
-
-		private static TraceEventDispatcher GetDispatcherFromFileName(string filePath)
-		{
-			if (filePath.EndsWith(".trace.zip"))
-			{
-				return new CtfTraceEventSource(filePath);
-			}
-
-			return new ETWTraceEventSource(filePath);
-		}
 
 		/// <summary>
 		/// Given a process's virtual address 'address' and an event which acts as a 

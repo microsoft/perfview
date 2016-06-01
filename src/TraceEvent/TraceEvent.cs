@@ -2661,6 +2661,20 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     abstract unsafe public class TraceEventDispatcher : TraceEventSource
     {
+        /// <summary>
+        /// Obtains the correct TraceEventDispatcher for the given trace file name.
+        /// </summary>
+        /// <param name="traceFileName">A path to a trace file.</param>
+        /// <returns>A TraceEventDispatcher for the given trace file.</returns>
+        public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName)
+        {
+            if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase) ||
+                traceFileName.EndsWith(".lttng.zip", StringComparison.OrdinalIgnoreCase))
+                return new CtfTraceEventSource(traceFileName);
+            else
+                return new ETWTraceEventSource(traceFileName);
+        }
+
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However
         // there are a couple of events that TraceEventDispatcher can handle directly.
         /// <summary>
