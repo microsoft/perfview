@@ -1605,7 +1605,7 @@ namespace ClrCap
                     if ((_event.GCGeneration == 2) &&
                         (_event.Type != GCType.BackgroundGC) &&
                         _event.IsNotCompacting() &&
-                        (_event.PerHeapHistories[0].MemoryPressure >= 90))
+                        (_event.PerHeapHistories[0].HasMemoryPressure && _event.PerHeapHistories[0].MemoryPressure >= 90))
                     {
                         if (Gen2HighMemSequenceBeginIndex == 0)
                             Gen2HighMemSequenceBeginIndex = i;
@@ -1645,9 +1645,12 @@ namespace ClrCap
 
                     if (_event.GCGeneration > 0)
                     {
-                        Total.TotalMemoryPressure += _event.PerHeapHistories[0].MemoryPressure;
-                        if (Total.MaxMemoryPressure < _event.PerHeapHistories[0].MemoryPressure)
-                            Total.MaxMemoryPressure = _event.PerHeapHistories[0].MemoryPressure;
+                        if (_event.PerHeapHistories[0].HasMemoryPressure)
+                        {
+                            Total.TotalMemoryPressure += _event.PerHeapHistories[0].MemoryPressure;
+                            if (Total.MaxMemoryPressure < _event.PerHeapHistories[0].MemoryPressure)
+                                Total.MaxMemoryPressure = _event.PerHeapHistories[0].MemoryPressure;
+                        }
                     }
                 }
 
