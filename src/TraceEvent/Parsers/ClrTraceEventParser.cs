@@ -4173,7 +4173,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(2);
                 else Debug.Assert(false, "FreeListAllocated invalid Version : " + Version);
@@ -4187,7 +4187,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(HostOffset(6, 1));
                 else Debug.Assert(false, "FreeListRejected invalid Version : " + Version);
@@ -4201,7 +4201,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(HostOffset(10, 2));
                 else Debug.Assert(false, "EndOfSegAllocated invalid Version : " + Version);
@@ -4215,7 +4215,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(HostOffset(14, 3));
                 else Debug.Assert(false, "CondemnedAllocated invalid Version : " + Version);
@@ -4229,7 +4229,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(HostOffset(18, 4));
                 else Debug.Assert(false, "PinnedAllocated invalid Version : " + Version);
@@ -4243,7 +4243,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (Version >= 3) ret = (long)GetAddressAt(HostOffset(22, 5));
                 else Debug.Assert(false, "PinnedAllocatedAdvance invalid Version : " + Version);
@@ -4257,7 +4257,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version >= 3) ret = GetInt32At(HostOffset(26, 6));
                 else Debug.Assert(false, "RunningFreeListEfficiency invalid Version : " +Version);
@@ -4274,7 +4274,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version == 0 && (MinorVersion == 0 || MinorVersion == 1)) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 3);
                 else if (Version == 0 && MinorVersion == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 4);
@@ -4293,7 +4293,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int));
                 else if (Version >= 3) ret = GetInt32At(HostOffset(34, 6));
@@ -4367,7 +4367,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version == 0) ret = GetInt32At(EventDataLength - (sizeof(int) + sizeof(byte)));
                 else if (Version == 2 && (MinorVersion == 0 || MinorVersion == 1)) ret = GetInt32At(EventDataLength - (sizeof(int) + sizeof(Int16)));
@@ -4403,7 +4403,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version >= 3) ret = GetInt32At(HostOffset(54, 7));
                 else Debug.Assert(false, "Count invalid Version : " + Version);
@@ -4419,7 +4419,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                int ret = -1;
+                int ret = int.MinValue;
 
                 if (Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData);
                 else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(Int32) * 2);
@@ -4750,7 +4750,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[1];
                 else if (m_version >= 2) ret = m_genDataArray[3];
@@ -4768,7 +4768,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version >= 2) ret = (SizeBefore - FreeListSpaceBefore - FreeObjSpaceBefore);
                 else Debug.Assert(false, "ObjSpaceBefore invalid version : " + m_version);
@@ -4785,7 +4785,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[4];
                 else if (m_version >= 2) ret = (FreeListSpaceAfter + FreeObjSpaceAfter);
@@ -4816,7 +4816,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version >= 2) ret = m_genDataArray[1];
                 else Debug.Assert(false, "FreeListSpaceBefore invalid version : " + m_version);
@@ -4834,7 +4834,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
                 if (m_version >= 2) ret = m_genDataArray[2];
                 else Debug.Assert(false, "FreeObjSpaceBefore invalid version : " + m_version);
 
@@ -4851,7 +4851,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
                 if (m_version >= 2) ret = m_genDataArray[4];
                 else Debug.Assert(false, "FreeListSpaceAfter invalid version : " + m_version);
 
@@ -4868,7 +4868,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version >= 2) ret = m_genDataArray[5];
                 else Debug.Assert(false, "FreeObjSpaceAfter invalid version : " + m_version);
@@ -4885,7 +4885,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[5];
                 else if (m_version >= 2) ret = m_genDataArray[6];
@@ -4902,7 +4902,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[6];
                 else if (m_version == 2) ret = m_genDataArray[7];
@@ -4920,7 +4920,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[7];
                 else if (m_version == 2) ret = m_genDataArray[8];
@@ -4938,7 +4938,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version == 0) ret = m_genDataArray[8];
                 else if (m_version == 2) ret = m_genDataArray[9];
@@ -4958,7 +4958,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version >= 3) ret = m_genDataArray[7];
                 else Debug.Assert(false, "PinnedSurv invalid version : " + m_version);
@@ -4972,7 +4972,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             get
             {
-                long ret = -1;
+                long ret = long.MinValue;
 
                 if (m_version >= 3) ret = m_genDataArray[8];
                 else Debug.Assert(false, "NonePinnedSurv invalid version : " + m_version);
