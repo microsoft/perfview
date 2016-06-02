@@ -418,7 +418,7 @@ namespace Diagnostics.Tracing.StackSources
 				}
 			}
 
-			throw new Exception("Not a valid input file");
+			throw new FileNotFoundException("Invalid perf script file or no perf script file found in the specified archive.");
 		}
 
 		private double? SampleEndTime;
