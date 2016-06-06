@@ -1,6 +1,31 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="home.css">
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script> -->
+
+    <!-- Javascript Stuff -->
+
+    <!-- Still writing the following to fix main view height problems. -->
+    <!-- <script>
+    document.addEventListener("DOMContentLoaded", function(event) {
+      document.getElementById("main").style.height = recalculateMainSize();
+    })
+
+    $( window ).resize(function() {
+      $( "#main" ).css("height", recalculateMainSize());
+    });
+
+    function recalculateMainSize() {
+      var body = document.body,
+          html = document.documentElement;
+      var pageHeight = Math.max(body.scrollHeight, body.offsetHeight,
+                       html.clientHeight, html.scrollHeight, html.offsetHeight);
+      var navBarHeight = document.getElementsByClassName("nav")[0].offsetHeight;
+      var footerHeight = document.getElementsByClassName("footer")[0].offsetHeight;
+      console.log(pageHeight - (navBarHeight + footerHeight))
+      return pageHeight - (navBarHeight + footerHeight);
+    }
+    </script> -->
   </head>
 
   <body>
@@ -18,15 +43,34 @@
         <li><a href="#">Tutorial</a></li>
         <li><a href="#">Troubleshooting</a></li>
         <li><a href="#">FAQ</a></li>
+        <li><a href="#">Tips</a></li>
+        <li><a href="#">Video</a></li>
+        <li><a href="#">Feedback</a></li>
       </ul>
     </div>
 
     <div class="wrapper">
-      <div class="tree">
+      <div id="sideBarContainer">
+
+          <input id="dirSelect" list="directories" type="text">
+          <datalist id="directories">
+            <option value="dir0"/>
+            <option value="dir1"/>
+            <option value="dir2"/>
+          </datalist>
+
+
+        <div id="filterContainer">
+          <form action="#">
+            <a href="#">Filter</a>
+            <input type="text" name="fname" value="" onkeydown="">
+          </form>
+        </div>
+
         Tree Container
       </div>
 
-      <div class="main">
+      <div id="main">
         <p>Welcome to PerfView!
   PerfView is an application designed to simplify the collection and analysis of performance data.
   Pressing the F1 key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the User's Guide . If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the feedback instructions in the documentation.
@@ -54,12 +98,12 @@
     </wrapper>
 
 
-      <footer class="footer">
-        <div class="status">
+      <footer id="footer">
+        <div id="status">
           <span>Completed: View (Elapsed Time: 0.070 sec)</span>
         </div>
 
-        <div class="toggle">
+        <div id="toggle">
           <span>Ready</span>
           <a href="#">Log</a>
           <a href="#">Cancel</a>

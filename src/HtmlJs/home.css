@@ -5,7 +5,10 @@ body {
   margin: 0;
   display: flex;
   flex-direction: column;
+
+  font-family: Verdana, sans-serif;
 }
+
 
 
 /*
@@ -40,13 +43,20 @@ Nav Bar Views
   justify-content: flex-end;
 }
 
+.nav ul {
+  padding-left: .2em;
+}
+
 .nav #dropdownNav li a, .nav #helpfulLinks li a {
+  margin: 0;
   text-decoration: none;
+  font-family: Helvetica, sans-serif;
   display: block;
-  padding: .5em;
+  padding: .7em;
   color: white;
 }
 /*------------*/
+
 
 
 /*
@@ -62,15 +72,61 @@ Tree View and Main View
 }
 
 /* Tree View */
-.wrapper .tree {
+.wrapper #sideBarContainer {
   min-width: 20em;
   border-right-style: solid;
   border-right-color: deepskyblue;
 }
 
+/* Directory Selector and Filter */
+.wrapper #sideBarContainer #dirSelect {
+  margin: 0;
+  height: 2em;
+  background-color: darkgrey;
+}
+
+.wrapper #sideBarContainer #dirSelect {
+  background-color: white;
+  width: 100%;
+}
+
+.wrapper #sideBarContainer #dirSelect::-webkit-calendar-picker-indicator {
+  opacity: 100;
+}
+
+.wrapper #sideBarContainer #filterContainer {
+  height: 2em;
+  background-color: lightgrey;
+}
+
+.wrapper #sideBarContainer form {
+  display: flex;
+  padding-top: .3em;
+  margin-left: .2em;
+  margin-right: .2em;
+}
+
+.wrapper #sideBarContainer form a {
+  margin-right: .2em;
+}
+
+.wrapper #sideBarContainer form input {
+  flex-grow: 1;
+}
+
+/* Tree Hierarchy */
+
 /* Main View */
-.wrapper .main {
+.wrapper #main {
   flex-grow: 1;  /* TODO: May not need this since implementing '.wrapper' */
+  margin: 0;
+  padding: 0;
+  /*height: 100%;*/
+  /*overflow: auto;*/
+}
+
+.wrapper #main p {
+  margin: .3em;
 }
 /*--------------------*/
 
@@ -80,8 +136,9 @@ Tree View and Main View
 Footer View
 -----------
 */
-.footer {
+#footer {
   list-style: none;
+  font-family: Arial, Helvetica, sans-serif;
   margin: 0;
 
   background: deepskyblue;
@@ -92,20 +149,20 @@ Footer View
   height: 2em;
 }
 
-.footer .status {
+#footer #status {
   flex-grow: 1;
 }
 
-.footer .toggle {
+#footer #toggle {
   min-width: 17em;
 }
 
-.footer .status span {
+#footer #status span {
   line-height: 2em;
   margin-left: .2em;
 }
 
-.footer .toggle span {
+#footer #toggle span {
   line-height: 2em;
 }
 /*----------*/
