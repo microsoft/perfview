@@ -1,4 +1,4 @@
-#Setting Up *Without* a Fork with Visual Studio 2015 
+#Setting Up *Without* a Fork with Visual Studio 2015
 
  * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material. 
  * See also [Open Source GitHub Setup and Workflow](OpenSourceGitWorkflow.md) for the setup needed for pull requests.  
