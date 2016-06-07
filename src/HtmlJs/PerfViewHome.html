@@ -4,32 +4,32 @@
     <link rel="stylesheet" type="text/css" href="home.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
 
-    <!-- Allows for resizing of #main if there is too much text.
+    <!-- Allows for resizing of #welcome if there is too much text.
     This is unfortunately how it has to be done. Even Facebook.com has
     to do something like this for their footer (chat windows) bar. -->
     <script>
-    var navBar, footer;
+      var navBar, footer;
 
-    function initialPageResize() {
-      navBar = document.getElementsByClassName("nav")[0];
-      footer = document.getElementById("footer");
-      $("#main").css("height", calculateMainSize());
-    }
-    window.onload = initialPageResize;
+      /* Try to avoid constantly traversing the DOM as much as we can. */
+      function initVars() {
+        navBar = document.getElementsByClassName("nav")[0];
+        footer = document.getElementById("footer");
+        resizeWelcomeDiv();
+      }
 
-    $(window).resize(function() {
-      $("#main").css("height", calculateMainSize());
-    });
+      function resizeWelcomeDiv() {
+        var pageHeight = $(window).height();
+        navBarHeight = navBar.offsetHeight;
+        footerHeight = footer.offsetHeight;
 
-    function calculateMainSize() {
-      var pageHeight = $(window).height();
-      var navBarHeight = navBar.offsetHeight;
-      var footerHeight = footer.offsetHeight;
+        var result = pageHeight - (navBarHeight + footerHeight);
 
-      var result = pageHeight - (navBarHeight + footerHeight);
-      // console.log("pageHeight - (navBarHeight + footerHeight): " + pageHeight + " - (" + navBarHeight + " + " + footerHeight + ") = " + result);
-      return result;
-    }
+        // console.log("pageHeight - (navBarHeight + footerHeight): " + pageHeight + " - (" + navBarHeight + " + " + footerHeight + ") = " + result);
+        document.getElementById("welcome").style.height = result + "px";
+      }
+
+      window.onload = initVars;
+      window.onresize = resizeWelcomeDiv;
     </script>
   </head>
 
@@ -125,7 +125,7 @@
         Tree Container
       </div>
 
-      <div id="main">
+      <div id="welcome">
         <p>Welcome to PerfView!
   PerfView is an application designed to simplify the collection and analysis of performance data.
   Pressing the F1 key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the User's Guide . If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the feedback instructions in the documentation.

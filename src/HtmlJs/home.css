@@ -93,10 +93,10 @@ Nav Bar Views
 
 
 /*
-Tree View and Main View
+Tree View and Welcome View
 -----------------------
 */
-/* Wrapper for Tree View and Main View */
+/* Wrapper for Tree View and Welcome View */
 .wrapper {
   flex-grow: 1;
   margin: 0;
@@ -149,8 +149,8 @@ Tree View and Main View
 
 /* Tree Hierarchy */
 
-/* Main View */
-.wrapper #main {
+/* Welcome View */
+.wrapper #welcome {
   flex-grow: 1;  /* TODO: May not need this since implementing '.wrapper' */
   margin: 0;
   padding: 0;
@@ -158,7 +158,7 @@ Tree View and Main View
   overflow: auto;
 }
 
-.wrapper #main p {
+.wrapper #welcome p {
   margin: .3em;
 }
 /*--------------------*/
