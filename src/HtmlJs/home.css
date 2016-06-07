@@ -96,7 +96,7 @@ Nav Bar Views
 Tree View and Welcome View
 -----------------------
 */
-/* Wrapper for Tree View and Welcome View */
+/* Wrapper for Side Bar View and Welcome View */
 .wrapper {
   flex-grow: 1;
   margin: 0;
@@ -104,10 +104,10 @@ Tree View and Welcome View
   flex-direction: row;
 }
 
-/* Tree View */
 .wrapper #sideBarContainer {
   min-width: 20em;
   border-right-style: solid;
+  border-right-width: .15em;
   border-right-color: deepskyblue;
 }
 
@@ -120,7 +120,9 @@ Tree View and Welcome View
 
 .wrapper #sideBarContainer #dirSelect {
   background-color: white;
-  width: 100%;
+  width: 99%;
+  margin: 0;
+  padding: 0;
 }
 
 .wrapper #sideBarContainer #dirSelect::-webkit-calendar-picker-indicator {
@@ -148,6 +150,9 @@ Tree View and Welcome View
 }
 
 /* Tree Hierarchy */
+.wrapper #treeContainer {
+  /*background: grey;*/
+}
 
 /* Welcome View */
 .wrapper #welcome {
