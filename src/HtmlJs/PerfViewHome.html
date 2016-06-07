@@ -1,31 +1,36 @@
+<!DOCTYPE html>
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="home.css">
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
 
-    <!-- Javascript Stuff -->
+    <!-- Allows for resizing of #main if there is too much text.
+    This is unfortunately how it has to be done. Even Facebook.com has
+    to do something like this for their footer (chat windows) bar. -->
+    <script>
+    var navBar, footer;
 
-    <!-- Still writing the following to fix main view height problems. -->
-    <!-- <script>
-    document.addEventListener("DOMContentLoaded", function(event) {
-      document.getElementById("main").style.height = recalculateMainSize();
-    })
+    function initialPageResize() {
+      navBar = document.getElementsByClassName("nav")[0];
+      footer = document.getElementById("footer");
+      $("#main").css("height", calculateMainSize());
+    }
+    window.onload = initialPageResize;
 
     $(window).resize(function() {
-      $("#main").css("height", recalculateMainSize());
+      $("#main").css("height", calculateMainSize());
     });
 
-    function recalculateMainSize() {
-      var body = document.body,
-          html = document.documentElement;
-      var pageHeight = Math.max(body.scrollHeight, body.offsetHeight,
-                       html.clientHeight, html.scrollHeight, html.offsetHeight);
-      var navBarHeight = document.getElementsByClassName("nav")[0].offsetHeight;
-      var footerHeight = document.getElementsByClassName("footer")[0].offsetHeight;
-      console.log(pageHeight - (navBarHeight + footerHeight))
-      return pageHeight - (navBarHeight + footerHeight);
+    function calculateMainSize() {
+      var pageHeight = $(window).height();
+      var navBarHeight = navBar.offsetHeight;
+      var footerHeight = footer.offsetHeight;
+
+      var result = pageHeight - (navBarHeight + footerHeight);
+      // console.log("pageHeight - (navBarHeight + footerHeight): " + pageHeight + " - (" + navBarHeight + " + " + footerHeight + ") = " + result);
+      return result;
     }
-    </script> -->
+    </script>
   </head>
 
   <body>
@@ -88,7 +93,7 @@
         </li>
       </ul>
 
-      <ul class="navItems" id="helpfulLinks">
+      <ul class="navItems helpfulLinks">
         <li><a href="#">Main View Help</a></li>
         <li><a href="#">Tutorial</a></li>
         <li><a href="#">Troubleshooting</a></li>
