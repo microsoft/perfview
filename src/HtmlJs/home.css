@@ -21,7 +21,7 @@ Nav Bar Views
   display: flex;
 }
 
-/* Wrapper for dropdownNav and helpfulLinks */
+/* Wrapper for Dropdown Navbar and Helpful Links */
 .nav .navItems {
   margin: 0;
   list-style: none;
@@ -32,28 +32,53 @@ Nav Bar Views
   flex-flow: row nowrap;
 }
 
-.nav #dropdownNav {
+.nav .top-level-dropdown {
   margin: 0;
+  padding: 0;
+  list-style: none;
   flex-grow: 1;
   justify-content: flex-start;
-}
-
-.nav #helpfulLinks {
-  margin: 0;
-  justify-content: flex-end;
 }
 
 .nav ul {
   padding-left: .2em;
 }
 
-.nav #dropdownNav li a, .nav #helpfulLinks li a {
+.nav .top-level-dropdown a, .nav #helpfulLinks a {
   margin: 0;
   text-decoration: none;
+  white-space: nowrap;
   font-family: Helvetica, sans-serif;
   display: block;
   padding: .7em;
   color: white;
+  display: block;
+}
+
+.nav .top-level-dropdown a:hover { color: #000000; }
+.nav .top-level-dropdown > li:hover { background: #CCCCCC; }
+
+.nav .top-level-dropdown li:hover > ul {
+  display: inline;
+}
+
+.nav .second-level-dropdown {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: none;
+  position: fixed;
+}
+
+.nav .second-level-dropdown > li {
+  background: #999999;
+}
+
+.nav .second-level-dropdown > li:hover { background: #CCCCCC; }
+
+.nav #helpfulLinks {
+  margin: 0;
+  justify-content: flex-end;
 }
 /*------------*/
 
