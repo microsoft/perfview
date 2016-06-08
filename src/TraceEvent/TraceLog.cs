@@ -1070,10 +1070,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
 
             var ClrRundownParser = new ClrRundownTraceEventParser(rawEvents);
-            ClrRundownParser.LoaderModuleDCStop += delegate (ModuleLoadUnloadTraceData data)
+            Action< ModuleLoadUnloadTraceData> onLoaderRundown = delegate(ModuleLoadUnloadTraceData data)
             {
                 this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
             };
+
+            ClrRundownParser.LoaderModuleDCStop += onLoaderRundown;
+            ClrRundownParser.LoaderModuleDCStart += onLoaderRundown;
 
             Action<MethodLoadUnloadVerboseTraceData> onMethodStart = delegate (MethodLoadUnloadVerboseTraceData data)
                 {
