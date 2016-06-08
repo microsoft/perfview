@@ -101,7 +101,17 @@
         </div>
 
         <div id="treeContainer">
-          Tree Container
+          <ul class="mktree" id="mainTree">
+            <li>item 1</li>
+            <li>item 2</li>
+            <li id="folder1">Folder 1
+              <ul>
+                <li>sub-item 1</li>
+                <li>sub-item 2</li>
+              </ul>
+            </li>
+            <li>item 3</li>
+          </ul>
         </div>
       </div>
 
@@ -202,5 +212,11 @@
           basicContext.show(items, e)
         })
       </script>
+
+      <!-- MKTREE Library -->
+      <script type="text/javascript" src="mktree/mktree.js"></script>
+      <link rel="stylesheet" href="mktree/mktree.css" type="text/css">
+
+      <script>expandToItem('mainTree', 'folder1')</script>
   </body>
 </html>
