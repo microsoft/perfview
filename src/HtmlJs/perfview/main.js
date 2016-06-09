@@ -1,14 +1,14 @@
-const electron = require('electron')
-
-const {app} = electron;
-
-const {BrowserWindow} = electron;
+var app = require('electron').app
+const BrowserWindow = require('electron').BrowserWindow;
+// var ejs = require('ejs');
 
 
 
 let win;
+var basicContext = require('basiccontext');
 
 function createWindow() {
+
   win = new BrowserWindow({width: 800, height: 600});
 
   win.loadURL('file://' + __dirname + '/index.html');

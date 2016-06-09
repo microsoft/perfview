@@ -190,10 +190,13 @@
       </script>
 
       <!-- basicContext Library -->
-      <script src="node_modules/basiccontext/dist/basicContext.min.js"></script>
+      <!-- <script src="node_modules/basiccontext/dist/basicContext.min.js"></script> -->
 
       <!-- basicContext Menu Test -->
       <script>
+        var remote = require("electron").remote;
+        var basicContext = remote.require('basiccontext');
+
         document.querySelector('#treeContainer').addEventListener('contextmenu', function(e) {
           var clicked = function() { alert('Item clicked!') }
           let items = [
