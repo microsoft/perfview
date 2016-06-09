@@ -1,0 +1,17 @@
+{
+  "name": "perfview",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "basiccontext": "^3.5.1"
+  },
+  "devDependencies": {
+    "electron-prebuilt": "^1.2.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kaelin D. Hooper",
+  "license": "ISC"
+}
