@@ -5,7 +5,6 @@ const BrowserWindow = require('electron').BrowserWindow;
 
 
 let win;
-var basicContext = require('basiccontext');
 
 function createWindow() {
 
