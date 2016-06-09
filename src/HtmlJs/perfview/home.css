@@ -26,7 +26,7 @@ Nav Bar Views
   margin: 0;
   list-style: none;
   margin: 0;
-  background-color: deepskyblue;
+  background-color: #1e90ff;
 
   display: flex;
   flex-flow: row nowrap;
@@ -112,7 +112,7 @@ Tree View and Welcome View
   min-width: 20em;
   border-right-style: solid;
   border-right-width: .15em;
-  border-right-color: deepskyblue;
+  border-right-color: #1e90ff;
 }
 
 /* Directory Selector and Filter */
@@ -182,10 +182,11 @@ Footer View
 #footer {
   list-style: none;
   font-family: Arial, Helvetica, sans-serif;
+  color: white;
   font-size: .9em;
   margin: 0;
 
-  background: deepskyblue;
+  background: #1e90ff;
 
   display: flex;
   flex-flow: row;
