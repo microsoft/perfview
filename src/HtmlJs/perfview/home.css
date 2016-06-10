@@ -53,7 +53,6 @@ Nav Bar Views
   text-decoration: none;
   white-space: nowrap;
   font-family: Helvetica, sans-serif;
-  display: block;
   padding: .7em;
   color: white;
   display: block;
@@ -169,6 +168,7 @@ Tree View and Welcome View
 }
 
 .wrapper #welcome p {
+  font-size: .9em;
   margin: .3em;
 }
 /*--------------------*/
