@@ -1,6 +1,5 @@
 var app = require('electron').app
 const BrowserWindow = require('electron').BrowserWindow;
-// var ejs = require('ejs');
 
 
 

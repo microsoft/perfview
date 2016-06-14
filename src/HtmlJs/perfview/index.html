@@ -12,75 +12,7 @@
   </head>
 
   <body>
-
-    <div class="nav">
-      <ul class="navItems top-level-dropdown">
-        <li>
-          <a href="#">File</a>
-          <ul class="second-level-dropdown">
-            <li><a href="#">Help</a></li>
-            <li><a href="#">Clear Temp Files</a></li>
-            <li><a href="#">Clear User Config</a></li>
-            <li><a href="#">Set Symbol Path</a></li>
-            <li><a href="#">User Command</a></li>
-            <li><a href="#">Exit</a></li>
-          </ul>
-        </li>
-        <li>
-          <a href="#">Collect</a>
-          <ul class="second-level-dropdown">
-            <li><a href="#">Run</a></li>
-            <li><a href="#">Collect</a></li>
-            <li><a href="#">Abort</a></li>
-            <li><a href="#">Merge</a></li>
-          </ul>
-        </li>
-        <li>
-          <a href="#">Memory</a>
-          <ul class="second-level-dropdown">
-            <li><a href="#">Take Heap Snapshot</a></li>
-            <li><a href="#">Take Heap Snapshot From Dump</a></li>
-          </ul>
-        </li>
-        <li>
-          <a href="#">Size</a>
-          <ul class="second-level-dropdown">
-            <li><a href="#">Directory Size</a></li>
-            <li><a href="#">Image Size</a></li>
-          </ul>
-        </li>
-        <li>
-          <a href="#">Help</a>
-          <ul class="second-level-dropdown">
-            <li><a href="#">Help on Main View</a></li>
-            <li><a href="#">Users Guide</a></li>
-            <li><a href="#">Getting Started Videos</a></li>
-            <li><a href="#">Get the Latest Version</a></li>
-            <li><a href="#">Give Feedback or Ask a Question</a></li>
-            <li><a href="#">Reference Guide</a></li>
-            <li><a href="#">Command Line Help</a></li>
-            <li><a href="#">User Command Help</a></li>
-            <li><a href="#">Multi-Scenarios Analysis</a></li>
-            <li><a href="#">Extending Perfview</a></li>
-            <li><a href="#">Viewing Linux Data</a></li>
-            <li><a href="#">Viewing External Data</a></li>
-            <li><a href="#">Using EventSources</a></li>
-            <li><a href="#">Release Notes</a></li>
-            <li><a href="#">About</a></li>
-          </ul>
-        </li>
-      </ul>
-
-      <ul class="navItems helpfulLinks">
-        <li><a href="#">Main View Help</a></li>
-        <li><a href="#">Tutorial</a></li>
-        <li><a href="#">Troubleshooting</a></li>
-        <li><a href="#">FAQ</a></li>
-        <li><a href="#">Tips</a></li>
-        <li><a href="#">Video</a></li>
-        <li><a href="#">Feedback</a></li>
-      </ul>
-    </div>
+    <div class="nav"></div>
 
     <div class="wrapper">
       <div id="sideBarContainer">
@@ -166,23 +98,34 @@
     </div>
 
 
-      <footer id="footer">
-        <div id="status">
-          <span>Completed: View (Elapsed Time: 0.070 sec)</span>
-        </div>
-
-        <div id="toggle">
-          <span>Ready</span>
-          <a href="#">Log</a>
-          <a href="#">Cancel</a>
-        </div>
-      </footer>
+      <footer id="footer"></footer>
 
 
 
       <!-- ****************** SCRIPTS BELOW ****************** -->
 
 
+
+      <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+
+      <!-- Let's get some jQuery going here. -->
+      <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+      <!-- alternate require method that works for Electron
+      <script>window.$ = window.jQuery = require('./libraries/jquery-3.0.0.min.js')</script> -->
+
+      <!-- Template Including -->
+      <script>
+        $.get('templates/navbar.html', function(data) {
+          var template = $(data).children();
+          $('.nav').append(template);
+        });
+
+        $.get('templates/footer.html', function(data) {
+          var template = $(data).children();
+          $('#footer').append(template);
+        })
+      </script>
 
       <!-- Allows for resizing of #welcome if there is too much text.
       This is unfortunately how it has to be done. Even Facebook.com has
@@ -214,12 +157,11 @@
 
       <!-- basicContext Library -->
       <script src="node_modules/basiccontext/dist/basicContext.min.js"></script>
+      <!-- alternate require method that works for Electron
+      <script>window.basicContext = require('./node_modules/basiccontext/dist/basicContext.min.js')</script> -->
 
       <!-- basicContext Menu Test -->
       <script>
-        // var remote = require("electron").remote;
-        // var basicContext = remote.require('basiccontext');
-
         document.querySelector('#treeContainer').addEventListener('contextmenu', function(e) {
           var clicked = function() { alert('Item clicked!') }
           let items = [
@@ -244,5 +186,7 @@
       <link rel="stylesheet" href="mktree/mktree.css" type="text/css">
 
       <script>expandToItem('mainTree')</script>
+
+      <script>if (window.module) module = window.module;</script>
   </body>
 </html>
