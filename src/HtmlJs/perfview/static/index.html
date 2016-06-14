@@ -4,10 +4,10 @@
     <link rel="stylesheet" type="text/css" href="home.css">
 
     <!-- basicContext Library -->
-    <link rel="stylesheet" href="node_modules/basiccontext/dist/basicContext.min.css">
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
     <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
-    <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/bright.min.css">
-    <link rel="stylesheet" href="node_modules/basiccontext/dist/addons/popin.min.css">
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
     <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
   </head>
 
@@ -105,12 +105,14 @@
       <!-- ****************** SCRIPTS BELOW ****************** -->
 
 
-
+      <!-- Do NOT Delete
+      This allows for script tags and requires('') to work both in the browser and i Electron -->
       <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
 
 
+
       <!-- Let's get some jQuery going here. -->
-      <script type = "text/javascript" src = "./node_modules/jquery/dist/jquery.min.js"></script>
+      <script type = "text/javascript" src = "../node_modules/jquery/dist/jquery.min.js"></script>
       <!-- alternate require method that works for Electron
       <script>window.$ = window.jQuery = require('./node_modules/jquery/dist/jquery.min.js')</script> -->
 
@@ -156,7 +158,7 @@
       </script>
 
       <!-- basicContext Library -->
-      <script src="node_modules/basiccontext/dist/basicContext.min.js"></script>
+      <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
       <!-- alternate require method that works for Electron
       <script>window.basicContext = require('./node_modules/basiccontext/dist/basicContext.min.js')</script> -->
 
@@ -182,11 +184,15 @@
       </script>
 
       <!-- MKTREE Library -->
-      <script type="text/javascript" src="mktree/mktree.js"></script>
-      <link rel="stylesheet" href="mktree/mktree.css" type="text/css">
+      <script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
+      <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">
 
       <script>expandToItem('mainTree')</script>
 
+
+
+      <!-- Do NOT Delete
+      This allows for script tags and requires('') to work both in the browser and i Electron -->
       <script>if (window.module) module = window.module;</script>
   </body>
 </html>
