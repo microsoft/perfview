@@ -82,11 +82,12 @@ Nav Bar Views
 .nav .helpfulLinks {
   margin: 0;
   justify-content: flex-end;
+  text-decoration: underline;
 }
 
-.nav .helpfulLinks li:hover {
+/*.nav .helpfulLinks li:hover {
   background: #CCCCCC;
-}
+}*/
 
 .nav .helpfulLinks li a:hover {
   color: #000000;
