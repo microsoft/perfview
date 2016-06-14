@@ -4,7 +4,8 @@
   "description": "",
   "main": "main.js",
   "dependencies": {
-    "basiccontext": "^3.5.1"
+    "basiccontext": "^3.5.1",
+    "jquery": "^3.0.0"
   },
   "devDependencies": {
     "electron-prebuilt": "^1.2.2"
