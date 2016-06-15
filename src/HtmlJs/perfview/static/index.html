@@ -34,40 +34,7 @@
 
         <div id="treeContainer">
           <ul class="mktree" id="mainTree">
-            <li>item 1</li>
-            <li>item 2</li>
-            <li id="folder1">Folder 1
-              <ul>
-                <li>sub-item 1</li>
-                <li>sub-item 2</li>
-              </ul>
-            </li>
-            <li>item 3</li>
-            <li id="folder2">Folder 2
-              <ul>
-                <li>sub-item 1</li>
-                <li>sub-item 2</li>
-              </ul>
-            </li>
-            <li id="folder3">Folder 3
-              <ul>
-                <li>sub-item 1</li>
-                <li>sub-item 2</li>
-                <li id="folder3">Folder 4
-                  <ul>
-                    <li>sub-item 1</li>
-                    <li>sub-item 2</li>
-                    <li>sub-item 3</li>
-                    <li>sub-item 4</li>
-                    <li>sub-item 5</li>
-                  </ul>
-                </li>
-              </ul>
-            </li>
-            <li>item 4</li>
-            <li>item 5</li>
-            <li>item 6</li>
-            <li>item 7</li>
+
           </ul>
         </div>
       </div>
@@ -157,6 +124,7 @@
         window.onresize = resizeWelcomeDiv;
       </script>
 
+
       <!-- basicContext Library -->
       <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
       <!-- alternate require method that works for Electron
@@ -183,11 +151,61 @@
         })
       </script>
 
+
       <!-- MKTREE Library -->
       <script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
       <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">
 
-      <script>expandToItem('mainTree')</script>
+
+      <!-- GET Tree View Hierarchy -->
+      <script>
+        // Reusable useful GET request method
+        function httpGet(url, callback) {
+          var xmlHttp = new XMLHttpRequest();
+          xmlHttp.onreadystatechange = function() {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+              callback(xmlHttp.responseText);
+            }
+          }
+          xmlHttp.open("GET", url, true);
+          xmlHttp.send(null);
+        }
+
+        // GET all directories and items and append them to tree view
+        $(document).ready( function() {
+          treeView = httpGet("http://localhost:5000/api/data/open", function (response) {
+            var tree = JSON.parse(response);
+            items = tree.items;
+            var htmlFromJSON = createTreeFromJSON(items);
+            $("#mainTree").append(htmlFromJSON);
+          });
+        });
+
+        // Recursively parse JSON tree
+        function createTreeFromJSON(items) {
+          var htmlToAppend = "";
+          for (var i = 0; i < items.length; ++i) {
+            var item = items[i];
+
+            if (item.type == "dir"
+            || item.type == "directory"
+            || item.type == "file"
+            || item.type == "folder") {
+              // It's a file
+              htmlToAppend += "<li>" + item.name
+                             + "<ul>\n"
+                             +   createTreeFromJSON(item.items)
+                             + "\n</ul>\n" +
+                             "</li>";
+            } else {
+              // It's an item
+              htmlToAppend += "<li>" + item.name + "</li>";
+            }
+          }
+
+          return htmlToAppend;
+        }
+      </script>
 
 
 

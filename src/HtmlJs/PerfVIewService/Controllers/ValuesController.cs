@@ -13,9 +13,9 @@ namespace PerfViewService.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] { "Item1", "Item2" };
         }
-
+         
         // GET api/values/5
         [HttpGet("{id}")]
         public string Get(int id)
