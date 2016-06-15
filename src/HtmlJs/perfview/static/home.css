@@ -195,7 +195,7 @@ Footer View
   height: 2em;
 }
 
-#footer #status {
+#footer #statusBar {
   flex-grow: 1;
 }
 
@@ -203,7 +203,7 @@ Footer View
   min-width: 17em;
 }
 
-#footer #status span {
+#footer #statusBar span {
   line-height: 2em;
   margin-left: .7em;
 }

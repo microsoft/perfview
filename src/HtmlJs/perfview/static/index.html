@@ -83,6 +83,7 @@
       <!-- alternate require method that works for Electron
       <script>window.$ = window.jQuery = require('./node_modules/jquery/dist/jquery.min.js')</script> -->
 
+
       <!-- Template Including -->
       <script>
         $.get('templates/navbar.html', function(data) {
@@ -95,6 +96,10 @@
           $('#footer').append(template);
         })
       </script>
+
+
+      <script src="../js/Delegate.js"></script>
+
 
       <!-- Allows for resizing of #welcome if there is too much text.
       This is unfortunately how it has to be done. Even Facebook.com has
@@ -159,31 +164,21 @@
 
       <!-- GET Tree View Hierarchy -->
       <script>
-        // Reusable useful GET request method
-        function httpGet(url, callback) {
-          var xmlHttp = new XMLHttpRequest();
-          xmlHttp.onreadystatechange = function() {
-            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-              callback(xmlHttp.responseText);
-            }
-          }
-          xmlHttp.open("GET", url, true);
-          xmlHttp.send(null);
-        }
-
         // GET all directories and items and append them to tree view
         $(document).ready( function() {
-          treeView = httpGet("http://localhost:5000/api/data/open", function (response) {
+          treeView = delegate.httpGet("http://localhost:5000/api/data/open", function (response) {
             var tree = JSON.parse(response);
             items = tree.items;
             var htmlFromJSON = createTreeFromJSON(items);
             $("#mainTree").append(htmlFromJSON);
+            delegate.log("Completed: View");
           });
         });
 
         // Recursively parse JSON tree
         function createTreeFromJSON(items) {
           var htmlToAppend = "";
+
           for (var i = 0; i < items.length; ++i) {
             var item = items[i];
 
