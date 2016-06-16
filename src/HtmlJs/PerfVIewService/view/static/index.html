@@ -89,11 +89,13 @@
         $.get('templates/navbar.html', function(data) {
           var template = $(data).children();
           $('.nav').append(template);
+          resizeWelcomeDiv();
         });
 
         $.get('templates/footer.html', function(data) {
           var template = $(data).children();
           $('#footer').append(template);
+          resizeWelcomeDiv();
         })
       </script>
 

@@ -707,6 +707,22 @@
           "lib/netstandard1.3/Microsoft.AspNetCore.Server.Kestrel.dll": {}
         }
       },
+      "Microsoft.AspNetCore.StaticFiles/1.0.0-rc2-final": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.AspNetCore.Hosting.Abstractions": "1.0.0-rc2-final",
+          "Microsoft.AspNetCore.Http.Extensions": "1.0.0-rc2-final",
+          "Microsoft.Extensions.FileProviders.Abstractions": "1.0.0-rc2-final",
+          "Microsoft.Extensions.Logging.Abstractions": "1.0.0-rc2-final",
+          "Microsoft.Extensions.WebEncoders": "1.0.0-rc2-final"
+        },
+        "compile": {
+          "lib/netstandard1.3/Microsoft.AspNetCore.StaticFiles.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard1.3/Microsoft.AspNetCore.StaticFiles.dll": {}
+        }
+      },
       "Microsoft.AspNetCore.WebUtilities/1.0.0-rc2-final": {
         "type": "package",
         "dependencies": {
@@ -3749,6 +3765,18 @@
         "lib/net451/Microsoft.AspNetCore.Server.Kestrel.xml",
         "lib/netstandard1.3/Microsoft.AspNetCore.Server.Kestrel.dll",
         "lib/netstandard1.3/Microsoft.AspNetCore.Server.Kestrel.xml"
+      ]
+    },
+    "Microsoft.AspNetCore.StaticFiles/1.0.0-rc2-final": {
+      "sha512": "sTOQfVrjuwX7Z9ny974EkviHavMuAgsBi4D98kV1Hjbd5RgkWvkovr62tERxpxOT+6T6zRg4VTrb1L7IWhVFpg==",
+      "type": "package",
+      "files": [
+        "Microsoft.AspNetCore.StaticFiles.1.0.0-rc2-final.nupkg.sha512",
+        "Microsoft.AspNetCore.StaticFiles.nuspec",
+        "lib/net451/Microsoft.AspNetCore.StaticFiles.dll",
+        "lib/net451/Microsoft.AspNetCore.StaticFiles.xml",
+        "lib/netstandard1.3/Microsoft.AspNetCore.StaticFiles.dll",
+        "lib/netstandard1.3/Microsoft.AspNetCore.StaticFiles.xml"
       ]
     },
     "Microsoft.AspNetCore.WebUtilities/1.0.0-rc2-final": {
@@ -8839,6 +8867,7 @@
       "Microsoft.AspNetCore.Mvc >= 1.0.0-rc2-final",
       "Microsoft.AspNetCore.Server.IISIntegration >= 1.0.0-rc2-final",
       "Microsoft.AspNetCore.Server.Kestrel >= 1.0.0-rc2-final",
+      "Microsoft.AspNetCore.StaticFiles >= 1.0.0-rc2-final",
       "Microsoft.Extensions.Configuration.EnvironmentVariables >= 1.0.0-rc2-final",
       "Microsoft.Extensions.Configuration.FileExtensions >= 1.0.0-rc2-final",
       "Microsoft.Extensions.Configuration.Json >= 1.0.0-rc2-final",
