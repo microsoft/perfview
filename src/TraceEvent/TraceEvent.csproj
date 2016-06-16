@@ -91,7 +91,7 @@
     <Compile Include="Parsers\ApplicationServerTraceEventParser.cs" />
     <Compile Include="Parsers\ASPNetTraceEventParser.cs" />
     <Compile Include="Parsers\ClrPrivateTraceEventParser.cs" />
-    <Compile Include="Parsers\ClrTraceEventParser.cs" />
+    <Compile Include="Ctf\ClrTraceEventParser.cs" />
     <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
     <Compile Include="Parsers\Microsoft-Windows-Kernel-File.cs" />
     <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
