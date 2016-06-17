@@ -3077,7 +3077,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private bool truncated;     // stopped because the file was too large.  
         private int sampleProfileInterval100ns;
         private string machineName;
-        private TraceProcesses processes;
+        internal TraceProcesses processes;
         private TraceThreads threads;
         private TraceCallStacks callStacks;
         private TraceCodeAddresses codeAddresses;
@@ -4607,7 +4607,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// The amount of CPU time spent in this process based on the kernel CPU sampling events.   
         /// </summary>
-        public float CPUMSec { get { return (float)(cpuSamples * Log.SampleProfileInterval.TotalMilliseconds); } }
+        public float CPUMSec { get { return (float)(cpuSamples * (Log != null ? Log.SampleProfileInterval.TotalMilliseconds : 1)); } }
         /// <summary>
         /// Returns true if the process is a 64 bit process
         /// </summary>
@@ -4617,7 +4617,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 // We are 64 bit if any module was loaded high or
                 // (if we are on a 64 bit and there were no modules loaded, we assume we are the OS system process)
-                return loadedAModuleHigh || (!anyModuleLoaded && log.PointerSize == 8);
+                return loadedAModuleHigh || (!anyModuleLoaded && log != null && log.PointerSize == 8);
             }
         }
         /// <summary>
@@ -4688,13 +4688,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (Parent != null)
                 sb.Append("ParentPID=").Append(XmlUtilities.XmlQuote(Parent.ProcessID)).Append(" ");
             sb.Append("Exe=").Append(XmlUtilities.XmlQuote(Name)).Append(" ");
-            sb.Append("Start=").Append(XmlUtilities.XmlQuote(StartTimeRelativeMsec)).Append(" ");
-            sb.Append("End=").Append(XmlUtilities.XmlQuote(EndTimeRelativeMsec)).Append(" ");
+            if (log != null)
+                sb.Append("Start=").Append(XmlUtilities.XmlQuote(StartTimeRelativeMsec)).Append(" ");
+            if (log != null)
+                sb.Append("End=").Append(XmlUtilities.XmlQuote(EndTimeRelativeMsec)).Append(" ");
             if (ExitStatus.HasValue)
                 sb.Append("ExitStatus=").Append(XmlUtilities.XmlQuote(ExitStatus.Value)).Append(" ");
             sb.Append("CPUMSec=").Append(XmlUtilities.XmlQuote(CPUMSec)).Append(" ");
             sb.Append("Is64Bit=").Append(XmlUtilities.XmlQuote(Is64Bit)).Append(" ");
             sb.Append("CommandLine=").Append(XmlUtilities.XmlQuote(CommandLine)).Append(" ");
+            sb.Append("ImageName=").Append(XmlUtilities.XmlQuote(ImageFileName)).Append(" ");
             sb.Append("/>");
             return sb.ToString();
         }
@@ -4809,14 +4812,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal ProcessIndex processIndex;
         private TraceLog log;
 
-        private string commandLine;
+        internal string commandLine;
         internal string imageFileName;
         private string name;
         internal long firstEventSeenQPC;      // Sadly there are events before process start.   This is minimum of those times.  Note that there may be events before this 
         internal long startTimeQPC;
         internal long endTimeQPC;
         private int? exitStatus;
-        private int parentID;
+        internal int parentID;
         private TraceProcess parent;
 
         internal int cpuSamples;
