@@ -91,11 +91,11 @@
     <Compile Include="Parsers\ApplicationServerTraceEventParser.cs" />
     <Compile Include="Parsers\ASPNetTraceEventParser.cs" />
     <Compile Include="Parsers\ClrPrivateTraceEventParser.cs" />
-    <Compile Include="Ctf\ClrTraceEventParser.cs" />
+    <Compile Include="Parsers\ClrTraceEventParser.cs" />
     <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
     <Compile Include="Parsers\Microsoft-Windows-Kernel-File.cs" />
     <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
-    <Compile Include="CtfTraceEventSource.cs" />
+    <Compile Include="Ctf\CtfTraceEventSource.cs" />
     <Compile Include="Stacks\AggregateStackSource.cs" />
     <Compile Include="Stacks\FilterStacks.cs" />
     <Compile Include="Stacks\IndexMap.cs" />
