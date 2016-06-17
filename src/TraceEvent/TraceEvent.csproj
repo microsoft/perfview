@@ -75,6 +75,7 @@
     </Compile>
     <Compile Include="Computers\ActivityComputer.cs" />
     <Compile Include="Computers\GCReferenceComputer.cs" />
+    <Compile Include="Computers\ProcessComputer.cs" />
     <Compile Include="Computers\ServerRequestComputer.cs" />
     <Compile Include="Computers\StartStopActivityComputer.cs" />
     <Compile Include="Computers\TcpIpComputer.cs" />

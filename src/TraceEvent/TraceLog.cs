@@ -1131,6 +1131,21 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             rawEvents.Clr.MethodDCStopVerboseV2 += onMethodDCStop;
             ClrRundownParser.MethodDCStopVerbose += onMethodDCStop;
 
+            Action<RuntimeInformationTraceData> doAtRuntimeStart = delegate (RuntimeInformationTraceData data)
+            {
+                TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
+
+                process.clrRuntimeVersion = new Version(data.VMMajorVersion, data.VMMinorVersion, data.VMBuildNumber, data.VMQfeNumber);
+                process.ClrStartupFlags = data.StartupFlags;
+                // proxy for bitness, given we don't have a traceevent to pass through
+                process.loadedAModuleHigh = (data.RuntimeDllPath.ToLower().Contains("framework64"));
+
+                if (process.commandLine.Length == 0)
+                    process.commandLine = data.CommandLine;
+            };
+            ClrRundownParser.RuntimeStart += doAtRuntimeStart;
+            rawEvents.Clr.RuntimeStart += doAtRuntimeStart;
+
             var jScriptParser = new JScriptTraceEventParser(rawEvents);
 
             jScriptParser.AddCallbackForEvents<Microsoft.Diagnostics.Tracing.Parsers.JScript.SourceLoadUnloadTraceData>(
@@ -4607,7 +4622,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// The amount of CPU time spent in this process based on the kernel CPU sampling events.   
         /// </summary>
-        public float CPUMSec { get { return (float)(cpuSamples * Log.SampleProfileInterval.TotalMilliseconds); } }
+        public float CPUMSec { get { return (float)(cpuSamples * (Log != null ? Log.SampleProfileInterval.TotalMilliseconds : 1)); } }
         /// <summary>
         /// Returns true if the process is a 64 bit process
         /// </summary>
@@ -4617,9 +4632,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 // We are 64 bit if any module was loaded high or
                 // (if we are on a 64 bit and there were no modules loaded, we assume we are the OS system process)
-                return loadedAModuleHigh || (!anyModuleLoaded && log.PointerSize == 8);
+                return loadedAModuleHigh || (!anyModuleLoaded && log != null && log.PointerSize == 8);
             }
         }
+        /// <summary>
+        /// Returns the textual version of the .NET Framework
+        /// </summary>
+        public string ClrRuntimeVersion { get { return "V " + clrRuntimeVersion.Major + "." + clrRuntimeVersion.Minor + "." + clrRuntimeVersion.Build + "." + clrRuntimeVersion.Revision; } }
+        /// <summary>
+        /// Returns the .NET startup flags
+        /// </summary>
+        public StartupFlags ClrStartupFlags { get; internal set; }
         /// <summary>
         /// The log file associated with the process. 
         /// </summary>
@@ -4688,13 +4711,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (Parent != null)
                 sb.Append("ParentPID=").Append(XmlUtilities.XmlQuote(Parent.ProcessID)).Append(" ");
             sb.Append("Exe=").Append(XmlUtilities.XmlQuote(Name)).Append(" ");
-            sb.Append("Start=").Append(XmlUtilities.XmlQuote(StartTimeRelativeMsec)).Append(" ");
-            sb.Append("End=").Append(XmlUtilities.XmlQuote(EndTimeRelativeMsec)).Append(" ");
+            if (log != null)
+                sb.Append("Start=").Append(XmlUtilities.XmlQuote(StartTimeRelativeMsec)).Append(" ");
+            if (log != null)
+                sb.Append("End=").Append(XmlUtilities.XmlQuote(EndTimeRelativeMsec)).Append(" ");
             if (ExitStatus.HasValue)
                 sb.Append("ExitStatus=").Append(XmlUtilities.XmlQuote(ExitStatus.Value)).Append(" ");
             sb.Append("CPUMSec=").Append(XmlUtilities.XmlQuote(CPUMSec)).Append(" ");
             sb.Append("Is64Bit=").Append(XmlUtilities.XmlQuote(Is64Bit)).Append(" ");
             sb.Append("CommandLine=").Append(XmlUtilities.XmlQuote(CommandLine)).Append(" ");
+            sb.Append("ImageName=").Append(XmlUtilities.XmlQuote(ImageFileName)).Append(" ");
+            sb.Append("ClrRuntimeVersion=").Append(XmlUtilities.XmlQuote(ClrRuntimeVersion)).Append(" ");
+            sb.Append("ClrStartupFlags=").Append(XmlUtilities.XmlQuote(ClrStartupFlags)).Append(" ");
             sb.Append("/>");
             return sb.ToString();
         }
@@ -4758,6 +4786,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.commandLine = "";
             this.imageFileName = "";
             this.loadedModules = new TraceLoadedModules(this);
+            this.clrRuntimeVersion = new Version(0,0,0,0);
+            this.ClrStartupFlags = StartupFlags.None;
             // TODO FIX NOW ACTIVITIES: if this is only used during translation, we should not allocate it in the ctor
             this.scheduledActivityIdToActivityIndex = new Dictionary<Address, ActivityIndex>();
         }
@@ -4809,15 +4839,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal ProcessIndex processIndex;
         private TraceLog log;
 
-        private string commandLine;
+        internal string commandLine;
         internal string imageFileName;
         private string name;
         internal long firstEventSeenQPC;      // Sadly there are events before process start.   This is minimum of those times.  Note that there may be events before this 
         internal long startTimeQPC;
         internal long endTimeQPC;
         private int? exitStatus;
-        private int parentID;
+        internal int parentID;
         private TraceProcess parent;
+        internal Version clrRuntimeVersion;
 
         internal int cpuSamples;
         internal bool loadedAModuleHigh;    // Was any module loaded above 0x100000000?  (which indicates it is a 64 bit process)
