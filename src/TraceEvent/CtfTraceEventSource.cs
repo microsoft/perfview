@@ -80,11 +80,10 @@ namespace Microsoft.Diagnostics.Tracing
                 // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
                 CtfClock clock = _channels.First().Item2.Clocks.First();
 
-                var channels = new ChannelList(_channels);
-                if (channels.Count() == 0)
+                var firstChannel = (new ChannelList(_channels)).FirstOrDefault();
+                if (firstChannel == null)
                     throw new EndOfStreamException("No CTF Information found in ZIP file.");
-
-                long firstEventTimestamp = (long)channels.First().Current.Timestamp;
+                long firstEventTimestamp = (long)firstChannel.Current.Timestamp;
 
                 _QPCFreq = (long)clock.Frequency;
                 sessionStartTimeQPC = firstEventTimestamp;
