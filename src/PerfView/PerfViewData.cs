@@ -6120,9 +6120,16 @@ namespace PerfView
                 {
                     TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
                 }
-                catch (EndOfStreamException)        // Throws this if there is no CTF Information
+                catch (Exception e)        // Throws this if there is no CTF Information
                 {
-                    log.WriteLine("Trying to open CTF stream failed, no CTF information");
+                    if (e is EndOfStreamException)
+                        log.WriteLine("Warning: Trying to open CTF stream failed, no CTF (lttng) information");
+                    else
+                    {
+                        log.WriteLine("Error: Exception CTF conversion: {0}", e.ToString());
+                        log.WriteLine("[Error: exception while opening CTF (lttng) data.]");
+                    }
+
                     Debug.Assert(m_traceLog == null);
                     m_noTraceLogInfo = true;
                     return m_traceLog;
