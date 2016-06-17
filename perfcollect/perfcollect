@@ -1055,6 +1055,15 @@ ProcessArguments()
 		PrintUsage
 		exit 0
 	fi
+
+	# Set the action
+	action=$1
+
+	# Actions with no arguments.
+	if [ "$action" == "livetrace" ]
+	then
+		return
+	fi
 	
 	# Not enough arguments.
 	if [ "$#" -le "1" ]
@@ -1062,8 +1071,7 @@ ProcessArguments()
 		FatalError "Not enough arguments have been specified."
 	fi
 
-	# Set the action
-	action=$1
+	# Validate action name.
 	if [ "$action" != "collect" ] && [ "$action" != "view" ]
 	then
 		FatalError "Invalid action specified."
@@ -1159,7 +1167,13 @@ lttngSessionName=''
 lttngTraceDir=''
 CreateLTTngSession()
 {
-	output=`lttng create`
+	if [ "$action" == "livetrace" ]
+	then
+		output=`lttng create --live`
+	else
+		output=`lttng create`
+	fi
+
 	lttngSessionName=`echo $output | grep -o "Session.*created." | sed 's/\(Session \| created.\)//g'`
 	lttngTraceDir=`echo $output | grep -o "Traces.*" | sed 's/\(Traces will be written in \|\)//g'`
 }
@@ -1171,7 +1185,10 @@ SetupLTTngSession()
 	RunSilent "lttng add-context --userspace --type vtid"
 	RunSilent "lttng add-context --userspace --type procname"
 
-	if [ "$gcCollectOnly" == "1" ]
+	if [ "$action" == "livetrace" ]
+	then
+		RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:EventSource"
+	elif [ "$gcCollectOnly" == "1" ]
 	then
 		usePerf=0
 		EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
@@ -1512,7 +1529,7 @@ PrintUsage()
 	echo "For detailed collection and viewing steps, view this script in a text editor or viewer."
 	echo ""
 	echo "./perfcollect <action> <tracename>"
-	echo "Valid Actions: collect view install"
+	echo "Valid Actions: collect view livetrace install"
 	echo ""
 	echo "collect options:"
 	echo "By default, collection includes CPU samples collected every ms."
@@ -1523,6 +1540,9 @@ PrintUsage()
 	echo "	-processfilter	  : Filter data by the specified process name."
 	echo "	-graphtype	  : Specify the type of graph.  Valid values are 'caller' and 'callee'.  Default is 'callee'."
 	echo "	-viewer		  : Specify the data viewer.  Valid values are 'perf' and 'lttng'.  Default is 'perf'."
+	echo ""
+	echo "livetrace:"
+	echo "	Print EventSource events directly to the console.  Root privileges not required."
 	echo ""
 	echo "install:"
 	echo "	Useful for first-time setup.  Installs/upgrades perf_event and LTTng."
@@ -1647,6 +1667,19 @@ DoCollect()
 	EndCollect
 }
 
+DoLiveTrace()
+{
+	# Start the session
+	StartLTTngCollection
+
+	# View the event stream (until the user hits CTRL+C)
+	WriteStatus "Listening for events from LTTng.  Hit CTRL+C to stop."
+	$lttngcmd view
+
+	# Stop the LTTng sessoin
+	StopLTTngCollection
+}
+
 # $1 == Path to directory containing trace files
 PropSymbolsAndMapFilesForView()
 {
@@ -1745,4 +1778,7 @@ then
 elif [ "$action" == "view" ]
 then
 	DoView
+elif [ "$action" == "livetrace" ]
+then
+	DoLiveTrace
 fi
