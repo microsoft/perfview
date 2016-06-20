@@ -114,7 +114,7 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public void SetSymbolFile(string path)
 		{
-			this.SetSymbolFile(new ZipArchive(new FileStream(path, FileMode.Open)));
+            this.SetSymbolFile(ZipFile.OpenRead(path));
 		}
 
 		/// <summary>
