@@ -45,52 +45,64 @@ namespace Microsoft.Diagnostics.Tracing
         {
             _filename = fileName;
             _zip = ZipFile.Open(fileName, ZipArchiveMode.Read);
-
-            _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-            foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
+            bool success = false;
+            try
             {
-                CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
-                CtfMetadata metadata = new CtfMetadata(parser);
 
-                string path = Path.GetDirectoryName(metadataArchive.FullName);
-                _channels.AddRange(from entry in _zip.Entries
-                                   where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
-                                   select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
+                _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
+                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
+                {
+                    CtfMetadataLegacyParser parser = new CtfMetadataLegacyParser(metadataArchive.Open());
+                    CtfMetadata metadata = new CtfMetadata(parser);
 
-                pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
-            }
+                    string path = Path.GetDirectoryName(metadataArchive.FullName);
+                    _channels.AddRange(from entry in _zip.Entries
+                                       where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
+                                       select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
+
+                    pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
+                }
 
 
-            IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
-            TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
-            _header = (TraceEventNativeMethods.EVENT_RECORD*)mem;
+                IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
+                TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
+                _header = (TraceEventNativeMethods.EVENT_RECORD*)mem;
 
-            int processors = (from entry in _channels
-                              let filename = entry.Item1.FullName
-                              let i = filename.LastIndexOf('_')
-                              let processor = filename.Substring(i + 1)
-                              select int.Parse(processor)
-                             ).Max() + 1;
+                int processors = (from entry in _channels
+                                  let filename = entry.Item1.FullName
+                                  let i = filename.LastIndexOf('_')
+                                  let processor = filename.Substring(i + 1)
+                                  select int.Parse(processor)
+                                 ).Max() + 1;
 
-            numberOfProcessors = processors;
+                numberOfProcessors = processors;
 
-            // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
-            CtfClock clock = _channels.First().Item2.Clocks.First();
+                // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
+                CtfClock clock = _channels.First().Item2.Clocks.First();
 
-            long firstEventTimestamp = (long)new ChannelList(_channels).First().Current.Timestamp;
+                var firstChannel = (new ChannelList(_channels)).FirstOrDefault();
+                if (firstChannel == null)
+                    throw new EndOfStreamException("No CTF Information found in ZIP file.");
+                long firstEventTimestamp = (long)firstChannel.Current.Timestamp;
 
-            _QPCFreq = (long)clock.Frequency;
-            sessionStartTimeQPC = firstEventTimestamp;
-            _syncTimeQPC = firstEventTimestamp;
-            _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
+                _QPCFreq = (long)clock.Frequency;
+                sessionStartTimeQPC = firstEventTimestamp;
+                _syncTimeQPC = firstEventTimestamp;
+                _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
 
-            _eventMapping = InitEventMap();
-
+                _eventMapping = InitEventMap();
+                success = true;
 #if DEBUG
             //// Uncomment for debug output.
             //_debugOut = File.CreateText("debug.txt");
             //_debugOut.AutoFlush = true;
 #endif
+            }
+            finally
+            {
+                if (!success)
+                    Dispose();      // This closes the ZIP file we opened.  We don't want to leave it dangling.  
+            }
         }
 
         private static Dictionary<string, ETWMapping> InitEventMap()
@@ -577,7 +589,13 @@ namespace Microsoft.Diagnostics.Tracing
         protected override void Dispose(bool disposing)
         {
             if (disposing)
-                _zip.Dispose();
+            {
+                if (_zip != null)
+                {
+                    _zip.Dispose();
+                    _zip = null;
+                }
+            }
 
             // TODO
             //Marshal.FreeHGlobal(new IntPtr(_header));
