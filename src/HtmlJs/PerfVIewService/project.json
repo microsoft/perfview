@@ -13,7 +13,8 @@
     "Microsoft.Extensions.Configuration.Json": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final",
-    "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final"
+    "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final",
+    "TraceEventCore": "1.0.41"
   },
 
   "tools": {

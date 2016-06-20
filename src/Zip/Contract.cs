@@ -1,4 +1,8 @@
-﻿using System;
+﻿// If you are compiling for a .NET Runtime before V4.0 than you need to provide these stubs that 
+// define the Contract class.   
+#if PRE_V4_0
+
+using System;
 
 namespace System.Diagnostics.Contracts
 {
@@ -34,3 +38,5 @@ namespace System.Diagnostics.Contracts
 
 	}
 }
+
+#endif
