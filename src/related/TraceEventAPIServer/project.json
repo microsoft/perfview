@@ -11,7 +11,7 @@
     "Microsoft.Extensions.Logging": "1.0.0-*",
     "Microsoft.NETCore.App": {
       "type": "platform",
-      "version": "1.0.0-*"
+      "version": "1.0.0-rc2-3002702"    // TODO upgrade to 1.0.0 when .NET Core ships.  
     },
     "TraceEventCore": "1.0.41"
   },
