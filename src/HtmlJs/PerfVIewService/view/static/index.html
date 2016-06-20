@@ -168,9 +168,8 @@
       <script>
         // GET all directories and items and append them to tree view
         $(document).ready( function() {
-          treeView = delegate.httpGet("http://localhost:5000/api/data/open", function (response) {
-            var tree = JSON.parse(response);
-            items = tree.items;
+          treeView = delegate.httpGet("/api/data/open", function (response) {
+            items = response.items;
             var htmlFromJSON = createTreeFromJSON(items);
             $("#mainTree").append(htmlFromJSON);
             delegate.log("Completed: View");
