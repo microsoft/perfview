@@ -4594,7 +4594,7 @@ namespace PerfView
                 allocName = "Alloc >= 32768";
             return allocName;
         }
-#endregion
+        #endregion
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
@@ -5177,7 +5177,7 @@ namespace PerfView
         }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
 
-#region private
+        #region private
         /// <summary>
         /// See if the log has events from VS providers.  If so we should register the VS providers. 
         /// </summary>
@@ -5261,7 +5261,7 @@ namespace PerfView
         bool m_notifiedAboutLostEvents;
         bool m_notifiedAboutWin8;
         string m_extraTopStats;
-#endregion
+        #endregion
     }
 
     class WTPerfViewFile : PerfViewFile
@@ -5403,7 +5403,7 @@ namespace PerfView
             stackWindow.CallTreeTab.IsSelected = true;
         }
 
-#region private
+        #region private
         [Flags]
         enum PageProtection
         {
@@ -5471,7 +5471,7 @@ namespace PerfView
                 return string.Format("<MemoryNode Name=\"{0}\" Start=\"0x{1:x}\" Length=\"0x{2:x}\"/>", Details, Address, Size);
             }
 
-#region private
+            #region private
 
             private void Insert(MemoryNode newNode)
             {
@@ -5519,7 +5519,7 @@ namespace PerfView
                     ulong.TryParse(attrValue, out ret);
                 return ret;
             }
-#endregion
+            #endregion
         }
 
         class VMMapStackSource : InternStackSource
@@ -5623,7 +5623,7 @@ namespace PerfView
             StackSourceSample m_sample;
 
         }
-#endregion
+        #endregion
     }
 
     class PdbScopePerfViewFile : PerfViewFile
@@ -5825,7 +5825,7 @@ namespace PerfView
             }
         }
 
-#region private
+        #region private
 
         protected internal void OpenDump(TextWriter log)
         {
@@ -5973,7 +5973,7 @@ namespace PerfView
 
         internal protected GCHeapDump m_gcDump;
         string m_extraTopStats;
-#endregion
+        #endregion
     }
 
     public partial class LinuxPerfViewData : PerfViewFile
@@ -6060,10 +6060,10 @@ namespace PerfView
                     advanced.AddChild(new PerfViewJitStats(this));
             }
 
-            if(memory.Children.Count > 0)
+            if (memory.Children.Count > 0)
                 m_Children.Add(memory);
 
-            if(advanced.Children.Count > 0)
+            if (advanced.Children.Count > 0)
                 m_Children.Add(advanced);
 
             return null;
@@ -6096,6 +6096,9 @@ namespace PerfView
                 m_traceLog.Dispose();
                 m_traceLog = null;
             }
+            else if (m_noTraceLogInfo)
+                return null;
+
             var dataFileName = FilePath;
             var options = new TraceLogOptions();
             options.ConversionLog = log;
@@ -6107,59 +6110,42 @@ namespace PerfView
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
 
-            // But if there is a directory called EtwManifests exists, look in there instead. 
-            //var etwManifestDirPath = Path.Combine(Path.GetDirectoryName(dataFileName), "EtwManifests");
-            //if (Directory.Exists(etwManifestDirPath))
-            //options.ExplicitManifestDir = etwManifestDirPath;
-
-            //UnZipIfNecessary(ref dataFileName, log);
-
-            // If the etlx file exists, delete it so we can regenerate it.
-
             // Generate the etlx file path / name.
-            string etlxFile = dataFileName + ".etlx";
-            if (File.Exists(etlxFile))
+            string etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
+            if (!File.Exists(etlxFile) || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
             {
                 FileUtilities.ForceDelete(etlxFile);
-            }
+                log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
+                try
+                {
+                    TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
+                }
+                catch (Exception e)        // Throws this if there is no CTF Information
+                {
+                    if (e is EndOfStreamException)
+                        log.WriteLine("Warning: Trying to open CTF stream failed, no CTF (lttng) information");
+                    else
+                    {
+                        log.WriteLine("Error: Exception CTF conversion: {0}", e.ToString());
+                        log.WriteLine("[Error: exception while opening CTF (lttng) data.]");
+                    }
 
-            log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
-
-            try
-            {
-                TraceLog.CreateFromLttngTextDataFile(dataFileName, etlxFile, options);
-            }
-            catch (Exception ex)
-            {
-                log.WriteLine("Exception encountered when building the tracelog.");
-                log.WriteLine(ex.ToString());
-                m_traceLog = null;
-                return m_traceLog;
+                    Debug.Assert(m_traceLog == null);
+                    m_noTraceLogInfo = true;
+                    return m_traceLog;
+                }
             }
 
             var dataFileSize = "Unknown";
             if (File.Exists(dataFileName))
                 dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
-
             log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
 
-            try
-            {
-                m_traceLog = new TraceLog(etlxFile);
-
-                // Add some more parser that we would like.  
-                //new ETWClrProfilerTraceEventParser(m_traceLog);
-                //new MicrosoftWindowsNDISPacketCaptureTraceEventParser(m_traceLog);
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-
+            // Open the ETLX file.  
+            m_traceLog = new TraceLog(etlxFile);
             m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
             if (App.CommandLineArgs.UnsafePDBMatch)
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
-
             if (m_traceLog.Truncated)   // Warn about truncation.  
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -6170,9 +6156,10 @@ namespace PerfView
             return m_traceLog;
         }
 
-#region Private
+        #region Private
         TraceLog m_traceLog;
-#endregion
+        bool m_noTraceLogInfo;
+        #endregion
     }
 
     /// <summary>
@@ -6407,7 +6394,7 @@ namespace PerfView
             ConfigureAsEtwStackWindow(stackWindow, false, false);
         }
 
-#region private
+        #region private
 
         /// <summary>
         /// Search for scenario data files matching a pattern, and add them to a dictionary.
@@ -6549,7 +6536,7 @@ namespace PerfView
             return pathDict;
         }
 
-#endregion
+        #endregion
     }
 
     /// <summary>

@@ -396,7 +396,7 @@ namespace Diagnostics.Tracing.StackSources
 			archive = null;
 			if (path.EndsWith(".zip"))
 			{
-				archive = new ZipArchive(new FileStream(path, FileMode.Open));
+                archive = ZipFile.OpenRead(path);
 				ZipArchiveEntry foundEntry = null;
 
 				foreach (ZipArchiveEntry entry in archive.Entries)
