@@ -28,8 +28,17 @@ It is also a goal to allow this version to work in two scearios
 
 ## Architecture
 
-The basic 
+The basic architecture for the app is there are two processes 
 
+   1. One that acts as a 'back end' that acts as a data model.   
+    This has no user interface and communiates to the UI by 
+	passing back JSON encoding information in response to URLS
+	(that is a REST API)  This is responsible for all data.  
+	This code is written in C# and uses the .NET Runtime, and
+	is intended to reuse as much code as possible with the windows
+	version of PerfView.
+
+   2. A second process that 
 
 
 

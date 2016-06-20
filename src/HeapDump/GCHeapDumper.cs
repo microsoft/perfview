@@ -45,13 +45,10 @@ public class GCHeapDumper
     /// <param name="log"></param>
     public GCHeapDumper(TextWriter log)
     {
+        m_origLog = log;
         m_copyOfLog = new StringWriter();
-        m_log = new TeeTextWriter(m_copyOfLog, log);
-#if DEPENDENT_HANDLE
-        m_handles = new Dictionary<Address, NodeIndex>(100);
-#endif
-        m_children = new GrowableArray<NodeIndex>(2000);
-        m_graphTypeIdxForArrayType = new Dictionary<string, NodeTypeIndex>(100);
+        m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
+
         MaxDumpCountK = 250;
     }
 
@@ -662,7 +659,8 @@ public class GCHeapDumper
             session.CaptureState(ClrTraceEventParser.NativeProviderGuid,
                 (long)(ClrTraceEventParser.Keywords.GCHeapCollect));
         }
-        catch {
+        catch
+        {
             m_log.WriteLine("{0,5:n1}s: .NET Native Capture state failed. OK if this is not a .NET Native scenario.", sw.Elapsed.TotalSeconds);
         };
 
@@ -1059,323 +1057,355 @@ public class GCHeapDumper
     /// Dump tries to aggressively Detach from debugProcess (so if we are killed, it does 
     /// not bring down the debuggee).   When we have detached, we also null out debugProcess, 
     /// since it is now pretty useless.   
+    /// 
+    /// The resulting heap dump is in the m_gcHeapDump.MemoryGraph variable. 
     /// </summary>
     private void DumpDotNetHeapData(ClrHeap heap, ref ICorDebugProcess debugProcess, bool isDump)
     {
         // We retry if we run out of memory with smaller MaxNodeCount.  
-        for (int retryScale = 1; ; retryScale = retryScale * 2)
+        for (double retryScale = 1; ; retryScale = retryScale * 1.5)
         {
             try
             {
-                m_gotDotNetData = true;
-                m_copyOfLog.GetStringBuilder().Length = 0;  // Restart the copy
+                var curHeapSize = GC.GetTotalMemory(false);
+                m_log.WriteLine("DumpDotNetHeapData: Heap Size {0:n0} MB", curHeapSize/1000000.0);
+                DumpDotNetHeapDataWorker(heap, ref debugProcess, isDump, retryScale);
+                return;
+            }
+            catch (OutOfMemoryException e)
+            {
+                // Give up after trying a few times.  
+                if (retryScale > 10)
+                    throw;
+                // Thow away the log that we will put into the .gcdump file for this first round. 
+                m_copyOfLog = new StringWriter();
+                m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
 
-                m_log.WriteLine("Dumping GC heap, This process is a {0} bit process on a {1} bit OS",
-                    EnvironmentUtilities.Is64BitProcess ? "64" : "32",
-                    EnvironmentUtilities.Is64BitOperatingSystem ? "64" : "32");
-                m_dotNetHeap = heap;
+                long beforeGCMemSize = GC.GetTotalMemory(false);
+                m_gcHeapDump.MemoryGraph = null;        // Free most of the memory.  
+                GC.Collect();
+                long afterGCMemSize = GC.GetTotalMemory(false);
+                m_log.WriteLine("{0,5:f1}s: WARNING: Hit and Out of Memory Condition, retrying with a smaller MaxObjectCount", m_sw.Elapsed.TotalSeconds);
+                m_log.WriteLine("Stack: {0}",  e.StackTrace);
 
-                if (debugProcess != null && Freeze && !isDump)
-                {
-                    int isRunning;
-                    debugProcess.IsRunning(out isRunning);
-                    if (isRunning != 0)
-                    {
-                        m_log.WriteLine("freezing process.");
-                        debugProcess.Stop(5000);
-                    }
-                }
+                m_log.WriteLine("{0,5:f1}s: Dumper heap usage before {1:n0} MB after {2:n0} MB",
+                    m_sw.Elapsed.TotalSeconds, beforeGCMemSize/1000000.0, afterGCMemSize/1000000.0);
+            }
+        }
+    }
 
-                ulong totalGCSize = m_dotNetHeap.TotalHeapSize;
-                if (MaxDumpCountK < 10)   // Having fewer than 10K is probably wrong.    
-                    MaxDumpCountK = 10;
-                m_log.WriteLine("{0,5:f1}s: Size of heap = {1:f3} GB", m_sw.Elapsed.TotalSeconds, ((double)totalGCSize) / 1000000000.0);
-
-                /// We have an overhead of about 52 bytes per object (24 for the hash table, 28 for the rest)
-                /// we have 1GB in a 32 bit process 
-                m_maxNodeCount = 1000000000 / 52;       // 20 Meg objects;
-                if (EnvironmentUtilities.Is64BitOperatingSystem)
-                    m_maxNodeCount *= 3;                // We have 4GB instead of 2GB, so we 3GB instead of 1GB available for us to use in 32 bit processes = 60Meg objects
-
-                // On 64 bit process we are limited by the fact that the graph node is in a MemoryStream and its byte array is limited to 2 gig.  Most objects will
-                // be represented by 10 bytes in this array and we round this up to 16 = 128Meg
-                if (EnvironmentUtilities.Is64BitProcess)
-                {
-                    m_maxNodeCount = int.MaxValue / 16 - 11;      // Limited to 128Meg objects.  (We are limited by the size of the stream)
-                    m_log.WriteLine("In a 64 bit process.  Increasing the max node count to {0:f1} Meg", m_maxNodeCount / 1000000.0);
-                }
-                m_log.WriteLine("Implicitly limit the number of nodes to {0:f1} Meg to avoid arrays that are too large", m_maxNodeCount / 1000000.0);
-
-                // Can force it smaller in case our estimate is not good enough.  
-                var explicitMax = MaxNodeCountK * 1000;
-                if (0 < explicitMax)
-                {
-                    m_maxNodeCount = Math.Min(m_maxNodeCount, explicitMax);
-                    m_log.WriteLine("Explicit object count maximum {0:n0}, resulting max {1:n0}", explicitMax, m_maxNodeCount);
-                }
-
-                if (retryScale != 1)
-                {
-                    m_maxNodeCount = m_maxNodeCount / retryScale;
-                    m_log.WriteLine("We are retrying the dump so we scale the max by {0} to the value {1}", retryScale, m_maxNodeCount);
-                }
-
-                // We assume that object on average are 8 object pointers.      
-                int estimatedObjectCount = (int)(totalGCSize / ((uint)(8 * IntPtr.Size)));
-                m_log.WriteLine("Estimated number of objects = {0:n0}", estimatedObjectCount);
-
-                // We force the node count to be this max node count if we are within a factor of 2.  
-                // This insures that we don't have an issue where growing algorithms overshoot the amount
-                // of memory available and fail.   Note we do this on 64 bit too 
-                if (estimatedObjectCount >= m_maxNodeCount / 2)
-                {
-                    m_log.WriteLine("Limiting object count to {0:n0}", m_maxNodeCount);
-                    estimatedObjectCount = m_maxNodeCount + 2;
-                }
-
-                // Allocate a memory graph if we have not already.  
-                if (m_gcHeapDump.MemoryGraph == null)
-                    m_gcHeapDump.MemoryGraph = new MemoryGraph(estimatedObjectCount);
-                m_gcHeapDump.MemoryGraph.Is64Bit = EnvironmentUtilities.Is64BitProcess;
-
-                var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
-
-                ulong total = 0;
-                var ccwChildren = new GrowableArray<NodeIndex>();
-                m_log.WriteLine("A total of {0} segments.", m_dotNetHeap.Segments.Count);
-
-                // Get the GC Segments to dump
-                var gcHeapDumpSegments = new List<GCHeapDumpSegment>();
-                foreach (var seg in m_dotNetHeap.Segments)
-                {
-                    var gcHeapDumpSegment = new GCHeapDumpSegment();
-                    gcHeapDumpSegment.Start = seg.Start;
-                    gcHeapDumpSegment.End = seg.End;
-                    if (seg.IsLarge)
-                    {
-                        // Everything is Gen3 (large objects)
-                        gcHeapDumpSegment.Gen0End = seg.End;
-                        gcHeapDumpSegment.Gen1End = seg.End;
-                        gcHeapDumpSegment.Gen2End = seg.End;
-                        gcHeapDumpSegment.Gen3End = seg.End;
-                    }
-                    else
-                    {
-                        gcHeapDumpSegment.Gen0End = seg.End;
-                        gcHeapDumpSegment.Gen1End = seg.Gen0Start;
-                        gcHeapDumpSegment.Gen2End = seg.Gen1Start;
-                        gcHeapDumpSegment.Gen3End = seg.Start;
-                    }
-                    gcHeapDumpSegments.Add(gcHeapDumpSegment);
-
-                    total += seg.Length;
-                    m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M LOH:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.IsLarge);
-                }
-                m_log.WriteLine("Segment: Total {0,16} Length: {1,16:x} {2,11:n3}M", "", total, total / 1000000.0);
-
-                try
-                {
-                    m_log.WriteLine("{0,5:f1}s: Scanning Named GC roots", m_sw.Elapsed.TotalSeconds);
-                    // AddStaticAndLocalRoots(rootNode, debugProcess);
-
-                    // From here we don't use proc unless we are frozen, so we can detach aggressively
-                    if (debugProcess != null && !Freeze && !isDump)
-                    {
-                        m_log.WriteLine("{0,5:f1}s: Not frozen, Finished with roots.  Detaching the process", m_sw.Elapsed.TotalSeconds);
-                        TryDetach(ref debugProcess);
-                    }
-
-                    m_log.WriteLine("{0,5:f1}s: Scanning UNNAMED GC roots", m_sw.Elapsed.TotalSeconds);
-                    var rootsStartTimeMSec = m_sw.Elapsed.TotalMilliseconds;
-                    var getCCWDataNotImplemented = false; // THis happens on silverlight. 
-                                                          // Do the roots that don't have good names
-
-                    int numRoots = 0;
-                    foreach (ClrRoot root in m_dotNetHeap.EnumerateRoots(true))
-                    {
-                        // If there is a named root already then we assume that that root is the interesting one and we drop this one.  
-                        if (m_gcHeapDump.MemoryGraph.IsInGraph(root.Object))
-                            continue;
-
-                        // Skip weak roots.  
-                        if (root.Kind == Microsoft.Diagnostics.Runtime.GCRootKind.Weak)
-                            continue;
-
-                        numRoots++;
-                        if (numRoots % 1024 == 0)
-                            m_log.WriteLine("{0,5:f1}s: Scanned {1} roots.", m_sw.Elapsed.TotalSeconds, numRoots);
-
-                        string name = root.Name;
-                        if (name == "RefCount handle")
-                            name = "COM/WinRT Objects";
-                        else if (name == "local var" || name.EndsWith("handle", StringComparison.OrdinalIgnoreCase))
-                            name += "s";
-                        MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
-
-                        var type = heap.GetObjectType(root.Object);
-                        if (type != null && !getCCWDataNotImplemented)
-                        {
-                            // TODO FIX NOW, try clause is a hack because ccwInfo.* methods sometime throw.  
-                            // Also GetCCWData fails for silverlight
-                            try
-                            {
-                                var ccwInfo = type.GetCCWData(root.Object);
-                                if (ccwInfo != null)
-                                {
-                                    // TODO FIX NOW for some reason IUnknown is always 0
-                                    ulong comPtr = ccwInfo.IUnknown;
-                                    if (comPtr == 0)
-                                    {
-                                        var intfs = ccwInfo.Interfaces;
-                                        if (intfs != null && intfs.Count > 0)
-                                            comPtr = intfs[0].InterfacePointer;
-                                    }
-
-                                    // Create a CCW node that represents the COM object that has one child that points at the managed object.  
-                                    var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(comPtr);
-                                    var typeName = "[CCW";
-                                    var targetType = m_dotNetHeap.GetObjectType(root.Object);
-                                    if (targetType != null)
-                                        typeName += " for " + targetType.Name;
-                                    // typeName += " " + comPtrName + ":[0x" + comPtr.ToString("x");
-                                    typeName += " RefCnt: " + ccwInfo.RefCount + "]";
-                                    var ccwTypeIndex = GetTypeIndexForName(typeName, null, 200);
-                                    ccwChildren.Clear();
-                                    ccwChildren.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object));
-
-                                    if (comPtr != 0)
-                                        m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
-
-                                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
-                                    nodeToAddRootTo.AddChild(ccwNode);
-                                    continue;
-                                }
-                            }
-                            catch (NotImplementedException)
-                            {
-                                // getCCWDataNoImplemented not implemented on Silverlight.  don't keep trying.  
-                                getCCWDataNotImplemented = true;
-                            }
-                            catch (Exception e)
-                            {
-                                m_log.WriteLine("Caught exception {0} while fetching CCW information, treating as unknown root",
-                                    e.GetType().Name);
-                            }
-                        }
-
-                        if (name.StartsWith("static var"))
-                            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[static vars]");
-
-                        if (root.IsPinned && root.Kind == Microsoft.Diagnostics.Runtime.GCRootKind.LocalVar)
-                        {
-                            // Add pinned local vars to their own node
-                            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[Pinned local vars]");
-                        }
-                        else
-                        {
-                            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[" + name + "]");
-                        }
-                        nodeToAddRootTo.AddChild(m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object));
-                    }
-
+    private void DumpDotNetHeapDataWorker(ClrHeap heap, ref ICorDebugProcess debugProcess, bool isDump, double retryScale)
+    {
 #if DEPENDENT_HANDLE
-                    var runtime = m_dotNetHeap.Runtime;
-                    // Special logic to allow Dependent handles to look like nodes from source to target.  
-                    NodeTypeIndex typeIdxForDependentHandlePseudoNode = NodeTypeIndex.Invalid;
-                    // Get all the dependent handles 
-                    foreach (var handle in runtime.EnumerateHandles())
-                    {
-                        if (handle.HandleType == HandleType.Dependent)
-                        {
-                            var dependentHandle = handle.Address;
-                            Debug.Assert(dependentHandle != 0);
-                            var source = handle.Object;
-                            if (source != 0)
-                            {
-                                m_children.Clear();
-                                m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(handle.DependentTarget));
-
-                                if (typeIdxForDependentHandlePseudoNode == NodeTypeIndex.Invalid)
-                                    typeIdxForDependentHandlePseudoNode = GetTypeIndexForName("Dependent Handle", null, 0);
-
-                                NodeIndex nodeIdxForDependentHandlePseudoNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(dependentHandle);
-                                m_gcHeapDump.MemoryGraph.SetNode(nodeIdxForDependentHandlePseudoNode, typeIdxForDependentHandlePseudoNode, runtime.PointerSize * 2, m_children);
-
-                                m_handles[dependentHandle] = nodeIdxForDependentHandlePseudoNode;
-
-                                // Add the dependent handle node to a table so that we can create links from the source to the dependent handle.  
-                                if (m_dependentHandles == null)
-                                    m_dependentHandles = new Dictionary<NodeIndex, List<NodeIndex>>();
-
-                                var sourceNodeIdx = m_gcHeapDump.MemoryGraph.GetNodeIndex(source);
-                                List<NodeIndex> dependentHandlesForAddress;
-                                if (!m_dependentHandles.TryGetValue(sourceNodeIdx, out dependentHandlesForAddress))
-                                    m_dependentHandles[sourceNodeIdx] = dependentHandlesForAddress = new List<NodeIndex>();
-                                dependentHandlesForAddress.Add(nodeIdxForDependentHandlePseudoNode);
-                            }
-                        }
-                    }
+        m_handles = new Dictionary<Address, NodeIndex>(100);
 #endif
+        m_children = new GrowableArray<NodeIndex>(2000);
+        m_graphTypeIdxForArrayType = new Dictionary<string, NodeTypeIndex>(100);
+        m_typeIdxToGraphIdx = new GrowableArray<int>();
+        m_typeMayHaveHandles = new GrowableArray<bool>();
 
-                    var rootDuration = m_sw.Elapsed.TotalMilliseconds - rootsStartTimeMSec;
-                    m_log.WriteLine("Scanning UNNAMED GC roots took {0:n1} msec", rootDuration);
-                }
-                catch (Exception e)
+        m_gotDotNetData = true;
+        m_copyOfLog.GetStringBuilder().Length = 0;  // Restart the copy
+
+        m_log.WriteLine("Dumping GC heap, This process is a {0} bit process on a {1} bit OS",
+            EnvironmentUtilities.Is64BitProcess ? "64" : "32",
+            EnvironmentUtilities.Is64BitOperatingSystem ? "64" : "32");
+        m_log.WriteLine("{0,5:f1}s: Starting heap dump {1}", m_sw.Elapsed.TotalSeconds, DateTime.Now);
+        m_dotNetHeap = heap;
+
+        if (debugProcess != null && Freeze && !isDump)
+        {
+            int isRunning;
+            debugProcess.IsRunning(out isRunning);
+            if (isRunning != 0)
+            {
+                m_log.WriteLine("freezing process.");
+                debugProcess.Stop(5000);
+            }
+        }
+
+        ulong totalGCSize = m_dotNetHeap.TotalHeapSize;
+        if (MaxDumpCountK < 10)   // Having fewer than 10K is probably wrong.    
+            MaxDumpCountK = 10;
+        m_log.WriteLine("{0,5:f1}s: Size of heap = {1:f3} GB", m_sw.Elapsed.TotalSeconds, ((double)totalGCSize) / 1000000000.0);
+
+        /// We have an overhead of about 52 bytes per object (24 for the hash table, 28 for the rest)
+        /// we have 1GB in a 32 bit process 
+        m_maxNodeCount = 1000000000 / 52;       // 20 Meg objects;
+        if (EnvironmentUtilities.Is64BitOperatingSystem)
+            m_maxNodeCount *= 3;                // We have 4GB instead of 2GB, so we 3GB instead of 1GB available for us to use in 32 bit processes = 60Meg objects
+
+        // On 64 bit process we are limited by the fact that the graph node is in a MemoryStream and its byte array is limited to 2 gig.  Most objects will
+        // be represented by 10 bytes in this array and we round this up to 16 = 128Meg
+        if (EnvironmentUtilities.Is64BitProcess)
+        {
+            m_maxNodeCount = int.MaxValue / 16 - 11;      // Limited to 128Meg objects.  (We are limited by the size of the stream)
+            m_log.WriteLine("In a 64 bit process.  Increasing the max node count to {0:f1} Meg", m_maxNodeCount / 1000000.0);
+        }
+        m_log.WriteLine("Implicitly limit the number of nodes to {0:f1} Meg to avoid arrays that are too large", m_maxNodeCount / 1000000.0);
+
+        // Can force it smaller in case our estimate is not good enough.  
+        var explicitMax = MaxNodeCountK * 1000;
+        if (0 < explicitMax)
+        {
+            m_maxNodeCount = Math.Min(m_maxNodeCount, explicitMax);
+            m_log.WriteLine("Explicit object count maximum {0:n0}, resulting max {1:n0}", explicitMax, m_maxNodeCount);
+        }
+
+        if (retryScale != 1)
+        {
+            m_maxNodeCount = (int)(m_maxNodeCount / retryScale);
+            m_log.WriteLine("We are retrying the dump so we scale the max by {0} to the value {1}", retryScale, m_maxNodeCount);
+        }
+
+        // We assume that object on average are 8 object pointers.      
+        int estimatedObjectCount = (int)(totalGCSize / ((uint)(8 * IntPtr.Size)));
+        m_log.WriteLine("Estimated number of objects = {0:n0}", estimatedObjectCount);
+
+        // We force the node count to be this max node count if we are within a factor of 2.  
+        // This insures that we don't have an issue where growing algorithms overshoot the amount
+        // of memory available and fail.   Note we do this on 64 bit too 
+        if (estimatedObjectCount >= m_maxNodeCount / 2)
+        {
+            m_log.WriteLine("Limiting object count to {0:n0}", m_maxNodeCount);
+            estimatedObjectCount = m_maxNodeCount + 2;
+        }
+
+        // Allocate a memory graph if we have not already.  
+        if (m_gcHeapDump.MemoryGraph == null)
+            m_gcHeapDump.MemoryGraph = new MemoryGraph(estimatedObjectCount);
+        m_gcHeapDump.MemoryGraph.Is64Bit = EnvironmentUtilities.Is64BitProcess;
+
+        var dotNetRoot = new MemoryNodeBuilder(m_gcHeapDump.MemoryGraph, "[.NET Roots]");
+
+        ulong total = 0;
+        var ccwChildren = new GrowableArray<NodeIndex>();
+        m_log.WriteLine("DumpDotNetHeapDataWorker: Heap Size of dumper {0:n0} MB", GC.GetTotalMemory(false) / 1000000.0);
+
+        m_log.WriteLine("A total of {0} segments.", m_dotNetHeap.Segments.Count);
+        // Get the GC Segments to dump
+        var gcHeapDumpSegments = new List<GCHeapDumpSegment>();
+        foreach (var seg in m_dotNetHeap.Segments)
+        {
+            var gcHeapDumpSegment = new GCHeapDumpSegment();
+            gcHeapDumpSegment.Start = seg.Start;
+            gcHeapDumpSegment.End = seg.End;
+            if (seg.IsLarge)
+            {
+                // Everything is Gen3 (large objects)
+                gcHeapDumpSegment.Gen0End = seg.End;
+                gcHeapDumpSegment.Gen1End = seg.End;
+                gcHeapDumpSegment.Gen2End = seg.End;
+                gcHeapDumpSegment.Gen3End = seg.End;
+            }
+            else
+            {
+                gcHeapDumpSegment.Gen0End = seg.End;
+                gcHeapDumpSegment.Gen1End = seg.Gen0Start;
+                gcHeapDumpSegment.Gen2End = seg.Gen1Start;
+                gcHeapDumpSegment.Gen3End = seg.Start;
+            }
+            gcHeapDumpSegments.Add(gcHeapDumpSegment);
+
+            total += seg.Length;
+            m_log.WriteLine("Segment: Start {0,16:x} Length: {1,16:x} {2,11:n3}M LOH:{3}", seg.Start, seg.Length, seg.Length / 1000000.0, seg.IsLarge);
+        }
+        m_log.WriteLine("Segment: Total {0,16} Length: {1,16:x} {2,11:n3}M", "", total, total / 1000000.0);
+
+        try
+        {
+            m_log.WriteLine("{0,5:f1}s: Scanning Named GC roots", m_sw.Elapsed.TotalSeconds);
+            // AddStaticAndLocalRoots(rootNode, debugProcess);
+
+            // From here we don't use proc unless we are frozen, so we can detach aggressively
+            if (debugProcess != null && !Freeze && !isDump)
+            {
+                m_log.WriteLine("{0,5:f1}s: Not frozen, Finished with roots.  Detaching the process", m_sw.Elapsed.TotalSeconds);
+                TryDetach(ref debugProcess);
+            }
+
+            m_log.WriteLine("{0,5:f1}s: Scanning UNNAMED GC roots", m_sw.Elapsed.TotalSeconds);
+            var rootsStartTimeMSec = m_sw.Elapsed.TotalMilliseconds;
+            var getCCWDataNotImplemented = false; // THis happens on silverlight. 
+                                                  // Do the roots that don't have good names
+
+            int numRoots = 0;
+            foreach (ClrRoot root in m_dotNetHeap.EnumerateRoots(true))
+            {
+                // If there is a named root already then we assume that that root is the interesting one and we drop this one.  
+                if (m_gcHeapDump.MemoryGraph.IsInGraph(root.Object))
+                    continue;
+
+                // Skip weak roots.  
+                if (root.Kind == Microsoft.Diagnostics.Runtime.GCRootKind.Weak)
+                    continue;
+
+                numRoots++;
+                if (numRoots % 1024 == 0)
+                    m_log.WriteLine("{0,5:f1}s: Scanned {1} roots.", m_sw.Elapsed.TotalSeconds, numRoots);
+
+                string name = root.Name;
+                if (name == "RefCount handle")
+                    name = "COM/WinRT Objects";
+                else if (name == "local var" || name.EndsWith("handle", StringComparison.OrdinalIgnoreCase))
+                    name += "s";
+                MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
+
+                var type = heap.GetObjectType(root.Object);
+                if (type != null && !getCCWDataNotImplemented)
                 {
-                    m_log.WriteLine("[ERROR while processing roots: {0}", e.Message);
-                    m_log.WriteLine("Continuing without complete root information");
-                }
-                m_log.Flush();
-
-                m_log.WriteLine("{0,5:f1}s: Starting GC Graph Traversal.  This can take a while...", m_sw.Elapsed.TotalSeconds);
-                double heapTravseralStartSec = m_sw.Elapsed.TotalSeconds;
-
-                // If we are want to dump the whole heap, do it now, this is much more efficient.  
-                long startSize = m_gcHeapDump.MemoryGraph.TotalSize;
-                DumpAllSegments();
-                Debug.Assert(m_gcHeapDump.MemoryGraph.TotalSize - startSize < (long)totalGCSize);
-
-                if (m_runTime != null)
-                {
-                    m_log.Write("{0,5:f1}s: Dump RCW/CCW information", m_sw.Elapsed.TotalSeconds);
-
-                    m_gcHeapDump.InteropInfo = new InteropInfo();
+                    // TODO FIX NOW, try clause is a hack because ccwInfo.* methods sometime throw.  
+                    // Also GetCCWData fails for silverlight
                     try
                     {
-                        DumpCCWRCW();
+                        var ccwInfo = type.GetCCWData(root.Object);
+                        if (ccwInfo != null)
+                        {
+                            // TODO FIX NOW for some reason IUnknown is always 0
+                            ulong comPtr = ccwInfo.IUnknown;
+                            if (comPtr == 0)
+                            {
+                                var intfs = ccwInfo.Interfaces;
+                                if (intfs != null && intfs.Count > 0)
+                                    comPtr = intfs[0].InterfacePointer;
+                            }
+
+                            // Create a CCW node that represents the COM object that has one child that points at the managed object.  
+                            var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(comPtr);
+                            var typeName = "[CCW";
+                            var targetType = m_dotNetHeap.GetObjectType(root.Object);
+                            if (targetType != null)
+                                typeName += " for " + targetType.Name;
+                            // typeName += " " + comPtrName + ":[0x" + comPtr.ToString("x");
+                            typeName += " RefCnt: " + ccwInfo.RefCount + "]";
+                            var ccwTypeIndex = GetTypeIndexForName(typeName, null, 200);
+                            ccwChildren.Clear();
+                            ccwChildren.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object));
+
+                            if (comPtr != 0)
+                                m_gcHeapDump.MemoryGraph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
+
+                            nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[COM/WinRT Objects]");
+                            nodeToAddRootTo.AddChild(ccwNode);
+                            continue;
+                        }
+                    }
+                    catch (NotImplementedException)
+                    {
+                        // getCCWDataNoImplemented not implemented on Silverlight.  don't keep trying.  
+                        getCCWDataNotImplemented = true;
                     }
                     catch (Exception e)
                     {
-                        m_log.Write("Error: dumping CCW/RCW information\r\n{0}", e);
-                        m_gcHeapDump.InteropInfo = new InteropInfo();       // Clear the info
+                        m_log.WriteLine("Caught exception {0} while fetching CCW information, treating as unknown root",
+                            e.GetType().Name);
                     }
                 }
 
-                // If we have been asked to free, we only need to freeze while gathering data.  We are done here so we can unfreeze
-                if (debugProcess != null && Freeze && !isDump)
-                    TryDetach(ref debugProcess);
-                m_log.WriteLine("{0,5:f1}s: Done collecting data.", m_sw.Elapsed.TotalSeconds);
+                if (name.StartsWith("static var"))
+                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[static vars]");
 
-                var dotNetInfo = m_gcHeapDump.DotNetHeapInfo = new DotNetHeapInfo();
-
-                // Write out the dump (TODO we should do this incrementally).    
-                dotNetInfo.SizeOfAllSegments = (long)totalGCSize;
-                dotNetInfo.Segments = gcHeapDumpSegments;
-
-                m_gcHeapDump.MemoryGraph.RootIndex = dotNetRoot.Build();
-
-                m_log.WriteLine("Number of bad objects during trace {0:n0}", BadObjectCount);
-                return;
+                if (root.IsPinned && root.Kind == Microsoft.Diagnostics.Runtime.GCRootKind.LocalVar)
+                {
+                    // Add pinned local vars to their own node
+                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[Pinned local vars]");
+                }
+                else
+                {
+                    nodeToAddRootTo = nodeToAddRootTo.FindOrCreateChild("[" + name + "]");
+                }
+                nodeToAddRootTo.AddChild(m_gcHeapDump.MemoryGraph.GetNodeIndex(root.Object));
             }
-            catch (OutOfMemoryException)
+
+#if DEPENDENT_HANDLE
+            var runtime = m_dotNetHeap.Runtime;
+            // Special logic to allow Dependent handles to look like nodes from source to target.  
+            NodeTypeIndex typeIdxForDependentHandlePseudoNode = NodeTypeIndex.Invalid;
+            // Get all the dependent handles 
+            foreach (var handle in runtime.EnumerateHandles())
             {
-                // Give up after trying a few times.  
-                if (retryScale > 16)
-                    throw;
-                m_gcHeapDump.MemoryGraph = null;        // Free most of the memory.  
-                m_log.WriteLine("ERROR: Hit and Out of Memory Condition, retrying with a smaller MaxObjectCount");
+                if (handle.HandleType == HandleType.Dependent)
+                {
+                    var dependentHandle = handle.Address;
+                    Debug.Assert(dependentHandle != 0);
+                    var source = handle.Object;
+                    if (source != 0)
+                    {
+                        m_children.Clear();
+                        m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(handle.DependentTarget));
+
+                        if (typeIdxForDependentHandlePseudoNode == NodeTypeIndex.Invalid)
+                            typeIdxForDependentHandlePseudoNode = GetTypeIndexForName("Dependent Handle", null, 0);
+
+                        NodeIndex nodeIdxForDependentHandlePseudoNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(dependentHandle);
+                        m_gcHeapDump.MemoryGraph.SetNode(nodeIdxForDependentHandlePseudoNode, typeIdxForDependentHandlePseudoNode, runtime.PointerSize * 2, m_children);
+
+                        m_handles[dependentHandle] = nodeIdxForDependentHandlePseudoNode;
+
+                        // Add the dependent handle node to a table so that we can create links from the source to the dependent handle.  
+                        if (m_dependentHandles == null)
+                            m_dependentHandles = new Dictionary<NodeIndex, List<NodeIndex>>();
+
+                        var sourceNodeIdx = m_gcHeapDump.MemoryGraph.GetNodeIndex(source);
+                        List<NodeIndex> dependentHandlesForAddress;
+                        if (!m_dependentHandles.TryGetValue(sourceNodeIdx, out dependentHandlesForAddress))
+                            m_dependentHandles[sourceNodeIdx] = dependentHandlesForAddress = new List<NodeIndex>();
+                        dependentHandlesForAddress.Add(nodeIdxForDependentHandlePseudoNode);
+                    }
+                }
+            }
+#endif
+
+            var rootDuration = m_sw.Elapsed.TotalMilliseconds - rootsStartTimeMSec;
+            m_log.WriteLine("Scanning UNNAMED GC roots took {0:n1} msec", rootDuration);
+        }
+        catch (Exception e)
+        {
+            m_log.WriteLine("[ERROR while processing roots: {0}", e.Message);
+            m_log.WriteLine("Continuing without complete root information");
+        }
+        m_log.Flush();
+
+        m_log.WriteLine("{0,5:f1}s: Starting GC Graph Traversal.  This can take a while...", m_sw.Elapsed.TotalSeconds);
+        double heapTravseralStartSec = m_sw.Elapsed.TotalSeconds;
+
+        // If we are want to dump the whole heap, do it now, this is much more efficient.  
+        long startSize = m_gcHeapDump.MemoryGraph.TotalSize;
+        DumpAllSegments();
+        Debug.Assert(m_gcHeapDump.MemoryGraph.TotalSize - startSize < (long)totalGCSize);
+
+        if (m_runTime != null)
+        {
+            m_log.Write("{0,5:f1}s: Dump RCW/CCW information", m_sw.Elapsed.TotalSeconds);
+
+            m_gcHeapDump.InteropInfo = new InteropInfo();
+            try
+            {
+                DumpCCWRCW();
+            }
+            catch (Exception e)
+            {
+                m_log.Write("Error: dumping CCW/RCW information\r\n{0}", e);
+                m_gcHeapDump.InteropInfo = new InteropInfo();       // Clear the info
             }
         }
+
+        // If we have been asked to free, we only need to freeze while gathering data.  We are done here so we can unfreeze
+        if (debugProcess != null && Freeze && !isDump)
+            TryDetach(ref debugProcess);
+        m_log.WriteLine("{0,5:f1}s: Done collecting data.", m_sw.Elapsed.TotalSeconds);
+
+        var dotNetInfo = m_gcHeapDump.DotNetHeapInfo = new DotNetHeapInfo();
+
+        // Write out the dump (TODO we should do this incrementally).    
+        dotNetInfo.SizeOfAllSegments = (long)totalGCSize;
+        dotNetInfo.Segments = gcHeapDumpSegments;
+
+        m_gcHeapDump.MemoryGraph.RootIndex = dotNetRoot.Build();
+
+        m_log.WriteLine("Number of bad objects during trace {0:n0}", BadObjectCount);
+        m_log.WriteLine("{0,5:f1}s: Finished heap dump {1}", m_sw.Elapsed.TotalSeconds, DateTime.Now);
+        return;
     }
 
     /// <summary>
@@ -1439,7 +1469,7 @@ public class GCHeapDumper
                     m_gcHeapDump.TotalProcessCommit / 1000000, m_gcHeapDump.TotalProcessWorkingSet / 1000000);
 
                 m_log.WriteLine("Total GC Size = {0:n0} = {1:n2} % of total working set",
-                m_gcHeapDump.MemoryGraph.TotalSize / 1000000, 
+                m_gcHeapDump.MemoryGraph.TotalSize / 1000000,
                 m_gcHeapDump.MemoryGraph.TotalSize * 100.0 / m_gcHeapDump.TotalProcessWorkingSet);
             }
             catch (Exception) { }
@@ -1650,6 +1680,7 @@ public class GCHeapDumper
 
             Address lastObjEnd = 0;
             Address lastObj = 0;
+            Address nextStatusUpdateObj = 0;
             ClrType type;
             for (Address objAddr = segment.FirstObject; start <= objAddr && objAddr < end; objAddr = segment.NextObject(objAddr))
             {
@@ -1757,6 +1788,13 @@ public class GCHeapDumper
                     }
                 }
 #endif
+                if (objAddr > nextStatusUpdateObj)
+                {
+                    m_log.WriteLine("{0,5:f1}s: Dumped {1:n0} objects, max_dump_limit {2:n0} Dumper heap Size {3:n0}MB", 
+                        m_sw.Elapsed.TotalSeconds, m_gcHeapDump.MemoryGraph.NodeCount, m_maxNodeCount, GC.GetTotalMemory(false)/1000000.0);
+                    nextStatusUpdateObj = objAddr + 1000000;        // log a message every 1 Meg 
+                }
+
                 if (m_gcHeapDump.MemoryGraph.NodeCount >= m_maxNodeCount ||
                     m_gcHeapDump.MemoryGraph.DistinctRefCount + m_children.Count > m_maxNodeCount)
                 {
@@ -1819,25 +1857,38 @@ public class GCHeapDumper
     /// </summary>
     private unsafe Address FindNextValidObject(Address objAddr, Address segmentEnd)
     {
-        // This is inefficient, but we should not do this often 
+        // This is inefficient, but we should not do this often
+        
+        // See if we have poiters from already scanned objects that happen to point
+        // just beyond where we failed synchronization.   If so use that as the next
+        // valid object (since we know it should be).   We look back at the last
+        // 200 object to see if we have these.  
         Address ret = objAddr;
-        for (NodeIndex i = 0; i < m_gcHeapDump.MemoryGraph.NodeIndexLimit; i++)
+        NodeIndex endIdx = m_gcHeapDump.MemoryGraph.NodeIndexLimit;
+        NodeIndex startIdx = endIdx - 200;
+        if (startIdx < 0)
+            startIdx = 0;
+        for (NodeIndex i = startIdx; i < endIdx; i++)
             ret = Math.Max(ret, m_gcHeapDump.MemoryGraph.GetAddress(i));
-        if (ret == objAddr)
+        if (ret <= objAddr)
             ret = Address.MaxValue;
 
-        // If we skip more that 100K, we should try walking IntPtrs
+        // If we skip more that 100K, we should try walking IntPtrs.  This is more heurisitc,
+        // but should give up after 100K.   
         // TODO: should we do this all the time?  
         if (100000 < ret - objAddr)
         {
             m_log.WriteLine("Trying to resync by walking IntPtrs starting at {0:x}", objAddr);
             bool prevValueIsZero = true;
-            // Only search for 10M pointer slots.  TODO: should we have this limit?
-            for (int i = 0; i < 10000000; i++)
+            // Only search for 100K pointer slots.  TODO: should we have this limit?
+            for (int i = 0; i < 100000; i++)
             {
                 objAddr += (uint)m_dotNetHeap.PointerSize;
                 if (segmentEnd <= objAddr)
                     break;
+
+                if ((i & 0xFFF) == 0xFFF)
+                    m_log.WriteLine("Walked {0} ptrs looking for object header", i);
 
                 // TODO is this fetching an IntPtr at a time too expensive?  
                 Address val = FetchIntPtrAt(m_dotNetHeap, objAddr);
@@ -1856,14 +1907,14 @@ public class GCHeapDumper
                 // We also filter out any value that lives in the GC heap itself (since method tables don't).  
                 if (m_dotNetHeap.IsInHeap(val))
                     continue;
-                m_log.WriteLine("Trying to resync at {0:x} with value {1:x}", objAddr, val);
+                // m_log.WriteLine("Trying to resync at {0:x} with value {1:x}", objAddr, val);
 
                 // OK see if we have a valid type. 
                 var type = m_dotNetHeap.GetObjectType(objAddr);
                 if (type == null)
                     continue;
 
-                m_log.WriteLine("Trying to resync at {0:x}, found type {1}", objAddr, type.Name);
+                // m_log.WriteLine("Trying to resync at {0:x}, found type {1}", objAddr, type.Name);
 
                 // See if the 'next' object has a valid type
                 var objAddr1 = objAddr + type.GetSize(objAddr);
@@ -1884,7 +1935,8 @@ public class GCHeapDumper
             }
             m_log.WriteLine("Failed to resync by walking IntPtrs.");
         }
-
+        else
+            m_log.WriteLine("Resynced by looking at forward poiters at {0:x}", ret);
         return ret;
     }
 
@@ -2345,6 +2397,7 @@ public class GCHeapDumper
     private int m_processID;
     private string m_outputFileName;
     private Stream m_outputStream;
+    private TextWriter m_origLog;           // What was passed into the constructor.
     private TextWriter m_log;               // Where we send messages
     private StringWriter m_copyOfLog;       // We keep a copy of all logged messages here to append to output file. 
     private Stopwatch m_sw;                 // We keep track of how long it takes.  
