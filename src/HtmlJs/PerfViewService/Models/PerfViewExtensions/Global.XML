@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Global</name>
+    </assembly>
+    <members>
+        <member name="T:Commands">
+            <summary>
+            The methods in this Commands class is the class that is called from PerfView 'UserCommand DLLNAME.Method'
+            
+            Commands can have varags (params argument qualifier) and can also have default arguments.   
+            
+            To use them: PerfView UserCommand METHODNAME arg1 arg2 ...
+            </summary>
+        </member>
+        <member name="M:Commands.DemoCommandWithDefaults(System.String,System.String,System.String)">
+            <summary>
+            A quick example of a command that has default arguments.  You can also use the 'params' style
+            varargs.  
+            </summary>
+            <param name="requiredArg1">A demo of a required argument</param>
+            <param name="optionalArg2">A demo of a optional argument</param>
+            <param name="optionalArg3">A demo of a optional argument</param>
+        </member>
+        <member name="M:Commands.DemoHtmlReport(System.String[])">
+            <summary>
+            This command creates a simple HTML report that has links that in turn cause actions.  If you make custom reports you 
+            are likely to want to do this.  
+            </summary>
+            <param name="args">a list of strings that will appear in the report</param>
+        </member>
+        <member name="M:Commands.DemoLoadLibrary(System.String)">
+            <summary>
+            This demo scans a particular ETL file for a strongly typed events (in this case Image Load events)
+            and prints them out.  
+            </summary>
+        </member>
+        <member name="M:Commands.DemoEventSearch(System.String)">
+            <summary>
+            This demo scans a particular ETL file for events of a particular type (in this case PerfView events)
+            and prints them to the log.  
+            </summary>
+            <param name="etlFileName">The ETL file to open</param>    
+        </member>
+        <member name="M:Commands.DemoOpenPerfViewXml(System.String)">
+            <summary>
+            A trivial example of opening a PerfView XML file and then displaying it in the viewer.  
+            </summary>
+            <param name="fileName"></param>
+        </member>
+        <member name="M:Commands.DemoOpenCpuStacks(System.String)">
+            <summary>
+            Trivial demo that opens an ETL file named 'eltFileName' and opens the view on the CPU data. 
+            </summary>
+            <param name="etlFileName"></param>
+        </member>
+        <member name="M:Commands.DemoOpenEventView(System.String)">
+            <summary>
+            If you wish to programatically get at events in the ETL file you typically will want 
+            to use the etlFile.TraceLog.Events directly (they are more efficient).   This is what
+            is done in the DemoEventSearch, DemoLoadLibrary, and DemoStartupReport cases. 
+            
+            However if you simply want to control the PerfView event viewer and open it, then using
+            the etlFile.Events class is what you want since you can open the event viewer on it 
+            easily.  
+            
+            In this demo, we open a viewer for just the process and image load events.  
+            </summary>
+            <param name="etlFileName">The ETL file to open</param>
+        </member>
+        <member name="M:Commands.DemoStartupReport(System.String,System.String)">
+            <summary>
+            Here is an example of a 'real' report.  It computes startup statistics for a given process.  
+            </summary>
+            <param name="etlFileName">The ETL file to open</param>
+            <param name="processName">The name of the process to focus on.  If not present, the first process to start is used.</param>
+        </member>
+        <member name="M:Commands.DemoStacksReportByDll(System.String,System.String,System.String[])">
+            <summary>
+            This demonstrates how to use the CallTree view problematically.  
+            This demo takes a set of DLL names, and then assigns all CPU time to whichever
+            member of the set is hit first crawling from the IP to the top of the stack.
+            
+            The idea is that you want to 'blame' one of small set of DLLs, and you want
+            to ignore all other dlls that are not in your set (e.g. OS dlls), and assign
+            any time they had one in your set.  
+            </summary>
+            <param name="etlFileName">The ETL file to open</param>
+            <param name="processName">The name of the process to focus on (null means first pr</param>
+            <param name="dllNames">The list of DLLs names (file names without extensions) to blame.</param>
+        </member>
+        <member name="M:Commands.DemoCommandWithQualifiers(System.String[])">
+            <summary>
+            Commands with many options need more complex argument parsing, which is what 'CommandLineParser does.  
+            Here is an example of adding two optional qualifiers as well as parameters.  
+            </summary>
+        </member>
+        <member name="M:Commands.DemoConfigSettings(System.String)">
+            <summary>
+            This routine demos the use of the 'ConfigData' to save state across invokations of the perfView program. 
+            </summary>
+            <param name="value">A value to remember between invokations</param>
+        </member>
+        <member name="M:Commands.DemoMemoryGraph">
+            <summary>
+            This demo shows you how to create a a graph of memory and turn it into a stackSource with MemoryGraphStackSource. 
+            </summary>
+        </member>
+        <member name="M:Commands.DemoInternStackSource">
+            <summary>
+            This demo shows you how to create a StackSource (or a class Stacks from 'nothing').  
+            
+            Note that a useful alternative to this is to simply generate a file XML file which
+            matches the format of a PerfVIew.XML file.   This XML file is just what you would
+            expect (a list of frame definitions, which define stacks which define samples).  
+            Thus you may wish to simply generate this XML directy and simple read that file
+            with OpenPerfViewXmlFile
+            </summary>
+        </member>
+        <member name="T:Commands.MyStackSource">
+            <summary>
+            InternStackSource is used to create a StackSource out of nothing.  However at least currently
+            you need to subclass it to get at the creation APIs.   
+            </summary>
+        </member>
+        <member name="M:Commands.GetTraceEventsWithProcessFilter(PerfViewExtensibility.ETLDataFile)">
+            <summary>
+            Gets the TraceEvents list of events from etlFile, applying a process filter if the /process argument is given. 
+            </summary>
+        </member>
+        <member name="M:Commands.DemoOnStartup">
+            <summary>
+            If you place a file called PerfViewExtensions\PerfViewStartup next to the 
+            PerfView.exe it will run execute commands in that file.  If you put
+            
+            OnStartup DemoOnStartup
+            
+            It will execute this user command when PerfView starts up.  
+            </summary>
+        </member>
+        <member name="M:Commands.DemoOnFileOpen(System.String)">
+            <summary>
+            If you place a file called PerfViewExtensions\PerfViewStartup next to the PerfView.exe it will 
+            run execute commands in that file.  If you put
+            
+            OnFileOpen .etl DemoOnFileOpen
+            
+            It will execute this user command whenever a file is opened.  This allows you to manipulate 
+            the views for this file type.   It is passed the name of the file that was opened.  
+            </summary>
+        </member>
+        <member name="M:Commands.DemoDeclareFileView(System.String,System.String)">
+            <summary>
+            If you place a file called PerfViewExtensions\PerfViewStartup next to the PerfView.exe it will 
+            run execute commands in that file.  If you put
+            
+            DeclareFileView .etl "Demo View In Etl File" DemoDeclareFileView
+            
+            It will create a child node for all .etl files called 'Demo View In Etl File'  If you click 
+            on this node it will execute this user command.  It is passed the name of the file that was 
+            opened and the name of the view that was opened (in this case 'Demo View In Etl File').  
+            </summary>
+        </member>
+    </members>
+</doc>
