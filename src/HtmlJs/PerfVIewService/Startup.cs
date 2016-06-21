@@ -60,8 +60,8 @@ namespace PerfViewService
             app.UseStaticFiles(new StaticFileOptions()
             {
                 FileProvider = new PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), @"view")),
-                RequestPath = new Microsoft.AspNetCore.Http.PathString("/view")
+                    Path.Combine(Directory.GetCurrentDirectory(), @"Views")),
+                RequestPath = new Microsoft.AspNetCore.Http.PathString("/Views")
             });
         }
     }
