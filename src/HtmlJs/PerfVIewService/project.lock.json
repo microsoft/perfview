@@ -3293,6 +3293,24 @@
         "runtime": {
           "lib/netstandard1.3/System.Xml.XPath.XDocument.dll": {}
         }
+      },
+      "TraceEventCore/1.0.41": {
+        "type": "package",
+        "dependencies": {
+          "System.Diagnostics.Tools": "4.0.0",
+          "System.Diagnostics.Tracing": "4.0.20",
+          "System.Net.Primitives": "4.0.10",
+          "System.Runtime": "4.0.20",
+          "System.Runtime.InteropServices": "4.0.20",
+          "System.Threading": "4.0.10",
+          "System.Xml.XDocument": "4.0.10"
+        },
+        "compile": {
+          "ref/netstandard1.3/Microsoft.Diagnostics.Tracing.TraceEvent.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard1.3/Microsoft.Diagnostics.Tracing.TraceEvent.dll": {}
+        }
       }
     }
   },
@@ -8859,6 +8877,16 @@
         "ref/xamarintvos10/_._",
         "ref/xamarinwatchos10/_._"
       ]
+    },
+    "TraceEventCore/1.0.41": {
+      "sha512": "sDodRHVtDjuOCyRkpPRNfKVJBRXzBqOEuo3ByFTn89r25olaHp3DYTmuWJBcCFVlodpHjt62XXKsJtDfrRFe6w==",
+      "type": "package",
+      "files": [
+        "TraceEventCore.1.0.41.nupkg.sha512",
+        "TraceEventCore.nuspec",
+        "lib/netstandard1.3/Microsoft.Diagnostics.Tracing.TraceEvent.dll",
+        "ref/netstandard1.3/Microsoft.Diagnostics.Tracing.TraceEvent.dll"
+      ]
     }
   },
   "projectFileDependencyGroups": {
@@ -8875,7 +8903,8 @@
       "Microsoft.Extensions.Logging.Console >= 1.0.0-rc2-final",
       "Microsoft.Extensions.Logging.Debug >= 1.0.0-rc2-final",
       "Microsoft.NETCore.App >= 1.0.0-rc2-3002702",
-      "Newtonsoft.Json >= 8.0.3"
+      "Newtonsoft.Json >= 8.0.3",
+      "TraceEventCore >= 1.0.41"
     ],
     ".NETCoreApp,Version=v1.0": []
   },
