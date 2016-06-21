@@ -1,4 +1,4 @@
-﻿{
+{
   "dependencies": {
     "Microsoft.NETCore.App": {
       "version": "1.0.0-rc2-3002702",
@@ -14,6 +14,8 @@
     "Microsoft.Extensions.Logging": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final",
+    "Newtonsoft.Json": "8.0.3",
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final",
     "TraceEventCore": "1.0.41"
   },
 
