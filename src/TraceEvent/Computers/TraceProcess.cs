@@ -102,6 +102,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 var process = data.Process();
                 process.CPUMSec++;
             };
+
+            kernelParser.AddCallbackForEvents<ProcessCtrTraceData>(delegate (ProcessCtrTraceData data)
+            {
+                var process = data.Process();
+                process.PeakVirtual = (double)data.PeakVirtualSize;
+                process.PeakWorkingSet = (double)data.PeakWorkingSetSize;
+            });
         }
         #endregion
     }
@@ -459,6 +466,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// The log file associated with the process. 
         /// </summary>
         public TraceLog Log { get; private set; }
+
+        /// <summary>
+        /// Peak working set
+        /// </summary>
+        public double PeakWorkingSet { get; internal set; }
+        /// <summary>
+        /// Peak virtual size
+        /// </summary>
+        public double PeakVirtual { get; internal set; }
+
         /// <summary>
         /// A list of all the threads that occurred in this process.  
         /// </summary> 
@@ -498,6 +515,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             sb.Append("Is64Bit=").Append(XmlUtilities.XmlQuote(Is64Bit)).Append(" ");
             sb.Append("CommandLine=").Append(XmlUtilities.XmlQuote(CommandLine)).Append(" ");
             sb.Append("ImageName=").Append(XmlUtilities.XmlQuote(ImageFileName)).Append(" ");
+            if (PeakVirtual != 0)
+                sb.Append("PeakVirtual=").Append(XmlUtilities.XmlQuote(PeakVirtual)).Append(" ");
+            if (PeakWorkingSet != 0)
+                sb.Append("PeakWorkingSet=").Append(XmlUtilities.XmlQuote(PeakWorkingSet)).Append(" ");
             sb.Append("/>");
             return sb.ToString();
         }
