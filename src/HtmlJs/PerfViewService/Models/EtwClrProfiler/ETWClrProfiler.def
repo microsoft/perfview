@@ -1,7 +1,0 @@
-; EtwClrProfiler.def : Declares the module parameters.
-
-LIBRARY      "EtwClrProfiler.DLL"
-
-EXPORTS
-    DllCanUnloadNow     PRIVATE
-    DllGetClassObject   PRIVATE
