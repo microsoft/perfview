@@ -71,14 +71,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Returns the .NET startup flags
         /// </summary>
         public StartupFlags StartupFlags { get; internal set; }
-        /// <summary>
-        /// Peak working set
-        /// </summary>
-        public double PeakWorkingSet { get; internal set; }
-        /// <summary>
-        /// Peak virtual size
-        /// </summary>
-        public double PeakVirtual { get; internal set; }
 
         /// <summary>
         /// Garbage Collector (GC) specific details about this process
@@ -116,8 +108,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
             sb.Append("ClrRuntimeVersion=").Append(XmlUtilities.XmlQuote(RuntimeVersion)).Append(" ");
             sb.Append("ClrStartupFlags=").Append(XmlUtilities.XmlQuote(StartupFlags)).Append(" ");
-            sb.Append("PeakVirtual=").Append(XmlUtilities.XmlQuote(PeakVirtual)).Append(" ");
-            sb.Append("PeakWorkingSet=").Append(XmlUtilities.XmlQuote(PeakWorkingSet)).Append(" ");
             sb.Append("/>");
 
             return xml.Replace("/>", sb.ToString());
@@ -210,15 +200,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             };
             clrRundownParser.RuntimeStart += doAtRuntimeStart;
             source.Clr.RuntimeStart += doAtRuntimeStart;
-
-            source.Kernel.AddCallbackForEvents<ProcessCtrTraceData>(delegate (ProcessCtrTraceData data)
-            {
-                TraceManagedProcess stats = data.Process().AsManagedProcess();
-                if (stats == null) return;
-                stats.PeakVirtual = (double)data.PeakVirtualSize;
-                stats.PeakWorkingSet = (double)data.PeakWorkingSetSize;
-            });
-
 
             //
             // GC
