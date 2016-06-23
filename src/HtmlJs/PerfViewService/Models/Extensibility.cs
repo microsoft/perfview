@@ -412,7 +412,7 @@ namespace PerfViewExtensibility
     /// </summary>
     public class ETLDataFile : DataFile
     {
-        static string symbolPath;
+        static string symbolPath = "C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug\\tempSymbols";
         // We have the concept of a process to focus on.  All STACK sampling will be filtered by this.  
         // If null, then no filtering is done.   Do try to limit to one process if possible as it makes
         // analysis and symbol lookup faster.  
@@ -464,16 +464,21 @@ namespace PerfViewExtensibility
             m_FilePath = fileName;
 
             var etlOrEtlXFileName = FilePath;
+
             // NOTE: Probably need the following for .etl.zip
-            ////UnZipIfNecessary(ref etlOrEtlXFileName, log);
+            TextWriter log = File.CreateText("./temp.txt");
+            UnZipIfNecessary(ref etlOrEtlXFileName, log);
 
             for (; ; )  // RETRY Loop 
             {
                 var usedAnExistingEtlxFile = false;
                 var etlxFileName = etlOrEtlXFileName;
+                System.Diagnostics.Debug.WriteLine("\n\nfile: " + etlOrEtlXFileName + "\n\n");
+                System.Diagnostics.Debug.WriteLine("\n\nEnds with .etl?: " + etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) + "\n\n");
                 if (etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                 {
-                    ////etlxFileName = CacheFiles.FindFile(etlOrEtlXFileName, ".etlx");
+                    etlxFileName = CacheFiles.FindFile(etlOrEtlXFileName, ".etlx");
+                    System.Diagnostics.Debug.WriteLine("\n\nAfter Cache Check: " + etlxFileName + "\n\n");
                     if (File.Exists(etlxFileName) && File.GetLastWriteTimeUtc(etlOrEtlXFileName) <= File.GetLastWriteTimeUtc(etlxFileName))
                     {
                         usedAnExistingEtlxFile = true;
@@ -491,6 +496,7 @@ namespace PerfViewExtensibility
                         options.LocalSymbolsOnly = false;
                         options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };
 
+                        System.Diagnostics.Debug.WriteLine("\n\nAbout to CreateFromEventTraceLogFile: " + etlOrEtlXFileName + "\n\n");
                         ////log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
                         TraceLog.CreateFromEventTraceLogFile(etlOrEtlXFileName, etlxFileName, options);
 
