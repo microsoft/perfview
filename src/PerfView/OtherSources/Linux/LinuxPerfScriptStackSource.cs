@@ -301,6 +301,11 @@ namespace Diagnostics.Tracing.StackSources
 		{
 			Contract.Requires(_samples != null, nameof(_samples));
 
+			if (!_samples.Any())
+			{
+				return;
+			}
+
 			List<StackSourceSample> samples = _samples.ToList();
 			samples.Sort((x, y) => x.TimeRelativeMSec.CompareTo(y.TimeRelativeMSec));
 			double startTime = samples[0].TimeRelativeMSec;
@@ -396,7 +401,7 @@ namespace Diagnostics.Tracing.StackSources
 			archive = null;
 			if (path.EndsWith(".zip"))
 			{
-                archive = ZipFile.OpenRead(path);
+				archive = ZipFile.OpenRead(path);
 				ZipArchiveEntry foundEntry = null;
 
 				foreach (ZipArchiveEntry entry in archive.Entries)
