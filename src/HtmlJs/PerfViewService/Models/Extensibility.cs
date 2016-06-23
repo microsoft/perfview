@@ -18,7 +18,7 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 //using PerfView.GuiUtilities;
 //using PerfViewModel;
 using Microsoft.Diagnostics.Symbols;
-////using Utilities;
+using Utilities;
 ////using FastSerialization;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -412,6 +412,7 @@ namespace PerfViewExtensibility
     /// </summary>
     public class ETLDataFile : DataFile
     {
+        static string symbolPath;
         // We have the concept of a process to focus on.  All STACK sampling will be filtered by this.  
         // If null, then no filtering is done.   Do try to limit to one process if possible as it makes
         // analysis and symbol lookup faster.  
@@ -603,114 +604,115 @@ namespace PerfViewExtensibility
         }
         #region private
 
-        ////private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
-        ////{
-        ////    if (string.Compare(Path.GetExtension(inputFileName), ".zip", StringComparison.OrdinalIgnoreCase) == 0)
-        ////    {
-        ////        string unzipedEtlFile;
-        ////        if (unpackInCache)
-        ////        {
-        ////            unzipedEtlFile = CacheFiles.FindFile(inputFileName, ".etl");
-        ////            if (File.Exists(unzipedEtlFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzipedEtlFile))
-        ////            {
-        ////                log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
-        ////                inputFileName = unzipedEtlFile;
-        ////                return;
-        ////            }
-        ////        }
-        ////        else
-        ////        {
-        ////            if (!inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
-        ////                throw new Exception("File does not end with the .etl.zip file extension");
-        ////            unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
-        ////        }
+        private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
+        {
+            if (string.Compare(Path.GetExtension(inputFileName), ".zip", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                string unzipedEtlFile;
+                if (unpackInCache)
+                {
+                    unzipedEtlFile = CacheFiles.FindFile(inputFileName, ".etl");
+                    if (File.Exists(unzipedEtlFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzipedEtlFile))
+                    {
+                        log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
+                        inputFileName = unzipedEtlFile;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                        throw new Exception("File does not end with the .etl.zip file extension");
+                    unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
+                }
 
-        ////        Stopwatch sw = Stopwatch.StartNew();
-        ////        log.WriteLine("[Decompressing {0}]", inputFileName);
-        ////        log.WriteLine("Generating output file {0}", unzipedEtlFile);
-        ////        var zipArchive = ZipFile.OpenRead(inputFileName);
+                Stopwatch sw = Stopwatch.StartNew();
+                log.WriteLine("[Decompressing {0}]", inputFileName);
+                log.WriteLine("Generating output file {0}", unzipedEtlFile);
+                var zipArchive = ZipFile.OpenRead(inputFileName);
 
-        ////        ZipArchiveEntry zippedEtlFile = null;
-        ////        string dirForPdbs = null;
-        ////        foreach (var entry in zipArchive.Entries)
-        ////        {
-        ////            if (entry.Length == 0)  // Skip directories. 
-        ////                continue;
+                ZipArchiveEntry zippedEtlFile = null;
+                string dirForPdbs = null;
+                foreach (var entry in zipArchive.Entries)
+                {
+                    if (entry.Length == 0)  // Skip directories. 
+                        continue;
 
-        ////            var fullName = entry.FullName;
-        ////            if (fullName.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-        ////            {
-        ////                fullName = fullName.Replace('/', '\\');     // normalize separator convention 
-        ////                string pdbRelativePath = null;
-        ////                if (fullName.StartsWith(@"symbols\", StringComparison.OrdinalIgnoreCase))
-        ////                    pdbRelativePath = fullName.Substring(8);
-        ////                else if (fullName.StartsWith(@"ngenpdbs\", StringComparison.OrdinalIgnoreCase))
-        ////                    pdbRelativePath = fullName.Substring(9);
-        ////                else
-        ////                {
-        ////                    var m = Regex.Match(fullName, @"^[^\\]+\.ngenpdbs?\\(.*)", RegexOptions.IgnoreCase);
-        ////                    if (m.Success)
-        ////                        pdbRelativePath = m.Groups[1].Value;
-        ////                    else
-        ////                    {
-        ////                        log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
-        ////                        log.WriteLine("         Unzip this ETL and PDB by hand to use this PDB.");
-        ////                        continue;
-        ////                    }
-        ////                }
+                    var fullName = entry.FullName;
+                    if (fullName.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                    {
+                        fullName = fullName.Replace('/', '\\');     // normalize separator convention 
+                        string pdbRelativePath = null;
+                        if (fullName.StartsWith(@"symbols\", StringComparison.OrdinalIgnoreCase))
+                            pdbRelativePath = fullName.Substring(8);
+                        else if (fullName.StartsWith(@"ngenpdbs\", StringComparison.OrdinalIgnoreCase))
+                            pdbRelativePath = fullName.Substring(9);
+                        else
+                        {
+                            var m = Regex.Match(fullName, @"^[^\\]+\.ngenpdbs?\\(.*)", RegexOptions.IgnoreCase);
+                            if (m.Success)
+                                pdbRelativePath = m.Groups[1].Value;
+                            else
+                            {
+                                log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
+                                log.WriteLine("         Unzip this ETL and PDB by hand to use this PDB.");
+                                continue;
+                            }
+                        }
 
-        ////                if (dirForPdbs == null)
-        ////                {
-        ////                    var inputDir = Path.GetDirectoryName(inputFileName);
-        ////                    if (inputDir.Length == 0)
-        ////                        inputDir = ".";
-        ////                    var symbolsDir = Path.Combine(inputDir, "symbols");
-        ////                    if (Directory.Exists(symbolsDir))
-        ////                        dirForPdbs = symbolsDir;
-        ////                    else
-        ////                        dirForPdbs = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
-        ////                    log.WriteLine("Putting symbols in {0}", dirForPdbs);
-        ////                }
+                        if (dirForPdbs == null)
+                        {
+                            var inputDir = Path.GetDirectoryName(inputFileName);
+                            if (inputDir.Length == 0)
+                                inputDir = ".";
+                            var symbolsDir = Path.Combine(inputDir, "symbols");
+                            if (Directory.Exists(symbolsDir))
+                                dirForPdbs = symbolsDir;
+                            else
+                                dirForPdbs = ETLDataFile.symbolPath;
+                                ////dirForPdbs = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+                            log.WriteLine("Putting symbols in {0}", dirForPdbs);
+                        }
 
-        ////                var pdbTargetPath = Path.Combine(dirForPdbs, pdbRelativePath);
-        ////                var pdbTargetName = Path.GetFileName(pdbTargetPath);
-        ////                if (!File.Exists(pdbTargetPath) || (new System.IO.FileInfo(pdbTargetPath).Length != entry.Length))
-        ////                {
-        ////                    var firstNameInRelativePath = pdbRelativePath;
-        ////                    var sepIdx = firstNameInRelativePath.IndexOf('\\');
-        ////                    if (sepIdx >= 0)
-        ////                        firstNameInRelativePath = firstNameInRelativePath.Substring(0, sepIdx);
-        ////                    var firstNamePath = Path.Combine(dirForPdbs, firstNameInRelativePath);
-        ////                    if (File.Exists(firstNamePath))
-        ////                    {
-        ////                        log.WriteLine("Deleting pdb file that is in the way {0}", firstNamePath);
-        ////                        FileUtilities.ForceDelete(firstNamePath);
-        ////                    }
-        ////                    log.WriteLine("Extracting PDB {0}", pdbRelativePath);
-        ////                    AtomicExtract(entry, pdbTargetPath);
-        ////                }
-        ////                else
-        ////                    log.WriteLine("PDB {0} exists, skipping", pdbRelativePath);
-        ////            }
-        ////            else if (fullName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
-        ////            {
-        ////                if (zippedEtlFile != null)
-        ////                    throw new Exception("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
-        ////                zippedEtlFile = entry;
-        ////            }
-        ////        }
-        ////        if (zippedEtlFile == null)
-        ////            throw new Exception("The ZIP file does not have any ETL files in it!");
+                        var pdbTargetPath = Path.Combine(dirForPdbs, pdbRelativePath);
+                        var pdbTargetName = Path.GetFileName(pdbTargetPath);
+                        if (!File.Exists(pdbTargetPath) || (new System.IO.FileInfo(pdbTargetPath).Length != entry.Length))
+                        {
+                            var firstNameInRelativePath = pdbRelativePath;
+                            var sepIdx = firstNameInRelativePath.IndexOf('\\');
+                            if (sepIdx >= 0)
+                                firstNameInRelativePath = firstNameInRelativePath.Substring(0, sepIdx);
+                            var firstNamePath = Path.Combine(dirForPdbs, firstNameInRelativePath);
+                            if (File.Exists(firstNamePath))
+                            {
+                                log.WriteLine("Deleting pdb file that is in the way {0}", firstNamePath);
+                                FileUtilities.ForceDelete(firstNamePath);
+                            }
+                            log.WriteLine("Extracting PDB {0}", pdbRelativePath);
+                            AtomicExtract(entry, pdbTargetPath);
+                        }
+                        else
+                            log.WriteLine("PDB {0} exists, skipping", pdbRelativePath);
+                    }
+                    else if (fullName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (zippedEtlFile != null)
+                            throw new Exception("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
+                        zippedEtlFile = entry;
+                    }
+                }
+                if (zippedEtlFile == null)
+                    throw new Exception("The ZIP file does not have any ETL files in it!");
 
-        ////        AtomicExtract(zippedEtlFile, unzipedEtlFile);
-        ////        log.WriteLine("Zipped size = {0:f3} MB Unzipped = {1:f3} MB",
-        ////            zippedEtlFile.CompressedLength / 1000000.0, zippedEtlFile.Length / 1000000.0);
+                AtomicExtract(zippedEtlFile, unzipedEtlFile);
+                log.WriteLine("Zipped size = {0:f3} MB Unzipped = {1:f3} MB",
+                    zippedEtlFile.CompressedLength / 1000000.0, zippedEtlFile.Length / 1000000.0);
 
-        ////        File.SetLastWriteTime(unzipedEtlFile, DateTime.Now);       // Touch the file
-        ////        inputFileName = unzipedEtlFile;
-        ////        log.WriteLine("Finished decompression, took {0:f0} sec", sw.Elapsed.TotalSeconds);
-        ////    }
-        ////}
+                File.SetLastWriteTime(unzipedEtlFile, DateTime.Now);       // Touch the file
+                inputFileName = unzipedEtlFile;
+                log.WriteLine("Finished decompression, took {0:f0} sec", sw.Elapsed.TotalSeconds);
+            }
+        }
         // Extract to a temp file and move so we get atomic update.  May leave trash behind
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
@@ -2892,7 +2894,7 @@ static class GuiModel
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+        #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -2969,7 +2971,7 @@ static class GuiModel
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+        #endregion
         }
 
         /// <summary>
@@ -3340,7 +3342,7 @@ static class GuiModel
          }
 #endif
 
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -3354,7 +3356,8 @@ static class GuiModel
             }
             return outputFileName;
         }
-
+        #endregion
+#endif
         /// <summary>
         /// Gets the TraceEvents list of events from etlFile, applying a process filter if the /process argument is given. 
         /// </summary>
@@ -3362,18 +3365,19 @@ static class GuiModel
         {
             // If the user asked to focus on one process, do so.  
             TraceEvents events;
-            if (CommandLineArgs.Process != null)
-            {
-                var process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
-                if (process == null)
-                    throw new Exception("Could not find process named " + CommandLineArgs.Process);
-                events = process.EventsInProcess;
-            }
-            else
+            ////if (CommandLineArgs.Process != null)
+            ////{
+            ////    var process = etlFile.Processes.LastProcessWithName(CommandLineArgs.Process);
+            ////    if (process == null)
+            ////        throw new Exception("Could not find process named " + CommandLineArgs.Process);
+            ////    events = process.EventsInProcess;
+            ////}
+            ////else
                 events = etlFile.TraceLog.Events;           // All events in the process.
             return events;
         }
-
+#if false
+        #region private
         /// <summary>
         /// Save the CPU stacks for an ETL file into a perfView.xml.zip file.
         /// </summary>
@@ -3636,7 +3640,7 @@ static class GuiModel
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
 #endif
     }
 }

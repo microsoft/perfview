@@ -7,7 +7,8 @@ using System.IO.Compression;
 using System.IO;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Collections.Generic;
-using System.Runtime.Serialization.Json;
+////using System.Runtime.Serialization.Json;
+using Newtonsoft.Json;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -132,7 +133,7 @@ namespace Diagnostics.Tracing.StackSources
                     var zipArchive = new ZipArchive(dataStream);
                     var entries = zipArchive.Entries;
                     if (entries.Count != 1)
-                        throw new ApplicationException("The ZIP file does not have exactly 1 XML file in it,");
+                        throw new Exception("The ZIP file does not have exactly 1 XML file in it,");
                     xmlStream = entries[0].Open();
                     unzippedName = fileName.Substring(0, fileName.Length - 4);
                 }
@@ -145,7 +146,8 @@ namespace Diagnostics.Tracing.StackSources
                 else
                 {
                     XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
-                    reader = XmlTextReader.Create(xmlStream, settings);
+                    ////reader = XmlTextReader.Create(xmlStream, settings);
+                    reader = XmlReader.Create(xmlStream);
                 }
 
                 reader.Read();      // Skip the StackWindow element. 
@@ -253,7 +255,9 @@ namespace Diagnostics.Tracing.StackSources
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         static private XmlReader GetJsonReader(Stream dataStream)
         {
-            return JsonReaderWriterFactory.CreateJsonReader(dataStream, new XmlDictionaryReaderQuotas());
+            ////return JsonReaderWriterFactory.CreateJsonReader(dataStream, new XmlRead XmlDictionaryReaderQuotas());
+            XmlReader reader = XmlReader.Create(dataStream);
+            return reader;
         }
 
         private void Read(XmlReader reader)
