@@ -38,7 +38,8 @@
 
   "buildOptions": {
     "emitEntryPoint": true,
-    "preserveCompilationContext": true
+    "preserveCompilationContext": true,
+    "allowUnsafe": true
   },
 
   "runtimeOptions": {
