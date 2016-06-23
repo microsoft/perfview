@@ -4,6 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using PerfViewExtensibility;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
+////Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -68,6 +72,12 @@ namespace PerfViewService.Controllers
             {
                 // Form a response using HttpResponseException
             }
+
+            string etlFileName = @"C:\Users\t-kahoop\Development\perfview\src\PerfView\bin\Debug\PerfViewData.etl.zip";
+            var etlFile = PerfViewExtensibility.CommandEnvironment.OpenETLFile(etlFileName);
+            TraceEvents events = etlFile.TraceLog.Events;
+            var traceEventSource = events.GetSource();
+            traceEventSource.Process();
 
             return json;
         }
