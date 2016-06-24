@@ -19,7 +19,7 @@
     "PerfViewService": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "http://localhost:5000/view/static/index.html",
+      "launchUrl": "http://localhost:5000/Views/static/index.html",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
