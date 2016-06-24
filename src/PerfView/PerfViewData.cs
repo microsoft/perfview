@@ -2769,7 +2769,7 @@ namespace PerfView
                         if (module != null)
                         {
                             // Resolve the type name.
-                            typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                            typeName = typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                         }
                     }
 
@@ -6179,17 +6179,17 @@ namespace PerfView
         /// </summary>
         public TypeNameSymbolResolver(string contextFilePath, TextWriter log) { m_contextFilePath = contextFilePath; m_log = log; }
 
-        public string ResolveTypeName(int typeID, TraceLoadedModule module, TypeNameOptions options = TypeNameOptions.None)
+        public string ResolveTypeName(int rvaOfType, TraceModuleFile module, TypeNameOptions options = TypeNameOptions.None)
         {
             Module mod = new Module(module.ImageBase);
-            mod.BuildTime = module.ModuleFile.BuildTime;
-            mod.Path = module.ModuleFile.FilePath;
-            mod.PdbAge = module.ModuleFile.PdbAge;
-            mod.PdbGuid = module.ModuleFile.PdbSignature;
-            mod.PdbName = module.ModuleFile.PdbName;
-            mod.Size = module.ModuleFile.ImageSize;
+            mod.BuildTime = module.BuildTime;
+            mod.Path = module.FilePath;
+            mod.PdbAge = module.PdbAge;
+            mod.PdbGuid = module.PdbSignature;
+            mod.PdbName = module.PdbName;
+            mod.Size = module.ImageSize;
 
-            string typeName = ResolveTypeName(typeID, mod);
+            string typeName = ResolveTypeName(rvaOfType, mod);
 
             // Trim the module from the type name if requested.
             if (options == TypeNameOptions.StripModuleName && !string.IsNullOrEmpty(typeName))
