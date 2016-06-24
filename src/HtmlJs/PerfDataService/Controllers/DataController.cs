@@ -11,7 +11,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
-namespace PerfViewService.Controllers
+namespace PerfDataService.Controllers
 {
     [Route("api/[controller]/open")]
     public class DataController : Controller

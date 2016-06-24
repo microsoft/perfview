@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 
-namespace PerfViewService
+namespace PerfDataService
 {
     public class Startup
     {
