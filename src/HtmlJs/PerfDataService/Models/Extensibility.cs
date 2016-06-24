@@ -412,6 +412,7 @@ namespace PerfViewExtensibility
     /// </summary>
     public class ETLDataFile : DataFile
     {
+        // TODO: This symbolPath static property is only a temporary fix.
         static string symbolPath = "C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug\\tempSymbols";
         // We have the concept of a process to focus on.  All STACK sampling will be filtered by this.  
         // If null, then no filtering is done.   Do try to limit to one process if possible as it makes
