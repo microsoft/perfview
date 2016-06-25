@@ -868,7 +868,7 @@ InstallLTTng_RHEL()
 	echo "LTTng installation requires that a new package repo be added to your yum configuration."
 	echo "The package repo url is: $packageRepo"
 	echo ""
-	read -p "Would you like to add the LTTng package repo to your zypper configuration? [Y/N]" resp
+	read -p "Would you like to add the LTTng package repo to your YUM configuration? [Y/N]" resp
 	ResetText
 	if [ "$resp" == "Y" ] || [ "$resp" == "y" ]
 	then
