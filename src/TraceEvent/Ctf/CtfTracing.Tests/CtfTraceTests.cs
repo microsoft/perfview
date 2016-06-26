@@ -102,6 +102,8 @@ namespace Tests
         [TestMethod]
         public void GCStartStopEvents()
         {
+            Assert.Inconclusive("Issue https://github.com/Microsoft/perfview/issues/102 track this.");
+
             string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
