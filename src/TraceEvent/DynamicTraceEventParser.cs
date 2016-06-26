@@ -515,7 +515,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if ((int)ID != 0xFFFE) // If it is not a manifest event
                 {
                     // TODO FIX NOW the || condition is a hack because PerfVIew.ClrEnableParameters fails.  
-                    Debug.Assert(computedSize == this.EventDataLength || this.ProviderName == "PerfView");
+                    Debug.Assert(computedSize <= this.EventDataLength || this.ProviderName == "PerfView");
                 }
 #endif
                 int offset = payloadFetches[index].Offset;
