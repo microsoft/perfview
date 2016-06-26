@@ -53,7 +53,7 @@ namespace TraceEventTests
         /// </summary>
 
         [TestMethod]
-        public void GeneralParsingBasic()
+        public void ETW_GeneralParsing_Basic()
         {
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
