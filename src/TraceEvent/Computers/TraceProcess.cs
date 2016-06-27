@@ -32,7 +32,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             TraceProcesses processes = source.Processes();
             if (processes == null)
             {
-                processes = new TraceProcesses(null /* TraceLog */);
+                processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
                 SetupCallbacks(source);
 
@@ -51,7 +51,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static void AddCallbackOnProcessStart(this TraceEventDispatcher source, Action<TraceProcess> OnProcessStart)
         {
-            TraceProcess.OnInitialized += OnProcessStart;
+            var processes = source.Processes();
+            Debug.Assert(processes != null);
+            processes.OnInitialized += OnProcessStart;
         }
 
         #region private
@@ -285,9 +287,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// process, as well as the process lookup tables and a cache that remembers the last calls to
         /// GetNameForAddress(). 
         /// </summary>
-        internal TraceProcesses(TraceLog log)
+        internal TraceProcesses(TraceLog log, TraceEventDispatcher source)
         {
             this.log = log;
+            this.source = source;
             this.processes = new GrowableArray<TraceProcess>(64);
             this.processesByPID = new GrowableArray<TraceProcess>(64);
         }
@@ -313,13 +316,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         return retProcess;
                     }
                 }
-                retProcess = new TraceProcess(processID, log, (ProcessIndex)processes.Count);
+                retProcess = new TraceProcess(processID, log, (ProcessIndex)processes.Count, source);
                 retProcess.firstEventSeenQPC = timeQPC;
                 processes.Add(retProcess);
                 processesByPID.Insert(index + 1, retProcess);
+                // fire event
+                FireOnInitialized(retProcess);
             }
             return retProcess;
         }
+
+        internal void FireOnInitialized(TraceProcess proc)
+        {
+            if (OnInitialized != null) OnInitialized(proc);
+        }
+
         internal TraceProcess FindProcessAndIndex(int processID, long timeQPC, out int index)
         {
             if (processesByPID.BinarySearch(processID, out index, compareByProcessID))
@@ -345,6 +356,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         private GrowableArray<TraceProcess> processes;          // The threads ordered in time. 
         private GrowableArray<TraceProcess> processesByPID;     // The threads ordered by processID.  
         private TraceLog log;
+        private TraceEventDispatcher source;
+        internal event Action<TraceProcess> OnInitialized;
 
         static private GrowableArray<TraceProcess>.Comparison<int> compareByProcessID = delegate (int processID, TraceProcess process)
         {
@@ -565,15 +578,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         internal TraceProcess(int processID, ProcessIndex processIndex)
         {
-            Initialize(processID, processIndex);
+            Initialize(processID, processIndex, null /* TraceEventDispatcher */);
         }
 
-        internal TraceProcess(int processID, TraceLog log, ProcessIndex processIndex)
+        internal TraceProcess(int processID, TraceLog log, ProcessIndex processIndex, TraceEventDispatcher source)
         {
-            Initialize(processID, processIndex);
+            Initialize(processID, processIndex, source);
         }
 
-        private void Initialize(int processID, ProcessIndex processIndex)
+        private void Initialize(int processID, ProcessIndex processIndex, TraceEventDispatcher source)
         {
             ProcessID = processID;
             ParentID = -1;
@@ -581,6 +594,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             endTimeQPC = long.MaxValue;
             CommandLine = "";
             ImageFileName = "";
+            Source = source;
             Is64Bit = false;
             LoadedModules = null;
             Log = null;
@@ -590,17 +604,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             EventsDuringProcess = null;
             StartTime = EndTime = default(DateTime);
             StartTimeRelativeMsec = EndTimeRelativeMsec = -1;
-
-            if (OnInitialized != null) OnInitialized(this);
         }
-
-        internal static event Action<TraceProcess> OnInitialized;
 
         internal string name;
         internal long firstEventSeenQPC;      // Sadly there are events before process start.   This is minimum of those times.  Note that there may be events before this 
         internal long startTimeQPC;
         internal long endTimeQPC;
-#endregion
+        internal TraceEventDispatcher Source;
+        #endregion
     }
 
     /// <summary>
