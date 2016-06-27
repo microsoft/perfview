@@ -73,7 +73,7 @@ namespace PerfDataService.Controllers
                 // Form a response using HttpResponseException
             }
 
-            string etlFileName = @"C:\Users\t-kahoop\Development\perfview\src\PerfView\bin\Debug\PerfViewData.etl.zip\PerfViewData";
+            string etlFileName = @"C:\Users\t-kahoop\Development\perfview\src\PerfView\bin\Debug\PerfViewData.etl.zip";
             var etlFile = PerfViewExtensibility.CommandEnvironment.OpenETLFile(etlFileName);
             TraceEvents events = etlFile.TraceLog.Events;
             var traceEventSource = events.GetSource();
