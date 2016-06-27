@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 
-namespace PerfViewService
+namespace PerfDataService
 {
     public class Startup
     {
@@ -60,8 +60,8 @@ namespace PerfViewService
             app.UseStaticFiles(new StaticFileOptions()
             {
                 FileProvider = new PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), @"view")),
-                RequestPath = new Microsoft.AspNetCore.Http.PathString("/view")
+                    Path.Combine(Directory.GetCurrentDirectory(), @"Views")),
+                RequestPath = new Microsoft.AspNetCore.Http.PathString("/Views")
             });
         }
     }
