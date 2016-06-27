@@ -683,7 +683,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         #endregion
 
-        [DllImport("kernel32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("kernel32.dll", EntryPoint="RtlZeroMemory", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
         internal static extern void ZeroMemory(IntPtr handle, int length);
 
         // TODO what is this for?
