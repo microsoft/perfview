@@ -834,7 +834,7 @@ InstallPerf_Ubuntu()
 	BlueText
 	echo "Installing perf_event packages."
 	ResetText
-	apt-get install linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r`
+	apt-get install linux-tools-common linux-tools-`uname -r` linux-cloud-tools-`uname -r` zip software-properties-common
 }
 
 InstallPerf()
