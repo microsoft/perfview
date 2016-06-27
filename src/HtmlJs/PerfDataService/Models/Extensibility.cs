@@ -483,7 +483,7 @@ namespace PerfViewExtensibility
                     if (File.Exists(etlxFileName) && File.GetLastWriteTimeUtc(etlOrEtlXFileName) <= File.GetLastWriteTimeUtc(etlxFileName))
                     {
                         usedAnExistingEtlxFile = true;
-                        ////log.WriteLine("Found a existing ETLX file in cache: {0}", etlxFileName);
+                        log.WriteLine("Found a existing ETLX file in cache: {0}", etlxFileName);
                     }
                     else
                     {
@@ -498,15 +498,15 @@ namespace PerfViewExtensibility
                         options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };
 
                         System.Diagnostics.Debug.WriteLine("\n\nAbout to CreateFromEventTraceLogFile: " + etlOrEtlXFileName + "\n\n");
-                        ////log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
+                        log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
                         TraceLog.CreateFromEventTraceLogFile(etlOrEtlXFileName, etlxFileName, options);
 
                         var dataFileSize = "Unknown";
                         if (File.Exists(etlOrEtlXFileName))
                             dataFileSize = ((new System.IO.FileInfo(etlOrEtlXFileName)).Length / 1000000.0).ToString("n3") + " MB";
 
-                        ////log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB",
-                        ////dataFileSize, (new System.IO.FileInfo(etlxFileName)).Length / 1000000.0);
+                        log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB",
+                        dataFileSize, (new System.IO.FileInfo(etlxFileName)).Length / 1000000.0);
                     }
                 }
                 // At this point we have an etlxFileName set, so we can open the TraceLog file. 
@@ -519,7 +519,7 @@ namespace PerfViewExtensibility
                     // Failure! If we used an existing ETLX file we should try to regenerate the file 
                     if (usedAnExistingEtlxFile)
                     {
-                        ////log.WriteLine("Could not open the ETLX file, regenerating...");
+                        log.WriteLine("Could not open the ETLX file, regenerating...");
                         FileUtilities.ForceDelete(etlxFileName);
                         if (!File.Exists(etlxFileName))
                             continue;       // Retry 
