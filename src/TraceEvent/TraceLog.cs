@@ -474,7 +474,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
                 //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
-                TraceEventCounts countForEvent = this.stats.GetEventCounts(data);
+                TraceEventCounts countForEvent = this.Stats.GetEventCounts(data);
                 Debug.Assert((int)data.EventIndex == this.eventCount);
                 countForEvent.m_count++;
                 countForEvent.m_eventDataLenTotal += data.EventDataLength;
