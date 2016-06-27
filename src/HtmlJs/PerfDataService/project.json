@@ -1,9 +1,5 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.App": {
-      "version": "1.0.0-rc2-3002702",
-      "type": "platform"
-    },
     "Microsoft.ApplicationInsights.AspNetCore": "1.0.0-rc2-final",
     "Microsoft.AspNetCore.Mvc": "1.0.0-rc2-final",
     "Microsoft.AspNetCore.Server.IISIntegration": "1.0.0-rc2-final",
@@ -15,8 +11,7 @@
     "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final",
     "Newtonsoft.Json": "8.0.3",
-    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final",
-    "TraceEventCore": "1.0.41"
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final"
   },
 
   "tools": {
@@ -27,13 +22,30 @@
   },
 
   "frameworks": {
+    /** comment out the net46 framework if you want to run on .NET Core */
+    "net46": {
+      "dependencies": {
+        "Microsoft.Diagnostics.Tracing.TraceEvent": "1.0.41",
+        "System.IO.Compression": "4.1.0",
+        "System.IO.Compression.ZipFile": "4.0.1"
+      }
+    }
+    /** comment out the netcorapp1.0 if you want to run on the Desktop framework. 
     "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "version": "1.0.0-rc2-3002702",
+          "type": "platform"
+        },
+        "TraceEventCore": "1.0.41"
+      },
       "imports": [
         "dotnet5.6",
         "dnxcore50",
         "portable-net45+win8"
       ]
     }
+    **/
   },
 
   "buildOptions": {

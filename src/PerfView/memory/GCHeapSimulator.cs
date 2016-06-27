@@ -498,7 +498,7 @@ namespace PerfView
                     if (module != null)
                     {
                         // Resolve the type name using project N resolution 
-                        typeName = m_typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                        typeName = m_typeNameSymbolResolver.ResolveTypeName((int)(data.TypeID - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                     }
                 }
 

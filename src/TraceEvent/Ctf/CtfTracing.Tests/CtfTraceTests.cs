@@ -13,7 +13,7 @@ namespace Tests
         static string TestDataDirectory = @"..\..\inputs";
 
         [TestMethod]
-        public void GCAllocationTick()
+        public void LTTng_GCAllocationTick()
         {
             Assert.Inconclusive();
             return;
@@ -100,8 +100,10 @@ namespace Tests
         }
 
         [TestMethod]
-        public void GCStartStopEvents()
+        public void LTTng_GCStartStopEvents()
         {
+            Assert.Inconclusive("Issue https://github.com/Microsoft/perfview/issues/102 track this.");
+
             string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))

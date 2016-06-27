@@ -2181,7 +2181,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (pieces.Length >= 2)
                     {
                         var buildTimePath = pieces[0];
-                        log.WriteLine("Found source {0} in the PDB", buildTimePath);
+                        // log.WriteLine("Found source {0} in the PDB", buildTimePath);
                         if (string.Compare(BuildTimeFilePath, buildTimePath, StringComparison.OrdinalIgnoreCase) == 0)
                         {
                             // Create variables for each of the pieces.  
