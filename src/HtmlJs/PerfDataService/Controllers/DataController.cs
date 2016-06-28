@@ -32,88 +32,12 @@ namespace PerfDataService.Controllers
             // Dictionary containing entire hierarchy
             Dictionary<string, object> tree = new Dictionary<string, object>();
             tree.Add("status", "OK");
+            tree.Add("name", path.Split('\\').Last());
             tree.Add("path", path);
+            tree.Add("type", getTypeOfItem(path));
 
-            // Top level items
-            List<object> items = new List<object>();
-            tree.Add("items", items);
-
-            /* Identify path target */
-
-            // Does this path lead to a directory or a file?
-            if (Directory.Exists(path))
-            {
-                // Indiciate (in the JSON response object) that this is a directory
-                tree.Add("type", "directory");
-
-                // Get all children of directory
-                IEnumerable<string> children = Directory.EnumerateFileSystemEntries(path);
-
-                // Package into JSON
-                foreach (string child in children)
-                {
-                    // Set name property
-                    Dictionary<string, object> directory = new Dictionary<string, object>();
-                    directory.Add("name", child.Split('/').Last());  // Name of item
-                    //directory.Add("type", GetType(child));  // TODO: Create method to derive the type of a child item
-                    directory.Add("path", child);  // Path to item
-                    //directory.Add("hasChildren", hasChildren(child));  // TODO: Create method to derive hasChildren property of child item
-                }
-            }
-            else if (new FileInfo(path).Exists)
-            {
-                // Create .etl file from path (assume only .etl.zip for now)
-                string etlFileName = path;
-                var etlFile = PerfViewExtensibility.CommandEnvironment.OpenETLFile(etlFileName);
-                TraceEvents events = etlFile.TraceLog.Events;
-
-                Stacks CPUStacks = etlFile.CPUStacks();
-
-                // First top level item
-                Dictionary<string, object> item = new Dictionary<string, object>();
-                items.Add(item);
-                item.Add("name", etlFileName);
-                item.Add("type", etlFile.GetType());
-                System.Diagnostics.Debug.WriteLine("type: " + etlFile.GetType());
-
-                // Second top level item
-                item = new Dictionary<string, object>();
-                items.Add(item);
-                item.Add("name", CPUStacks.Name);
-                item.Add("type", CPUStacks.GetType());
-                System.Diagnostics.Debug.WriteLine("type: " + CPUStacks.GetType());
-            }
-            else
-            {
-                // Invalid path
-                return null;  // TODO: Form proper response notifying user that the path passed was incorrect
-            }
-
-            //// First top level folder
-            //item = new Dictionary<string, object>();
-            //items.Add(item);
-            //item.Add("name", "Test Folder 1");
-            //item.Add("type", "file");
-            //List<object> subItems = new List<object>();
-            //item.Add("items", subItems);
-
-            //// Folder subitem
-            //Dictionary<string, object> subItem = new Dictionary<string, object>();
-            //subItems.Add(subItem);
-            //subItem.Add("name", "Dump");
-            //subItem.Add("type", "otherType");
-
-            //// Folder subitem
-            //subItem = new Dictionary<string, object>();
-            //subItems.Add(subItem);
-            //subItem.Add("name", "Trace");
-            //subItem.Add("type", "otherType");
-
-            //// Third top level item
-            //item = new Dictionary<string, object>();
-            //items.Add(item);
-            //item.Add("name", "Another Top Level Item");
-            //item.Add("type", "otherType");
+            List<object> children = getChildrenForPath(path);
+            tree.Add("children", children);
 
             string json = JsonConvert.SerializeObject(tree, Formatting.Indented);
 
@@ -124,6 +48,125 @@ namespace PerfDataService.Controllers
 
             return json;
         }
+
+
+        public List<object> getChildrenForPath(string pathToItem)
+        {
+            List<object> childrenContainer = new List<object>();
+
+            /* IF DIRECTORY */
+            if (Directory.Exists(pathToItem))
+            {
+                // Get all children in the directory
+                IEnumerable<string> children = Directory.EnumerateFileSystemEntries(pathToItem);
+
+                // Package them into dictionary objects
+                foreach (string child in children)
+                {
+                    string type = getTypeOfItem(child);
+                    if (type == null) { continue; }  // Unsupported file types return null
+
+                    // This is a file type we want to return!
+                    Dictionary<string, object> dir = new Dictionary<string, object>();
+                    dir.Add("name", child.Split('\\').Last());  // Name of item
+                    dir.Add("type", type);  // Type of item
+                    dir.Add("path", child);  // Path to item
+                    dir.Add("hasChildren", hasChildren(child));  // TODO: Create method to derive hasChildren property of child item
+                    childrenContainer.Add(dir);
+                }
+
+                return childrenContainer;
+            }
+            // IF REAL FILE (e.g. .etl.zip, .etl)
+            else if (new FileInfo(pathToItem).Exists)
+            {
+                // Assume only .etl.zip for now
+                string etlFileName = pathToItem;
+                var etlFile = PerfViewExtensibility.CommandEnvironment.OpenETLFile(etlFileName);
+                TraceEvents events = etlFile.TraceLog.Events;
+
+                // Create CPU Stacks as child
+                Stacks CPUStacks = etlFile.CPUStacks();
+
+                Dictionary<string, object> child = new Dictionary<string, object>();
+                childrenContainer.Add(child);
+                child.Add("name", CPUStacks.Name);
+                child.Add("type", CPUStacks.GetType());
+                System.Diagnostics.Debug.WriteLine("type: " + CPUStacks.GetType());
+
+                // TODO: Create Process / Files / Registry Stacks as child
+                // TODO: Create TraceInfo htmlReport as child
+                // TODO: Create Processes htmlReport as child
+                // TODO: Create Events as child
+                // TODO: Create Memory Group as child
+                // TODO: Create Advanced Group as child
+
+                return childrenContainer;
+            }
+            // IF PERFVIEW FILE (e.g. "stacks", "events", "html", "gcdump")
+            else
+            {
+                // Virtual path
+                // TODO: Actually, make this another GET route on the API
+                return childrenContainer;
+            }
+        }
+
+
+        public string getTypeOfItem(string itemPath)
+        {
+            if (Directory.Exists(itemPath))
+            {
+                return "dir";
+            }
+            else if (new FileInfo(itemPath).Exists)
+            {
+                string fileExtension = itemPath.Split('.').Last();
+
+                // Add more types as they are implemented
+                switch (fileExtension)
+                {
+                    case "etl.zip":
+                        return "file";
+                    case "etl":
+                        return "file";
+                    default:
+                        // This file type is currently unsupported
+                        return null;
+                }
+            }
+
+            // Something went wrong between this point and the discovery of the item
+            return null;
+        }
+
+
+        public Boolean hasChildren(string itemPath)
+        {
+            if (Directory.Exists(itemPath) && Directory.EnumerateFileSystemEntries(itemPath).Count() > 0)
+            {
+                // It's a directory and we have confirmed that it has children
+                return true;
+            }
+            else if (new FileInfo(itemPath).Exists)
+            {
+                string type = getTypeOfItem(itemPath);
+
+                // It's a file, and we must check that it's a type we expect to have children
+                // Add more types as they are implemented
+                switch (type)
+                {
+                    case "file":
+                        return true;
+                    default:
+                        // This file type is currently unsupported
+                        return false;
+                }
+            }
+
+            return false;
+        }
+
 
         // GET api/values/5
         [HttpGet("{id}")]
