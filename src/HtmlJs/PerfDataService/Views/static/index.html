@@ -167,13 +167,14 @@
       <!-- GET Tree View Hierarchy -->
       <script>
         // GET all directories and items and append them to tree view
-        $(document).ready( function() {
-          treeView = delegate.httpGet("/api/data/open?path=C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug", function (response) {
-            items = response.items;
-            var htmlFromJSON = createTreeFromJSON(items);
-            $("#mainTree").append(htmlFromJSON);
-            delegate.log("Completed: View");
-          });
+        $(document).ready(function () {
+            treeView = delegate.httpGet("/api/data/open?path=C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug", function (response) {
+                console.log(response);
+                items = response.items;
+                var htmlFromJSON = createTreeFromJSON(items);
+                $("#mainTree").append(htmlFromJSON);
+                delegate.log("Completed: View");
+            });
         });
 
         // Recursively parse JSON tree
