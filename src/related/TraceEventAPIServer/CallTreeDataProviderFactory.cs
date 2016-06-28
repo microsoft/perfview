@@ -86,23 +86,23 @@
             }
 
             /* symbols and sources related parameters */
-            string sympath = queryString["sympath"];
-            string srcpath = queryString["srcpath"];
-            string imageFilter = queryString["imagefilter"];
-            string modulesFilter = queryString["modulesfilter"];
+            string sympath = (string)queryString["sympath"] ?? string.Empty;
+            string srcpath = (string)queryString["srcpath"] ?? string.Empty;
+            string imageFilter = (string)queryString["imagefilter"] ?? string.Empty;
+            string modulesFilter = (string)queryString["modulesfilter"] ?? string.Empty;
 
             /* filtering parameters */
-            string start = queryString["start"];
-            string end = queryString["end"];
-            string incpats = queryString["incpats"];
-            string excpats = queryString["excpats"];
-            string foldpats = queryString["foldpats"];
-            string grouppats = queryString["grouppats"];
-            string foldpct = queryString["foldpct"];
+            string start = (string)queryString["start"] ?? string.Empty;
+            string end = (string)queryString["end"] ?? string.Empty;
+            string incpats = (string)queryString["incpats"] ?? string.Empty;
+            string excpats = (string)queryString["excpats"] ?? string.Empty;
+            string foldpats = (string)queryString["foldpats"] ?? string.Empty;
+            string grouppats = (string)queryString["grouppats"] ?? string.Empty;
+            string foldpct = (string)queryString["foldpct"] ?? string.Empty;
 
             EtlxFile etlxFile;
 
-            string etlxFilePath = Path.Combine(tempPath, Path.ChangeExtension(filename.Replace(@"\", "_"), etlxExtension));
+            string etlxFilePath = Path.Combine(tempPath, Path.ChangeExtension(filename.Replace(@"\", "_").Replace(@":", "_").Replace(@"/", "_"), etlxExtension));
             SymbolReader symbolReader;
 
             lock (this.etlxCache)
