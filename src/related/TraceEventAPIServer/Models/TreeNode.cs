@@ -5,13 +5,17 @@
     using Microsoft.Diagnostics.Tracing.Stacks;
 
     [DataContract]
-    public sealed class TreeNode
+    public class TreeNode
     {
         private readonly object lockObj = new object();
 
         private TreeNode[] callees;
 
         private readonly CallTreeNode backingNodeWithChildren;
+
+        internal TreeNode()
+        {
+        }
 
         public TreeNode(CallTreeNodeBase template)
         {
