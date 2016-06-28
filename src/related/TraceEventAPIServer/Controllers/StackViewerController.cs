@@ -8,14 +8,14 @@
     {
         private readonly ICallTreeDataProvider dataProvider;
 
-        public StackViewerController(ICallTreeDataProvider dataProvider)
+        public StackViewerController(ICallTreeDataProviderFactory dataProviderFactory)
         {
-            if (dataProvider == null)
+            if (dataProviderFactory == null)
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(dataProvider));
+                ThrowHelper.ThrowArgumentNullException(nameof(dataProviderFactory));
             }
 
-            this.dataProvider = dataProvider;
+            this.dataProvider = dataProviderFactory.Get();
         }
 
         [HttpGet]
