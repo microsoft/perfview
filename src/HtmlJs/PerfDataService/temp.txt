@@ -1,0 +1,2 @@
+Found a existing unzipped file C:\Users\t-kahoop\AppData\Local\Temp\PerfDataService\PerfViewData.etl_cb808e88.etl
+Found a existing ETLX file in cache: C:\Users\t-kahoop\AppData\Local\Temp\PerfDataService\PerfViewData.etl_cb808e88_1bd8260c.etlx
