@@ -170,7 +170,7 @@
         $(document).ready(function () {
             treeView = delegate.httpGet("/api/data/open?path=C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug", function (response) {
                 console.log(response);
-                items = response.items;
+                var items = response.children;
                 var htmlFromJSON = createTreeFromJSON(items);
                 $("#mainTree").append(htmlFromJSON);
                 delegate.log("Completed: View");
@@ -184,14 +184,11 @@
           for (var i = 0; i < items.length; ++i) {
             var item = items[i];
 
-            if (item.type == "dir"
-            || item.type == "directory"
-            || item.type == "file"
-            || item.type == "folder") {
+            if (item.type == "dir" && item.children) {
               // It's a file
               htmlToAppend += "<li>" + item.name
                              + "<ul>\n"
-                             +   createTreeFromJSON(item.items)
+                             +   createTreeFromJSON(item.children)
                              + "\n</ul>\n" +
                              "</li>";
             } else {
