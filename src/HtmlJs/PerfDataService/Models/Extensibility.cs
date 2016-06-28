@@ -474,12 +474,9 @@ namespace PerfViewExtensibility
             {
                 var usedAnExistingEtlxFile = false;
                 var etlxFileName = etlOrEtlXFileName;
-                System.Diagnostics.Debug.WriteLine("\n\nfile: " + etlOrEtlXFileName + "\n\n");
-                System.Diagnostics.Debug.WriteLine("\n\nEnds with .etl?: " + etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) + "\n\n");
                 if (etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                 {
                     etlxFileName = CacheFiles.FindFile(etlOrEtlXFileName, ".etlx");
-                    System.Diagnostics.Debug.WriteLine("\n\nAfter Cache Check: " + etlxFileName + "\n\n");
                     if (File.Exists(etlxFileName) && File.GetLastWriteTimeUtc(etlOrEtlXFileName) <= File.GetLastWriteTimeUtc(etlxFileName))
                     {
                         usedAnExistingEtlxFile = true;
@@ -497,7 +494,6 @@ namespace PerfViewExtensibility
                         options.LocalSymbolsOnly = false;
                         options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };
 
-                        System.Diagnostics.Debug.WriteLine("\n\nAbout to CreateFromEventTraceLogFile: " + etlOrEtlXFileName + "\n\n");
                         log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
                         TraceLog.CreateFromEventTraceLogFile(etlOrEtlXFileName, etlxFileName, options);
 
@@ -529,6 +525,8 @@ namespace PerfViewExtensibility
                 break;
             }
 
+            log.Flush();
+            log.Close();
             // Yeah we have opened the log file!
             ////if (App.CommandLineArgs.UnsafePDBMatch)
             ////    m_TraceLog.CodeAddresses.UnsafePDBMatching = true;
