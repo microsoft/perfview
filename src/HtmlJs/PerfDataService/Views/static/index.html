@@ -3,12 +3,15 @@
   <head>
     <link rel="stylesheet" type="text/css" href="home.css">
 
-    <!-- basicContext Library -->
+    <!-- basicContext Theme -->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
     <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
     <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+    <!-- jsTree Theme -->
+    <link rel="stylesheet" href="../node_modules/jstree/dist/themes/default/style.min.css" />
   </head>
 
   <body>
@@ -17,11 +20,8 @@
     <div class="wrapper">
       <div id="sideBarContainer">
 
-          <input id="dirSelect" list="directories" type="text" onchange="delegate.changeDirectoryTreePath(this.value)">
-          <datalist id="directories">
-            <option value="dir0"/>
-            <option value="dir1"/>
-            <option value="dir2"/>
+          <input id="dirSelect" list="recentDirectories" type="text" onchange="delegate.changeDirectoryTreePath(this.value)">
+          <datalist id="recentDirectories">
           </datalist>
 
 
@@ -33,10 +33,9 @@
         </div>
 
         <div id="treeContainer">
-          <ul class="mktree" id="directoryTree">
 
-          </ul>
         </div>
+
       </div>
 
       <div id="welcome">
@@ -160,40 +159,20 @@
 
 
       <!-- MKTREE Library -->
-      <script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
-      <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">
+      <!--<script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
+      <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">-->
+
+      <!-- jsTree Library -->
+      <script src="../node_modules/jstree/dist/jstree.min.js"></script>
 
 
       <!-- GET Tree View Hierarchy -->
-      <script>
+      <!--<script>
         // GET all directories and items and append them to tree view
-        $(document).ready(function () {
-            delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
-        });
-
-        // Recursively parse JSON tree
-        function createTreeFromJSON(items) {
-          var htmlToAppend = "";
-
-          for (var i = 0; i < items.length; ++i) {
-            var item = items[i];
-
-            if (item.type == "dir" && item.children) {
-              // It's a file
-              htmlToAppend += "<li>" + item.name
-                             + "<ul>\n"
-                             +   createTreeFromJSON(item.children)
-                             + "\n</ul>\n" +
-                             "</li>";
-            } else {
-              // It's an item
-              htmlToAppend += "<li>" + item.name + "</li>";
-            }
-          }
-
-          return htmlToAppend;
-        }
-      </script>
+        //$(document).ready(function () {
+        //    delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
+        //});
+      </script>-->
 
 
 

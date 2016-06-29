@@ -29,7 +29,7 @@ namespace PerfDataService.Controllers
             // Dictionary containing entire hierarchy
             Dictionary<string, object> tree = new Dictionary<string, object>();
             tree.Add("status", "OK");
-            tree.Add("name", path.Split('/').Last());
+            tree.Add("text", path.Split(new Char[] {'/', '\\'}).Last());
             tree.Add("path", path);
             tree.Add("type", getTypeOfItem(path));
 
@@ -79,6 +79,17 @@ namespace PerfDataService.Controllers
                 // Get all children in the directory
                 IEnumerable<string> children = Directory.EnumerateFileSystemEntries(pathToItem);
 
+                if (pathToItem != "C:/" || pathToItem != "C:\\")
+                {
+                    // Add '..' directory
+                    Dictionary<string, object> upDir = new Dictionary<string, object>();
+                    upDir.Add("text", "..");  // Name of item
+                    upDir.Add("type", "dir");  // Type of item
+                    upDir.Add("path", System.IO.Directory.GetParent(pathToItem).FullName);  // Path to item
+                    upDir.Add("hasChildren", false);  // TODO: Create method to derive hasChildren property of child item
+                    childrenContainer.Add(upDir);
+                }
+
                 // Package them into dictionary objects
                 foreach (string child in children)
                 {
@@ -87,12 +98,14 @@ namespace PerfDataService.Controllers
 
                     // This is a file type we want to return!
                     Dictionary<string, object> dir = new Dictionary<string, object>();
-                    dir.Add("name", child.Split('\\').Last());  // Name of item
+                    dir.Add("text", child.Split('\\').Last());  // Name of item
                     dir.Add("type", type);  // Type of item
                     dir.Add("path", child);  // Path to item
                     dir.Add("hasChildren", hasChildren(child));  // TODO: Create method to derive hasChildren property of child item
                     childrenContainer.Add(dir);
                 }
+
+                System.Diagnostics.Debug.WriteLine("\n\n\n" + children.ToString() + "\n\n\n");
 
                 return childrenContainer;
             }
@@ -109,7 +122,7 @@ namespace PerfDataService.Controllers
 
                 Dictionary<string, object> child = new Dictionary<string, object>();
                 childrenContainer.Add(child);
-                child.Add("name", CPUStacks.Name);
+                child.Add("text", CPUStacks.Name);
                 child.Add("type", CPUStacks.GetType());
                 System.Diagnostics.Debug.WriteLine("type: " + CPUStacks.GetType());
 
@@ -145,7 +158,7 @@ namespace PerfDataService.Controllers
                 // Add more types as they are implemented
                 switch (fileExtension)
                 {
-                    case "etl.zip":
+                    case "zip":
                         return "file";
                     case "etl":
                         return "file";
