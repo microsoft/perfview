@@ -155,8 +155,10 @@ Tree View and Welcome View
 }
 
 /* Tree Hierarchy */
-.wrapper #treeContainer ul li {
-  font-size: .9em;
+.wrapper #treeContainer li {
+    overflow: hidden;
+    text-overflow: clip;
+    font-size: .75em;
 }
 
 /* Welcome View */
