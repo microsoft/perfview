@@ -21,32 +21,51 @@ namespace PerfDataService.Controllers
         [HttpGet]
         public string Get([FromQuery]string path)
         {
-            // Make sure the user provided a non-null query string parameter 'path'
-            if (String.IsNullOrEmpty(path))
-            {
-                return null;  // TODO: Form proper respone notifying user that the path passed was nonexistent
-            }
+            path = cleanUpPath(path);
+            if (path == null) { return null; }  // TODO: Form proper response
 
             /* Create Dictionary to be returned as JSON in response */
 
             // Dictionary containing entire hierarchy
             Dictionary<string, object> tree = new Dictionary<string, object>();
             tree.Add("status", "OK");
-            tree.Add("name", path.Split('\\').Last());
+            tree.Add("name", path.Split('/').Last());
             tree.Add("path", path);
             tree.Add("type", getTypeOfItem(path));
 
-            List<object> children = getChildrenForPath(path);
-            tree.Add("children", children);
+            try
+            {
+                List<object> children = getChildrenForPath(path);
+                tree.Add("children", children);
+            } catch (UnauthorizedAccessException)
+            {
+                // TODO: Form a proper response for this
+            }
 
             string json = JsonConvert.SerializeObject(tree, Formatting.Indented);
 
             if (json == null)
             {
-                // Form a response using HttpResponseException
+                // TODO: Form a response using HttpResponseException
             }
 
             return json;
+        }
+
+
+        public string cleanUpPath(string path)
+        {
+            // Make sure the user provided a non-null query string parameter 'path'
+            if (String.IsNullOrEmpty(path))
+            {
+                return null;  // TODO: Form proper respone notifying user that the path passed was nonexistent
+            }
+
+            if (path.Last() == '/' && !path.Equals("C:/") && !path.Equals("C:\\")) {
+                path = path.Substring(0, path.Length - 1);
+            }
+
+            return path;
         }
 
 

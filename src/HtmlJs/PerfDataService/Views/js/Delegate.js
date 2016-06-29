@@ -1,13 +1,14 @@
 function Delegate() {
     var self = this;
-    var domain = "http://localhost:5000";
+    self.domain = "http://localhost:5000";
+    self.defaultDirectoryTreePath = "C:/Users/t-kahoop/Development/perfview/src/PerfView/bin/Debug";
 
   this.log = function log(status) {
     $("#statusBar span").text(status);
   }
 
   this.httpGet = function httpGet(url, callback) {
-    url = domain + url;
+    url = self.domain + url;
     var xmlHttp = new XMLHttpRequest();
     xmlHttp.onreadystatechange = function() {
       if (xmlHttp.readyState == 4) {
@@ -21,6 +22,16 @@ function Delegate() {
     }
     xmlHttp.open("GET", url, true);
     xmlHttp.send(null);
+  }
+
+  this.changeDirectoryTreePath = function changeDirectoryTreePath(path) {
+      self.httpGet("/api/data/open?path=" + path, function (response) {
+          console.log(response);
+          var items = response.children;
+          var htmlFromJSON = createTreeFromJSON(items);
+          $("#directoryTree").html(htmlFromJSON);
+          delegate.log("Completed: Directory Tree Path Update");
+      });
   }
 }
 
