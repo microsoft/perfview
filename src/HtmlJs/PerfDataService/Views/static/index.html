@@ -17,7 +17,7 @@
     <div class="wrapper">
       <div id="sideBarContainer">
 
-          <input id="dirSelect" list="directories" type="text">
+          <input id="dirSelect" list="directories" type="text" onchange="delegate.changeDirectoryTreePath(this.value)">
           <datalist id="directories">
             <option value="dir0"/>
             <option value="dir1"/>
@@ -33,7 +33,7 @@
         </div>
 
         <div id="treeContainer">
-          <ul class="mktree" id="mainTree">
+          <ul class="mktree" id="directoryTree">
 
           </ul>
         </div>
@@ -168,13 +168,7 @@
       <script>
         // GET all directories and items and append them to tree view
         $(document).ready(function () {
-            treeView = delegate.httpGet("/api/data/open?path=C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug", function (response) {
-                console.log(response);
-                var items = response.children;
-                var htmlFromJSON = createTreeFromJSON(items);
-                $("#mainTree").append(htmlFromJSON);
-                delegate.log("Completed: View");
-            });
+            delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
         });
 
         // Recursively parse JSON tree
