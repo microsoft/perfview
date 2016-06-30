@@ -13,9 +13,8 @@ using System.Windows.Controls.Primitives;
 
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Stats;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
 
 namespace PerfView
 {
@@ -24,14 +23,14 @@ namespace PerfView
     /// </summary>
     internal class GcEventWrapper
     {
-        GCEvent m_event;
+        TraceGC m_event;
 
-        internal GcEventWrapper(GCEvent evnt)
+        internal GcEventWrapper(TraceGC evnt)
         {
             m_event = evnt;
         }
 
-        internal GCEvent Event
+        internal TraceGC Event
         {
             get
             {
@@ -43,7 +42,7 @@ namespace PerfView
         {
             get
             {
-                return m_event.GCNumber;
+                return m_event.Number;
             }
         }
 
@@ -83,7 +82,7 @@ namespace PerfView
         {
             get
             {
-                GCHeapStatsTraceData stat = m_event.HeapStats;
+                GCHeapStats stat = m_event.HeapStats;
 
                 if (stat != null)
                 {
@@ -100,7 +99,7 @@ namespace PerfView
         {
             get
             {
-                GCHeapStatsTraceData stat = m_event.HeapStats;
+                GCHeapStats stat = m_event.HeapStats;
 
                 if (stat != null)
                 {
@@ -117,7 +116,7 @@ namespace PerfView
         {
             get
             {
-                GCHeapStatsTraceData stat = m_event.HeapStats;
+                GCHeapStats stat = m_event.HeapStats;
 
                 if (stat != null)
                 {
@@ -205,11 +204,11 @@ namespace PerfView
 
             foreach (GcEventWrapper er in m_gcEvents)
             {
-                GCEvent e = er.Event;
+                TraceGC e = er.Event;
 
                 GCType typ = e.Type;
 
-                switch (e.GCGeneration)
+                switch (e.Generation)
                 {
                     case 0:
                         if (no_g0) continue;
@@ -298,7 +297,7 @@ namespace PerfView
             m_grid.ItemsSource = FilterEvent();
         }
 
-        internal void SetGCEvents(List<GCEvent> events)
+        internal void SetGCEvents(List<TraceGC> events)
         {
             m_gcEvents = new List<GcEventWrapper>(events.Count);
             
