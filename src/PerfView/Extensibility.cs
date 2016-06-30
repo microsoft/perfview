@@ -30,7 +30,6 @@ using Address = System.UInt64;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using PerfView.Dialogs;
-using PerfView.CapStats;
 using EventSources;
 
 namespace PerfViewExtensibility
@@ -401,9 +400,9 @@ namespace PerfViewExtensibility
         public void Close() { Dispose(); }
         public virtual void Dispose() { }
 
-        #region private
+#region private
         protected string m_FilePath;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -600,7 +599,7 @@ namespace PerfViewExtensibility
             m_TraceLog.Dispose();
             m_TraceLog = null;
         }
-        #region private
+#region private
 
         private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
         {
@@ -729,7 +728,7 @@ namespace PerfViewExtensibility
 
         TraceLog m_TraceLog;
         TraceProcess m_FilterProcess;       // Only care about this process. 
-        #endregion
+#endregion
     }
 
     public class Events : ETWEventSource
@@ -813,7 +812,7 @@ namespace PerfViewExtensibility
             m_EtlFile = etlFile;
         }
 
-        #region private
+#region private
         /// <summary>
         /// Returns a string that is will be exactly one field of a CSV file.  Thus it escapes , and ""
         /// </summary>
@@ -832,7 +831,7 @@ namespace PerfViewExtensibility
         }
 
         internal ETLDataFile m_EtlFile;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1073,7 +1072,7 @@ namespace PerfViewExtensibility
             return sw.ToString();
         }
 
-        #region private
+#region private
         /// <summary>
         /// TODO should not have to specify the ETL file. 
         /// </summary>
@@ -1127,10 +1126,10 @@ namespace PerfViewExtensibility
         internal ETLDataFile m_EtlFile;                 // If this stack came from and ETL File this is that file.  
         internal string m_fileName;                     // TODO is this a hack.  This is the file name if present.  
         StackWindowGuiState m_GuiState;
-        #endregion
+#endregion
     }
 
-    #region internal classes
+#region internal classes
     internal static class Extensions
     {
         public static string ExtensionsDirectory
@@ -1509,7 +1508,7 @@ namespace PerfViewExtensibility
         }
 
 
-        #region private
+#region private
         private static string s_ExtensionsDirectory;
 
         private static Dictionary<string, object> LoadedObjects;
@@ -1587,10 +1586,10 @@ namespace PerfViewExtensibility
                     "Could not find user command {0} that takes {1} arguments.  Use /userCommandHelp for help.", methodSpec, args == null ? 0 : args.Length));
             }
         }
-        #endregion
+#endregion
     }
 
-#if false 
+#if false
 // TODO FIX NOW use or remove 
 //
 // What is the right model?
@@ -1661,7 +1660,7 @@ static class GuiModel
     }
 }
 #endif
-    #endregion
+#endregion
 }
 
 // PerfViewModel contains things that are not very important for the user to see 
@@ -2838,19 +2837,6 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
-        /// <summary>
-        /// Prints a report whether exeFileName is a ready-to-run image.  
-        /// </summary>
-        public void IsReadyToRun(string exeFileName)
-        {
-            using (var pefile = new PEFile.PEFile(exeFileName))
-            {
-                var isReadyToRun = pefile.IsManagedReadyToRun;
-                LogFile.WriteLine("[{0} isReadyToRun = {1}]", exeFileName, isReadyToRun);
-                OpenLog();
-            }
-        }
-
         class CodeSymbolListener
         {
             public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)
@@ -2862,7 +2848,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-            #region private
+#region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -2939,7 +2925,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -2985,21 +2971,28 @@ namespace PerfViewExtensibility
         {
             ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
 
-            var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile);
-            var gcStats = Stats.GCProcess.Collect(source, 1);   // TODO we don't know that it is 1 msec sampling.  
+            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            using (var source = new ETWTraceEventSource(etlFile))
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                source.Process();
+                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+            }
 
             var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
             using (var output = File.CreateText(outputFileName))
             {
                 LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
-                gcStats.ToHtml(output, outputFileName, "GCStats", null);
-                foreach (Stats.GCProcess proc in gcStats)
+                Stats.ClrStats.ToHtml(output, processes, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC);
+                foreach (Microsoft.Diagnostics.Tracing.Analysis.TraceProcess proc in processes)
                 {
-                    if (proc.Interesting)
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc);
+                    if (mang != null)
                     {
                         var csvName = Path.ChangeExtension(etlFile, ".gcStats." + proc.ProcessID.ToString() + ".csv");
                         LogFile.WriteLine("  Wrote CsvFile {0}", csvName);
-                        proc.ToCsv(csvName);
+                        Stats.GcStats.ToCsv(csvName, mang);
                     }
                 }
             }
@@ -3015,15 +3008,25 @@ namespace PerfViewExtensibility
             if (PerfView.AppLog.InternalUser)
             {
                 ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
-                TraceLog source = TraceLog.OpenOrConvert(etlFile);
 
-                var gcStats = Stats.GCProcess.Collect(source.Events.GetSource(), 1, null, null, true, source);
+                List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+                using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
+                {
+                    using (var source = tracelog.Events.GetSource())
+                    {
+                        Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                        Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source,  proc => { proc.Log = tracelog; });
+                        source.Process();
+                        foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                            if(Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
+                    }
+                }
 
                 var outputFileName = Path.ChangeExtension(etlFile, ".gcStats.html");
                 using (var output = File.CreateText(outputFileName))
                 {
                     LogFile.WriteLine("Wrote GCStats to {0}", outputFileName);
-                    gcStats.ToHtml(output, outputFileName, "GCStats", null);
+                    Stats.ClrStats.ToHtml(output, gcStats, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC, false, true /* do server report */);
                 }
                 if (!App.CommandLineArgs.NoGui)
                     OpenHtmlReport(outputFileName, "GCStats report");
@@ -3037,21 +3040,29 @@ namespace PerfViewExtensibility
         {
             ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
 
-            var source = TraceEventDispatcher.GetDispatcherFromFileName(etlFile);
-            var jitStats = Stats.JitProcess.Collect(source);
+            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> jitStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>(); ;
+            using (var source = new ETWTraceEventSource(etlFile))
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                source.Process();
+                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) jitStats.Add(proc);
+            }
 
             var outputFileName = Path.ChangeExtension(etlFile, ".jitStats.html");
             using (var output = File.CreateText(outputFileName))
             {
                 LogFile.WriteLine("Wrote JITStats to {0}", outputFileName);
-                jitStats.ToHtml(output, outputFileName, "JitStats", null);
-                foreach (Stats.JitProcess proc in jitStats)
+                Stats.ClrStats.ToHtml(output, jitStats, outputFileName, "JitStats", Stats.ClrStats.ReportType.JIT);
+                foreach (var proc in jitStats)
                 {
-                    if (proc.Interesting)
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc);
+
+                    if (mang != null && mang.JIT.Stats().Interesting)
                     {
                         var csvName = Path.ChangeExtension(etlFile, ".jitStats." + proc.ProcessID.ToString() + ".csv");
                         LogFile.WriteLine("  Wrote CsvFile {0}", csvName);
-                        proc.ToCsv(csvName);
+                        Stats.JitStats.ToCsv(csvName, mang);
                     }
                 }
             }
@@ -3078,55 +3089,6 @@ namespace PerfViewExtensibility
         //        LogFile.WriteLine("[Source Server Data Dumped into log for {0}]", pdbFile);
         //    }
         //}
-
-#if CAP
-        /// <summary>
-        /// Reads the JITStats report for the CAP program (XML format) and produces a list of hot methods as txt for a given process.
-        /// </summary>
-        public void CapFormatJITStats(string jitReportFileName, string processName, string discardNamespace = "false")
-        {
-            ClrCap.JitCapAnalysis report = ClrCap.JitCapAnalysis.ReadReport(jitReportFileName);
-            report.FormatForTrace(processName, StripFileExt(jitReportFileName) + ".spmi.txt", Boolean.Parse(discardNamespace));
-        }
-
-        /// <summary>
-        /// Creates the JITStats report for the CAP program (XML format)
-        /// </summary>
-        public void CapJITStats(string etlFile, string methodCount = "20")
-        {
-            ETLDataFile etlDataFile = OpenETLFile(etlFile);
-            JitCapCollector jitCollector = new JitCapCollector(etlDataFile);
-
-            var jitStats = jitCollector.Collect();
-            ClrCap.CAP.GenerateCAPReport(jitStats, jitCollector.Report, Int32.Parse(methodCount));
-            var outputFileName = StripFileExt(etlFile) + "jitstats.xml";
-            jitCollector.Report.WriteToFileXML(outputFileName);
-            LogFile.WriteLine("[Output Written to {0}]", outputFileName);
-        }
-
-        /// <summary>
-        /// Creates the GCStats report for the CAP program (XML format)
-        /// </summary>
-        public void CapGCStats(string etlFile)
-        {
-            string savedEtlFile = etlFile;
-            ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
-            ETWTraceEventSource source = new ETWTraceEventSource(etlFile, TraceEventSourceType.MergeAll);
-
-            GcCapCollector gcCollector = new GcCapCollector(source);
-            var gcStats = gcCollector.Collect(etlFile, source);
-            ClrCap.CAP.GenerateCAPReport(gcStats, gcCollector.Report);
-
-            var outputFileName = StripFileExt(savedEtlFile) + ".xml";
-            gcCollector.Report.WriteToFileXML(outputFileName);
-            LogFile.WriteLine("[Output Written to {0}]", outputFileName);
-            if (!App.CommandLineArgs.NoGui)
-            {
-                LogFile.WriteLine("[Opening XML file in Browser]");
-                Command.Run(Command.Quote(outputFileName), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
-            }
-        }
-#endif
 
 #if CROSS_GENERATION_LIVENESS
         public void CollectCrossGenerationLiveness(string processId, string generationToTrigger, string promotedBytes, string dumpFilePath)

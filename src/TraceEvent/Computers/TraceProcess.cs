@@ -30,7 +30,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void NeedProcesses(this TraceEventDispatcher source)
         {
             TraceProcesses processes = source.Processes();
-            if (processes == null)
+            if (processes == null || m_currentSource != source)
             {
                 processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
@@ -38,22 +38,49 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                 source.UserData["Computers/Processes"] = processes;
             }
+
+            m_currentSource = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
+            Debug.Assert(m_currentSource == source);
+
             if (source.UserData.ContainsKey("Computers/Processes")) return source.UserData["Computers/Processes"] as TraceProcesses;
             else return null;
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
+            Debug.Assert(m_currentSource == _event.Source);
+
             return _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
         }
 
         public static void AddCallbackOnProcessStart(this TraceEventDispatcher source, Action<TraceProcess> OnProcessStart)
         {
+            Debug.Assert(m_currentSource == source);
+
             var processes = source.Processes();
             Debug.Assert(processes != null);
             processes.OnInitialized += OnProcessStart;
+        }
+
+        public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
+        {
+            Debug.Assert(m_currentSource == process.Source);
+
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (!map.ContainsKey(process.ProcessIndex)) map[process.ProcessIndex] = sampleIntervalMSec;
+        }
+
+        public static float SampleIntervalMSec(this TraceProcess process)
+        {
+            Debug.Assert(m_currentSource == process.Source);
+
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex];
+            else return 1; // defualt 1 ms
         }
 
         #region private
@@ -102,7 +129,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
 
                 var process = data.Process();
-                process.CPUMSec++;
+                process.CPUMSec += process.SampleIntervalMSec();
             };
 
             kernelParser.AddCallbackForEvents<ProcessCtrTraceData>(delegate (ProcessCtrTraceData data)
@@ -112,6 +139,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 process.PeakWorkingSet = (double)data.PeakWorkingSetSize;
             });
         }
+
+        private static TraceEventDispatcher m_currentSource; // used to verify non-concurrent usage
         #endregion
     }
 
@@ -478,7 +507,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// <summary>
         /// The log file associated with the process. 
         /// </summary>
-        public TraceLog Log { get; private set; }
+        public Microsoft.Diagnostics.Tracing.Etlx.TraceLog Log { get; set; }
 
         /// <summary>
         /// Peak working set

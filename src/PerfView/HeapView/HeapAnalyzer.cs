@@ -1,10 +1,10 @@
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Stats;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -668,7 +668,8 @@ namespace PerfView
             writer.WriteLine("</pre>");
         }
 
-        GCProcess m_gcProcess;
+        Microsoft.Diagnostics.Tracing.Analysis.TraceProcess m_process;
+        Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntime m_runtime;
         int m_heapCount;
         double m_SampleInterval;
         TraceEventSource m_source;
@@ -677,17 +678,17 @@ namespace PerfView
         {
             get
             {
-                return m_gcProcess.ProcessCpuMSec;
+                return m_process.CPUMSec;
             }
         }
 
-        internal List<GCEvent> GcEvents
+        internal List<TraceGC> GcEvents
         {
             get
             {
-                if (m_gcProcess != null)
+                if (m_runtime != null)
                 {
-                    return m_gcProcess.Events;
+                    return m_runtime.GC.GCs;
                 }
                 else
                 {
@@ -699,7 +700,7 @@ namespace PerfView
         int m_procID;
 
         Guid kernelGuid;
-        ProcessLookup<GCProcess> m_processLookup;
+        Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_processLookup;
 
         /// <summary>
         /// Event filtering by process ID. Called in ForwardEventEnumerator::MoveNext
@@ -710,9 +711,10 @@ namespace PerfView
         {
             if (data.ProcessID == m_procID)
             {
-                if (m_gcProcess == null)
+                if (m_process == null && m_processLookup.ContainsKey(data.ProcessID))
                 {
-                    m_gcProcess = m_processLookup[data];
+                    m_process = m_processLookup[data.ProcessID];
+                    m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( m_process );
                 }
 
                 if (m_source == null)
@@ -907,20 +909,31 @@ namespace PerfView
             kernel.VirtualMemAlloc += OnVirtualMem;
             kernel.VirtualMemFree += OnVirtualMem;
 
-            m_processLookup = new ProcessLookup<GCProcess>();
+            m_processLookup = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
 
             // Process all events into GCProcess lookup dictionary
-            GCProcess.Collect(source, sampleInterval100ns, m_processLookup, null, false, m_traceLog);
+            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes( source );
+            Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc =>
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, sampleInterval100ns);
+                proc.Log = m_traceLog;
+            });
+            source.Process();
+            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes( source ))
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( proc ) != null) m_processLookup.Add(proc.ProcessID, proc);
 
             // Get the process we want
-            return m_processLookup.TryGetByID(procID, out m_gcProcess);
+            if (!m_processLookup.ContainsKey(procID)) return false;
+            m_process = m_processLookup[procID];
+            m_runtime = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime( m_process );
+            return true;
         }
 
         public List<Metric> GetMetrics()
         {
             List<Metric> metrics = new List<Metric>();
 
-            string version = m_gcProcess.RuntimeVersion;
+            string version = m_runtime.RuntimeVersion;
 
             if (!String.IsNullOrEmpty(version))
             {
@@ -933,29 +946,29 @@ namespace PerfView
             }
 
             metrics.Add(new Metric("Cpu", TotalCpuSample, Toolbox.TimeFormatN0));
-            metrics.Add(new Metric("GC Cpu", m_gcProcess.Total.TotalGCCpuMSec, Toolbox.TimeFormatN0));
-            metrics.Add(new Metric("GC %", m_gcProcess.Total.TotalGCCpuMSec * 100.0 / m_gcProcess.ProcessCpuMSec, Toolbox.PercentageFormat));
-            metrics.Add(new Metric("GC Pause", m_gcProcess.Total.TotalPauseTimeMSec, Toolbox.TimeFormatN0));
+            metrics.Add(new Metric("GC Cpu", m_runtime.GC.Stats().TotalCpuMSec, Toolbox.TimeFormatN0));
+            metrics.Add(new Metric("GC %", m_runtime.GC.Stats().TotalCpuMSec * 100.0 / m_process.CPUMSec, Toolbox.PercentageFormat));
+            metrics.Add(new Metric("GC Pause", m_runtime.GC.Stats().TotalPauseTimeMSec, Toolbox.TimeFormatN0));
             metrics.Add(new Metric("Thread #", m_threadInfo.Count));
 
-            if (m_gcProcess.PeakWorkingSetMB != 0)
+            if (m_process.PeakWorkingSet != 0)
             {
-                metrics.Add(new Metric("Peak VM", m_gcProcess.PeakVirtualMB, Toolbox.MemoryFormatN0));
+                metrics.Add(new Metric("Peak VM", m_process.PeakVirtual / 1000000.0, Toolbox.MemoryFormatN0));
             }
 
-            if (m_gcProcess.PeakWorkingSetMB != 0)
+            if (m_process.PeakWorkingSet != 0)
             {
-                metrics.Add(new Metric("Peak WS", m_gcProcess.PeakWorkingSetMB, Toolbox.MemoryFormatN0));
+                metrics.Add(new Metric("Peak WS", m_process.PeakWorkingSet / 1000000.0, Toolbox.MemoryFormatN0));
             }
 
-            metrics.Add(new Metric("Alloc", m_gcProcess.Total.TotalAllocatedMB, Toolbox.MemoryFormatN0));
-            metrics.Add(new Metric("Max heap", m_gcProcess.Total.MaxSizePeakMB, Toolbox.MemoryFormatN0));
+            metrics.Add(new Metric("Alloc", m_runtime.GC.Stats().TotalAllocatedMB, Toolbox.MemoryFormatN0));
+            metrics.Add(new Metric("Max heap", m_runtime.GC.Stats().MaxSizePeakMB, Toolbox.MemoryFormatN0));
 
             metrics.Add(new Metric("Heap #", m_heapCount));
-            metrics.Add(new Metric("GC", m_gcProcess.Total.GCCount));
-            metrics.Add(new Metric("Gen0 GC", m_gcProcess.Generations[0].GCCount));
-            metrics.Add(new Metric("Gen1 GC", m_gcProcess.Generations[1].GCCount));
-            metrics.Add(new Metric("Gen2 GC", m_gcProcess.Generations[2].GCCount));
+            metrics.Add(new Metric("GC", m_runtime.GC.Stats().Count));
+            metrics.Add(new Metric("Gen0 GC", (m_runtime.GC.Generations()[0] != null) ? m_runtime.GC.Generations()[0].Count : 0));
+            metrics.Add(new Metric("Gen1 GC", (m_runtime.GC.Generations()[1] != null) ? m_runtime.GC.Generations()[1].Count : 0));
+            metrics.Add(new Metric("Gen2 GC", (m_runtime.GC.Generations()[2] != null) ? m_runtime.GC.Generations()[2].Count : 0));
 
             metrics.Add(new Metric("FirstEvent", FirstEventTime, Toolbox.TimeFormatN0));
             metrics.Add(new Metric("LastEvent", LastEventTime, Toolbox.TimeFormatN0));
@@ -973,8 +986,8 @@ namespace PerfView
             DiagramData data = new DiagramData();
 
             data.dataFile = m_traceLog;
-            data.events = m_gcProcess.Events;
-            data.procID = m_gcProcess.ProcessID;
+            data.events = m_runtime.GC.GCs;
+            data.procID = m_process.ProcessID;
             data.threads = m_threadInfo;
             data.allocsites = m_allocSites;
             data.drawLegend = true;
@@ -996,8 +1009,8 @@ namespace PerfView
             DiagramData data = new DiagramData();
 
             data.dataFile = m_traceLog;
-            data.events = m_gcProcess.Events;
-            data.procID = m_gcProcess.ProcessID;
+            data.events = m_runtime.GC.GCs;
+            data.procID = m_process.ProcessID;
             data.threads = m_threadInfo;
             data.allocsites = m_allocSites;
             data.vmCurve = m_VMCurve;
@@ -1018,7 +1031,7 @@ namespace PerfView
 
         public void SaveDiagram(string fileName, bool xps)
         {
-            fileName = Path.ChangeExtension(fileName, null).Replace(" ", "") + "_" + m_gcProcess.ProcessID;
+            fileName = Path.ChangeExtension(fileName, null).Replace(" ", "") + "_" + m_process.ProcessID;
 
             if (xps)
             {
@@ -1133,7 +1146,7 @@ namespace PerfView
     {
         internal TraceLog dataFile;
         internal int procID;
-        internal List<GCEvent> events;
+        internal List<TraceGC> events;
         internal Dictionary<int, ThreadMemoryInfo> threads;
         internal List<AllocTick> allocsites;
         internal List<double> vmCurve;

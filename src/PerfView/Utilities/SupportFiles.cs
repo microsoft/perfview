@@ -235,7 +235,7 @@ namespace Utilities
             s_managedDllSearchPaths.Add(directory);
         }
 
-        #region private
+#region private
         private static void UnpackResources()
         {
             // We don't unpack into the final directory so we can be transactional (all or nothing).  
@@ -325,6 +325,6 @@ namespace Utilities
         private static string s_supportFileDirBase;
         internal static string s_exePath;
         private static List<string> s_managedDllSearchPaths;
-        #endregion
+#endregion
     }
 }
