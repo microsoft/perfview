@@ -20,5 +20,12 @@ namespace Microsoft.Diagnostics.Utilities
 
             return true;
         }
+
+        public static string QuotePadLeft(string str, int totalSize)
+        {
+            int spaces = totalSize - 2 - str.Length;
+            if (spaces < 0) spaces = 0;
+            return new string(' ', spaces) + '"' + str + '"';
+        }
     }
 }
