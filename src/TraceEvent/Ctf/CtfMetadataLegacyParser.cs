@@ -24,8 +24,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         static Regex s_struct = new Regex(@"^\s*struct\s(\{|\w+)");
         static Regex s_float = new Regex(@"floating_point +\{");
 
-        static CtfString s_string = new CtfString();
-
         private Stream _stream;
 
         public CtfMetadataLegacyParser(string filename)
@@ -255,7 +253,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 
                 string typeName = typeGroup.ToString().Trim();
                 if (typeName == "string")
-                    type = s_string;
+                    type = new CtfString();
                 else
                     type = new CtfUnresolvedType(typeName);
 
