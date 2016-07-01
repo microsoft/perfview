@@ -492,6 +492,9 @@ namespace Microsoft.Diagnostics.Tracing
                 CtfEvent evt = header.Event;
                 lastTimestamp = header.Timestamp;
 
+                entry.Reader.ReadEventIntoBuffer(evt);
+                events++;
+
 #if DEBUG
                 if (_debugOut != null)
                 {
@@ -499,18 +502,11 @@ namespace Microsoft.Diagnostics.Tracing
                     _debugOut.WriteLine($"    Process: {header.ProcessName}");
                     _debugOut.WriteLine($"    File: {entry.FileName}");
                     _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
-                    _debugOut.WriteLine($"    Event #{events}");
-                    object[] result = entry.Reader.ReadEvent(evt);
-                    evt.WriteLine(_debugOut, result, 4);
+                    _debugOut.WriteLine($"    Event #{events}: {evt.Name}");
                 }
-                else
 #endif
 
-                    entry.Reader.ReadEventIntoBuffer(evt);
-                events++;
-
                 ETWMapping etw = GetTraceEvent(evt);
-
                 if (etw.IsNull)
                     continue;
 
@@ -518,6 +514,7 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceEvent traceEvent = Lookup(hdr);
                 traceEvent.eventRecord = hdr;
                 traceEvent.userData = entry.Reader.BufferPtr;
+                traceEvent.EventTypeUserData = evt;
 
                 traceEvent.DebugValidate();
                 Dispatch(traceEvent);
