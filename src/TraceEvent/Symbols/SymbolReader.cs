@@ -194,11 +194,6 @@ namespace Microsoft.Diagnostics.Symbols
                             cache = path.DefaultSymbolCache();
 
                         pdbPath = GetFileFromServer(element.Target, pdbIndexPath, Path.Combine(cache, pdbIndexPath));
-                        if (pdbPath != null)
-                        {
-                            // we have downloaded the symbol from server to local cache, just return
-                            return pdbPath;
-                        }
                     }
                     else
                     {
@@ -207,7 +202,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             // TODO can stall if the path is a remote path.   
                             if (PdbMatches(filePath, pdbIndexGuid, pdbIndexAge, false))
-                                pdbPath = filePath;
+                                pdbPath = this.CacheFileLocally(filePath, pdbIndexGuid, pdbIndexAge);
                         }
                         else
                             m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
@@ -220,7 +215,6 @@ namespace Microsoft.Diagnostics.Symbols
             if (pdbPath != null)
             {
                 this.m_log.WriteLine("FindSymbolFilePath: *}} Successfully found PDB {0} GUID {1} Age {2} Version {3}", pdbPath, pdbIndexGuid, pdbIndexAge, fileVersion);
-                pdbPath = this.CacheFileLocally(pdbPath, pdbIndexGuid, pdbIndexAge);
             }
             else
             {
@@ -2024,11 +2018,11 @@ namespace Microsoft.Diagnostics.Symbols
         public string BuildTimeFilePath { get; internal set; }
 
         /// <summary>
-        /// Get the expanded SRCSRVTRG value in the PDB's SRCSRV stream. 
-        /// If the value is in a valid absolute uri format (eg, https://abc/file.cs), return the value. 
-        /// Otherwise, return null.
+        /// If the source file is directly available on the web (that is there is a Url that 
+        /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
+        /// point exists this property will return null.   
         /// </summary>
-        public string SourceServerTargetFullUrl
+        public string Url
         {
             get
             {
@@ -2159,10 +2153,60 @@ namespace Microsoft.Diagnostics.Symbols
 
         #region private
         /// <summary>
-        /// Get the source server target (SRCSRVTRG) and command (SRCSRVCMD) from the symbol pdb
+        /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
+        /// represented by the 'this' pointer.   This target is iether a ULR or a local file
+        /// path.  
+        /// 
+        /// You can dump the srcsrv stream using a tool called pdbstr 
+        ///     pdbstr -r -s:srcsrv -p:PDBPATH
+        /// 
+        /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
+        /// which represents the command to run to fetch the soruce into SRCSRVTRG
+        /// 
+        /// To form the target, the stream expect you to private a %targ% variable which is a directory
+        /// prefix to tell where to put the source file being fetched.   If the source file is
+        /// available via a URL this variable is not needed.  
+        /// 
+        ///  ********* This is a typical example of what is in a PDB with source server information. 
+        ///  SRCSRV: ini ------------------------------------------------
+        ///  VERSION=3
+        ///  INDEXVERSION=2
+        ///  VERCTRL=Team Foundation Server
+        ///  DATETIME=Thu Mar 10 16:15:55 2016
+        ///  SRCSRV: variables ------------------------------------------
+        ///  TFS_EXTRACT_CMD=tf.exe view /version:%var4% /noprompt "$%var3%" /server:%fnvar%(%var2%) /output:%srcsrvtrg%
+        ///  TFS_EXTRACT_TARGET=%targ%\%var2%%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
+        ///  VSTFDEVDIV_DEVDIV2=http://vstfdevdiv.redmond.corp.microsoft.com:8080/DevDiv2
+        ///  SRCSRVVERCTRL=tfs
+        ///  SRCSRVERRDESC=access
+        ///  SRCSRVERRVAR=var2
+        ///  SRCSRVTRG=%TFS_extract_target%
+        ///  SRCSRVCMD=%TFS_extract_cmd%
+        ///  SRCSRV: source files ---------------------------------------
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvconst.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvconst.h*1363200
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvinfo.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvinfo.h*1363200
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\vc\ammintrin.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/vc/ammintrin.h*1363200
+        ///  SRCSRV: end ------------------------------------------------
+        ///  
+        ///  ********* And here is a more modern one where the source code is available via a URL.  
+        ///  SRCSRV: ini ------------------------------------------------
+        ///  VERSION=2
+        ///  INDEXVERSION=2
+        ///  VERCTRL=http
+        ///  SRCSRV: variables ------------------------------------------
+        ///  SRCSRVTRG=https://nuget.smbsrc.net/src/%fnfile%(%var1%)/%var2%/%fnfile%(%var1%)
+        ///  SRCSRVCMD=
+        ///  SRCSRVVERCTRL=http
+        ///  SRCSRV: source files ---------------------------------------
+        ///  c:\Users\rafalkrynski\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
+        ///  SRCSRV: end ------------------------------------------------
+        ///  
         /// </summary>
-        /// <param name="targVar">Specify the value for %targ% variable. If the value is null, %targ% variable will not be expanded.</param>
-        private void GetSourceServerTargetAndCommand(out string target, out string command, string targVar = null)
+        /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
+        /// directory where source files can be fetched to.  Typically the returned file is under this directory
+        /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
+        /// that does not need to be copied to the machine (either a URL or a file that already exists)</param>
+        private void GetSourceServerTargetAndCommand(out string target, out string command, string localDirectoryToPlaceSourceFiles = null)
         {
             target = null;
             command = null;
@@ -2191,8 +2235,8 @@ namespace Microsoft.Diagnostics.Symbols
             bool inVars = false;
             var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            if (targVar != null)
-                vars.Add("targ", targVar);
+            if (localDirectoryToPlaceSourceFiles != null)
+                vars.Add("targ", localDirectoryToPlaceSourceFiles);
 
             for (;;)
             {
