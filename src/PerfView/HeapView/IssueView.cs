@@ -9,6 +9,8 @@ using System.Windows.Media;
 using System.Windows.Controls;
 
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
 
 namespace PerfView
 {
@@ -141,7 +143,7 @@ namespace PerfView
         {
             m_issues = new List<Issue>();
 
-            if (m_gcProcess.Total.TotalAllocatedMB == 0)
+            if (m_runtime.GC.Stats().TotalAllocatedMB == 0)
             {
                 AddIssue(IssueType.Profiling, "No .Net heap allocation found.", "Turn on Clr/ClrPrivate ETW event providers and profile again.");
             }
@@ -151,13 +153,13 @@ namespace PerfView
                 AddIssue(IssueType.Profiling, "No .Net allocation tick event found.", "Turn on Clr allocation tick event and profile again.");
             }
 
-            if (m_gcProcess.ProcessCpuMSec == 0)
+            if (m_process.CPUMSec == 0)
             {
                 AddIssue(IssueType.Profiling, "No CPU sample event found.", "Turn on CPU sample event and profile again.");
             }
             else
             {
-                double gcCpu = m_gcProcess.Total.TotalGCCpuMSec * 100.0 / m_gcProcess.ProcessCpuMSec;
+                double gcCpu = m_runtime.GC.Stats().TotalCpuMSec * 100.0 / m_process.CPUMSec;
 
                 if (gcCpu >= 40)
                 {
@@ -169,11 +171,11 @@ namespace PerfView
                 }
             }
 
-            List<Stats.GCEvent> events = m_gcProcess.Events;
+            List<TraceGC> events = m_runtime.GC.GCs;
 
             for (int i = 0; i < events.Count; i++)
             {
-                Stats.GCEvent e = events[i];
+                TraceGC e = events[i];
 
                 if (e.IsInduced())
                 {
@@ -215,7 +217,7 @@ namespace PerfView
 
         void OnOpenLargeAllocStacks(object sender, RoutedEventArgs e)
         {
-            StackSource stacks = m_dataFile.CreateStackSource("GC Heap Alloc Ignore Free (Coarse Sampling)", m_gcProcess.ProcessID, m_statusBar.LogWriter, true);
+            StackSource stacks = m_dataFile.CreateStackSource("GC Heap Alloc Ignore Free (Coarse Sampling)", m_process.ProcessID, m_statusBar.LogWriter, true);
 
             StackWindow stackWin = null;
 
@@ -226,20 +228,20 @@ namespace PerfView
         {
             StackSourceBuilder builder = new StackSourceBuilder(m_traceLog);
 
-            List<Stats.GCEvent> events = m_gcProcess.Events;
+            List<TraceGC> events = m_runtime.GC.GCs;
 
             for (int i = 0; i < events.Count; i ++)
             {
-                Stats.GCEvent ev = events[i];
+                TraceGC ev = events[i];
 
                 if (ev.IsInduced())
                 {
-                    GcEventExtra extra = GetGcEventExtra(ev.GCNumber, false);
+                    GcEventExtra extra = GetGcEventExtra(ev.Number, false);
 
                     if (extra != null)
                     {
-                        builder.AddSample(extra.GCStartThread, ev.PauseDurationMSec, ev.GCStartRelativeMSec,
-                            String.Format("StartGC({0}, {1}, G{2})", ev.Reason, ev.Type, ev.GCGeneration),
+                        builder.AddSample(extra.GCStartThread, ev.PauseDurationMSec, ev.StartRelativeMSec,
+                            String.Format("StartGC({0}, {1}, G{2})", ev.Reason, ev.Type, ev.Generation),
                             extra.GCStartIndex);
                     }
                 }
