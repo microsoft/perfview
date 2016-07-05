@@ -24,6 +24,7 @@ using Address = System.UInt64;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using System.Threading;
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
 
 namespace PerfView
 {
@@ -693,12 +694,12 @@ namespace PerfView
         {
             double maxHeap = m_data.vmMaxVM;
 
-            foreach (GCEvent gc in m_data.events)
+            foreach (TraceGC gc in m_data.events)
             {
-                double g0 = gc.GenSizeBeforeMB(Gens.Gen0);
-                double g1 = gc.GenSizeBeforeMB(Gens.Gen1);
-                double g2 = gc.GenSizeBeforeMB(Gens.Gen2);
-                double g3 = gc.GenSizeBeforeMB(Gens.GenLargeObj);
+                double g0 = gc.GenSizeBeforeMB[(int)Gens.Gen0];
+                double g1 = gc.GenSizeBeforeMB[(int)Gens.Gen1];
+                double g2 = gc.GenSizeBeforeMB[(int)Gens.Gen2];
+                double g3 = gc.GenSizeBeforeMB[(int)Gens.GenLargeObj];
 
                 CheckMax(ref maxHeap, g0 + g1 + g2 + g3);
             }
@@ -724,7 +725,7 @@ namespace PerfView
 
             GeometryBuilder[] gcBarList = new GeometryBuilder[6];
 
-            foreach (GCEvent gc in m_data.events)
+            foreach (TraceGC gc in m_data.events)
             {
                 double start = gc.PauseStartRelativeMSec;
                 double end   = gc.PauseStartRelativeMSec + gc.PauseDurationMSec;
@@ -735,7 +736,7 @@ namespace PerfView
                 if (start > m_t1)
                     break;
 
-                int gen = gc.GCGeneration;
+                int gen = gc.Generation;
 
                 double gcTime = gc.GetTotalGCTime();
 
@@ -748,10 +749,10 @@ namespace PerfView
                 // double smallAloc  = gc.AllocedSinceLastGCBasedOnAllocTickMB[0];
                 // double largeAlloc = gc.AllocedSinceLastGCBasedOnAllocTickMB[1];
 
-                double g0 = gc.GenSizeBeforeMB(Gens.Gen0);
-                double g1 = gc.GenSizeBeforeMB(Gens.Gen1);
-                double g2 = gc.GenSizeBeforeMB(Gens.Gen2);
-                double g3 = gc.GenSizeBeforeMB(Gens.GenLargeObj);
+                double g0 = gc.GenSizeBeforeMB[(int)Gens.Gen0];
+                double g1 = gc.GenSizeBeforeMB[(int)Gens.Gen1];
+                double g2 = gc.GenSizeBeforeMB[(int)Gens.Gen2];
+                double g3 = gc.GenSizeBeforeMB[(int)Gens.GenLargeObj];
 
                 sizeCurves.Add(start);
                 sizeCurves.Add(g0);
@@ -1021,7 +1022,7 @@ namespace PerfView
         {
             for (int i = start; i < m_heapInfo.GcEvents.Count; i++)
             {
-                GCEvent gc = m_heapInfo.GcEvents[i];
+                TraceGC gc = m_heapInfo.GcEvents[i];
 
                 if (tick >= gc.PauseStartRelativeMSec)
                 {

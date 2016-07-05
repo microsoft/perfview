@@ -202,7 +202,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             // TODO can stall if the path is a remote path.   
                             if (PdbMatches(filePath, pdbIndexGuid, pdbIndexAge, false))
-                                pdbPath = filePath;
+                                pdbPath = this.CacheFileLocally(filePath, pdbIndexGuid, pdbIndexAge);
                         }
                         else
                             m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
@@ -215,7 +215,6 @@ namespace Microsoft.Diagnostics.Symbols
             if (pdbPath != null)
             {
                 this.m_log.WriteLine("FindSymbolFilePath: *}} Successfully found PDB {0} GUID {1} Age {2} Version {3}", pdbPath, pdbIndexGuid, pdbIndexAge, fileVersion);
-                pdbPath = this.CacheFileLocally(pdbPath, pdbIndexGuid, pdbIndexAge);
             }
             else
             {
@@ -746,12 +745,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     if (Uri.IsWellFormedUriString(serverPath, UriKind.Absolute))
                     {
-                        var fullUri = serverPath;
-                        var tail = pdbIndexPath.Replace('\\', '/');
-                        if (!tail.StartsWith("/"))
-                            fullUri += "/" + tail;
-                        else
-                            fullUri += tail;
+                        var fullUri = BuildFullUri(serverPath, pdbIndexPath);
                         try
                         {
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
@@ -858,6 +852,28 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             return successful && File.Exists(fullDestPath);
+        }
+
+        /// <summary>
+        /// Build the full uri from server path and pdb index path
+        /// </summary>
+        private string BuildFullUri(string serverPath, string pdbIndexPath)
+        {
+            var tail = pdbIndexPath.Replace('\\', '/');
+            if (!tail.StartsWith("/", StringComparison.Ordinal))
+                tail = "/" + tail;
+
+            // The server path can contain query parameters (eg, Azure storage SAS token).
+            // Append the pdb index to the path part.
+            var query = serverPath.IndexOf('?');
+            if (query > 0)
+            {
+                return serverPath.Insert(query, tail);
+            }
+            else
+            {
+                return serverPath + tail;
+            }
         }
 
         /// <summary>
@@ -2000,10 +2016,31 @@ namespace Microsoft.Diagnostics.Symbols
         /// The path of the file at the time the source file was built. 
         /// </summary>
         public string BuildTimeFilePath { get; internal set; }
+
+        /// <summary>
+        /// If the source file is directly available on the web (that is there is a Url that 
+        /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
+        /// point exists this property will return null.   
+        /// </summary>
+        public string Url
+        {
+            get
+            {
+                string target, command;
+                GetSourceServerTargetAndCommand(out target, out command);
+
+                if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
+                    return target;
+                else
+                    return null;
+            }
+        }
+
         /// <summary>
         /// true if the PDB has a checksum for the data in the source file. 
         /// </summary>
         public bool HasChecksum { get { return m_hash != null; } }
+
         /// <summary>
         /// This may fetch things from the source server, and thus can be very slow, which is why it is not a property. 
         /// </summary>
@@ -2099,6 +2136,7 @@ namespace Microsoft.Diagnostics.Symbols
             log.WriteLine("[Could not find source for {0}]", BuildTimeFilePath);
             return null;
         }
+
         /// <summary>
         /// If GetSourceFile is called and 'requireChecksumMatch' == false then you can call this property to 
         /// determine if the checksum actually matched or not.   This will return true if the original
@@ -2115,28 +2153,64 @@ namespace Microsoft.Diagnostics.Symbols
 
         #region private
         /// <summary>
-        /// Try to fetch the source file associated with 'buildTimeFilePath' from the symbol server 
-        /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses 
-        /// SourceCacheDirectory associated symbol reader for context where to put the file), 
-        /// or null if unsuccessful.  
+        /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
+        /// represented by the 'this' pointer.   This target is iether a ULR or a local file
+        /// path.  
         /// 
-        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
+        /// You can dump the srcsrv stream using a tool called pdbstr 
         ///     pdbstr -r -s:srcsrv -p:PDBPATH
-        /// will dump it. 
-        ///
-        /// The basic flow is 
         /// 
-        /// There is a variables section and a files section
+        /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
+        /// which represents the command to run to fetch the soruce into SRCSRVTRG
         /// 
-        /// The file section is a list of items separated by *.   The first is the path, the rest are up to you
+        /// To form the target, the stream expect you to private a %targ% variable which is a directory
+        /// prefix to tell where to put the source file being fetched.   If the source file is
+        /// available via a URL this variable is not needed.  
         /// 
-        /// You form a command by using the SRCSRVTRG variable and substituting variables %var1 where var1 is the first item in the * separated list
-        /// There are special operators %fnfile%(XXX), etc that manipulate the string XXX (get file name, translate \ to / ...
-        /// 
-        /// If what is at the end is a valid URL it is looked up.   
+        ///  ********* This is a typical example of what is in a PDB with source server information. 
+        ///  SRCSRV: ini ------------------------------------------------
+        ///  VERSION=3
+        ///  INDEXVERSION=2
+        ///  VERCTRL=Team Foundation Server
+        ///  DATETIME=Thu Mar 10 16:15:55 2016
+        ///  SRCSRV: variables ------------------------------------------
+        ///  TFS_EXTRACT_CMD=tf.exe view /version:%var4% /noprompt "$%var3%" /server:%fnvar%(%var2%) /output:%srcsrvtrg%
+        ///  TFS_EXTRACT_TARGET=%targ%\%var2%%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
+        ///  VSTFDEVDIV_DEVDIV2=http://vstfdevdiv.redmond.corp.microsoft.com:8080/DevDiv2
+        ///  SRCSRVVERCTRL=tfs
+        ///  SRCSRVERRDESC=access
+        ///  SRCSRVERRVAR=var2
+        ///  SRCSRVTRG=%TFS_extract_target%
+        ///  SRCSRVCMD=%TFS_extract_cmd%
+        ///  SRCSRV: source files ---------------------------------------
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvconst.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvconst.h*1363200
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvinfo.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvinfo.h*1363200
+        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\vc\ammintrin.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/vc/ammintrin.h*1363200
+        ///  SRCSRV: end ------------------------------------------------
+        ///  
+        ///  ********* And here is a more modern one where the source code is available via a URL.  
+        ///  SRCSRV: ini ------------------------------------------------
+        ///  VERSION=2
+        ///  INDEXVERSION=2
+        ///  VERCTRL=http
+        ///  SRCSRV: variables ------------------------------------------
+        ///  SRCSRVTRG=https://nuget.smbsrc.net/src/%fnfile%(%var1%)/%var2%/%fnfile%(%var1%)
+        ///  SRCSRVCMD=
+        ///  SRCSRVVERCTRL=http
+        ///  SRCSRV: source files ---------------------------------------
+        ///  c:\Users\rafalkrynski\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
+        ///  SRCSRV: end ------------------------------------------------
+        ///  
         /// </summary>
-        string GetSourceFromSrcServer()
+        /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
+        /// directory where source files can be fetched to.  Typically the returned file is under this directory
+        /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
+        /// that does not need to be copied to the machine (either a URL or a file that already exists)</param>
+        private void GetSourceServerTargetAndCommand(out string target, out string command, string localDirectoryToPlaceSourceFiles = null)
         {
+            target = null;
+            command = null;
+
             var log = m_symbolModule.m_reader.m_log;
             log.WriteLine("*** Looking up {0} using source server", BuildTimeFilePath);
 
@@ -2144,14 +2218,14 @@ namespace Microsoft.Diagnostics.Symbols
             if (srcServerPdb == null)
             {
                 log.WriteLine("*** Could not find PDB to look up source server information");
-                return null;
+                return;
             }
 
             string srcsvcStream = srcServerPdb.GetSrcSrvStream();
             if (srcsvcStream == null)
             {
                 log.WriteLine("*** Could not find srcsrv stream in PDB file");
-                return null;
+                return;
             }
 
             log.WriteLine("*** Found srcsrv stream in PDB file. of size {0}", srcsvcStream.Length);
@@ -2160,8 +2234,10 @@ namespace Microsoft.Diagnostics.Symbols
             bool inSrc = false;
             bool inVars = false;
             var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var cacheDir = m_symbolModule.m_reader.SourceCacheDirectory;
-            vars.Add("targ", cacheDir);
+
+            if (localDirectoryToPlaceSourceFiles != null)
+                vars.Add("targ", localDirectoryToPlaceSourceFiles);
+
             for (;;)
             {
                 var line = reader.ReadLine();
@@ -2188,114 +2264,10 @@ namespace Microsoft.Diagnostics.Symbols
                             for (int i = 0; i < pieces.Length; i++)
                                 vars.Add("var" + (i + 1).ToString(), pieces[i]);
 
-                            var target = SourceServerFetchVar("SRCSRVTRG", vars);
-                            if (!target.StartsWith(cacheDir, StringComparison.OrdinalIgnoreCase))
-                            {
-                                if (Uri.IsWellFormedUriString(target, UriKind.Absolute))
-                                {
-                                    var url = target;
-                                    target = null;
-                                    if (vars.ContainsKey("HTTP_ALIAS"))
-                                    {
-                                        string prefix = vars["HTTP_ALIAS"];
-                                        log.WriteLine("HTTP_ALIAS = {0}.", prefix);
-                                        if (url.StartsWith(prefix))
-                                        {
-                                            var relPath = url.Substring(prefix.Length);
-                                            var newTarget = Path.Combine(cacheDir, relPath.TrimStart('/').Replace('/', '\\'));
-                                            if (m_symbolModule.m_reader.GetPhysicalFileFromServer(prefix, relPath, newTarget))
-                                                target = newTarget;
-                                        }
-                                        else
-                                            log.WriteLine("target does not have HTTP_ALIAS as a prefix");
-                                    }
-                                    else
-                                    {
-                                        var uri = new Uri(url);
-                                        var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
-                                        if (m_symbolModule.m_reader.GetPhysicalFileFromServer(uri.GetLeftPart(UriPartial.Authority), uri.AbsolutePath, newTarget))
-                                            target = newTarget;
-                                    }
+                            target = SourceServerFetchVar("SRCSRVTRG", vars);
+                            command = SourceServerFetchVar("SRCSRVCMD", vars);
 
-                                    if (target == null)
-                                    {
-                                        log.WriteLine("Could not fetch {0} from web", url);
-                                        return null;
-                                    }
-                                }
-                                else
-                                {
-                                    log.WriteLine("Source Server string {0} is targeting an unsafe location.  Giving up.", target);
-                                    return null;
-                                }
-                            }
-                            if (!File.Exists(target))
-                            {
-                                log.WriteLine("Trying to generate the file {0}.", target);
-                                var fetchCmdStr = SourceServerFetchVar("SRCSRVCMD", vars);
-                                var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-                                var archToolsDir = Path.Combine(toolsDir, Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
-
-                                // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
-                                string addToPath = null;
-#if !PUBLIC_ONLY                // SD.exe is a Microsoft-internal source code control system.
-                                if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
-                                        log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
-                                    addToPath = archToolsDir;
-                                }
-                                else
-#endif
-                                    if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    var tfExe = Command.FindOnPath("tf.exe");
-                                    if (tfExe == null)
-                                    {
-                                        tfExe = FindTfExe();
-                                        if (tfExe == null)
-                                        {
-                                            log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
-                                            return null;
-                                        }
-                                        addToPath = Path.GetDirectoryName(tfExe);
-                                    }
-                                }
-                                else
-                                {
-                                    log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
-                                    return null;
-                                }
-                                Directory.CreateDirectory(Path.GetDirectoryName(target));
-                                fetchCmdStr = "cmd /c " + fetchCmdStr;
-                                var options = new CommandOptions().AddOutputStream(log).AddNoThrow();
-                                if (addToPath != null)
-                                    options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
-
-                                log.WriteLine("Source Server command {0}.", fetchCmdStr);
-                                var fetchCmd = Command.Run(fetchCmdStr, options);
-                                if (fetchCmd.ExitCode != 0)
-                                    log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
-                                if (File.Exists(target))
-                                {
-                                    // If TF.exe command files it might still create an empty output file.   Fix that 
-                                    if (new FileInfo(target).Length == 0)
-                                    {
-                                        File.Delete(target);
-                                        target = null;
-                                    }
-                                }
-                                else
-                                    target = null;
-
-                                if (target == null)
-                                    log.WriteLine("Source Server command failed to produce the output file.");
-                                else
-                                    log.WriteLine("Source Server command succeeded creating {0}", target);
-                            }
-                            else
-                                log.WriteLine("Found an existing source server file {0}.", target);
-                            return target;
+                            return;
                         }
                     }
                 }
@@ -2307,6 +2279,131 @@ namespace Microsoft.Diagnostics.Symbols
                         vars[m.Groups[1].Value] = m.Groups[2].Value;
                 }
             }
+        }
+
+        /// <summary>
+        /// Try to fetch the source file associated with 'buildTimeFilePath' from the symbol server 
+        /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses 
+        /// SourceCacheDirectory associated symbol reader for context where to put the file), 
+        /// or null if unsuccessful.  
+        /// 
+        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
+        ///     pdbstr -r -s:srcsrv -p:PDBPATH
+        /// will dump it. 
+        ///
+        /// The basic flow is 
+        /// 
+        /// There is a variables section and a files section
+        /// 
+        /// The file section is a list of items separated by *.   The first is the path, the rest are up to you
+        /// 
+        /// You form a command by using the SRCSRVTRG variable and substituting variables %var1 where var1 is the first item in the * separated list
+        /// There are special operators %fnfile%(XXX), etc that manipulate the string XXX (get file name, translate \ to / ...
+        /// 
+        /// If what is at the end is a valid URL it is looked up.   
+        /// </summary>
+        string GetSourceFromSrcServer()
+        {
+            var log = m_symbolModule.m_reader.m_log;
+            var cacheDir = m_symbolModule.m_reader.SourceCacheDirectory;
+
+            string target, fetchCmdStr;
+            GetSourceServerTargetAndCommand(out target, out fetchCmdStr, cacheDir);
+
+            if (target != null)
+            {
+                if (!target.StartsWith(cacheDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    // if target is not in cache dir, it means it's from a remote server.
+                    Uri uri = null;
+                    if (Uri.TryCreate(target, UriKind.Absolute, out uri))
+                    {
+                        target = null;
+                        var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
+                        if (m_symbolModule.m_reader.GetPhysicalFileFromServer(uri.GetLeftPart(UriPartial.Authority), uri.AbsolutePath, newTarget))
+                            target = newTarget;
+
+                        if (target == null)
+                        {
+                            log.WriteLine("Could not fetch {0} from web", uri.AbsoluteUri);
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        log.WriteLine("Source Server string {0} is targeting an unsafe location.  Giving up.", target);
+                        return null;
+                    }
+                }
+
+                if (!File.Exists(target) && fetchCmdStr != null)
+                {
+                    log.WriteLine("Trying to generate the file {0}.", target);
+                    var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+                    var archToolsDir = Path.Combine(toolsDir, Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
+
+                    // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
+                    string addToPath = null;
+#if !PUBLIC_ONLY                // SD.exe is a Microsoft-internal source code control system.
+                    if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
+                            log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
+                        addToPath = archToolsDir;
+                    }
+                    else
+#endif
+                    if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tfExe = Command.FindOnPath("tf.exe");
+                        if (tfExe == null)
+                        {
+                            tfExe = FindTfExe();
+                            if (tfExe == null)
+                            {
+                                log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
+                                return null;
+                            }
+                            addToPath = Path.GetDirectoryName(tfExe);
+                        }
+                    }
+                    else
+                    {
+                        log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
+                        return null;
+                    }
+                    Directory.CreateDirectory(Path.GetDirectoryName(target));
+                    fetchCmdStr = "cmd /c " + fetchCmdStr;
+                    var options = new CommandOptions().AddOutputStream(log).AddNoThrow();
+                    if (addToPath != null)
+                        options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
+
+                    log.WriteLine("Source Server command {0}.", fetchCmdStr);
+                    var fetchCmd = Command.Run(fetchCmdStr, options);
+                    if (fetchCmd.ExitCode != 0)
+                        log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
+                    if (File.Exists(target))
+                    {
+                        // If TF.exe command files it might still create an empty output file.   Fix that 
+                        if (new FileInfo(target).Length == 0)
+                        {
+                            File.Delete(target);
+                            target = null;
+                        }
+                    }
+                    else
+                        target = null;
+
+                    if (target == null)
+                        log.WriteLine("Source Server command failed to produce the output file.");
+                    else
+                        log.WriteLine("Source Server command succeeded creating {0}", target);
+                }
+                else
+                    log.WriteLine("Found an existing source server file {0}.", target);
+                return target;
+            }
+
             log.WriteLine("Did not find source file in the set of source files in the PDB.");
             return null;
         }
@@ -2467,9 +2564,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
             // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
             m_hashType = sourceFile.checksumType;
-            if (m_hashType != 1 && m_hashType != 0)
+            if (m_hashType != 2 && m_hashType != 1 && m_hashType != 0)
             {
-                // TODO does anyone use SHA1?   
                 Debug.Assert(false, "Unknown hash type");
                 m_hashType = 0;
             }
@@ -2477,12 +2573,12 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             {
                 // MD5 is 16 bytes
                 // SHA1 is 20 bytes  
-                m_hash = new byte[16];
+                m_hash = m_hashType == 1 ? new byte[16] : new byte[20];
 
                 uint bytesFetched;
                 fixed (byte* bufferPtr = m_hash)
                     sourceFile.get_checksum((uint)m_hash.Length, out bytesFetched, out *bufferPtr);
-                Debug.Assert(bytesFetched == 16);
+                Debug.Assert(bytesFetched == m_hash.Length);
             }
         }
 

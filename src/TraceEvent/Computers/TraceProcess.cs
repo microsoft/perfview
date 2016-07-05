@@ -30,28 +30,57 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void NeedProcesses(this TraceEventDispatcher source)
         {
             TraceProcesses processes = source.Processes();
-            if (processes == null)
+            if (processes == null || m_currentSource != source)
             {
-                processes = new TraceProcesses(null /* TraceLog */);
+                processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
                 SetupCallbacks(source);
 
                 source.UserData["Computers/Processes"] = processes;
             }
+
+            m_currentSource = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
+            Debug.Assert(m_currentSource == source);
+
             if (source.UserData.ContainsKey("Computers/Processes")) return source.UserData["Computers/Processes"] as TraceProcesses;
             else return null;
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
+            Debug.Assert(m_currentSource == _event.Source);
+
             return _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
         }
 
         public static void AddCallbackOnProcessStart(this TraceEventDispatcher source, Action<TraceProcess> OnProcessStart)
         {
-            TraceProcess.OnInitialized += OnProcessStart;
+            Debug.Assert(m_currentSource == source);
+
+            var processes = source.Processes();
+            Debug.Assert(processes != null);
+            processes.OnInitialized += OnProcessStart;
+        }
+
+        public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
+        {
+            Debug.Assert(m_currentSource == process.Source);
+
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (!map.ContainsKey(process.ProcessIndex)) map[process.ProcessIndex] = sampleIntervalMSec;
+        }
+
+        public static float SampleIntervalMSec(this TraceProcess process)
+        {
+            Debug.Assert(m_currentSource == process.Source);
+
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex];
+            else return 1; // defualt 1 ms
         }
 
         #region private
@@ -100,7 +129,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 }
 
                 var process = data.Process();
-                process.CPUMSec++;
+                process.CPUMSec += process.SampleIntervalMSec();
             };
 
             kernelParser.AddCallbackForEvents<ProcessCtrTraceData>(delegate (ProcessCtrTraceData data)
@@ -110,6 +139,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 process.PeakWorkingSet = (double)data.PeakWorkingSetSize;
             });
         }
+
+        private static TraceEventDispatcher m_currentSource; // used to verify non-concurrent usage
         #endregion
     }
 
@@ -285,9 +316,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// process, as well as the process lookup tables and a cache that remembers the last calls to
         /// GetNameForAddress(). 
         /// </summary>
-        internal TraceProcesses(TraceLog log)
+        internal TraceProcesses(TraceLog log, TraceEventDispatcher source)
         {
             this.log = log;
+            this.source = source;
             this.processes = new GrowableArray<TraceProcess>(64);
             this.processesByPID = new GrowableArray<TraceProcess>(64);
         }
@@ -313,13 +345,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         return retProcess;
                     }
                 }
-                retProcess = new TraceProcess(processID, log, (ProcessIndex)processes.Count);
+                retProcess = new TraceProcess(processID, log, (ProcessIndex)processes.Count, source);
                 retProcess.firstEventSeenQPC = timeQPC;
                 processes.Add(retProcess);
                 processesByPID.Insert(index + 1, retProcess);
+                // fire event
+                FireOnInitialized(retProcess);
             }
             return retProcess;
         }
+
+        internal void FireOnInitialized(TraceProcess proc)
+        {
+            if (OnInitialized != null) OnInitialized(proc);
+        }
+
         internal TraceProcess FindProcessAndIndex(int processID, long timeQPC, out int index)
         {
             if (processesByPID.BinarySearch(processID, out index, compareByProcessID))
@@ -345,6 +385,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         private GrowableArray<TraceProcess> processes;          // The threads ordered in time. 
         private GrowableArray<TraceProcess> processesByPID;     // The threads ordered by processID.  
         private TraceLog log;
+        private TraceEventDispatcher source;
+        internal event Action<TraceProcess> OnInitialized;
 
         static private GrowableArray<TraceProcess>.Comparison<int> compareByProcessID = delegate (int processID, TraceProcess process)
         {
@@ -465,7 +507,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// <summary>
         /// The log file associated with the process. 
         /// </summary>
-        public TraceLog Log { get; private set; }
+        public Microsoft.Diagnostics.Tracing.Etlx.TraceLog Log { get; set; }
 
         /// <summary>
         /// Peak working set
@@ -565,15 +607,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         internal TraceProcess(int processID, ProcessIndex processIndex)
         {
-            Initialize(processID, processIndex);
+            Initialize(processID, processIndex, null /* TraceEventDispatcher */);
         }
 
-        internal TraceProcess(int processID, TraceLog log, ProcessIndex processIndex)
+        internal TraceProcess(int processID, TraceLog log, ProcessIndex processIndex, TraceEventDispatcher source)
         {
-            Initialize(processID, processIndex);
+            Initialize(processID, processIndex, source);
         }
 
-        private void Initialize(int processID, ProcessIndex processIndex)
+        private void Initialize(int processID, ProcessIndex processIndex, TraceEventDispatcher source)
         {
             ProcessID = processID;
             ParentID = -1;
@@ -581,6 +623,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             endTimeQPC = long.MaxValue;
             CommandLine = "";
             ImageFileName = "";
+            Source = source;
             Is64Bit = false;
             LoadedModules = null;
             Log = null;
@@ -590,17 +633,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             EventsDuringProcess = null;
             StartTime = EndTime = default(DateTime);
             StartTimeRelativeMsec = EndTimeRelativeMsec = -1;
-
-            if (OnInitialized != null) OnInitialized(this);
         }
-
-        internal static event Action<TraceProcess> OnInitialized;
 
         internal string name;
         internal long firstEventSeenQPC;      // Sadly there are events before process start.   This is minimum of those times.  Note that there may be events before this 
         internal long startTimeQPC;
         internal long endTimeQPC;
-#endregion
+        internal TraceEventDispatcher Source;
+        #endregion
     }
 
     /// <summary>
