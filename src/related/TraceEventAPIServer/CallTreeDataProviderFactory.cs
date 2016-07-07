@@ -156,19 +156,19 @@
 
                     symbolReader = new SymbolReader(this.textWriter, sympath) { SourcePath = srcpath };
 
-                    //foreach (var process in processes)
-                    //{
-                    //    if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
-                    //    {
-                    //        foreach (var module in process.LoadedModules)
-                    //        {
-                    //            if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
-                    //            {
-                    //                etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
-                    //            }
-                    //        }
-                    //    }
-                    //}
+                    foreach (var process in processes)
+                    {
+                        if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
+                        {
+                            foreach (var module in process.LoadedModules)
+                            {
+                                if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
+                                {
+                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -190,19 +190,19 @@
                     var processes = etlxFile.TraceLog.Processes;
                     symbolReader = new SymbolReader(this.textWriter, sympath) { SourcePath = srcpath };
 
-                    //foreach (var process in processes)
-                    //{
-                    //    if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
-                    //    {
-                    //        foreach (var module in process.LoadedModules)
-                    //        {
-                    //            if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
-                    //            {
-                    //                etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
-                    //            }
-                    //        }
-                    //    }
-                    //}
+                    foreach (var process in processes)
+                    {
+                        if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
+                        {
+                            foreach (var module in process.LoadedModules)
+                            {
+                                if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
+                                {
+                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                }
+                            }
+                        }
+                    }
 
                     stackViewerSession = new StackViewerSession(filename, stacktype, etlxFile.TraceLog, filterParams, symbolReader);
                     this.stackViewerSessionCache.Set(stackViewerKey, stackViewerSession, cacheExpirationTime);
