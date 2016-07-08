@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,11 +15,11 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfDataService.Controllers
 {
-    [Route("api/[controller]/open")]
     public class DataController : Controller
     {
         // GET: api/data
         [HttpGet]
+        [Route("api/[controller]/open")]
         public string Get([FromQuery]string path)
         {
             path = cleanUpPath(path);
@@ -46,10 +47,32 @@ namespace PerfDataService.Controllers
 
             if (json == null)
             {
-                // TODO: Form a response using HttpResponseException
+                // TODO: Form a proper response
+                return null;
             }
 
             return json;
+        }
+
+
+        [HttpGet]
+        [Route("/api/[controller]/stackviewer/summary")]
+        public string GetStackSummary([FromQuery]string filename, [FromQuery]string stackType, [FromQuery]int numNodes = 10)
+        {
+            // Ensure the required properties are present
+            if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType))
+            {
+                // TODO: Form proper resposne
+                return null;
+            }
+
+            using (var client = new WebClient())
+            {
+                var json = client.DownloadString("http://localhost:50001/stackviewer/summary?filename="+ filename
+                                                                                        + "&stacktype=" + stackType
+                                                                                        + "&numNodes=" + numNodes);
+                return json;
+            }
         }
 
 
@@ -112,6 +135,7 @@ namespace PerfDataService.Controllers
             // IF REAL FILE (e.g. .etl.zip, .etl)
             else if (new FileInfo(pathToItem).Exists)
             {
+                // TODO: Separate this into another function, if not another endpoint
                 // Assume only .etl.zip for now
                 string etlFileName = pathToItem;
                 var etlFile = PerfViewExtensibility.CommandEnvironment.OpenETLFile(etlFileName);
@@ -122,9 +146,11 @@ namespace PerfDataService.Controllers
 
                 Dictionary<string, object> child = new Dictionary<string, object>();
                 childrenContainer.Add(child);
-                child.Add("text", CPUStacks.Name);
-                child.Add("type", CPUStacks.GetType());
-                System.Diagnostics.Debug.WriteLine("type: " + CPUStacks.GetType());
+                child.Add("text", "CPU Stacks");
+                child.Add("type", "stacks");
+                child.Add("stackType", "CPU");
+                child.Add("path", pathToItem);
+                child.Add("hasChildren", false);
 
                 // TODO: Create Process / Files / Registry Stacks as child
                 // TODO: Create TraceInfo htmlReport as child
@@ -135,13 +161,10 @@ namespace PerfDataService.Controllers
 
                 return childrenContainer;
             }
-            // IF PERFVIEW FILE (e.g. "stacks", "events", "html", "gcdump")
-            else
-            {
-                // Virtual path
-                // TODO: Actually, make this another GET route on the API
-                return childrenContainer;
-            }
+
+
+            // TODO: Form proper response
+            return null;
         }
 
 
