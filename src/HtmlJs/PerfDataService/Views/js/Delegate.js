@@ -2,6 +2,7 @@ function Delegate() {
     var self = this;
     self.domain = "http://localhost:5000";
     self.defaultDirectoryTreePath = "C:/Users/t-kahoop/Development/perfview/src/PerfView/bin/Debug";
+    self.defaultNumNodes = 10;
     self.treeDivID = "#treeContainer";
 
     self.log = function log(status) {
@@ -34,6 +35,13 @@ function Delegate() {
         });
     };
 
+    self.openStackSummary = function openStackSummary(filePath, stackType, numNodes) {
+        httpGet("/api/data/stackviewer/summary?filename=" + filePath + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response) {
+            console.log(response);
+            delegate.log("Completed: Open " + stackType + " Stack Summary at filepath " + filePath);
+        });
+    }
+
     // PRIVATE
     function createJsTreeFromJSON(JSONTree) {
         // In case there is a tree already loaded in the div, destroy it
@@ -53,7 +61,13 @@ function Delegate() {
     // PRIVATE
     function addJsTreeEventListeners() {
         $(self.treeDivID).on('activate_node.jstree', function (event, node) {
-            self.changeDirectoryTreePath(node.node.original.path);  // JSTree has a node within a node.. Weird.
+            nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
+
+            if (nodeObject.type == "dir" || nodeObject.type == "file") {
+                self.changeDirectoryTreePath(nodeObject.path);
+            } else if (nodeObject.type == "stacks") {
+                self.openStackSummary(nodeObject.path, nodeObject.stackType, self.defaultNumNodes);
+            }
         });
 
         // TODO: Use double click event to change directory
@@ -89,12 +103,8 @@ delegate = new Delegate();
 /**********************************************************/
 
 
-
 $(document).ready(function () {
     delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
-});
-
-$(document).ready(function () {
     // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
     $("#recentDirectories").append("<option value=" + delegate.defaultDirectoryTreePath + "/>");
 });
