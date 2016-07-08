@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <div id="stackData">
+
+    </div>
+
+    <!-- Let's get some jQuery going here. -->
+    <script type="text/javascript" src="../node_modules/jquery/dist/jquery.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Get meta data from parent window
+            var filename = window.opener.filename;
+            var stackType = window.opener.stackType;
+            var numNodes = window.opener.numNodes;
+
+            // Get stack data from parent window
+            var stackData = window.opener.stackData;
+            
+            console.log(stackData);
+
+            for (var i = 0; i < stackData.length; ++i) {
+                $("#stackData").append(stackData[i].name + "<br>");
+            }
+        });
+    </script>
+</body>
+</html>
