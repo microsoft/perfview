@@ -35,10 +35,21 @@ function Delegate() {
         });
     };
 
-    self.openStackSummary = function openStackSummary(filePath, stackType, numNodes) {
-        httpGet("/api/data/stackviewer/summary?filename=" + filePath + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response) {
+    self.openStackSummary = function openStackSummary(filename, stackType, numNodes) {
+        httpGet("/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response) {
             console.log(response);
-            delegate.log("Completed: Open " + stackType + " Stack Summary at filepath " + filePath);
+
+            // Attach data to current (parent) window so that the new window can access it on load (via window.opener.stackData)
+            window.filename = filename;
+            window.stackType = stackType;
+            window.numNodes = numNodes;
+            window.stackData = response;
+
+            // Create and open the new window
+            var stackViewerWindow = window.open(self.domain + "/Views/static/stackviewer.html");
+
+            // Log the completed work out
+            delegate.log("Completed: Open " + stackType + " Stack Summary at filepath " + filename);
         });
     }
 
