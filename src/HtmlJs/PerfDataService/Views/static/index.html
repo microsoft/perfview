@@ -20,7 +20,7 @@
     <div class="wrapper">
       <div id="sideBarContainer">
 
-          <input id="dirSelect" list="recentDirectories" type="text" onchange="delegate.changeDirectoryTreePath(this.value)">
+          <input id="dirSelect" list="recentDirectories" type="text" onchange="homeDelegate.changeDirectoryTreePath(this.value)">
           <datalist id="recentDirectories">
           </datalist>
 
@@ -125,13 +125,13 @@
       </script>
 
 
-      <script src="../js/Delegate.js"></script>
+
+      <script src="../js/homeDelegate.js"></script>
 
 
       <!-- basicContext Library -->
       <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
-      <!-- alternate require method that works for Electron
-      <script>window.basicContext = require('./node_modules/basiccontext/dist/basicContext.min.js')</script> -->
+
 
       <!-- basicContext Menu Test -->
       <script>
@@ -157,63 +157,16 @@
 
       <!-- jsTree Library -->
       <script src="../node_modules/jstree/dist/jstree.min.js"></script>
+      <!--<script src="../js/jsTreeHandler.js"></script>-->  
 
 
       <script>
-          function changeDirectoryTreePath(path) {
-              delegate.httpGet("/api/data/open?path=" + path, function (response) {
-                  console.log(response);
-                  createJsTreeFromJSON(response);
-                  delegate.log("Completed: Directory Tree Path Update");
-              });
-          };
-
-
-          function createJsTreeFromJSON(JSONTree) {
-              // In case there is a tree already loaded in the div, destroy it
-              $(delegate.treeDivID).jstree("destroy");
-
-              // Load the JSON data
-              $(delegate.treeDivID).jstree({
-                  'core': {
-                      'data': JSONTree.children
-                  }
-              });
-
-              // Add JsTree event listeners (handles user interactions with the tree)
-              addJsTreeEventListeners();
-          };
-
-          // PRIVATE
-          function addJsTreeEventListeners() {
-              $(delegate.treeDivID).on('activate_node.jstree', function (event, node) {
-                  nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
-
-                  if (nodeObject.type == "dir" || nodeObject.type == "file") {
-                      changeDirectoryTreePath(nodeObject.path);
-                  } else if (nodeObject.type == "stacks") {
-                      delegate.openStackSummary(nodeObject.path, nodeObject.stackType, delegate.defaultNumNodes);
-                  }
-              });
-          }
-
-
           $(document).ready(function () {
-              changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
+              homeDelegate.changeDirectoryTreePath(homeDelegate.defaultDirectoryTreePath);
               // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
-              $("#recentDirectories").append("<option value=" + delegate.defaultDirectoryTreePath + "/>");
+              $("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
           });
       </script>
-
-
-      <!-- GET Tree View Hierarchy -->
-      <!--<script>
-        // GET all directories and items and append them to tree view
-        //$(document).ready(function () {
-        //    delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
-        //});
-      </script>-->
-
 
 
       <!-- Do NOT Delete
