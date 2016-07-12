@@ -96,16 +96,10 @@
           $('#footer').append(template);
           resizeWelcomeDiv();
         })
-      </script>
 
-
-      <script src="../js/Delegate.js"></script>
-
-
-      <!-- Allows for resizing of #welcome if there is too much text.
-      This is unfortunately how it has to be done. Even Facebook.com has
-      to do something like this for their footer (chat windows) bar. -->
-      <script>
+          /* Allows for resizing of #welcome if there is too much text.
+          This is unfortunately how it has to be done. Even Facebook.com has
+          to do something like this for their footer (chat windows) bar. */
         var navBar, footer;
 
         /* Try to avoid constantly traversing the DOM as much as we can. */
@@ -129,6 +123,9 @@
         window.onload = initVars;
         window.onresize = resizeWelcomeDiv;
       </script>
+
+
+      <script src="../js/Delegate.js"></script>
 
 
       <!-- basicContext Library -->
@@ -158,12 +155,55 @@
       </script>
 
 
-      <!-- MKTREE Library -->
-      <!--<script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
-      <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">-->
-
       <!-- jsTree Library -->
       <script src="../node_modules/jstree/dist/jstree.min.js"></script>
+
+
+      <script>
+          function changeDirectoryTreePath(path) {
+              delegate.httpGet("/api/data/open?path=" + path, function (response) {
+                  console.log(response);
+                  createJsTreeFromJSON(response);
+                  delegate.log("Completed: Directory Tree Path Update");
+              });
+          };
+
+
+          function createJsTreeFromJSON(JSONTree) {
+              // In case there is a tree already loaded in the div, destroy it
+              $(delegate.treeDivID).jstree("destroy");
+
+              // Load the JSON data
+              $(delegate.treeDivID).jstree({
+                  'core': {
+                      'data': JSONTree.children
+                  }
+              });
+
+              // Add JsTree event listeners (handles user interactions with the tree)
+              addJsTreeEventListeners();
+          };
+
+          // PRIVATE
+          function addJsTreeEventListeners() {
+              $(delegate.treeDivID).on('activate_node.jstree', function (event, node) {
+                  nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
+
+                  if (nodeObject.type == "dir" || nodeObject.type == "file") {
+                      changeDirectoryTreePath(nodeObject.path);
+                  } else if (nodeObject.type == "stacks") {
+                      delegate.openStackSummary(nodeObject.path, nodeObject.stackType, delegate.defaultNumNodes);
+                  }
+              });
+          }
+
+
+          $(document).ready(function () {
+              changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
+              // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
+              $("#recentDirectories").append("<option value=" + delegate.defaultDirectoryTreePath + "/>");
+          });
+      </script>
 
 
       <!-- GET Tree View Hierarchy -->

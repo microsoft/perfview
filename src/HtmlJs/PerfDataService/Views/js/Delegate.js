@@ -9,8 +9,7 @@ function Delegate() {
         $("#statusBar span").text(status);
     };
 
-    // PRIVATE
-    function httpGet(url, callback) {
+    self.httpGet = function httpGet(url, callback) {
         url = self.domain + url;
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.onreadystatechange = function () {
@@ -27,16 +26,16 @@ function Delegate() {
         xmlHttp.send(null);
     };
 
-    self.changeDirectoryTreePath = function changeDirectoryTreePath(path) {
-        httpGet("/api/data/open?path=" + path, function (response) {
-            console.log(response);
-            createJsTreeFromJSON(response);
-            delegate.log("Completed: Directory Tree Path Update");
-        });
-    };
+    //self.changeDirectoryTreePath = function changeDirectoryTreePath(path) {
+    //    httpGet("/api/data/open?path=" + path, function (response) {
+    //        console.log(response);
+    //        createJsTreeFromJSON(response);
+    //        delegate.log("Completed: Directory Tree Path Update");
+    //    });
+    //};
 
     self.openStackSummary = function openStackSummary(filename, stackType, numNodes) {
-        httpGet("/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response) {
+        self.httpGet("/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response) {
             console.log(response);
 
             // Attach data to current (parent) window so that the new window can access it on load (via window.opener.stackData)
@@ -54,32 +53,32 @@ function Delegate() {
     }
 
     // PRIVATE
-    function createJsTreeFromJSON(JSONTree) {
-        // In case there is a tree already loaded in the div, destroy it
-        $(self.treeDivID).jstree("destroy");
+    //function createJsTreeFromJSON(JSONTree) {
+    //    // In case there is a tree already loaded in the div, destroy it
+    //    $(self.treeDivID).jstree("destroy");
 
-        // Load the JSON data
-        $(self.treeDivID).jstree({
-            'core': {
-                'data': JSONTree.children
-            }
-        });
+    //    // Load the JSON data
+    //    $(self.treeDivID).jstree({
+    //        'core': {
+    //            'data': JSONTree.children
+    //        }
+    //    });
 
-        // Add JsTree event listeners (handles user interactions with the tree)
-        addJsTreeEventListeners();
-    };
+    //    // Add JsTree event listeners (handles user interactions with the tree)
+    //    addJsTreeEventListeners();
+    //};
 
-    // PRIVATE
-    function addJsTreeEventListeners() {
-        $(self.treeDivID).on('activate_node.jstree', function (event, node) {
-            nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
+    //// PRIVATE
+    //function addJsTreeEventListeners() {
+    //    $(self.treeDivID).on('activate_node.jstree', function (event, node) {
+    //        nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
 
-            if (nodeObject.type == "dir" || nodeObject.type == "file") {
-                self.changeDirectoryTreePath(nodeObject.path);
-            } else if (nodeObject.type == "stacks") {
-                self.openStackSummary(nodeObject.path, nodeObject.stackType, self.defaultNumNodes);
-            }
-        });
+    //        if (nodeObject.type == "dir" || nodeObject.type == "file") {
+    //            self.changeDirectoryTreePath(nodeObject.path);
+    //        } else if (nodeObject.type == "stacks") {
+    //            self.openStackSummary(nodeObject.path, nodeObject.stackType, self.defaultNumNodes);
+    //        }
+    //    });
 
         // TODO: Use double click event to change directory
         //$(self.treeDivID).on('dblclick.jstree', function (event, node) {
@@ -99,7 +98,7 @@ function Delegate() {
         //        domNode.addClass('jstree-open').removeClass('jstree-leaf');
         //    }
         //});
-    }
+    //}
 
 }
 
@@ -113,9 +112,3 @@ delegate = new Delegate();
 /**********************************************************/
 /**********************************************************/
 
-
-$(document).ready(function () {
-    delegate.changeDirectoryTreePath(delegate.defaultDirectoryTreePath);
-    // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
-    $("#recentDirectories").append("<option value=" + delegate.defaultDirectoryTreePath + "/>");
-});
