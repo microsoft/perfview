@@ -1,0 +1,26 @@
+﻿table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    font-size: .8rem;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+#stackData table.treetable .collapsed td span.indenter a {
+    background-image: url("../static/images/right-arrow.png");
+    background-size: 16px;
+}
+
+#stackData table.treetable .expanded td span.indenter a {
+    background-image: url("../static/images/down-arrow.png");
+    background-size: 16px;
+}

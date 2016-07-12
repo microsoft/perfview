@@ -2,16 +2,60 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title></title>
+    <title>Stack Viewer</title>
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/foundation.css">
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/app.css">
+    <link href="../libraries/jquery.treetable/css/jquery.treetable.css" rel="stylesheet" type="text/css" />
+    <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <div id="stackData">
+    <ul class="tabs" data-tabs id="example-tabs">
+        <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
+        <li class="tabs-title"><a href="#caller-callee">Caller-Callee</a></li>
+        <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
+        <li class="tabs-title"><a href="#callers">Callers</a></li>
+        <li class="tabs-title"><a href="#callees">Callees</a></li>
+        <li class="tabs-title"><a href="#notes">Notes</a></li>
+    </ul>
 
+    <div class="tabs-content" data-tabs-content="example-tabs">
+        <div class="tabs-panel is-active" id="by-name">
+
+            <div id="stackData">
+                <table id="tree">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Exc %</th>
+                            <th>Exc</th>
+                            <th>Inc %</th>
+                            <th>Fold</th>
+                            <th>When</th>
+                            <th>First</th>
+                            <th>Last</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+
+        </div>
+        <div class="tabs-panel" id="caller-callee">
+            <p>Suspendisse dictum feugiat nisl ut dapibus.  Vivamus hendrerit arcu sed erat molestie vehicula. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.  Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor.</p>
+        </div>
     </div>
 
-    <!-- Let's get some jQuery going here. -->
-    <script type="text/javascript" src="../node_modules/jquery/dist/jquery.min.js"></script>
 
+
+    <!-- Do NOT Delete
+      This allows for script tags and requires('') to work both in the browser and i Electron -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+
+    <!-- Let's get some jQuery going here. -->
+    <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
+    <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
+
+    
     <script>
         $(document).ready(function () {
             // Get meta data from parent window
@@ -21,13 +65,68 @@
 
             // Get stack data from parent window
             var stackData = window.opener.stackData;
+
+            // Get tree ready
+            var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
+
+            // Initiate tree table with said properties
+            $("#tree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                clickableNodeNames: true,
+                onNodeExpand: function () {
+                    var node = this;
+
+                    console.log(node);
+                }
+            });
             
             console.log(stackData);
 
-            for (var i = 0; i < stackData.length; ++i) {
-                $("#stackData").append(stackData[i].name + "<br>");
-            }
+            updateTree(stackData);
         });
+
+
+        function updateTree(stackData) {
+            var rowsToAppend = "";
+
+            // Iterate through each row
+            for (var i = 0; i < stackData.length; ++i) {
+                var name = stackData[i].name;
+                var exclusiveMetricPercent = stackData[i].exclusiveMetricPercent;
+                var exclusiveMetric = stackData[i].exclusiveMetric;
+                var inclusiveMetricPercent = stackData[i].inclusiveMetricPercent;
+                var inclusiveMetric = stackData[i].inclusiveMetric;
+                var exclusiveFoldedCount = stackData[i].exclusiveFoldedCount;
+                var firstTimeRelativeMSec = stackData[i].firstTimeRelativeMSec;
+                var lastTimeRelativeMSec = stackData[i].lastTimeRelativeMSec;
+
+                var rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + i + "\" data-tt-branch>\
+                                    <td>" + name + "</td>\
+                                    <td>" + exclusiveMetricPercent + "</td>\
+                                    <td>" + exclusiveMetric + "</td>\
+                                    <td>" + inclusiveMetricPercent + "</td>\
+                                    <td>" + inclusiveMetric + "</td>\
+                                    <td>" + exclusiveFoldedCount + "</td>\
+                                    <td>" + firstTimeRelativeMSec + "</td>\
+                                    <td>" + lastTimeRelativeMSec + "</td>\
+                                    </tr>";
+            }
+            $("#tree").treetable("loadBranch", null, rowsToAppend);
+        }
     </script>
+
+
+    <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
+    <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
+    <script src="../static/foundation-6.2.3-custom/js/app.js"></script>
+
+
+    <!-- Do NOT Delete
+      This allows for script tags and require statements to work both in the browser and in Electron -->
+    <script>if (window.module) module = window.module;</script>
+
+
+
 </body>
 </html>
