@@ -9,7 +9,7 @@
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <ul class="tabs" data-tabs id="example-tabs">
+    <ul class="tabs" data-tabs id="tabs">
         <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
         <li class="tabs-title"><a href="#caller-callee">Caller-Callee</a></li>
         <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
@@ -18,7 +18,7 @@
         <li class="tabs-title"><a href="#notes">Notes</a></li>
     </ul>
 
-    <div class="tabs-content" data-tabs-content="example-tabs">
+    <div class="tabs-content" data-tabs-content="tabs">
         <div class="tabs-panel is-active" id="by-name">
 
             <div id="stackData">
@@ -55,16 +55,15 @@
     <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
     <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
 
+    <script src="../js/stackDelegate.js"></script>
+
     
     <script>
         $(document).ready(function () {
-            // Get meta data from parent window
-            var filename = window.opener.filename;
-            var stackType = window.opener.stackType;
-            var numNodes = window.opener.numNodes;
-
-            // Get stack data from parent window
-            var stackData = window.opener.stackData;
+            // Get metadata and stack json from parent window
+            //var filename = window.opener.filename;
+            //var stackType = window.opener.stackType;
+            //var stackData = window.opener.stackData;
 
             // Get tree ready
             var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
@@ -81,9 +80,9 @@
                 }
             });
             
-            console.log(stackData);
+            console.log(stackDelegate.stackData);
 
-            updateTree(stackData);
+            updateTree(stackDelegate.stackData);
         });
 
 
@@ -119,7 +118,9 @@
 
     <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
     <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
-    <script src="../static/foundation-6.2.3-custom/js/app.js"></script>
+    <script>
+        $(document).foundation();
+    </script>
 
 
     <!-- Do NOT Delete

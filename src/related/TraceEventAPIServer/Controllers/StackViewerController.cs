@@ -32,13 +32,14 @@
             return this.dataProvider.GetNode(name);
         }
 
-        [HttpGet]
-        [Route("stackviewer/callertree")]
-        public TreeNode[] CallerTree(string name)
-        {
-            return this.dataProvider.GetCallerTree(name);
-        }
+        //[HttpGet]
+        //[Route("stackviewer/callertree")]
+        //public TreeNode[] CallerTree(string name)
+        //{
+        //    return this.dataProvider.GetCallerTree(name);
+        //}
 
+        //[HttpGet("{path}")]
         [HttpGet]
         [Route("stackviewer/callertree")]
         public TreeNode[] CallerTree(string name, string path)

@@ -1,4 +1,4 @@
-﻿{
+{
   "buildOptions": {
     "emitEntryPoint": true,
     "preserveCompilationContext": true
@@ -13,7 +13,8 @@
     "Microsoft.AspNetCore.Razor.Tools": {
       "version": "1.0.0-preview2-final",
       "type": "build"
-    }
+    },
+    "Microsoft.AspNetCore.Mvc.Core": "1.0.0"
   },
   "frameworks": {
     "net461": {

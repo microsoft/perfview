@@ -2,6 +2,7 @@
     self = this;
     self.domain = "http://localhost:5000";
     self.defaultDirectoryTreePath = "C:/Users/t-kahoop/Development/perfview/src/PerfView/bin/Debug";
+    self.defaultNumNodes = 10;
     self.treeDivID = "#treeContainer";
 
     self.log = function log(status) {
@@ -50,15 +51,17 @@
     }
 
     self.openStackSummary = function openStackSummary(filename, stackType, numNodes) {
-        $.get("/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes, function (response, status) {
+        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes;
+
+        $.get(url, function (response, status) {
             json = JSON.parse(response);
 
+            console.log(url);
             console.log(json);
 
             // Attach data to current (parent) window so that the new window can access it on load (via window.opener.stackData)
             window.filename = filename;
             window.stackType = stackType;
-            window.numNodes = numNodes;
             window.stackData = json;
 
             // Create and open the new window
