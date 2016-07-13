@@ -68,9 +68,35 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var json = client.DownloadString("http://localhost:50001/stackviewer/summary?filename="+ filename
-                                                                                        + "&stacktype=" + stackType
-                                                                                        + "&numNodes=" + numNodes);
+                var url = "http://localhost:50001/stackviewer/summary?filename=" + filename
+                                                                                + "&stacktype=" + stackType
+                                                                                + "&numNodes=" + numNodes;
+                var json = client.DownloadString(url);
+
+                return json;
+            }
+        }
+
+
+        [HttpGet]
+        [Route("/api/[controller]/stackviewer/callertree")]
+        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10)
+        {
+            // Ensure the required properties are present
+            if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
+            {
+                // TODO: Form proper resposne
+                return null;
+            }
+
+            using (var client = new WebClient())
+            {
+                var url = "http://localhost:50001/stackviewer/callertree?filename=" + filename
+                                                                                + "&name=" + name
+                                                                                + "&stacktype=" + stackType
+                                                                                + "&numNodes=" + numNodes;
+                System.Diagnostics.Debug.WriteLine("\n\n\nURL: " + url + "\n\n\n");
+                var json = client.DownloadString(url);
                 return json;
             }
         }
