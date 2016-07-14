@@ -9,6 +9,7 @@
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+
     <ul class="tabs" data-tabs id="tabs">
         <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
         <li class="tabs-title"><a href="#caller-callee">Caller-Callee</a></li>
@@ -20,27 +21,37 @@
 
     <div class="tabs-content" data-tabs-content="tabs">
         <div class="tabs-panel is-active" id="by-name">
-
-            <div id="stackData">
-                <table id="tree">
+                <table id="by-name-list">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Exc %</th>
                             <th>Exc</th>
                             <th>Inc %</th>
+                            <th>Inc</th>
                             <th>Fold</th>
-                            <th>When</th>
                             <th>First</th>
                             <th>Last</th>
                         </tr>
                     </thead>
                 </table>
-            </div>
-
         </div>
-        <div class="tabs-panel" id="caller-callee">
-            <p>Suspendisse dictum feugiat nisl ut dapibus.  Vivamus hendrerit arcu sed erat molestie vehicula. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor.  Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor.</p>
+
+        <div class="tabs-panel" id="callers">
+                <table id="callersTree">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Exc %</th>
+                            <th>Exc</th>
+                            <th>Inc %</th>
+                            <th>Inc</th>
+                            <th>Fold</th>
+                            <th>First</th>
+                            <th>Last</th>
+                        </tr>
+                    </thead>
+                </table>
         </div>
     </div>
 
@@ -60,33 +71,41 @@
     
     <script>
         $(document).ready(function () {
-            // Get metadata and stack json from parent window
-            //var filename = window.opener.filename;
-            //var stackType = window.opener.stackType;
-            //var stackData = window.opener.stackData;
-
             // Get tree ready
             var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
 
-            // Initiate tree table with said properties
-            $("#tree").treetable({
+            // Initialize by-name-list with said properties
+            $("#by-name-list").treetable({
                 expandable: true,
                 indenterTemplate: indenterTemplate,
-                clickableNodeNames: true,
                 onNodeExpand: function () {
                     var node = this;
 
                     console.log(node);
                 }
             });
-            
-            console.log(stackDelegate.stackData);
 
-            updateTree(stackDelegate.stackData);
+            // Initialize callersTree with said properties
+            $("#callersTree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                onNodeExpand: function () {
+                    var node = this;
+
+                    callersTreeNodeExpanded(node);
+                }
+            });
+
+            updateTreeTable("#by-name-list", null, stackDelegate.summaryStackData);
         });
 
 
-        function updateTree(stackData) {
+        /*_____________________________________*/
+        /*_______ Tab Updater Functions _______*/
+        /*_____________________________________*/
+        function updateTreeTable(treeTableId, parentNode, stackData) {
+            console.log(parentNode);
+
             var rowsToAppend = "";
 
             // Iterate through each row
@@ -99,9 +118,22 @@
                 var exclusiveFoldedCount = stackData[i].exclusiveFoldedCount;
                 var firstTimeRelativeMSec = stackData[i].firstTimeRelativeMSec;
                 var lastTimeRelativeMSec = stackData[i].lastTimeRelativeMSec;
+                var parentContextId = stackData[i].parentContextId;
+                var contextId = stackData[i].contextId;
+                var hasChildren = stackData[i].hasChildren;
 
-                var rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + i + "\" data-tt-branch>\
-                                    <td>" + name + "</td>\
+                // TODO: Wrap this up in a function or something nicer
+                if (parentNode != null && parentNode != undefined) {
+                    var childNodeAlreadyPresent = false;
+                    for (var j = 0; j < parentNode.children.length; ++j) {
+                        if (parentNode.children[j].id == contextId) { childNodeAlreadyPresent = true; }
+                    }
+                    if (childNodeAlreadyPresent) { continue; }
+                }
+
+                rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + contextId + "\" data-tt-parent-id=\"" + parentContextId + "\" data-tt-branch=\"" + hasChildren + "\">";
+
+                rowsToAppend = rowsToAppend + "<td>" + name + "</td>\
                                     <td>" + exclusiveMetricPercent + "</td>\
                                     <td>" + exclusiveMetric + "</td>\
                                     <td>" + inclusiveMetricPercent + "</td>\
@@ -111,8 +143,58 @@
                                     <td>" + lastTimeRelativeMSec + "</td>\
                                     </tr>";
             }
-            $("#tree").treetable("loadBranch", null, rowsToAppend);
+
+            $(treeTableId).treetable("loadBranch", parentNode, rowsToAppend);  // treetable treats a null node parameter as meaning root
         }
+
+        
+        /*_____________________________________*/
+        /*__________ Event Listeners __________*/
+        /*_____________________________________*/
+
+        // by-name-list click event
+        $(document).on("dblclick", "#by-name-list tbody tr", function (row) {
+            var name = row.currentTarget.children[0].innerText.trim();  // Get the name of the clicked node
+
+            if (name !== undefined) {
+                stackDelegate.getCallerTree(name, "", function (callersStackData) {
+                    // Switch to Callers tab
+                    $('#tabs').foundation('selectTab', $("#callers"));
+
+                    // Place data in Callers tab
+                    updateTreeTable("#callersTree", null, callersStackData);
+                });
+            }
+        });
+
+        // callersTree node expand event
+        //$(document).on("dblclick", "#callersTree tbody tr", function (row) {
+        function callersTreeNodeExpanded(node) {
+            // Get the nodeId (contains the name and path) of the row the user just clicked on
+
+            // Split the name from the path
+            var nameAndPath = node.id.split("/");
+            var name = nameAndPath[0];
+
+            // Get the path, if there is one
+            var path = "";
+            // Check if there is actually a path component
+            if (nameAndPath.length > 1) {
+                // There is, so let's reconstruct it
+                for (var i = 1; i < nameAndPath.length - 1; ++i) {
+                    path += nameAndPath[i] + "/";
+                }
+                path += nameAndPath[nameAndPath.length - 1];
+            }
+
+            if (name !== undefined) {
+                stackDelegate.getCallerTree(name, path, function (callersStackData) {
+                    // Place data under clicked node
+                    updateTreeTable("#callersTree", node, callersStackData);
+                });
+            }
+        }
+        //});
     </script>
 
 

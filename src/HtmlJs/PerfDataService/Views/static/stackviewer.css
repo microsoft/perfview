@@ -15,12 +15,12 @@ tr:nth-child(even) {
     background-color: #dddddd;
 }
 
-#stackData table.treetable .collapsed td span.indenter a {
+#callersTree .branch td span.indenter a {
     background-image: url("../static/images/right-arrow.png");
     background-size: 16px;
 }
 
-#stackData table.treetable .expanded td span.indenter a {
+#callersTree .expanded td span.indenter a {
     background-image: url("../static/images/down-arrow.png");
     background-size: 16px;
 }

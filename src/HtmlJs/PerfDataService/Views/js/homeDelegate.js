@@ -39,6 +39,7 @@
 
 
     function addJsTreeEventListeners() {
+        // Directory/File Click Event
         $(self.treeDivID).on('activate_node.jstree', function (event, node) {
             nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
 
@@ -59,10 +60,10 @@
             console.log(url);
             console.log(json);
 
-            // Attach data to current (parent) window so that the new window can access it on load (via window.opener.stackData)
+            // Attach data to current (parent) window so that the new window can access it on load (via window.opener.summaryStackData)
             window.filename = filename;
             window.stackType = stackType;
-            window.stackData = json;
+            window.summaryStackData = json;
 
             // Create and open the new window
             var stackViewerWindow = window.open(self.domain + "/Views/static/stackviewer.html");
