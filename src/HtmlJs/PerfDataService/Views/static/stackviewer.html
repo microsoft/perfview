@@ -51,6 +51,7 @@
                             <th>Last</th>
                         </tr>
                     </thead>
+                    <tbody></tbody>
                 </table>
         </div>
     </div>
@@ -84,6 +85,7 @@
                     console.log(node);
                 }
             });
+            updateTreeTable("#by-name-list", null, stackDelegate.summaryStackData);
 
             // Initialize callersTree with said properties
             $("#callersTree").treetable({
@@ -95,8 +97,6 @@
                     callersTreeNodeExpanded(node);
                 }
             });
-
-            updateTreeTable("#by-name-list", null, stackDelegate.summaryStackData);
         });
 
 
@@ -104,43 +104,30 @@
         /*_______ Tab Updater Functions _______*/
         /*_____________________________________*/
         function updateTreeTable(treeTableId, parentNode, stackData) {
-            console.log(parentNode);
-
-            var rowsToAppend = "";
-
             // Iterate through each row
+            var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
-                var name = stackData[i].name;
-                var exclusiveMetricPercent = stackData[i].exclusiveMetricPercent;
-                var exclusiveMetric = stackData[i].exclusiveMetric;
-                var inclusiveMetricPercent = stackData[i].inclusiveMetricPercent;
-                var inclusiveMetric = stackData[i].inclusiveMetric;
-                var exclusiveFoldedCount = stackData[i].exclusiveFoldedCount;
-                var firstTimeRelativeMSec = stackData[i].firstTimeRelativeMSec;
-                var lastTimeRelativeMSec = stackData[i].lastTimeRelativeMSec;
-                var parentContextId = stackData[i].parentContextId;
-                var contextId = stackData[i].contextId;
-                var hasChildren = stackData[i].hasChildren;
-
                 // TODO: Wrap this up in a function or something nicer
                 if (parentNode != null && parentNode != undefined) {
                     var childNodeAlreadyPresent = false;
                     for (var j = 0; j < parentNode.children.length; ++j) {
-                        if (parentNode.children[j].id == contextId) { childNodeAlreadyPresent = true; }
+                        if (parentNode.children[j].id == stackData[i].contextId) { childNodeAlreadyPresent = true; }
                     }
                     if (childNodeAlreadyPresent) { continue; }
                 }
 
-                rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + contextId + "\" data-tt-parent-id=\"" + parentContextId + "\" data-tt-branch=\"" + hasChildren + "\">";
+                rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
+                                            + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
+                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren + "\">";
 
-                rowsToAppend = rowsToAppend + "<td>" + name + "</td>\
-                                    <td>" + exclusiveMetricPercent + "</td>\
-                                    <td>" + exclusiveMetric + "</td>\
-                                    <td>" + inclusiveMetricPercent + "</td>\
-                                    <td>" + inclusiveMetric + "</td>\
-                                    <td>" + exclusiveFoldedCount + "</td>\
-                                    <td>" + firstTimeRelativeMSec + "</td>\
-                                    <td>" + lastTimeRelativeMSec + "</td>\
+                rowsToAppend = rowsToAppend + "<td>" + stackData[i].name + "</td>\
+                                    <td>" + stackData[i].exclusiveMetricPercent + "</td>\
+                                    <td>" + stackData[i].exclusiveMetric + "</td>\
+                                    <td>" + stackData[i].inclusiveMetricPercent + "</td>\
+                                    <td>" + stackData[i].inclusiveMetric + "</td>\
+                                    <td>" + stackData[i].exclusiveFoldedCount + "</td>\
+                                    <td>" + stackData[i].firstTimeRelativeMSec + "</td>\
+                                    <td>" + stackData[i].lastTimeRelativeMSec + "</td>\
                                     </tr>";
             }
 
@@ -153,13 +140,15 @@
         /*_____________________________________*/
 
         // by-name-list click event
-        $(document).on("dblclick", "#by-name-list tbody tr", function (row) {
-            var name = row.currentTarget.children[0].innerText.trim();  // Get the name of the clicked node
+        $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
+            var name = row.currentTarget.innerText.trim();  // Get the name of the clicked node
 
             if (name !== undefined) {
                 stackDelegate.getCallerTree(name, "", function (callersStackData) {
                     // Switch to Callers tab
                     $('#tabs').foundation('selectTab', $("#callers"));
+
+                    $("#callersTree tbody").empty();
 
                     // Place data in Callers tab
                     updateTreeTable("#callersTree", null, callersStackData);
