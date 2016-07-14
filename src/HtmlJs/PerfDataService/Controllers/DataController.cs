@@ -80,7 +80,7 @@ namespace PerfDataService.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/stackviewer/callertree")]
-        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10)
+        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10, [FromQuery]string path="")
         {
             // Ensure the required properties are present
             if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
@@ -94,7 +94,8 @@ namespace PerfDataService.Controllers
                 var url = "http://localhost:50001/stackviewer/callertree?filename=" + filename
                                                                                 + "&name=" + name
                                                                                 + "&stacktype=" + stackType
-                                                                                + "&numNodes=" + numNodes;
+                                                                                + "&numNodes=" + numNodes
+                                                                                + "&path=" + path;
                 System.Diagnostics.Debug.WriteLine("\n\n\nURL: " + url + "\n\n\n");
                 var json = client.DownloadString(url);
                 return json;
