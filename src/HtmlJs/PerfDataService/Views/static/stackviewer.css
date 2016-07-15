@@ -1,4 +1,11 @@
-﻿table {
+﻿.filter {
+    display: inline;
+    width: 200px;
+}
+
+
+
+table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
@@ -15,12 +22,26 @@ tr:nth-child(even) {
     background-color: #dddddd;
 }
 
-#callersTree .branch td span.indenter a {
+/*#CallersTree {
+    table-layout: fixed;
+    width: 100%;
+    white-space: nowrap;
+}*/
+
+/*.name-col {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    width: 50%;
+}*/
+
+#CallersTree .branch td span.indenter a {
     background-image: url("../static/images/right-arrow.png");
     background-size: 16px;
 }
 
-#callersTree .expanded td span.indenter a {
+#CallersTree .expanded td span.indenter a {
     background-image: url("../static/images/down-arrow.png");
     background-size: 16px;
 }

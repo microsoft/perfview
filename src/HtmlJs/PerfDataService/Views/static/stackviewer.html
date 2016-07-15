@@ -9,12 +9,37 @@
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+    <div id="filterBoxesContainer">
+        Start:<input class="filter" id="start-filter" list="start-filter-list" type="text">
+        <datalist id="start-filter-list"><option value="lol"></option></datalist>
+
+        End:<input class="filter" id="end-filter" list="end-filter-list" type="text">
+        <datalist id="end-filter-list"><option value="lol"></option></datalist>
+
+        Find:<input class="filter" id="find-filter" list="find-filter-list" type="text">
+        <datalist id="find-filter-list"><option value="lol"></option></datalist>
+
+        GroupPats:<input class="filter" id="groupptas-filter" list="grouppats-filter-list" type="text">
+        <datalist id="grouppats-filter-list"><option value="lol"></option></datalist>
+
+        Fold%:<input class="filter" id="foldpct-filter" list="foldpercent-filter-list" type="text">
+        <datalist id="foldpercent-filter-list"><option value="lol"></option></datalist>
+
+        FoldPats:<input class="filter" id="foldpats-filter" list="foldpats-filter-list" type="text">
+        <datalist id="foldpats-filter-list"><option value="lol"></option></datalist>
+
+        IncPats:<input class="filter" id="incpats-filter" list="incpats-filter-list" type="text">
+        <datalist id="incpats-filter-list"><option value="lol"></option></datalist>
+
+        ExcPats:<input class="filter" id="excpats-filter" list="excpats-filter-list" type="text">
+        <datalist id="excpats-filter-list"><option value="lol"></option></datalist>
+    </div>
 
     <ul class="tabs" data-tabs id="tabs">
         <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
         <li class="tabs-title"><a href="#caller-callee">Caller-Callee</a></li>
         <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
-        <li class="tabs-title"><a href="#callers">Callers</a></li>
+        <li class="tabs-title" data-getMethod="getCallerTree"><a href="#callers">Callers</a></li>
         <li class="tabs-title"><a href="#callees">Callees</a></li>
         <li class="tabs-title"><a href="#notes">Notes</a></li>
     </ul>
@@ -38,7 +63,7 @@
         </div>
 
         <div class="tabs-panel" id="callers">
-                <table id="callersTree">
+                <table id="CallersTree">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -76,19 +101,11 @@
             var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
 
             // Initialize by-name-list with said properties
-            $("#by-name-list").treetable({
-                expandable: true,
-                indenterTemplate: indenterTemplate,
-                onNodeExpand: function () {
-                    var node = this;
-
-                    console.log(node);
-                }
-            });
+            $("#by-name-list").treetable();
             updateTreeTable("#by-name-list", null, stackDelegate.summaryStackData);
 
-            // Initialize callersTree with said properties
-            $("#callersTree").treetable({
+            // Initialize CallersTree with said properties
+            $("#CallersTree").treetable({
                 expandable: true,
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
@@ -120,7 +137,7 @@
                                             + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren + "\">";
 
-                rowsToAppend = rowsToAppend + "<td>" + stackData[i].name + "</td>\
+                rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
                                     <td>" + stackData[i].exclusiveMetricPercent + "</td>\
                                     <td>" + stackData[i].exclusiveMetric + "</td>\
                                     <td>" + stackData[i].inclusiveMetricPercent + "</td>\
@@ -142,22 +159,23 @@
         // by-name-list click event
         $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
             var name = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            stackDelegate.focusNode = name;  // TODO: Make this an actual jQuery TreeTable Node object instead of a string (use node(id))
 
             if (name !== undefined) {
-                stackDelegate.getCallerTree(name, "", function (callersStackData) {
+                stackDelegate.getCallerTree(name, "", "", function (callersStackData) {
                     // Switch to Callers tab
                     $('#tabs').foundation('selectTab', $("#callers"));
 
-                    $("#callersTree tbody").empty();
+                    $("#CallersTree tbody").empty();  // TODO: Unload branch, instead
 
                     // Place data in Callers tab
-                    updateTreeTable("#callersTree", null, callersStackData);
+                    updateTreeTable("#CallersTree", null, callersStackData);
                 });
             }
         });
 
-        // callersTree node expand event
-        //$(document).on("dblclick", "#callersTree tbody tr", function (row) {
+        // CallersTree node expand event
+        //$(document).on("dblclick", "#CallersTree tbody tr", function (row) {
         function callersTreeNodeExpanded(node) {
             // Get the nodeId (contains the name and path) of the row the user just clicked on
 
@@ -177,13 +195,48 @@
             }
 
             if (name !== undefined) {
-                stackDelegate.getCallerTree(name, path, function (callersStackData) {
+                stackDelegate.getCallerTree(name, path, "", function (callersStackData) {
                     // Place data under clicked node
-                    updateTreeTable("#callersTree", node, callersStackData);
+                    updateTreeTable("#CallersTree", node, callersStackData);
                 });
             }
         }
         //});
+
+        $(".filter").keypress(function (e) {
+            // If the user pressed enter in a filter textfield
+            if (e.which == 13) {
+                var filterType = e.currentTarget.id.split("-")[0];
+                var filterValue = e.currentTarget.value;
+
+                var filterString = filterType + "=" + filterValue;
+                stackDelegate.currentFilters += filterString;
+
+                // Get data attribute data-getMethod which denotes which stackDelegate method to invoke based on the active tab
+                var methodToInvoke = $(".is-active").attr("data-getMethod");
+                var tabSectionToUpdate = "CallersTree";  // TODO: Make this dynamic
+
+                // Dynamically call that stackDelegate method
+                stackDelegate[methodToInvoke](stackDelegate.focusNode, "", stackDelegate.currentFilters, function (callersStackData) {
+                    $('#tabs').foundation('selectTab', $("#callers"));
+
+                    $("#CallersTree tbody").empty();  // TODO: Unload branch, instead.
+
+                    console.log(callersStackData);
+                    updateTreeTable(tabSectionToUpdate, null, callersStackData);
+                });
+
+                //stackDelegate.getCallerTree(name, "", "", function (callersStackData) {
+                //    // Switch to Callers tab
+                //    $('#tabs').foundation('selectTab', $("#callers"));
+
+                //    $("#CallersTree tbody").empty();
+
+                //    // Place data in Callers tab
+                //    updateTreeTable("#CallersTree", null, callersStackData);
+                //});
+            }
+        });
     </script>
 
 
