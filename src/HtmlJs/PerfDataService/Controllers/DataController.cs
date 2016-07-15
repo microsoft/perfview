@@ -91,12 +91,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:50001/stackviewer/callertree?filename=" + filename
-                                                                                + "&name=" + name
-                                                                                + "&stacktype=" + stackType
-                                                                                + "&numNodes=" + numNodes
-                                                                                + "&path=" + path;
-                System.Diagnostics.Debug.WriteLine("\n\n\nURL: " + url + "\n\n\n");
+                var url = "http://localhost:50001/stackviewer/callertree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
                 return json;
             }
@@ -154,8 +149,6 @@ namespace PerfDataService.Controllers
                     dir.Add("hasChildren", hasChildren(child));  // TODO: Create method to derive hasChildren property of child item
                     childrenContainer.Add(dir);
                 }
-
-                System.Diagnostics.Debug.WriteLine("\n\n\n" + children.ToString() + "\n\n\n");
 
                 return childrenContainer;
             }
