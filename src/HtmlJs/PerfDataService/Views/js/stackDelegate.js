@@ -1,11 +1,12 @@
-function StackDelegate(filename, stackType, summaryStackData) {
+function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStackData) {
     var self = this;
     self.filename = filename;
     self.stackType = stackType;
     self.summaryStackData = summaryStackData;
-    self.domain = "http://localhost:5000";
-    self.currentNode = "";
-    self.defaultNumNodes = 10;
+    self.domain = domain;
+    self.defaultNumNodes = defaultNumNodes;
+    self.currentFilters = "";
+    self.focusNode = "";
 
     self.log = function log(status) {
         $("#statusBar span").text(status);
@@ -15,12 +16,16 @@ function StackDelegate(filename, stackType, summaryStackData) {
         //console.log(tab);
     });
 
-    self.getCallerTree = function getCallerTree(name, path, callback) {
+    self.getCallerTree = function getCallerTree(name, path, filters, callback) {
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
                                                                             + "&name=" + name
                                                                             + "&stacktype=" + self.stackType
                                                                             + "&numNodes=" + self.defaultNumNodes
                                                                             + "&path=" + path;
+        if (self.currentFilters != "" && self.currentFilters != undefined) {
+            url += "&" + self.currentFilters;
+        }
+
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
@@ -36,8 +41,8 @@ function StackDelegate(filename, stackType, summaryStackData) {
 }
 
 
-var filename = window.opener.filename;
-var stackType = window.opener.stackType;
-var summaryStackData = window.opener.summaryStackData;
-
-var stackDelegate = new StackDelegate(filename, stackType, summaryStackData);
+var stackDelegate = new StackDelegate(window.opener.domain,
+                                    window.opener.filename,
+                                    window.opener.stackType,
+                                    window.opener.defaultNumNodes,
+                                    window.opener.summaryStackData);

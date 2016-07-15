@@ -13,7 +13,6 @@
         url = self.domain + "/api/data/open?path=" + path;
         $.get(url, function (response, status) {
             json = JSON.parse(response);
-            console.log(json);
             self.log("GET " + url + " Complete");
             createJsTreeFromJSON(json);
         });
@@ -51,18 +50,17 @@
         });
     }
 
-    self.openStackSummary = function openStackSummary(filename, stackType, numNodes) {
+    self.openStackSummary = function openStackSummary(filename, stackType, numNodes = self.defaultNumNodes) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes;
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
-            console.log(url);
-            console.log(json);
-
             // Attach data to current (parent) window so that the new window can access it on load (via window.opener.summaryStackData)
+            window.domain = self.domain;
             window.filename = filename;
             window.stackType = stackType;
+            window.defaultNumNodes = self.defaultNumNodes;
             window.summaryStackData = json;
 
             // Create and open the new window
