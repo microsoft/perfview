@@ -9,6 +9,7 @@
     using Microsoft.Diagnostics.Symbols;
     using Microsoft.Diagnostics.Tracing.Etlx;
     using Microsoft.Extensions.Caching.Memory;
+    using System.Text;
 
     public sealed class CallTreeDataProviderFactory : ICallTreeDataProviderFactory
     {
@@ -176,8 +177,10 @@
             lock (this.stackViewerSessionCache)
             {
                 var filterParams = new FilterParams { Name = filename + stacktype, StartTimeRelativeMSec = start, EndTimeRelativeMSec = end, MinInclusiveTimePercent = foldpct, FoldRegExs = foldpats, IncludeRegExs = incpats, ExcludeRegExs = excpats, GroupRegExs = grouppats };
-
-                var stackViewerKey = filterParams.ToString();
+                var keyBuilder = new StringBuilder();
+                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs); 
+                
+                var stackViewerKey = keyBuilder.ToString();
                 if (this.stackViewerSessionCache.TryGetValue(stackViewerKey, out stackViewerSession))
                 {
                     if (stackViewerSession == null)

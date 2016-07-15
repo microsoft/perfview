@@ -57,7 +57,7 @@ namespace PerfDataService.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/stackviewer/summary")]
-        public string GetStackSummary([FromQuery]string filename, [FromQuery]string stackType, [FromQuery]int numNodes = 10)
+        public string GetStackSummary([FromQuery]string filename, [FromQuery]string stackType, [FromQuery]int numNodes = 10)  // TODO: Remove these parameters
         {
             // Ensure the required properties are present
             if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType))
@@ -68,9 +68,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:50001/stackviewer/summary?filename=" + filename
-                                                                                + "&stacktype=" + stackType
-                                                                                + "&numNodes=" + numNodes;
+                var url = "http://localhost:50001/stackviewer/summary" + Request.QueryString;
                 var json = client.DownloadString(url);
 
                 return json;
@@ -80,7 +78,7 @@ namespace PerfDataService.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/stackviewer/callertree")]
-        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10, [FromQuery]string path="")
+        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10, [FromQuery]string path="")  // TODO: Remove these parameters
         {
             // Ensure the required properties are present
             if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
