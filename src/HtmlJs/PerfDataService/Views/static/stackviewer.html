@@ -161,18 +161,13 @@
         $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
             var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             stackDelegate.focusNode = focusNode;  // TODO: Make this an actual jQuery TreeTable Node object instead of a string (use node(id))
+            $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
             getAndDisplayData();
         });
 
         function getAndDisplayData() {
-            if (stackDelegate.focusNode !== undefined) {
-                // TODO: Get updated summary stack data again and update By Name tab
-                //updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
-
+            if (stackDelegate.focusNode !== undefined && stackDelegate.focusNode != "") {
                 stackDelegate.getCallersData(stackDelegate.focusNode, "", function (callersStackData) {
-                    // Switch to Callers tab
-                    $('#tabs').foundation('selectTab', $("#callers"));
-
                     $("#callersTree tbody").empty();  // TODO: Maybe unload branch, instead
 
                     // Place data in Callers tab
@@ -180,8 +175,6 @@
                 });
 
                 // TODO: Add other tab update calls here
-            } else {
-                throw "stackDelegate.focusNode is not defined";
             }
         }
 
@@ -216,6 +209,12 @@
             if (e.which == 13) {
                 // TODO: Assign filter box values to respective keys in stackDelegate.filters dictionary
                 stackDelegate.filters = $("#filtersForm").serialize();
+
+                // Get updated summary stack data again and update By Name tab
+                stackDelegate.getSummaryData(function (summaryStackData) {
+                    $("#by-name-list tbody").empty();
+                    updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+                });
 
                 getAndDisplayData();
                 // TODO:  updateTreeTableHtml(all sections, (maybe use stackDelegate.focusNode), callersStackData);

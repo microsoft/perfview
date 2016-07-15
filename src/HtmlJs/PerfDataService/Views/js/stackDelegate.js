@@ -16,20 +16,42 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
         //console.log(tab);
     });
 
+    self.getSummaryData = function getSummaryData(callback) {
+        var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
+                                                          + "&stacktype=" + self.stackType
+                                                          + "&numNodes=" + self.defaultNumNodes
+                                                          + "&" + self.filters;
+
+        console.log("Fetching Summary Data for " + self.filename);
+        //self.log("Fetching Summary Data for " + self.filename);
+
+        $.get(url, function (response, status) {
+            json = JSON.parse(response);
+            self.summaryStackData = json;
+
+            //self.log("Completed: Get Summary Data for " + self.filename);
+            console.log("Completed: Get Summary Data for " + self.filename);
+
+            callback(json);
+        });
+    }
+
     self.getCallersData = function getCallersData(name, path, callback) {
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
-                                                                            + "&name=" + name
-                                                                            + "&stacktype=" + self.stackType
-                                                                            + "&numNodes=" + self.defaultNumNodes
-                                                                            + "&path=" + path
-                                                                            + "&" + self.filters;
+                                                                             + "&name=" + name
+                                                                             + "&stacktype=" + self.stackType
+                                                                             + "&numNodes=" + self.defaultNumNodes
+                                                                             + "&path=" + path
+                                                                             + "&" + self.filters;
+
+        path = path != "" && path != undefined ? "/" + path : path;
+        console.log("Fetching Callers Data for " + name + path);
+        //self.log("Fetching Callers Data for " + name + path);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
             //self.log("Completed: Get Callers for " + name + " at path: " + path);
-
-            path = path != "" && path != undefined ? "/" + path : path;
             console.log("Completed: Get Callers for " + name + path);
             
             callback(json);
