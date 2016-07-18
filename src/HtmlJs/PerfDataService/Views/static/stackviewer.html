@@ -11,28 +11,28 @@
 <body>
     <form id="filtersForm">
         Start:<input class="filter" name="start" list="start-filter-list" type="text">
-        <datalist id="start-filter-list"><option value="lol"></option></datalist>
+        <datalist id="start-filter-list"></datalist>
 
         End:<input class="filter" name="end" list="end-filter-list" type="text">
-        <datalist id="end-filter-list"><option value="lol"></option></datalist>
+        <datalist id="end-filter-list"></datalist>
 
         Find:<input class="filter" name="find" list="find-filter-list" type="text">
-        <datalist id="find-filter-list"><option value="lol"></option></datalist>
+        <datalist id="find-filter-list"></datalist>
 
         GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
-        <datalist id="grouppats-filter-list"><option value="lol"></option></datalist>
+        <datalist id="grouppats-filter-list"></datalist>
 
         Fold%:<input class="filter" name="foldpct" list="foldpercent-filter-list" type="text">
-        <datalist id="foldpercent-filter-list"><option value="lol"></option></datalist>
+        <datalist id="foldpercent-filter-list"></datalist>
 
         FoldPats:<input class="filter" name="foldpats" list="foldpats-filter-list" type="text">
-        <datalist id="foldpats-filter-list"><option value="lol"></option></datalist>
+        <datalist id="foldpats-filter-list"></datalist>
 
         IncPats:<input class="filter" name="incpats" list="incpats-filter-list" type="text">
-        <datalist id="incpats-filter-list"><option value="lol"></option></datalist>
+        <datalist id="incpats-filter-list"></datalist>
 
         ExcPats:<input class="filter" name="excpats" list="excpats-filter-list" type="text">
-        <datalist id="excpats-filter-list"><option value="lol"></option></datalist>
+        <datalist id="excpats-filter-list"></datalist>
     </form>
 
     <ul class="tabs" data-tabs id="tabs">
@@ -110,6 +110,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
+                    // TODO: Place repeat children protection here (if node has a children present attribute)
                     callersTreeNodeExpanded(node);
                 }
             });
@@ -121,22 +122,16 @@
         /*_____________________________________*/
         /*_______ Tab Updater Functions _______*/
         /*_____________________________________*/
-        function updateTreeTableHtml(treeTableId, parentNode, stackData) {
+        function updateTreeTableHtml(treeTableId, parentNode, stackData, forceParentNodeId = "") {
             // Iterate through each row
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
-                // TODO: Wrap this up in a function or something nicer
-                if (parentNode != null && parentNode != undefined) {
-                    var childNodeAlreadyPresent = false;
-                    for (var j = 0; j < parentNode.children.length; ++j) {
-                        if (parentNode.children[j].id == stackData[i].contextId) { childNodeAlreadyPresent = true; }
-                    }
-                    if (childNodeAlreadyPresent) { continue; }
-                }
+                var parentId = forceParentNodeId != "" ? forceParentNodeId : stackData[i].parentContextId;
 
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
-                                            + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
-                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren + "\">";
+                                            + "\" data-tt-parent-id=\"" + parentId
+                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren
+                                            + "\" direct-children-loaded=\"false\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
                                     <td>" + stackData[i].exclusiveMetricPercent + "</td>\
@@ -159,19 +154,30 @@
 
         /* by-name-list click event */
         $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
-            var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
-            stackDelegate.focusNode = focusNode;  // TODO: Make this an actual jQuery TreeTable Node object instead of a string (use node(id))
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            stackDelegate.focusNode = $("#by-name-list").treetable("node", clickedNodeId);
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
+
             getAndDisplayData();
         });
 
         function getAndDisplayData() {
-            if (stackDelegate.focusNode !== undefined && stackDelegate.focusNode != "") {
-                stackDelegate.getCallersData(stackDelegate.focusNode, "", function (callersStackData) {
+            if (stackDelegate.focusNode !== undefined && stackDelegate.focusNode != null) {
+                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
                     $("#callersTree tbody").empty();  // TODO: Maybe unload branch, instead
 
+                    var focusNodeHtml = "<tr data-tt-id=\"" + "callersTree_" + stackDelegate.focusNode.id
+                                        + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
+                                        " + stackDelegate.focusNode.row[0].innerHTML + "\
+                                        " + "</tr>";
+
+                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    $("#callersTree").treetable("loadBranch", null, focusNodeHtml);
+                    var parentNode = $("#callersTree").treetable("node", "callersTree_" + stackDelegate.focusNode.id);
+
                     // Place data in Callers tab
-                    updateTreeTableHtml("#callersTree", null, callersStackData);
+                    updateTreeTableHtml("#callersTree", parentNode, callersStackData, forceParentNodeId=parentNode.id);
                 });
 
                 // TODO: Add other tab update calls here
@@ -180,6 +186,7 @@
 
         /* callersTree node expand event */
         function callersTreeNodeExpanded(node) {
+            if (node.row[0].getAttribute("direct-children-loaded") == "true") { return; }
 
             // Split the name from the path
             var nameAndPath = node.id.split("/");
@@ -197,9 +204,13 @@
             }
 
             if (name !== undefined) {
-                stackDelegate.getCallersData(name, path, function (callersStackData) {
-                    // Place data under clicked node
-                    updateTreeTableHtml("#callersTree", node, callersStackData);
+                stackDelegate.getCallersData(name, path, function (callersStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
+
+                        // Place data under clicked node
+                        updateTreeTableHtml("#callersTree", node, callersStackData);
+                    }
                 });
             }
         }
@@ -214,10 +225,10 @@
                 stackDelegate.getSummaryData(function (summaryStackData) {
                     $("#by-name-list tbody").empty();
                     updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+                    stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
                 });
 
                 getAndDisplayData();
-                // TODO:  updateTreeTableHtml(all sections, (maybe use stackDelegate.focusNode), callersStackData);
             }
         });
     </script>
