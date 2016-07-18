@@ -5,7 +5,7 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
     self.summaryStackData = summaryStackData;
     self.domain = domain;
     self.defaultNumNodes = defaultNumNodes;
-    self.focusNode = "";
+    self.focusNode = null;
     self.filters = ""
 
     self.log = function log(status) {
@@ -36,25 +36,25 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
         });
     }
 
-    self.getCallersData = function getCallersData(name, path, callback) {
+    self.getCallersData = function getCallersData(nodeName, path, callback) {
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
-                                                                             + "&name=" + name
-                                                                             + "&stacktype=" + self.stackType
-                                                                             + "&numNodes=" + self.defaultNumNodes
-                                                                             + "&path=" + path
-                                                                             + "&" + self.filters;
+                                                                  + "&name=" + nodeName
+                                                             + "&stacktype=" + self.stackType
+                                                              + "&numNodes=" + self.defaultNumNodes
+                                                                  + "&path=" + path
+                                                                       + "&" + self.filters;
 
         path = path != "" && path != undefined ? "/" + path : path;
-        console.log("Fetching Callers Data for " + name + path);
-        //self.log("Fetching Callers Data for " + name + path);
+        console.log("Fetching Callers Data for " + nodeName + path);
+        //self.log("Fetching Callers Data for " + nodeName + path);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
-            //self.log("Completed: Get Callers for " + name + " at path: " + path);
-            console.log("Completed: Get Callers for " + name + path);
+            //self.log("Completed: Get Callers for " + nodeName + " at path: " + path);
+            console.log("Completed: Get Callers for " + nodeName + path);
             
-            callback(json);
+            callback(json, status);
         });
     }
 }

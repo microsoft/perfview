@@ -57,7 +57,7 @@ namespace PerfDataService.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/stackviewer/summary")]
-        public string GetStackSummary([FromQuery]string filename, [FromQuery]string stackType, [FromQuery]int numNodes = 10)  // TODO: Remove these parameters
+        public string GetStackSummary([FromQuery]string filename, [FromQuery]string stackType)  // TODO: Remove these parameters
         {
             // Ensure the required properties are present
             if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType))
@@ -78,7 +78,7 @@ namespace PerfDataService.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/stackviewer/callertree")]
-        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType, [FromQuery]int numNodes = 10, [FromQuery]string path="")  // TODO: Remove these parameters
+        public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType)  // TODO: Remove these parameters
         {
             // Ensure the required properties are present
             if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
