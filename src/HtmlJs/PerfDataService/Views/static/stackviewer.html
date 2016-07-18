@@ -225,10 +225,11 @@
                 stackDelegate.getSummaryData(function (summaryStackData) {
                     $("#by-name-list tbody").empty();
                     updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
-                    stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
+                    if (stackDelegate.focusNode != null) {
+                        stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
+                    }
+                    getAndDisplayData();
                 });
-
-                getAndDisplayData();
             }
         });
     </script>
