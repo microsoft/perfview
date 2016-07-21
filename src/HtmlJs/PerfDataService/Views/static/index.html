@@ -20,7 +20,7 @@
     <div class="wrapper">
       <div id="sideBarContainer">
 
-          <input id="dirSelect" list="recentDirectories" type="text" onchange="homeDelegate.changeDirectoryTreePath(this.value)">
+          <input id="dirSelect" list="recentDirectories" type="text">
           <datalist id="recentDirectories">
           </datalist>
 
@@ -162,9 +162,23 @@
 
       <script>
           $(document).ready(function () {
-              homeDelegate.changeDirectoryTreePath(homeDelegate.defaultDirectoryTreePath);
+              homeDelegate.changeDirectoryTreePath();
               // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
-              $("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
+              //$("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
+          });
+
+          $("#dirSelect").keypress(function (e) {
+              // If the user pressed enter in the directory search bar
+              if (e.which == 13) {
+                  var dir = e.currentTarget.value;
+                  
+                  // In case the user specifically passes <drive name>:/
+                  if (dir.charAt(1) == ":" && dir.charAt(dir.length - 1) == "/") {
+                      dir = dir.substring(0, dir.length - 1) + "\/";
+                  }
+
+                  homeDelegate.changeDirectoryTreePath(dir);
+              }
           });
       </script>
 

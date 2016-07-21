@@ -17,20 +17,27 @@ namespace PerfDataService.Controllers
 {
     public class DataController : Controller
     {
+        string[] logicalDrives;
+
         // GET: api/data
         [HttpGet]
         [Route("api/[controller]/open")]
         public string Get([FromQuery]string path)
         {
+            logicalDrives = Environment.GetLogicalDrives();
+            if (string.IsNullOrEmpty(path)) { path = PerfDataService.Startup.config["HomeDirectory"]; }
             path = cleanUpPath(path);
-            if (path == null) { return null; }  // TODO: Form proper response
 
             /* Create Dictionary to be returned as JSON in response */
-
             // Dictionary containing entire hierarchy
             Dictionary<string, object> tree = new Dictionary<string, object>();
             tree.Add("status", "OK");
-            tree.Add("text", path.Split(new Char[] {'/', '\\'}).Last());
+            if (logicalDrives.Contains(path.ToUpper())) {
+                tree.Add("text", path);
+            } else
+            {
+                tree.Add("text", Path.GetFileName(path));  //.Split(new Char[] {'/', '\\'}).Last());
+            }
             tree.Add("path", path);
             tree.Add("type", getTypeOfItem(path));
 
@@ -98,14 +105,13 @@ namespace PerfDataService.Controllers
 
         public string cleanUpPath(string path)
         {
-            // Make sure the user provided a non-null query string parameter 'path'
-            if (String.IsNullOrEmpty(path))
-            {
-                return null;  // TODO: Form proper respone notifying user that the path passed was nonexistent
-            }
-
-            if (path.Last() == '/' && !path.Equals("C:/") && !path.Equals("C:\\")) {
+            string possibleDrive = Path.GetFullPath(path).ToUpper();
+            if (path.Last() == '/' && !logicalDrives.Contains(possibleDrive)) {
                 path = path.Substring(0, path.Length - 1);
+            }
+            else if (logicalDrives.Contains(possibleDrive))
+            {
+                return possibleDrive;
             }
 
             return path;
@@ -119,16 +125,29 @@ namespace PerfDataService.Controllers
             /* IF DIRECTORY */
             if (Directory.Exists(pathToItem))
             {
-                // Get all children in the directory
-                IEnumerable<string> children = Directory.EnumerateFileSystemEntries(pathToItem);
+                // Get all children in the directory, if applicable
+                IEnumerable<string> children;
+                try
+                {
+                    // This will succeed if the directory has subdirectories or files to enumerate over
+                    children = Directory.EnumerateFileSystemEntries(pathToItem);
+                }
+                catch
+                {
+                    // This means the directory has no children, so we're going to create an empty list
+                    children = new List<string>();
+                }
 
-                if (pathToItem != "C:/" || pathToItem != "C:\\")
+                if (!logicalDrives.Contains(pathToItem.ToUpper()))  // TODO: Use Path.GetRootDirectory (store it in a global property)
                 {
                     // Add '..' directory
                     Dictionary<string, object> upDir = new Dictionary<string, object>();
                     upDir.Add("text", "..");  // Name of item
                     upDir.Add("type", "dir");  // Type of item
-                    upDir.Add("path", System.IO.Directory.GetParent(pathToItem).FullName);  // Path to item
+                    if (!logicalDrives.Contains(pathToItem.ToUpper()))
+                    {
+                        upDir.Add("path", Directory.GetParent(pathToItem).FullName);  // Path to item
+                    }
                     upDir.Add("hasChildren", false);  // TODO: Create method to derive hasChildren property of child item
                     childrenContainer.Add(upDir);
                 }
@@ -144,7 +163,8 @@ namespace PerfDataService.Controllers
                     dir.Add("text", child.Split('\\').Last());  // Name of item
                     dir.Add("type", type);  // Type of item
                     dir.Add("path", child);  // Path to item
-                    dir.Add("hasChildren", hasChildren(child));  // TODO: Create method to derive hasChildren property of child item
+                    try { dir.Add("hasChildren", hasChildren(child)); }
+                    catch { dir.Add("hasChildren", false); }  // If this directory has an unauthorized access exception
                     childrenContainer.Add(dir);
                 }
 

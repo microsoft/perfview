@@ -165,7 +165,17 @@
                             {
                                 if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
                                 {
-                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                    //
+                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
+                                    //
+                                    try
+                                    {
+                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
+                                    }
+                                    catch
+                                    {
+
+                                    }
                                 }
                             }
                         }
@@ -201,7 +211,17 @@
                             {
                                 if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
                                 {
-                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                    //
+                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
+                                    //
+                                    try
+                                    {
+                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
+                                    }
+                                    catch
+                                    {
+
+                                    }
                                 }
                             }
                         }

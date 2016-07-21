@@ -218,7 +218,6 @@
         $(".filter").keypress(function (e) {
             // If the user pressed enter in a filter textfield
             if (e.which == 13) {
-                // TODO: Assign filter box values to respective keys in stackDelegate.filters dictionary
                 stackDelegate.filters = $("#filtersForm").serialize();
 
                 // Get updated summary stack data again and update By Name tab
