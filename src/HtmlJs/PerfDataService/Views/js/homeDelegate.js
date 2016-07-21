@@ -1,7 +1,6 @@
 ﻿function HomeDelegate() {
     self = this;
     self.domain = "http://localhost:5000";
-    self.defaultDirectoryTreePath = "";  // TODO: Get rid of this?
     self.defaultNumNodes = 10;
     self.treeDivID = "#treeContainer";
 
@@ -9,7 +8,8 @@
         $("#statusBar span").text(status);
     };
 
-    self.changeDirectoryTreePath = function changeDirectoryTreePath(path) {
+    self.changeDirectoryTreePath = function changeDirectoryTreePath(path="") {
+        // Passing path="" will cause the server to respond with the default path in appsettings.json
         url = self.domain + "/api/data/open?path=" + path;
         $.get(url, function (response, status) {
             json = JSON.parse(response);

@@ -125,22 +125,32 @@ namespace PerfDataService.Controllers
             /* IF DIRECTORY */
             if (Directory.Exists(pathToItem))
             {
-                // Get all children in the directory
-                IEnumerable<string> children = Directory.EnumerateFileSystemEntries(pathToItem);
-
-                //if (pathToItem != "C:/" || pathToItem != "C:\\")  // TODO: Use Path.GetRootDirectory (store it in a global property)
-                //{
-                    // Add '..' directory
-                Dictionary<string, object> upDir = new Dictionary<string, object>();
-                upDir.Add("text", "..");  // Name of item
-                upDir.Add("type", "dir");  // Type of item
-                if (!logicalDrives.Contains(pathToItem.ToUpper()))
+                // Get all children in the directory, if applicable
+                IEnumerable<string> children;
+                try
                 {
-                    upDir.Add("path", Directory.GetParent(pathToItem).FullName);  // Path to item
+                    // This will succeed if the directory has subdirectories or files to enumerate over
+                    children = Directory.EnumerateFileSystemEntries(pathToItem);
                 }
-                upDir.Add("hasChildren", false);  // TODO: Create method to derive hasChildren property of child item
-                childrenContainer.Add(upDir);
-                //}
+                catch
+                {
+                    // This means the directory has no children, so we're going to create an empty list
+                    children = new List<string>();
+                }
+
+                if (!logicalDrives.Contains(pathToItem.ToUpper()))  // TODO: Use Path.GetRootDirectory (store it in a global property)
+                {
+                    // Add '..' directory
+                    Dictionary<string, object> upDir = new Dictionary<string, object>();
+                    upDir.Add("text", "..");  // Name of item
+                    upDir.Add("type", "dir");  // Type of item
+                    if (!logicalDrives.Contains(pathToItem.ToUpper()))
+                    {
+                        upDir.Add("path", Directory.GetParent(pathToItem).FullName);  // Path to item
+                    }
+                    upDir.Add("hasChildren", false);  // TODO: Create method to derive hasChildren property of child item
+                    childrenContainer.Add(upDir);
+                }
 
                 // Package them into dictionary objects
                 foreach (string child in children)
