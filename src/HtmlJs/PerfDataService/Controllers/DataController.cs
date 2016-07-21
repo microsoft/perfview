@@ -105,8 +105,13 @@ namespace PerfDataService.Controllers
 
         public string cleanUpPath(string path)
         {
-            if (path.Last() == '/' && !logicalDrives.Contains(path)) {
+            string possibleDrive = Path.GetFullPath(path).ToUpper();
+            if (path.Last() == '/' && !logicalDrives.Contains(possibleDrive)) {
                 path = path.Substring(0, path.Length - 1);
+            }
+            else if (logicalDrives.Contains(possibleDrive))
+            {
+                return possibleDrive;
             }
 
             return path;
