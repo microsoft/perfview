@@ -162,9 +162,9 @@
 
       <script>
           $(document).ready(function () {
-              homeDelegate.changeDirectoryTreePath(homeDelegate.defaultDirectoryTreePath);
+              homeDelegate.changeDirectoryTreePath();
               // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
-              $("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
+              //$("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
           });
 
           $("#dirSelect").keypress(function (e) {
