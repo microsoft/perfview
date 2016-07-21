@@ -1,7 +1,7 @@
 ﻿function HomeDelegate() {
     self = this;
     self.domain = "http://localhost:5000";
-    self.defaultDirectoryTreePath = "F:\perfview_data";
+    self.defaultDirectoryTreePath = "";  // TODO: Get rid of this?
     self.defaultNumNodes = 10;
     self.treeDivID = "#treeContainer";
 

@@ -32,6 +32,8 @@ using System.ComponentModel;
 //using PerfView.Dialogs;
 //using PerfView.CapStats;
 ////using EventSources;
+using PerfDataService;
+
 
 namespace PerfViewExtensibility
 {
@@ -419,7 +421,9 @@ namespace PerfViewExtensibility
         // in web.config you read: 'Configure your application settings in appsettings.json. Learn more at http://go.microsoft.com/fwlink/?LinkId=786380'
         //
 
-        static string symbolPath = "C:\\Users\\lorenzte\\Development\\perfview\\src\\PerfView\\bin\\Debug\\tempSymbols";
+        static string symbolPath = PerfDataService.Startup.config["SymbolPath"];
+
+
         // We have the concept of a process to focus on.  All STACK sampling will be filtered by this.  
         // If null, then no filtering is done.   Do try to limit to one process if possible as it makes
         // analysis and symbol lookup faster.  
