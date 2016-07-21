@@ -15,6 +15,8 @@ namespace PerfDataService
 {
     public class Startup
     {
+        public static IConfigurationRoot config;
+
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -30,6 +32,7 @@ namespace PerfDataService
 
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
+            config = Configuration;
         }
 
         public IConfigurationRoot Configuration { get; }
