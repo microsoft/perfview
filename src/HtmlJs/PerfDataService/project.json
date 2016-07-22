@@ -10,8 +10,14 @@
     "Microsoft.Extensions.Logging": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Console": "1.0.0-rc2-final",
     "Microsoft.Extensions.Logging.Debug": "1.0.0-rc2-final",
-    "Newtonsoft.Json": "8.0.3",
-    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final"
+    "Newtonsoft.Json": "9.0.1",
+    "Microsoft.AspNetCore.StaticFiles": "1.0.0-rc2-final",
+    "System.Collections.Specialized": "4.0.1",
+    "Microsoft.AspNetCore.WebUtilities": "1.0.0",
+    "Microsoft.AspNetCore.Razor.Tools": {
+      "version": "1.0.0-preview2-final",
+      "type": "build"
+    }
   },
 
   "tools": {
