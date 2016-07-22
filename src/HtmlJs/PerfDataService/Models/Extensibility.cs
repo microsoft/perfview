@@ -476,8 +476,8 @@ namespace PerfViewExtensibility
 
             var etlOrEtlXFileName = FilePath;
 
-            // NOTE: Probably need the following for .etl.zip
-            TextWriter log = File.CreateText("./temp.txt");
+            // TODO: Probably need the following for .etl.zip
+            TextWriter log = File.CreateText("./log.txt");
             UnZipIfNecessary(ref etlOrEtlXFileName, log);
 
             for (; ; )  // RETRY Loop 
