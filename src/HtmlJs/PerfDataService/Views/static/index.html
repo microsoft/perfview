@@ -88,40 +88,12 @@
         $.get('templates/navbar.html', function(data) {
           var template = $(data).children();
           $('.nav').append(template);
-          resizeWelcomeDiv();
         });
 
         $.get('templates/footer.html', function(data) {
           var template = $(data).children();
           $('#footer').append(template);
-          resizeWelcomeDiv();
         })
-
-          /* Allows for resizing of #welcome if there is too much text.
-          This is unfortunately how it has to be done. Even Facebook.com has
-          to do something like this for their footer (chat windows) bar. */
-        var navBar, footer;
-
-        /* Try to avoid constantly traversing the DOM as much as we can. */
-        function initVars() {
-          navBar = document.getElementsByClassName("nav")[0];
-          footer = document.getElementById("footer");
-          resizeWelcomeDiv();
-        }
-
-        function resizeWelcomeDiv() {
-          var pageHeight = window.innerHeight;
-          navBarHeight = navBar.offsetHeight;
-          footerHeight = footer.offsetHeight;
-
-          var result = pageHeight - (navBarHeight + footerHeight);
-
-          // console.log("pageHeight - (navBarHeight + footerHeight): " + pageHeight + " - (" + navBarHeight + " + " + footerHeight + ") = " + result);
-          document.getElementById("welcome").style.height = result + "px";
-        }
-
-        window.onload = initVars;
-        window.onresize = resizeWelcomeDiv;
       </script>
 
 
