@@ -13,6 +13,9 @@ using System.IO;
 
 namespace PerfDataService
 {
+    using Microsoft.AspNetCore.Hosting.Server.Features;
+    using Microsoft.AspNetCore.Http;
+
     public class Startup
     {
         public static IConfigurationRoot config;
@@ -24,11 +27,11 @@ namespace PerfDataService
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
 
-            if (env.IsEnvironment("Development"))
-            {
-                // This will push telemetry data through Application Insights pipeline faster, allowing you to view results immediately.
-                builder.AddApplicationInsightsSettings(developerMode: true);
-            }
+            //if (env.IsEnvironment("Development"))
+            //{
+            //    // This will push telemetry data through Application Insights pipeline faster, allowing you to view results immediately.
+            //    builder.AddApplicationInsightsSettings(developerMode: true);
+            //}
 
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
@@ -41,9 +44,18 @@ namespace PerfDataService
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
-            services.AddApplicationInsightsTelemetry(Configuration);
-
+            //services.AddApplicationInsightsTelemetry(Configuration);
             services.AddMvc();
+            services.AddMemoryCache();
+            services.AddTransient<ICallTreeDataProvider, CallTreeDataProvider>();
+            services.AddTransient<ICallTreeDataProviderFactory, CallTreeDataProviderFactory>();
+            services.AddSingleton<EtlxCache, EtlxCache>();
+            services.AddSingleton<StackViewerSessionCache, StackViewerSessionCache>();
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<ITemporaryPathProvider, TemporaryPathProvider>();
+            services.AddSingleton<ICacheExpirationTimeProvider, CacheExpirationTimeProvider>();
+            services.AddSingleton<TextWriter, EventSourceTextWriter>();
+            //services.AddSingleton(ServerAddressesFeature);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
@@ -52,9 +64,9 @@ namespace PerfDataService
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
-            app.UseApplicationInsightsRequestTelemetry();
+            //app.UseApplicationInsightsRequestTelemetry();
 
-            app.UseApplicationInsightsExceptionTelemetry();
+            //app.UseApplicationInsightsExceptionTelemetry();
 
             app.UseMvc();
 

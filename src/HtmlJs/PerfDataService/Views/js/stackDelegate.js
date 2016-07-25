@@ -12,6 +12,7 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
         $("#statusBar span").text(status);
     };
 
+    // TODO: Probably remove this
     $('#tabs').on('change.zf.tabs', function (event, tab) {
         //console.log(tab);
     });
