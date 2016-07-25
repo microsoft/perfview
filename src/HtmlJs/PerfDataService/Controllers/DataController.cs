@@ -15,6 +15,7 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfDataService.Controllers
 {
+
     public class DataController : Controller
     {
         string[] logicalDrives;
@@ -75,7 +76,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:50001/stackviewer/summary" + Request.QueryString;
+                var url = "http://localhost:5000/stackviewer/summary" + Request.QueryString;
                 var json = client.DownloadString(url);
 
                 return json;
@@ -96,7 +97,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:50001/stackviewer/callertree" + Request.QueryString.Value;
+                var url = "http://localhost:5000/stackviewer/callertree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
                 return json;
             }
@@ -260,30 +261,5 @@ namespace PerfDataService.Controllers
             return false;
         }
 
-
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody]string value)
-        {
-        }
-
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
     }
 }
