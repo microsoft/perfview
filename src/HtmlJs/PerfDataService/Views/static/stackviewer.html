@@ -9,6 +9,8 @@
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
+    <div class="nav"></div>
+
     <form id="filtersForm">
         Start:<input class="filter" name="start" list="start-filter-list" type="text">
         <datalist id="start-filter-list"></datalist>
@@ -82,6 +84,9 @@
     </div>
 
 
+    <footer id="footer"></footer>
+
+
 
     <!-- Do NOT Delete
       This allows for script tags and requires('') to work both in the browser and i Electron -->
@@ -93,6 +98,20 @@
     <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
 
     <script src="../js/stackDelegate.js"></script>
+
+
+    <!-- Template Including -->
+    <script>
+        $.get('templates/navbar.html', function(data) {
+          var template = $(data).children();
+          $('.nav').append(template);
+        });
+
+        $.get('templates/footer.html', function(data) {
+          var template = $(data).children();
+          $('#footer').append(template);
+        })
+    </script>
 
     
     <script>

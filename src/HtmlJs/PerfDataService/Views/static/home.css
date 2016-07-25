@@ -1,8 +1,11 @@
-
+html, body {
+    height: 100%;
+}
 
 
 body {
   margin: 0;
+  margin-bottom: 2em;
   display: flex;
   flex-direction: column;
 
@@ -106,6 +109,7 @@ Tree View and Welcome View
   margin: 0;
   display: flex;
   flex-direction: row;
+  height: 100%;
 }
 
 .wrapper #sideBarContainer {
@@ -195,6 +199,11 @@ Footer View
   flex-flow: row;
 
   height: 2em;
+
+  margin-bottom: 0;
+  bottom: 0;
+  position: fixed;
+  width: 100%;
 }
 
 #footer #statusBar {
