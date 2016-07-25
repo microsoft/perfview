@@ -23,15 +23,15 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
                                                           + "&numNodes=" + self.defaultNumNodes
                                                           + "&" + self.filters;
 
-        console.log("Fetching Summary Data for " + self.filename);
-        //self.log("Fetching Summary Data for " + self.filename);
+        //console.log("Fetching Summary Data for " + self.filename);
+        self.log("Fetching Summary Data for " + self.filename);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
             self.summaryStackData = json;
 
-            //self.log("Completed: Get Summary Data for " + self.filename);
-            console.log("Completed: Get Summary Data for " + self.filename);
+            self.log("Completed: Get Summary Data for " + self.filename);
+            //console.log("Completed: Get Summary Data for " + self.filename);
 
             callback(json);
         });
@@ -46,14 +46,14 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
                                                                        + "&" + self.filters;
 
         path = path != "" && path != undefined ? "/" + path : path;
-        console.log("Fetching Callers Data for " + nodeName + path);
-        //self.log("Fetching Callers Data for " + nodeName + path);
+        //console.log("Fetching Callers Data for " + nodeName + path);
+        self.log("Fetching Callers Data for " + nodeName + path);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
-            //self.log("Completed: Get Callers for " + nodeName + " at path: " + path);
-            console.log("Completed: Get Callers for " + nodeName + path);
+            self.log("Completed: Get Callers for " + nodeName + path);
+            //console.log("Completed: Get Callers for " + nodeName + path);
             
             callback(json, status);
         });
