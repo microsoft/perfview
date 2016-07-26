@@ -1,9 +1,8 @@
 Docs on how to sign and publish PerfView.  
 
-[codesignInstructions.md](codesignInstructions.md) are notes on code signing.
+[codeSignInstructions.md](codeSignInstructions.md) are notes on code signing.
 
 [UpdatingPerfViewDownload.md](UpdatingPerfViewDownload.md) on how to upload to download center.
-
 
 When there is more than a bug-fix, you should re-run these scans.
 
