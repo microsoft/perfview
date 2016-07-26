@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
@@ -20,18 +21,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfMetadata(CtfMetadataParser parser)
         {
             Load(parser);
-        }
-
-        internal void WriteMetadata(TextWriter output)
-        {
-            Trace.WriteLine(output, 0);
-            Environment.WriteLine(output, 0);
-
-            foreach (CtfClock clock in _clocks.Values)
-                clock.WriteLine(output, 0);
-
-            foreach (CtfStream stream in Streams)
-                stream.WriteLine(output, 0);
         }
 
         public void Load(CtfMetadataParser parser)
@@ -125,7 +114,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             output.WriteLine("{0}    Byte order: {1}", ind, ByteOrder);
             output.WriteLine("{0}    Header:", ind);
 
-            Header.WriteLine(output, null, indent + 4);
             output.WriteLine();
         }
 
@@ -180,23 +168,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             foreach (CtfEvent evt in _events)
                 evt.ResolveReferences(typealias);
         }
-
-        internal void WriteLine(TextWriter output, int indent)
-        {
-            string ind = new string(' ', indent);
-            output.WriteLine("{0}Stream {1}:", ind, ID);
-            output.WriteLine("{0}    Header:", ind);
-            EventHeader.WriteLine(output, null, indent + 8);
-
-            output.WriteLine("{0}    PacketContext:", ind);
-            PacketContext.WriteLine(output, null, indent + 8);
-
-            output.WriteLine("{0}    Events:", ind);
-            foreach (CtfEvent evt in _events)
-                evt.WriteLine(output, null, indent + 8);
-
-            output.WriteLine();
-        }
     }
 
     /// <summary>
@@ -218,16 +189,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public string TracerName { get; private set; }
         public int TracerMajor { get; private set; }
         public int TracerMinor { get; private set; }
-
-        internal void WriteLine(TextWriter output, int indent)
-        {
-            string ind = new string(' ', indent);
-            output.WriteLine("{0}Environment:", ind);
-            output.WriteLine("{0}    Host name: {1}", ind, HostName);
-            output.WriteLine("{0}    Domain:    {1}", ind, Domain);
-            output.WriteLine("{0}    Tracer:    {1} ({2}.{3})", ind, TracerName, TracerMajor, TracerMinor);
-            output.WriteLine();
-        }
     }
 
 
@@ -250,17 +211,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public string Name { get; private set; }
         public ulong Offset { get; private set; }
         public Guid UUID { get; private set; }
-        
-        internal void WriteLine(TextWriter output, int indent)
-        {
-            string ind = new string(' ', indent);
-            output.WriteLine("{0}Clock:", ind);
-            output.WriteLine("{0}    Name:        {1}", ind, Name);
-            output.WriteLine("{0}    Description: {1}", ind, Description);
-            output.WriteLine("{0}    UUID:        {1}", ind, UUID);
-            output.WriteLine("{0}    Offset:      {1}", ind, Offset);
-            output.WriteLine();
-        }
     }
 
     /// <summary>
@@ -281,7 +231,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             get
             {
                 if (_size == SizeUninitialized)
-                    _size = Fields.GetSize();
+                    _size = Definition.GetSize();
 
                 Debug.Assert(_size >= SizeIndeterminate);
                 return _size;
@@ -292,14 +242,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public string Name { get; private set; }
         public int Stream { get; private set; }
         public uint LogLevel { get; private set; }
-        public CtfStruct Fields { get; private set; }
+        public CtfStruct Definition { get; private set; }
         public bool IsPacked
         {
             get
             {
                 if (!_isPacked.HasValue)
                 {
-                    var fields = Fields.Fields;
+                    var fields = Definition.Fields;
                     _isPacked = fields.Length == 3 && fields[2].Name == "___data__";
                 }
 
@@ -314,43 +264,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Stream = bag.GetInt("stream_id");
             LogLevel = bag.GetUInt("loglevel");
 
-            Fields = bag.GetStruct("fields");
+            Definition = bag.GetStruct("fields");
         }
 
         internal void ResolveReferences(Dictionary<string, CtfMetadataType> typealias)
         {
-            Fields.ResolveReference(typealias);
-        }
-
-        internal void WriteLine(TextWriter output, object[] values, int indent)
-        {
-            string ind = new string(' ', indent);
-            output.WriteLine("{0}Event {1}:", ind, ID);
-            output.WriteLine("{0}    Name:     {1}", ind, Name);
-            output.WriteLine("{0}    LogLevel: {1}", ind, LogLevel);
-
-            var actualFields = Fields.Fields;
-            if (actualFields.Length > 0)
-            {
-                output.WriteLine("{0}    Fields:", ind);
-
-                if (values == null)
-                {
-                    foreach (CtfField field in actualFields)
-                        field.WriteLine(output, null, indent + 8);
-                }
-                else
-                {
-                    for (int i = 0; i < actualFields.Length; i++)
-                        actualFields[i].WriteLine(output, values[i], indent + 8);
-                }
-            }
-            else
-            {
-                output.WriteLine("{0}    No fields.", ind);
-            }
-
-            output.WriteLine();
+            Definition.ResolveReference(typealias);
         }
 
         public override string ToString()
@@ -360,7 +279,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         public int GetFieldOffset(string name)
         {
-            return Fields.GetFieldOffset(name);
+            return Definition.GetFieldOffset(name);
         }
     }
 }
