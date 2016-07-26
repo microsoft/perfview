@@ -16,9 +16,11 @@ andrehal
 dantaylo
 leecow
 
-It will ask for the kind of signing,   You want authenticode (not strong name).  j
+It will ask for the kind of signing,   You want authenticode (not strong name).  
+
 
 10006 Certificate
+You also want the Sha256 for Win 10 (how exactly to you ask for it to be signed both ways)?
 
 
 Use the name 	PerfView
@@ -26,5 +28,3 @@ Use the name 	PerfView
 And the URL 	http://www.microsoft.com/download/en/details.aspx?id=28567
 
 You will add just the PerfVIew.exe exe to be signed.  
-
-Job number PRA10614004
