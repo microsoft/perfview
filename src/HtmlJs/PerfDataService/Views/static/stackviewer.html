@@ -39,11 +39,9 @@
 
     <ul class="tabs" data-tabs id="tabs">
         <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
-        <li class="tabs-title"><a href="#caller-callee">Caller-Callee</a></li>
         <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
         <li class="tabs-title"><a href="#callers">Callers</a></li>
         <li class="tabs-title"><a href="#callees">Callees</a></li>
-        <li class="tabs-title"><a href="#notes">Notes</a></li>
     </ul>
 
     <div class="tabs-content" data-tabs-content="tabs">
@@ -80,6 +78,24 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+        </div>
+
+        <div class="tabs-panel" id="callees">
+            <table id="calleesTree">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
@@ -129,8 +145,17 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    // TODO: Place repeat children protection here (if node has a children present attribute)
-                    callersTreeNodeExpanded(node);
+                    treeNodeExpanded(node);
+                }
+            });
+
+            // Initialize calleesTree and possibly set some properties
+            $("#calleesTree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                onNodeExpand: function () {
+                    var node = this;
+                    treeNodeExpanded(node);
                 }
             });
 
@@ -183,9 +208,13 @@
 
         function getAndDisplayData() {
             if (stackDelegate.focusNode !== undefined && stackDelegate.focusNode != null) {
+                /* Empty all the views */
+                $("#callersTree tbody").empty();  // TODO: Maybe unload branch, instead
+                $("#calleesTree tbody").empty();  // TODO: Maybe unload branch, instead
+                
+                /* Get and Display all the new data */
+                // DISPLAY CALLERS DATA
                 stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
-                    $("#callersTree tbody").empty();  // TODO: Maybe unload branch, instead
-
                     var focusNodeHtml = "<tr data-tt-id=\"" + "callersTree_" + stackDelegate.focusNode.id
                                         + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
@@ -199,12 +228,27 @@
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData, forceParentNodeId=parentNode.id);
                 });
 
+                // DISPLAY CALLEES DATA
+                stackDelegate.getCalleesData(stackDelegate.focusNode.id, "", function (calleesStackData, status) {
+                    var focusNodeHtml = "<tr data-tt-id=\"" + "calleesTree_" + stackDelegate.focusNode.id
+                                        + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
+                                        " + stackDelegate.focusNode.row[0].innerHTML + "\
+                                        " + "</tr>";
+
+                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    $("#calleesTree").treetable("loadBranch", null, focusNodeHtml);
+                    var parentNode = $("#calleesTree").treetable("node", "calleesTree_" + stackDelegate.focusNode.id);
+
+                    // Place data in Callees tab
+                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData, forceParentNodeId=parentNode.id);
+                });
+
                 // TODO: Add other tab update calls here
             }
         }
 
-        /* callersTree node expand event */
-        function callersTreeNodeExpanded(node) {
+        /* Tree node expand event */
+        function treeNodeExpanded(node) {
             if (node.row[0].getAttribute("direct-children-loaded") == "true") { return; }
 
             // Split the name from the path
@@ -223,14 +267,28 @@
             }
 
             if (name !== undefined) {
-                stackDelegate.getCallersData(name, path, function (callersStackData, status) {
-                    if (status == "success") {
-                        node.row[0].setAttribute("direct-children-loaded", "true");
+                var activeTabName = $(".tabs-panel.is-active").attr("id");
+                //var activeTreeName = $(".tabs-panel.is-active table").attr("id");
 
-                        // Place data under clicked node
-                        updateTreeTableHtml("#callersTree", node, callersStackData);
-                    }
-                });
+                if (activeTabName == "callers") {
+                    stackDelegate.getCallersData(name, path, function (callersStackData, status) {
+                        if (status == "success") {
+                            node.row[0].setAttribute("direct-children-loaded", "true");
+
+                            // Place data under clicked node
+                            updateTreeTableHtml("#callersTree", node, callersStackData);
+                        }
+                    });
+                } else if (activeTabName == "callees") {
+                    stackDelegate.getCalleesData(name, path, function (calleesStackData, status) {
+                        if (status == "success") {
+                            node.row[0].setAttribute("direct-children-loaded", "true");
+
+                            // Place data under clicked node
+                            updateTreeTableHtml("#calleesTree", node, calleesStackData);
+                        }
+                    });
+                }
             }
         }
 

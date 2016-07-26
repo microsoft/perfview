@@ -102,6 +102,7 @@ table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
+    margin-bottom: 200px;
 }
 
 td, th {
@@ -135,6 +136,16 @@ tr:nth-child(even) {
 }
 
 #callersTree .expanded td span.indenter a {
+    background-image: url("../static/images/down-arrow.png");
+    background-size: 16px;
+}
+
+#calleesTree .branch td span.indenter a {
+    background-image: url("../static/images/right-arrow.png");
+    background-size: 16px;
+}
+
+#calleesTree .expanded td span.indenter a {
     background-image: url("../static/images/down-arrow.png");
     background-size: 16px;
 }

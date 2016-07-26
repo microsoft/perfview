@@ -53,13 +53,14 @@ namespace PerfDataService.Controllers
 
             string json = JsonConvert.SerializeObject(tree, Formatting.Indented);
 
-            if (json == null)
+            if (string.IsNullOrEmpty(json))
             {
-                // TODO: Form a proper response
-                return null;
+                return "[]";
             }
-
-            return json;
+            else
+            {
+                return json;
+            }
         }
 
 
@@ -79,7 +80,14 @@ namespace PerfDataService.Controllers
                 var url = "http://localhost:5000/stackviewer/summary" + Request.QueryString;
                 var json = client.DownloadString(url);
 
-                return json;
+                if (string.IsNullOrEmpty(json))
+                {
+                    return "[]";
+                }
+                else
+                {
+                    return json;
+                }
             }
         }
 
@@ -99,7 +107,42 @@ namespace PerfDataService.Controllers
             {
                 var url = "http://localhost:5000/stackviewer/callertree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
-                return json;
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    return "[]";
+                }
+                else
+                {
+                    return json;
+                }
+            }
+        }
+
+
+        [HttpGet]
+        [Route("/api/[controller]/stackviewer/calleetree")]
+        public string GetCallees([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType)  // TODO: Remove these parameters
+        {
+            // Ensure the required properties are present
+            if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
+            {
+                // TODO: Form proper resposne
+                return null;
+            }
+
+            using (var client = new WebClient())
+            {
+                var url = "http://localhost:5000/stackviewer/calleetree" + Request.QueryString.Value;
+                var json = client.DownloadString(url);
+                
+                if (string.IsNullOrEmpty(json))
+                {
+                    return "[]";
+                } else
+                {
+                    return json;
+                }
             }
         }
 

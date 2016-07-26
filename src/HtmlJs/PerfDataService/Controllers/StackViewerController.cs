@@ -47,12 +47,12 @@
             return this.dataProvider.GetCallerTree(name, path);
         }
 
-        [HttpGet]
-        [Route("stackviewer/calleetree")]
-        public TreeNode[] CalleeTree(string name)
-        {
-            return this.dataProvider.GetCalleeTree(name);
-        }
+        //[HttpGet]
+        //[Route("stackviewer/calleetree")]
+        //public TreeNode[] CalleeTree(string name)
+        //{
+        //    return this.dataProvider.GetCalleeTree(name);
+        //}
 
         [HttpGet]
         [Route("stackviewer/calleetree")]
