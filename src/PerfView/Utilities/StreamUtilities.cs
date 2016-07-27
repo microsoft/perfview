@@ -11,7 +11,7 @@ using System.IO;
 namespace PerfView
 {
     public static class StreamUtilities {
-        public static void CopyFromFile(string fromFilePath, Stream toStream)
+    public static void CopyFromFile(string fromFilePath, Stream toStream)
         {
             using (Stream fromStream = File.OpenRead(fromFilePath))
                 CopyStream(fromStream, toStream);

@@ -19,7 +19,6 @@ using global::DiagnosticsHub.Packaging.Interop;
 using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
 using PerfViewModel;
-using Stats;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1964,17 +1963,18 @@ namespace PerfView
                     rest = rest.Substring(14);
                 }
                 var processId = int.Parse(rest);
-                GCProcess gcProc;
-                if (m_gcStats.TryGetByID(processId, out gcProc))
+                if (m_gcStats.ContainsKey(processId))
                 {
+                    var gcProc = m_gcStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + raw + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
                     {
                         if (raw.Length != 0)
-                            gcProc.PerGenerationCsv(csvFile);
+                            Stats.GcStats.PerGenerationCsv(csvFile, mang);
                         else
-                            gcProc.ToCsv(csvFile);
+                            Stats.GcStats.ToCsv(csvFile, mang);
                     }
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -1984,14 +1984,15 @@ namespace PerfView
             else if (command.StartsWith("excelFinalization/"))
             {
                 var processId = int.Parse(command.Substring(18));
-                GCProcess gcProc;
-                if (m_gcStats.TryGetByID(processId, out gcProc))
+                if (m_gcStats.ContainsKey(processId))
                 {
+                    var gcProc = m_gcStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats.Finalization." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
                     {
-                        gcProc.ToCsvFinalization(csvFile);
+                        Stats.GcStats.ToCsvFinalization(csvFile, mang);
                     }
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -2001,16 +2002,17 @@ namespace PerfView
             else if (command.StartsWith("xml/"))
             {
                 var processId = int.Parse(command.Substring(4));
-                GCProcess gcProc;
-                if (m_gcStats.TryGetByID(processId, out gcProc) && gcProc.m_detailedGCInfo)
+                if (m_gcStats.ContainsKey(processId) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(m_gcStats[processId]).GC.Stats().HasDetailedGCInfo)
                 {
+                    var gcProc = m_gcStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var xmlOutputName = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".xml");
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".csv");
                     if (!File.Exists(xmlOutputName) || File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
                     {
                         using (var writer = File.CreateText(xmlOutputName))
-                            gcProc.ToXml(writer, "");
+                            Stats.GcStats.ToXml(writer, gcProc, mang, "");
                     }
 
                     // TODO FIX NOW Need a way of viewing it.  
@@ -2028,12 +2030,23 @@ namespace PerfView
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
-            var source = dataFile.Events.GetSource();
-            m_gcStats = GCProcess.Collect(source, (float)dataFile.SampleProfileInterval.TotalMilliseconds, null, null, false, dataFile);
-            m_gcStats.ToHtml(writer, fileName, "GCStats", null, true);
+            using (var source = dataFile.Events.GetSource())
+            {
+                m_gcStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc =>
+                {
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, (float)dataFile.SampleProfileInterval.TotalMilliseconds);
+                    proc.Log = dataFile;
+                });
+                source.Process();
+                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                    if (!m_gcStats.ContainsKey(proc.ProcessID) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) m_gcStats.Add(proc.ProcessID, proc);
+                Stats.ClrStats.ToHtml(writer, m_gcStats.Values.ToList(), fileName, "GCStats", Stats.ClrStats.ReportType.GC, true);
+            }
         }
 
-        ProcessLookup<GCProcess> m_gcStats;
+        Dictionary<int/*pid*/,Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -2045,13 +2058,14 @@ namespace PerfView
             {
                 var rest = command.Substring(6);
                 var processId = int.Parse(rest);
-                JitProcess jitProc;
-                if (m_jitStats.TryGetByID(processId, out jitProc))
+                if (m_jitStats.ContainsKey(processId))
                 {
+                    var jitProc = m_jitStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
-                        jitProc.ToCsv(csvFile);
+                        Stats.JitStats.ToCsv(csvFile, mang);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -2061,13 +2075,14 @@ namespace PerfView
             {
                 var rest = command.Substring(14);
                 var processId = int.Parse(rest);
-                JitProcess jitProc;
-                if (m_jitStats.TryGetByID(processId, out jitProc))
+                if (m_jitStats.ContainsKey(processId))
                 {
+                    var jitProc = m_jitStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
-                        jitProc.ToInliningCsv(csvFile);
+                        Stats.JitStats.ToInliningCsv(csvFile, mang);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -2077,13 +2092,15 @@ namespace PerfView
             {
                 var rest = command.Substring(20);
                 var processId = int.Parse(rest);
-                JitProcess jitProc;
-                if (m_jitStats.TryGetByID(processId, out jitProc))
+                if (m_jitStats.ContainsKey(processId))
                 {
+                    var jitProc = m_jitStats[processId];
+                    var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
+                    List<object> events = m_bgJitEvents[processId];
                     var csvFile = CacheFiles.FindFile(FilePath, ".BGjitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
-                        jitProc.BackgroundDiagCsv(csvFile);
+                        Stats.JitStats.BackgroundDiagCsv(csvFile, mang, events);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -2095,11 +2112,34 @@ namespace PerfView
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter output, string fileName, TextWriter log)
         {
-            m_jitStats = JitProcess.Collect(dataFile.Events.GetSource());
-            m_jitStats.ToHtml(output, fileName, "JITStats", null, true);
+            var source = dataFile.Events.GetSource();
+
+            m_jitStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            m_bgJitEvents = new Dictionary<int, List<object>>();
+
+                // attach callbacks to grab background JIT events
+                var clrPrivate = new ClrPrivateTraceEventParser(source);
+                clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
+                {
+                    if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                    m_bgJitEvents[data.ProcessID].Add(data.Clone());
+                };
+                source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
+                {
+                    if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                    m_bgJitEvents[data.ProcessID].Add(data.Clone());
+                };
+
+                // process the model
+            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+            source.Process();
+            foreach(var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !m_jitStats.ContainsKey(proc.ProcessID)) m_jitStats.Add(proc.ProcessID, proc);
+            Stats.ClrStats.ToHtml(output, m_jitStats.Values.ToList(), fileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
         }
 
-        ProcessLookup<JitProcess> m_jitStats;
+        Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_jitStats;
+        Dictionary<int /*pid*/, List<object>> m_bgJitEvents;
     }
 
     /// <summary>
@@ -4044,9 +4084,15 @@ namespace PerfView
             }
             else if (streamName == "Server GC")
             {
-                GCProcess.Collect(eventSource, (float)eventLog.SampleProfileInterval.TotalMilliseconds, null, stackSource);
-                return stackSource;
-            }
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(eventSource);
+                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(eventSource, proc => 
+                {
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, (float)eventLog.SampleProfileInterval.TotalMilliseconds);
+                    Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.SetMutableTraceEventStackSource(proc, stackSource);
+                });
+                eventSource.Process();
+                    return stackSource;
+                }
             else throw new Exception("Unknown stream " + streamName);
 
             log.WriteLine("Produced {0:n3}K events", stackSource.SampleIndexLimit / 1000.0);
