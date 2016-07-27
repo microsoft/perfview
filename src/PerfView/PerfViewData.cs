@@ -5986,7 +5986,7 @@ namespace PerfView
 
         public override string FormatName { get { return "LTTng"; } }
 
-        public override string[] FileExtensions { get { return new string[] { ".lttng.zip", ".trace.zip" }; } }
+        public override string[] FileExtensions { get { return new string[] { ".trace.zip" }; } }
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
