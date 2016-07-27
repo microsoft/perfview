@@ -25,7 +25,6 @@ using Microsoft.Win32;
 
 using Microsoft.Diagnostics.Tracing;
 using Address = System.UInt64;
-using Stats;
 using Microsoft.Diagnostics.Tracing.Parsers;
 
 using PerfViewExtensibility;
@@ -33,7 +32,7 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Threading;
-
+using Microsoft.Diagnostics.Tracing.Analysis.GC;
 
 namespace PerfView
 {
@@ -1034,7 +1033,7 @@ namespace PerfView
             stackWindow.Show();
         }
 
-        static internal bool IsInduced(this Stats.GCEvent evt)
+        static internal bool IsInduced(this TraceGC evt)
         {
             GCReason reason = evt.Reason;
             
@@ -1043,16 +1042,16 @@ namespace PerfView
                    (reason == GCReason.InducedNotForced);
         }
 
-        static internal bool IsAllocLarge(this Stats.GCEvent evt)
+        static internal bool IsAllocLarge(this TraceGC evt)
         {
             GCReason reason = evt.Reason;
 
             return (reason == GCReason.AllocLarge) || (reason == GCReason.OutOfSpaceLOH);
         }
 
-        static internal string GetTip(this GCEvent gc)
+        static internal string GetTip(this TraceGC gc)
         {
-            return String.Format("GC# {0}, Gen {1}, pause {2:N3} ms", gc.GCNumber, gc.GCGeneration, gc.PauseDurationMSec);
+            return String.Format("GC# {0}, Gen {1}, pause {2:N3} ms", gc.Number, gc.Generation, gc.PauseDurationMSec);
         }
     }
 

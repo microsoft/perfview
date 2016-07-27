@@ -82,14 +82,42 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public IEnumerable<CtfEventHeader> EnumerateEventHeaders()
         {
             CtfStruct header = _streamDefinition.EventHeader;
+            CtfEnum id = (CtfEnum)header.GetField("id").Type;
             CtfVariant v = (CtfVariant)header.GetField("v").Type;
             CtfStruct extended = (CtfStruct)v.GetVariant("extended").Type;
-            CtfStruct compact = (CtfStruct)v.GetVariant("compact").Type;
+            CtfInteger extendedId = (CtfInteger)extended.GetField("id").Type;
+            CtfInteger extendedTimestamp = (CtfInteger)extended.GetField("timestamp").Type;
+            CtfInteger compactTimestamp = (CtfInteger)((CtfStruct)v.GetVariant("compact").Type).GetField("timestamp").Type;
+            
+            CtfInteger pid = null;
+            CtfInteger tid = null;
+            CtfArray processName = null;
+            string lastProcessName = "";
+            int processLen = 0;
+            CtfStruct eventContext = _streamDefinition.EventContext;
+            if (eventContext != null)
+            {
+                pid = (CtfInteger)eventContext.GetField("_vpid")?.Type;
+                tid = (CtfInteger)eventContext.GetField("_vtid")?.Type;
+                processName = (CtfArray)eventContext.GetField("_procname")?.Type;
+
+                // We only handle ascii process names, which seems to be the only thing lttng provides.
+                if (processName != null)
+                {
+                    processLen = int.Parse(processName.Index);
+                    Debug.Assert(processName.Type.GetSize() == 8);
+
+                    if (processName.Type.GetSize() != 8)
+                        processName = null;
+                }
+            }
+
+            
+            uint extendedIdValue = (uint)id.GetValue("extended").End;
 
             ulong lowMask = 0, highMask = 0, overflowBit = 0;
             ulong lastTimestamp = 0;
-
-            StringBuilder processName = new StringBuilder();
+            
             while (!_eof)
             {
                 if (_readHeader)
@@ -97,32 +125,29 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
                 _header.Clear();
                 ResetBuffer();
-
-                object[] result = ReadStruct(header);
+                ReadStruct(header);
                 if (_eof)
                     break;
+                
 
                 ulong timestamp;
-                CtfEnum en = (CtfEnum)header.GetField("id").Type;
-                uint event_id = header.GetFieldValue<uint>(result, "id");
+                uint event_id = CtfInteger.ReadInt<uint>(id.Type, _buffer, id.BitOffset);
 
-                result = header.GetFieldValue<object[]>(result, "v");
-                if (en.GetName((int)event_id) == "extended")
+                if (event_id == extendedIdValue)
                 {
-                    event_id = extended.GetFieldValue<uint>(result, "id");
-                    timestamp = extended.GetFieldValue<ulong>(result, "timestamp");
+                    event_id = CtfInteger.ReadInt<uint>(extendedId, _buffer, extendedId.BitOffset);
+                    timestamp = CtfInteger.ReadInt<ulong>(extendedTimestamp, _buffer, extendedTimestamp.BitOffset);
                 }
                 else
                 {
                     if (overflowBit == 0)
                     {
-                        CtfInteger compactTimestamp = (CtfInteger)compact.GetField("timestamp").Type;
                         overflowBit = (1ul << compactTimestamp.Size);
                         lowMask = overflowBit - 1;
                         highMask = ~lowMask;
                     }
-
-                    ulong uint27timestamp = compact.GetFieldValue<ulong>(result, "timestamp");
+                    
+                    ulong uint27timestamp = CtfInteger.ReadInt<ulong>(compactTimestamp, _buffer, compactTimestamp.BitOffset);
                     ulong prevLowerBits = lastTimestamp & lowMask;
                     
                     if (prevLowerBits < uint27timestamp)
@@ -141,27 +166,40 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 CtfEvent evt = _streamDefinition.Events[(int)event_id];
                 _header.Event = evt;
                 _header.Timestamp = timestamp;
-
-                CtfStruct eventContext = _streamDefinition.EventContext;
+                
                 if (eventContext != null)
                 {
-                    result = ReadStruct(eventContext);
-                    _header.Pid = eventContext.GetFieldValue<int>(result, "_vpid");
-                    _header.Tid = eventContext.GetFieldValue<int>(result, "_vtid");
+                    ReadStruct(eventContext);
 
-                    int procnameIndex = eventContext.GetFieldIndex("_procname");
-                    object[] procname = (object[])(result[procnameIndex]);
-                    processName.Clear();
-                    for (int i = 0; i < 17; i++)
+                    if (pid != null)
+                        _header.Pid = CtfInteger.ReadInt<int>(pid, _buffer, pid.BitOffset);
+
+                    if (tid != null)
+                        _header.Tid = CtfInteger.ReadInt<int>(tid, _buffer, tid.BitOffset);
+
+                    bool matches = true;
+                    int processNameOffset = processName.BitOffset >> 3;
+
+                    if (_buffer[processNameOffset] == 0)
                     {
-                        sbyte b = (sbyte)procname[i];
-                        if (b == 0)
-                            break;
+                        lastProcessName = string.Empty;
+                    }
+                    else
+                    {
+                        int len = 0;
+                        for (; len < processLen && _buffer[processNameOffset + len] != 0; len++)
+                        {
+                            if (len >= lastProcessName.Length)
+                                matches = false;
+                            else
+                                matches &= lastProcessName[len] == _buffer[processNameOffset + len];
+                        }
 
-                        processName.Append((char)b);
+                        if (!matches || len != lastProcessName.Length)
+                            lastProcessName = Encoding.UTF8.GetString(_buffer, processName.BitOffset >> 3, len);
                     }
 
-                    _header.ProcessName = processName.ToString();
+                    _header.ProcessName = lastProcessName;
                 }
 
                 _readHeader = true;
@@ -173,27 +211,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             _bitOffset = 0;
             _bufferLength = 0;
-        }
-        
-
-        public object[] ReadEvent(CtfEvent evt)
-        {
-            if (!_readHeader)
-                throw new InvalidOperationException("Must read an event's header before reading an event's data.");
-
-            object[] result = null;
-            if (evt.IsPacked)
-            {
-                ReadPackedEvent();
-            }
-            else
-            {
-                ResetBuffer();
-                result = ReadStruct(evt.Fields);
-            }
-
-            _readHeader = false;
-            return result;
         }
 
         internal void ReadEventIntoBuffer(CtfEvent evt)
@@ -208,11 +225,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             else
             {
                 ResetBuffer();
-
-                if (evt.IsFixedSize)
-                    ReadBits(evt.Size);
-                else
-                    ReadStruct(evt.Fields);
+                ReadStruct(evt.Definition);
             }
 
             _readHeader = false;
@@ -229,171 +242,153 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             ResetBuffer();
             ReadBits(8 * len);
         }
-
-
-        public object[] ReadStruct(CtfStruct strct)
+        
+        public void ReadStruct(CtfStruct strct)
         {
             var fields = strct.Fields;
 
-            object[] result = new object[fields.Length];
-
             for (int i = 0; i < fields.Length; i++)
-                result[i] = ReadType(strct, result, fields[i].Type);
-
-            return result;
+                ReadTypeIntoBuffer(strct, fields[i].Type);
         }
 
-        private object ReadType(CtfStruct strct, object[] result, CtfMetadataType type)
+        public void ReadTypeIntoBuffer(CtfStruct context, CtfMetadataType type)
         {
             Align(type.Align);
+
+            type.BitOffset = _bitOffset;
+
+            if (type.CtfType == CtfTypes.Enum)
+            {
+                type = ((CtfEnum)type).Type;
+                type.BitOffset = _bitOffset;
+            }
+            else if (type.CtfType != CtfTypes.Struct && type.CtfType != CtfTypes.Variant)
+            {
+                int size = type.GetSize();
+                if (size != CtfEvent.SizeIndeterminate)
+                {
+                    ReadBits(size);
+                    return;
+                }
+            }
 
             switch (type.CtfType)
             {
                 case CtfTypes.Array:
                     CtfArray array = (CtfArray)type;
-                    int len = array.GetLength(strct, result);
 
-                    object[] ret = new object[len];
+                    var indexType = context.GetField(array.Index).Type;
+                    int len = CtfInteger.ReadInt<int>(indexType, _buffer, indexType.BitOffset);
 
-                    for (int j = 0; j < len; j++)
-                        ret[j] = ReadType(null, null, array.Type);
-
-                    return ret;
-
-                case CtfTypes.Enum:
-                    return ReadType(strct, result, ((CtfEnum)type).Type);
+                    int elemSize = array.Type.GetSize();
+                    if (elemSize == CtfEvent.SizeIndeterminate)
+                    {
+                        for (int j = 0; j < len; j++)
+                            ReadTypeIntoBuffer(null, array.Type);
+                    }
+                    else
+                    {
+                        for (int j = 0; j < len; j++)
+                        {
+                            Align(type.Align);
+                            ReadBits(elemSize);
+                        }
+                    }
+                    break;
 
                 case CtfTypes.Float:
                     CtfFloat flt = (CtfFloat)type;
                     ReadBits(flt.Exp + flt.Mant);
-                    return 0f;  // TODO:  Not implemented.
+                    break;
 
                 case CtfTypes.Integer:
                     CtfInteger ctfInt = (CtfInteger)type;
-                    return ReadInteger(ctfInt);
+                    ReadBits(ctfInt.Size);
+                    break;
 
                 case CtfTypes.String:
+                    Debug.Assert((_bitOffset % 8) == 0);
+                    int startOffset = _bitOffset >> 3;
+                    int offset = startOffset;
+
+                    ReadBits(8);
                     bool ascii = ((CtfString)type).IsAscii;
-                    return ReadString(ascii);
+                    if (ascii)
+                    {
+                        while (_buffer[offset++] != 0)
+                            ReadBits(8);
+                    }
+                    else
+                    {
+                        byte b = _buffer[offset];
+                        while (b != 0)
+                        {
+                            switch (b)
+                            {
+                                default:
+                                    break;
+
+                                case 0xc:
+                                case 0xd:
+                                    ReadBits(8);
+                                    break;
+
+                                case 0xe:
+                                    ReadBits(16);
+                                    break;
+
+                                case 0xf:
+                                    ReadBits(24);
+                                    break;
+                            }
+
+                            offset = ReadBits(8) >> 3;
+                            b = _buffer[offset];
+                        }
+                    }
+
+                    int bufferLen = (_bitOffset >> 3) - startOffset;
+
+                    Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
+                    
+                    byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _buffer, startOffset, bufferLen);
+                    ((CtfString)type).Length = bufferLen;
+
+                    if (_buffer.Length < _bufferLength + newArr.Length)
+                    {
+                        byte[] buffer = ReallocateBuffer(_bufferLength + newArr.Length);
+                        System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
+                    }
+
+                    System.Buffer.BlockCopy(newArr, 0, _buffer, startOffset, newArr.Length);
+                    _bufferLength = startOffset + newArr.Length;
+                    _bitOffset = _bufferLength * 8;
+                    
+                    break;
+
 
                 case CtfTypes.Struct:
-                    return ReadStruct((CtfStruct)type);
+                    ReadStruct((CtfStruct)type);
+                    break;
 
                 case CtfTypes.Variant:
                     CtfVariant var = (CtfVariant)type;
 
-                    int i = strct.GetFieldIndex(var.Switch);
-                    CtfField field = strct.Fields[i];
+                    CtfField field = context.GetField(var.Switch);
                     CtfEnum enumType = (CtfEnum)field.Type;
 
-                    int value = strct.GetFieldValue<int>(result, i);
+                    int value = CtfInteger.ReadInt<int>(enumType, _buffer, enumType.BitOffset);
                     string name = enumType.GetName(value);
 
-                    field = var.Union.Where(f => f.Name == name).Single();
-                    return ReadType(strct, result, field.Type);
+                    field = var.GetVariant(name);
+                    ReadTypeIntoBuffer(null, field.Type);
+                    break;
 
                 default:
                     throw new InvalidOperationException();
             }
         }
-
-        private object ReadInteger(CtfInteger ctfInt)
-        {
-            if (ctfInt.Size > 64)
-                throw new NotImplementedException();
-
-            Align(ctfInt.Align);
-            int bitOffset = ReadBits(ctfInt.Size);
-            int byteOffset = bitOffset / 8;
-
-            bool fastPath = (_bitOffset % 8) == 0 && (ctfInt.Size % 8) == 0;
-            if (fastPath)
-            {
-                if (ctfInt.Size == 32)
-                {
-                    if (ctfInt.Signed)
-                        return BitConverter.ToInt32(_buffer, byteOffset);
-
-                    return BitConverter.ToUInt32(_buffer, byteOffset);
-                }
-
-                if (ctfInt.Size == 8)
-                {
-                    if (ctfInt.Signed)
-                        return (sbyte)_buffer[byteOffset];
-
-                    return _buffer[byteOffset];
-                }
-
-                if (ctfInt.Size == 64)
-                {
-                    if (ctfInt.Signed)
-                        return BitConverter.ToInt64(_buffer, byteOffset);
-
-                    return BitConverter.ToUInt64(_buffer, byteOffset);
-                }
-
-                Debug.Assert(ctfInt.Size == 16);
-                if (ctfInt.Signed)
-                    return BitConverter.ToInt16(_buffer, byteOffset);
-
-                return BitConverter.ToUInt16(_buffer, byteOffset);
-            }
-
-
-
-            // Sloooow path for misaligned integers
-            int bits = ctfInt.Size;
-            ulong value = 0;
-
-            int byteLen = IntHelpers.AlignUp(bits, 8) / 8;
-
-            for (int i = 0; i < byteLen; i++)
-                value = unchecked((value << 8) | _buffer[byteOffset + byteLen - i - 1]);
-
-            value >>= bitOffset;
-            value &= (ulong)((1 << bits) - 1);
-
-            if (ctfInt.Signed)
-            {
-                ulong signBit = (1u << (bits - 1));
-
-                if ((value & signBit) != 0)
-                    value |= ulong.MaxValue << bits;
-            }
-
-
-            if (ctfInt.Size > 32)
-            {
-                if (ctfInt.Signed)
-                    return (long)value;
-
-                return value;
-            }
-
-            if (ctfInt.Size > 16)
-            {
-                if (ctfInt.Signed)
-                    return (int)value;
-
-                return (uint)value;
-            }
-
-            if (ctfInt.Size > 8)
-            {
-                if (ctfInt.Signed)
-                    return (short)value;
-
-                return (ushort)value;
-            }
-
-            if (ctfInt.Signed)
-                return (sbyte)value;
-
-            return (byte)value;
-        }
-
-
+        
         #region IDisposable
         public void Dispose()
         {
@@ -474,110 +469,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 else
                     _eof = true;
             }
-        }
-
-        byte[] _stringBuffer = new byte[1024];
-        internal string ReadString(bool ascii)
-        {
-            byte b = ReadByte();
-            if (b == 0)
-            {
-                if (_buffer.Length < _bufferLength + 2)
-                {
-                    byte[] buffer = ReallocateBuffer(_bufferLength + 2);
-                    System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
-                }
-
-                _buffer[_bufferLength++] = 0;
-                _buffer[_bufferLength++] = 0;
-                _bitOffset += 16;
-
-                return "";
-            }
-
-            int i = 0;
-            _stringBuffer[i++] = b;
-            if (ascii)
-            {
-                while (b != 0)
-                {
-                    if (i >= _stringBuffer.Length - 4)
-                    {
-                        byte[] tmp = _stringBuffer;
-                        _stringBuffer = new byte[_stringBuffer.Length + 1024];
-                        System.Buffer.BlockCopy(tmp, 0, _stringBuffer, 0, tmp.Length);
-                    }
-
-                    b = _stringBuffer[i++] = ReadByte();
-                }
-            }
-            else
-            {
-                while (b != 0)
-                {
-                    if (i >= _stringBuffer.Length - 4)
-                    {
-                        byte[] tmp = _stringBuffer;
-                        _stringBuffer = new byte[_stringBuffer.Length + 1024];
-                        System.Buffer.BlockCopy(tmp, 0, _stringBuffer, 0, tmp.Length);
-                    }
-
-                    b >>= 4;
-
-                    switch (b)
-                    {
-                        default:
-                            break;
-
-                        case 0xc:
-                        case 0xd:
-                            _stringBuffer[i++] = ReadByte();
-                            break;
-
-                        case 0xe:
-                            _stringBuffer[i++] = ReadByte();
-                            _stringBuffer[i++] = ReadByte();
-                            break;
-
-                        case 0xf:
-                            _stringBuffer[i++] = ReadByte();
-                            _stringBuffer[i++] = ReadByte();
-                            _stringBuffer[i++] = ReadByte();
-                            break;
-                    }
-
-                    b = _stringBuffer[i++] = ReadByte();
-                }
-            }
-
-            Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
-
-            string s = encoding.GetString(_stringBuffer, 0, i - 1);
-            byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _stringBuffer, 0, i);
-
-            if (_buffer.Length < _bufferLength + newArr.Length)
-            {
-                byte[] buffer = ReallocateBuffer(_bufferLength + newArr.Length);
-                System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
-            }
-
-            System.Buffer.BlockCopy(newArr, 0, _buffer, _bufferLength, newArr.Length);
-            _bufferLength += newArr.Length;
-            _bitOffset += newArr.Length * 8;
-
-            return s;
-        }
-
-        private byte ReadByte()
-        {
-            int c = _stream.ReadByte();
-            if (c == -1)
-            {
-                _eof = true;
-                return 0;
-            }
-
-            return (byte)c;
         }
     }
 }
