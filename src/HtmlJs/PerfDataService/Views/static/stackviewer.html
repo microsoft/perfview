@@ -62,6 +62,24 @@
                 </table>
         </div>
 
+        <div class="tabs-panel" id="call-tree">
+            <table id="call-treeTree">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
         <div class="tabs-panel" id="callers">
                 <table id="callersTree">
                     <thead>
@@ -137,7 +155,10 @@
 
             // Initialize by-name-list and possibly set some properties
             $("#by-name-list").treetable();
-            updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+            loadAndDisplayData(["by-name-list"]);
+
+            //$("#call-treeTree").treetable();
+            
 
             // Initialize callersTree and possibly set some properties
             $("#callersTree").treetable({
@@ -203,18 +224,32 @@
             stackDelegate.focusNode = $("#by-name-list").treetable("node", clickedNodeId);
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
 
-            getAndDisplayData();
+            loadAndDisplayData(["callersTree", "calleesTree"]);
         });
 
-        function getAndDisplayData() {
-            if (stackDelegate.focusNode !== undefined && stackDelegate.focusNode != null) {
-                /* Empty all the views */
-                $("#callersTree tbody").empty();  // TODO: Maybe unload branch, instead
-                $("#calleesTree tbody").empty();  // TODO: Maybe unload branch, instead
-                
-                /* Get and Display all the new data */
+
+        function loadAndDisplayData(treesToUpdate) {
+
+            if (treesToUpdate == null || treesToUpdate.includes("by-name-list")) {
+                // DISPLAY BY-NAME DATA
+                stackDelegate.getSummaryData(function (summaryStackData) {
+                    $("#by-name-list tbody").empty();  // TODO: Maybe unload branch, instead
+                    updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+                    if (stackDelegate.focusNode != null) {
+                        stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
+                    }
+                });
+            }
+
+            if (treesToUpdate == null || treesToUpdate.includes("callersTree")) {
+                if (stackDelegate.focusNode === undefined || stackDelegate.focusNode == null) {
+                    throw "callersTree update attempted before focusNode was set";
+                }
+
                 // DISPLAY CALLERS DATA
                 stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
+                    $("#callersTree tbody").empty();
+
                     var focusNodeHtml = "<tr data-tt-id=\"" + "callersTree_" + stackDelegate.focusNode.id
                                         + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
@@ -227,9 +262,17 @@
                     // Place data in Callers tab
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData, forceParentNodeId=parentNode.id);
                 });
+            }
+
+            if (treesToUpdate == null || treesToUpdate.includes("calleesTree")) {
+                if (stackDelegate.focusNode === undefined || stackDelegate.focusNode == null) {
+                    throw "calleesTree update attempted before focusNode was set";
+                }
 
                 // DISPLAY CALLEES DATA
                 stackDelegate.getCalleesData(stackDelegate.focusNode.id, "", function (calleesStackData, status) {
+                    $("#calleesTree tbody").empty();
+
                     var focusNodeHtml = "<tr data-tt-id=\"" + "calleesTree_" + stackDelegate.focusNode.id
                                         + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
@@ -246,6 +289,7 @@
                 // TODO: Add other tab update calls here
             }
         }
+
 
         /* Tree node expand event */
         function treeNodeExpanded(node) {
@@ -292,6 +336,7 @@
             }
         }
 
+
         $(".filter").keypress(function (e) {
             // If the user pressed enter in a filter textfield
             if (e.which == 13) {
@@ -304,7 +349,7 @@
                     if (stackDelegate.focusNode != null) {
                         stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
                     }
-                    getAndDisplayData();
+                    loadAndDisplayData();
                 });
             }
         });
