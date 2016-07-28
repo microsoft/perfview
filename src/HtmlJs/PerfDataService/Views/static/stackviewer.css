@@ -150,6 +150,16 @@ tr:nth-child(even) {
     background-size: 16px;
 }
 
+#call-tree .branch td span.indenter a {
+    background-image: url("../static/images/right-arrow.png");
+    background-size: 16px;
+}
+
+#call-tree .expanded td span.indenter a {
+    background-image: url("../static/images/down-arrow.png");
+    background-size: 16px;
+}
+
 
 
 /*
