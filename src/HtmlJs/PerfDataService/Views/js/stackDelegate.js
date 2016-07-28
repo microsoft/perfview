@@ -1,10 +1,9 @@
-function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStackData) {
+function StackDelegate(domain, filename, stackType, summaryStackData) {
     var self = this;
     self.filename = filename;
     self.stackType = stackType;
     self.summaryStackData = summaryStackData;
     self.domain = domain;
-    self.defaultNumNodes = defaultNumNodes;
     self.focusNode = null;
     self.filters = ""
 
@@ -23,7 +22,6 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
     self.getSummaryData = function getSummaryData(callback) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
-                                                          + "&numNodes=" + self.defaultNumNodes
                                                           + "&" + self.filters;
 
         self.log("Fetching Summary Data for " + self.filename);
@@ -43,7 +41,6 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
                                                                   + "&name=" + nodeName
                                                              + "&stacktype=" + self.stackType
-                                                              + "&numNodes=" + self.defaultNumNodes
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
 
@@ -64,7 +61,6 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
         var url = self.domain + "/api/data/stackviewer/calleetree?filename=" + self.filename
                                                                   + "&name=" + nodeName
                                                              + "&stacktype=" + self.stackType
-                                                              + "&numNodes=" + self.defaultNumNodes
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
 
@@ -85,5 +81,4 @@ function StackDelegate(domain, filename, stackType, defaultNumNodes, summaryStac
 var stackDelegate = new StackDelegate(window.opener.domain,
                                     window.opener.filename,
                                     window.opener.stackType,
-                                    window.opener.defaultNumNodes,
                                     window.opener.summaryStackData);

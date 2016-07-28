@@ -1,7 +1,6 @@
 ﻿function HomeDelegate() {
     self = this;
     self.domain = "http://localhost:5000";
-    self.defaultNumNodes = 10;
     self.treeDivID = "#treeContainer";
 
     self.log = function log(status) {
@@ -45,15 +44,13 @@
             if (nodeObject.type == "dir" || nodeObject.type == "file") {
                 self.changeDirectoryTreePath(nodeObject.path);
             } else if (nodeObject.type == "stacks") {
-                self.openStackSummary(nodeObject.path, nodeObject.stackType, self.defaultNumNodes);
+                self.openStackSummary(nodeObject.path, nodeObject.stackType);
             }
         });
     }
 
-    self.openStackSummary = function openStackSummary(filename, stackType, numNodes = self.defaultNumNodes) {
-        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=" + numNodes;
-        
-        console.log( url );
+    self.openStackSummary = function openStackSummary(filename, stackType) {
+        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType;
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
@@ -62,7 +59,6 @@
             window.domain = self.domain;
             window.filename = filename;
             window.stackType = stackType;
-            window.defaultNumNodes = self.defaultNumNodes;
             window.summaryStackData = json;
 
             console.log(self.domain);

@@ -191,7 +191,16 @@
             {
                 if (this.summary == null)
                 {
-                    var nodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Take(numNodes);
+                    IEnumerable<CallTreeNodeBase> nodes;
+                    if (numNodes > 0)
+                    {
+                        nodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Take(numNodes);
+                    }
+                    else
+                    {
+                        numNodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Count();
+                        nodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Take(numNodes);
+                    }
 
                     this.summary = new List<TreeNode>();
                     foreach (CallTreeNodeBase node in nodes)
