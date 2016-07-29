@@ -24,7 +24,7 @@
         GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
         <datalist id="grouppats-filter-list"></datalist>
 
-        Fold%:<input class="filter" name="foldpct" list="foldpercent-filter-list" type="text">
+        Fold%:<input class="filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
         <datalist id="foldpercent-filter-list"></datalist>
 
         FoldPats:<input class="filter" name="foldpats" list="foldpats-filter-list" type="text">
@@ -162,11 +162,12 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    treeNodeExpanded(node);
+                    onTreeNodeExpand(node);
                 }
             });
             
             // Load data into by-name-list and call-treeTree
+            stackDelegate.filters = $("#filtersForm").serialize();  // In case there are any default filter values set
             loadAndDisplayData(["by-name-list", "call-treeTree"]);
 
             // Initialize callersTree and possibly set some properties
@@ -175,7 +176,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    treeNodeExpanded(node);
+                    onTreeNodeExpand(node);
                 }
             });
 
@@ -185,7 +186,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    treeNodeExpanded(node);
+                    onTreeNodeExpand(node);
                 }
             });
         });
@@ -249,11 +250,7 @@
             }
 
             // DISPLAY CALLERS DATA
-            if (treesToUpdate == null || treesToUpdate.includes("callersTree")) {
-                if (stackDelegate.focusNode === undefined || stackDelegate.focusNode == null) {
-                    throw "callersTree update attempted before focusNode was set";
-                }
-
+            if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
                 stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
@@ -272,11 +269,7 @@
             }
             
             // DISPLAY CALLEES DATA
-            if (treesToUpdate == null || treesToUpdate.includes("calleesTree")) {
-                if (stackDelegate.focusNode === undefined || stackDelegate.focusNode == null) {
-                    throw "calleesTree update attempted before focusNode was set";
-                }
-
+            if ((treesToUpdate == null || treesToUpdate.includes("calleesTree")) && stackDelegate.focusNode != null) {
                 stackDelegate.getCalleesData(stackDelegate.focusNode.id, "", function (calleesStackData, status) {
                     $("#calleesTree tbody").empty();
 
@@ -309,7 +302,7 @@
 
 
         /* Tree node expand event */
-        function treeNodeExpanded(node) {
+        function onTreeNodeExpand(node) {
             if (node.row[0].getAttribute("direct-children-loaded") == "true") { return; }
 
             // Split the name from the path

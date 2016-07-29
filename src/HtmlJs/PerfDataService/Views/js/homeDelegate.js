@@ -44,31 +44,22 @@
             if (nodeObject.type == "dir" || nodeObject.type == "file") {
                 self.changeDirectoryTreePath(nodeObject.path);
             } else if (nodeObject.type == "stacks") {
-                self.openStackSummary(nodeObject.path, nodeObject.stackType);
+                self.openStackWindow(nodeObject.path, nodeObject.stackType);
             }
         });
     }
 
-    self.openStackSummary = function openStackSummary(filename, stackType) {
-        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=-1";
+    self.openStackWindow = function openStackWindow(filename, stackType) {
+        // Attach data to current (parent) window so that the new window can access it on load (via window.opener.summaryStackData)
+        window.domain = self.domain;
+        window.filename = filename;
+        window.stackType = stackType;
 
-        $.get(url, function (response, status) {
-            json = JSON.parse(response);
-            console.log( json );
-            // Attach data to current (parent) window so that the new window can access it on load (via window.opener.summaryStackData)
-            window.domain = self.domain;
-            window.filename = filename;
-            window.stackType = stackType;
-            window.summaryStackData = json;
+        // Create and open the new window
+        var stackViewerWindow = window.open(self.domain + "/Views/static/stackviewer.html");
 
-            console.log(self.domain);
-
-            // Create and open the new window
-            var stackViewerWindow = window.open(self.domain + "/Views/static/stackviewer.html");
-
-            // Log the completed work out
-            self.log("Completed: Open " + stackType + " Stack Summary at filepath " + filename);
-        });
+        // Log the completed work out
+        self.log("Completed: Open " + stackType + " Stack Summary at filepath " + filename);
     }
 
 }
