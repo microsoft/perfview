@@ -192,12 +192,13 @@
                 if (this.summary == null)
                 {
                     IEnumerable<CallTreeNodeBase> nodes;
-                    if (numNodes > 0)
+                    if (numNodes >= 0)
                     {
                         nodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Take(numNodes);
                     }
                     else
                     {
+                        // numNodes < 0 --> Take ALL the nodes
                         numNodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Count();
                         nodes = this.callTree.ByIDSortedExclusiveMetric().Where(this.summaryPredicate).Take(numNodes);
                     }
