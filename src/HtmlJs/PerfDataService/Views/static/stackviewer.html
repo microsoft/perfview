@@ -195,16 +195,16 @@
         /*_____________________________________*/
         /*_______ Tab Updater Functions _______*/
         /*_____________________________________*/
-        function updateTreeTableHtml(treeTableId, parentNode, stackData, forceParentNodeId = "", forceChildrenLoaded=false) {
+        function updateTreeTableHtml(treeTableId, parentNode, stackData, options={}) {
             // Iterate through each row
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
-                var parentId = forceParentNodeId != "" ? forceParentNodeId : stackData[i].parentContextId;
+                var parentId = "forceParentNodeId" in options ? options["forceParentNodeId"] : stackData[i].parentContextId;
 
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + parentId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
-                                            + "\" direct-children-loaded=\"" + forceChildrenLoaded + "\">";
+                                            + "\" direct-children-loaded=\"" + ("forceChildrenLoaded" in options ? options["forceChildrenLoaded"] : false) + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
                                     <td>" + stackData[i].exclusiveMetricPercent + "</td>\
@@ -255,7 +255,8 @@
                     $("#call-treeTree tbody").empty();
 
                     // Place root node in tree
-                    updateTreeTableHtml("#call-treeTree", null, [nodeData], forceParentNodeId="", forceChildrenLoaded=true);
+                    var options = {"forceChildrenLoaded" : true}
+                    updateTreeTableHtml("#call-treeTree", null, [nodeData], options=options);
 
                     stackDelegate.getCalleesData("ROOT", "", function (callTreeStackData, status) {
                         // Place data in CallTree tab
@@ -280,7 +281,8 @@
                     var parentNode = $("#callersTree").treetable("node", "callersTree_" + stackDelegate.focusNode.id);
 
                     // Place data in Callers tab
-                    updateTreeTableHtml("#callersTree", parentNode, callersStackData, forceParentNodeId=parentNode.id);
+                    var options = {"forceParentNodeId" : parentNode.id}
+                    updateTreeTableHtml("#callersTree", parentNode, callersStackData, options=options);
                 });
             }
             
@@ -299,7 +301,8 @@
                     var parentNode = $("#calleesTree").treetable("node", "calleesTree_" + stackDelegate.focusNode.id);
 
                     // Place data in Callees tab
-                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData, forceParentNodeId=parentNode.id);
+                    var options = {"forceParentNodeId" : parentNode.id}
+                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData, options=options);
                 });
             }
 
