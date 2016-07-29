@@ -97,10 +97,6 @@
       </script>
 
 
-
-      <script src="../js/homeDelegate.js"></script>
-
-
       <!-- basicContext Library -->
       <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
 
@@ -134,7 +130,10 @@
 
       <script>
           $(document).ready(function () {
-              homeDelegate.changeDirectoryTreePath();
+              $.getScript("../js/homeDelegate.js", function () {
+                  homeDelegate.changeDirectoryTreePath();
+              });
+
               // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
               //$("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
           });

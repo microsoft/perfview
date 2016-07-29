@@ -5,7 +5,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.summaryStackData = summaryStackData;
     self.domain = domain;
     self.focusNode = null;
-    self.filters = ""
+    self.filters = "";
 
 
     self.log = function log(status) {
@@ -13,20 +13,13 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     };
 
 
-    // TODO: Probably remove this
-    //$('#tabs').on('change.zf.tabs', function (event, tab) {
-    //    //console.log(tab);
-    //});
-
-
     self.getSummaryData = function getSummaryData(callback) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
-                                                          + "&" + self.filters
-                                                          + "&numNodes=-1";
+                                                          + "&numNodes=-1&" + self.filters;
 
         self.log("Fetching Summary Data for " + self.filename);
-
+        console.log("stackDelegate: " + url);
         $.get(url, function (response, status) {
             json = JSON.parse(response);
             self.summaryStackData = json;
