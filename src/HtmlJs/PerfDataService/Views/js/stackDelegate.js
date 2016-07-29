@@ -22,7 +22,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.getSummaryData = function getSummaryData(callback) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
-                                                          + "&" + self.filters;
+                                                          + "&" + self.filters
+                                                          + "&numNodes=-1";
 
         self.log("Fetching Summary Data for " + self.filename);
 

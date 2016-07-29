@@ -50,7 +50,7 @@
     }
 
     self.openStackSummary = function openStackSummary(filename, stackType) {
-        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType;
+        var url = self.domain + "/api/data/stackviewer/summary?filename=" + filename + "&stacktype=" + stackType + "&numNodes=-1";
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
