@@ -195,7 +195,7 @@
         /*_____________________________________*/
         /*_______ Tab Updater Functions _______*/
         /*_____________________________________*/
-        function updateTreeTableHtml(treeTableId, parentNode, stackData, forceParentNodeId = "") {
+        function updateTreeTableHtml(treeTableId, parentNode, stackData, forceParentNodeId = "", forceChildrenLoaded=false) {
             // Iterate through each row
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
@@ -204,7 +204,7 @@
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + parentId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
-                                            + "\" direct-children-loaded=\"false\">";
+                                            + "\" direct-children-loaded=\"" + forceChildrenLoaded + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
                                     <td>" + stackData[i].exclusiveMetricPercent + "</td>\
@@ -249,6 +249,22 @@
                 });
             }
 
+            // DISPLAY CALLTREE DATA
+            if (treesToUpdate == null || treesToUpdate.includes("call-treeTree")) {
+                stackDelegate.getNode("ROOT", function(nodeData){
+                    $("#call-treeTree tbody").empty();
+
+                    // Place root node in tree
+                    updateTreeTableHtml("#call-treeTree", null, [nodeData], forceParentNodeId="", forceChildrenLoaded=true);
+
+                    stackDelegate.getCalleesData("ROOT", "", function (callTreeStackData, status) {
+                        // Place data in CallTree tab
+                        var parentNode = $("#call-treeTree").treetable("node", "ROOT");
+                        updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
+                    });
+                });
+            }
+
             // DISPLAY CALLERS DATA
             if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
                 stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
@@ -284,16 +300,6 @@
 
                     // Place data in Callees tab
                     updateTreeTableHtml("#calleesTree", parentNode, calleesStackData, forceParentNodeId=parentNode.id);
-                });
-            }
-
-            // DISPLAY CALLTREE DATA
-            if (treesToUpdate == null || treesToUpdate.includes("call-treeTree")) {
-                stackDelegate.getCalleesData("ROOT", "", function (callTreeStackData, status) {
-                    $("#call-treeTree tbody").empty();
-
-                    // Place data in CallTree tab
-                    updateTreeTableHtml("#call-treeTree", null, callTreeStackData);
                 });
             }
 

@@ -19,12 +19,27 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                           + "&numNodes=-1&" + self.filters;
 
         self.log("Fetching Summary Data for " + self.filename);
-        console.log("stackDelegate: " + url);
         $.get(url, function (response, status) {
             json = JSON.parse(response);
             self.summaryStackData = json;
 
             self.log("Completed: Get Summary Data for " + self.filename);
+
+            callback(json);
+        });
+    }
+
+
+    self.getNode = function getNode(name, callback) {
+        var url = self.domain + "/api/data/stackviewer/node?filename=" + self.filename
+                                                          + "&stacktype=" + self.stackType
+                                                          + "&name=" + name;
+
+        self.log("Fetching Node Data for " + name);
+        $.get(url, function (response, status) {
+            json = JSON.parse(response);
+
+            self.log("Completed: Get Node Data for " + name);
 
             callback(json);
         });

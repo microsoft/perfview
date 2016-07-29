@@ -93,6 +93,34 @@ namespace PerfDataService.Controllers
 
 
         [HttpGet]
+        [Route("/api/[controller]/stackviewer/node")]
+        public string GetNode([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType)  // TODO: Remove these parameters
+        {
+            // Ensure the required properties are present
+            if (string.IsNullOrEmpty(filename) || string.IsNullOrEmpty(stackType) || string.IsNullOrEmpty(name))
+            {
+                // TODO: Form proper resposne
+                return null;
+            }
+
+            using (var client = new WebClient())
+            {
+                var url = "http://localhost:5000/stackviewer/node" + Request.QueryString.Value;
+                var json = client.DownloadString(url);
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    return "[]";
+                }
+                else
+                {
+                    return json;
+                }
+            }
+        }
+
+
+        [HttpGet]
         [Route("/api/[controller]/stackviewer/callertree")]
         public string GetCallers([FromQuery]string filename, [FromQuery]string name, [FromQuery]string stackType)  // TODO: Remove these parameters
         {
