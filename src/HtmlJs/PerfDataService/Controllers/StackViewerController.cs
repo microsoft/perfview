@@ -42,9 +42,9 @@
         //[HttpGet("{path}")]
         [HttpGet]
         [Route("stackviewer/callertree")]
-        public TreeNode[] CallerTree(string name, string path)
+        public TreeNode[] CallerTree(string name, string path, string find)
         {
-            return this.dataProvider.GetCallerTree(name, path);
+            return this.dataProvider.GetCallerTree(name, path, find);
         }
 
         //[HttpGet]
@@ -52,13 +52,13 @@
         //public TreeNode[] CalleeTree(string name)
         //{
         //    return this.dataProvider.GetCalleeTree(name);
-        //}
+        //} 
 
         [HttpGet]
         [Route("stackviewer/calleetree")]
-        public TreeNode[] CalleeTree(string name, string path)
+        public TreeNode[] CalleeTree(string name, string path, string find)
         {
-            return this.dataProvider.GetCalleeTree(name, path);
+            return this.dataProvider.GetCalleeTree(name, path, find);
         }
 
         [HttpGet]
