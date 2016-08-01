@@ -100,6 +100,7 @@
             string foldpats = (string)queryString["foldpats"] ?? string.Empty;
             string grouppats = (string)queryString["grouppats"] ?? string.Empty;
             string foldpct = (string)queryString["foldpct"] ?? string.Empty;
+            string find = (string)queryString["find"] ?? string.Empty;
 
             EtlxFile etlxFile;
 
@@ -188,7 +189,7 @@
             {
                 var filterParams = new FilterParams { Name = filename + stacktype, StartTimeRelativeMSec = start, EndTimeRelativeMSec = end, MinInclusiveTimePercent = foldpct, FoldRegExs = foldpats, IncludeRegExs = incpats, ExcludeRegExs = excpats, GroupRegExs = grouppats };
                 var keyBuilder = new StringBuilder();
-                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs); 
+                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs).Append("?" + find); 
                 
                 var stackViewerKey = keyBuilder.ToString();
                 if (this.stackViewerSessionCache.TryGetValue(stackViewerKey, out stackViewerSession))

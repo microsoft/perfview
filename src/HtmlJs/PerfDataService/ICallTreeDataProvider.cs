@@ -15,7 +15,7 @@
         TreeNode GetCalleeTreeNode(string name, string path = "");
 
         // gets a list of nodes with no context
-        List<TreeNode> GetSummaryTree(int numNodes);
+        List<TreeNode> GetSummaryTree(int numNodes, string find);
 
         // returns a flat caller tree given a node
         TreeNode[] GetCallerTree(string name);

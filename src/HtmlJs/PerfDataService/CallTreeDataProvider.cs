@@ -185,7 +185,7 @@
             return this.GetCalleeTreeNode(name, path).Children;
         }
 
-        public List<TreeNode> GetSummaryTree(int numNodes)
+        public List<TreeNode> GetSummaryTree(int numNodes, string find)
         {
             lock (this.lockobj)
             {
@@ -204,9 +204,20 @@
                     }
 
                     this.summary = new List<TreeNode>();
+                    int findCount = 0;
                     foreach (CallTreeNodeBase node in nodes)
                     {
-                        this.summary.Add(new TreeNode(node));
+                        TreeNode tn = new TreeNode(node);
+                        if (!string.IsNullOrEmpty(find))
+                        {
+                            // TODO: Search each node name to see if it contains find as a substring
+                            if (node.Name.Contains(find))
+                            {
+                                tn.FindFlag = findCount.ToString();
+                                findCount++;
+                            }
+                        }
+                        this.summary.Add(tn);
                     }
                 }
 

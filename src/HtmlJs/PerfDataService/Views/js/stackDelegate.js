@@ -17,7 +17,6 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
                                                           + "&numNodes=-1&" + self.filters;
-
         self.log("Fetching Summary Data for " + self.filename);
         $.get(url, function (response, status) {
             json = JSON.parse(response);

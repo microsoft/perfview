@@ -20,9 +20,9 @@
 
         [HttpGet]
         [Route("stackviewer/summary")]
-        public List<TreeNode> Get(int numNodes)
+        public List<TreeNode> Get(int numNodes, string find)
         {
-            return this.dataProvider.GetSummaryTree(numNodes);
+            return this.dataProvider.GetSummaryTree(numNodes, find);
         }
 
         [HttpGet]
