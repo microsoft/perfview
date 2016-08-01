@@ -2664,8 +2664,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>A TraceEventDispatcher for the given trace file.</returns>
         public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName)
         {
-            if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase) ||
-                traceFileName.EndsWith(".lttng.zip", StringComparison.OrdinalIgnoreCase))
+            if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
             else
                 return new ETWTraceEventSource(traceFileName);

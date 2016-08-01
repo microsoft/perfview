@@ -30,14 +30,23 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public void SkipPreamble(FastStream source)
 		{
-			source.MoveNext(); // Skip Sentinal value
+            source.MoveNext();      // Prime Current 
 
-			while (Encoding.UTF8.GetPreamble().Contains(source.Current)) // Skip the BOM marks if there are any
-			{
+            // These are bytes put at the begining of a UTF8 file (like the byte order mark (BOM)) that should be skipped.  
+            var preambleBytes = Encoding.UTF8.GetPreamble();
+            while(preambleBytes.Contains(source.Current))
 				source.MoveNext();
-			}
 
-			source.SkipWhiteSpace(); // Make sure we start at the beginning of a sample.
+            // Skip whitespace and comments.   
+            for(;;)
+            {
+                if (Char.IsWhiteSpace((char)source.Current))
+                    source.MoveNext();
+                else if (source.Current == '#')
+                    source.SkipUpTo('\n');
+                else
+                    break;
+            }
 		}
 
 		/// <summary>
@@ -67,12 +76,12 @@ namespace Diagnostics.Tracing.StackSources
 		/// </summary>
 		public IEnumerable<LinuxEvent> Parse(FastStream source)
 		{
-			if (source.Current == 0 && !source.EndOfStream)
-			{
-				source.MoveNext();
-			}
+            if (source.Current == 0 && !source.EndOfStream)
+            {
+                source.MoveNext();
+            }
 
-			Regex rgx = this.Pattern;
+            Regex rgx = this.Pattern;
 			foreach (LinuxEvent linuxEvent in this.NextEvent(rgx, source))
 			{
 				if (linuxEvent != null)
@@ -160,7 +169,7 @@ namespace Diagnostics.Tracing.StackSources
 		public void ParseSymbolFile(Stream stream, Mapper mapper)
 		{
 			FastStream source = new FastStream(stream);
-			source.MoveNext(); // Avoid \0 encounter
+			source.MoveNext(); // Prime Current.  
 			this.SkipPreamble(source); // Remove encoding stuff if it's there
 			source.SkipWhiteSpace();
 
