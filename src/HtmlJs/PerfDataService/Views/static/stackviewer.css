@@ -112,8 +112,13 @@ td, th {
     padding: 8px;
 }
 
-tr:nth-child(even) {
+table tbody tr:nth-child(even) {
     background-color: #dddddd;
+}
+
+table tbody tr:nth-child(odd)[data-find-flag],
+table tbody tr:nth-child(even)[data-find-flag] {
+  background-color: #809fff;
 }
 
 /*#CallersTree {
