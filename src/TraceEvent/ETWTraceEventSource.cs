@@ -138,7 +138,7 @@ namespace Microsoft.Diagnostics.Tracing
                 long ret = 0;
                 for (int i = 0; i < logFiles.Length; i++)
                 {
-                    var fileName = logFiles[0].LogFileName;
+                    var fileName = logFiles[i].LogFileName;
                     if (File.Exists(fileName))
                         ret += new FileInfo(fileName).Length;
                 }
