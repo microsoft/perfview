@@ -18,9 +18,6 @@
         End:<input class="filter" name="end" list="end-filter-list" type="text">
         <datalist id="end-filter-list"></datalist>
 
-        Find:<input class="filter" name="find" list="find-filter-list" type="text">
-        <datalist id="find-filter-list"></datalist>
-
         GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
         <datalist id="grouppats-filter-list"></datalist>
 
@@ -46,23 +43,25 @@
 
     <div class="tabs-content" data-tabs-content="tabs">
         <div class="tabs-panel is-active" id="by-name">
-                <table id="by-name-list">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Exc %</th>
-                            <th>Exc</th>
-                            <th>Inc %</th>
-                            <th>Inc</th>
-                            <th>Fold</th>
-                            <th>First</th>
-                            <th>Last</th>
-                        </tr>
-                    </thead>
-                </table>
+            Find:<input class="filter find" name="find" list="find-filter-list" type="text">
+            <table id="by-name-list">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+            </table>
         </div>
 
         <div class="tabs-panel" id="call-tree">
+            Find:<input class="filter find" name="find" list="find-filter-list" type="text">
             <table id="call-treeTree">
                 <thead>
                     <tr>
@@ -81,6 +80,7 @@
         </div>
 
         <div class="tabs-panel" id="callers">
+            Find:<input class="filter find" name="find" list="find-filter-list" type="text">
                 <table id="callersTree">
                     <thead>
                         <tr>
@@ -99,6 +99,7 @@
         </div>
 
         <div class="tabs-panel" id="callees">
+            Find:<input class="filter find" name="find" list="find-filter-list" type="text">
             <table id="calleesTree">
                 <thead>
                     <tr>
