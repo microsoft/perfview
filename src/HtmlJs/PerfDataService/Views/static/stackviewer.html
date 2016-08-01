@@ -200,10 +200,13 @@
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
                 var parentId = "forceParentNodeId" in options ? options["forceParentNodeId"] : stackData[i].parentContextId;
-
+                //if (stackData[i].findFlag != "") {
+                //    console.log(stackData[i].findFlag);
+                //}
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + parentId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
+                                            + (stackData[i].findFlag != "" ? "\" data-find-flag=\"" + stackData[i].findFlag : "")
                                             + "\" direct-children-loaded=\"" + ("forceChildrenLoaded" in options ? options["forceChildrenLoaded"] : false) + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
@@ -371,14 +374,7 @@
                 stackDelegate.filters = $("#filtersForm").serialize();
 
                 // Get updated summary stack data again and update By Name tab
-                stackDelegate.getSummaryData(function (summaryStackData) {
-                    $("#by-name-list tbody").empty();
-                    updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
-                    if (stackDelegate.focusNode != null) {
-                        stackDelegate.focusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
-                    }
-                    loadAndDisplayData();
-                });
+                loadAndDisplayData();
             }
         });
     </script>
