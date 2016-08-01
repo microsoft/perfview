@@ -21,13 +21,13 @@
         TreeNode[] GetCallerTree(string name);
 
         // returns a flat caller tree given a node and its context
-        TreeNode[] GetCallerTree(string name, string path);
+        TreeNode[] GetCallerTree(string name, string path, string find);
 
         // returns a flat callee tree given a node
         TreeNode[] GetCalleeTree(string name);
 
         // returns a flat callee tree given a node and its context
-        TreeNode[] GetCalleeTree(string name, string path);
+        TreeNode[] GetCalleeTree(string name, string path, string find);
 
         SourceInformation Source(TreeNode node);
     }

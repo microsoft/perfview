@@ -200,13 +200,11 @@
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
                 var parentId = "forceParentNodeId" in options ? options["forceParentNodeId"] : stackData[i].parentContextId;
-                //if (stackData[i].findFlag != "") {
-                //    console.log(stackData[i].findFlag);
-                //}
+
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + parentId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
-                                            + (stackData[i].findFlag != "" ? "\" data-find-flag=\"" + stackData[i].findFlag : "")
+                                            + (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "")
                                             + "\" direct-children-loaded=\"" + ("forceChildrenLoaded" in options ? options["forceChildrenLoaded"] : false) + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
@@ -373,8 +371,14 @@
             if (e.which == 13) {
                 stackDelegate.filters = $("#filtersForm").serialize();
 
-                // Get updated summary stack data again and update By Name tab
-                loadAndDisplayData();
+                // If find was used, only update the current tab
+                if (e.target.name == "find") {
+                    var activeTreeName = $(".tabs-panel.is-active table").attr("id");
+                    loadAndDisplayData([activeTreeName])
+                } else {
+                    // Get updated summary stack data again and update By Name tab
+                    loadAndDisplayData();
+                }
             }
         });
     </script>

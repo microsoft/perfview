@@ -118,7 +118,9 @@ table tbody tr:nth-child(even) {
 
 table tbody tr:nth-child(odd)[data-find-flag],
 table tbody tr:nth-child(even)[data-find-flag] {
-  background-color: #809fff;
+  /*background-color: #809fff;*/
+  background-color: #b3c6ff;
+  font-weight: bold;
 }
 
 /*#CallersTree {

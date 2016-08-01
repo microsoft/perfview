@@ -170,7 +170,7 @@
             return this.GetCallerTreeNode(name).Children;
         }
 
-        public TreeNode[] GetCallerTree(string name, string path)
+        public TreeNode[] GetCallerTree(string name, string path, string find)
         {
             return this.GetCallerTreeNode(name, path).Children;
         }
@@ -180,7 +180,7 @@
             return this.GetCalleeTreeNode(name).Children;
         }
 
-        public TreeNode[] GetCalleeTree(string name, string path)
+        public TreeNode[] GetCalleeTree(string name, string path, string find)
         {
             return this.GetCalleeTreeNode(name, path).Children;
         }
@@ -211,7 +211,7 @@
                         if (!string.IsNullOrEmpty(find))
                         {
                             // TODO: Search each node name to see if it contains find as a substring
-                            if (node.Name.Contains(find))
+                            if (node.Name.ToLower().Contains(find.ToLower()))
                             {
                                 tn.FindFlag = findCount.ToString();
                                 findCount++;
