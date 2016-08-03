@@ -28,6 +28,7 @@
             this.ContextId = this.Id;
             this.ParentContextId = string.Empty;
             this.ParentId = string.Empty;
+            this.ParentNode = null;
             this.Name = template.Name;
             this.FindFlag = string.Empty;
             this.InclusiveMetric = template.InclusiveMetric;
@@ -55,6 +56,7 @@
             this.ParentContextId = string.Empty;
             this.Id = template.Name;
             this.ParentId = string.Empty;
+            this.ParentNode = null;
             this.ContextId = this.Id;
             this.Name = template.Name;
             this.FindFlag = string.Empty;
@@ -84,6 +86,9 @@
 
         [DataMember]
         public string ParentId { get; set; }
+
+        [DataMember]
+        public TreeNode ParentNode { get; set; }
 
         [DataMember]
         public string Id { get; set; }
@@ -148,6 +153,7 @@
                         for (int i = 0; i < count; ++i)
                         {
                             this.callees[i] = new TreeNode(backingNodeCallees[i]) { ContextId = this.ContextId + "/" + i, ParentContextId = this.ContextId, ParentId = this.Name }; // for example, 7105/0 .. 7105/N
+                            this.callees[i].ParentNode = this;
                         }
                     }
 
