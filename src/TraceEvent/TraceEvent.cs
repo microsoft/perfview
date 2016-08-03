@@ -314,7 +314,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public IDictionary<string, object> UserData { get { return userData; } }
 
-#region protected
+        #region protected
 
         internal /*protected*/ TraceEventSource()
         {
@@ -340,7 +340,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected virtual void Dispose(bool disposing) { }
 
-#region ITraceParserServices Members
+        #region ITraceParserServices Members
         // [SecuritySafeCritical]
         void ITraceParserServices.RegisterEventTemplate(TraceEvent template)
         {
@@ -376,7 +376,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             return ProviderNameForGuidImpl(taskOrProviderGuid);
         }
-#endregion
+        #endregion
 
         internal /*protected*/ IDictionary<string, object> userData;
 
@@ -400,8 +400,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
 #endif //  !NOT_WINDOWS
-#endregion
-#region private
+        #endregion
+        #region private
         /// <summary>
         /// This is the high frequency tick clock on the processor (what QueryPerformanceCounter uses).  
         /// You should not need 
@@ -481,7 +481,7 @@ namespace Microsoft.Diagnostics.Tracing
                     return *((Guid*)extendedData[i].DataPtr);
             return Guid.Empty;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1235,7 +1235,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public object EventTypeUserData;
 
-#region Protected
+        #region Protected
         /// <summary>
         /// Create a template with the given event meta-data.  Used by TraceParserGen.  
         /// </summary>
@@ -1650,8 +1650,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal virtual void SetState(object state) { }
 
-#endregion
-#region Private
+        #endregion
+        #region Private
         private static char HexDigit(int digit)
         {
             if (digit < 10)
@@ -1894,7 +1894,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEventSource source;
         internal EventIndex eventIndex;               // something that uniquely identifies this event in the stream.  
         internal IntPtr myBuffer;                     // If the raw data is owned by this instance, this points at it.  Normally null.
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2342,7 +2342,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public virtual bool IsStatic { get { return true; } }
 
-#region protected
+        #region protected
         /// <summary>
         /// All TraceEventParsers invoke this constructor.  If 'dontRegister' is true it is not registered with the source. 
         /// </summary>
@@ -2401,8 +2401,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         protected internal abstract void EnumerateTemplates(Func<string, string, EventFilterResponse> eventsToObserve, Action<TraceEvent> callback);
 
-#endregion
-#region private
+        #endregion
+        #region private
 
 #if DEBUG
         /// <summary>
@@ -2420,7 +2420,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
 
             // Use reflection to see what events have declared 
-                MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo[] methods = GetType().GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
             {
                 var addMethod = methods[i];
@@ -2491,9 +2491,9 @@ namespace Microsoft.Diagnostics.Tracing
                 var typeName = this.GetType().FullName;
                 foreach (var methodName in enumSet.Keys)
                 {
-                    Debug.Assert(false, "The template " + methodName + 
-                        " for the parser " + typeName + 
-                        " for provider " + provider + 
+                    Debug.Assert(false, "The template " + methodName +
+                        " for the parser " + typeName +
+                        " for provider " + provider +
                         " exists in EnumerateTemplates enumeration but not as a C# event, please add it.");
                 }
             }
@@ -2645,7 +2645,7 @@ namespace Microsoft.Diagnostics.Tracing
         GrowableArray<SubscriptionRequest> m_subscriptionRequests;
 
         private string stateKey;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2786,7 +2786,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// Subscribers of Completed will be called after processing is complete (right before TraceEventDispatcher.Process returns.    
         /// </summary>
         public event Action Completed;
-#region protected
+        #region protected
         /// <summary>
         /// Called when processing is complete.  You can call this more than once if your not sure if it has already been called.  
         /// however we do guard against races.  
@@ -2798,8 +2798,8 @@ namespace Microsoft.Diagnostics.Tracing
             if (completed != null)
                 completed();
         }
-#endregion
-#region private
+        #endregion
+        #region private
 #if DEBUG
         /// <summary>
         /// For debugging, dump the Dispatcher table.
@@ -2914,33 +2914,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-                anEvent.Dispatch();
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (;;)
+                if (anEvent.Target != null)
+                    anEvent.Dispatch();
+                if (anEvent.next != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                        break;
-                    if (nextEvent.Target != null)
+                    TraceEvent nextEvent = anEvent;
+                    for (;;)
                     {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                            break;
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        }
                     }
                 }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                    unhandledEventTemplate.PrepForCallback();
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                        unhandledEventTemplate.PrepForCallback();
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)
@@ -2958,7 +2958,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-        RetryLookup:
+            RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -3268,7 +3268,7 @@ namespace Microsoft.Diagnostics.Tracing
             return new Guid(bytes);
         }
 
-#region TemplateHashTable
+        #region TemplateHashTable
         struct TemplateEntry
         {
             public Guid eventGuid;
@@ -3304,9 +3304,9 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
         }
-#endregion
+        #endregion
 
-#region ITraceParserServices Members
+        #region ITraceParserServices Members
         // [SecuritySafeCritical]
         internal override void RegisterEventTemplateImpl(TraceEvent template)
         {
@@ -3445,12 +3445,12 @@ namespace Microsoft.Diagnostics.Tracing
             }
             guidToNames.TryGetValue(guid, out ret);
         }
-#endregion
+        #endregion
 
         internal /*protected*/ bool stopProcessing;
         internal EventIndex currentID;
         Func<TraceEvent, bool>[] lastChanceHandlers;
-#endregion
+        #endregion
     }
 
     // Generic events for very simple cases (no payload, one value)
@@ -3468,7 +3468,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             this.Action = action;
         }
-#region Private
+        #region Private
         /// <summary>
         /// implementation of TraceEvent Interface. 
         /// </summary>
@@ -3513,7 +3513,7 @@ namespace Microsoft.Diagnostics.Tracing
             get { return Action; }
             set { Action = (Action<EmptyTraceData>)value; }
         }
-#endregion
+        #endregion
     }
 
 
@@ -3536,7 +3536,7 @@ namespace Microsoft.Diagnostics.Tracing
             this.Action = action;
             this.isUnicode = isUnicode;
         }
-#region Private
+        #region Private
         /// <summary>
         /// implementation of TraceEvent Interface. 
         /// </summary>
@@ -3591,7 +3591,7 @@ namespace Microsoft.Diagnostics.Tracing
             set { Action = (Action<StringTraceData>)value; }
         }
         bool isUnicode;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -3599,7 +3599,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// </summary>
     public unsafe class UnhandledTraceEvent : TraceEvent
     {
-#region private
+        #region private
         /// <summary>
         /// implementation of TraceEvent Interface. 
         /// </summary>
@@ -3741,10 +3741,10 @@ namespace Microsoft.Diagnostics.Tracing
             eventName = null;
             eventNameIsJustTaskName = false;
         }
-#endregion
+        #endregion
     }
 
-#region Private Classes
+    #region Private Classes
 
     internal sealed class TraceEventRawReaders
     {
@@ -3821,7 +3821,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
     }
 
-#endregion
+    #endregion
 
 #if !DOTNET_V35
     /// <summary>
@@ -3917,7 +3917,7 @@ namespace Microsoft.Diagnostics.Tracing
             return new TraceEventObservable<TraceEvent>(source, addHandler, removeHandler);
         }
 
-#region private
+        #region private
         /// <summary>
         /// A TraceEventObservable is a helper class that implements the IObservable pattern for TraceEventDispatcher 
         /// (like ETWTraceEventDispatcher).  It is called from the TraceEventParser.Observe*{T} methods.  
@@ -3937,7 +3937,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return new TraceEventSubscription(delegate (T data) { observer.OnNext((T)data.Clone()); }, observer.OnCompleted, this);
             }
 
-#region private
+            #region private
             /// <summary>
             /// A TraceEventSubscription is helper class that hooks 'callback' and 'completedCallback' to the 'observable' and 
             /// unhooks them when 'Dispose' is called.  
@@ -3962,19 +3962,19 @@ namespace Microsoft.Diagnostics.Tracing
                     m_observable.m_source.Completed -= m_completedCallback;
                     m_observable.m_removeHander(m_callback, this);
                 }
-#region private
+                #region private
                 Action<T> m_callback;
                 Action m_completedCallback;
                 TraceEventObservable<T> m_observable;
-#endregion
+                #endregion
             }
 
             private TraceEventDispatcher m_source;
             internal Action<Action<T>, object> m_removeHander;
             internal Action<Action<T>, object> m_addHander;
-#endregion
+            #endregion
         }
-#endregion
+        #endregion
     }
 #endif
 
