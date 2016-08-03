@@ -2114,7 +2114,6 @@ namespace FastSerialization
     /// <summary>
     /// Thrown when the deserializer detects an error. 
     /// </summary>
-    [Serializable]
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace Microsoft.Diagnostics.Utilities
 {
@@ -29,8 +27,7 @@ namespace Microsoft.Diagnostics.Utilities
             return (functionPointer != IntPtr.Zero);
         }
 
-        [DllImport(KERNEL32, CharSet = CharSet.Auto, SetLastError = true)]
-        [ResourceExposure(ResourceScope.Process)]
+        [DllImport(KERNEL32, SetLastError = true)]
         internal static extern IntPtr GetCurrentProcess();
 
         #region Private methods
@@ -41,12 +38,9 @@ namespace Microsoft.Diagnostics.Utilities
         // solely by DoesWin32MethodExist for avoiding try/catch EntryPointNotFoundException
         // in scenarios where an OS Version check is insufficient
         [DllImport(KERNEL32, CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true, ExactSpelling = true)]
-        [ResourceExposure(ResourceScope.None)]
         private static extern IntPtr GetProcAddress(IntPtr hModule, String methodName);
 
-        [DllImport(KERNEL32, CharSet = CharSet.Auto, BestFitMapping = false, SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
-        [ResourceExposure(ResourceScope.Process)]  // Is your module side-by-side?
+        [DllImport(KERNEL32, BestFitMapping = false, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(String moduleName);
 
         #endregion

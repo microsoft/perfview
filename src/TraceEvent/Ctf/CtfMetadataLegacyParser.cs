@@ -506,7 +506,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private void Dispose(bool disposing)
         {
             if (disposing)
-                _stream.Close();
+                _stream.Dispose();
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
