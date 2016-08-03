@@ -1,3 +1,4 @@
+
 namespace System.Security
 {
     //
@@ -14,6 +15,8 @@ namespace System.Security
         public SuppressUnmanagedCodeSecurityAttribute() { }
     }
 }
+
+#if !NOT_WINDOWS
 
 namespace System.Runtime.InteropServices
 {
@@ -68,3 +71,5 @@ namespace System.Diagnostics
 
 
 // DotNet 4.5+ additions
+
+#endif

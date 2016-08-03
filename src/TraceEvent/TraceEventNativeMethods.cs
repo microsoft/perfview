@@ -698,7 +698,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal static void SetPrivilege(uint privilege)
         {
-#if !Silverlight
+#if !NOT_WINDOWS
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
             bool success = OpenProcessToken(process.Handle, TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
@@ -721,6 +721,7 @@ namespace Microsoft.Diagnostics.Tracing
         // TODO FIX NOW make these private 
         internal static bool? IsElevated()
         {
+#if !NOT_WINDOWS 
             if (Environment.OSVersion.Version.Major < 6)
                 return true;
 
@@ -738,6 +739,9 @@ namespace Microsoft.Diagnostics.Tracing
 
             GC.KeepAlive(process);                      // TODO get on SafeHandles. 
             return tokenIsElevated != 0;
+#else
+            return true;
+#endif // !NOT_WINDOWS
         }
 
         // TODO why do we need this? 
