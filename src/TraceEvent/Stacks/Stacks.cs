@@ -1184,8 +1184,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 _buckets = null;
 
-                // Trim _entries if it's less than 75% full.
-                if (_count < (_entries.LongLength * 3L / 4L))
+                // Trim _entries if it's less than 75% full (watching out for overflow) 
+                if (_count < (_entries.Length / 4 * 3))
                 {
                     Array.Resize(ref _entries, _count);
                 }
