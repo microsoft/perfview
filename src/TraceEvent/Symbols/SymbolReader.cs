@@ -1872,10 +1872,6 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public uint RVA { get { return m_diaSymbol.relativeVirtualAddress; } }
         /// <summary>
-        /// The Tag is the kind of symbol it is (See SymTagEnum for more)
-        /// </summary>
-        public SymTagEnum Tag { get { return (SymTagEnum)m_diaSymbol.symTag; } }
-        /// <summary>
         /// The length of the memory that the symbol represents.  
         /// </summary>
         public ulong Length { get { return m_diaSymbol.length; } }
@@ -1968,7 +1964,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public override string ToString()
         {
-            return string.Format("Symbol({0}, Tag={1}, RVA=0x{2:x}", Name, Tag, RVA);
+            return string.Format("Symbol({0}, RVA=0x{2:x}", Name, RVA);
         }
 
         internal Symbol(SymbolModule module, IDiaSymbol diaSymbol)
@@ -2624,156 +2620,155 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
     }
 }
 
-#region private classes
+    #region private classes
 
-internal sealed class ComStreamWrapper : IStream
-{
-    private readonly Stream stream;
-
-    public ComStreamWrapper(Stream stream)
+    internal sealed class ComStreamWrapper : IStream
     {
-        this.stream = stream;
-    }
+        private readonly Stream stream;
 
-    public void Commit(uint grfCommitFlags)
-    {
-        throw new NotSupportedException();
-    }
-
-    public unsafe void RemoteRead(out byte pv, uint cb, out uint pcbRead)
-    {
-        byte[] buf = new byte[cb];
-
-        int bytesRead = stream.Read(buf, 0, (int)cb);
-        pcbRead = (uint)bytesRead;
-
-        fixed (byte* p = &pv)
+        public ComStreamWrapper(Stream stream)
         {
-            for (int i = 0; i < bytesRead; i++)
-                p[i] = buf[i];
+            this.stream = stream;
+        }
+
+        public void Commit(uint grfCommitFlags)
+        {
+            throw new NotSupportedException();
+        }
+
+        public unsafe void RemoteRead(out byte pv, uint cb, out uint pcbRead)
+        {
+            byte[] buf = new byte[cb];
+
+            int bytesRead = stream.Read(buf, 0, (int)cb);
+            pcbRead = (uint)bytesRead;
+
+            fixed (byte* p = &pv)
+            {
+                for (int i = 0; i < bytesRead; i++)
+                    p[i] = buf[i];
+            }
+        }
+
+        public unsafe void RemoteSeek(_LARGE_INTEGER dlibMove, uint origin, out _ULARGE_INTEGER plibNewPosition)
+        {
+            long newPosition = stream.Seek(dlibMove.QuadPart, (SeekOrigin)origin);
+            plibNewPosition.QuadPart = (ulong)newPosition;
+        }
+
+        public void SetSize(_ULARGE_INTEGER libNewSize)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Stat(out tagSTATSTG pstatstg, uint grfStatFlag)
+        {
+            pstatstg = new tagSTATSTG()
+            {
+                cbSize = new _ULARGE_INTEGER() { QuadPart = (ulong)stream.Length }
+            };
+        }
+
+        public unsafe void RemoteWrite(ref byte pv, uint cb, out uint pcbWritten)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Clone(out IStream ppstm)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void RemoteCopyTo(IStream pstm, _ULARGE_INTEGER cb, out _ULARGE_INTEGER pcbRead, out _ULARGE_INTEGER pcbWritten)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void LockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void Revert()
+        {
+            throw new NotSupportedException();
+        }
+
+        public void UnlockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
+        {
+            throw new NotSupportedException();
         }
     }
 
-    public unsafe void RemoteSeek(_LARGE_INTEGER dlibMove, uint origin, out _ULARGE_INTEGER plibNewPosition)
-    {
-        long newPosition = stream.Seek(dlibMove.QuadPart, (SeekOrigin)origin);
-        plibNewPosition.QuadPart = (ulong)newPosition;
-    }
-
-    public void SetSize(_ULARGE_INTEGER libNewSize)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void Stat(out tagSTATSTG pstatstg, uint grfStatFlag)
-    {
-        pstatstg = new tagSTATSTG()
-        {
-            cbSize = new _ULARGE_INTEGER() { QuadPart = (ulong)stream.Length }
-        };
-    }
-
-    public unsafe void RemoteWrite(ref byte pv, uint cb, out uint pcbWritten)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void Clone(out IStream ppstm)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void RemoteCopyTo(IStream pstm, _ULARGE_INTEGER cb, out _ULARGE_INTEGER pcbRead, out _ULARGE_INTEGER pcbWritten)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void LockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void Revert()
-    {
-        throw new NotSupportedException();
-    }
-
-    public void UnlockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
-    {
-        throw new NotSupportedException();
-    }
-}
-
-namespace Dia2Lib
-{
-    /// <summary>
-    /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
-    /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
-    /// Basically it just called the DllGetClassObject interface directly.
-    /// 
-    /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
-    /// From there you can do anything you need.  
-    /// 
-    /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
-    /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Interop.Dia2Lib.dll
-    /// 
-    /// roughly what you need to do is 
-    ///     copy vctools\langapi\idl\dia2_internal.idl .
-    ///     copy vctools\langapi\idl\dia2.idl .
-    ///     copy vctools\langapi\include\cvconst.h .
-    ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
-    ///     midl dia2_internal.idl /D CC_DP_CXX
-    ///     tlbimp dia2_internal.tlb
-    ///     xcopy Dia2Lib.dll Interop.Dia2Lib.dll
-    /// </summary>
-    internal static class DiaLoader
+    namespace Dia2Lib
     {
         /// <summary>
-        /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
+        /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
+        /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
+        /// Basically it just called the DllGetClassObject interface directly.
+        /// 
+        /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
+        /// From there you can do anything you need.  
+        /// 
+        /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+        /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Interop.Dia2Lib.dll
+        /// 
+        /// roughly what you need to do is 
+        ///     copy vctools\langapi\idl\dia2_internal.idl .
+        ///     copy vctools\langapi\idl\dia2.idl .
+        ///     copy vctools\langapi\include\cvconst.h .
+        ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
+        ///     midl dia2_internal.idl /D CC_DP_CXX
+        ///     tlbimp dia2_internal.tlb
+        ///     xcopy Dia2Lib.dll Interop.Dia2Lib.dll
         /// </summary>
-        public static IDiaDataSource3 GetDiaSourceObject()
+        internal static class DiaLoader
         {
-            if (!s_loadedNativeDll)
+            /// <summary>
+            /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
+            /// </summary>
+            public static IDiaDataSource3 GetDiaSourceObject()
             {
-                // Insure that the native DLL we need exist.  
-                NativeDlls.LoadNative("msdia140.dll");
-                s_loadedNativeDll = true;
+                if (!s_loadedNativeDll)
+                {
+                    // Insure that the native DLL we need exist.  
+                    NativeDlls.LoadNative("msdia140.dll");
+                    s_loadedNativeDll = true;
+                }
+
+                // This is the value it was for msdia120 and before 
+                // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
+
+                // This is the value for msdia140.  
+                var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
+                var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
+
+                object comObject = null;
+                Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
+                comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
+                return (comObject as IDiaDataSource3);
+            }
+            #region private
+            [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
+             InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+            private interface IClassFactory
+            {
+                void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
+                                    ref Guid refiid,
+                                    [MarshalAs(UnmanagedType.Interface)] out object createdObject);
+                void LockServer(bool incrementRefCount);
             }
 
-            // This is the value it was for msdia120 and before 
-            // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
+            // Methods
+            [return: MarshalAs(UnmanagedType.Interface)]
+            [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+            private static extern object DllGetClassObject(
+                [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
+                [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
-            // This is the value for msdia140.  
-            var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
-
-            object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
-            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-            return (comObject as IDiaDataSource3);
+            static bool s_loadedNativeDll;
+            #endregion
         }
-        #region private
-        [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
-         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        private interface IClassFactory
-        {
-            void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                ref Guid refiid,
-                                [MarshalAs(UnmanagedType.Interface)] out object createdObject);
-            void LockServer(bool incrementRefCount);
-        }
-
-        // Methods
-        [return: MarshalAs(UnmanagedType.Interface)]
-        [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
-        private static extern object DllGetClassObject(
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
-            [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
-
-        static bool s_loadedNativeDll;
-        #endregion
     }
-}
-#endregion
-
+    #endregion
 
