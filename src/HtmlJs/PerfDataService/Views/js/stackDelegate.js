@@ -17,7 +17,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
                                                           + "&numNodes=-1&" + self.filters
-                                                          + "&find=" + $(".tabs-panel.is-active .find").val();
+                                                          + "&find=" + $("#by-name .find").val();
         self.log("Fetching Summary Data for " + self.filename);
         $.get(url, function (response, status) {
             json = JSON.parse(response);
@@ -51,7 +51,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                                   + "&name=" + nodeName
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
-                                                                       + "&" + self.filters;
+                                                                       + "&" + self.filters
+                                                                       + "&find=" + $("#callers .find").val();
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callers Data for " + nodeName + path);
@@ -71,7 +72,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                                   + "&name=" + nodeName
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
-                                                                       + "&" + self.filters;
+                                                                       + "&" + self.filters
+                                                                       + "&find=" + $(".tabs-panel.is-active .find").val();
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callees Data for " + nodeName + path);
