@@ -18,7 +18,7 @@
         "../TraceEvent.cs",
         "../TraceEventNativeMethods.cs"
       ],
-      "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs" ]
+      "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
     },
 
     // TODO FIX NOW remove 618 (obsolete warning) supression.

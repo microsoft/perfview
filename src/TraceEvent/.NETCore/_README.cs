@@ -5,9 +5,9 @@
 // A normal build of the 'TraceEventCore' project creates the 
 // Microsoft.Diagnostics.Tracing.dll  To make Nuget package type
 //
-//  dotnet pack
+//  dotnet pack -c release
 //
-// in the .NETCore directory.   It will end up in bin\Release\*.nupkg 
+// in the .NETCore directory.   *It will end up in bin\Release\*.nupkg 
 //
 //
 
