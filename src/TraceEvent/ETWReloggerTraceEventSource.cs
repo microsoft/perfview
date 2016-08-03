@@ -4,7 +4,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Eventing;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
