@@ -1,5 +1,4 @@
 ﻿using Microsoft.Diagnostics.Symbols;
-using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -9,10 +8,13 @@ using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
+
 #if V4_5_Runtime || PERFVIEW
 
 namespace Microsoft.Diagnostics.Tracing
 {
+#if !NOT_WINDOWS 
     /// <summary>
     /// ZippedETLWriter is a helper class used to compress ETW data (ETL files)
     /// along with symbolic information (e.g. NGEN pdbs), as well as other optional
@@ -224,12 +226,12 @@ namespace Microsoft.Diagnostics.Tracing
                         var startTime = DateTime.UtcNow;
                         Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
 
-                        TraceEventMergeOptions options = TraceEventMergeOptions.None;
+                        var options = Session.TraceEventMergeOptions.None;
                         if (CompressETL)
-                            options |= TraceEventMergeOptions.Compress;
+                            options |= Session.TraceEventMergeOptions.Compress;
 
                         // Do the merge
-                        TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
+                        Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
                         Log.WriteLine("Merging took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
                     }
                     else
@@ -304,6 +306,7 @@ namespace Microsoft.Diagnostics.Tracing
         string m_etlFilePath;
         #endregion // private
     }
+#endif 
 
     /// <summary>
     /// ZippedETLReader is a helper class that unpacks the ZIP files generated

@@ -19,7 +19,8 @@
         "../Parsers/KernelTraceEventParser.cs",
         "../TraceEvent.cs",
         "../ETWTraceEventSource.cs",
-        "../TraceEventNativeMethods.cs"
+        "../TraceEventNativeMethods.cs",
+        "../ZippedETL.cs"
       ],
       "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
     },
