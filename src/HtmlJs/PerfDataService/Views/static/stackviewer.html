@@ -194,16 +194,17 @@
 
 
         /*_____________________________________*/
-        /*_______ Tab Updater Functions _______*/
+        /*_______ Tab Updater Function ________*/
         /*_____________________________________*/
+        /* OPTIONS:
+        "forceChildrenLoaded" = true/false
+        */
         function updateTreeTableHtml(treeTableId, parentNode, stackData, options={}) {
             // Iterate through each row
             var rowsToAppend = "";
             for (var i = 0; i < stackData.length; ++i) {
-                var parentId = "forceParentNodeId" in options ? options["forceParentNodeId"] : stackData[i].parentContextId;
-
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
-                                            + "\" data-tt-parent-id=\"" + parentId
+                                            + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
                                             + (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "")
                                             + "\" direct-children-loaded=\"" + ("forceChildrenLoaded" in options ? options["forceChildrenLoaded"] : false) + "\">";
@@ -273,18 +274,17 @@
                 stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
-                    var focusNodeHtml = "<tr data-tt-id=\"" + "callersTree_" + stackDelegate.focusNode.id
+                    var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
                                         + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
                                         " + "</tr>";
 
                     // Need to add stackDelegate.focusNode as parent node for this tree table
                     $("#callersTree").treetable("loadBranch", null, focusNodeHtml);
-                    var parentNode = $("#callersTree").treetable("node", "callersTree_" + stackDelegate.focusNode.id);
+                    var parentNode = $("#callersTree").treetable("node", stackDelegate.focusNode.id);
 
                     // Place data in Callers tab
-                    var options = {"forceParentNodeId" : parentNode.id}
-                    updateTreeTableHtml("#callersTree", parentNode, callersStackData, options=options);
+                    updateTreeTableHtml("#callersTree", parentNode, callersStackData);
                 });
             }
             
@@ -293,18 +293,17 @@
                 stackDelegate.getCalleesData(stackDelegate.focusNode.id, "", function (calleesStackData, status) {
                     $("#calleesTree tbody").empty();
 
-                    var focusNodeHtml = "<tr data-tt-id=\"" + "calleesTree_" + stackDelegate.focusNode.id
+                    var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
                                         + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
                                         " + "</tr>";
 
                     // Need to add stackDelegate.focusNode as parent node for this tree table
                     $("#calleesTree").treetable("loadBranch", null, focusNodeHtml);
-                    var parentNode = $("#calleesTree").treetable("node", "calleesTree_" + stackDelegate.focusNode.id);
+                    var parentNode = $("#calleesTree").treetable("node", stackDelegate.focusNode.id);
 
                     // Place data in Callees tab
-                    var options = {"forceParentNodeId" : parentNode.id}
-                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData, options=options);
+                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData);
                 });
             }
 
