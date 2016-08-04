@@ -10,6 +10,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using Utilities;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
@@ -221,9 +222,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             get
             {
                 var ret = (Keywords)unchecked((int)0xf84c8000);
-                var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-
-                if (version >= 62) // We are on Win8
+                if (OperatingSystemVersion.AtLeast(OperatingSystemVersion.Win8))
                     ret &= ~Keywords.VAMap;
                 return ret;
             }

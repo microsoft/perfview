@@ -14,8 +14,11 @@
         "../Ctf/*.cs",
         "../Stacks/*.cs",
         "../TraceUtilities/HistoryDictionary.cs",
+        "../TraceUtilities/PEFile.cs",                // Only needed for KernelTraceEventParser (BuildTime property)
         "../Parsers/clr*.cs",
+        "../Parsers/KernelTraceEventParser.cs",
         "../TraceEvent.cs",
+        "../ETWTraceEventSource.cs",
         "../TraceEventNativeMethods.cs"
       ],
       "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
@@ -68,10 +71,10 @@
 
   "dependencies": {
     "NETStandard.Library": "1.6.0",
-    "System.Threading.Thread": "4.0.0",
-    "System.Threading.Tasks.Parallel": "4.0.1"
-
-    // "System.Diagnostics.Process": "4.1.0"
+    "System.Threading.Thread": "4.0.0", // For Thread.Sleep()
+    "System.Threading.Tasks.Parallel": "4.0.1", // For Parallel
+    "System.Diagnostics.Process": "4.1.0", // For ThreadWaitReason, ThreadState (in KernelTraceEventParser).
+    "System.IO.UnmanagedMemoryStream" :  "4.0.1" // for PEFile header reading.  
     // "Microsoft.NETCore.App": "1.0.0",
     // "Microsoft.NETCore.App": "1.0.0"
     // "Microsoft.Win32.Registry": "4.0.0"
