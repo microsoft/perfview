@@ -170,85 +170,75 @@
             return this.GetCallerTreeNode(name).Children;
         }
 
-        /* Return all paths found from Depth First Search for 'target' on all trees in array 'nodes' */
-        private List<List<TreeNode>> findPaths(TreeNode[] nodes, string target)
+        /* 
+         * Return all paths found from Depth First Search for 'target' on all trees in array 'nodes'
+         * TODO: Perform search RECURSIVELY instead of iteratively 
+         */
+        private TreeNode[] searchForTarget(TreeNode[] nodes, string target)
         {
             target = target.ToLower();
-            List<List<TreeNode>> pathsFound = new List<List<TreeNode>>();
-            Stack<TreeNode> stack = new Stack<TreeNode>(nodes);
-            while (stack.Count() > 0)
+            SortedSet<TreeNode> pathsFound = new SortedSet<TreeNode>(new SortNodeByContextId());  // TODO: Make this sorted list
+
+            int flagCount = 0;
+            foreach (TreeNode node in nodes)
             {
-                TreeNode node = stack.Pop();
-                if (node.Name.ToLower().Contains(target))
-                {
-                    // We have a match
-                    pathsFound.Add(getPathWithSiblingsForNode(node));
-                }
-                else if (node.HasChildren)
-                {
-                    // There are children to search
-                    foreach (TreeNode tn in node.Children)
-                    {
-                        stack.Push(tn);
-                    }
-                }
-
-                // We've hit a dead end
+                searchHelper(node, pathsFound, target, ref flagCount);
             }
-
-            pathsFound.Reverse();
-            return pathsFound;
+            
+            return pathsFound.ToArray();
         }
 
-        private List<TreeNode> getPathWithSiblingsForNode(TreeNode node)
+        public class SortNodeByContextId : IComparer<TreeNode>
         {
-            List<List<TreeNode>> backwardsPathWithoutSiblings = new List<List<TreeNode>>();
-
-            string[] nameAndPath = getContextNameAndPath(node);
-            while (!string.IsNullOrEmpty(nameAndPath.Last()))
+            public int Compare(TreeNode node1, TreeNode node2)
             {
-                List<TreeNode> treeLevelBucket = new List<TreeNode>();
-                treeLevelBucket.Add(node);
-                backwardsPathWithoutSiblings.Add(treeLevelBucket);
+                return String.Compare(node1.ContextId, node2.ContextId);
+            }
+        }
 
-                node = node.ParentNode;
-                nameAndPath = getContextNameAndPath(node);
+        private void searchHelper(TreeNode node, SortedSet<TreeNode> pathsFound, string target, ref int flagCount)
+        {
+            if (node.Name.Contains(target)) {
+                node.FindFlag = flagCount.ToString();
+                flagCount++;
             }
 
-            List<TreeNode> forwardPathWithSiblings = new List<TreeNode>();
-            for (int i = backwardsPathWithoutSiblings.Count() - 1; i >= 0; --i)
+            // Breaks on 29
+            if (node.HasChildren)
             {
-                TreeNode n = backwardsPathWithoutSiblings[i].First();
-                nameAndPath = getContextNameAndPath(n);
-                TreeNode[] callers = this.GetCallerTree(nameAndPath.First(), nameAndPath.Last(), null);
-                foreach (TreeNode tn in callers)
+                foreach (TreeNode child in node.Children)  // TODO: Maybe change node.children to GetCallers in order to retain correct ContextId
                 {
-                    forwardPathWithSiblings.Add(tn);
+                    searchHelper(child, pathsFound, target, ref flagCount);
                 }
             }
 
-            return forwardPathWithSiblings;
-            
-            //while (node.ParentNode != null)
-            //{
-            //    string[] nameAndPath = node.ParentNode.ContextId.Split(new[] { '/' }, 2);
-            //    string name = nameAndPath.First();
-            //    string pathString = nameAndPath.Length > 1 ? nameAndPath.Last() : "";
-            //    if (pathString == "")
-            //    {
-            //        path.Add(node);
-            //        break;
-            //    }
-            //    TreeNode[] tnArray = this.GetCallerTree(name, pathString, null);
-            //    for (int i = tnArray.Length - 1; i >= 0; --i)
-            //    {
-            //        path.Add(tnArray[i]);
-            //    }
-            //    node = node.ParentNode;
-            //}
-            //path.Reverse();
-
-            //return path;
+            if (!string.IsNullOrEmpty(node.FindFlag))
+            {
+                TreeNode tempNode = node;
+                while (tempNode != null)
+                {
+                    // Add current node plus all of its siblings
+                    foreach (TreeNode n in tempNode.ParentNode.Children)
+                    {
+                        if (!n.AddedToSearchSet)
+                        {
+                            pathsFound.Add(n);
+                            n.AddedToSearchSet = true;
+                        }
+                    }
+                    tempNode = tempNode.ParentNode;
+                }
+                
+                if (node.ParentNode == null)
+                {
+                    // This a top level node; just add itself
+                    if (!node.AddedToSearchSet)
+                    {
+                        pathsFound.Add(node);
+                        node.AddedToSearchSet = true;
+                    }
+                }
+            }
         }
 
         private string[] getContextNameAndPath(TreeNode node)
@@ -260,45 +250,12 @@
             return new string[]{ name, path };
         }
 
-        private TreeNode[] mergeNodes(TreeNode[] children, List<List<TreeNode>> listsOfNodes)
-        {
-            //int numNodes = 0;
-            //foreach (List<TreeNode> list in listsOfNodes)
-            //{
-            //    numNodes += list.Count();
-            //}
-
-            //TreeNode[] result = new TreeNode[children.Count() - listsOfNodes.Count() + numNodes];
-            //int pos = 0;
-            //foreach (TreeNode childNode in children)
-            //{
-            //    result[pos] = childNode;
-            //    pos++;
-
-            //    foreach (List<TreeNode> list in listsOfNodes)
-            //    {
-            //        if (list.Count() > 2 && list[1] == childNode)
-            //        {
-            //            // These go under the current node, 'childNode'
-            //            for (int i = 2; i < list.Count(); ++i)
-            //            {
-            //                result[pos] = list[i];
-            //                pos++;
-            //            }
-            //        } 
-            //    }
-            //}
-
-            return listsOfNodes[1].ToArray();
-        }
-
         public TreeNode[] GetCallerTree(string name, string path, string find)
         {
             TreeNode[] children = this.GetCallerTreeNode(name, path).Children;
             if (!string.IsNullOrEmpty(find))
             {
-                List<List<TreeNode>> searchResults = findPaths(children, find);
-                children = mergeNodes(children, searchResults);
+                children = searchForTarget(children, find);
             }
             return children;
         }

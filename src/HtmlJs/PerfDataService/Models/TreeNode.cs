@@ -31,6 +31,7 @@
             this.ParentNode = null;
             this.Name = template.Name;
             this.FindFlag = string.Empty;
+            this.AddedToSearchSet = false;
             this.InclusiveMetric = template.InclusiveMetric;
             this.InclusiveCount = template.InclusiveCount;
             this.ExclusiveMetric = template.ExclusiveMetric;
@@ -60,6 +61,7 @@
             this.ContextId = this.Id;
             this.Name = template.Name;
             this.FindFlag = string.Empty;
+            this.AddedToSearchSet = false;
             this.InclusiveMetric = template.InclusiveMetric;
             this.InclusiveCount = template.InclusiveCount;
             this.ExclusiveMetric = template.ExclusiveMetric;
@@ -98,6 +100,9 @@
 
         [DataMember]
         public string FindFlag { get; set; }
+
+        [DataMember]
+        public bool AddedToSearchSet { get; set; }
 
         [DataMember]
         public float InclusiveMetric { get; set; }
