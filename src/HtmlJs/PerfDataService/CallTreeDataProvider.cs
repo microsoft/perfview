@@ -198,7 +198,7 @@
 
         private void searchHelper(TreeNode node, SortedSet<TreeNode> pathsFound, string target, ref int flagCount)
         {
-            if (node.Name.Contains(target)) {
+            if (node.Name.ToLower().Contains(target)) {
                 node.FindFlag = flagCount.ToString();
                 flagCount++;
             }
@@ -218,12 +218,15 @@
                 while (tempNode != null)
                 {
                     // Add current node plus all of its siblings
-                    foreach (TreeNode n in tempNode.ParentNode.Children)
+                    if (tempNode.ParentNode != null && tempNode.ParentNode.HasChildren)
                     {
-                        if (!n.AddedToSearchSet)
+                        foreach (TreeNode n in tempNode.ParentNode.Children)
                         {
-                            pathsFound.Add(n);
-                            n.AddedToSearchSet = true;
+                            if (!n.AddedToSearchSet)
+                            {
+                                pathsFound.Add(n);
+                                n.AddedToSearchSet = true;
+                            }
                         }
                     }
                     tempNode = tempNode.ParentNode;
