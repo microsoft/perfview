@@ -271,7 +271,7 @@
 
             // DISPLAY CALLERS DATA
             if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
-                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", function (callersStackData, status) {
+                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", true, function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
                     var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
@@ -335,7 +335,8 @@
                 //var activeTreeName = $(".tabs-panel.is-active table").attr("id");
 
                 if (activeTabName == "callers") {
-                    stackDelegate.getCallersData(name, path, function (callersStackData, status) {
+                    // TODO: Fix so that find is not included in this
+                    stackDelegate.getCallersData(name, path, false, function (callersStackData, status) {
                         if (status == "success") {
                             node.row[0].setAttribute("direct-children-loaded", "true");
 
