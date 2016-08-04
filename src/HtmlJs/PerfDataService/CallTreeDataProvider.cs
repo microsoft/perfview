@@ -172,7 +172,6 @@
 
         /* 
          * Return all paths found from Depth First Search for 'target' on all trees in array 'nodes'
-         * TODO: Perform search RECURSIVELY instead of iteratively 
          */
         private TreeNode[] searchForTarget(TreeNode[] nodes, string target)
         {
@@ -185,11 +184,11 @@
                 searchHelper(node, pathsFound, target, ref flagCount);
             }
 
-            TreeNode[] result = new TreeNode[pathsFound.Count()];
+            TreeNode[] result = new TreeNode[pathsFound.Count()];  // This function promised to return an array, not a list
             int index = 0;
             foreach (TreeNode tn in pathsFound)
             {
-                tn.Visited = false;
+                tn.Visited = false;  // Undo visited set (cleanup in prep for another search); we're aiming for statelessness here
                 result[index] = tn;
                 index++;
             }

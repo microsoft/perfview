@@ -89,7 +89,6 @@
         [DataMember]
         public string ParentId { get; set; }
 
-        [DataMember]
         public TreeNode ParentNode { get; set; }
 
         [DataMember]
@@ -101,7 +100,6 @@
         [DataMember]
         public string FindFlag { get; set; }
 
-        [DataMember]
         public bool Visited { get; set; }
 
         [DataMember]
