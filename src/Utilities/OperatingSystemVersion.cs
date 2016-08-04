@@ -22,13 +22,13 @@ namespace Utilities
         public static bool AtLeast(int requiredOSVersion)
         {
 #if !NOT_WINDOWS
-                int osVersion = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+            int osVersion = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
 #else
             // FIX NOW. we assume we are on windows 10 if we ar running .NET Core 
             // Need to actually PINVOKE to something.   
-            int osNum = 100;
+            int osVersion = 100;
 #endif
-            return osVersion >= requiredOSVersion; 
+            return osVersion >= requiredOSVersion;
         }
     }
 }
