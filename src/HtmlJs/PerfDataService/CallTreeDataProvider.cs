@@ -203,10 +203,9 @@
                 flagCount++;
             }
 
-            // Breaks on 29
             if (node.HasChildren)
             {
-                foreach (TreeNode child in node.Children)  // TODO: Maybe change node.children to GetCallers in order to retain correct ContextId
+                foreach (TreeNode child in node.Children)
                 {
                     searchHelper(child, pathsFound, target, ref flagCount);
                 }
@@ -242,15 +241,6 @@
                     }
                 }
             }
-        }
-
-        private string[] getContextNameAndPath(TreeNode node)
-        {
-            string[] nameAndPath = node.ContextId.Split(new[] { '/' }, 2);
-            string name = nameAndPath.First();
-            string path = nameAndPath.Length > 1 ? nameAndPath.Last() : "";
-
-            return new string[]{ name, path };
         }
 
         public TreeNode[] GetCallerTree(string name, string path, string find)
