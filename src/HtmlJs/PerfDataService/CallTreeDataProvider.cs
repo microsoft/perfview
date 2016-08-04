@@ -177,15 +177,24 @@
         private TreeNode[] searchForTarget(TreeNode[] nodes, string target)
         {
             target = target.ToLower();
-            SortedSet<TreeNode> pathsFound = new SortedSet<TreeNode>(new SortNodeByContextId());  // TODO: Make this sorted list
+            SortedSet<TreeNode> pathsFound = new SortedSet<TreeNode>(new SortNodeByContextId());
 
             int flagCount = 0;
             foreach (TreeNode node in nodes)
             {
                 searchHelper(node, pathsFound, target, ref flagCount);
             }
-            
-            return pathsFound.ToArray();
+
+            TreeNode[] result = new TreeNode[pathsFound.Count()];
+            int index = 0;
+            foreach (TreeNode tn in pathsFound)
+            {
+                tn.Visited = false;
+                result[index] = tn;
+                index++;
+            }
+
+            return result;
         }
 
         public class SortNodeByContextId : IComparer<TreeNode>
@@ -221,10 +230,10 @@
                     {
                         foreach (TreeNode n in tempNode.ParentNode.Children)
                         {
-                            if (!n.AddedToSearchSet)
+                            if (!n.Visited)
                             {
                                 pathsFound.Add(n);
-                                n.AddedToSearchSet = true;
+                                n.Visited = true;
                             }
                         }
                     }
@@ -234,10 +243,10 @@
                 if (node.ParentNode == null)
                 {
                     // This a top level node; just add itself
-                    if (!node.AddedToSearchSet)
+                    if (!node.Visited)
                     {
                         pathsFound.Add(node);
-                        node.AddedToSearchSet = true;
+                        node.Visited = true;
                     }
                 }
             }
