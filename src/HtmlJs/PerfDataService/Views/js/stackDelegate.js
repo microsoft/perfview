@@ -46,13 +46,13 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
-    self.getCallersData = function getCallersData(nodeName, path, callback) {
+    self.getCallersData = function getCallersData(nodeName, path, includeSearch, callback) {
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
                                                                   + "&name=" + nodeName
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
-                                                                       + "&" + self.filters
-                                                                       + "&find=" + $("#callers .find").val();
+                                                                       + "&" + self.filters;
+        if (includeSearch) { url = url + "&find=" + $("#callers .find").val(); }
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callers Data for " + nodeName + path);
