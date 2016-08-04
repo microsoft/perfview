@@ -19,8 +19,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
 
-namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel {}       // Avoids compiler error above if we dont have a kernel parser
-
 // #Introduction 
 // 
 // Note that TraceEvent lives in a Nuget package.   See 
@@ -174,7 +172,6 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-#if !NOT_WINDOWS
         /// <summary>
         /// For convenience, we provide a property returns a KernelTraceEventParser that knows 
         /// how to parse all the Kernel events into callbacks.
@@ -189,6 +186,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return _Kernel;
             }
         }
+
+#if !NOT_WINDOWS
         /// <summary>
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
@@ -395,8 +394,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
         internal /*protected*/ ClrTraceEventParser _CLR;
-#if !NOT_WINDOWS
         internal /*protected*/ KernelTraceEventParser _Kernel;
+#if !NOT_WINDOWS
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
 #endif //  !NOT_WINDOWS

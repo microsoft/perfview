@@ -16,7 +16,6 @@ namespace System.Security
     }
 }
 
-#if !NOT_WINDOWS
 
 namespace System.Runtime.InteropServices
 {
@@ -59,6 +58,8 @@ namespace System
         public EntryPointNotFoundException(string message) : base(message) { }
     }
 }
+
+#if !NOT_WINDOWS
 
 namespace System.Diagnostics
 {
