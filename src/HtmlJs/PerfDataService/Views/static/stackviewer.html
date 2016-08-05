@@ -163,7 +163,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    onTreeNodeExpand(node);
+                    onTreeNodeExpand(node, "#call-treeTree");
                 }
             });
             
@@ -177,7 +177,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    onTreeNodeExpand(node);
+                    onTreeNodeExpand(node, "#callersTree");
                 }
             });
 
@@ -187,7 +187,7 @@
                 indenterTemplate: indenterTemplate,
                 onNodeExpand: function () {
                     var node = this;
-                    onTreeNodeExpand(node);
+                    onTreeNodeExpand(node, "#calleesTree");
                 }
             });
         });
@@ -323,7 +323,7 @@
 
 
         /* Tree node expand event */
-        function onTreeNodeExpand(node) {
+        function onTreeNodeExpand(node, treeName) {
             if (node.children.length > 0) { return; }
 
             // Split the name from the path
@@ -342,36 +342,32 @@
             }
 
             if (name !== undefined) {
-                var activeTabName = $(".tabs-panel.is-active").attr("id");
-                console.log(node);
-                //var activeTreeName = $(".tabs-panel.is-active table").attr("id");
-
-                if (activeTabName == "callers") {
+                if (treeName == "#callersTree") {
                     // TODO: Fix so that find is not included in this
                     stackDelegate.getCallersData(name, path, false, function (callersStackData, status) {
                         if (status == "success") {
                             node.row[0].setAttribute("direct-children-loaded", "true");
 
                             // Place data under clicked node
-                            updateTreeTableHtml("#callersTree", node, callersStackData);
+                            updateTreeTableHtml(treeName, node, callersStackData);
                         }
                     });
-                } else if (activeTabName == "callees") {
+                } else if (treeName == "#calleesTree") {
                     stackDelegate.getCalleesData(name, path, function (calleesStackData, status) {
                         if (status == "success") {
                             node.row[0].setAttribute("direct-children-loaded", "true");
 
                             // Place data under clicked node
-                            updateTreeTableHtml("#calleesTree", node, calleesStackData);
+                            updateTreeTableHtml(treeName, node, calleesStackData);
                         }
                     });
-                } else if (activeTabName == "call-tree") {
+                } else if (treeName == "#call-treeTree") {
                     stackDelegate.getCalleesData(name, path, function (calleesStackData, status) {
                         if (status == "success") {
                             node.row[0].setAttribute("direct-children-loaded", "true");
 
                             // Place data under clicked node
-                            updateTreeTableHtml("#call-treeTree", node, calleesStackData);
+                            updateTreeTableHtml(treeName, node, calleesStackData);
                         }
                     });
                 }
