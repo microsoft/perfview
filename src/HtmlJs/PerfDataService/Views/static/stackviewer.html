@@ -169,7 +169,7 @@
             
             // Load data into by-name-list and call-treeTree
             stackDelegate.filters = $("#filtersForm").serialize();  // In case there are any default filter values set
-            loadAndDisplayData(["by-name-list", "call-treeTree"]);
+            loadAndDisplayData(["by-name-list", "call-treeTree"], false);
 
             // Initialize callersTree and possibly set some properties
             $("#callersTree").treetable({
@@ -197,17 +197,22 @@
         /*_______ Tab Updater Function ________*/
         /*_____________________________________*/
         /* OPTIONS:
-        "forceChildrenLoaded" = true/false
+        "forceParentNodeId" : "id"
         */
         function updateTreeTableHtml(treeTableId, parentNode, stackData, options={}) {
             // Iterate through each row
             var rowsToAppend = "";
+            var dataIncludesSearchResults = false;
+
             for (var i = 0; i < stackData.length; ++i) {
+                var findFlag = (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "");
+                dataIncludesSearchResults = dataIncludesSearchResults || findFlag.length;
+
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
                                             + "\" data-tt-branch=\"" + stackData[i].hasChildren
-                                            + (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "")
-                                            + "\" direct-children-loaded=\"" + ("forceChildrenLoaded" in options ? options["forceChildrenLoaded"] : false) + "\">";
+                                            + findFlag
+                                            + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
                                     <td>" + stackData[i].exclusiveMetricPercent + "</td>\
@@ -221,6 +226,13 @@
             }
 
             $(treeTableId).treetable("loadBranch", parentNode, rowsToAppend);  // treetable treats a null node parameter as meaning root
+                
+            if (dataIncludesSearchResults) {
+                $(treeTableId + " tbody tr").each(function(index) {
+                    var hasChildren = $(treeTableId).treetable("node", $(this).attr("data-tt-id")).children.length > 0;
+                    if (hasChildren) { $(treeTableId).treetable("expandNode", $(this).attr("data-tt-id")) };
+                }); 
+            }
         }
 
         
@@ -235,11 +247,11 @@
             stackDelegate.focusNode = $("#by-name-list").treetable("node", clickedNodeId);
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
 
-            loadAndDisplayData(["callersTree", "calleesTree"]);
+            loadAndDisplayData(["callersTree", "calleesTree"], false);
         });
 
 
-        function loadAndDisplayData(treesToUpdate) {
+        function loadAndDisplayData(treesToUpdate, includeSearch=true) {
 
             // DISPLAY BY-NAME DATA
             if (treesToUpdate == null || treesToUpdate.includes("by-name-list")) {
@@ -258,8 +270,7 @@
                     $("#call-treeTree tbody").empty();
 
                     // Place root node in tree
-                    var options = {"forceChildrenLoaded" : true}
-                    updateTreeTableHtml("#call-treeTree", null, [nodeData], options=options);
+                    updateTreeTableHtml("#call-treeTree", null, [nodeData]);
 
                     stackDelegate.getCalleesData("ROOT", "", function (callTreeStackData, status) {
                         // Place data in CallTree tab
@@ -271,7 +282,7 @@
 
             // DISPLAY CALLERS DATA
             if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
-                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", true, function (callersStackData, status) {
+                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", includeSearch, function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
                     var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
@@ -313,7 +324,7 @@
 
         /* Tree node expand event */
         function onTreeNodeExpand(node) {
-            if (node.row[0].getAttribute("direct-children-loaded") == "true") { return; }
+            if (node.children.length > 0) { return; }
 
             // Split the name from the path
             var nameAndPath = node.id.split("/");
@@ -332,6 +343,7 @@
 
             if (name !== undefined) {
                 var activeTabName = $(".tabs-panel.is-active").attr("id");
+                console.log(node);
                 //var activeTreeName = $(".tabs-panel.is-active table").attr("id");
 
                 if (activeTabName == "callers") {
@@ -375,7 +387,7 @@
                 // If find was used, only update the current tab
                 if (e.target.name == "find") {
                     var activeTreeName = $(".tabs-panel.is-active table").attr("id");
-                    loadAndDisplayData([activeTreeName])
+                    loadAndDisplayData([activeTreeName]);
                 } else {
                     // Get updated summary stack data again and update By Name tab
                     loadAndDisplayData();
