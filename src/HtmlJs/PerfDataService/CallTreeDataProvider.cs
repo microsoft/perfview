@@ -206,6 +206,10 @@
 
         private void searchHelper(TreeNode node, SortedSet<TreeNode> pathsFound, string target, ref int flagCount)
         {
+            if (node == null || target == null) { return; }
+
+            node.FindFlag = "";
+
             if (node.Name.ToLower().Contains(target)) {
                 node.FindFlag = flagCount.ToString();
                 flagCount++;
