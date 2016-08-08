@@ -9,41 +9,45 @@
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-    <div class="nav"></div>
+    <div class="fixedContainer">
+        <div class="nav"></div>
 
-    <form id="filtersForm">
-        Start:<input class="filter" name="start" list="start-filter-list" type="text">
-        <datalist id="start-filter-list"></datalist>
+        <form id="filtersForm">
+            Start:<input class="filter" name="start" list="start-filter-list" type="text">
+            <datalist id="start-filter-list"></datalist>
 
-        End:<input class="filter" name="end" list="end-filter-list" type="text">
-        <datalist id="end-filter-list"></datalist>
+            End:<input class="filter" name="end" list="end-filter-list" type="text">
+            <datalist id="end-filter-list"></datalist>
 
-        GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
-        <datalist id="grouppats-filter-list"></datalist>
+            GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
+            <datalist id="grouppats-filter-list"></datalist>
 
-        Fold%:<input class="filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
-        <datalist id="foldpercent-filter-list"></datalist>
+            Fold%:<input class="filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
+            <datalist id="foldpercent-filter-list"></datalist>
 
-        FoldPats:<input class="filter" name="foldpats" list="foldpats-filter-list" type="text">
-        <datalist id="foldpats-filter-list"></datalist>
+            FoldPats:<input class="filter" name="foldpats" list="foldpats-filter-list" type="text">
+            <datalist id="foldpats-filter-list"></datalist>
 
-        IncPats:<input class="filter" name="incpats" list="incpats-filter-list" type="text">
-        <datalist id="incpats-filter-list"></datalist>
+            IncPats:<input class="filter" name="incpats" list="incpats-filter-list" type="text">
+            <datalist id="incpats-filter-list"></datalist>
 
-        ExcPats:<input class="filter" name="excpats" list="excpats-filter-list" type="text">
-        <datalist id="excpats-filter-list"></datalist>
-    </form>
+            ExcPats:<input class="filter" name="excpats" list="excpats-filter-list" type="text">
+            <datalist id="excpats-filter-list"></datalist>
+        </form>
 
-    <ul class="tabs" data-tabs id="tabs">
-        <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
-        <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
-        <li class="tabs-title"><a href="#callers">Callers</a></li>
-        <li class="tabs-title"><a href="#callees">Callees</a></li>
-    </ul>
+        <ul class="tabs" data-tabs id="tabs">
+            <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
+            <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
+            <li class="tabs-title"><a href="#callers">Callers</a></li>
+            <li class="tabs-title"><a href="#callees">Callees</a></li>
+        </ul>
+    </div>
 
     <div class="tabs-content" data-tabs-content="tabs">
         <div class="tabs-panel is-active" id="by-name">
-            Find:<input class="filter find" name="find" type="text">
+            <div class="findContainer">
+                <span>Find:</span><input class="find" name="find" type="text">
+            </div>
             <table id="by-name-list">
                 <thead>
                     <tr>
@@ -61,7 +65,9 @@
         </div>
 
         <div class="tabs-panel" id="call-tree">
-            Find:<input class="filter find" name="find" type="text">
+            <div class="findContainer">
+                <span>Find:</span><input class="find" name="find" type="text">
+            </div>
             <table id="call-treeTree">
                 <thead>
                     <tr>
@@ -80,7 +86,9 @@
         </div>
 
         <div class="tabs-panel" id="callers">
-            Find:<input class="filter find" name="find" type="text">
+            <div class="findContainer">
+                <span>Find:</span><input class="find" name="find" type="text">
+            </div>
                 <table id="callersTree">
                     <thead>
                         <tr>
@@ -99,7 +107,9 @@
         </div>
 
         <div class="tabs-panel" id="callees">
-            Find:<input class="filter find" name="find" type="text">
+            <div class="findContainer">
+                <span>Find:</span><input class="find" name="find" type="text">
+            </div>
             <table id="calleesTree">
                 <thead>
                     <tr>
@@ -135,17 +145,27 @@
     <script src="../js/stackDelegate.js"></script>
 
 
+    <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
+    <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
+    <script src="../js/bluebird.min.js"></script>
+
     <!-- Template Including -->
     <script>
-        $.get('templates/navbar.html', function(data) {
-          var template = $(data).children();
-          $('.nav').append(template);
-        });
+        var join = Promise.join;
+        
+        var navbar = $.get('templates/navbar.html');
+        var footer = $.get('templates/footer.html');
+        
+        join(navbar, footer, function(navbarResult, footerResult) {
+                var nav = $(navbarResult).children();
+                $('.nav').append(nav);
 
-        $.get('templates/footer.html', function(data) {
-          var template = $(data).children();
-          $('#footer').append(template);
-        })
+                var foot = $(footerResult).children();
+                $('#footer').append(foot);
+
+                $(document).foundation();
+            }
+        );
     </script>
 
     
@@ -388,7 +408,7 @@
         }
 
 
-        $(".filter").keypress(function (e) {
+        $(".filter, .find").keypress(function (e) {
             // If the user pressed enter in a filter textfield
             if (e.which == 13) {
                 stackDelegate.filters = $("#filtersForm").serialize();
@@ -403,13 +423,6 @@
                 }
             }
         });
-    </script>
-
-
-    <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
-    <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
-    <script>
-        $(document).foundation();
     </script>
 
 

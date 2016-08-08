@@ -6,14 +6,28 @@
 Nav Bar Views
 -------------
 */
-/* Wrapper for Nav Bar Views */
-.nav {
-  margin: 0;
-  display: flex;
+.fixedContainer {
+    margin-top: 0;
+    margin-bottom: 10em;
+    top: 0;
+    position: fixed;
+    width: 100%;
+
+    background-color: #4169e1;
 }
 
+.top-bar .title, .top-bar-left .title {
+    color: white;
+}
+
+/* Wrapper for Nav Bar Views */
+/*.nav {
+  margin: 0;
+  display: flex;
+}*/
+
 /* Wrapper for Dropdown Navbar and Helpful Links */
-.nav .navItems {
+/*.nav .navItems {
   margin: 0;
   list-style: none;
   margin: 0;
@@ -74,15 +88,15 @@ Nav Bar Views
   margin: 0;
   justify-content: flex-end;
   text-decoration: underline;
-}
+}*/
 
 /*.nav .helpfulLinks li:hover {
   background: #CCCCCC;
 }*/
 
-.nav .helpfulLinks li a:hover {
+/*.nav .helpfulLinks li a:hover {
   color: #000000;
-}
+}*/
 /*------------*/
 
 
@@ -96,16 +110,34 @@ Nav Bar Views
     height: 27px;
 }
 
-.filter.find {
-    width: 400px;
+.findContainer {
+    position: fixed;
+    right: 0;
+    width: 446px;
+    margin-right: 16px;
+    height: 30px;
+    margin-top: 140px;
+    background-color: #dddddd;
+    padding-left: 10px;
 }
 
+.findContainer span {
+    background-color: #dddddd;
+    width: 25px;
+    height: 30px;
+}
 
+.findContainer .find {
+    display: inline;
+    width: 400px;
+    height: 30px;
+}
 
 table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
+    margin-top: 200px;
     margin-bottom: 200px;
 }
 

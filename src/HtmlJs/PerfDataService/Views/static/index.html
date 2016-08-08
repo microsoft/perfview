@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/foundation.css">
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/app.css">
+
     <link rel="stylesheet" type="text/css" href="home.css">
 
     <!-- basicContext Theme -->
@@ -78,22 +81,32 @@
 
 
       <!-- Let's get some jQuery going here. -->
-      <script type = "text/javascript" src = "../node_modules/jquery/dist/jquery.min.js"></script>
+      <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
       <!-- alternate require method that works for Electron
       <script>window.$ = window.jQuery = require('./node_modules/jquery/dist/jquery.min.js')</script> -->
 
 
+      <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
+      <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
+      <script src="../js/bluebird.min.js"></script>
+
       <!-- Template Including -->
       <script>
-        $.get('templates/navbar.html', function(data) {
-          var template = $(data).children();
-          $('.nav').append(template);
-        });
+        var join = Promise.join;
 
-        $.get('templates/footer.html', function(data) {
-          var template = $(data).children();
-          $('#footer').append(template);
-        })
+        var navbar = $.get('templates/navbar.html');
+        var footer = $.get('templates/footer.html');
+
+        join(navbar, footer, function(navbarResult, footerResult) {
+                var nav = $(navbarResult).children();
+                $('.nav').append(nav);
+
+                var foot = $(footerResult).children();
+                $('#footer').append(foot);
+
+                $(document).foundation();
+            }
+        );
       </script>
 
 

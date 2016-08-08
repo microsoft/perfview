@@ -6,6 +6,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.domain = domain;
     self.focusNode = null;
     self.filters = "";
+    self.numNodes = 1000;
 
 
     self.log = function log(status) {
@@ -31,7 +32,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.getSummaryData = function getSummaryData(callback) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
-                                                          + "&numNodes=-1&" + self.filters
+                                                          + "&numNodes=" + self.numNodes
+                                                          + "&" + self.filters
                                                           + "&find=" + $("#by-name .find").val();
         self.log("Fetching Summary Data for " + self.filename);
         $.get(url, function (response, status) {
