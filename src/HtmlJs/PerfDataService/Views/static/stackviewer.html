@@ -155,7 +155,9 @@
             var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
 
             // Initialize by-name-list and possibly set some properties
-            $("#by-name-list").treetable();
+            $("#by-name-list").treetable({
+                indenterTemplate: "<span></span>"
+            });
 
             // Initialize call-treeTree and possibly set some properties
             $("#call-treeTree").treetable({
@@ -251,7 +253,7 @@
             loadAndDisplayData(["callersTree", "calleesTree"], false);
         });
 
-        /* by-name-list click event */
+        /* callersTree click event */
         $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
             //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
@@ -263,6 +265,18 @@
             loadAndDisplayData(["callersTree", "calleesTree"], false);
         });
 
+
+        /* calleesTree click event */
+        $(document).on("dblclick", "#calleesTree tbody tr td:first-child", function (row) {
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            //var clickedNodeId = row.currentTarget.innerText.trim();
+            
+            var newFocusNode = $("#calleesTree").treetable("node", clickedNodeId);
+            stackDelegate.setFocusNode(newFocusNode);
+
+            loadAndDisplayData(["calleesTree", "callersTree"], false);
+        });
 
 
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
