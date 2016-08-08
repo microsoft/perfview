@@ -128,10 +128,13 @@ Nav Bar Views
 }
 
 .findContainer .find {
+    margin: 0;
     display: inline;
     width: 400px;
     height: 30px;
 }
+
+
 
 table {
     font-family: arial, sans-serif;

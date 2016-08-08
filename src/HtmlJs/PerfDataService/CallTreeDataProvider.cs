@@ -178,7 +178,7 @@
             target = target.ToLower();
             SortedSet<TreeNode> pathsFound = new SortedSet<TreeNode>(new SortNodeByContextId());
 
-            int flagCount = 0;
+            int flagCount = 1;
             foreach (TreeNode node in nodes)
             {
                 searchHelper(node, pathsFound, target, ref flagCount);
@@ -294,7 +294,7 @@
                     }
 
                     this.summary = new List<TreeNode>();
-                    int findCount = 0;
+                    int findCount = 1;
                     foreach (CallTreeNodeBase node in nodes)
                     {
                         TreeNode tn = new TreeNode(node);
