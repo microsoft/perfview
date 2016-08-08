@@ -46,42 +46,61 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
-    self.getCallersData = function getCallersData(nodeName, path, includeSearch, callback) {
+    self.getCallersData = function getCallersData(callback, options={}) {
+        if (self.focusNode == null && !("overrideFocusNode" in options)) {
+            throw "Focus node not selected";
+        }
+
+        var nodeString = "overrideFocusNode" in options ? options["overrideFocusNode"] : self.focusNode.id;
+        console.log(self.focusNode);
+        var nameAndPath = nodeString.split(/\/(.+)?/);  // Split on FIRST occurrence of '/'
+        var name = nameAndPath[0];
+        var path = nameAndPath.length > 1 ? nameAndPath[1] : "";
+
         var url = self.domain + "/api/data/stackviewer/callertree?filename=" + self.filename
-                                                                  + "&name=" + nodeName
+                                                                  + "&name=" + name
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
-        if (includeSearch) { url = url + "&find=" + $("#callers .find").val(); }
+        if ("includeSearch" in options) { url = url + "&find=" + $("#callers .find").val(); }
 
         path = path != "" && path != undefined ? "/" + path : path;
-        self.log("Fetching Callers Data for " + nodeName + path);
+        self.log("Fetching Callers Data for " + name + path);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
-            self.log("Completed: Get Callers for " + nodeName + path);
+            self.log("Completed: Get Callers for " + name + path);
             
             callback(json, status);
         });
     }
 
 
-    self.getCalleesData = function getCalleesData(nodeName, path, callback) {
+    self.getCalleesData = function getCalleesData(callback, options={}) {
+        if (self.focusNode == null && !("overrideFocusNode" in options)) {
+            throw "Focus node not selected";
+        }
+
+        var nodeString = "overrideFocusNode" in options ? options["overrideFocusNode"] : self.focusNode.id;
+        var nameAndPath = nodeString.split(/\/(.+)?/);  // Split on FIRST occurrence of '/'
+        var name = nameAndPath[0];
+        var path = nameAndPath.length > 1 ? nameAndPath[1] : "";
+
         var url = self.domain + "/api/data/stackviewer/calleetree?filename=" + self.filename
-                                                                  + "&name=" + nodeName
+                                                                  + "&name=" + name
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
                                                                        + "&" + self.filters
                                                                        + "&find=" + $(".tabs-panel.is-active .find").val();
 
         path = path != "" && path != undefined ? "/" + path : path;
-        self.log("Fetching Callees Data for " + nodeName + path);
+        self.log("Fetching Callees Data for " + name + path);
 
         $.get(url, function (response, status) {
             json = JSON.parse(response);
 
-            self.log("Completed: Get Callees for " + nodeName + path);
+            self.log("Completed: Get Callees for " + name + path);
 
             callback(json, status);
         });

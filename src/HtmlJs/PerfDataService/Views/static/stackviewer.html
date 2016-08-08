@@ -250,6 +250,18 @@
             loadAndDisplayData(["callersTree", "calleesTree"], false);
         });
 
+        /* by-name-list click event */
+        $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            //var clickedNodeId = row.currentTarget.innerText.trim();
+
+            stackDelegate.focusNode = $("#callersTree").treetable("node", clickedNodeId);;
+            $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
+
+            loadAndDisplayData(["callersTree", "calleesTree"], false);
+        });
+
 
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
 
@@ -272,17 +284,19 @@
                     // Place root node in tree
                     updateTreeTableHtml("#call-treeTree", null, [nodeData]);
 
-                    stackDelegate.getCalleesData("ROOT", "", function (callTreeStackData, status) {
+                    var options = {"overrideFocusNode" : "ROOT"};
+                    stackDelegate.getCalleesData(function (callTreeStackData, status) {
                         // Place data in CallTree tab
                         var parentNode = $("#call-treeTree").treetable("node", "ROOT");
                         updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
-                    });
+                    }, options);
                 });
             }
 
             // DISPLAY CALLERS DATA
             if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
-                stackDelegate.getCallersData(stackDelegate.focusNode.id, "", includeSearch, function (callersStackData, status) {
+                var options = {"includeSearch" : true};
+                stackDelegate.getCallersData(function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
                     var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
@@ -296,12 +310,12 @@
 
                     // Place data in Callers tab
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData);
-                });
+                }, options);
             }
             
             // DISPLAY CALLEES DATA
             if ((treesToUpdate == null || treesToUpdate.includes("calleesTree")) && stackDelegate.focusNode != null) {
-                stackDelegate.getCalleesData(stackDelegate.focusNode.id, "", function (calleesStackData, status) {
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
                     $("#calleesTree tbody").empty();
 
                     var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
@@ -326,51 +340,36 @@
         function onTreeNodeExpand(node, treeName) {
             if (node.children.length > 0) { return; }
 
-            // Split the name from the path
-            var nameAndPath = node.id.split("/");
-            var name = nameAndPath[0];
+            var options = {"overrideFocusNode" : node.id };
 
-            // Get the path, if there is one
-            var path = "";
-            // Check if there is actually a path component
-            if (nameAndPath.length > 1) {
-                // There is, so let's reconstruct it
-                for (var i = 1; i < nameAndPath.length - 1; ++i) {
-                    path += nameAndPath[i] + "/";
-                }
-                path += nameAndPath[nameAndPath.length - 1];
-            }
+            if (treeName == "#callersTree") {
+                // TODO: Fix so that find is not included in this
+                stackDelegate.getCallersData(function (callersStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
 
-            if (name !== undefined) {
-                if (treeName == "#callersTree") {
-                    // TODO: Fix so that find is not included in this
-                    stackDelegate.getCallersData(name, path, false, function (callersStackData, status) {
-                        if (status == "success") {
-                            node.row[0].setAttribute("direct-children-loaded", "true");
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, callersStackData);
+                    }
+                }, options);
+            } else if (treeName == "#calleesTree") {
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
 
-                            // Place data under clicked node
-                            updateTreeTableHtml(treeName, node, callersStackData);
-                        }
-                    });
-                } else if (treeName == "#calleesTree") {
-                    stackDelegate.getCalleesData(name, path, function (calleesStackData, status) {
-                        if (status == "success") {
-                            node.row[0].setAttribute("direct-children-loaded", "true");
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, calleesStackData);
+                    }
+                }, options);
+            } else if (treeName == "#call-treeTree") {
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
 
-                            // Place data under clicked node
-                            updateTreeTableHtml(treeName, node, calleesStackData);
-                        }
-                    });
-                } else if (treeName == "#call-treeTree") {
-                    stackDelegate.getCalleesData(name, path, function (calleesStackData, status) {
-                        if (status == "success") {
-                            node.row[0].setAttribute("direct-children-loaded", "true");
-
-                            // Place data under clicked node
-                            updateTreeTableHtml(treeName, node, calleesStackData);
-                        }
-                    });
-                }
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, calleesStackData);
+                    }
+                }, options);
             }
         }
 
