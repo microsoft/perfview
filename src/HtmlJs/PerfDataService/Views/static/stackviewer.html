@@ -47,6 +47,11 @@
         <div class="tabs-panel is-active" id="by-name">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="visibility: hidden;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
             </div>
             <table id="by-name-list">
                 <thead>
@@ -309,6 +314,11 @@
                         var newFocusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
                         stackDelegate.setFocusNode(newFocusNode);
                     }
+
+                    if (includeSearch) {
+                        displayFindNavigation(["by-name-list"]);
+                        $(".is-active .searchNavButtons .next").click();
+                    }
                 });
             }
 
@@ -407,6 +417,64 @@
             }
         }
 
+
+        function displayFindNavigation(treesToUpdate) {
+            if (treesToUpdate.includes("by-name-list")) {
+                var searchButtons = $(".is-active .searchNavButtons");
+                
+                var targetNodesFound = 0;
+                $("#by-name-list tbody tr").each(function(index) {
+                    var findFlag = $(this).attr("data-find-flag");
+
+                    if (findFlag != undefined) {
+                        targetNodesFound++;
+                    }
+                });
+
+                $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
+                searchButtons.css("visibility", "visible");
+            }
+        }
+
+        $(".next").click(function (e) {
+            var itemIndicator = $(e.target.parentNode).find('span');
+            var numbersFromIndicator = itemIndicator.text().split('/');
+
+            var current = parseInt(numbersFromIndicator[0]);
+            var total = parseInt(numbersFromIndicator[1]);
+
+            if (total <= 0) { return; }
+            
+            // Navigate to next item
+            current = (current + 1) % (total + 1);
+            current = current == 0 ? 1 : current;
+            $('html, body').animate({
+                scrollTop: $(".is-active").find("[data-find-flag='" + current + "']").offset().top - 400
+            }, 300);
+
+            // Update itemIndicator
+            itemIndicator.text(current + '/' + total);
+        });
+
+        $(".prev").click(function (e) {
+            var itemIndicator = $(e.target.parentNode).find('span');
+            var numbersFromIndicator = itemIndicator.text().split('/');
+
+            var current = parseInt(numbersFromIndicator[0]);
+            var total = parseInt(numbersFromIndicator[1]);
+
+            if (total <= 0) { return; }
+            
+            // Navigate to next item
+            current = (total + current - 1) % (total);
+            current = current == 0 ? 5 : current;
+            $('html, body').animate({
+                scrollTop: $(".is-active").find("[data-find-flag='" + current + "']").offset().top - 400
+            }, 300);
+
+            // Update itemIndicator
+            itemIndicator.text(current + '/' + total);
+        });
 
         $(".filter, .find").keypress(function (e) {
             // If the user pressed enter in a filter textfield
