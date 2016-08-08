@@ -13,6 +13,19 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     };
 
 
+    self.setFocusNode = function setFocusNode(node) {
+        var child = node.row[0].children[0];
+        $(child).find('span').remove(); 
+
+        stackDelegate.focusNode = node;
+    }
+
+
+    self.getFocusNode = function getFocusNode() {
+        return self.focusNode;
+    }
+
+
     self.getSummaryData = function getSummaryData(callback) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
@@ -52,7 +65,6 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
         }
 
         var nodeString = "overrideFocusNode" in options ? options["overrideFocusNode"] : self.focusNode.id;
-        console.log(self.focusNode);
         var nameAndPath = nodeString.split(/\/(.+)?/);  // Split on FIRST occurrence of '/'
         var name = nameAndPath[0];
         var path = nameAndPath.length > 1 ? nameAndPath[1] : "";
