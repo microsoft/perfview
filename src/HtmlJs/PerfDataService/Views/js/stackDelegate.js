@@ -15,7 +15,9 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
 
     self.setFocusNode = function setFocusNode(node) {
         var child = node.row[0].children[0];
-        $(child).find('span').remove(); 
+
+        $(child).find('span').remove();
+        $(node).attr("id", $(child).text().trim());
 
         stackDelegate.focusNode = node;
     }
@@ -103,8 +105,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                                   + "&name=" + name
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
-                                                                       + "&" + self.filters
-                                                                       + "&find=" + $(".tabs-panel.is-active .find").val();
+                                                                       + "&" + self.filters;
+        if ("includeSearch" in options) { url = url + "&find=" + $("#callees .find").val(); }
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callees Data for " + name + path);
