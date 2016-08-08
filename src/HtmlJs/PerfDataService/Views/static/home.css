@@ -5,7 +5,7 @@ html, body {
 
 body {
   margin: 0;
-  margin-bottom: 2em;
+  /*margin-bottom: 2em;*/
   display: flex;
   flex-direction: column;
 
@@ -170,7 +170,7 @@ Tree View and Welcome View
   flex-grow: 1;  /* TODO: May not need this since implementing '.wrapper' */
   margin: 0;
   padding: 0;
-  height: 40em;
+  /*height: 40em;*/
   overflow: auto;
 }
 
