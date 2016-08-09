@@ -39,6 +39,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
             changeCellState(cell, true); // Change to selected state
             self.selectedCell = cell;
         } else if (cell.hasOwnProperty("selected") && cell.selected == true) {
+            if (self.selectedCell != null && $(cell)[0] == $(self.selectedCell)[0]) { return; }
             changeCellState(cell, false);
             self.clearSelectedCell();
         }

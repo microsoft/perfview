@@ -13,10 +13,10 @@
         <div class="nav"></div>
 
         <form id="filtersForm">
-            Start:<input class="filter" name="start" list="start-filter-list" type="text">
+            Start:<input class="filter" id="start-filter" name="start" list="start-filter-list" type="text">
             <datalist id="start-filter-list"></datalist>
 
-            End:<input class="filter" name="end" list="end-filter-list" type="text">
+            End:<input class="filter" id="end-filter" name="end" list="end-filter-list" type="text">
             <datalist id="end-filter-list"></datalist>
 
             GroupPats:<input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
@@ -262,8 +262,8 @@
                                     <td>" + stackData[i].inclusiveMetricPercent + "</td>\
                                     <td>" + stackData[i].inclusiveMetric + "</td>\
                                     <td>" + stackData[i].exclusiveFoldedCount + "</td>\
-                                    <td>" + stackData[i].firstTimeRelativeMSec + "</td>\
-                                    <td>" + stackData[i].lastTimeRelativeMSec + "</td>\
+                                    <td relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec + "</td>\
+                                    <td relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec + "</td>\
                                     </tr>";
             }
 
@@ -328,9 +328,10 @@
 
 
         // TODO: Double click on first and last
-        //$(document).on("dblclick", ".is-active table tbody tr td", function (cell) {
-        //    console.log($(cell.target).text());
-        //});
+        $(document).on("dblclick", ".is-active table tbody tr td", function (cell) {
+            var filterId = $(cell.target).attr("relevant-filter-id");
+            $(filterId).val($(cell.target).text());
+        });
 
 
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
