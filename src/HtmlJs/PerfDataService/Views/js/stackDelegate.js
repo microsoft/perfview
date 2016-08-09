@@ -29,12 +29,13 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
-    self.getSummaryData = function getSummaryData(callback) {
+    self.getSummaryData = function getSummaryData(callback, options={}) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
                                                           + "&numNodes=" + self.numNodes
-                                                          + "&" + self.filters
-                                                          + "&find=" + $("#by-name .find").val();
+                                                          + "&" + self.filters;
+        if ("includeSearch" in options) { url = url + "&find=" + $("#by-name .find").val(); }
+
         self.log("Fetching Summary Data for " + self.filename);
         $.get(url, function (response, status) {
             json = JSON.parse(response);
@@ -108,7 +109,15 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
-        if ("includeSearch" in options) { url = url + "&find=" + $("#callees .find").val(); }
+        if ("includeSearch" in options && "call-treeTree" in options) {
+            url = url + "&find=" + $("#call-tree .find").val();
+            console.log("1");
+        } else if ("includeSearch" in options) {
+            url = url + "&find=" + $("#callees .find").val();
+            console.log("2");
+        }
+
+        console.log(url);
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callees Data for " + name + path);
