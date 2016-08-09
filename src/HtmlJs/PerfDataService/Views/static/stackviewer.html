@@ -72,6 +72,11 @@
         <div class="tabs-panel" id="call-tree">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="visibility: hidden;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
             </div>
             <table id="call-treeTree">
                 <thead>
@@ -93,6 +98,11 @@
         <div class="tabs-panel" id="callers">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="visibility: hidden;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
             </div>
                 <table id="callersTree">
                     <thead>
@@ -114,6 +124,11 @@
         <div class="tabs-panel" id="callees">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="visibility: hidden;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
             </div>
             <table id="calleesTree">
                 <thead>
@@ -152,7 +167,7 @@
 
     <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
     <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
-    <script src="../js/bluebird.min.js"></script>
+    <script src="../libraries/bluebird.min.js"></script>
 
     <!-- Template Including -->
     <script>
@@ -307,6 +322,7 @@
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
             // DISPLAY BY-NAME DATA
             if (treesToUpdate == null || treesToUpdate.includes("by-name-list")) {
+                var options = { "includeSearch" : includeSearch };
                 stackDelegate.getSummaryData(function (summaryStackData) {
                     $("#by-name-list tbody").empty();  // TODO: Maybe unload branch, instead
                     updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
@@ -316,10 +332,10 @@
                     }
 
                     if (includeSearch) {
-                        displayFindNavigation(["by-name-list"]);
+                        displayFindNavigation("#by-name-list");
                         $(".is-active .searchNavButtons .next").click();
                     }
-                });
+                }, options);
             }
 
             // LOAD AND DISPLAY CALLTREE DATA
@@ -330,18 +346,26 @@
                     // Place root node in tree
                     updateTreeTableHtml("#call-treeTree", null, [nodeData]);
 
-                    var options = {"overrideFocusNode" : "ROOT"};
+                    var options = {"overrideFocusNode" : "ROOT",
+                        "includeSearch" : includeSearch,
+                        "call-treeTree" : true
+                    };
                     stackDelegate.getCalleesData(function (callTreeStackData, status) {
                         // Place data in CallTree tab
                         var parentNode = $("#call-treeTree").treetable("node", "ROOT");
                         updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
+
+                        if (includeSearch) {
+                            displayFindNavigation("#call-treeTree");
+                            $(".is-active .searchNavButtons .next").click();
+                        }
                     }, options);
                 });
             }
 
             // LOAD AND DISPLAY CALLERS DATA
             if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
-                var options = {"includeSearch" : true};
+                var options = {"includeSearch" : includeSearch};
                 stackDelegate.getCallersData(function (callersStackData, status) {
                     $("#callersTree tbody").empty();
 
@@ -356,11 +380,17 @@
 
                     // Place data in Callers tab
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData);
+
+                    if (includeSearch) {
+                        displayFindNavigation("#callersTree");
+                        $(".is-active .searchNavButtons .next").click();
+                    }
                 }, options);
             }
             
             // LOAD AND DISPLAY CALLEES DATA
             if ((treesToUpdate == null || treesToUpdate.includes("calleesTree")) && stackDelegate.focusNode != null) {
+                var options = {"includeSearch" : includeSearch};
                 stackDelegate.getCalleesData(function (calleesStackData, status) {
                     $("#calleesTree tbody").empty();
 
@@ -375,7 +405,12 @@
 
                     // Place data in Callees tab
                     updateTreeTableHtml("#calleesTree", parentNode, calleesStackData);
-                });
+
+                    if (includeSearch) {
+                        displayFindNavigation("#calleesTree");
+                        $(".is-active .searchNavButtons .next").click();
+                    }
+                }, options);
             }
         }
 
@@ -418,45 +453,31 @@
         }
 
 
-        function displayFindNavigation(treesToUpdate) {
-            if (treesToUpdate.includes("by-name-list")) {
-                var searchButtons = $(".is-active .searchNavButtons");
+        function displayFindNavigation(treeId) {
+            var searchButtons = $(".is-active .searchNavButtons");
                 
-                var targetNodesFound = 0;
-                $("#by-name-list tbody tr").each(function(index) {
-                    var findFlag = $(this).attr("data-find-flag");
+            var targetNodesFound = 0;
+            $(treeId + " tbody tr").each(function(index) {
+                var findFlag = $(this).attr("data-find-flag");
 
-                    if (findFlag != undefined) {
-                        targetNodesFound++;
-                    }
-                });
+                if (findFlag != undefined) {
+                    targetNodesFound++;
+                }
+            });
 
-                $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
-                searchButtons.css("visibility", "visible");
-            }
+            $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
+            searchButtons.css("visibility", "visible");
         }
 
         $(".next").click(function (e) {
-            var itemIndicator = $(e.target.parentNode).find('span');
-            var numbersFromIndicator = itemIndicator.text().split('/');
-
-            var current = parseInt(numbersFromIndicator[0]);
-            var total = parseInt(numbersFromIndicator[1]);
-
-            if (total <= 0) { return; }
-            
-            // Navigate to next item
-            current = (current + 1) % (total + 1);
-            current = current == 0 ? 1 : current;
-            $('html, body').animate({
-                scrollTop: $(".is-active").find("[data-find-flag='" + current + "']").offset().top - 400
-            }, 300);
-
-            // Update itemIndicator
-            itemIndicator.text(current + '/' + total);
+            changeFindCounter(e, 1);
         });
 
         $(".prev").click(function (e) {
+            changeFindCounter(e, -1);
+        });
+
+        function changeFindCounter(e, i) {
             var itemIndicator = $(e.target.parentNode).find('span');
             var numbersFromIndicator = itemIndicator.text().split('/');
 
@@ -466,15 +487,15 @@
             if (total <= 0) { return; }
             
             // Navigate to next item
-            current = (total + current - 1) % (total);
-            current = current == 0 ? 5 : current;
+            current = (current + i) % total;
+            current = current == 0 ? total : current;
             $('html, body').animate({
                 scrollTop: $(".is-active").find("[data-find-flag='" + current + "']").offset().top - 400
-            }, 300);
+            }, 100);
 
             // Update itemIndicator
             itemIndicator.text(current + '/' + total);
-        });
+        }
 
         $(".filter, .find").keypress(function (e) {
             // If the user pressed enter in a filter textfield

@@ -272,7 +272,12 @@
 
         public TreeNode[] GetCalleeTree(string name, string path, string find)
         {
-            return this.GetCalleeTreeNode(name, path).Children;
+            TreeNode[] children = this.GetCalleeTreeNode(name, path).Children;
+            if (!string.IsNullOrEmpty(find))
+            {
+                children = searchForTarget(children, find);
+            }
+            return children;
         }
 
         public List<TreeNode> GetSummaryTree(int numNodes, string find)
