@@ -47,7 +47,7 @@
         <div class="tabs-panel is-active" id="by-name">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
-                <div class="searchNavButtons" style="visibility: hidden;">
+                <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
                     <a href="#" class="next">next</a>
                     <span>0/0</span>
@@ -72,7 +72,7 @@
         <div class="tabs-panel" id="call-tree">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
-                <div class="searchNavButtons" style="visibility: hidden;">
+                <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
                     <a href="#" class="next">next</a>
                     <span>0/0</span>
@@ -98,7 +98,7 @@
         <div class="tabs-panel" id="callers">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
-                <div class="searchNavButtons" style="visibility: hidden;">
+                <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
                     <a href="#" class="next">next</a>
                     <span>0/0</span>
@@ -124,7 +124,7 @@
         <div class="tabs-panel" id="callees">
             <div class="findContainer">
                 <span>Find:</span><input class="find" name="find" type="text">
-                <div class="searchNavButtons" style="visibility: hidden;">
+                <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
                     <a href="#" class="next">next</a>
                     <span>0/0</span>
@@ -291,6 +291,7 @@
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
 
             loadAndDisplayData(["callersTree", "calleesTree"], false);
+            stackDelegate.clearSelectedCell();
         });
 
         /* callersTree click event */
@@ -303,6 +304,7 @@
             stackDelegate.setFocusNode(newFocusNode);
 
             loadAndDisplayData(["callersTree", "calleesTree"], false);
+            stackDelegate.clearSelectedCell();
         });
 
 
@@ -316,7 +318,19 @@
             stackDelegate.setFocusNode(newFocusNode);
 
             loadAndDisplayData(["calleesTree", "callersTree"], false);
+            stackDelegate.clearSelectedCell();
         });
+
+
+        $(document).on("click", ".is-active table tbody tr td", function(event) {
+            stackDelegate.setSelectedCell(event.target);
+        });
+
+
+        // TODO: Double click on first and last
+        //$(document).on("dblclick", ".is-active table tbody tr td", function (cell) {
+        //    console.log($(cell.target).text());
+        //});
 
 
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
@@ -454,8 +468,6 @@
 
 
         function displayFindNavigation(treeId) {
-            var searchButtons = $(".is-active .searchNavButtons");
-                
             var targetNodesFound = 0;
             $(treeId + " tbody tr").each(function(index) {
                 var findFlag = $(this).attr("data-find-flag");
@@ -466,7 +478,7 @@
             });
 
             $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
-            searchButtons.css("visibility", "visible");
+            $(".is-active .searchNavButtons").show();
         }
 
         $(".next").click(function (e) {
@@ -475,6 +487,19 @@
 
         $(".prev").click(function (e) {
             changeFindCounter(e, -1);
+        });
+
+        $("body").keydown(function(e) {
+            if (e.ctrlKey) {
+                if (e.which == 39 || e.which == 40) {
+                    $(".is-active .searchNavButtons .next").click();
+                } else if (e.which == 37 || e.which == 38) {
+                    $(".is-active .searchNavButtons .prev").click();
+                }
+            } else if (e.which == 27) {
+                $(".is-active .searchNavButtons").hide();
+                stackDelegate.clearSelectedCell();
+            }
         });
 
         function changeFindCounter(e, i) {
@@ -489,9 +514,12 @@
             // Navigate to next item
             current = (current + i) % total;
             current = current == 0 ? total : current;
+            var targetNode = $(".is-active").find("[data-find-flag='" + current + "']");
             $('html, body').animate({
-                scrollTop: $(".is-active").find("[data-find-flag='" + current + "']").offset().top - 400
+                scrollTop: targetNode.offset().top - 400
             }, 100);
+
+            stackDelegate.setSelectedCell(targetNode);
 
             // Update itemIndicator
             itemIndicator.text(current + '/' + total);
