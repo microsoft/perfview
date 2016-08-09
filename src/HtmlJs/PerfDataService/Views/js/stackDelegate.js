@@ -7,6 +7,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.focusNode = null;
     self.filters = "";
     self.numNodes = 1000;
+    self.selectedCell = null;
 
 
     self.log = function log(status) {
@@ -26,6 +27,46 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
 
     self.getFocusNode = function getFocusNode() {
         return self.focusNode;
+    }
+
+
+    self.setSelectedCell = function setSelectedCell(cell) {
+        if (cell == null || cell === undefined) { return; }
+
+        if (!cell.hasOwnProperty("selected") || cell.selected == false) {  // If cell is unselected
+            var oldCell = self.selectedCell;
+            changeCellState(oldCell, false);
+            changeCellState(cell, true); // Change to selected state
+            self.selectedCell = cell;
+        } else if (cell.hasOwnProperty("selected") && cell.selected == true) {
+            changeCellState(cell, false);
+            self.clearSelectedCell();
+        }
+    }
+
+    function changeCellState(cell, selected) {
+        if (cell == null) { return; }
+        if (selected) {
+            cell.originalBackgroundColor = $(cell).css("background-color");
+            $(cell).css("background-color", "#b3c6ff");
+            $(cell).css("border", "2px inset black");
+            $(cell).css("font-weight", "bold");
+            cell.selected = true;
+        } else {
+            $(cell).css("background-color", cell.originalBackgroundColor);
+            $(cell).css("border-style", "none");
+            $(cell).css("font-weight", "normal");
+            cell.selected = false;
+        }
+    }
+
+    self.getSelectedCell = function getSelectedCell() {
+        return self.selectedCell;
+    }
+
+    self.clearSelectedCell = function clearSelectedCell() {
+        if (self.selectedCell == null) { return; }
+        changeCellState(self.selectedCell, false);
     }
 
 
@@ -111,13 +152,9 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                                        + "&" + self.filters;
         if ("includeSearch" in options && "call-treeTree" in options) {
             url = url + "&find=" + $("#call-tree .find").val();
-            console.log("1");
         } else if ("includeSearch" in options) {
             url = url + "&find=" + $("#callees .find").val();
-            console.log("2");
         }
-
-        console.log(url);
 
         path = path != "" && path != undefined ? "/" + path : path;
         self.log("Fetching Callees Data for " + name + path);
