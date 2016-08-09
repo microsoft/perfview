@@ -50,7 +50,7 @@ namespace PerfView
         /// <summary>
         /// The name to place in the treeview (should be short).  
         /// </summary>
-        public string Name { get; protected set; }
+        public string Name { get; protected internal set; }
         /// <summary>
         /// If the entry should have children in the TreeView, this is them.
         /// </summary>
@@ -6671,14 +6671,15 @@ namespace PerfView
         /// <summary>
         /// Gets a new local file path for the given resource, extracting it from the .diagsession if required
         /// </summary>
-        /// <param name="package">The diagsession package object</param>
+        /// <param name="packageFilePath">The file path to the package</param>
+        /// <param name="package">The diagsession package object (opened from the file path)</param>
         /// <param name="resource">The diagsession resource object</param>
         /// <param name="fileExtension">The final extension to use</param>
         /// <returns>The full local file path to the resource</returns>
-        private static string GetLocalFilePath(DhPackage package, ResourceInfo resource, string fileExtension)
+        private static string GetLocalFilePath(string packageFilePath, DhPackage package, ResourceInfo resource, string fileExtension)
         {
             string localFileName = Path.GetFileNameWithoutExtension(resource.Name);
-            string localFilePath = CacheFiles.FindFile(localFileName, fileExtension);
+            string localFilePath = CacheFiles.FindFile(packageFilePath, "_" + localFileName + fileExtension);
 
             if (!File.Exists(localFilePath))
             {
@@ -6703,11 +6704,12 @@ namespace PerfView
             {
                 Guid resourceId = resource.ResourceId;
 
-                string localFilePath = GetLocalFilePath(dhPackage, resource, fileExtension);
+                string localFilePath = GetLocalFilePath(FilePath, dhPackage, resource, fileExtension);
 
                 worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");
 
                 PerfViewFile perfViewFile = getPerfViewFile(localFilePath);
+                perfViewFile.Name = resource.Name;
 
                 this.Children.Add(perfViewFile);
 

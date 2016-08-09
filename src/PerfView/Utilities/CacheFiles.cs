@@ -43,8 +43,6 @@ namespace Utilities
         /// </remarks>
         public static string FindFile(string baseFilePath, string extension = "")
         {
-            // TODO FIX NOW add collision detection
-
             // We expect the original file to exist
             Debug.Assert(File.Exists(baseFilePath));
 
