@@ -101,6 +101,8 @@
         {
             lock (this.lockobj)
             {
+                if (name == null) { return null; }
+
                 CallTreeNodeBase node = this.GetNode(name).BackingNode;
                 TreeNode callerTreeNode;
 
@@ -135,6 +137,8 @@
         {
             lock (this.lockobj)
             {
+                if (name == null) { return null; }
+
                 CallTreeNodeBase node = this.GetNode(name).BackingNode;
                 TreeNode calleeTreeNode;
 
