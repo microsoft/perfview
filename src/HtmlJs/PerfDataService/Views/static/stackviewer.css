@@ -2,6 +2,10 @@
     margin-bottom: 4em;
 }
 
+:root {
+    --main-color: #485761;
+}
+
 /*
 Nav Bar Views
 -------------
@@ -13,7 +17,7 @@ Nav Bar Views
     position: fixed;
     width: 100%;
 
-    background-color: #4169e1;
+    background-color: var(--main-color);
 }
 
 .top-bar .title, .top-bar-left .title {
@@ -102,6 +106,7 @@ Nav Bar Views
 
 #filtersForm {
     margin-top: 15px;
+    color: white;
 }
 
 .filter {
@@ -161,6 +166,15 @@ table tbody tr:nth-child(even)[data-find-flag] {
   background-color: #e6ebff;
 }
 
+.selected,
+table tbody tr:nth-child(odd).selected,
+table tbody tr:nth-child(even).selected {
+    background-color: #b3c6ff;
+    outline: 1px solid var(--main-color);
+    font-weight: bold;
+    color: black;
+}
+
 /*#CallersTree {
     table-layout: fixed;
     width: 100%;
@@ -218,7 +232,7 @@ Footer View
   font-size: .9em;
   margin: 0;
 
-  background: #4169e1;
+  background:var(--main-color);
 
   display: flex;
   flex-flow: row;
