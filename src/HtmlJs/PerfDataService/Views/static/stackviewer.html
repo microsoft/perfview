@@ -323,7 +323,6 @@
 
 
         $(document).on("click", ".is-active table tbody tr td", function(cell) {
-            console.log(cell.target);
             if ($(cell.target).is(".selectable")) {
                 stackDelegate.setSelectedCell(cell.target);
             }
