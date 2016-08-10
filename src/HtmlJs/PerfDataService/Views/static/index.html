@@ -42,27 +42,43 @@
       </div>
 
       <div id="welcome">
-        <p>Welcome to PerfView!
-  PerfView is an application designed to simplify the collection and analysis of performance data.
-  Pressing the F1 key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the User's Guide . If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the feedback instructions in the documentation.
-  If you are new to PerfView , we strongly recommend reading the tutorial or watch the tutorial videos . It should only take 10-20 minutes to walk through. Also recommend is reading what perfView can do for you .
-  Optimizing Time, or Unmanaged Memory: Collecting ETW Profile Data
-  PerfView can collect a time based ETW trace for investigating CPU and Server Response Time, as well as Wall Clock / Blocked Time , Unmanaged memory or Managed memory . For these cases PerfView has two ways of collecting ETW trace data :
-  •	Run a command and collect data while the command is running. Collect->Run (Alt-R)
-  •	Collect data machine wide by starting and stopping collection manually. Collect->Collect (Alt-C)
-  Optimizing Managed Memory: Collecting .NET Runtime Heap Data
-  PerfView can also collect data about the GC heap of a .NET Runtime process. See GC Heap Quick Start for more details.
-  •	Take a heap snapshot of an existing process Memory->Take Heap Snapshot (Alt-S)
-  To Take a heap snapshot from a Process Dump simply double click on the .DMP file in the file view to the left.
+        <h4>Welcome to PerfView!</h4>
+          <p>
+              PerfView is an application designed to simplify the collection and analysis of performance data.<br><br>
+              Pressing the <b>F1</b> key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the <a href="#"><u>User's Guide</u></a>. If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the <a href="#"><u>feedback instructions</u></a> in the documentation.<br><br>
+              <b>If you are new to PerfView</b>, we strongly recommend reading the <a href="#"><u>tutorial</u></a> or watch the tutorial <a href="#"><u>videos</u></a>. It should only take 10-20 minutes to walk through. Also recommend is reading <a href="#"><u>what perfView can do for you</u></a>.<br><br>
 
-  Viewing Existing Profile Data
-  The result of data collection is data stored in data files of varying extensions. The left pane is a list of file names in the current directory that PerfView knows how to open. Simply double click on the file of interest to view the data. You can change the current directory by either double clicking on a subdirectory or typing the name in the textbox in the upper left.
-  If the file contains more than one view of the data then double clicking on the object populates children nodes in the treeview. Double clicking on one of the children will open the viewer for that view. Right clicking and selecting 'Help on Item' will take you to the help for that particular entry in the viewer. There are two main viewers of profile data:
-  •	A stack viewer which allows aggregation and filtering of events with associated stack traces.
-  •	An event viewer which allows filtering of time based events.
+              <b>Optimizing Time, or Unmanaged Memory: Collecting ETW Profile Data</b><br>
+              PerfView can collect a time based ETW trace for investigating <a href="#"><u><b>CPU</b></u></a> and <a href="#"><u><b>Server Response Time</b></u></a>, as well as <a href="#"><u>Wall Clock / Blocked Time</u></a>, <a href="#"><u>Unmanaged memory</u></a> or <a href="#"><u>Managed memory</u></a>. For these cases PerfView has two ways of collecting ETW trace data:<br>
+          </p>
+              <ul>
+                  <li>Run a command and collect data while the command is running. Collect->Run (Alt-R)</li>
+                  <li>Collect data machine wide by starting and stopping collection manually. Collect->Collect (Alt-C)</li>
+              </ul><br>
 
-  Diffing Profile Data
-  PerfView has the ability to determine the difference between two traces, which is very useful in doing regression analysis. To use the Diff functionality first view both traces in separate stack view windows and (if necessary) filter out all but the region that represents an equivalent amount of work in each view. Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other window as its baseline. See Diff Help for more.
+          <p>
+              <b>Optimizing Managed Memory: Collecting .NET Runtime Heap Data</b>
+              PerfView can also collect data about the GC heap of a .NET Runtime process. See <a href="#"><u>GC Heap Quick Start</u></a> for more details.<br>
+          </p>
+              <ul>
+                  <li>Take a heap snapshot of an existing process Memory->Take Heap Snapshot (Alt-S)</li>
+                  <li>To Take a heap snapshot from a Process Dump simply double click on the .DMP file in the file view to the left.</li>
+              </ul><br>
+
+          <p>
+              <b>Viewing Existing Profile Data</b>
+              The result of data collection is data stored in data files of varying extensions. The left pane is a list of file names in the current directory that PerfView knows how to open. Simply double click on the file of interest to view the data. You can change the current directory by either double clicking on a subdirectory or typing the name in the textbox in the upper left.<br>
+              If the file contains more than one view of the data then double clicking on the object populates children nodes in the treeview. Double clicking on one of the children will open the viewer for that view. <b>Right clicking and selecting 'Help on Item'</b> will take you to the help for that particular entry in the viewer. There are two main viewers of profile data:<br>
+          </p>
+              <ul>
+                  <li>A stack viewer which allows aggregation and filtering of events with associated stack traces.</li>
+                  <li>An event viewer which allows filtering of time based events.</li>
+              </ul><br>
+
+          <p>
+              <b>Diffing Profile Data</b>
+              PerfView has the ability to determine the difference between two traces, which is very useful in doing regression analysis. To use the Diff functionality first view both traces in separate stack view windows and (if necessary) filter out all but the region that represents an equivalent amount of work in each view. Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other window as its baseline. See <a href="#"><u>Diff Help</u></a> for more.
+          </p>
       </div>
     </div>
 
