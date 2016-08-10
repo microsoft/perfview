@@ -256,14 +256,14 @@
                                             + findFlag
                                             + "\">";
 
-                rowsToAppend = rowsToAppend + "<td class=\"name-col\">" + stackData[i].name + "</td>\
-                                    <td>" + stackData[i].exclusiveMetricPercent + "</td>\
-                                    <td>" + stackData[i].exclusiveMetric + "</td>\
-                                    <td>" + stackData[i].inclusiveMetricPercent + "</td>\
-                                    <td>" + stackData[i].inclusiveMetric + "</td>\
-                                    <td>" + stackData[i].exclusiveFoldedCount + "</td>\
-                                    <td relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec + "</td>\
-                                    <td relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec + "</td>\
+                rowsToAppend = rowsToAppend + "<td class=\"name-col selectable\">" + stackData[i].name + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].exclusiveMetricPercent + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].exclusiveMetric + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].inclusiveMetricPercent + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].inclusiveMetric + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].exclusiveFoldedCount + "</td>\
+                                    <td class=\"selectable\" relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec + "</td>\
+                                    <td class=\"selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec + "</td>\
                                     </tr>";
             }
 
@@ -322,8 +322,11 @@
         });
 
 
-        $(document).on("click", ".is-active table tbody tr td", function(event) {
-            stackDelegate.setSelectedCell(event.target);
+        $(document).on("click", ".is-active table tbody tr td", function(cell) {
+            console.log(cell.target);
+            if ($(cell.target).is(".selectable")) {
+                stackDelegate.setSelectedCell(cell.target);
+            }
         });
 
 
