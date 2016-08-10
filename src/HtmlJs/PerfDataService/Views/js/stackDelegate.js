@@ -47,16 +47,12 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
 
     function changeCellState(cell, selected) {
         if (cell == null) { return; }
+        console.log(selected);
         if (selected) {
-            cell.originalBackgroundColor = $(cell).css("background-color");
-            $(cell).css("background-color", "#b3c6ff");
-            $(cell).css("border", "2px inset black");
-            $(cell).css("font-weight", "bold");
+            $(cell).addClass("selected");  // This causes the styling to show up (look in stackviewer.css for more)
             cell.selected = true;
         } else {
-            $(cell).css("background-color", cell.originalBackgroundColor);
-            $(cell).css("border-style", "none");
-            $(cell).css("font-weight", "normal");
+            $(cell).removeClass("selected");  // This causes the styling to return to normal (look in stackviewer.css for more)
             cell.selected = false;
         }
     }
