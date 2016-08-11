@@ -133,6 +133,7 @@
       <!-- basicContext Menu Test -->
       <script>
         document.querySelector('#treeContainer').addEventListener('contextmenu', function(e) {
+            console.log(e);
           var clicked = function() { alert('Item clicked!') }
           let items = [
             { title: 'Help on Item', icon: 'ion-help-buoy', fn: clicked, disabled: true },

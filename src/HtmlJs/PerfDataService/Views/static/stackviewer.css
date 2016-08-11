@@ -173,16 +173,16 @@ table tbody tr:nth-child(even) {
 table tbody tr:nth-child(odd)[data-find-flag],
 table tbody tr:nth-child(even)[data-find-flag] {
   /*background-color: #809fff;*/
-  background-color: #e6ebff;
+  background-color: #b3c6ff;
 }
 
 .selected,
 table tbody tr:nth-child(odd).selected,
 table tbody tr:nth-child(even).selected {
-    background-color: #b3c6ff;
-    outline: 1px solid var(--main-color);
-    font-weight: bold;
-    color: black;
+    background-color: var(--main-color);
+    /*outline: 1px solid var(--main-color);*/
+    /*font-weight: bold;*/
+    color: white;
 }
 
 /*#CallersTree {
