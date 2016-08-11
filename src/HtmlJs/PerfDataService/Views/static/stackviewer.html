@@ -1,0 +1,638 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Stack Viewer</title>
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/foundation.css">
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/app.css">
+    <link href="../libraries/jquery.treetable/css/jquery.treetable.css" rel="stylesheet" type="text/css" />
+    <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
+
+    <!-- basicContext Theme -->
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
+    <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
+    <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+</head>
+<body>
+    <div class="fixedContainer">
+        <div class="nav"></div>
+
+        <form id="filtersForm" class="row fullWidth align-middle">
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>Start:</label>
+                <input class="filter" id="start-filter" name="start" list="start-filter-list" type="text">
+                <datalist id="start-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>End:</label>
+                <input class="filter" id="end-filter" name="end" list="end-filter-list" type="text">
+                <datalist id="end-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>GroupPats:</label>
+                <input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
+                <datalist id="grouppats-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>Fold%:</label>
+                <input class="filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
+                <datalist id="foldpercent-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>FoldPats:</label>
+                <input class="filter" name="foldpats" list="foldpats-filter-list" type="text">
+                <datalist id="foldpats-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>IncPats:</label>
+                <input class="filter" name="incpats" list="incpats-filter-list" type="text">
+                <datalist id="incpats-filter-list"></datalist>
+            </div>
+
+            <div class="singleFilterContainer small-12 medium-4 large-3 columns">
+                <label>ExcPats:</label>
+                <input class="filter" name="excpats" list="excpats-filter-list" type="text">
+                <datalist id="excpats-filter-list"></datalist>
+            </div>
+        </form>
+
+        <ul class="tabs" data-tabs id="tabs">
+            <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
+            <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
+            <li class="tabs-title"><a href="#callers">Callers</a></li>
+            <li class="tabs-title"><a href="#callees">Callees</a></li>
+        </ul>
+    </div>
+
+    <div class="tabs-content" data-tabs-content="tabs">
+        <div class="tabs-panel is-active" id="by-name">
+            <div class="findContainer" style="display: none;">
+                <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="display: none;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
+            </div>
+            <table id="by-name-list">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+
+        <div class="tabs-panel" id="call-tree">
+            <div class="findContainer" style="display: none;">
+                <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="display: none;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
+            </div>
+            <table id="call-treeTree">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="tabs-panel" id="callers">
+            <div class="findContainer" style="display: none;">
+                <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="display: none;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
+            </div>
+                <table id="callersTree">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Inc %</th>
+                            <th>Inc</th>
+                            <th>Exc %</th>
+                            <th>Exc</th>
+                            <th>Fold</th>
+                            <th>First</th>
+                            <th>Last</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+        </div>
+
+        <div class="tabs-panel" id="callees">
+            <div class="findContainer" style="display: none;">
+                <span>Find:</span><input class="find" name="find" type="text">
+                <div class="searchNavButtons" style="display: none;">
+                    <a href="#" class="prev">prev</a>
+                    <a href="#" class="next">next</a>
+                    <span>0/0</span>
+                </div>
+            </div>
+            <table id="calleesTree">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <footer id="footer"></footer>
+
+
+
+    <!-- Do NOT Delete
+      This allows for script tags and requires('') to work both in the browser and i Electron -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+
+    <!-- Let's get some jQuery going here. -->
+    <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
+    <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
+
+    <script src="../js/stackDelegate.js"></script>
+
+
+    <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
+    <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
+    <script src="../libraries/bluebird.min.js"></script>
+    <!-- basicContext Library -->
+    <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
+
+    <!-- Template Including -->
+    <script>
+        var join = Promise.join;
+        
+        var navbar = $.get('templates/navbar.html');
+        var footer = $.get('templates/footer.html');
+        
+        join(navbar, footer, function(navbarResult, footerResult) {
+                var nav = $(navbarResult).children();
+                $('.nav').append(nav);
+
+                var foot = $(footerResult).children();
+                $('#footer').append(foot);
+
+                $(document).foundation();
+                positionTabsContent();
+            }
+        );
+
+        $(window).resize(function() {
+            positionTabsContent();
+        });
+
+        function positionTabsContent() {
+            var offset = $(".fixedContainer").height() + 40;
+            $(".tabs-content").css("margin-top", offset);
+        }
+    </script>
+
+    
+    <script>
+        $(document).ready(function () {
+            // Get tree ready
+            var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
+
+            // Initialize by-name-list and possibly set some properties
+            $("#by-name-list").treetable({
+                indenterTemplate: "<span></span>"
+            });
+
+            // Initialize call-treeTree and possibly set some properties
+            $("#call-treeTree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                onNodeExpand: function () {
+                    var node = this;
+                    onTreeNodeExpand(node, "#call-treeTree");
+                }
+            });
+            
+            // Load data into by-name-list and call-treeTree
+            stackDelegate.filters = $("#filtersForm").serialize();  // In case there are any default filter values set
+            loadAndDisplayData(["by-name-list", "call-treeTree"], false);
+
+            // Initialize callersTree and possibly set some properties
+            $("#callersTree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                onNodeExpand: function () {
+                    var node = this;
+                    onTreeNodeExpand(node, "#callersTree");
+                }
+            });
+
+            // Initialize calleesTree and possibly set some properties
+            $("#calleesTree").treetable({
+                expandable: true,
+                indenterTemplate: indenterTemplate,
+                onNodeExpand: function () {
+                    var node = this;
+                    onTreeNodeExpand(node, "#calleesTree");
+                }
+            });
+        });
+
+
+
+        /*_____________________________________*/
+        /*_______ Tab Updater Function ________*/
+        /*_____________________________________*/
+        /* OPTIONS:
+        "forceParentNodeId" : "id"
+        */
+        function updateTreeTableHtml(treeTableId, parentNode, stackData, options={}) {
+            // Iterate through each row
+            var rowsToAppend = "";
+            var dataIncludesSearchResults = false;
+
+            for (var i = 0; i < stackData.length; ++i) {
+                var findFlag = (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "");
+                dataIncludesSearchResults = dataIncludesSearchResults || findFlag.length;
+
+                rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
+                                            + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
+                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren
+                                            + findFlag
+                                            + "\">";
+
+                rowsToAppend = rowsToAppend + "<td class=\"name-col selectable\">" + stackData[i].name + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].exclusiveMetricPercent : stackData[i].inclusiveMetricPercent) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].exclusiveMetric : stackData[i].inclusiveMetric) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].inclusiveMetricPercent : stackData[i].exclusiveMetricPercent) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].inclusiveMetric : stackData[i].exclusiveMetric) + "</td>\
+                                    <td class=\"selectable\">" + stackData[i].exclusiveFoldedCount + "</td>\
+                                    <td class=\"selectable\" relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec + "</td>\
+                                    <td class=\"selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec + "</td>\
+                                    </tr>";
+            }
+
+            $(treeTableId).treetable("loadBranch", parentNode, rowsToAppend);  // treetable treats a null node parameter as meaning root
+                
+            if (dataIncludesSearchResults) {
+                $(treeTableId + " tbody tr").each(function(index) {
+                    var hasChildren = $(treeTableId).treetable("node", $(this).attr("data-tt-id")).children.length > 0;
+                    if (hasChildren) { $(treeTableId).treetable("expandNode", $(this).attr("data-tt-id")) };
+                }); 
+            }
+        }
+
+        
+        /*_____________________________________*/
+        /*__________ Event Listeners __________*/
+        /*_____________________________________*/
+
+        /* by-name-list click event */
+        $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            var newFocusNode = $("#by-name-list").treetable("node", clickedNodeId);
+            switchExclusiveAndInclusiveMetricsElements(newFocusNode);
+
+            stackDelegate.setFocusNode(newFocusNode);
+            $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
+
+            loadAndDisplayData(["callersTree", "calleesTree"], false);
+            stackDelegate.clearSelectedCell();
+        });
+
+        function switchExclusiveAndInclusiveMetricsElements(node) {
+            var exclusiveMetricPercent = $(node.row[0].children[1]).text();
+            var exclusiveMetric = $(node.row[0].children[2]).text();
+            var inclusiveMetricPercent = $(node.row[0].children[3]).text();
+            var inclusiveMetric = $(node.row[0].children[4]).text();
+            $(node.row[0].children[1]).text(inclusiveMetricPercent);
+            $(node.row[0].children[2]).text(inclusiveMetric);
+            $(node.row[0].children[3]).text(exclusiveMetricPercent);
+            $(node.row[0].children[4]).text(exclusiveMetric);
+        }
+
+        /* callersTree click event */
+        $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            //var clickedNodeId = row.currentTarget.innerText.trim();
+            
+            var newFocusNode = $("#callersTree").treetable("node", clickedNodeId);
+            stackDelegate.setFocusNode(newFocusNode);
+
+            loadAndDisplayData(["callersTree", "calleesTree"], false);
+            stackDelegate.clearSelectedCell();
+        });
+
+
+        /* calleesTree click event */
+        $(document).on("dblclick", "#calleesTree tbody tr td:first-child", function (row) {
+            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
+            //var clickedNodeId = row.currentTarget.innerText.trim();
+            
+            var newFocusNode = $("#calleesTree").treetable("node", clickedNodeId);
+            stackDelegate.setFocusNode(newFocusNode);
+
+            loadAndDisplayData(["calleesTree", "callersTree"], false);
+            stackDelegate.clearSelectedCell();
+        });
+
+
+        $(document).on("click", ".is-active table tbody tr td", function(cell) {
+            if ($(cell.target).is(".selectable")) {
+                stackDelegate.setSelectedCell(cell.target);
+            }
+        });
+
+
+        // TODO: Double click on first and last
+        $(document).on("dblclick", ".is-active table tbody tr td", function (cell) {
+            var filterId = $(cell.target).attr("relevant-filter-id");
+            $(filterId).val($(cell.target).text());
+        });
+
+
+        function loadAndDisplayData(treesToUpdate, includeSearch=true) {
+            // DISPLAY BY-NAME DATA
+            if (treesToUpdate == null || treesToUpdate.includes("by-name-list")) {
+                var options = { "includeSearch" : includeSearch };
+                stackDelegate.getSummaryData(function (summaryStackData) {
+                    $("#by-name-list tbody").empty();  // TODO: Maybe unload branch, instead
+                    updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+                    if (stackDelegate.focusNode != null) {
+                        var newFocusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
+                        stackDelegate.setFocusNode(newFocusNode);
+                    }
+
+                    if (includeSearch) {
+                        displayFindNavigation("#by-name-list");
+                        $(".is-active .searchNavButtons .next").click();
+                    }
+                }, options);
+            }
+
+            // LOAD AND DISPLAY CALLTREE DATA
+            if (treesToUpdate == null || treesToUpdate.includes("call-treeTree")) {
+                stackDelegate.getNode("ROOT", function(nodeData){
+                    $("#call-treeTree tbody").empty();
+
+                    // Place root node in tree
+                    updateTreeTableHtml("#call-treeTree", null, [nodeData]);
+
+                    var options = {"overrideFocusNode" : "ROOT",
+                        "includeSearch" : includeSearch,
+                        "call-treeTree" : true
+                    };
+                    stackDelegate.getCalleesData(function (callTreeStackData, status) {
+                        // Place data in CallTree tab
+                        var parentNode = $("#call-treeTree").treetable("node", "ROOT");
+                        updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
+
+                        if (includeSearch) {
+                            displayFindNavigation("#call-treeTree");
+                            $(".is-active .searchNavButtons .next").click();
+                        }
+                    }, options);
+                });
+            }
+
+            // LOAD AND DISPLAY CALLERS DATA
+            if ((treesToUpdate == null || treesToUpdate.includes("callersTree")) && stackDelegate.focusNode != null) {
+                var options = {"includeSearch" : includeSearch};
+                stackDelegate.getCallersData(function (callersStackData, status) {
+                    $("#callersTree tbody").empty();
+
+                    var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
+                                        + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
+                                        " + stackDelegate.focusNode.row[0].innerHTML + "\
+                                        " + "</tr>";
+
+                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    $("#callersTree").treetable("loadBranch", null, focusNodeHtml);
+                    var parentNode = $("#callersTree").treetable("node", stackDelegate.focusNode.id);
+
+                    // Place data in Callers tab
+                    updateTreeTableHtml("#callersTree", parentNode, callersStackData);
+
+                    if (includeSearch) {
+                        displayFindNavigation("#callersTree");
+                        $(".is-active .searchNavButtons .next").click();
+                    }
+                }, options);
+            }
+            
+            // LOAD AND DISPLAY CALLEES DATA
+            if ((treesToUpdate == null || treesToUpdate.includes("calleesTree")) && stackDelegate.focusNode != null) {
+                var options = {"includeSearch" : includeSearch};
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
+                    $("#calleesTree tbody").empty();
+
+                    var focusNodeHtml = "<tr data-tt-id=\"" + stackDelegate.focusNode.id
+                                        + "\" data-tt-branch=\"true\" direct-children-loaded=\"true\">\
+                                        " + stackDelegate.focusNode.row[0].innerHTML + "\
+                                        " + "</tr>";
+
+                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    $("#calleesTree").treetable("loadBranch", null, focusNodeHtml);
+                    var parentNode = $("#calleesTree").treetable("node", stackDelegate.focusNode.id);
+
+                    // Place data in Callees tab
+                    updateTreeTableHtml("#calleesTree", parentNode, calleesStackData);
+
+                    if (includeSearch) {
+                        displayFindNavigation("#calleesTree");
+                        $(".is-active .searchNavButtons .next").click();
+                    }
+                }, options);
+            }
+        }
+
+
+        /* Tree node expand event */
+        function onTreeNodeExpand(node, treeName) {
+            if (node.children.length > 0) { return; }
+
+            var options = {"overrideFocusNode" : node.id };
+
+            if (treeName == "#callersTree") {
+                // TODO: Fix so that find is not included in this
+                stackDelegate.getCallersData(function (callersStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
+
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, callersStackData);
+                    }
+                }, options);
+            } else if (treeName == "#calleesTree") {
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
+
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, calleesStackData);
+                    }
+                }, options);
+            } else if (treeName == "#call-treeTree") {
+                stackDelegate.getCalleesData(function (calleesStackData, status) {
+                    if (status == "success") {
+                        node.row[0].setAttribute("direct-children-loaded", "true");
+
+                        // Place data under clicked node
+                        updateTreeTableHtml(treeName, node, calleesStackData);
+                    }
+                }, options);
+            }
+        }
+
+
+        function displayFindNavigation(treeId) {
+            var targetNodesFound = 0;
+            $(treeId + " tbody tr").each(function(index) {
+                var findFlag = $(this).attr("data-find-flag");
+
+                if (findFlag != undefined) {
+                    targetNodesFound++;
+                }
+            });
+
+            $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
+            $(".is-active .searchNavButtons").show();
+        }
+
+        $(".next").click(function (e) {
+            changeFindCounter(e, 1);
+        });
+
+        $(".prev").click(function (e) {
+            changeFindCounter(e, -1);
+        });
+
+        $("body").keydown(function(e) {
+            if (e.ctrlKey) {
+                if (e.which == 39 || e.which == 40) {
+                    $(".is-active .searchNavButtons .next").click();
+                } else if (e.which == 37 || e.which == 38) {
+                    $(".is-active .searchNavButtons .prev").click();
+                }
+            } else if (e.which == 27) {
+                $(".is-active .searchNavButtons").hide();
+                $(".is-active .findContainer").hide();
+                stackDelegate.clearSelectedCell();
+            }
+        });
+
+        function changeFindCounter(e, i) {
+            var itemIndicator = $(e.target.parentNode).find('span');
+            var numbersFromIndicator = itemIndicator.text().split('/');
+
+            var current = parseInt(numbersFromIndicator[0]);
+            var total = parseInt(numbersFromIndicator[1]);
+
+            if (total <= 0) { return; }
+            
+            // Navigate to next item
+            current = (current + i) % total;
+            current = current == 0 ? total : current;
+            var targetNode = $(".is-active").find("[data-find-flag='" + current + "']");
+            $('html, body').animate({
+                scrollTop: targetNode.offset().top - 400
+            }, 100);
+
+            stackDelegate.setSelectedCell(targetNode);
+
+            // Update itemIndicator
+            itemIndicator.text(current + '/' + total);
+        }
+
+        $(window).keydown(function(e){
+            if ((e.ctrlKey || e.metaKey) && e.keyCode === 70) {
+                e.preventDefault();
+                $(".is-active .findContainer").show();
+                $(".is-active .findContainer input").focus();
+            }
+        });
+
+        $(".filter, .find").keypress(function (e) {
+            // If the user pressed enter in a filter textfield
+            if (e.which == 13) {
+                stackDelegate.filters = $("#filtersForm").serialize();
+
+                // If find was used, only update the current tab
+                if (e.target.name == "find") {
+                    var activeTreeName = $(".tabs-panel.is-active table").attr("id");
+                    loadAndDisplayData([activeTreeName]);
+                } else {
+                    // Get updated summary stack data again and update By Name tab
+                    loadAndDisplayData();
+                }
+            }
+        });
+
+        document.querySelector('#by-name-list').addEventListener('contextmenu', function(e) {
+            console.log(e.target);
+            var clicked = function() { alert('Item clicked!') }
+            let items = [
+              { title: 'Set Time Range', icon: 'ion-help-buoy', fn: clicked }
+              //{ title: 'Refresh Dir', icon: 'ion-refresh', fn: clicked },
+              //{ title: 'Open', icon: 'ion-android-open', fn: clicked },
+              //{ title: 'Close', icon: 'ion-close', fn: clicked },
+              //{ title: 'Delete', icon: 'ion-android-remove-circle', fn: clicked },
+              //{ title: 'Rename', icon: 'ion-edit', fn: clicked },
+              //{ title: 'Merge', icon: 'ion-merge', fn: clicked },
+              //{ title: 'Make Local Symbol Dir', icon: 'ion-plus-round', fn: clicked },
+              //{ title: 'Zip', icon: 'ion-ios-briefcase', fn: clicked },
+              //{ title: 'UnZip', icon: 'ion-ios-briefcase-outline', fn: clicked }
+            ]
+
+            basicContext.show(items, e)
+        })
+    </script>
+
+
+    <!-- Do NOT Delete
+      This allows for script tags and require statements to work both in the browser and in Electron -->
+    <script>if (window.module) module = window.module;</script>
+
+
+
+</body>
+</html>

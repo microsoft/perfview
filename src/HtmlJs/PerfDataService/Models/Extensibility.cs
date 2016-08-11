@@ -32,6 +32,8 @@ using System.ComponentModel;
 //using PerfView.Dialogs;
 //using PerfView.CapStats;
 ////using EventSources;
+using PerfDataService;
+
 
 namespace PerfViewExtensibility
 {
@@ -61,7 +63,7 @@ namespace PerfViewExtensibility
         ////public static Stacks OpenPerfViewXmlFile(string perfViewXmlFileName)
         ////{
         ////    var guiState = new StackWindowGuiState();
-        ////    var source = new XmlStackSource(perfViewXmlFileName, delegate(XmlReader reader)
+        ////    var source = new XmlStackSource(perfViewXmlFileName, delegate (XmlReader reader)
         ////    {
         ////        if (reader.Name == "StackWindowGuiState")
         ////            guiState.ReadFromXml(reader);
@@ -83,51 +85,51 @@ namespace PerfViewExtensibility
         /// <summary>
         /// Opens a GCHeap dump (created with HeapSnapshot)
         /// </summary>
-////        public static Stacks OpenGCDumpFile(string gcDumpFileName)
-////        {
-////            var log = App.CommandProcessor.LogFile;
-////            var gcDump = new GCHeapDump(gcDumpFileName);
+        ////        public static Stacks OpenGCDumpFile(string gcDumpFileName)
+        ////        {
+        ////            var log = App.CommandProcessor.LogFile;
+        ////            var gcDump = new GCHeapDump(gcDumpFileName);
 
-////            Graph graph = gcDump.MemoryGraph;
+        ////            Graph graph = gcDump.MemoryGraph;
 
-////            log.WriteLine(
-////                   "Opened Graph {0} Bytes: {1:f3}M NumObjects: {2:f3}K  NumRefs: {3:f3}K Types: {4:f3}K RepresentationSize: {5:f1}M",
-////                   gcDumpFileName, graph.TotalSize / 1000000.0, (int)graph.NodeIndexLimit / 1000.0,
-////                   graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
-////                   graph.SizeOfGraphDescription() / 1000000.0);
+        ////            log.WriteLine(
+        ////                   "Opened Graph {0} Bytes: {1:f3}M NumObjects: {2:f3}K  NumRefs: {3:f3}K Types: {4:f3}K RepresentationSize: {5:f1}M",
+        ////                   gcDumpFileName, graph.TotalSize / 1000000.0, (int)graph.NodeIndexLimit / 1000.0,
+        ////                   graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
+        ////                   graph.SizeOfGraphDescription() / 1000000.0);
 
-////#if false // TODO FIX NOW remove
-////            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".heapDump.xml")))
-////            {
-////                ((MemoryGraph)graph).DumpNormalized(writer);
-////            }
-////#endif
-////            var retSource = new MemoryGraphStackSource(graph, log, gcDump.CountMultipliersByType);
+        ////#if false // TODO FIX NOW remove
+        ////            using (StreamWriter writer = File.CreateText(Path.ChangeExtension(this.FilePath, ".heapDump.xml")))
+        ////            {
+        ////                ((MemoryGraph)graph).DumpNormalized(writer);
+        ////            }
+        ////#endif
+        ////            var retSource = new MemoryGraphStackSource(graph, log, gcDump.CountMultipliersByType);
 
-////            // Set the sampling ratio so that the number of objects does not get too far out of control.  
-////            if (2000000 <= (int)graph.NodeIndexLimit)
-////            {
-////                retSource.SamplingRate = ((int)graph.NodeIndexLimit / 1000000);
-////                log.WriteLine("Setting the sampling rate to {0} to keep processing under control.", retSource.SamplingRate);
-////            }
+        ////            // Set the sampling ratio so that the number of objects does not get too far out of control.  
+        ////            if (2000000 <= (int)graph.NodeIndexLimit)
+        ////            {
+        ////                retSource.SamplingRate = ((int)graph.NodeIndexLimit / 1000000);
+        ////                log.WriteLine("Setting the sampling rate to {0} to keep processing under control.", retSource.SamplingRate);
+        ////            }
 
-////            // Figure out the multiplier 
-////            string extraTopStats = "";
-////            if (gcDump.CountMultipliersByType != null)
-////            {
-////                extraTopStats += string.Format(" Heap Sampled: Mean Count Multiplier {0:f2} Mean Size Multiplier {1:f2}",
-////                        gcDump.AverageCountMultiplier, gcDump.AverageSizeMultiplier);
-////            }
+        ////            // Figure out the multiplier 
+        ////            string extraTopStats = "";
+        ////            if (gcDump.CountMultipliersByType != null)
+        ////            {
+        ////                extraTopStats += string.Format(" Heap Sampled: Mean Count Multiplier {0:f2} Mean Size Multiplier {1:f2}",
+        ////                        gcDump.AverageCountMultiplier, gcDump.AverageSizeMultiplier);
+        ////            }
 
-////            log.WriteLine("Type Histograph > 1% of heap size");
-////            log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
+        ////            log.WriteLine("Type Histograph > 1% of heap size");
+        ////            log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
-////            // TODO FIX NOW better name. 
-////            var retStacks = new Stacks(retSource, "GC Heap Dump of " + Path.GetFileName(gcDumpFileName));
-////            retStacks.m_fileName = gcDumpFileName;
-////            retStacks.ExtraTopStats = extraTopStats;
-////            return retStacks;
-////        }
+        ////            // TODO FIX NOW better name. 
+        ////            var retStacks = new Stacks(retSource, "GC Heap Dump of " + Path.GetFileName(gcDumpFileName));
+        ////            retStacks.m_fileName = gcDumpFileName;
+        ////            retStacks.ExtraTopStats = extraTopStats;
+        ////            return retStacks;
+        ////        }
 
         // Data Collection
         /// <summary>
@@ -285,113 +287,113 @@ namespace PerfViewExtensibility
         ////        ////    eventSource.Viewer.Loaded += delegate { OnOpened(eventSource.Viewer); };
         ////    ////});
         ////}
-        /////// <summary>
-        /////// Displays an HTML file htmlFilePath, (typically created using CommandEnvironment.CreateUniqueCacheFileName()) 
-        /////// in a new window.  
-        /////// </summary>
-        /////// <param name="htmlFilePath">The path to the file containing the HTML.</param>
-        /////// <param name="title">The title for the new window.</param>
-        /////// <param name="DoCommand">Docommand(string command, TextWriter log), is a action that is called any time a URL of the
-        /////// form <a href="command:XXXX"></a> is clicked on.   The XXXX is passed as the command and a TextWriter that can display
-        /////// messages to the windows log is given, and a handle to the web browser window itself.   Messages surrounded by [] in 
-        /////// the log are also displayed on the windows one line status bar.   Thus important messages should be surrounded by [].   
-        /////// This callback is NOT on the GUI thread, so you have to use the window.Dispatcher.BeginInvoke() to cause actions on 
-        /////// the GUI thread.</param>
-        /////// <param name="OnOpened">If non-null an action to perform after the window is opened (on the GUI thread)</param>
-        ////public static void OpenHtmlReport(string htmlFilePath, string title,
-        ////    Action<string, TextWriter, WebBrowserWindow> DoCommand = null, Action<WebBrowserWindow> OnOpened = null)
-        ////{
-        ////    ////GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
-        ////    ////{
-        ////    ////    var viewer = new WebBrowserWindow();
-        ////    ////    viewer.Browser.Navigating += delegate(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
-        ////    ////    {
-        ////    ////        if (e.Uri != null)
-        ////    ////        {
-        ////    ////            if (e.Uri.Scheme == "command")
-        ////    ////            {
-        ////    ////                e.Cancel = true;
-        ////    ////                if (viewer.StatusBar.Visibility != System.Windows.Visibility.Visible)
-        ////    ////                    viewer.StatusBar.Visibility = System.Windows.Visibility.Visible;
-        ////    ////                viewer.StatusBar.StartWork("Following Hyperlink", delegate()
-        ////    ////                {
-        ////    ////                    if (DoCommand != null)
-        ////    ////                        DoCommand(e.Uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
-        ////    ////                    else
-        ////    ////                        viewer.StatusBar.Log("This view does not support command URLs.");
-        ////    ////                    viewer.StatusBar.EndWork(null);
-        ////    ////                });
-        ////    ////            }
-        ////    ////        }
-        ////    ////    };
-        ////    ////    viewer.Width = 1000;
-        ////    ////    viewer.Height = 600;
-        ////    ////    viewer.Title = title;
-        ////    ////    WebBrowserWindow.Navigate(viewer.Browser, Path.GetFullPath(htmlFilePath));
-        ////    ////    viewer.Show();
-        ////    ////    if (OnOpened != null)
-        ////    ////        viewer.Loaded += delegate { OnOpened(viewer); };
+    ////    / <summary>
+    ////    / Displays an HTML file htmlFilePath, (typically created using CommandEnvironment.CreateUniqueCacheFileName()) 
+    ////    / in a new window.
+    ////    / </summary>
+    ////    / <param name = "htmlFilePath" > The path to the file containing the HTML.</param>
+    ////    / <param name = "title" > The title for the new window.</param>
+    ////    / <param name = "DoCommand" > Docommand(string command, TextWriter log), is a action that is called any time a URL of the
+    ////    / form<a href="command:XXXX"></a> is clicked on.The XXXX is passed as the command and a TextWriter that can display
+    ////    / messages to the windows log is given, and a handle to the web browser window itself.Messages surrounded by[] in 
+    ////    / the log are also displayed on the windows one line status bar.   Thus important messages should be surrounded by[].   
+    ////    / This callback is NOT on the GUI thread, so you have to use the window.Dispatcher.BeginInvoke() to cause actions on
+    ////    / the GUI thread.</param>
+    ////    / <param name = "OnOpened" > If non-null an action to perform after the window is opened(on the GUI thread)</param>
+    ////    public static void OpenHtmlReport(string htmlFilePath, string title,
+    ////        Action<string, TextWriter, WebBrowserWindow> DoCommand = null, Action<WebBrowserWindow> OnOpened = null)
+    ////{
+    ////    GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+    ////    {
+    ////        var viewer = new WebBrowserWindow();
+    ////        viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+    ////        {
+    ////            if (e.Uri != null)
+    ////            {
+    ////                if (e.Uri.Scheme == "command")
+    ////                {
+    ////                    e.Cancel = true;
+    ////                    if (viewer.StatusBar.Visibility != System.Windows.Visibility.Visible)
+    ////                        viewer.StatusBar.Visibility = System.Windows.Visibility.Visible;
+    ////                    viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
+    ////                    {
+    ////                        if (DoCommand != null)
+    ////                            DoCommand(e.Uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
+    ////                        else
+    ////                            viewer.StatusBar.Log("This view does not support command URLs.");
+    ////                        viewer.StatusBar.EndWork(null);
+    ////                    });
+    ////                }
+    ////            }
+    ////        };
+    ////        viewer.Width = 1000;
+    ////        viewer.Height = 600;
+    ////        viewer.Title = title;
+    ////        WebBrowserWindow.Navigate(viewer.Browser, Path.GetFullPath(htmlFilePath));
+    ////        viewer.Show();
+    ////        if (OnOpened != null)
+    ////            viewer.Loaded += delegate { OnOpened(viewer); };
 
-        ////    ////});
-        ////}
-        /////// <summary>
-        /////// Open Excel on csvFilePath.   
-        /////// </summary>
-        ////public static void OpenExcel(string csvFilePath)
-        ////{
-        ////    LogFile.WriteLine("[Opening CSV on {0}]", csvFilePath);
-        ////    Command.Run(Command.Quote(csvFilePath), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
-        ////}
-        /////// <summary>
-        /////// Opens the log window if this is running under the GUI, otherwise does nothing.  
-        /////// </summary>
-        ////public static void OpenLog()
-        ////{
-        ////    if (App.CommandLineArgs.NoGui)
-        ////        return;
-        ////    ////GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
-        ////    ////{
-        ////    ////    GuiApp.MainWindow.StatusBar.OpenLog();
-        ////    ////});
-        ////}
+    ////    });
+    ////}
+    /////// <summary>
+    /////// Open Excel on csvFilePath.   
+    /////// </summary>
+    ////public static void OpenExcel(string csvFilePath)
+    ////{
+    ////    LogFile.WriteLine("[Opening CSV on {0}]", csvFilePath);
+    ////    Command.Run(Command.Quote(csvFilePath), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+    ////}
+    /////// <summary>
+    /////// Opens the log window if this is running under the GUI, otherwise does nothing.  
+    /////// </summary>
+    ////public static void OpenLog()
+    ////{
+    ////    if (App.CommandLineArgs.NoGui)
+    ////        return;
+    ////    ////GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+    ////    ////{
+    ////    ////    GuiApp.MainWindow.StatusBar.OpenLog();
+    ////    ////});
+    ////}
 
-        ////// environment support 
-        /////// <summary>
-        /////// The command lines passed to perfView itself.  These are also populated by default values.
-        /////// Setting these values in CommandLineArgs will cause the commands below to use the updated values. 
-        /////// </summary>
-        ////public static CommandLineArgs CommandLineArgs { get { return App.CommandLineArgs; } }
-        /////// <summary>
-        /////// ConfigData is a set of key-value dictionary that is persisted (as AppData\Roaming\PerfView\UserConfig.xml)
-        /////// so it is remembered across invocations of the program.  
-        /////// </summary>
-        ////public static ConfigData ConfigData { get { return App.ConfigData; } }
-        /////// <summary>
-        /////// This is a directory where you can place temporary files.   These files will be cleaned up
-        /////// eventually if the number grows too large.   (this is %TEMP%\PerfView)
-        /////// </summary>
-        ////public static string CacheFileDirectory { get { return CacheFiles.CacheDir; } }
-        /////// <summary>
-        /////// Creates a file name that is in the CacheFileDirectory that will not collide with any other file.  
-        /////// You give it the base name (file name without extension), as well as the extension, and it returns
-        /////// a full file path that is guaranteed to be unique.  
-        /////// </summary>
-        /////// <param name="baseFilePath">The file name without extension (a suffix will be added to this)</param>
-        /////// <param name="extension">optionally an extension to add to the file name (must have a . in front)</param>
-        /////// <returns>The full path of a unique file in the CacheFileDirectory</returns>
-        ////public static string CreateUniqueCacheFileName(string baseFilePath, string extension = "")
-        ////{
-        ////    return CacheFiles.FindFile(baseFilePath, extension);
-        ////}
-        /////// <summary>
-        /////// This is the directory that all extensions live in (e.g. PerfViewExtensibity next to PerfView.exe)
-        /////// </summary>
-        ////public static string ExtensionsDirectory { get { return Extensions.ExtensionsDirectory; } }
-        /////// <summary>
-        /////// This is the directory where support files can go (.e.g AppData\Roaming\PerfView\VER.*)
-        /////// </summary>
-        ////public static string SupportFilesDirectory { get { return SupportFiles.SupportFileDir; } }
-    }
+    ////// environment support 
+    /////// <summary>
+    /////// The command lines passed to perfView itself.  These are also populated by default values.
+    /////// Setting these values in CommandLineArgs will cause the commands below to use the updated values. 
+    /////// </summary>
+    ////public static CommandLineArgs CommandLineArgs { get { return App.CommandLineArgs; } }
+    /////// <summary>
+    /////// ConfigData is a set of key-value dictionary that is persisted (as AppData\Roaming\PerfView\UserConfig.xml)
+    /////// so it is remembered across invocations of the program.  
+    /////// </summary>
+    ////public static ConfigData ConfigData { get { return App.ConfigData; } }
+    /////// <summary>
+    /////// This is a directory where you can place temporary files.   These files will be cleaned up
+    /////// eventually if the number grows too large.   (this is %TEMP%\PerfView)
+    /////// </summary>
+    ////public static string CacheFileDirectory { get { return CacheFiles.CacheDir; } }
+    /////// <summary>
+    /////// Creates a file name that is in the CacheFileDirectory that will not collide with any other file.  
+    /////// You give it the base name (file name without extension), as well as the extension, and it returns
+    /////// a full file path that is guaranteed to be unique.  
+    /////// </summary>
+    /////// <param name="baseFilePath">The file name without extension (a suffix will be added to this)</param>
+    /////// <param name="extension">optionally an extension to add to the file name (must have a . in front)</param>
+    /////// <returns>The full path of a unique file in the CacheFileDirectory</returns>
+    ////public static string CreateUniqueCacheFileName(string baseFilePath, string extension = "")
+    ////{
+    ////    return CacheFiles.FindFile(baseFilePath, extension);
+    ////}
+    /////// <summary>
+    /////// This is the directory that all extensions live in (e.g. PerfViewExtensibity next to PerfView.exe)
+    /////// </summary>
+    ////public static string ExtensionsDirectory { get { return Extensions.ExtensionsDirectory; } }
+    /////// <summary>
+    /////// This is the directory where support files can go (.e.g AppData\Roaming\PerfView\VER.*)
+    /////// </summary>
+    ////public static string SupportFilesDirectory { get { return SupportFiles.SupportFileDir; } }
+}
 
     public class DataFile : IDisposable
     {        /// <summary>
@@ -413,7 +415,15 @@ namespace PerfViewExtensibility
     public class ETLDataFile : DataFile
     {
         // TODO: This symbolPath static property is only a temporary fix.
-        static string symbolPath = "C:\\Users\\t-kahoop\\Development\\perfview\\src\\PerfView\\bin\\Debug\\tempSymbols";
+
+        //
+        // TODO: lt72: do not hardcode paths, you could use a configuration setting in case... (Settings.cs or web.config or app.settings...)
+        // in web.config you read: 'Configure your application settings in appsettings.json. Learn more at http://go.microsoft.com/fwlink/?LinkId=786380'
+        //
+
+        static string symbolPath = PerfDataService.Startup.config["SymbolPath"];
+
+
         // We have the concept of a process to focus on.  All STACK sampling will be filtered by this.  
         // If null, then no filtering is done.   Do try to limit to one process if possible as it makes
         // analysis and symbol lookup faster.  
@@ -466,24 +476,21 @@ namespace PerfViewExtensibility
 
             var etlOrEtlXFileName = FilePath;
 
-            // NOTE: Probably need the following for .etl.zip
-            TextWriter log = File.CreateText("./temp.txt");
+            // TODO: Probably need the following for .etl.zip
+            TextWriter log = File.CreateText("./log.txt");
             UnZipIfNecessary(ref etlOrEtlXFileName, log);
 
             for (; ; )  // RETRY Loop 
             {
                 var usedAnExistingEtlxFile = false;
                 var etlxFileName = etlOrEtlXFileName;
-                System.Diagnostics.Debug.WriteLine("\n\nfile: " + etlOrEtlXFileName + "\n\n");
-                System.Diagnostics.Debug.WriteLine("\n\nEnds with .etl?: " + etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) + "\n\n");
                 if (etlOrEtlXFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                 {
                     etlxFileName = CacheFiles.FindFile(etlOrEtlXFileName, ".etlx");
-                    System.Diagnostics.Debug.WriteLine("\n\nAfter Cache Check: " + etlxFileName + "\n\n");
                     if (File.Exists(etlxFileName) && File.GetLastWriteTimeUtc(etlOrEtlXFileName) <= File.GetLastWriteTimeUtc(etlxFileName))
                     {
                         usedAnExistingEtlxFile = true;
-                        ////log.WriteLine("Found a existing ETLX file in cache: {0}", etlxFileName);
+                        log.WriteLine("Found a existing ETLX file in cache: {0}", etlxFileName);
                     }
                     else
                     {
@@ -497,16 +504,15 @@ namespace PerfViewExtensibility
                         options.LocalSymbolsOnly = false;
                         options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };
 
-                        System.Diagnostics.Debug.WriteLine("\n\nAbout to CreateFromEventTraceLogFile: " + etlOrEtlXFileName + "\n\n");
-                        ////log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
+                        log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
                         TraceLog.CreateFromEventTraceLogFile(etlOrEtlXFileName, etlxFileName, options);
 
                         var dataFileSize = "Unknown";
                         if (File.Exists(etlOrEtlXFileName))
                             dataFileSize = ((new System.IO.FileInfo(etlOrEtlXFileName)).Length / 1000000.0).ToString("n3") + " MB";
 
-                        ////log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB",
-                        ////dataFileSize, (new System.IO.FileInfo(etlxFileName)).Length / 1000000.0);
+                        log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB",
+                        dataFileSize, (new System.IO.FileInfo(etlxFileName)).Length / 1000000.0);
                     }
                 }
                 // At this point we have an etlxFileName set, so we can open the TraceLog file. 
@@ -519,7 +525,7 @@ namespace PerfViewExtensibility
                     // Failure! If we used an existing ETLX file we should try to regenerate the file 
                     if (usedAnExistingEtlxFile)
                     {
-                        ////log.WriteLine("Could not open the ETLX file, regenerating...");
+                        log.WriteLine("Could not open the ETLX file, regenerating...");
                         FileUtilities.ForceDelete(etlxFileName);
                         if (!File.Exists(etlxFileName))
                             continue;       // Retry 
@@ -529,6 +535,8 @@ namespace PerfViewExtensibility
                 break;
             }
 
+            log.Flush();
+            log.Close();
             // Yeah we have opened the log file!
             ////if (App.CommandLineArgs.UnsafePDBMatch)
             ////    m_TraceLog.CodeAddresses.UnsafePDBMatching = true;
@@ -2043,7 +2051,7 @@ static class GuiModel
                 string dirName = Path.GetDirectoryName(xmlOutputFileName);
                 string fileName = Path.GetFileNameWithoutExtension(xmlOutputFileName);
                 string newExtension = ".etl.xml";
-                Path.Combine(dirName, fileName + newExtension);
+                xmlOutputFileName = Path.Combine(dirName, fileName + newExtension);
             }
 
             var eventCount = 0;
@@ -2068,7 +2076,7 @@ static class GuiModel
             ////LogFile.WriteLine("[Wrote {0} events to {1}]", eventCount, xmlOutputFileName);
         }
 
-#if false
+
         /// <summary>
         /// Save the CPU stacks from 'etlFileName'.  If the /process qualifier is present use it to narrow what
         /// is put into the file to a single process.  
@@ -2087,7 +2095,7 @@ static class GuiModel
                 SaveCPUStacksForProcess(etlFile, process);
             }
         }
-
+#if false
         /// <summary>
         /// Save the CPU stacks for a set of traces.
         /// 
@@ -3383,8 +3391,7 @@ static class GuiModel
                 events = etlFile.TraceLog.Events;           // All events in the process.
             return events;
         }
-#if false
-        #region private
+
         /// <summary>
         /// Save the CPU stacks for an ETL file into a perfView.xml.zip file.
         /// </summary>
@@ -3406,14 +3413,19 @@ static class GuiModel
             var stacks = etlFile.CPUStacks();
             stacks.Filter = filter;
             stacks.LookupWarmSymbols(10);           // Look up symbols (even on the symbol server) for modules with more than 50 inclusive samples
-            stacks.GuiState.Notes = string.Format("Created by SaveCPUStacks from {0} on {1}", etlFile.FilePath, DateTime.Now);
+            ////stacks.GuiState.Notes = string.Format("Created by SaveCPUStacks from {0} on {1}", etlFile.FilePath, DateTime.Now);
 
             // Derive the output file name from the input file name.  
-            var stackSourceFileName = PerfViewFile.ChangeExtension(etlFile.FilePath, ".perfView.xml.zip");
+            ////var stackSourceFileName = PerfViewFile.ChangeExtension(etlFile.FilePath, ".perfView.xml.zip");\
+            string dirName = Path.GetDirectoryName(etlFile.FilePath);
+            string fileName = Path.GetFileNameWithoutExtension(etlFile.FilePath);
+            string newExtension = ".perfView.xml.zip";
+            var stackSourceFileName = Path.Combine(dirName, fileName + newExtension);
             stacks.SaveAsXml(outputName ?? stackSourceFileName);
-            LogFile.WriteLine("[Saved {0} to {1}]", etlFile.FilePath, stackSourceFileName);
+            ////LogFile.WriteLine("[Saved {0} to {1}]", etlFile.FilePath, stackSourceFileName);
         }
-
+#if false
+        #region private
         /// <summary>
         /// The configuration data for an ETL file dumped by SaveCPUStacksForProcess.
         /// </summary>
