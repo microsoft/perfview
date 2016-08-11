@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData;
 using Address = System.UInt64;
 using StartStopKey = System.Guid;   // The start-stop key is unique in the trace.  We incorperate the process as well as activity ID to achieve this.
 
@@ -167,7 +168,7 @@ namespace Microsoft.Diagnostics.Tracing
                     return;
                 }
 
-                // OK so now we only have EventSources with start and stop opcodes.   THere are a few that don't follow
+                // OK so now we only have EventSources with start and stop opcodes. There are a few that don't follow
                 // conventions completely, and then we handle the 'normal' case 
                 if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
                     FixAndProcessFrameworkEvents(data);
@@ -182,6 +183,16 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         if (data.Opcode == TraceEventOpcode.Start)
                         {
+                            if (data.ProviderGuid == MicrosoftDiagnosticsDiagnosticSourceProvider)
+                            {
+                                // Inside the function, it will filter the events by 'EventName'. 
+                                // It will only process "Microsoft.EntityFrameworkCore.BeforeExecuteCommand" and "Microsoft.AspNetCore.Hosting.BeginRequest".
+                                if (TryProcessDiagnosticSourceStartEvents(data))
+                                {
+                                    return;
+                                }
+                            }
+
                             string extraStartInfo = null;
                             // Include the first argument in extraInfo if it is a string (e.g. a URL or other identifier).  
                             if (0 < data.PayloadNames.Length)
@@ -712,6 +723,7 @@ namespace Microsoft.Diagnostics.Tracing
         private static readonly Guid MicrosoftWindowsIISProvider = new Guid("de4649c9-15e8-4fea-9d85-1cdda520c334");
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
         private static readonly Guid MicrosoftWindowsHttpService = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
+        private static readonly Guid MicrosoftDiagnosticsDiagnosticSourceProvider = new Guid("ADB401E1-5296-51F8-C125-5FDA75826144");
 
 
         // The main start and stop logic.  
@@ -913,6 +925,71 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
         }
+
+        /// <summary>
+        /// Try to process some predefined DiagnosticSource ("Microsoft.EntityFrameworkCore.BeforeExecuteCommand" and "Microsoft.AspNetCore.Hosting.BeginRequest") start events.
+        /// This will try to filter the events by "EventName", if failed it will return false without any further processing.
+        /// </summary>
+        /// <returns>Whether or not succeeded in processing the event</returns>
+        bool TryProcessDiagnosticSourceStartEvents(TraceEvent data)
+        {
+            Debug.Assert(data.ProviderGuid == MicrosoftDiagnosticsDiagnosticSourceProvider);
+            bool result = false;
+            try
+            {
+                var eventName = data.PayloadByName("EventName") as string;
+                switch (eventName)
+                {
+                    case "Microsoft.EntityFrameworkCore.BeforeExecuteCommand":
+                        {
+                            // In the converter from 'DiagnosticSource' to ETW, we have some default configurations.
+                            // By default, SQL (EntityFramework) DiagnosticSource event will be converted to 'Activity2Start' and 'Activity2Stop' events
+                            // of provider 'Microsoft-Diagnostics-DiagnosticSource'. Meanwhile, the sql command will be in the payload.
+                            // The following code is used to make the call stack looks better (converting 'Activity2Start' to 'SQLCommand')
+                            // and showing the SQL command.
+                            // Details:
+                            //https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
+                            if (0 < data.PayloadNames.Length)
+                            {
+                                var arguments = data.PayloadByName("Arguments") as StructValue[];
+                                if (arguments != null)
+                                {
+                                    // Try to extract SQL command of the EntityFramework event.
+                                    foreach (var payload in arguments)
+                                    {
+                                        object tmp;
+                                        if (payload.TryGetValue("Key", out tmp)
+                                            && tmp.ToString() == "CommandText")
+                                        {
+                                            if (payload.TryGetValue("Value", out tmp))
+                                            {
+                                                OnStart(data, tmp.ToString(), null, null, null, "SQLCommand");
+                                                result = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case "Microsoft.AspNetCore.Hosting.BeginRequest":
+                        {
+                            // Just change the name from "Activity1Start" to "AspNetCoreHosting".
+                            OnStart(data, null, null, null, null, "AspNetCoreHosting");
+                            result = true;
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine("Threw exception while processing DiagnosticSource start events: " + ex.Message);
+            }
+
+            return result;
+        }
+
         void FixAndProcessFrameworkEvents(TraceEvent data)
         {
             Debug.Assert(data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid);
