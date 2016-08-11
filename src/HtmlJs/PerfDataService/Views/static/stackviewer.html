@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/app.css">
     <link href="../libraries/jquery.treetable/css/jquery.treetable.css" rel="stylesheet" type="text/css" />
     <link href="../static/stackviewer.css" rel="stylesheet" type="text/css" />
+
+    <!-- basicContext Theme -->
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
+    <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
+    <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
+    <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
 <body>
     <div class="fixedContainer">
@@ -103,10 +110,10 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Exc %</th>
-                        <th>Exc</th>
                         <th>Inc %</th>
                         <th>Inc</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
                         <th>Fold</th>
                         <th>First</th>
                         <th>Last</th>
@@ -129,10 +136,10 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Exc %</th>
-                            <th>Exc</th>
                             <th>Inc %</th>
                             <th>Inc</th>
+                            <th>Exc %</th>
+                            <th>Exc</th>
                             <th>Fold</th>
                             <th>First</th>
                             <th>Last</th>
@@ -155,10 +162,10 @@
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Exc %</th>
-                        <th>Exc</th>
                         <th>Inc %</th>
                         <th>Inc</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
                         <th>Fold</th>
                         <th>First</th>
                         <th>Last</th>
@@ -189,6 +196,8 @@
     <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
     <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
     <script src="../libraries/bluebird.min.js"></script>
+    <!-- basicContext Library -->
+    <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
 
     <!-- Template Including -->
     <script>
@@ -289,10 +298,10 @@
                                             + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col selectable\">" + stackData[i].name + "</td>\
-                                    <td class=\"selectable\">" + stackData[i].exclusiveMetricPercent + "</td>\
-                                    <td class=\"selectable\">" + stackData[i].exclusiveMetric + "</td>\
-                                    <td class=\"selectable\">" + stackData[i].inclusiveMetricPercent + "</td>\
-                                    <td class=\"selectable\">" + stackData[i].inclusiveMetric + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].exclusiveMetricPercent : stackData[i].inclusiveMetricPercent) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].exclusiveMetric : stackData[i].inclusiveMetric) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].inclusiveMetricPercent : stackData[i].exclusiveMetricPercent) + "</td>\
+                                    <td class=\"selectable\">" + (treeTableId == "#by-name-list" ? stackData[i].inclusiveMetric : stackData[i].exclusiveMetric) + "</td>\
                                     <td class=\"selectable\">" + stackData[i].exclusiveFoldedCount + "</td>\
                                     <td class=\"selectable\" relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec + "</td>\
                                     <td class=\"selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec + "</td>\
@@ -319,12 +328,25 @@
             //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
             var newFocusNode = $("#by-name-list").treetable("node", clickedNodeId);
+            switchExclusiveAndInclusiveMetricsElements(newFocusNode);
+
             stackDelegate.setFocusNode(newFocusNode);
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
 
             loadAndDisplayData(["callersTree", "calleesTree"], false);
             stackDelegate.clearSelectedCell();
         });
+
+        function switchExclusiveAndInclusiveMetricsElements(node) {
+            var exclusiveMetricPercent = $(node.row[0].children[1]).text();
+            var exclusiveMetric = $(node.row[0].children[2]).text();
+            var inclusiveMetricPercent = $(node.row[0].children[3]).text();
+            var inclusiveMetric = $(node.row[0].children[4]).text();
+            $(node.row[0].children[1]).text(inclusiveMetricPercent);
+            $(node.row[0].children[2]).text(inclusiveMetric);
+            $(node.row[0].children[3]).text(exclusiveMetricPercent);
+            $(node.row[0].children[4]).text(exclusiveMetric);
+        }
 
         /* callersTree click event */
         $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
@@ -584,6 +606,25 @@
                 }
             }
         });
+
+        document.querySelector('#by-name-list').addEventListener('contextmenu', function(e) {
+            console.log(e.target);
+            var clicked = function() { alert('Item clicked!') }
+            let items = [
+              { title: 'Set Time Range', icon: 'ion-help-buoy', fn: clicked }
+              //{ title: 'Refresh Dir', icon: 'ion-refresh', fn: clicked },
+              //{ title: 'Open', icon: 'ion-android-open', fn: clicked },
+              //{ title: 'Close', icon: 'ion-close', fn: clicked },
+              //{ title: 'Delete', icon: 'ion-android-remove-circle', fn: clicked },
+              //{ title: 'Rename', icon: 'ion-edit', fn: clicked },
+              //{ title: 'Merge', icon: 'ion-merge', fn: clicked },
+              //{ title: 'Make Local Symbol Dir', icon: 'ion-plus-round', fn: clicked },
+              //{ title: 'Zip', icon: 'ion-ios-briefcase', fn: clicked },
+              //{ title: 'UnZip', icon: 'ion-ios-briefcase-outline', fn: clicked }
+            ]
+
+            basicContext.show(items, e)
+        })
     </script>
 
 
