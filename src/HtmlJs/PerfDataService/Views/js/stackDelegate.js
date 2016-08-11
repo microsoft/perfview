@@ -47,7 +47,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
 
     function changeCellState(cell, selected) {
         if (cell == null) { return; }
-        console.log(selected);
+
         if (selected) {
             $(cell).addClass("selected");  // This causes the styling to show up (look in stackviewer.css for more)
             cell.selected = true;

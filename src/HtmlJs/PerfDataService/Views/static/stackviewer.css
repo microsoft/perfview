@@ -12,7 +12,6 @@ Nav Bar Views
 */
 .fixedContainer {
     margin-top: 0;
-    margin-bottom: 10em;
     top: 0;
     position: fixed;
     width: 100%;
@@ -127,9 +126,10 @@ Nav Bar Views
     position: fixed;
     right: 0;
     width: 446px;
-    margin-right: 16px;
+    margin-right: 17px;
+    
     height: 30px;
-    margin-top: 180px;
+    top: 0px;
     background-color: #dddddd;
     padding-left: 10px;
 }
@@ -149,12 +149,14 @@ Nav Bar Views
 
 
 
+.tabs-content {
+    margin-bottom: 200px;
+}
+
 table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
-    margin-top: 250px;
-    margin-bottom: 200px;
 }
 
 td, th {
