@@ -306,7 +306,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             Debug.Assert(filterDescrPtr == null || -100 <= filterDescrPtr[0].Type);   // We are not using any of the Win8.1 defined types.  
                         }
 
-                        uint eventControlCode = (valueDataType == (int) ControllerCommand.SendManifest
+                        uint eventControlCode = (valueDataType == (int)ControllerCommand.SendManifest
                                                      ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
@@ -323,7 +323,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
 
                 // Track our current enabled providers so we can request manifests upon filename changes.
-                if (valueDataType == (int) ControllerCommand.Update)
+                if (valueDataType == (int)ControllerCommand.Update)
                 {
                     lock (m_enabledProviders)
                         m_enabledProviders[providerGuid] = matchAnyKeywords;
@@ -339,15 +339,50 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// to ETW.   Return the blob in the valueData, valueDataSize, valueDataType triple.  
         /// </summary>
         private void SerializeKeyValueArgumentsToByteBlob(IEnumerable<KeyValuePair<string, string>> arguments, Guid providerGuid,
-            ref byte[] valueData, ref int valueDataSize, ref int valueDataType,
-            ref ulong matchAllKeywords)
+            ref byte[] valueData, ref int valueDataSize, ref int valueDataType, ref ulong matchAllKeywords)
         {
             Debug.Assert(arguments != null);
-            valueDataType = (int)ControllerCommand.Update;
 
+            valueData = new byte[1024];
+            if (SerializeKeyValueArgumentsToByteBlobForPrefV4_62IfRequested(arguments, providerGuid,
+                    ref valueData, ref valueDataSize, ref valueDataType, ref matchAllKeywords))
+                return;
+
+            valueDataType = TraceEventNativeMethods.EVENT_FILTER_TYPE_SCHEMATIZED;
+
+            // Create a EVENT_FILTER_HEADER
+            valueData[0] = 1;       // EVENT_FILTER_HEADER.Id = 1
+            valueData[2] = 2;       // EVENT_FILTER_HEADER.Version = 2
+            valueDataSize = sizeof(TraceEventNativeMethods.EVENT_FILTER_HEADER);
+
+            foreach (KeyValuePair<string, string> keyValue in arguments)
+            {
+                valueDataSize += Encoding.UTF8.GetBytes(keyValue.Key, 0, keyValue.Key.Length, valueData, valueDataSize);
+                valueData[valueDataSize++] = 0;
+                valueDataSize += Encoding.UTF8.GetBytes(keyValue.Value, 0, keyValue.Value.Length, valueData, valueDataSize);
+                valueData[valueDataSize++] = 0;
+            }
+
+            // Fill in the header with the final size for the header + data.  
+            valueData[16] = (Byte)valueDataSize;            // EVENT_FILTER_HEADER.Size = valueDataSize
+            valueData[17] = (Byte)(valueDataSize >> 16);
+        }
+
+        #region OnlyNeededForCompatibility
+        /// <summary>
+        /// Checks if the user user wanted a V4.62 or earlier format for giving EventSource argumennts and if so
+        /// serializes in that format.  Returns true if the user did want old formats otherwise it does nothing
+        /// and returns false. 
+        /// </summary>
+        private bool SerializeKeyValueArgumentsToByteBlobForPrefV4_62IfRequested(
+            IEnumerable<KeyValuePair<string, string>> arguments, Guid providerGuid,
+            ref byte[] valueData, ref int valueDataSize, ref int valueDataType, ref ulong matchAllKeywords)
+        {
+            Debug.Assert(arguments != null);
+
+            // See if the user requested old formats
             bool V4_5EventSource = false;
             bool preV4_62EventSource = false;
-
             foreach (KeyValuePair<string, string> keyValue in arguments)
             {
                 if (keyValue.Key == "V4_5EventSource" && keyValue.Value == "true")
@@ -367,17 +402,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
             }
 
-            valueData = new byte[1024];
-            valueDataType = TraceEventNativeMethods.EVENT_FILTER_TYPE_SCHEMATIZED;
-
+            // If we were not asked to do compat things then we are done.  
             if (!preV4_62EventSource)
-            {
-                // Create a EVENT_FILTER_HEADER
-                valueData[0] = 1;       // EVENT_FILTER_HEADER.Id = 1
-                valueData[2] = 2;       // EVENT_FILTER_HEADER.Version = 2
-                valueDataSize = sizeof(TraceEventNativeMethods.EVENT_FILTER_HEADER);
-            }
+                return false;
 
+            // Then do the old formats.  
             foreach (KeyValuePair<string, string> keyValue in arguments)
             {
                 valueDataSize += Encoding.UTF8.GetBytes(keyValue.Key, 0, keyValue.Key.Length, valueData, valueDataSize);
@@ -386,18 +415,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 valueData[valueDataSize++] = 0;
             }
 
-            if (!preV4_62EventSource)
-            {
-                valueData[16] = (Byte)valueDataSize;            // EVENT_FILTER_HEADER.Size = valueDataSize
-                valueData[17] = (Byte)(valueDataSize >> 16);
-            }
-            else
-                SerializePreV4_62Formats(providerGuid, ref valueData, ref valueDataSize, valueDataType, ref matchAllKeywords, V4_5EventSource);
-        }
-
-        #region OnlyNeededForCompatibility
-        private void SerializePreV4_62Formats(Guid providerGuid, ref byte[] valueData, ref int valueDataSize, int valueDataType, ref ulong matchAllKeywords, bool V4_5EventSource)
-        {
+            valueDataType = (int)ControllerCommand.Update;
             if (!V4_5EventSource)
             {
                 // We add the EtwSessionName=NAME as the first key-value pairs,  This allows us to identify this
@@ -448,6 +466,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
             if (valueDataType != (int)ControllerCommand.SendManifest) // don't write anything to the registry for SendManifest commands
                 SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
+
+            return true;
         }
 
         private static int FindFreeSessionKeyword(Guid providerGuid)
@@ -476,6 +496,72 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if (!inUse)
                     return i;
             }
+        }
+
+        /// <summary>
+        /// SetDataForSession sets the filter data for an ETW session by storing it in the registry.
+        /// This is basically a work-around for the fact that filter data does not get transmitted to
+        /// the provider if the provider is not alive at the time the controller issues the EnableProvider 
+        /// call.   We store in the registry and EventSource looks there for it if it is not present.  
+        /// 
+        /// Note that we support up to 'maxSession' etw sessions simultaneously active (having different 
+        /// filter data).   The function return a sessionIndex that indicates which of the 'slots' 
+        /// was used to store the data.   This routine also 'garbage collects' data for sessions that
+        /// have died without cleaning up their filter data.  
+        /// 
+        /// If 'data' is null, then it indicates that no data should be stored and the registry entry
+        /// is removed.
+        /// 
+        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
+        /// This is present only used for compatibilty 
+        /// </summary>
+        /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
+        private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
+        {
+            string baseKeyName = GetEventSourceRegistryBaseLocation();
+            string providerKeyName = "{" + providerGuid + "}";
+            string regKeyName = baseKeyName + "\\" + providerKeyName;
+            string valueName;
+            if (!V4_5EventSource)
+                valueName = "ControllerData_Session_" + m_SessionId.ToString();
+            else
+                valueName = "ControllerData";
+
+            if (data != null)
+                Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\" + regKeyName, valueName, data, RegistryValueKind.Binary);
+            else
+            {
+                // if data == null, Delete the value 
+                bool deleteProviderKey = false;
+                using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKeyName, true))
+                {
+                    if (regKey != null)
+                    {
+                        regKey.DeleteValue(valueName, false);
+                        if (regKey.GetValueNames().Length == 0)
+                            deleteProviderKey = true;
+                    }
+
+                    // Hygene: if the provider has no values in it we can delete the key.
+                    if (deleteProviderKey)
+                    {
+                        using (var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
+                        {
+                            // Try to delete the provider key too, but don't try too hard.  It is possible a race will prevent it from being deleted, and that is OK
+                            try { baseKey.DeleteSubKey(providerKeyName); }
+                            catch (Exception) { }
+                        }
+                    }
+                }
+            }
+        }
+
+        private string GetEventSourceRegistryBaseLocation()
+        {
+            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+                return @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
+            else
+                return @"Software\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
         }
 
         /// <summary>
@@ -546,72 +632,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
 
-        /// <summary>
-        /// SetDataForSession sets the filter data for an ETW session by storing it in the registry.
-        /// This is basically a work-around for the fact that filter data does not get transmitted to
-        /// the provider if the provider is not alive at the time the controller issues the EnableProvider 
-        /// call.   We store in the registry and EventSource looks there for it if it is not present.  
-        /// 
-        /// Note that we support up to 'maxSession' etw sessions simultaneously active (having different 
-        /// filter data).   The function return a sessionIndex that indicates which of the 'slots' 
-        /// was used to store the data.   This routine also 'garbage collects' data for sessions that
-        /// have died without cleaning up their filter data.  
-        /// 
-        /// If 'data' is null, then it indicates that no data should be stored and the registry entry
-        /// is removed.
-        /// 
-        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
-        /// This is present only used for compatibilty 
-        /// </summary>
-        /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
-        private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
-        {
-            string baseKeyName = GetEventSourceRegistryBaseLocation();
-            string providerKeyName = "{" + providerGuid + "}";
-            string regKeyName = baseKeyName + "\\" + providerKeyName;
-            string valueName;
-            if (!V4_5EventSource)
-                valueName = "ControllerData_Session_" + m_SessionId.ToString();
-            else
-                valueName = "ControllerData";
-
-            if (data != null)
-                Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\" + regKeyName, valueName, data, RegistryValueKind.Binary);
-            else
-            {
-                // if data == null, Delete the value 
-                bool deleteProviderKey = false;
-                using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKeyName, true))
-                {
-                    if (regKey != null)
-                    {
-                        regKey.DeleteValue(valueName, false);
-                        if (regKey.GetValueNames().Length == 0)
-                            deleteProviderKey = true;
-                    }
-
-                    // Hygene: if the provider has no values in it we can delete the key.
-                    if (deleteProviderKey)
-                    {
-                        using (var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
-                        {
-                            // Try to delete the provider key too, but don't try too hard.  It is possible a race will prevent it from being deleted, and that is OK
-                            try { baseKey.DeleteSubKey(providerKeyName); }
-                            catch (Exception) { }
-                        }
-                    }
-                }
-            }
-        }
-
-        private string GetEventSourceRegistryBaseLocation()
-        {
-            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
-                return @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
-            else
-                return @"Software\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
-        }
-#endregion 
+        #endregion
 
         /// <summary>
         /// Enable a NON-KERNEL provider (see also EnableKernelProvider) which has a given provider name.  
