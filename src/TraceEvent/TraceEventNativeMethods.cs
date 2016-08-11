@@ -452,6 +452,19 @@ namespace Microsoft.Diagnostics.Tracing
             public int Type;        // Can be user defined, but also the EVENT_FILTER_TYPE* constants above.  
         };
 
+        // If EVENT_FILTER_DESCRIPTOR.Type == EVENT_FILTER_TYPE_SCHEMATIZED then the filter data has the following format
+        // The data 
+        unsafe internal struct EVENT_FILTER_HEADER
+        {
+            public ushort Id;
+            public byte Version;
+            public byte Reserved1;
+            public int Reserved2;
+            public ulong InstanceId;       // Identifies the ETW session.  Passed to WriteEnableEx in the Filter parameter
+            public uint Size;              // Size includes the header and and data that follows the header
+            public uint NextOffset;        // Number of bytes to the next EVENT_FILTER_HEADER for the current header.  0 if no next header.  
+        }
+
         // Used when Type = EVENT_FILTER_TYPE_EVENT_ID or EVENT_FILTER_TYPE_STACKWALK
         [StructLayout(LayoutKind.Sequential)]
         unsafe internal struct EVENT_FILTER_EVENT_ID

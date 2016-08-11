@@ -184,102 +184,20 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             lock (this)
             {
-                if (options == null)
-                    options = new TraceEventProviderOptions();
-
-                byte[] valueData = null;
-                int valueDataSize = 0;
-                ControllerCommand valueDataType = ControllerCommand.Update;
-                bool V4_5EventSource = false;
-
-                if (options.Arguments != null)
-                {
-                    valueDataType = ControllerCommand.Update;
-                    valueData = new byte[1024];
-                    foreach (KeyValuePair<string, string> keyValue in options.Arguments)
-                    {
-                        if (keyValue.Key == "V4_5EventSource" && keyValue.Value == "true")
-                            V4_5EventSource = true;
-                        if (keyValue.Key == "Command")
-                        {
-                            if (keyValue.Value == "SendManifest")
-                                valueDataType = ControllerCommand.SendManifest;
-                            else
-                            {
-                                int val;
-                                if (int.TryParse(keyValue.Value, out val))
-                                    valueDataType = (ControllerCommand)val;
-                            }
-                        }
-                        valueDataSize += Encoding.UTF8.GetBytes(keyValue.Key, 0, keyValue.Key.Length, valueData, valueDataSize);
-                        valueData[valueDataSize++] = 0;
-                        valueDataSize += Encoding.UTF8.GetBytes(keyValue.Value, 0, keyValue.Value.Length, valueData, valueDataSize);
-                        valueData[valueDataSize++] = 0;
-                    }
-                }
-
                 if (m_SessionName == KernelTraceEventParser.KernelSessionName)
                     throw new NotSupportedException("Can only enable kernel events on a kernel session.");
 
                 InsureStarted();
 
-                // If we have provider data we add some predefined key-value pairs for infrastructure purposes. 
+                if (options == null)
+                    options = new TraceEventProviderOptions();
+
                 ulong matchAllKeywords = 0;
-                if (valueData != null)
-                {
-                    if (!V4_5EventSource)
-                    {
-                        // We add the EtwSessionName=NAME as the first key-value pairs,  This allows us to identify this
-                        // data as coming from 'us' and garbage collect it if that session dies.  It is also likely to be
-                        // useful to the provider.
-                        var etwSessionName = "EtwSessionName";
-                        var etwSessionNameKeyValueSize = etwSessionName.Length + 1 + Encoding.UTF8.GetByteCount(m_SessionName) + 1;
-
-                        var etwSessionKeyword = "EtwSessionKeyword";
-                        int sessionKeyword = FindFreeSessionKeyword(providerGuid);
-                        matchAllKeywords = ((ulong)1) << sessionKeyword;
-
-                        var etwSessionKeywordValue = sessionKeyword.ToString();
-                        var etwSessionKeywordKeyValueSize = etwSessionKeyword.Length + 1 + Encoding.UTF8.GetByteCount(etwSessionKeywordValue) + 1;
-
-                        // Set the registry key so providers get the information even if they are not active now
-                        // We allocate a 4 byte header to allow us to easily version this in the future.  
-                        var newProviderData = new byte[valueDataSize + etwSessionNameKeyValueSize + etwSessionKeywordKeyValueSize];
-                        var curIdx = 0;
-                        curIdx += Encoding.UTF8.GetBytes(etwSessionName, 0, etwSessionName.Length, newProviderData, curIdx);
-                        newProviderData[curIdx++] = 0;       // Null terminate the string
-                        curIdx += Encoding.UTF8.GetBytes(m_SessionName, 0, m_SessionName.Length, newProviderData, curIdx);
-                        newProviderData[curIdx++] = 0;       // Null terminate the string
-                        curIdx += Encoding.UTF8.GetBytes(etwSessionKeyword, 0, etwSessionKeyword.Length, newProviderData, curIdx);
-                        newProviderData[curIdx++] = 0;       // Null terminate the string
-                        curIdx += Encoding.UTF8.GetBytes(etwSessionKeywordValue, 0, etwSessionKeywordValue.Length, newProviderData, curIdx);
-                        newProviderData[curIdx++] = 0;       // Null terminate the string
-                        Debug.Assert(curIdx + valueDataSize == newProviderData.Length);
-                        Array.Copy(valueData, 0, newProviderData, curIdx, valueDataSize);
-                        valueData = newProviderData;
-                        valueDataSize = newProviderData.Length;
-                    }
-                    else
-                    {
-                        // V4.5 data has a 4 bytes of 0s before the actual data.   
-                        var newProviderData = new byte[valueDataSize + 4];
-                        Array.Copy(valueData, 0, newProviderData, 4, valueDataSize);
-                        valueData = newProviderData;
-                        valueDataSize = newProviderData.Length;
-                    }
-                    // Working around an ETW limitation.   It turns out that filter data is transmitted only
-                    // to providers that are actually alive at the time the controller enables the provider.  
-                    // This makes filter data second class (keywords and levels ARE remembered and as providers
-                    // become alive they are enabled with that information). Arguably this is a bug.  
-                    // To work around this we remember the filter data in the registry and EventSources look
-                    // for this data if we don't already have non-null filter data so that even providers that 
-                    // have not yet started will get the data.  
-
-                    if (valueDataType != ControllerCommand.SendManifest) // don't write anything to the registry for SendManifest commands
-                    {
-                        SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
-                    }
-                }
+                byte[] valueData = null;
+                int valueDataSize = 0;
+                int valueDataType = 0;
+                if (options.Arguments != null)
+                    SerializeKeyValueArgumentsToByteBlob(options.Arguments, providerGuid, ref valueData, ref valueDataSize, ref valueDataType, ref matchAllKeywords);
 
                 const int MaxDesc = 7;  // This number needs to be bumped for to insure that all curDescrIdx never exceeds it below.  
                 TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR* filterDescrPtr = stackalloc TraceEventNativeMethods.EVENT_FILTER_DESCRIPTOR[MaxDesc];
@@ -291,7 +209,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         // This one must be first so it works pre-8.1
                         filterDescrPtr[curDescrIdx].Ptr = providerDataPtr;
                         filterDescrPtr[curDescrIdx].Size = valueDataSize;
-                        filterDescrPtr[curDescrIdx].Type = (int)valueDataType;
+                        filterDescrPtr[curDescrIdx].Type = valueDataType;
                         curDescrIdx++;
                     }
 
@@ -388,7 +306,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             Debug.Assert(filterDescrPtr == null || -100 <= filterDescrPtr[0].Type);   // We are not using any of the Win8.1 defined types.  
                         }
 
-                        uint eventControlCode = (valueDataType == ControllerCommand.SendManifest
+                        uint eventControlCode = (valueDataType == (int) ControllerCommand.SendManifest
                                                      ? TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE
                                                      : TraceEventNativeMethods.EVENT_CONTROL_CODE_ENABLE_PROVIDER);
                         hr = TraceEventNativeMethods.EnableTraceEx2(m_SessionHandle, ref providerGuid,
@@ -405,7 +323,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
 
                 // Track our current enabled providers so we can request manifests upon filename changes.
-                if (valueDataType == ControllerCommand.Update)
+                if (valueDataType == (int) ControllerCommand.Update)
                 {
                     lock (m_enabledProviders)
                         m_enabledProviders[providerGuid] = matchAnyKeywords;
@@ -415,6 +333,285 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 return m_restarted;
             }
         }
+
+        /// <summary>
+        /// Take the EventSource-style key-value pairs and serialize them into a binary blob suitable for passing 
+        /// to ETW.   Return the blob in the valueData, valueDataSize, valueDataType triple.  
+        /// </summary>
+        private void SerializeKeyValueArgumentsToByteBlob(IEnumerable<KeyValuePair<string, string>> arguments, Guid providerGuid,
+            ref byte[] valueData, ref int valueDataSize, ref int valueDataType,
+            ref ulong matchAllKeywords)
+        {
+            Debug.Assert(arguments != null);
+            valueDataType = (int)ControllerCommand.Update;
+
+            bool V4_5EventSource = false;
+            bool preV4_62EventSource = false;
+
+            foreach (KeyValuePair<string, string> keyValue in arguments)
+            {
+                if (keyValue.Key == "V4_5EventSource" && keyValue.Value == "true")
+                {
+                    V4_5EventSource = true;
+                    preV4_62EventSource = true;
+                }
+                if (keyValue.Key == "V4_62EventSource" && keyValue.Value == "true")
+                    preV4_62EventSource = true;
+
+                if (keyValue.Key == "Command")
+                {
+                    if (keyValue.Value == "SendManifest")
+                        valueDataType = (int)ControllerCommand.SendManifest;
+                    else
+                        int.TryParse(keyValue.Value, out valueDataType);
+                }
+            }
+
+            valueData = new byte[1024];
+            valueDataType = TraceEventNativeMethods.EVENT_FILTER_TYPE_SCHEMATIZED;
+
+            if (!preV4_62EventSource)
+            {
+                // Create a EVENT_FILTER_HEADER
+                valueData[0] = 1;       // EVENT_FILTER_HEADER.Id = 1
+                valueData[2] = 2;       // EVENT_FILTER_HEADER.Version = 2
+                valueDataSize = sizeof(TraceEventNativeMethods.EVENT_FILTER_HEADER);
+            }
+
+            foreach (KeyValuePair<string, string> keyValue in arguments)
+            {
+                valueDataSize += Encoding.UTF8.GetBytes(keyValue.Key, 0, keyValue.Key.Length, valueData, valueDataSize);
+                valueData[valueDataSize++] = 0;
+                valueDataSize += Encoding.UTF8.GetBytes(keyValue.Value, 0, keyValue.Value.Length, valueData, valueDataSize);
+                valueData[valueDataSize++] = 0;
+            }
+
+            if (!preV4_62EventSource)
+            {
+                valueData[16] = (Byte)valueDataSize;            // EVENT_FILTER_HEADER.Size = valueDataSize
+                valueData[17] = (Byte)(valueDataSize >> 16);
+            }
+            else
+                SerializePreV4_62Formats(providerGuid, ref valueData, ref valueDataSize, valueDataType, ref matchAllKeywords, V4_5EventSource);
+        }
+
+        #region OnlyNeededForCompatibility
+        private void SerializePreV4_62Formats(Guid providerGuid, ref byte[] valueData, ref int valueDataSize, int valueDataType, ref ulong matchAllKeywords, bool V4_5EventSource)
+        {
+            if (!V4_5EventSource)
+            {
+                // We add the EtwSessionName=NAME as the first key-value pairs,  This allows us to identify this
+                // data as coming from 'us' and garbage collect it if that session dies.  It is also likely to be
+                // useful to the provider.
+                var etwSessionName = "EtwSessionName";
+                var etwSessionNameKeyValueSize = etwSessionName.Length + 1 + Encoding.UTF8.GetByteCount(m_SessionName) + 1;
+
+                var etwSessionKeyword = "EtwSessionKeyword";
+                int sessionKeyword = FindFreeSessionKeyword(providerGuid);
+                matchAllKeywords = ((ulong)1) << sessionKeyword;
+
+                var etwSessionKeywordValue = sessionKeyword.ToString();
+                var etwSessionKeywordKeyValueSize = etwSessionKeyword.Length + 1 + Encoding.UTF8.GetByteCount(etwSessionKeywordValue) + 1;
+
+                // Set the registry key so providers get the information even if they are not active now
+                // We allocate a 4 byte header to allow us to easily version this in the future.  
+                var newProviderData = new byte[valueDataSize + etwSessionNameKeyValueSize + etwSessionKeywordKeyValueSize];
+                var curIdx = 0;
+                curIdx += Encoding.UTF8.GetBytes(etwSessionName, 0, etwSessionName.Length, newProviderData, curIdx);
+                newProviderData[curIdx++] = 0;       // Null terminate the string
+                curIdx += Encoding.UTF8.GetBytes(m_SessionName, 0, m_SessionName.Length, newProviderData, curIdx);
+                newProviderData[curIdx++] = 0;       // Null terminate the string
+                curIdx += Encoding.UTF8.GetBytes(etwSessionKeyword, 0, etwSessionKeyword.Length, newProviderData, curIdx);
+                newProviderData[curIdx++] = 0;       // Null terminate the string
+                curIdx += Encoding.UTF8.GetBytes(etwSessionKeywordValue, 0, etwSessionKeywordValue.Length, newProviderData, curIdx);
+                newProviderData[curIdx++] = 0;       // Null terminate the string
+                Debug.Assert(curIdx + valueDataSize == newProviderData.Length);
+                Array.Copy(valueData, 0, newProviderData, curIdx, valueDataSize);
+                valueData = newProviderData;
+                valueDataSize = newProviderData.Length;
+            }
+            else
+            {
+                // V4.5 data has a 4 bytes of 0s before the actual data.   
+                var newProviderData = new byte[valueDataSize + 4];
+                Array.Copy(valueData, 0, newProviderData, 4, valueDataSize);
+                valueData = newProviderData;
+                valueDataSize = newProviderData.Length;
+            }
+            // Working around an ETW limitation.   It turns out that filter data is transmitted only
+            // to providers that are actually alive at the time the controller enables the provider.  
+            // This makes filter data second class (keywords and levels ARE remembered and as providers
+            // become alive they are enabled with that information). Arguably this is a bug.  
+            // To work around this we remember the filter data in the registry and EventSources look
+            // for this data if we don't already have non-null filter data so that even providers that 
+            // have not yet started will get the data.  
+
+            if (valueDataType != (int)ControllerCommand.SendManifest) // don't write anything to the registry for SendManifest commands
+                SetFilterDataForEtwSession(providerGuid.ToString(), valueData, V4_5EventSource);
+        }
+
+        private static int FindFreeSessionKeyword(Guid providerGuid)
+        {
+            // TODO FIX NOW.  there are races associated with this.  
+            List<TraceEventNativeMethods.TRACE_ENABLE_INFO> infos = TraceEventProviders.SessionInfosForProvider(providerGuid, 0);
+            for (int i = 44; ; i++)
+            {
+                if (i > 47)
+                    throw new NotSupportedException("Error enabling provider " + providerGuid + ": Exceeded the maximum of 4 sessions can simultaneously use provider key-value arguments on a single provider simultaneously");
+
+                long bit = ((long)1) << i;
+
+                bool inUse = false;
+                if (infos != null)
+                {
+                    foreach (TraceEventNativeMethods.TRACE_ENABLE_INFO info in infos)
+                    {
+                        if ((info.MatchAllKeyword & bit) != 0)
+                        {
+                            inUse = true;
+                            break;
+                        }
+                    }
+                }
+                if (!inUse)
+                    return i;
+            }
+        }
+
+        /// <summary>
+        /// Cleans out all provider data associated with this session.  
+        /// </summary>
+        private void CleanFilterDataForEtwSession()
+        {
+            // Optimization, kernel sessions don't need filter cleanup.  
+            if (m_SessionName == KernelTraceEventParser.KernelSessionName)
+                return;
+            if (m_SessionId == -1)
+                return;             // don't do cleanup on sessions that are not ourselves.  
+
+            // What we want is actually pretty simple.  We want to enumerate all providers that this session has ever been associated with.  
+            // Sadly providers might have died that this session did set data for, so we can't just look at the currently active providers.  
+            // What we do today is to enumerate every provider, which is inefficient, but at least is not bad on 64 bit machines.  (Since 
+            // most providers are not registered in the WOW which is where we put the data). 
+            //
+            // If perf becomes a problem, we CAN give up leave behind stale data on dead providers, it is just a bit more dangerous and unhygienic. 
+            // For now, stopping providers is rare enough that we can live with the inefficiency.  
+            var baseKeyName = GetEventSourceRegistryBaseLocation();
+            using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
+            {
+                foreach (string subKeyName in regKey.GetSubKeyNames())
+                {
+                    if (!subKeyName.StartsWith("{") || !subKeyName.EndsWith("}"))
+                        continue;
+                    var providerGuid = subKeyName.Substring(1, subKeyName.Length - 2);
+                    var providersToClearData = new List<KeyValuePair<string, bool>>();              // Do all the deleting after we have closed the keys, so that the delete will succeed. 
+                    using (var subKey = regKey.OpenSubKey(subKeyName))
+                    {
+                        foreach (string valueName in subKey.GetValueNames())
+                        {
+                            int value;
+                            if (valueName.StartsWith("ControllerData_Session_") && int.TryParse(valueName.Substring(23), out value))
+                            {
+                                if (value == m_SessionId)
+                                {
+                                    providersToClearData.Add(new KeyValuePair<string, bool>(providerGuid.ToString(), false));
+                                    break;
+                                }
+                            }
+                            // V4.5 style support.  Session can interfere with one another.   Remove eventually.  
+                            else if (valueName == "ControllerData")
+                            {
+                                var infos = TraceEventProviders.SessionInfosForProvider(new Guid(providerGuid), 0);
+                                bool aliveByAnotherSession = false;
+                                if (infos != null)
+                                {
+                                    foreach (var info in infos)
+                                    {
+                                        if (info.LoggerId != m_SessionId)
+                                            aliveByAnotherSession = true;
+                                    }
+                                }
+                                if (!aliveByAnotherSession)
+                                {
+                                    providersToClearData.Add(new KeyValuePair<string, bool>(providerGuid.ToString(), true));
+                                }
+                            }
+                        }
+                    }
+
+                    // Now that we have closed the enumeration handle, we can delete all the enties we have accumulated.  
+                    foreach (var providerToClearData in providersToClearData)
+                        SetFilterDataForEtwSession(providerToClearData.Key, null, providerToClearData.Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// SetDataForSession sets the filter data for an ETW session by storing it in the registry.
+        /// This is basically a work-around for the fact that filter data does not get transmitted to
+        /// the provider if the provider is not alive at the time the controller issues the EnableProvider 
+        /// call.   We store in the registry and EventSource looks there for it if it is not present.  
+        /// 
+        /// Note that we support up to 'maxSession' etw sessions simultaneously active (having different 
+        /// filter data).   The function return a sessionIndex that indicates which of the 'slots' 
+        /// was used to store the data.   This routine also 'garbage collects' data for sessions that
+        /// have died without cleaning up their filter data.  
+        /// 
+        /// If 'data' is null, then it indicates that no data should be stored and the registry entry
+        /// is removed.
+        /// 
+        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
+        /// This is present only used for compatibilty 
+        /// </summary>
+        /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
+        private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
+        {
+            string baseKeyName = GetEventSourceRegistryBaseLocation();
+            string providerKeyName = "{" + providerGuid + "}";
+            string regKeyName = baseKeyName + "\\" + providerKeyName;
+            string valueName;
+            if (!V4_5EventSource)
+                valueName = "ControllerData_Session_" + m_SessionId.ToString();
+            else
+                valueName = "ControllerData";
+
+            if (data != null)
+                Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\" + regKeyName, valueName, data, RegistryValueKind.Binary);
+            else
+            {
+                // if data == null, Delete the value 
+                bool deleteProviderKey = false;
+                using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKeyName, true))
+                {
+                    if (regKey != null)
+                    {
+                        regKey.DeleteValue(valueName, false);
+                        if (regKey.GetValueNames().Length == 0)
+                            deleteProviderKey = true;
+                    }
+
+                    // Hygene: if the provider has no values in it we can delete the key.
+                    if (deleteProviderKey)
+                    {
+                        using (var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
+                        {
+                            // Try to delete the provider key too, but don't try too hard.  It is possible a race will prevent it from being deleted, and that is OK
+                            try { baseKey.DeleteSubKey(providerKeyName); }
+                            catch (Exception) { }
+                        }
+                    }
+                }
+            }
+        }
+
+        private string GetEventSourceRegistryBaseLocation()
+        {
+            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+                return @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
+            else
+                return @"Software\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
+        }
+#endregion 
 
         /// <summary>
         /// Enable a NON-KERNEL provider (see also EnableKernelProvider) which has a given provider name.  
@@ -675,7 +872,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
                             m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);         
+                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -914,7 +1111,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);     
+                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
@@ -1361,168 +1558,6 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         static SortedDictionary<string, Guid> s_providersByName;
         static Dictionary<Guid, string> s_providerNames;
-
-        private static int FindFreeSessionKeyword(Guid providerGuid)
-        {
-            // TODO FIX NOW.  there are races associated with this.  
-            List<TraceEventNativeMethods.TRACE_ENABLE_INFO> infos = TraceEventProviders.SessionInfosForProvider(providerGuid, 0);
-            for (int i = 44; ; i++)
-            {
-                if (i > 47)
-                    throw new NotSupportedException("Error enabling provider " + providerGuid + ": Exceeded the maximum of 4 sessions can simultaneously use provider key-value arguments on a single provider simultaneously");
-
-                long bit = ((long)1) << i;
-
-                bool inUse = false;
-                if (infos != null)
-                {
-                    foreach (TraceEventNativeMethods.TRACE_ENABLE_INFO info in infos)
-                    {
-                        if ((info.MatchAllKeyword & bit) != 0)
-                        {
-                            inUse = true;
-                            break;
-                        }
-                    }
-                }
-                if (!inUse)
-                    return i;
-            }
-        }
-
-        /// <summary>
-        /// Cleans out all provider data associated with this session.  
-        /// </summary>
-        private void CleanFilterDataForEtwSession()
-        {
-            // Optimization, kernel sessions don't need filter cleanup.  
-            if (m_SessionName == KernelTraceEventParser.KernelSessionName)
-                return;
-            if (m_SessionId == -1)
-                return;             // don't do cleanup on sessions that are not ourselves.  
-
-            // What we want is actually pretty simple.  We want to enumerate all providers that this session has ever been associated with.  
-            // Sadly providers might have died that this session did set data for, so we can't just look at the currently active providers.  
-            // What we do today is to enumerate every provider, which is inefficient, but at least is not bad on 64 bit machines.  (Since 
-            // most providers are not registered in the WOW which is where we put the data). 
-            //
-            // If perf becomes a problem, we CAN give up leave behind stale data on dead providers, it is just a bit more dangerous and unhygienic. 
-            // For now, stopping providers is rare enough that we can live with the inefficiency.  
-            var baseKeyName = GetEventSourceRegistryBaseLocation();
-            using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
-            {
-                foreach (string subKeyName in regKey.GetSubKeyNames())
-                {
-                    if (!subKeyName.StartsWith("{") || !subKeyName.EndsWith("}"))
-                        continue;
-                    var providerGuid = subKeyName.Substring(1, subKeyName.Length - 2);
-                    var providersToClearData = new List<KeyValuePair<string, bool>>();              // Do all the deleting after we have closed the keys, so that the delete will succeed. 
-                    using (var subKey = regKey.OpenSubKey(subKeyName))
-                    {
-                        foreach (string valueName in subKey.GetValueNames())
-                        {
-                            int value;
-                            if (valueName.StartsWith("ControllerData_Session_") && int.TryParse(valueName.Substring(23), out value))
-                            {
-                                if (value == m_SessionId)
-                                {
-                                    providersToClearData.Add(new KeyValuePair<string, bool>(providerGuid.ToString(), false));
-                                    break;
-                                }
-                            }
-                            // V4.5 style support.  Session can interfere with one another.   Remove eventually.  
-                            else if (valueName == "ControllerData")
-                            {
-                                var infos = TraceEventProviders.SessionInfosForProvider(new Guid(providerGuid), 0);
-                                bool aliveByAnotherSession = false;
-                                if (infos != null)
-                                {
-                                    foreach (var info in infos)
-                                    {
-                                        if (info.LoggerId != m_SessionId)
-                                            aliveByAnotherSession = true;
-                                    }
-                                }
-                                if (!aliveByAnotherSession)
-                                {
-                                    providersToClearData.Add(new KeyValuePair<string, bool>(providerGuid.ToString(), true));
-                                }
-                            }
-                        }
-                    }
-
-                    // Now that we have closed the enumeration handle, we can delete all the enties we have accumulated.  
-                    foreach (var providerToClearData in providersToClearData)
-                        SetFilterDataForEtwSession(providerToClearData.Key, null, providerToClearData.Value);
-                }
-            }
-        }
-
-        private string GetEventSourceRegistryBaseLocation()
-        {
-            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
-                return @"Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
-            else
-                return @"Software\Microsoft\Windows\CurrentVersion\Winevt\Publishers";
-        }
-
-        /// <summary>
-        /// SetDataForSession sets the filter data for an ETW session by storing it in the registry.
-        /// This is basically a work-around for the fact that filter data does not get transmitted to
-        /// the provider if the provider is not alive at the time the controller issues the EnableProvider 
-        /// call.   We store in the registry and EventSource looks there for it if it is not present.  
-        /// 
-        /// Note that we support up to 'maxSession' etw sessions simultaneously active (having different 
-        /// filter data).   The function return a sessionIndex that indicates which of the 'slots' 
-        /// was used to store the data.   This routine also 'garbage collects' data for sessions that
-        /// have died without cleaning up their filter data.  
-        /// 
-        /// If 'data' is null, then it indicates that no data should be stored and the registry entry
-        /// is removed.
-        /// 
-        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
-        /// This is present only used for compatibilty 
-        /// </summary>
-        /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>
-        private void SetFilterDataForEtwSession(string providerGuid, byte[] data, bool V4_5EventSource = false)
-        {
-            string baseKeyName = GetEventSourceRegistryBaseLocation();
-            string providerKeyName = "{" + providerGuid + "}";
-            string regKeyName = baseKeyName + "\\" + providerKeyName;
-            string valueName;
-            if (!V4_5EventSource)
-                valueName = "ControllerData_Session_" + m_SessionId.ToString();
-            else
-                valueName = "ControllerData";
-
-            if (data != null)
-                Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\" + regKeyName, valueName, data, RegistryValueKind.Binary);
-            else
-            {
-                // if data == null, Delete the value 
-                bool deleteProviderKey = false;
-                using (var regKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKeyName, true))
-                {
-                    if (regKey != null)
-                    {
-                        regKey.DeleteValue(valueName, false);
-                        if (regKey.GetValueNames().Length == 0)
-                            deleteProviderKey = true;
-                    }
-
-                    // Hygene: if the provider has no values in it we can delete the key.
-                    if (deleteProviderKey)
-                    {
-                        using (var baseKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(baseKeyName, true))
-                        {
-                            // Try to delete the provider key too, but don't try too hard.  It is possible a race will prevent it from being deleted, and that is OK
-                            try { baseKey.DeleteSubKey(providerKeyName); }
-                            catch (Exception) { }
-                        }
-                    }
-                }
-            }
-        }
 
         /// <summary>
         /// Given a mask of kernel flags, set the array stackTracingIds of size stackTracingIdsMax to match.
