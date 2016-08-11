@@ -392,6 +392,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 if (keyValue.Key == "V4_62EventSource" && keyValue.Value == "true")
                     preV4_62EventSource = true;
+                if (keyValue.Key == "V4_63EventSource" && keyValue.Value == "true")
+                    return false;
 
                 if (keyValue.Key == "Command")
                 {
@@ -403,8 +405,9 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
 
             // If we were not asked to do compat things then we are done.  
-            if (!preV4_62EventSource)
-                return false;
+            // TODO FIX NOW ADJUST THE DEFAULT to be the NEW Format
+            // if (!preV4_62EventSource)
+            //    return false;
 
             // Then do the old formats.  
             foreach (KeyValuePair<string, string> keyValue in arguments)
