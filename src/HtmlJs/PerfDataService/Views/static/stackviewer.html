@@ -66,7 +66,7 @@
 
     <div class="tabs-content" data-tabs-content="tabs">
         <div class="tabs-panel is-active" id="by-name">
-            <div class="findContainer">
+            <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
@@ -91,7 +91,7 @@
         </div>
 
         <div class="tabs-panel" id="call-tree">
-            <div class="findContainer">
+            <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
@@ -117,7 +117,7 @@
         </div>
 
         <div class="tabs-panel" id="callers">
-            <div class="findContainer">
+            <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
@@ -143,7 +143,7 @@
         </div>
 
         <div class="tabs-panel" id="callees">
-            <div class="findContainer">
+            <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
                     <a href="#" class="prev">prev</a>
@@ -205,17 +205,18 @@
                 $('#footer').append(foot);
 
                 $(document).foundation();
-                placeFindContainer();
+                positionTabsContent();
             }
         );
 
-        //$(window).resize(function() {
-        //    placeFindContainer();
-        //});
+        $(window).resize(function() {
+            positionTabsContent();
+        });
 
-        //function placeFindContainer() {
-        //    $(".findContainer").css("top", $("#tabs").offset().top - 52);
-        //}
+        function positionTabsContent() {
+            var offset = $(".fixedContainer").height() + 40;
+            $(".tabs-content").css("margin-top", offset);
+        }
     </script>
 
     
@@ -532,6 +533,7 @@
                 }
             } else if (e.which == 27) {
                 $(".is-active .searchNavButtons").hide();
+                $(".is-active .findContainer").hide();
                 stackDelegate.clearSelectedCell();
             }
         });
@@ -558,6 +560,14 @@
             // Update itemIndicator
             itemIndicator.text(current + '/' + total);
         }
+
+        $(window).keydown(function(e){
+            if ((e.ctrlKey || e.metaKey) && e.keyCode === 70) {
+                e.preventDefault();
+                $(".is-active .findContainer").show();
+                $(".is-active .findContainer input").focus();
+            }
+        });
 
         $(".filter, .find").keypress(function (e) {
             // If the user pressed enter in a filter textfield
