@@ -10,6 +10,8 @@
     using Microsoft.Diagnostics.Tracing.Etlx;
     using Microsoft.Extensions.Caching.Memory;
     using System.Text;
+    using System.Text.RegularExpressions;
+    using Microsoft.Diagnostics.Tracing;
 
     public sealed class CallTreeDataProviderFactory : ICallTreeDataProviderFactory
     {
@@ -87,10 +89,21 @@
             }
 
             /* symbols and sources related parameters */
-            string sympath = (string)queryString["sympath"] ?? string.Empty;
-            string srcpath = (string)queryString["srcpath"] ?? string.Empty;
-            string imageFilter = (string)queryString["imagefilter"] ?? string.Empty;
-            string modulesFilter = (string)queryString["modulesfilter"] ?? string.Empty;
+            string sympathStr = (string)queryString["sympath"] ?? SymbolPath.MicrosoftSymbolServerPath;
+            SymbolPath symPath = new SymbolPath(sympathStr);
+            string defaultSymbolCache = symPath.DefaultSymbolCache();
+
+            // Normalize the symbol path.  
+            symPath = symPath.InsureHasCache(defaultSymbolCache);
+            sympathStr = symPath.ToString();
+
+            string srcpath = (string)queryString["srcpath"];
+            //TODO FIX NOW: Dont spew to the Console, send it back to the client. 
+            SymbolReader symbolReader = new SymbolReader(Console.Out, sympathStr);
+            if (srcpath != null)
+                symbolReader.SourcePath = srcpath;
+
+            string modulePatStr = (string)queryString["symLookupPats"] ?? @"^(clr|ntoskrnl|ntdll|.*\.ni)";
 
             /* filtering parameters */
             string start = (string)queryString["start"] ?? string.Empty;
@@ -104,9 +117,8 @@
 
             EtlxFile etlxFile;
 
-            string etlxFilePath = Path.Combine(tempPath, Path.ChangeExtension(filename.Replace(@"\", "_").Replace(@":", "_").Replace(@"/", "_"), etlxExtension));
-            SymbolReader symbolReader;
-
+            // Do it twice so that XXX.etl.zip becomes XXX.   
+            string etlxFilePath = Path.ChangeExtension(Path.ChangeExtension(filename, null), ".etlx");
             lock (this.etlxCache)
             {
                 if (this.etlxCache.TryGetValue(filename, out etlxFile))
@@ -132,19 +144,12 @@
                         // if it's a zip file
                         if (string.Equals(Path.GetExtension(filename), ".zip", StringComparison.OrdinalIgnoreCase))
                         {
-                            using (ZipArchive archive = ZipFile.OpenRead(filename))
-                            {
-                                foreach (ZipArchiveEntry entry in archive.Entries)
-                                {
-                                    if (entry.FullName.EndsWith(etlExtension, StringComparison.OrdinalIgnoreCase))
-                                    {
-                                        entry.ExtractToFile(Path.ChangeExtension(etlxFilePath, etlExtension));
-                                        break;
-                                    }
-                                }
-                            }
-
-                            TraceLog.CreateFromEventTraceLogFile(Path.ChangeExtension(etlxFilePath, etlExtension), etlxFilePath);
+                            //TODO FIX NOW: Dont spew to the Console, send it back to the client. 
+                            ZippedETLReader reader = new ZippedETLReader(filename, Console.Out);
+                            reader.SymbolDirectory = defaultSymbolCache;
+                            reader.EtlFileName = Path.ChangeExtension(etlxFilePath, etlExtension);
+                            reader.UnpackAchive();
+                            TraceLog.CreateFromEventTraceLogFile(reader.EtlFileName, etlxFilePath);
                         }
                         else
                         {
@@ -154,32 +159,14 @@
 
                     etlxFile.TraceLog = TraceLog.OpenOrConvert(etlxFilePath);
                     etlxFile.Pending = false;
-                    var processes = etlxFile.TraceLog.Processes;
+                }
 
-                    symbolReader = new SymbolReader(this.textWriter, sympath) { SourcePath = srcpath };
-
-                    foreach (var process in processes)
+                Regex modulePat = new Regex(modulePatStr, RegexOptions.IgnoreCase);
+                foreach (var moduleFile in etlxFile.TraceLog.ModuleFiles)
+                {
+                    if (modulePat.IsMatch(moduleFile.Name))
                     {
-                        if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foreach (var module in process.LoadedModules)
-                            {
-                                if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
-                                {
-                                    //
-                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
-                                    //
-                                    try
-                                    {
-                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
-                                    }
-                                    catch
-                                    {
-
-                                    }
-                                }
-                            }
-                        }
+                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
                     }
                 }
             }
@@ -189,8 +176,8 @@
             {
                 var filterParams = new FilterParams { Name = filename + stacktype, StartTimeRelativeMSec = start, EndTimeRelativeMSec = end, MinInclusiveTimePercent = foldpct, FoldRegExs = foldpats, IncludeRegExs = incpats, ExcludeRegExs = excpats, GroupRegExs = grouppats };
                 var keyBuilder = new StringBuilder();
-                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs).Append("?" + find); 
-                
+                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs).Append("?" + find);
+
                 var stackViewerKey = keyBuilder.ToString();
                 if (this.stackViewerSessionCache.TryGetValue(stackViewerKey, out stackViewerSession))
                 {
@@ -201,33 +188,6 @@
                 }
                 else
                 {
-                    var processes = etlxFile.TraceLog.Processes;
-                    symbolReader = new SymbolReader(this.textWriter, sympath) { SourcePath = srcpath };
-
-                    foreach (var process in processes)
-                    {
-                        if (string.IsNullOrEmpty(imageFilter) || string.Equals(process.ImageFileName, imageFilter, StringComparison.OrdinalIgnoreCase))
-                        {
-                            foreach (var module in process.LoadedModules)
-                            {
-                                if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
-                                {
-                                    //
-                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
-                                    //
-                                    try
-                                    {
-                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
-                                    }
-                                    catch
-                                    {
-
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     stackViewerSession = new StackViewerSession(filename, stacktype, etlxFile.TraceLog, filterParams, symbolReader);
                     this.stackViewerSessionCache.Set(stackViewerKey, stackViewerSession, cacheExpirationTime);
                 }
