@@ -33,7 +33,7 @@ class NativeDlls
             {
                 s_ProcessArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
                 // THis should not be necessary, but the VS hosting process says its AMD64 but is in fact a 32 bit process. 
-                if (s_ProcessArch == "AMD64" && Marshal.SizeOf(typeof(IntPtr)) == 4)
+                if (s_ProcessArch == "AMD64" && IntPtr.Size == 4)
                     s_ProcessArch = "x86";
             }
             return s_ProcessArch;

@@ -1253,7 +1253,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public override bool IsStatic { get { return false; } }
 
 #region private
-        internal Func<DynamicTraceEventData, bool, EventFilterResponse> NewEventDefinition;
+        internal Func<TraceEvent, bool, EventFilterResponse> NewEventDefinition;
 
         /// <summary>
         /// Override
@@ -1300,9 +1300,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// <summary>
         /// Register 'template' so that if there are any subscriptions to template they get registered with the source.    
         /// </summary>
-        internal override EventFilterResponse OnNewEventDefintion(DynamicTraceEventData template, bool mayHaveExistedBefore)
+        internal override EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
-            m_state.m_templates[template] = template;
+            m_state.m_templates[template] = (DynamicTraceEventData) template;
             return base.OnNewEventDefintion(template, mayHaveExistedBefore);
         }
 
