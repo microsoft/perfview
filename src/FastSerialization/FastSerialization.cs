@@ -1715,8 +1715,6 @@ namespace FastSerialization
             if (factories.TryGetValue(fullName, out ret))
                 return ret;
 
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
             Type type;
             if (TypeResolver != null)
                 type = TypeResolver(fullName);
@@ -2114,7 +2112,6 @@ namespace FastSerialization
     /// <summary>
     /// Thrown when the deserializer detects an error. 
     /// </summary>
-    [Serializable]
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif

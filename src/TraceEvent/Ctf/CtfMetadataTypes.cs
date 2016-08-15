@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
@@ -54,6 +55,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
     abstract class CtfMetadataType
     {
+        public int BitOffset { get; set; }
         public abstract int Align { get; }
 
         public CtfTypes CtfType { get; protected set; }
@@ -64,15 +66,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         }
         
         internal abstract CtfMetadataType ResolveReference(Dictionary<string, CtfMetadataType> typealias);
-
-        internal abstract void Write(TextWriter output, object value, int indent);
-        internal virtual void WriteLine(TextWriter output, object value, int indent)
-        {
-            Write(output, value, indent);
-            output.WriteLine();
-        }
-        
         public abstract int GetSize();
+
+        public abstract object Read(byte[] buffer);
     }
 
     /// <summary>
@@ -110,12 +106,12 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             return typealias[Name];
         }
 
-        internal override void Write(TextWriter output, object value, int indent)
+        public override int GetSize()
         {
-            output.Write("{0}{1}", new string(' ', indent), Name);
+            throw new InvalidOperationException();
         }
 
-        public override int GetSize()
+        public override object Read(byte[] buffer)
         {
             throw new InvalidOperationException();
         }
@@ -151,30 +147,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = Type.ResolveReference(typealias);
             return this;
         }
-
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            output.Write("{0}{1}[{2}]", new string(' ', indent), Type, Index);
-
-            if (value != null)
-            {
-                output.Write("{ ");
-
-                output.Write(string.Join(", ", (object[])value));
-
-                output.Write(" }");
-            }
-        }
-        
-        public int GetLength(CtfStruct strct, object[] values)
-        {
-            int len;
-            if (int.TryParse(Index, out len))
-                return len;
-
-            return strct.GetFieldValue<int>(values, Index);
-        }
-
         
         public override int GetSize()
         {
@@ -187,6 +159,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 return CtfEvent.SizeIndeterminate;
 
             return size * len;
+        }
+
+        public override object Read(byte[] buffer)
+        {
+            return new byte[0];
         }
     }
 
@@ -212,23 +189,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         
         public string ByteOrder { get; private set; }
         public int Exp { get; private set; }
-        
         public int Mant { get; private set; }
         internal override CtfMetadataType ResolveReference(Dictionary<string, CtfMetadataType> typealias)
         {
             return this;
         }
 
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            output.Write("{0}float", new string(' ', indent));
-            if (value != null)
-                output.Write(" " + value.ToString());
-        }
-
         public override int GetSize()
         {
             return Exp + Mant;
+        }
+
+        public override object Read(byte[] buffer)
+        {
+            // TODO: We don't support reading floats.
+            return 0f;
         }
     }
 
@@ -269,21 +244,126 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return this;
         }
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            output.Write("{0}{1}int{2}", new string(' ', indent), Signed ? "" : "u", Size);
-            if (value != null)
-                output.Write(" " + value.ToString());
-        }
 
         public override int GetSize()
         {
             return Size;
         }
+        
+        public static T ReadInt<T>(CtfMetadataType type, byte[] buffer, int bitOffset) where T : IConvertible
+        {
+            if (type.CtfType == CtfTypes.Enum)
+                type = ((CtfEnum)type).Type;
+
+            CtfInteger intType = (CtfInteger)type;
+            object result = intType.Read(buffer, bitOffset);
+            object converted = ((IConvertible)result).ToType(typeof(T), null);
+            return (T)converted;
+        }
+
+        public object Read(byte[] buffer, int bitOffset)
+        {
+            if (Size > 64)
+                throw new NotImplementedException();
+
+            Debug.Assert((bitOffset % Align) == 0);
+            int byteOffset = bitOffset / 8;
+
+            bool fastPath = (bitOffset % 8) == 0 && (Size % 8) == 0;
+            if (fastPath)
+            {
+                if (Size == 32)
+                {
+                    if (Signed)
+                        return ((IConvertible)BitConverter.ToInt32(buffer, byteOffset));
+
+                    return BitConverter.ToUInt32(buffer, byteOffset);
+                }
+
+                if (Size == 8)
+                {
+                    if (Signed)
+                        return (sbyte)buffer[byteOffset];
+
+                    return buffer[byteOffset];
+                }
+
+                if (Size == 64)
+                {
+                    if (Signed)
+                        return BitConverter.ToInt64(buffer, byteOffset);
+
+                    return BitConverter.ToUInt64(buffer, byteOffset);
+                }
+
+                Debug.Assert(Size == 16);
+                if (Signed)
+                    return BitConverter.ToInt16(buffer, byteOffset);
+
+                return BitConverter.ToUInt16(buffer, byteOffset);
+            }
+            
+
+            // Sloooow path for misaligned integers
+            int bits = Size;
+            ulong value = 0;
+
+            int byteLen = IntHelpers.AlignUp(bits, 8) / 8;
+
+            for (int i = 0; i < byteLen; i++)
+                value = unchecked((value << 8) | buffer[byteOffset + byteLen - i - 1]);
+
+            value >>= bitOffset;
+            value &= (ulong)((1 << bits) - 1);
+
+            if (Signed)
+            {
+                ulong signBit = (1u << (bits - 1));
+
+                if ((value & signBit) != 0)
+                    value |= ulong.MaxValue << bits;
+            }
+
+
+            if (Size > 32)
+            {
+                if (Signed)
+                    return (long)value;
+
+                return value;
+            }
+
+            if (Size > 16)
+            {
+                if (Signed)
+                    return (int)value;
+
+                return (uint)value;
+            }
+
+            if (Size > 8)
+            {
+                if (Signed)
+                    return (short)value;
+
+                return (ushort)value;
+            }
+
+            if (Signed)
+                return (sbyte)value;
+
+            return (byte)value;
+        }
+
+        public override object Read(byte[] buffer)
+        {
+            return Read(buffer, BitOffset);
+        }
     }
 
     class CtfString : CtfMetadataType
     {
+        public int Length { get; set; }
         public override int Align
         {
             get
@@ -308,19 +388,15 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return this;
         }
-
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            string ind = new string(' ', indent);
-            if (value != null)
-                output.Write(ind + '"' + value.ToString() + '"');
-            else
-                output.Write("{0}string", ind);
-        }
-
+        
         public override int GetSize()
         {
             return CtfEvent.SizeIndeterminate;
+        }
+
+        public override object Read(byte[] buffer)
+        {
+            return Encoding.Unicode.GetString(buffer, BitOffset >> 3, Length);
         }
     }
 
@@ -349,15 +425,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = Type.ResolveReference(typealias);
             return this;
         }
-
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            string ind = new string(' ', indent);
-            if (value == null)
-                output.Write("{0}enum {{ {1} }}", ind, string.Join(", ", Values));
-            else
-                output.Write("{0} - {1}", GetName(((IConvertible)value).ToInt32(null)), value);
-        }
+        
         internal string GetName(int value)
         {
             foreach (CtfNamedRange range in Values)
@@ -370,6 +438,17 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override int GetSize()
         {
             return Type.GetSize();
+        }
+
+        internal CtfNamedRange GetValue(string name)
+        {
+            return Values.Where(p => p.Name == name).Single();
+        }
+
+        public override object Read(byte[] buffer)
+        {
+            int value = CtfInteger.ReadInt<int>(Type, buffer, BitOffset);
+            return GetName(value);
         }
     }
 
@@ -409,27 +488,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _resolved = true;
             return this;
         }
-
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            output.WriteLine("{0}struct", new string(' ', indent));
-            output.WriteLine(new string(' ', indent) + "{");
-
-            if (value == null)
-            {
-                foreach (CtfField field in Fields)
-                    field.WriteLine(output, null, indent + 4);
-            }
-            else
-            {
-                object[] values = (object[])value;
-                for (int i = 0; i < Fields.Length; i++)
-                    Fields[i].WriteLine(output, values[i], indent + 4);
-            }
-
-            output.Write(new string(' ', indent) + "}");
-        }
-
+        
         internal CtfField GetField(string name)
         {
             for (int index = 0; index < Fields.Length; index++)
@@ -437,34 +496,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     return Fields[index];
 
             return null;
-        }
-
-        internal T GetFieldValue<T>(object[] result, string name)
-        {
-            int index = GetFieldIndex(name);
-            return GetFieldValue<T>(result, index);
-        }
-
-        internal T GetFieldValue<T>(object[] result, int index)
-        {
-            object o = result[index];
-            if (!(o is T))
-                o = ((IConvertible)o).ToType(typeof(T), null);
-
-            return (T)o;
-        }
-
-        internal int GetFieldIndex(string name)
-        {
-            int index = 0;
-            for (; index < Fields.Length; index++)
-                if (Fields[index].Name == name)
-                    break;
-
-            if (index == Fields.Length)
-                throw new ArgumentException("name");
-
-            return index;
         }
 
         public override int GetSize()
@@ -499,6 +530,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             throw new ArgumentException();
         }
+
+        public override object Read(byte[] buffer)
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     class CtfVariant : CtfMetadataType
@@ -532,26 +568,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             return this;
         }
 
-        internal override void Write(TextWriter output, object value, int indent)
-        {
-            string ind = new string(' ', indent);
-            output.WriteLine("{0}variant <{1}>", ind, Switch);
-            output.WriteLine(ind + "{");
-
-            foreach (CtfField field in Union)
-                field.WriteLine(output, null, indent + 4);
-
-            if (value != null)
-            {
-                if (value is object[])
-                    output.WriteLine("{0}{{ {1} }}", ind, string.Join(", ", (object[])value));
-                else
-                    output.Write(ind + value);
-            }
-
-            output.Write(ind + "}");
-        }
-
         internal CtfField GetVariant(string name)
         {
             return Union.Where(f => f.Name == name).Single();
@@ -575,10 +591,16 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             return size;
         }
+
+        public override object Read(byte[] buffer)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     class CtfField
     {
+        public int BitOffset { get; set; }
         public CtfMetadataType Type { get; private set; }
         public string Name { get; private set; }
 
@@ -598,23 +620,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             Type = Type.ResolveReference(typealias);
         }
 
-        internal void Write(TextWriter output, object value, int indent)
+        internal object Read(byte[] buffer)
         {
-            if (Type.CtfType == CtfTypes.Array)
-            {
-                Type.Write(output, value, indent);
-            }
-            else
-            {
-                Type.Write(output, null, indent);
-                output.Write(" {0} = {1};", Name, value);
-            }
-        }
-
-        internal void WriteLine(TextWriter output, object value, int indent)
-        {
-            Write(output, value, indent);
-            output.WriteLine();
+            return Type.Read(buffer);
         }
     }
 

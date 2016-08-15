@@ -1,0 +1,105 @@
+{
+  "name": "Microsoft.Diagnostics.Tracing.TraceEvent",
+  "version": "1.0.0",
+  "buildOptions": {
+    "allowUnsafe": true,
+    "define": [
+      "NOT_WINDOWS"
+    ],
+    "compile": {
+      "include": [
+        "../../FastSerialization/*.cs",
+        "../../Utilities/*.cs",
+        "../Utilities/*.cs",
+        "../Ctf/*.cs",
+        "../Stacks/*.cs",
+        "../TraceUtilities/HistoryDictionary.cs",
+        "../TraceUtilities/PEFile.cs",                // Only needed for KernelTraceEventParser (BuildTime property)
+        "../Parsers/clr*.cs",
+        "../Parsers/KernelTraceEventParser.cs",
+        "../TraceEvent.cs",
+        "../ETWTraceEventSource.cs",
+        "../TraceEventNativeMethods.cs",
+        "../ZippedETL.cs"
+      ],
+      "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
+    },
+
+    // TODO FIX NOW remove 618 (obsolete warning) supression.
+    "additionalArguments": [ "/nowarn:618,649" ],
+
+    "packOptions": {
+      "summary": "A library for parsering Tracing information from ETW (windows) or LTTng (Linux)",
+      "releaseNotes": "Initial version that supports .NET Core.",
+      "repository": {
+        "url": "https://github.com/Microsoft/PerfView"
+      }
+    }
+
+    //"include": [ "../**/*.cs", "../../FastSerialization/*.cs", "../../Utilities/*.cs", "../../OSExtensions/*.cs" ],
+    //"exclude": [ "obj", "../obj", "../**/*.Tests" ]
+    //"exclude": [
+    //  "obj",
+    //  "../obj",
+    //  "../**/*.Tests",
+    //  "../RegisteredTraceEventParser.cs",
+    //  "../DynamicTraceEventParser.cs",
+    //  "../WPPTraceEventParser.cs",
+    //  "../TraceLog.cs",
+    //  "../TraceLog.cs",
+    //  "../Computers/ActivityComputer.cs",
+    //  "../Computers/StartStopActivityComputer.cs",
+    //  "../Computers/ThreadTimeComputer.cs",
+    //  "../Symbols/SymbolPath.cs",
+    //  "../Symbols/SymbolReader.cs"
+    //]
+
+    // For Full Windows Support.
+    // TODO FIX NOW remove 618 (obsolete warning) supression.
+    // "additionalArguments": [ "/r:../Interop.Dia2Lib.dll /r:../relogger/TraceReloggerLib.dll /nowarn:618,649" ]
+
+
+    //"define" :  [ "XXX" ],
+    // "platform" :  "x64",
+    // "outputName" "XXX",
+    // "copyToOutput {
+    // "include": [ *.dll ],
+    // "files": {
+    //   "include": [ "*.dll" ]
+    // }
+    // }
+  },
+
+  "dependencies": {
+    "NETStandard.Library": "1.6.0",
+    "System.Threading.Thread": "4.0.0", // For Thread.Sleep()
+    "System.Threading.Tasks.Parallel": "4.0.1", // For Parallel
+    "System.Diagnostics.Process": "4.1.0", // For ThreadWaitReason, ThreadState (in KernelTraceEventParser).
+    "System.IO.UnmanagedMemoryStream" :  "4.0.1" // for PEFile header reading.  
+    // "Microsoft.NETCore.App": "1.0.0",
+    // "Microsoft.NETCore.App": "1.0.0"
+    // "Microsoft.Win32.Registry": "4.0.0"
+    /**
+    "NETStandard.Library": "1.5.0-rc2-24027",
+    "System.Diagnostics.Process": "4.1.0-rc4-24204-03",
+    "System.Diagnostics.Tracing": "4.1.0-rc4-24204-0",
+    "Interop.Dia2Lib": "1.0.0",
+    "Microsoft.Win32.Registry": "4.0.0-rc4-24204-03",
+    "System.Net.Requests": "4.0.11-rc3-24131-00",
+    "System.IO.UnmanagedMemoryStream": "4.0.1-rc3-24131-00",
+    "System.Threading.Thread": "4.0.0-rc3-24131-00",
+    "System.Net.NameResolution": "4.0.0-rc4-24204-03",
+    "System.Threading.Tasks.Parallel": "4.0.1-rc3-24131-00"
+    **/
+  },
+
+  "frameworks": {
+    "netstandard1.6": {}
+
+    /*
+    "netcoreapp1.0": {
+      "imports": "dnxcore50"
+    }
+    */
+  }
+}

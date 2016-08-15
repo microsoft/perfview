@@ -14,6 +14,7 @@ using System.Threading;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Address = System.UInt64;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Utilities;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.
 namespace Microsoft.Diagnostics.Tracing
@@ -138,7 +139,7 @@ namespace Microsoft.Diagnostics.Tracing
                 long ret = 0;
                 for (int i = 0; i < logFiles.Length; i++)
                 {
-                    var fileName = logFiles[0].LogFileName;
+                    var fileName = logFiles[i].LogFileName;
                     if (File.Exists(fileName))
                         ret += new FileInfo(fileName).Length;
                 }
@@ -353,7 +354,7 @@ namespace Microsoft.Diagnostics.Tracing
             // Fill  out the first log file information (we will clone it later if we have multiple files). 
             logFiles[0].BufferCallback = this.TraceEventBufferCallback;
             handles[0] = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
-            useClassicETW = Environment.OSVersion.Version.Major < 6;
+            useClassicETW = !OperatingSystemVersion.AtLeast(OperatingSystemVersion.Vista);
             if (useClassicETW)
             {
                 IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));

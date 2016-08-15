@@ -302,7 +302,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var fieldName = fieldNames[i];
                     var value = data.PayloadString(i);
-                    var fieldNodeName = "EventData: " + fieldName + " " + value;
+                    var fieldNodeName = "EventData: " + fieldName + "=" + value;
                     var fieldNodeIndex = m_outputStackSource.Interner.FrameIntern(fieldNodeName);
                     stackIndex = m_outputStackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
                 }

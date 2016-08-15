@@ -61,6 +61,12 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\Utilities\DotNetCore.cs">
+      <Link>Utilities\DotNetCore.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\OperatingSystemVersion.cs">
+      <Link>Utilities\OperatingSystemVersion.cs</Link>
+    </Compile>
     <Compile Include="..\Utilities\DirectoryUtilities.cs">
       <Link>Utilities\DirectoryUtilities.cs</Link>
     </Compile>

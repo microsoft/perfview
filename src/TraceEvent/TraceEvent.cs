@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;
 
-// #Introduction
+// #Introduction 
 // 
 // Note that TraceEvent lives in a Nuget package.   See 
 // http://blogs.msdn.com/b/vancem/archive/2014/03/15/walk-through-getting-started-with-etw-traceevent-nuget-samples-package.aspx
@@ -157,6 +157,21 @@ namespace Microsoft.Diagnostics.Tracing
     abstract unsafe public class TraceEventSource : ITraceParserServices, IDisposable
     {
         // Properties to subscribe to find important parsers (these are convenience routines). 
+
+        /// <summary>
+        /// For convenience, we provide a property returns a ClrTraceEventParser that knows 
+        /// how to parse all the Common Language Runtime (CLR .NET) events into callbacks.
+        /// </summary>
+        public ClrTraceEventParser Clr
+        {
+            get
+            {
+                if (_CLR == null)
+                    _CLR = new ClrTraceEventParser(this);
+                return _CLR;
+            }
+        }
+
         /// <summary>
         /// For convenience, we provide a property returns a KernelTraceEventParser that knows 
         /// how to parse all the Kernel events into callbacks.
@@ -171,19 +186,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return _Kernel;
             }
         }
-        /// <summary>
-        /// For convenience, we provide a property returns a ClrTraceEventParser that knows 
-        /// how to parse all the Common Language Runtime (CLR .NET) events into callbacks.
-        /// </summary>
-        public ClrTraceEventParser Clr
-        {
-            get
-            {
-                if (_CLR == null)
-                    _CLR = new ClrTraceEventParser(this);
-                return _CLR;
-            }
-        }
+
+#if !NOT_WINDOWS
         /// <summary>
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
@@ -218,6 +222,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return _Registered;
             }
         }
+#endif // !NOT_WINDOWS
 
         /// <summary>
         /// The time when session started logging. 
@@ -388,10 +393,12 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ long sessionStartTimeQPC;
         internal /*protected*/ long sessionEndTimeQPC;
         internal /*protected*/ bool useClassicETW;
-        internal /*protected*/ KernelTraceEventParser _Kernel;
         internal /*protected*/ ClrTraceEventParser _CLR;
+        internal /*protected*/ KernelTraceEventParser _Kernel;
+#if !NOT_WINDOWS
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
+#endif //  !NOT_WINDOWS
         #endregion
         #region private
         /// <summary>
@@ -588,7 +595,9 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
                 // Old EventSources did not have tasks for event names so we make an exception for these 
+#if !NOT_WINDOWS 
                 Debug.Assert(!string.IsNullOrEmpty(taskName) || (this is DynamicTraceEventData && ProviderName == "TplEtwProvider"));
+#endif
                 return taskName;
             }
         }
@@ -1157,7 +1166,7 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
             sb.AppendLine().Append(" ");
 
-#if !DOTNET_V35
+#if !DOTNET_V35 && !NOT_WINDOWS
             if (ActivityID != Guid.Empty || RelatedActivityID != Guid.Empty)
             {
                 if (ActivityID != Guid.Empty)
@@ -1615,11 +1624,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal int ThreadIDforStacks()
         {
+#if !NOT_WINDOWS 
             if (0 <= ParentThread)
             {
                 Debug.Assert(this is ProcessTraceData || this is ThreadTraceData);
                 return ParentThread;
             }
+#endif
             return ThreadID;
         }
 
@@ -2408,7 +2419,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
 
             // Use reflection to see what events have declared 
-                MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo[] methods = GetType().GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
             {
                 var addMethod = methods[i];
@@ -2479,9 +2490,9 @@ namespace Microsoft.Diagnostics.Tracing
                 var typeName = this.GetType().FullName;
                 foreach (var methodName in enumSet.Keys)
                 {
-                    Debug.Assert(false, "The template " + methodName + 
-                        " for the parser " + typeName + 
-                        " for provider " + provider + 
+                    Debug.Assert(false, "The template " + methodName +
+                        " for the parser " + typeName +
+                        " for provider " + provider +
                         " exists in EnumerateTemplates enumeration but not as a C# event, please add it.");
                 }
             }
@@ -2508,8 +2519,11 @@ namespace Microsoft.Diagnostics.Tracing
         ///  
         /// It returns false if there are no definitions for that particular Provider (and thus you can skip callback if desired).  
         /// </summary>
-        internal virtual EventFilterResponse OnNewEventDefintion(DynamicTraceEventData template, bool mayHaveExistedBefore)
+        internal virtual EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
+#if !NOT_WINDOWS
+            Debug.Assert(template is DynamicTraceEventData);
+#endif
             EventFilterResponse combinedResponse = EventFilterResponse.RejectProvider;      // This is the combined result from all subscriptions. 
             var templateState = StateObject;
             // Does it match any subscription request we already have?  
@@ -2593,7 +2607,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Actually Register it with the source.     
             source.RegisterEventTemplate(templateWithCallback);
-#if !DOTNET_V35
+#if !DOTNET_V35 && !NOT_WINDOWS
             Debug.Assert(templateWithCallback.source == Source ||
                 (templateWithCallback.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
                  Source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
@@ -2664,11 +2678,16 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>A TraceEventDispatcher for the given trace file.</returns>
         public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName)
         {
-            if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase) ||
-                traceFileName.EndsWith(".lttng.zip", StringComparison.OrdinalIgnoreCase))
+            if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
-            else
+#if !NOT_WINDOWS
+            else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
+                     traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
+                     traceFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
                 return new ETWTraceEventSource(traceFileName);
+#endif
+            else
+                return null;
         }
 
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However
@@ -2894,33 +2913,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-            if (anEvent.Target != null)
-                anEvent.Dispatch();
-            if (anEvent.next != null)
-            {
-                TraceEvent nextEvent = anEvent;
-                for (;;)
+                if (anEvent.Target != null)
+                    anEvent.Dispatch();
+                if (anEvent.next != null)
                 {
-                    nextEvent = nextEvent.next;
-                    if (nextEvent == null)
-                        break;
-                    if (nextEvent.Target != null)
+                    TraceEvent nextEvent = anEvent;
+                    for (;;)
                     {
-                        nextEvent.eventRecord = anEvent.eventRecord;
-                        nextEvent.userData = anEvent.userData;
-                        nextEvent.eventIndex = anEvent.eventIndex;
-                        nextEvent.Dispatch();
-                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        nextEvent = nextEvent.next;
+                        if (nextEvent == null)
+                            break;
+                        if (nextEvent.Target != null)
+                        {
+                            nextEvent.eventRecord = anEvent.eventRecord;
+                            nextEvent.userData = anEvent.userData;
+                            nextEvent.eventIndex = anEvent.eventIndex;
+                            nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                        }
                     }
                 }
-            }
-            if (AllEvents != null)
-            {
-                if (unhandledEventTemplate == anEvent)
-                    unhandledEventTemplate.PrepForCallback();
-                AllEvents(anEvent);
-            }
-            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                if (AllEvents != null)
+                {
+                    if (unhandledEventTemplate == anEvent)
+                        unhandledEventTemplate.PrepForCallback();
+                    AllEvents(anEvent);
+                }
+                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)
@@ -2938,7 +2957,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal TraceEvent Lookup(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             int lastChanceHandlerChecked = 0;       // We have checked no last chance handlers to begin with
-        RetryLookup:
+            RetryLookup:
             ushort eventID = eventRecord->EventHeader.Id;
 
             //double relTime = QPCTimeToRelMSec(eventRecord->EventHeader.TimeStamp);
@@ -3145,7 +3164,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private unsafe void Insert(TraceEvent template)
         {
-#if !DOTNET_V35
+#if !DOTNET_V35 && !NOT_WINDOWS
             Debug.Assert(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.source == this);
             Debug.Assert(!(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif
@@ -3296,7 +3315,9 @@ namespace Microsoft.Diagnostics.Tracing
             // Use the old style exclusive if we are using old ETW APIs, or the provider does not
             // support it (This currently includes the Kernel Events)
             // If the event is tracelogging, do not register it as classic.
+#if !NOT_WINDOWS
             Debug.Assert(!(template.ProviderGuid == KernelTraceEventParser.ProviderGuid && template.eventID != TraceEventID.Illegal));
+#endif
             if (useClassicETW || template.eventID == TraceEventID.Illegal)
             {
                 // Use classic lookup mechanism (Task Guid, Opcode)

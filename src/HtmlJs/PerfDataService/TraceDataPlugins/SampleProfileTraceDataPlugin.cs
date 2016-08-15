@@ -20,7 +20,7 @@
             }
 
             TraceLog log = events.Log;
-            var stackSource = new MutableTraceEventStackSource(log) { ShowUnknownAddresses = true };
+            var stackSource = new MutableTraceEventStackSource(log) { /* ShowUnknownAddresses = true */ };
             var eventSource = events.GetSource();
 
             var sample = new StackSourceSample(stackSource);
