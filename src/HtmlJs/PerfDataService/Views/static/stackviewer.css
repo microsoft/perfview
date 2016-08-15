@@ -24,6 +24,14 @@ Nav Bar Views
     color: white;
 }
 
+#top-status-bar {
+    color: black;
+    padding-left: 16px;
+    font-size: 13px;
+    background-color: rgb(158, 158, 158);
+}
+
+
 /* Wrapper for Nav Bar Views */
 /*.nav {
   margin: 0;
