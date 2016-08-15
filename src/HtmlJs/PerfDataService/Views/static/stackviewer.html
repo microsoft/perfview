@@ -379,13 +379,13 @@
                                             + "\">";
 
                 rowsToAppend = rowsToAppend + "<td class=\"name-col selectable\">" + stackData[i].name + "</td>"
-                                    + (treeTableId == "#by-name-list" ? "<td class=\"exclusiveMetricPercent selectable\">" + stackData[i].exclusiveMetricPercent.toFixed(2) : "<td class=\"inclusiveMetricPercent selectable\">" + stackData[i].inclusiveMetricPercent.toFixed(2)) + "</td>"
+                                    + (treeTableId == "#by-name-list" ? "<td class=\"exclusiveMetricPercent selectable\">" + stackData[i].exclusiveMetricPercent.toFixed(3) : "<td class=\"inclusiveMetricPercent selectable\">" + stackData[i].inclusiveMetricPercent.toFixed(3)) + "</td>"
                                     + (treeTableId == "#by-name-list" ? "<td class=\"exclusiveMetric selectable\">" + stackData[i].exclusiveMetric : "<td class=\"inclusiveMetric selectable\">" + stackData[i].inclusiveMetric) + "</td>"
-                                    + (treeTableId == "#by-name-list" ? "<td class=\"inclusiveMetricPercent selectable\">" + stackData[i].inclusiveMetricPercent.toFixed(2) : "<td class=\"exclusiveMetricPercent selectable\">" + stackData[i].exclusiveMetricPercent.toFixed(2)) + "</td>"
+                                    + (treeTableId == "#by-name-list" ? "<td class=\"inclusiveMetricPercent selectable\">" + stackData[i].inclusiveMetricPercent.toFixed(3) : "<td class=\"exclusiveMetricPercent selectable\">" + stackData[i].exclusiveMetricPercent.toFixed(3)) + "</td>"
                                     + (treeTableId == "#by-name-list" ? "<td class=\"inclusiveMetric selectable\">" + stackData[i].inclusiveMetric : "<td class=\"exclusiveMetric selectable\">" + stackData[i].exclusiveMetric) + "</td>\
                                     <td class=\"exclusiveFoldedCount selectable\">" + stackData[i].exclusiveFoldedCount + "</td>\
-                                    <td class=\"firstTimeRelativeMSec selectable\" relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec.toFixed(2) + "</td>\
-                                    <td class=\"lastTimeRelativeMSec selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec.toFixed(2) + "</td>\
+                                    <td class=\"firstTimeRelativeMSec selectable\" relevant-filter-id=\"#start-filter\">" + stackData[i].firstTimeRelativeMSec.toFixed(3) + "</td>\
+                                    <td class=\"lastTimeRelativeMSec selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec.toFixed(3) + "</td>\
                                     </tr>";
             }
 
@@ -506,7 +506,7 @@
                     stackDelegate.getCalleesData(function (callTreeStackData, status) {
                         // Conveniently use the data to update the top-status-bar, which
                         // elicits all the ROOT node metrics (same as ROOT node row data).
-                        $("#top-status-bar").html("Totals Metric: " + nodeData.inclusiveMetric + ",  Count: " + nodeData.inclusiveMetric + ",  First: " + nodeData.firstTimeRelativeMSec.toFixed(4) + ",  Last: " + nodeData.lastTimeRelativeMSec.toFixed(4) + ",  Last-First: " + (nodeData.lastTimeRelativeMSec - nodeData.firstTimeRelativeMSec).toFixed(4) + ", TotalProcs: " + callTreeStackData.length);
+                        $("#top-status-bar").html("Totals Metric: " + nodeData.inclusiveMetric + ",  Count: " + nodeData.inclusiveMetric + ",  First: " + nodeData.firstTimeRelativeMSec.toFixed(3) + ",  Last: " + nodeData.lastTimeRelativeMSec.toFixed(3) + ",  Last-First: " + (nodeData.lastTimeRelativeMSec - nodeData.firstTimeRelativeMSec).toFixed(3) + ", TotalProcs: " + callTreeStackData.length);
 
                         // Place data in CallTree tab
                         var parentNode = $("#call-treeTree").treetable("node", "ROOT");
