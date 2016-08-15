@@ -10,8 +10,8 @@
 
     <!-- basicContext Theme -->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
-    <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
-    <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
+     <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/default.min.css"> 
+    <!--<link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">-->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
     <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
@@ -40,7 +40,7 @@
 
             <div class="singleFilterContainer small-12 medium-4 large-3 columns">
                 <label>Fold%:</label>
-                <input class="filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
+                <input class="filter" id="foldpercent-filter" name="foldpct" list="foldpercent-filter-list" type="text" value="1">
                 <datalist id="foldpercent-filter-list"></datalist>
             </div>
 
@@ -224,8 +224,8 @@
         });
 
         function positionTabsContent() {
-            var offset = $(".fixedContainer").height() + 40;
-            $(".tabs-content").css("margin-top", offset);
+            var offset = $(".fixedContainer").height() + 80;
+            $(".tabs-content").css("top", offset);
         }
     </script>
 
@@ -279,8 +279,8 @@
                   { title: 'Set Time Range', icon: 'ion-clock', fn: function() { setTimeRange(e); } },
                   { title: 'Include Item', icon: 'ion-plus', fn: function() { includeItem(e); } },
                   { title: 'Exclude Item', icon: 'ion-minus', fn: function() { excludeItem(e); } },
-                  { title: 'Fold Item', icon: 'ion-filing', fn: function() { foldItem(e); } }
-                  //{ title: 'Delete', icon: 'ion-android-remove-circle', fn: clicked },
+                  { title: 'Fold Item', icon: 'ion-filing', fn: function() { foldItem(e); } },
+                  { title: 'Remove All Folding', icon: 'ion-android-remove-circle', fn: function() { removeAllFolding(); } }
                   //{ title: 'Rename', icon: 'ion-edit', fn: clicked },
                   //{ title: 'Merge', icon: 'ion-merge', fn: clicked },
                   //{ title: 'Make Local Symbol Dir', icon: 'ion-plus-round', fn: clicked },
@@ -307,6 +307,7 @@
 
             function includeItem(e) {
                 var name = $(e.target.parentNode).find(".name-col").text();
+                if (name == "ROOT") { name = '^' + name; }
 
                 var incpatsFilter = $("#incpats-filter");
                 incpatsFilter.val(incpatsFilter.val() == "" ? name : incpatsFilter.val() + ";" + name);
@@ -335,6 +336,16 @@
                 var foldpatsFilter = $("#foldpats-filter");
                 foldpatsFilter.val(foldpatsFilter.val() == "" ? name : foldpatsFilter.val() + ";" + name);
                 
+                var press = jQuery.Event("keypress");
+                press.ctrlKey = false;
+                press.which = 13;
+                $("#foldpats-filter").trigger(press);
+            }
+
+            function removeAllFolding() {
+                $("#foldpercent-filter").val("");
+                $("#foldpats-filter").val("");
+
                 var press = jQuery.Event("keypress");
                 press.ctrlKey = false;
                 press.which = 13;
@@ -465,6 +476,7 @@
                 stackDelegate.getSummaryData(function (summaryStackData) {
                     $("#by-name-list tbody").empty();  // TODO: Maybe unload branch, instead
                     updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
+
                     if (stackDelegate.focusNode != null) {
                         var newFocusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
                         stackDelegate.setFocusNode(newFocusNode);
@@ -624,6 +636,7 @@
             } else if (e.which == 27) {
                 $(".is-active .searchNavButtons").hide();
                 $(".is-active .findContainer").hide();
+                $(".is-active .findContainer input").val("");
                 stackDelegate.clearSelectedCell();
 
                 // TODO: This "each" method of deleting data-find-flags could take a while on larger data sets
