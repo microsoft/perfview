@@ -276,22 +276,22 @@
                 }
             });
 
-            document.querySelector('#by-name-list tbody').addEventListener('contextmenu', function(e) {
-                let items = [
-                  { title: 'Set Time Range', icon: 'ion-clock', fn: function() { setTimeRange(e); } },
-                  { title: 'Include Item', icon: 'ion-plus', fn: function() { includeItem(e); } },
-                  { title: 'Exclude Item', icon: 'ion-minus', fn: function() { excludeItem(e); } },
-                  { title: 'Fold Item', icon: 'ion-filing', fn: function() { foldItem(e); } },
-                  { title: 'Remove All Folding', icon: 'ion-android-remove-circle', fn: function() { removeAllFolding(); } }
-                  //{ title: 'Rename', icon: 'ion-edit', fn: clicked },
-                  //{ title: 'Merge', icon: 'ion-merge', fn: clicked },
-                  //{ title: 'Make Local Symbol Dir', icon: 'ion-plus-round', fn: clicked },
-                  //{ title: 'Zip', icon: 'ion-ios-briefcase', fn: clicked },
-                  //{ title: 'UnZip', icon: 'ion-ios-briefcase-outline', fn: clicked }
-                ]
+            var nodeList = document.querySelectorAll('#by-name-list tbody, #call-treeTree tbody, #callersTree tbody, #calleesTree tbody')
+            for (var i = 0; i < nodeList.length; ++i) {
+                var node = nodeList[i];
 
-                basicContext.show(items, e)
-            });
+                node.addEventListener('contextmenu', function(e) {
+                    let items = [
+                      { title: 'Set Time Range', icon: 'ion-clock', fn: function() { setTimeRange(e); } },
+                      { title: 'Include Item', icon: 'ion-plus', fn: function() { includeItem(e); } },
+                      { title: 'Exclude Item', icon: 'ion-minus', fn: function() { excludeItem(e); } },
+                      { title: 'Fold Item', icon: 'ion-filing', fn: function() { foldItem(e); } },
+                      { title: 'Remove All Folding', icon: 'ion-android-remove-circle', fn: function() { removeAllFolding(); } }
+                    ]
+
+                    basicContext.show(items, e)
+                });
+            }
 
             function setTimeRange(e) {
                 var first = $(e.target.parentNode).find(".firstTimeRelativeMSec").text();
@@ -432,6 +432,8 @@
 
         /* callersTree click event */
         $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
+            if (row.target !== this) { return; }
+
             //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
             //var clickedNodeId = row.currentTarget.innerText.trim();
@@ -446,6 +448,8 @@
 
         /* calleesTree click event */
         $(document).on("dblclick", "#calleesTree tbody tr td:first-child", function (row) {
+            if (row.target !== this) { return; }
+
             //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
             //var clickedNodeId = row.currentTarget.innerText.trim();
