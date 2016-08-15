@@ -483,8 +483,8 @@
                     }
 
                     if (includeSearch) {
-                        displayFindNavigation("#by-name-list");
-                        $(".is-active .searchNavButtons .next").click();
+                        displayFindNavigation("#by-name-list", "#by-name");
+                        $("#by-name .searchNavButtons .next").click();
                     }
                 }, options);
             }
@@ -507,8 +507,8 @@
                         updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
 
                         if (includeSearch) {
-                            displayFindNavigation("#call-treeTree");
-                            $(".is-active .searchNavButtons .next").click();
+                            displayFindNavigation("#call-treeTree", "#call-tree");
+                            $("#call-tree .searchNavButtons .next").click();
                         }
                     }, options);
                 });
@@ -533,8 +533,8 @@
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData);
 
                     if (includeSearch) {
-                        displayFindNavigation("#callersTree");
-                        $(".is-active .searchNavButtons .next").click();
+                        displayFindNavigation("#callersTree", "#callers");
+                        $("#callers .searchNavButtons .next").click();
                     }
                 }, options);
             }
@@ -558,8 +558,8 @@
                     updateTreeTableHtml("#calleesTree", parentNode, calleesStackData);
 
                     if (includeSearch) {
-                        displayFindNavigation("#calleesTree");
-                        $(".is-active .searchNavButtons .next").click();
+                        displayFindNavigation("#calleesTree", "#callees");
+                        $("#callees .searchNavButtons .next").click();
                     }
                 }, options);
             }
@@ -604,7 +604,7 @@
         }
 
 
-        function displayFindNavigation(treeId) {
+        function displayFindNavigation(treeId, tabId) {
             var targetNodesFound = 0;
             $(treeId + " tbody tr").each(function(index) {
                 var findFlag = $(this).attr("data-find-flag");
@@ -614,8 +614,8 @@
                 }
             });
 
-            $(".is-active .searchNavButtons span").text("0/" + targetNodesFound);
-            $(".is-active .searchNavButtons").show();
+            $(tabId + " .searchNavButtons span").text("0/" + targetNodesFound);
+            $(tabId + " .searchNavButtons").show();
         }
 
         $(".next").click(function (e) {
