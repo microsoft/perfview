@@ -15,6 +15,7 @@ Nav Bar Views
     top: 0;
     position: fixed;
     width: 100%;
+    z-index: 1;
 
     background-color: var(--main-color);
 }
@@ -22,6 +23,14 @@ Nav Bar Views
 .top-bar .title, .top-bar-left .title {
     color: white;
 }
+
+#top-status-bar {
+    color: black;
+    padding-left: 16px;
+    font-size: 13px;
+    background-color: rgb(158, 158, 158);
+}
+
 
 /* Wrapper for Nav Bar Views */
 /*.nav {
@@ -127,6 +136,7 @@ Nav Bar Views
     right: 0;
     width: 446px;
     margin-right: 17px;
+    z-index: 1;
     
     height: 30px;
     top: 0px;
@@ -150,6 +160,9 @@ Nav Bar Views
 
 
 .tabs-content {
+    position: absolute;
+    width: 100%;
+    margin-top: 0px;
     margin-bottom: 200px;
 }
 
@@ -168,6 +181,10 @@ td, th {
 
 table tbody tr:nth-child(even) {
     background-color: #dddddd;
+}
+
+.basicContext tbody tr:nth-child(even) {
+    background-color: white;
 }
 
 table tbody tr:nth-child(odd)[data-find-flag],
