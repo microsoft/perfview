@@ -45,12 +45,15 @@
             if (nodeObject.type == "dir") {
                 self.changeDirectoryTreePath(nodeObject.path);
             } else if (nodeObject.type == "file") {
+                var parent = $(self.treeDivID).jstree('get_selected');
+                var isLeaf = $(self.treeDivID).jstree().is_leaf(parent);
+                if (!isLeaf) { return; }
+
                 url = self.domain + "/api/data/open?path=" + nodeObject.path;
                 $.get(url, function (response, status) {
                     json = JSON.parse(response);
                     
                     for (var i = 0; i < json.children.length; ++i) {
-                        var parent = $(self.treeDivID).jstree('get_selected');
                         var newNode = json.children[i];
                         var newNodeId = $(self.treeDivID).jstree().create_node(parent, newNode, "last");
                         $(self.treeDivID).jstree().open_node(parent);
