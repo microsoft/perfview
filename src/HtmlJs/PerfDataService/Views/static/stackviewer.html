@@ -255,6 +255,10 @@
                 onNodeExpand: function () {
                     var node = this;
                     onTreeNodeExpand(node, "#call-treeTree");
+                },
+                onNodeCollapse: function() {
+                    var node = this;
+                    onTreeNodeCollapse(node, "#call-treeTree");
                 }
             });
             
@@ -275,6 +279,10 @@
                 onNodeExpand: function () {
                     var node = this;
                     onTreeNodeExpand(node, "#callersTree");
+                },
+                onNodeCollapse: function() {
+                    var node = this;
+                    onTreeNodeCollapse(node, "#callersTree");
                 }
             });
 
@@ -285,6 +293,10 @@
                 onNodeExpand: function () {
                     var node = this;
                     onTreeNodeExpand(node, "#calleesTree");
+                },
+                onNodeCollapse: function() {
+                    var node = this;
+                    onTreeNodeCollapse(node, "#calleesTree");
                 }
             });
 
@@ -622,6 +634,17 @@
                         updateTreeTableHtml(treeName, node, calleesStackData);
                     }
                 }, options);
+            }
+        }
+
+        /* Tree node collapse event */
+        function onTreeNodeCollapse(node, treeName) {
+            if (node.children.length <= 0) { return; }
+            
+            for (var i = 0; i < node.children.length; ++i) {
+                var child = node.children[i];
+                $(treeName).treetable("collapseNode", child.id);
+                onTreeNodeCollapse(child, treeName);
             }
         }
 
