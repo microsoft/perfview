@@ -166,14 +166,14 @@ Nav Bar Views
     margin-bottom: 200px;
 }
 
-table {
+.tabs-panel table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
 }
 
-table thead th,
-table tbody td, table tbody th {
+.tabs-panel table thead th,
+.tabs-panel table tbody td, .tabs-panel table tbody th {
     border: 1px solid #dddddd;
     text-align: left;
     font-size: .8rem;
@@ -185,7 +185,7 @@ table.treetable span.indenter {
     display: inline;  /* TODO: THIS COULD BE HACKY; Figure out another way to fix arrow indenting problem*/
 }
 
-table tbody tr:nth-child(even) {
+.tabs-panel table tbody tr:nth-child(even) {
     background-color: #dddddd;
 }
 
