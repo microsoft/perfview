@@ -713,6 +713,13 @@
             }, 100);
 
             stackDelegate.setSelectedCell(targetNode);
+            
+            /* TODO:
+            // Open path to this node if it was collapsed after having been searched for
+            if (this node's children have been loaded before (e.g. "direct-children-loaded=true" on 'tr' element, contained inside targetNode)) {
+                recursively open this node and all of its parents
+            }
+            */
 
             // Update itemIndicator
             itemIndicator.text(current + '/' + total);
