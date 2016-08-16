@@ -44,7 +44,17 @@ namespace PerfDataService.Controllers
 
             try
             {
-                List<object> children = getChildrenForPath(path);
+                List<object> children = new List<object>();
+                if (Directory.Exists(path))
+                {
+                    // path leads to a valid directory
+                    children = getChildrenForPath(path);
+                }
+                else if (new FileInfo(path).Exists)
+                {
+                    // path leads to a valid file (e.g. .etl.zip, .etl)
+                    children = getDataForFile(path);
+                }
                 tree.Add("children", children);
             } catch (UnauthorizedAccessException)
             {
@@ -239,11 +249,16 @@ namespace PerfDataService.Controllers
                     catch { dir.Add("hasChildren", false); }  // If this directory has an unauthorized access exception
                     childrenContainer.Add(dir);
                 }
-
-                return childrenContainer;
             }
+
+            return childrenContainer;
+        }
+
+        public List<object> getDataForFile(string pathToItem) {
+            List<object> childrenContainer = new List<object>();
+
             // IF REAL FILE (e.g. .etl.zip, .etl)
-            else if (new FileInfo(pathToItem).Exists)
+            if (new FileInfo(pathToItem).Exists)
             {
                 // TODO: Separate this into another function, if not another endpoint
                 // Assume only .etl.zip for now
@@ -268,13 +283,10 @@ namespace PerfDataService.Controllers
                 // TODO: Create Events as child
                 // TODO: Create Memory Group as child
                 // TODO: Create Advanced Group as child
-
-                return childrenContainer;
             }
 
-
             // TODO: Form proper response
-            return null;
+            return childrenContainer;
         }
 
 

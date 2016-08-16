@@ -498,6 +498,7 @@
             // LOAD AND DISPLAY CALLTREE DATA
             if (treesToUpdate == null || treesToUpdate.includes("call-treeTree")) {
                 stackDelegate.getNode("ROOT", function(nodeData){
+                    console.log(nodeData);
                     $("#call-treeTree tbody").empty();
 
                     // Place root node in tree

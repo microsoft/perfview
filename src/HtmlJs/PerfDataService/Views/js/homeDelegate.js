@@ -25,6 +25,7 @@
         // Load the JSON data
         $(self.treeDivID).jstree({
             'core': {
+                'check_callback': true,
                 'data': JSONTree.children
             }
         });
@@ -41,8 +42,20 @@
         $(self.treeDivID).on('activate_node.jstree', function (event, node) {
             nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
 
-            if (nodeObject.type == "dir" || nodeObject.type == "file") {
+            if (nodeObject.type == "dir") {
                 self.changeDirectoryTreePath(nodeObject.path);
+            } else if (nodeObject.type == "file") {
+                url = self.domain + "/api/data/open?path=" + nodeObject.path;
+                $.get(url, function (response, status) {
+                    json = JSON.parse(response);
+                    
+                    for (var i = 0; i < json.children.length; ++i) {
+                        var parent = $(self.treeDivID).jstree('get_selected');
+                        var newNode = json.children[i];
+                        var newNodeId = $(self.treeDivID).jstree().create_node(parent, newNode, "last");
+                        $(self.treeDivID).jstree().open_node(parent);
+                    }
+                });
             } else if (nodeObject.type == "stacks") {
                 self.openStackWindow(nodeObject.path, nodeObject.stackType);
             }
