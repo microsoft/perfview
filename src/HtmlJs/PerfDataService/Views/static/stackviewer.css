@@ -172,11 +172,13 @@ table {
     width: 100%;
 }
 
-td, th {
+table thead th,
+table tbody td, table tbody th {
     border: 1px solid #dddddd;
     text-align: left;
     font-size: .8rem;
     padding: 8px;
+    text-indent: 8px;
 }
 
 table tbody tr:nth-child(even) {

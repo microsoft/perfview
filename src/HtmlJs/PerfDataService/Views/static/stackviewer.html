@@ -86,7 +86,7 @@
             <table id="by-name-list">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th style="width: 70%;">Name</th>
                         <th>Exc %</th>
                         <th>Exc</th>
                         <th>Inc %</th>
@@ -192,6 +192,7 @@
     <!-- Let's get some jQuery going here. -->
     <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
     <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
+    <script src="../libraries/colResizable-1.6.min.js"></script>
 
     <script src="../js/stackDelegate.js"></script>
 
@@ -239,7 +240,12 @@
 
             // Initialize by-name-list and possibly set some properties
             $("#by-name-list").treetable({
-                indenterTemplate: "<span></span>"
+                indenterTemplate: "<span></span>",
+                onInitialized: function() {
+                    $("#by-name-list").colResizable({
+                        liveDrag: true
+                    });
+                }
             });
 
             // Initialize call-treeTree and possibly set some properties
@@ -498,7 +504,6 @@
             // LOAD AND DISPLAY CALLTREE DATA
             if (treesToUpdate == null || treesToUpdate.includes("call-treeTree")) {
                 stackDelegate.getNode("ROOT", function(nodeData){
-                    console.log(nodeData);
                     $("#call-treeTree tbody").empty();
 
                     // Place root node in tree
