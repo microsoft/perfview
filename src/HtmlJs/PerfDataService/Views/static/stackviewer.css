@@ -181,6 +181,10 @@ table tbody td, table tbody th {
     text-indent: 8px;
 }
 
+table.treetable span.indenter {
+    display: inline;  /* TODO: THIS COULD BE HACKY; Figure out another way to fix arrow indenting problem*/
+}
+
 table tbody tr:nth-child(even) {
     background-color: #dddddd;
 }

@@ -112,7 +112,7 @@
             <table id="call-treeTree">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th style="width: 70%;">Name</th>
                         <th>Inc %</th>
                         <th>Inc</th>
                         <th>Exc %</th>
@@ -138,7 +138,7 @@
                 <table id="callersTree">
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th style="width: 70%;">Name</th>
                             <th>Inc %</th>
                             <th>Inc</th>
                             <th>Exc %</th>
@@ -164,7 +164,7 @@
             <table id="calleesTree">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th style="width: 70%;">Name</th>
                         <th>Inc %</th>
                         <th>Inc</th>
                         <th>Exc %</th>
@@ -261,6 +261,12 @@
             // Load data into by-name-list and call-treeTree
             stackDelegate.filters = $("#filtersForm").serialize();  // In case there are any default filter values set
             loadAndDisplayData(["by-name-list", "call-treeTree"], false);
+
+            $('#tabs').on('change.zf.tabs', function() {
+                $("#" + $(".is-active table").attr("id")).colResizable({
+                    liveDrag: true
+                });
+            });
 
             // Initialize callersTree and possibly set some properties
             $("#callersTree").treetable({
