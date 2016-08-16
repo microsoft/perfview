@@ -22,6 +22,10 @@ Nav Bar Views
 .nav {
   margin: 0;
   display: flex;
+
+  border-bottom: solid;
+  border-color: #4169e1;
+  border-width: 2px;
 }
 
 /* Wrapper for Dropdown Navbar and Helpful Links */
@@ -123,15 +127,16 @@ Tree View and Welcome View
 .wrapper #sideBarContainer #dirSelect {
   margin: 0;
   height: 1.5em;
-  background-color: darkgrey;
-}
-
-.wrapper #sideBarContainer #dirSelect {
   background-color: white;
   border: none;
+  border-bottom: solid;
+  border-width: 2px;
+  border-color: #4169e1;
+  border-radius: 0px;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 12px 4px 12px 4px;
+  font-size: 13px;
 }
 
 .wrapper #sideBarContainer #dirSelect::-webkit-calendar-picker-indicator {
