@@ -16,11 +16,16 @@
     <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
 <body>
+    <!-- NAVIGATION, TOP STATUS BAR, FILTER INPUTS, & TAB BUTTONS -->
     <div class="fixedContainer">
+        <!-- NAVIGATION (This div will be replaced with templates/navbar.html when document is loaded) -->
         <div class="nav"></div>
 
+        <!-- TOP STATUS BAR 
+            This status bar's text will get replaced with the stack's ROOT node column data -->
         <div id="top-status-bar">Totals Metric:  Count:  First:  Last:  Last-First:  Metric/Interval:  TimeBucket:  TotalProcs:</div>
 
+        <!-- STACK FILTERS -->
         <form id="filtersForm" class="row fullWidth align-middle">
             <div class="singleFilterContainer small-12 medium-4 large-3 columns">
                 <label>Start:</label>
@@ -36,7 +41,7 @@
 
             <div class="singleFilterContainer small-12 medium-4 large-3 columns">
                 <label>GroupPats:</label>
-                <input class="filter" name="grouppats" list="grouppats-filter-list" type="text">
+                <input class="filter" id="grouppats-filter" name="grouppats" list="grouppats-filter-list" type="text">
                 <datalist id="grouppats-filter-list"></datalist>
             </div>
 
@@ -65,6 +70,7 @@
             </div>
         </form>
 
+        <!-- TAB BUTTONS -->
         <ul class="tabs" data-tabs id="tabs">
             <li class="tabs-title is-active"><a href="#by-name" aria-selected="true">By Name</a></li>
             <li class="tabs-title"><a href="#call-tree">CallTree</a></li>
@@ -73,8 +79,11 @@
         </ul>
     </div>
 
+    <!-- TABS CONTENT -->
     <div class="tabs-content" data-tabs-content="tabs">
+        <!-- BY NAME Container -->
         <div class="tabs-panel is-active" id="by-name">
+            <!-- Find Input (search textbox) -->
             <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
@@ -83,10 +92,11 @@
                     <span>0/0</span>
                 </div>
             </div>
+            <!-- By Name TreeTable -->
             <table id="by-name-list">
                 <thead>
                     <tr>
-                        <th style="width: 70%;">Name</th>
+                        <th style="width: 70%;">Name</th>  <!-- width: 70% sets the 'Name' column to get most of the width -->
                         <th>Exc %</th>
                         <th>Exc</th>
                         <th>Inc %</th>
@@ -96,11 +106,13 @@
                         <th>Last</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody></tbody>  <!-- Stack data will go here -->
             </table>
         </div>
 
+        <!-- CALLTREE Container -->
         <div class="tabs-panel" id="call-tree">
+            <!-- Find Input (search textbox) -->
             <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
@@ -109,6 +121,7 @@
                     <span>0/0</span>
                 </div>
             </div>
+            <!-- CallTree TreeTable -->
             <table id="call-treeTree">
                 <thead>
                     <tr>
@@ -122,11 +135,13 @@
                         <th>Last</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody></tbody>  <!-- Stack data will go here -->  
             </table>
         </div>
 
+        <!-- CALLERS Container -->
         <div class="tabs-panel" id="callers">
+            <!-- Find Input (search textbox) -->
             <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
@@ -135,24 +150,27 @@
                     <span>0/0</span>
                 </div>
             </div>
-                <table id="callersTree">
-                    <thead>
-                        <tr>
-                            <th style="width: 70%;">Name</th>
-                            <th>Inc %</th>
-                            <th>Inc</th>
-                            <th>Exc %</th>
-                            <th>Exc</th>
-                            <th>Fold</th>
-                            <th>First</th>
-                            <th>Last</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <!-- Callers TreeTable -->
+            <table id="callersTree">
+                <thead>
+                    <tr>
+                        <th style="width: 70%;">Name</th>
+                        <th>Inc %</th>
+                        <th>Inc</th>
+                        <th>Exc %</th>
+                        <th>Exc</th>
+                        <th>Fold</th>
+                        <th>First</th>
+                        <th>Last</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>  <!-- Stack data will go here -->
+            </table>
         </div>
 
+        <!-- CALLEES Container -->
         <div class="tabs-panel" id="callees">
+            <!-- Find Input (search textbox) -->
             <div class="findContainer" style="display: none;">
                 <span>Find:</span><input class="find" name="find" type="text">
                 <div class="searchNavButtons" style="display: none;">
@@ -161,6 +179,7 @@
                     <span>0/0</span>
                 </div>
             </div>
+            <!-- Callees TreeTable -->
             <table id="calleesTree">
                 <thead>
                     <tr>
@@ -174,89 +193,105 @@
                         <th>Last</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody></tbody>  <!-- Stack data will go here -->
             </table>
         </div>
     </div>
 
 
-    <footer id="footer"></footer>
+    <footer id="footer"></footer>  <!-- BOTTOM STATUS BAR (This div will be replaced with templates/footer.html when document is loaded) -->
 
 
 
-    <!-- Do NOT Delete
-      This allows for script tags and requires('') to work both in the browser and i Electron -->
+    <!-- This allows for script tags and requires('') to work both in the Browser AND Electron -->
     <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
 
 
-    <!-- Let's get some jQuery going here. -->
+    <!-- jQuery includes -->
     <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
     <script src="../libraries/jquery.treetable/jquery.treetable.js"></script>
+
+    <!-- Resizable table columns library include -->
     <script src="../libraries/colResizable-1.6.min.js"></script>
 
+    <!-- Delegate that acts a liaison between the UI code on this page and the backend service.
+        Any calls in stackviewer.html that refer to the service side go through this delegate. -->
     <script src="../js/stackDelegate.js"></script>
 
-
+    <!-- Foundation scripts includes
+        Foundation is like Bootstrap; we're using it's grid system for things like the tabs and to place other UI elements. -->
     <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
     <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
     <script src="../libraries/bluebird.min.js"></script>
-    <!-- basicContext Library -->
+
+    <!-- basicContext Library
+        This is the context (right-click) menu -->
     <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
 
     <!-- Template Including -->
     <script>
         var join = Promise.join;
         
-        var navbar = $.get('templates/navbar.html');
-        var footer = $.get('templates/footer.html');
+        var navbar = $.get('templates/navbar.html');  // Navbar
+        var footer = $.get('templates/footer.html');  // Bottom Status Bar
         
+        /* This Promise waits for both the Navbar AND Footer elements
+           to be included before appending them. This is also the point
+           at which it's safe to initialize the Foundation library (because
+           all of the elements have been loaded) */
         join(navbar, footer, function(navbarResult, footerResult) {
-                var nav = $(navbarResult).children();
-                $('.nav').append(nav);
+            // Appends navbar.html content to the class="nav" div
+            var nav = $(navbarResult).children();
+            $('.nav').append(nav);
 
-                var foot = $(footerResult).children();
-                $('#footer').append(foot);
+            // Appends footer.html content to the id="footer" div
+            var foot = $(footerResult).children();
+            $('#footer').append(foot);
 
-                $(document).foundation();
-                positionTabsContent();
-            }
-        );
-
-        $(window).resize(function() {
+            // FOUNDATION Library Initialization
+            $(document).foundation();
             positionTabsContent();
         });
 
+        // Moves all the table content up and down according to the height of the id="fixedContainer"
         function positionTabsContent() {
             var offset = $(".fixedContainer").height() + 80;
             $(".tabs-content").css("top", offset);
         }
+
+        // Listens for window resize event
+        $(window).resize(function() {
+            positionTabsContent();
+        });
     </script>
 
     
     <script>
         $(document).ready(function () {
-            // Get tree ready
+            // Indenter template is the element(s) that go at the beginning of each row in the treetable
+            // The treetable library applies indenting to this which is how child rows get pushed to the right
             var indenterTemplate = "<span class=\"indenter\"><a href=\"#\">&nbsp;</a></span>";
 
-            // Initialize by-name-list and possibly set some properties
+            // Initialize by-name-list treetable
             $("#by-name-list").treetable({
-                indenterTemplate: "<span></span>",
+                indenterTemplate: "<span></span>",  // The by-name-list treetable is really more of a list (e.g. there won't be any children - hence no dropdown buttons)
                 onInitialized: function() {
+                    // Apply the column resizability library to the by-name-list treetable
                     $("#by-name-list").colResizable({
                         liveDrag: true
                     });
                 }
             });
 
-            // Initialize call-treeTree and possibly set some properties
+            // Initialize call-treeTree treetable
             $("#call-treeTree").treetable({
                 expandable: true,
                 indenterTemplate: indenterTemplate,
-                onNodeExpand: function () {
+                onNodeExpand: function () {  // When user clicks to expand a node
                     var node = this;
                     onTreeNodeExpand(node, "#call-treeTree");
                 },
-                onNodeCollapse: function() {
+                onNodeCollapse: function() {  // When user clicks to collapse a node
                     var node = this;
                     onTreeNodeCollapse(node, "#call-treeTree");
                 }
@@ -266,7 +301,10 @@
             stackDelegate.filters = $("#filtersForm").serialize();  // In case there are any default filter values set
             loadAndDisplayData(["by-name-list", "call-treeTree"], false);
 
+            // Listens for tab change event.
             $('#tabs').on('change.zf.tabs', function() {
+                // This is here simply because the column resizability library cannot be applied until the relevant table comes into visible view.
+                // Essentially, this is lazily applying the resizability library to each table.
                 $("#" + $(".is-active table").attr("id")).colResizable({
                     liveDrag: true
                 });
@@ -276,11 +314,11 @@
             $("#callersTree").treetable({
                 expandable: true,
                 indenterTemplate: indenterTemplate,
-                onNodeExpand: function () {
+                onNodeExpand: function () {  // When user clicks to expand a node
                     var node = this;
                     onTreeNodeExpand(node, "#callersTree");
                 },
-                onNodeCollapse: function() {
+                onNodeCollapse: function() {  // When user clicks to collapse a node
                     var node = this;
                     onTreeNodeCollapse(node, "#callersTree");
                 }
@@ -290,11 +328,11 @@
             $("#calleesTree").treetable({
                 expandable: true,
                 indenterTemplate: indenterTemplate,
-                onNodeExpand: function () {
+                onNodeExpand: function () {  // When user clicks to expand a node
                     var node = this;
                     onTreeNodeExpand(node, "#calleesTree");
                 },
-                onNodeCollapse: function() {
+                onNodeCollapse: function() {  // When user clicks to expand a node
                     var node = this;
                     onTreeNodeCollapse(node, "#calleesTree");
                 }
@@ -310,7 +348,8 @@
                       { title: 'Include Item', icon: 'ion-plus', fn: function() { includeItem(e); } },
                       { title: 'Exclude Item', icon: 'ion-minus', fn: function() { excludeItem(e); } },
                       { title: 'Fold Item', icon: 'ion-filing', fn: function() { foldItem(e); } },
-                      { title: 'Remove All Folding', icon: 'ion-android-remove-circle', fn: function() { removeAllFolding(); } }
+                      { title: 'Remove All Folding', icon: 'ion-android-remove-circle', fn: function() { removeAllFolding(); } },
+                      { title: 'Clear Filters', icon: 'ion-android-remove-circle', fn: function() { clearFilters(); } }
                     ]
 
                     basicContext.show(items, e)
@@ -376,6 +415,20 @@
                 press.ctrlKey = false;
                 press.which = 13;
                 $("#foldpats-filter").trigger(press);
+            }
+
+            function clearFilters() {
+                $("#start-filter").val("");
+                $("#end-filter").val("");
+                $("#grouppats-filter").val("");
+                $("#foldpats-filter").val("");
+                $("#incpats-filter").val("");
+                $("#excpats-filter").val("");
+
+                var press = jQuery.Event("keypress");
+                press.ctrlKey = false;
+                press.which = 13;
+                $("#excpats-filter").trigger(press);
             }
         });
 
