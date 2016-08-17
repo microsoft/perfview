@@ -170,6 +170,7 @@ Nav Bar Views
     font-family: arial, sans-serif;
     border-collapse: collapse;
     width: 100%;
+    white-space: nowrap;
 }
 
 .tabs-panel table thead th,
