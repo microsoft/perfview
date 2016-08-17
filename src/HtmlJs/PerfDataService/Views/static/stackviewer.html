@@ -607,7 +607,6 @@
             var options = {"overrideFocusNode" : node.id };
 
             if (treeName == "#callersTree") {
-                // TODO: Fix so that find is not included in this
                 stackDelegate.getCallersData(function (callersStackData, status) {
                     if (status == "success") {
                         node.row[0].setAttribute("direct-children-loaded", "true");
@@ -708,18 +707,26 @@
             current = (current + i) % total;
             current = current == 0 ? total : current;
             var targetNode = $(".is-active").find("[data-find-flag='" + current + "']");
+
+            /* 
+                Open path to this node.
+                This can be accomplished by opening all of this node's parents.
+
+                TODO: Only open the path to this node if it was collapsed after having been searched for,
+                otherwise we're iterating over all of its parent nodes for nothing (e.g. the path is already open)
+            */
+            var nodeId = $(".is-active .treetable").treetable("node", targetNode.attr("data-tt-id")).parentId;
+            while (nodeId !== undefined && nodeId != null && nodeId != "") {
+                var node = $(".is-active .treetable").treetable("node", nodeId);
+                $(".is-active .treetable").treetable("expandNode", nodeId);
+                nodeId = node.parentId;
+            }
+
             $('html, body').animate({
                 scrollTop: targetNode.offset().top - 400
             }, 100);
 
             stackDelegate.setSelectedCell(targetNode);
-            
-            /* TODO:
-            // Open path to this node if it was collapsed after having been searched for
-            if (this node's children have been loaded before (e.g. "direct-children-loaded=true" on 'tr' element, contained inside targetNode)) {
-                recursively open this node and all of its parents
-            }
-            */
 
             // Update itemIndicator
             itemIndicator.text(current + '/' + total);
