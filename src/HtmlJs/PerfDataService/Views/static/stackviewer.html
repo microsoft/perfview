@@ -338,6 +338,9 @@
                 }
             });
 
+            /* CONTEXT MENU EVENT LISTENERS */
+            // This is attaching the BasicContext menu to the context event listern of all the objects listed in querySelectorAll()
+            // Essentially, this is what enables right clicks on the specified elements
             var nodeList = document.querySelectorAll('#by-name-list tbody, #call-treeTree tbody, #callersTree tbody, #calleesTree tbody')
             for (var i = 0; i < nodeList.length; ++i) {
                 var node = nodeList[i];
@@ -356,21 +359,29 @@
                 });
             }
 
+            /* CONTEXT MENU FUNCTIONS */
+
+            // Set First (id=first-filter) and Last (id=last-filter) filters to the time range of the row that was rigt clicked on
             function setTimeRange(e) {
+                // Get the first and last metrics from this row
                 var first = $(e.target.parentNode).find(".firstTimeRelativeMSec").text();
                 var last = $(e.target.parentNode).find(".lastTimeRelativeMSec").text();
 
+                // Place them in first-filter and last-filter, respectively
                 $("#start-filter").val(first);
                 $("#end-filter").val(last);
                 
-                // TODO: Maybe override onSubmit() for #filtersForm so that a submit() can be used instead of a simulated enter (13) keypress
+                // This triggers the keypress by simulating an 'Enter' key press in one of the filter inputs,
+                // which in turn triggers a request to the server.
                 var press = jQuery.Event("keypress");
                 press.ctrlKey = false;
-                press.which = 13;
+                press.which = 13;  // 13 == 'Enter' key
                 $("#start-filter").trigger(press);
             }
 
+            // Add this item to IncPats Filter (id=incpats-filter)
             function includeItem(e) {
+                // See setTimeRange(e) function for details on the following similar logic
                 var name = $(e.target.parentNode).find(".name-col").text();
                 if (name == "ROOT") { name = '^' + name; }
 
@@ -383,7 +394,9 @@
                 $("#incpats-filter").trigger(press);
             }
 
+            // Add this item to ExcPats Filter (id=excpats-filter)
             function excludeItem(e) {
+                // See setTimeRange(e) function for details on the following similar logic
                 var name = $(e.target.parentNode).find(".name-col").text();
 
                 var excpatsFilter = $("#excpats-filter");
@@ -395,7 +408,9 @@
                 $("#excpats-filter").trigger(press);
             }
 
+            // Adds this item to FoldPats (id=foldpats-filter)
             function foldItem(e) {
+                // See setTimeRange(e) function for details on the following similar logic
                 var name = $(e.target.parentNode).find(".name-col").text();
 
                 var foldpatsFilter = $("#foldpats-filter");
@@ -407,7 +422,9 @@
                 $("#foldpats-filter").trigger(press);
             }
 
+            // Clears fold-related filters
             function removeAllFolding() {
+                // See setTimeRange(e) function for details on the following similar logic
                 $("#foldpercent-filter").val("");
                 $("#foldpats-filter").val("");
 
@@ -417,7 +434,9 @@
                 $("#foldpats-filter").trigger(press);
             }
 
+            // Clears all the filters
             function clearFilters() {
+                // See setTimeRange(e) function for details on the following similar logic
                 $("#start-filter").val("");
                 $("#end-filter").val("");
                 $("#grouppats-filter").val("");
@@ -435,23 +454,27 @@
 
 
         /*_____________________________________*/
-        /*_______ Tab Updater Function ________*/
+        /*______ TABLE UPDATER FUNCTION _______*/
         /*_____________________________________*/
-        /* OPTIONS:
-        "forceParentNodeId" : "id"
+        /*
+           This function iterates through the stack data and generates html table row for each node.
+           It takes the following paremeters:
+           updateTreeTableHtml(String, jQuery TreeTable Node, Deserialized Stack JSON)
         */
-        function updateTreeTableHtml(treeTableId, parentNode, stackData, options={}) {
-            // Iterate through each row
-            var rowsToAppend = "";
-            var dataIncludesSearchResults = false;
+        function updateTreeTableHtml(treeTableId, parentNode, stackData) {
+            var rowsToAppend = "";  // The string that we'll use to build up the html table
+            var dataIncludesSearchResults = false;  // This will flip to true if any of the nodes contain a flag indicating they were the result of a search
 
             for (var i = 0; i < stackData.length; ++i) {
+                // Evaluate if node was the result of a search; if it was, as "data-find-flag=#" as an attribute on the row.
+                // This allows the finder to navigate to nodes that were the result of a search.
                 var findFlag = (stackData[i].findFlag != "" && treeTableId == "#" + $(".tabs-panel.is-active table").attr("id") ? "\" data-find-flag=\"" + stackData[i].findFlag : "");
                 dataIncludesSearchResults = dataIncludesSearchResults || findFlag.length;
 
+                // Some required attributes so the jQuery TreeTable works
                 rowsToAppend = rowsToAppend + "<tr data-tt-id=\"" + stackData[i].contextId
                                             + "\" data-tt-parent-id=\"" + stackData[i].parentContextId
-                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren
+                                            + "\" data-tt-branch=\"" + stackData[i].hasChildren  // essentially, will it have a dropdown arrow
                                             + findFlag
                                             + "\">";
 
@@ -465,9 +488,10 @@
                                     <td class=\"lastTimeRelativeMSec selectable\" relevant-filter-id=\"#end-filter\">" + stackData[i].lastTimeRelativeMSec.toFixed(3) + "</td>\
                                     </tr>";
             }
-
+            // Load all these html rows into the correct table
             $(treeTableId).treetable("loadBranch", parentNode, rowsToAppend);  // treetable treats a null node parameter as meaning root
                 
+            // Open all the paths to nodes found from a search
             if (dataIncludesSearchResults) {
                 $(treeTableId + " tbody tr").each(function(index) {
                     var hasChildren = $(treeTableId).treetable("node", $(this).attr("data-tt-id")).children.length > 0;
@@ -478,42 +502,51 @@
 
         
         /*_____________________________________*/
-        /*__________ Event Listeners __________*/
+        /*_______ TABLE EVENT LISTENERS _______*/
         /*_____________________________________*/
 
-        /* by-name-list click event */
+        /*
+           by-name-list click event
+           Sets the new focus node to be the clicked node and reloads the stack data, given the new context
+        */
         $(document).on("dblclick", "#by-name-list tbody tr td:first-child", function (row) {
-            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            // Get the row as a jQuery TreeTable node; need to get its data-tt-id to do that
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
-            var newFocusNode = $("#by-name-list").treetable("node", clickedNodeId);
-            switchExclusiveAndInclusiveMetricsElements(newFocusNode);
+            var node = $("#by-name-list").treetable("node", clickedNodeId);
+            
+            // TODO: Need to create a CLONE of the clicked node and switch its Exc%, Exc, Inc%, and Inc
+            // Somehow, the below code is NOT performing a deep copy, which needs to happen.
+            var newFocusNode = jQuery.extend(true, {}, node);
+            //switchExclusiveAndInclusiveMetricsElements(newFocusNode);
 
-            stackDelegate.setFocusNode(newFocusNode);
+            stackDelegate.setFocusNode(newFocusNode);  // Sets the focus node to the click node
             $('#tabs').foundation('selectTab', $("#callers"));  // Switch to Callers tab
 
             loadAndDisplayData(["callersTree", "calleesTree"], false);
             stackDelegate.clearSelectedCell();
         });
 
-        function switchExclusiveAndInclusiveMetricsElements(node) {
-            // TODO: Use id's of td elements instead of indexing
-            var exclusiveMetricPercent = $(node.row[0].children[1]).text();
-            var exclusiveMetric = $(node.row[0].children[2]).text();
-            var inclusiveMetricPercent = $(node.row[0].children[3]).text();
-            var inclusiveMetric = $(node.row[0].children[4]).text();
-            $(node.row[0].children[1]).text(inclusiveMetricPercent);
-            $(node.row[0].children[2]).text(inclusiveMetric);
-            $(node.row[0].children[3]).text(exclusiveMetricPercent);
-            $(node.row[0].children[4]).text(exclusiveMetric);
-        }
+        //function switchExclusiveAndInclusiveMetricsElements(node) {
+        //    // TODO: Use id's of td elements instead of indexing
+        //    var exclusiveMetricPercent = $(node.row[0].children[1]).text();
+        //    var exclusiveMetric = $(node.row[0].children[2]).text();
+        //    var inclusiveMetricPercent = $(node.row[0].children[3]).text();
+        //    var inclusiveMetric = $(node.row[0].children[4]).text();
+        //    $(node.row[0].children[1]).text(inclusiveMetricPercent);
+        //    $(node.row[0].children[2]).text(inclusiveMetric);
+        //    $(node.row[0].children[3]).text(exclusiveMetricPercent);
+        //    $(node.row[0].children[4]).text(exclusiveMetric);
+        //}
 
-        /* callersTree click event */
+        /*
+           callersTree click event
+           Sets the new focus node to be the clicked node and reloads the stack data, given the new context
+        */
         $(document).on("dblclick", "#callersTree tbody tr td:first-child", function (row) {
             if (row.target !== this) { return; }
 
-            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
+            // Get the row as a jQuery TreeTable node; need to get its data-tt-id to do that
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
-            //var clickedNodeId = row.currentTarget.innerText.trim();
             
             var newFocusNode = $("#callersTree").treetable("node", clickedNodeId);
             stackDelegate.setFocusNode(newFocusNode);
@@ -523,13 +556,14 @@
         });
 
 
-        /* calleesTree click event */
+        /*
+            calleesTree click event
+            Sets the new focus node to be the clicked node and reloads the stack data, given the new context
+        */
         $(document).on("dblclick", "#calleesTree tbody tr td:first-child", function (row) {
             if (row.target !== this) { return; }
 
-            //var focusNode = row.currentTarget.innerText.trim();  // Get the name of the clicked node
             var clickedNodeId = row.currentTarget.parentElement.getAttribute("data-tt-id");
-            //var clickedNodeId = row.currentTarget.innerText.trim();
             
             var newFocusNode = $("#calleesTree").treetable("node", clickedNodeId);
             stackDelegate.setFocusNode(newFocusNode);
@@ -538,33 +572,48 @@
             stackDelegate.clearSelectedCell();
         });
 
-
+        // Handles highlighting a table cell when its clicked
         $(document).on("click", ".is-active table tbody tr td", function(cell) {
             if ($(cell.target).is(".selectable")) {
                 stackDelegate.setSelectedCell(cell.target);
             }
         });
 
-
+        // Places the data in a cell into its respective filter, if it has a relevant-filter-id data attribute
+        // Right now, only cells in columns 'First' and 'Last' have relevant-filter-ids
         $(document).on("dblclick", ".is-active table tbody tr td", function (cell) {
             var filterId = $(cell.target).attr("relevant-filter-id");
             $(filterId).val($(cell.target).text());
         });
 
 
+        /*_______________________________________________*/
+        /*_______ LOAD STACKS AND POPULATE TABLES _______*/
+        /*_______________________________________________*/
+        /* 
+            This function has the following signature:
+            loadAndDisplayData(String[], Boolean)
+        */
         function loadAndDisplayData(treesToUpdate, includeSearch=true) {
             // DISPLAY BY-NAME DATA
             if (treesToUpdate == null || treesToUpdate.includes("by-name-list")) {
                 var options = { "includeSearch" : includeSearch };
+                // stackDelegate handles the AJAX request
                 stackDelegate.getSummaryData(function (summaryStackData) {
-                    $("#by-name-list tbody").empty();  // TODO: Maybe unload branch, instead
+                    // Empty out any old data
+                    $("#by-name-list tbody").empty();
+
+                    // Load the new data into the by-name-list TreeTable
                     updateTreeTableHtml("#by-name-list", null, stackDelegate.summaryStackData);
 
+                    // TODO: This might be redundant
                     if (stackDelegate.focusNode != null) {
                         var newFocusNode = $("#by-name-list").treetable("node", stackDelegate.focusNode.id);
                         stackDelegate.setFocusNode(newFocusNode);
                     }
 
+                    // If a search was performed, navigate to the first found element
+                    // This can easily be done by simulating a click on 'next'
                     if (includeSearch) {
                         displayFindNavigation("#by-name-list", "#by-name");
                         $("#by-name .searchNavButtons .next").click();
@@ -577,10 +626,11 @@
                 stackDelegate.getNode("ROOT", function(nodeData){
                     $("#call-treeTree tbody").empty();
 
-                    // Place root node in tree
+                    // Place root node into tree
                     updateTreeTableHtml("#call-treeTree", null, [nodeData]);
 
-                    var options = {"overrideFocusNode" : "ROOT",
+                    var options = {
+                        "overrideFocusNode" : "ROOT",
                         "includeSearch" : includeSearch,
                         "call-treeTree" : true
                     };
@@ -589,10 +639,12 @@
                         // elicits all the ROOT node metrics (same as ROOT node row data).
                         $("#top-status-bar").html("Totals Metric: " + nodeData.inclusiveMetric + ",  Count: " + nodeData.inclusiveMetric + ",  First: " + nodeData.firstTimeRelativeMSec.toFixed(3) + ",  Last: " + nodeData.lastTimeRelativeMSec.toFixed(3) + ",  Last-First: " + (nodeData.lastTimeRelativeMSec - nodeData.firstTimeRelativeMSec).toFixed(3) + ", TotalProcs: " + callTreeStackData.length);
 
-                        // Place data in CallTree tab
+                        // Place data into the call-treeTree TreeTable
                         var parentNode = $("#call-treeTree").treetable("node", "ROOT");
                         updateTreeTableHtml("#call-treeTree", parentNode, callTreeStackData);
 
+                        // If a search was performed, navigate to the first found element
+                        // This can easily be done by simulating a click on 'next'
                         if (includeSearch) {
                             displayFindNavigation("#call-treeTree", "#call-tree");
                             $("#call-tree .searchNavButtons .next").click();
@@ -612,13 +664,15 @@
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
                                         " + "</tr>";
 
-                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    // Must use stackDelegate.focusNode as parent node for this tree table
                     $("#callersTree").treetable("loadBranch", null, focusNodeHtml);
                     var parentNode = $("#callersTree").treetable("node", stackDelegate.focusNode.id);
 
-                    // Place data in Callers tab
+                    // Place data in callersTree TreeTable
                     updateTreeTableHtml("#callersTree", parentNode, callersStackData);
 
+                    // If a search was performed, navigate to the first found element
+                    // This can easily be done by simulating a click on 'next'
                     if (includeSearch) {
                         displayFindNavigation("#callersTree", "#callers");
                         $("#callers .searchNavButtons .next").click();
@@ -637,13 +691,15 @@
                                         " + stackDelegate.focusNode.row[0].innerHTML + "\
                                         " + "</tr>";
 
-                    // Need to add stackDelegate.focusNode as parent node for this tree table
+                    // Must use stackDelegate.focusNode as parent node for this tree table
                     $("#calleesTree").treetable("loadBranch", null, focusNodeHtml);
                     var parentNode = $("#calleesTree").treetable("node", stackDelegate.focusNode.id);
 
-                    // Place data in Callees tab
+                    // Place data in calleesTree TreeTable
                     updateTreeTableHtml("#calleesTree", parentNode, calleesStackData);
 
+                    // If a search was performed, navigate to the first found element
+                    // This can easily be done by simulating a click on 'next'
                     if (includeSearch) {
                         displayFindNavigation("#calleesTree", "#callees");
                         $("#callees .searchNavButtons .next").click();
@@ -659,6 +715,7 @@
 
             var options = {"overrideFocusNode" : node.id };
 
+            /* Get the child nodes of the node that was expanded */
             if (treeName == "#callersTree") {
                 stackDelegate.getCallersData(function (callersStackData, status) {
                     if (status == "success") {
@@ -693,6 +750,7 @@
         function onTreeNodeCollapse(node, treeName) {
             if (node.children.length <= 0) { return; }
             
+            // Collapse this node as well any children of it that are expanded
             for (var i = 0; i < node.children.length; ++i) {
                 var child = node.children[i];
                 $(treeName).treetable("collapseNode", child.id);
@@ -700,8 +758,9 @@
             }
         }
 
-
+        /* Display the find bar in the top right of the screen */
         function displayFindNavigation(treeId, tabId) {
+            // Search for all the nodes that have a data-find-flag attribute on them
             var targetNodesFound = 0;
             $(treeId + " tbody tr").each(function(index) {
                 var findFlag = $(this).attr("data-find-flag");
@@ -711,14 +770,19 @@
                 }
             });
 
+            // Set the number for the find bar (e.g. 0/14)
             $(tabId + " .searchNavButtons span").text("0/" + targetNodesFound);
+
+            // Display the find bar
             $(tabId + " .searchNavButtons").show();
         }
 
+        // Find next click event listener
         $(".next").click(function (e) {
             changeFindCounter(e, 1);
         });
 
+        // Find previous click event listener
         $(".prev").click(function (e) {
             changeFindCounter(e, -1);
         });
@@ -726,17 +790,21 @@
         $("body").keydown(function(e) {
             if (e.ctrlKey) {
                 if (e.which == 39 || e.which == 40) {
+                    // Ctrl + right arrow OR Ctrl + down arrow
                     $(".is-active .searchNavButtons .next").click();
                 } else if (e.which == 37 || e.which == 38) {
+                    // Ctrl + left arrow OR Ctrl + up arrow
                     $(".is-active .searchNavButtons .prev").click();
                 }
             } else if (e.which == 27) {
+                // Esc (escape) key
                 $(".is-active .searchNavButtons").hide();
                 $(".is-active .findContainer").hide();
                 $(".is-active .findContainer input").val("");
                 stackDelegate.clearSelectedCell();
 
                 // TODO: This "each" method of deleting data-find-flags could take a while on larger data sets
+                // Instead, maybe keep a list of pointers (in the stackDelegate) to all the found nodes
                 $(".is-active table tbody tr").each(function(index) {
                     var findFlag = $(this).attr("data-find-flag");
 
@@ -747,12 +815,13 @@
             }
         });
 
+        // Find 'next' or 'prev' handler
         function changeFindCounter(e, i) {
-            var itemIndicator = $(e.target.parentNode).find('span');
-            var numbersFromIndicator = itemIndicator.text().split('/');
+            var itemIndicator = $(e.target.parentNode).find('span');  // e.g. 2/14
+            var numbersFromIndicator = itemIndicator.text().split('/');  // e.g. ('2', '14')
 
-            var current = parseInt(numbersFromIndicator[0]);
-            var total = parseInt(numbersFromIndicator[1]);
+            var current = parseInt(numbersFromIndicator[0]);  // e.g. 2
+            var total = parseInt(numbersFromIndicator[1]);  // e.g. 14
 
             if (total <= 0) { return; }
             
@@ -761,13 +830,8 @@
             current = current == 0 ? total : current;
             var targetNode = $(".is-active").find("[data-find-flag='" + current + "']");
 
-            /* 
-                Open path to this node.
-                This can be accomplished by opening all of this node's parents.
-
-                TODO: Only open the path to this node if it was collapsed after having been searched for,
-                otherwise we're iterating over all of its parent nodes for nothing (e.g. the path is already open)
-            */
+            // Open path to this node.
+            // This can be accomplished by opening all of this node's parents.
             var nodeId = $(".is-active .treetable").treetable("node", targetNode.attr("data-tt-id")).parentId;
             while (nodeId !== undefined && nodeId != null && nodeId != "") {
                 var node = $(".is-active .treetable").treetable("node", nodeId);
@@ -775,16 +839,18 @@
                 nodeId = node.parentId;
             }
 
+            // Navigate the page to that node
             $('html, body').animate({
                 scrollTop: targetNode.offset().top - 400
             }, 100);
 
             stackDelegate.setSelectedCell(targetNode);
 
-            // Update itemIndicator
+            // Update itemIndicator with new current number
             itemIndicator.text(current + '/' + total);
         }
 
+        // Find bar (Ctrl-F) listener
         $(window).keydown(function(e){
             if ((e.ctrlKey || e.metaKey) && e.keyCode === 70) {
                 e.preventDefault();
@@ -793,6 +859,7 @@
             }
         });
 
+        // Find bar 'Enter' key listener
         $(".filter, .find").keypress(function (e) {
             // If the user pressed enter in a filter textfield
             if (e.which == 13) {
