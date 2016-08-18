@@ -49,11 +49,14 @@
                 var isLeaf = $(self.treeDivID).jstree().is_leaf(parent);
                 if (!isLeaf) { return; }
 
+                // Get "children" (e.g. CPU Stacks, etc.) of 'path' to .etl or etl.zip file
                 url = self.domain + "/api/data/open?path=" + nodeObject.path;
                 $.get(url, function (response, status) {
                     json = JSON.parse(response);
                     
+                    // Place each child under its parent .etl or .etl.zip file
                     for (var i = 0; i < json.children.length; ++i) {
+                        console.log(i);
                         var newNode = json.children[i];
                         var newNodeId = $(self.treeDivID).jstree().create_node(parent, newNode, "last");
                         $(self.treeDivID).jstree().open_node(parent);
