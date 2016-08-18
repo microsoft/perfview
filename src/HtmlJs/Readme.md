@@ -85,7 +85,7 @@ When a user is on the stack view page, traversing through nodes, searching for t
 
 These endpoints act as the last layer that may have any attachment to the UI (e.g. cares about formatting the data in a way the UI can understand). Although at this point the endpoints remain fairly UI agnostic, any bias that must be imparted on the service side should go here. These endpoints communicate directly with symmetrical endpoints in the `StackViewerController.cs` controller. This is the controller that interacts with the model to actually retrieve and manipulate the stack data.
 
-NOTE: An incredibly huge thank you is deserve by [Mukul Sabharwal](https://github.com/mjsabby) at Microsoft for providing a very large chunk of the model and REST API for this service.
+NOTE: An incredibly huge thank you is deserved by [Mukul Sabharwal](https://github.com/mjsabby) at Microsoft for providing a very large chunk of the model and REST API for this service.
 
 ### Todos
 
