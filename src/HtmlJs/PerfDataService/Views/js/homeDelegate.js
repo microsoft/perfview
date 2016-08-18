@@ -1,6 +1,6 @@
 ﻿function HomeDelegate() {
     self = this;
-    self.domain = "http://localhost:5000";
+    self.domain = appSettings.targetUrl;
     self.treeDivID = "#treeContainer";
 
     self.log = function log(status) {
