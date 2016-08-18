@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using PerfViewExtensibility;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
-////Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -37,7 +36,7 @@ namespace PerfDataService.Controllers
                 tree.Add("text", path);
             } else
             {
-                tree.Add("text", Path.GetFileName(path));  //.Split(new Char[] {'/', '\\'}).Last());
+                tree.Add("text", Path.GetFileName(path));
             }
             tree.Add("path", path);
             tree.Add("type", getTypeOfItem(path));
@@ -87,7 +86,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/summary" + Request.QueryString;
+                var url = AppSettings.targetUrl + "/stackviewer/summary" + Request.QueryString;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -115,7 +114,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/node" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/node" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -143,7 +142,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/callertree" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/callertree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -171,7 +170,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/calleetree" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/calleetree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
                 
                 if (string.IsNullOrEmpty(json))
