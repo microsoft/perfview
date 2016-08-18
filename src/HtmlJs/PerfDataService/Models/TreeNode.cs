@@ -45,6 +45,7 @@
             this.ExclusiveFoldedMetricPercent = template.ExclusiveFoldedMetric * 100 / template.CallTree.PercentageBasis;
             this.HasChildren = false;
             this.BackingNode = template;
+            //System.Diagnostics.Debug.WriteLine("\n1\n" + template.InclusiveMetricByTimeString + "\n\n");
         }
 
         public TreeNode(CallTreeNode template)
@@ -76,6 +77,7 @@
             this.HasChildren = template.HasChildren;
             this.BackingNode = template;
             this.backingNodeWithChildren = template;
+            //System.Diagnostics.Debug.WriteLine("\n2\n" + template.InclusiveMetricByTimeString + "\n\n");
         }
 
         public CallTreeNodeBase BackingNode { get; }

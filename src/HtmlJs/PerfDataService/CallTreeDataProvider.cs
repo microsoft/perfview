@@ -19,7 +19,7 @@
 
         private readonly SymbolReader reader;
 
-        private readonly StackSource stacksource;
+        private readonly FilterStackSource stacksource;
 
         private List<TreeNode> summary;
 
@@ -57,12 +57,17 @@
 
             this.reader = reader;
             TraceEvents events = log.Events;
-            this.stacksource = plugin.GetStackSource(events);
+            var unfilteredStacksource = plugin.GetStackSource(events);
             this.summaryPredicate = plugin.SummaryPredicate;
             CallTree.DisableParallelism = true; // important
-            this.stacksource = new FilterStackSource(filterParams, this.stacksource, ScalingPolicyKind.TimeMetric);
-
+            this.stacksource = new FilterStackSource(filterParams, unfilteredStacksource, ScalingPolicyKind.TimeMetric);
             this.callTree = new CallTree(ScalingPolicyKind.TimeMetric) { StackSource = this.stacksource };
+
+            // Indicate I want the Time histograms to be computed.  
+            double startTimeRelativeMsec = 0;
+            double.TryParse(filterParams.StartTimeRelativeMSec, out startTimeRelativeMsec);
+            //System.Diagnostics.Debug.WriteLine("\n\nTIME: 1" + filterParams.StartTimeRelativeMSec + "\n2 " + startTimeRelativeMsec + "\n3 " + this.stacksource.SampleTimeRelativeMSecLimit + "\n\n");
+            callTree.TimeHistogramController = new TimeHistogramController(callTree, startTimeRelativeMsec, this.stacksource.SampleTimeRelativeMSecLimit);
             float minIncusiveTimePercent;
             if (float.TryParse(filterParams.MinInclusiveTimePercent, out minIncusiveTimePercent) && minIncusiveTimePercent > 0)
             {
