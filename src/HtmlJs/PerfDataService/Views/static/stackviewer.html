@@ -516,7 +516,8 @@
             
             // TODO: Need to create a CLONE of the clicked node and switch its Exc%, Exc, Inc%, and Inc
             // Somehow, the below code is NOT performing a deep copy, which needs to happen.
-            var newFocusNode = jQuery.extend(true, {}, node);
+            //var newFocusNode = jQuery.extend(true, {}, node);
+            var newFocusNode = node;  // node.clone(); is not working!
             //switchExclusiveAndInclusiveMetricsElements(newFocusNode);
 
             stackDelegate.setFocusNode(newFocusNode);  // Sets the focus node to the click node
