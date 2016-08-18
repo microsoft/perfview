@@ -16,13 +16,19 @@ namespace PerfDataService
         {
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseUrls("http://localhost:5000")
+                .UseUrls(AppSettings.targetUrl)
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                //.UseIISIntegration()
                 .UseStartup<Startup>()
                 .Build();
 
             host.Run();
         }
+    }
+
+    internal static class AppSettings
+    {
+        public static readonly String targetHost = "http://localhost";
+        public static readonly int port = 5000;
+        public static readonly String targetUrl = targetHost + ":" + port.ToString();
     }
 }

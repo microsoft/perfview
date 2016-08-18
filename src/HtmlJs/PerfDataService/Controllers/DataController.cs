@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using PerfViewExtensibility;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
-////Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 // For more information on enabling Web API for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -37,14 +36,24 @@ namespace PerfDataService.Controllers
                 tree.Add("text", path);
             } else
             {
-                tree.Add("text", Path.GetFileName(path));  //.Split(new Char[] {'/', '\\'}).Last());
+                tree.Add("text", Path.GetFileName(path));
             }
             tree.Add("path", path);
             tree.Add("type", getTypeOfItem(path));
 
             try
             {
-                List<object> children = getChildrenForPath(path);
+                List<object> children = new List<object>();
+                if (Directory.Exists(path))
+                {
+                    // path leads to a valid directory
+                    children = getChildrenForPath(path);
+                }
+                else if (new FileInfo(path).Exists)
+                {
+                    // path leads to a valid file (e.g. .etl.zip, .etl)
+                    children = getDataForFile(path);
+                }
                 tree.Add("children", children);
             } catch (UnauthorizedAccessException)
             {
@@ -77,7 +86,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/summary" + Request.QueryString;
+                var url = AppSettings.targetUrl + "/stackviewer/summary" + Request.QueryString;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -105,7 +114,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/node" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/node" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -133,7 +142,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/callertree" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/callertree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
 
                 if (string.IsNullOrEmpty(json))
@@ -161,7 +170,7 @@ namespace PerfDataService.Controllers
 
             using (var client = new WebClient())
             {
-                var url = "http://localhost:5000/stackviewer/calleetree" + Request.QueryString.Value;
+                var url = AppSettings.targetUrl + "/stackviewer/calleetree" + Request.QueryString.Value;
                 var json = client.DownloadString(url);
                 
                 if (string.IsNullOrEmpty(json))
@@ -239,11 +248,16 @@ namespace PerfDataService.Controllers
                     catch { dir.Add("hasChildren", false); }  // If this directory has an unauthorized access exception
                     childrenContainer.Add(dir);
                 }
-
-                return childrenContainer;
             }
+
+            return childrenContainer;
+        }
+
+        public List<object> getDataForFile(string pathToItem) {
+            List<object> childrenContainer = new List<object>();
+
             // IF REAL FILE (e.g. .etl.zip, .etl)
-            else if (new FileInfo(pathToItem).Exists)
+            if (new FileInfo(pathToItem).Exists)
             {
                 // TODO: Separate this into another function, if not another endpoint
                 // Assume only .etl.zip for now
@@ -268,13 +282,10 @@ namespace PerfDataService.Controllers
                 // TODO: Create Events as child
                 // TODO: Create Memory Group as child
                 // TODO: Create Advanced Group as child
-
-                return childrenContainer;
             }
 
-
             // TODO: Form proper response
-            return null;
+            return childrenContainer;
         }
 
 
