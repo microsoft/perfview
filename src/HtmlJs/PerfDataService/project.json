@@ -12,7 +12,7 @@
     "Microsoft.Extensions.Logging": "1.0.0",
     "Microsoft.Extensions.Logging.Console": "1.0.0",
     "Microsoft.Extensions.Logging.Debug": "1.0.0",
-    "Newtonsoft.Json": "9.0.1",
+    "Newtonsoft.Json": "9.0.1"
     //"Microsoft.AspNetCore.Razor.Tools": {
     //  "version": "1.0.0-preview2-final",
     //  "type": "build"
@@ -58,7 +58,14 @@
   "buildOptions": {
     "emitEntryPoint": true,
     "preserveCompilationContext": true,
-    "allowUnsafe": true
+    "allowUnsafe": true,
+    // "copyToOutput": { "includeFiles": [ "../../TraceEvent/amd64/msdia140.dll" ] }
+  },
+
+  // TODO this is post-compile puts the msdia140 DLL where it needs to be to run, but
+  // I would prefer to use copyToOutput
+  "scripts": {
+    "postcompile": "postcompile.cmd %compile:RuntimeOutputDir% %compile:TargetFramework% %compile:RuntimeIdentifier%"
   }
 
   //"runtimeOptions": {
