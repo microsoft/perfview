@@ -212,6 +212,7 @@ namespace Microsoft.Diagnostics.Tracing
             m_relogger.Cancel();
         }
 
+#if false
         private unsafe void SetPayload(ITraceEvent newEvent, IList<object> payloadArgs)
         {
             // Where we are writing the serialized data in m_scratchBuffer
@@ -273,6 +274,7 @@ namespace Microsoft.Diagnostics.Tracing
                 m_scratchBufferSize = requriedSize;
             }
         }
+#endif
 
 #if V4_5_Runtime
 
@@ -521,6 +523,6 @@ namespace Microsoft.Diagnostics.Tracing
         ITraceEvent m_curITraceEvent;                                            // Before we make callbacks we remember the ITraceEvent 
         TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent. 
 
-        #endregion
+#endregion
     }
 }
