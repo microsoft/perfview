@@ -37,6 +37,8 @@ namespace Utilities
                             keepTimeEnvVarValue = .007f;
                         KeepTimeInDays = keepTimeEnvVarValue;
                     }
+                    else if (KeepTimeInDays == 0)
+                        KeepTimeInDays = 5;
 
                     Directory.CreateDirectory(s_CacheDir);
                 }
@@ -96,9 +98,6 @@ namespace Utilities
 
         static public void CleanupDirectory(string directory, float keepTimeInDays)
         {
-            if (keepTimeInDays == 0)
-                keepTimeInDays = 5;
-
             var nowUTC = DateTime.UtcNow;
             foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
             {
@@ -106,7 +105,7 @@ namespace Utilities
                 {
                     try
                     {
-                        FileUtilities.ForceDelete(file);
+                        File.Delete(file);      // Don't try to hard. If it is in use let it be.  
                     }
                     catch (Exception) { }
                 }
