@@ -12,20 +12,32 @@ namespace Utilities
     /// </summary>
     static class CacheFiles
     {
-        public static float KeepTimeInDays { get; set; } 
+        public static float KeepTimeInDays { get; set; }
         public static string CacheDir
         {
             get
             {
                 if (s_CacheDir == null)
                 {
-                    var exeAssembly = Assembly.GetExecutingAssembly();
-                    var exePath = exeAssembly.ManifestModule.FullyQualifiedName;
-                    var exeName = Path.GetFileNameWithoutExtension(exePath);
-                    var tempDir = Environment.GetEnvironmentVariable("TEMP");
+                    Assembly exeAssembly = Assembly.GetExecutingAssembly();
+                    string exePath = exeAssembly.ManifestModule.FullyQualifiedName;
+                    string exeName = Path.GetFileNameWithoutExtension(exePath);
+                    string tempDir = Environment.GetEnvironmentVariable("TEMP");
                     if (tempDir == null)
                         tempDir = ".";
                     s_CacheDir = Path.Combine(tempDir, exeName);
+
+                    string keepTimeEnvVarName = exeName + "_Cache_KeepTimeInDays";
+                    string keepTimeEnvVarValueStr = Environment.GetEnvironmentVariable(keepTimeEnvVarName);
+                    float keepTimeEnvVarValue;
+                    if (keepTimeEnvVarName != null && float.TryParse(keepTimeEnvVarValueStr, out keepTimeEnvVarValue))
+                    {
+                        // Insure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
+                        if (keepTimeEnvVarValue < .007f)
+                            keepTimeEnvVarValue = .007f;
+                        KeepTimeInDays = keepTimeEnvVarValue;
+                    }
+
                     Directory.CreateDirectory(s_CacheDir);
                 }
                 return s_CacheDir;
