@@ -1,5 +1,7 @@
 function StackDelegate(domain, filename, stackType, summaryStackData) {
     var self = this;
+    
+    // These properties define the state of the stackDelegate
     self.filename = filename;
     self.stackType = stackType;
     self.summaryStackData = summaryStackData;
@@ -10,16 +12,20 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     self.selectedCell = null;
 
 
+    // Bottom status bar logger
     self.log = function log(status) {
         $("#statusBar span").text(status);
     };
 
 
+    // This is called when the user double clicks on a node in the by-name-list, callersTree, or CalleesTree
     self.setFocusNode = function setFocusNode(node) {
+        // Get the td element from the name column of this row
         var child = node.row[0].children[0];
 
+        // Remove the span indenter tag, if there is one
         $(child).find('span').remove();
-        $(node).attr("id", $(child).text().trim());
+        $(node).attr("id", $(child).text().trim());  // Get the name text
 
         stackDelegate.focusNode = node;
     }
@@ -30,6 +36,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
+    // This is called when the user single clicks on any cell
     self.setSelectedCell = function setSelectedCell(cell) {
         if (cell == null || cell === undefined) { return; }
 
@@ -45,6 +52,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
         }
     }
 
+    // Helper function to setSelectedCell
     function changeCellState(cell, selected) {
         if (cell == null) { return; }
 
@@ -67,11 +75,13 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
+    // Returns the summary stack based on the properties set in this stackDelegate
     self.getSummaryData = function getSummaryData(callback, options={}) {
         var url = self.domain + "/api/data/stackviewer/summary?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
                                                           + "&numNodes=" + self.numNodes
                                                           + "&" + self.filters;
+        // If the caller indicated that the service should subsequently perform a search on this stack
         if ("includeSearch" in options) { url = url + "&find=" + $("#by-name .find").val(); }
 
         self.log("Fetching Summary Data for " + self.filename);
@@ -86,6 +96,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
+    // Returns a single node
     self.getNode = function getNode(name, callback) {
         var url = self.domain + "/api/data/stackviewer/node?filename=" + self.filename
                                                           + "&stacktype=" + self.stackType
@@ -102,11 +113,14 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
+    // Returns the callers data stack based on the state of the properties in this stackDelegate
     self.getCallersData = function getCallersData(callback, options={}) {
         if (self.focusNode == null && !("overrideFocusNode" in options)) {
             throw "Focus node not selected";
         }
 
+        // overrideFocusNode is used when loading the ROOT for the CallTree table and by onTreeNodeExpand(),
+        // both in stackviewer.html
         var nodeString = "overrideFocusNode" in options ? options["overrideFocusNode"] : self.focusNode.id;
         var nameAndPath = nodeString.split(/\/(.+)?/);  // Split on FIRST occurrence of '/'
         var name = nameAndPath[0];
@@ -117,6 +131,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
+        // If the caller indicated that the service should subsequently perform a search on this stack
         if ("includeSearch" in options) { url = url + "&find=" + $("#callers .find").val(); }
 
         path = path != "" && path != undefined ? "/" + path : path;
@@ -132,11 +147,14 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
     }
 
 
+    // Returns the callers data stack based on the state of the properties in this stackDelegate
     self.getCalleesData = function getCalleesData(callback, options={}) {
         if (self.focusNode == null && !("overrideFocusNode" in options)) {
             throw "Focus node not selected";
         }
 
+        // overrideFocusNode is used when loading the ROOT for the CallTree table and by onTreeNodeExpand(),
+        // both in stackviewer.html
         var nodeString = "overrideFocusNode" in options ? options["overrideFocusNode"] : self.focusNode.id;
         var nameAndPath = nodeString.split(/\/(.+)?/);  // Split on FIRST occurrence of '/'
         var name = nameAndPath[0];
@@ -147,6 +165,7 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
                                                              + "&stacktype=" + self.stackType
                                                                   + "&path=" + path
                                                                        + "&" + self.filters;
+        // If the caller indicated that the service should subsequently perform a search on this stack
         if ("includeSearch" in options && "call-treeTree" in options) {
             url = url + "&find=" + $("#call-tree .find").val();
         } else if ("includeSearch" in options) {
@@ -167,6 +186,8 @@ function StackDelegate(domain, filename, stackType, summaryStackData) {
 }
 
 
+// This means the StackDelegate constructor gets called when stackviewer.html loads this javascript file
+// The parameters passed to the constructor are grabbed off of the window/tab (index.html) that opened this stack page up
 var stackDelegate = new StackDelegate(window.opener.domain,
                                     window.opener.filename,
                                     window.opener.stackType,

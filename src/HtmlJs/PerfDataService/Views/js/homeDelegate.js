@@ -1,6 +1,6 @@
 ﻿function HomeDelegate() {
     self = this;
-    self.domain = "http://localhost:5000";
+    self.domain = appSettings.targetUrl;
     self.treeDivID = "#treeContainer";
 
     self.log = function log(status) {
@@ -25,6 +25,7 @@
         // Load the JSON data
         $(self.treeDivID).jstree({
             'core': {
+                'check_callback': true,
                 'data': JSONTree.children
             }
         });
@@ -41,8 +42,26 @@
         $(self.treeDivID).on('activate_node.jstree', function (event, node) {
             nodeObject = node.node.original;  // JSTree has a node within a node.. Weird.
 
-            if (nodeObject.type == "dir" || nodeObject.type == "file") {
+            if (nodeObject.type == "dir") {
                 self.changeDirectoryTreePath(nodeObject.path);
+            } else if (nodeObject.type == "file") {
+                var parent = $(self.treeDivID).jstree('get_selected');
+                var isLeaf = $(self.treeDivID).jstree().is_leaf(parent);
+                if (!isLeaf) { return; }
+
+                // Get "children" (e.g. CPU Stacks, etc.) of 'path' to .etl or etl.zip file
+                url = self.domain + "/api/data/open?path=" + nodeObject.path;
+                $.get(url, function (response, status) {
+                    json = JSON.parse(response);
+                    
+                    // Place each child under its parent .etl or .etl.zip file
+                    for (var i = 0; i < json.children.length; ++i) {
+                        console.log(i);
+                        var newNode = json.children[i];
+                        var newNodeId = $(self.treeDivID).jstree().create_node(parent, newNode, "last");
+                        $(self.treeDivID).jstree().open_node(parent);
+                    }
+                });
             } else if (nodeObject.type == "stacks") {
                 self.openStackWindow(nodeObject.path, nodeObject.stackType);
             }
