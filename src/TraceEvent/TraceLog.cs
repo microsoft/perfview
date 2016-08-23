@@ -6638,7 +6638,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var methodRva = (uint)(address - moduleFile.ImageBase);
                 reader.m_log.WriteLine("GetSourceLine: address within module: native case, RVA = {0:x}", methodRva);
-                symbolReaderModule = OpenPdbForModuleFileWithCache(reader, moduleFile);
+                symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
                 if (symbolReaderModule != null)
                 {
                     string ilAssemblyName;
@@ -6663,7 +6663,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             if (string.Compare(moduleFileName, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFileWithCache(reader, ilAssemblyModule);
+                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
                                 if (ilSymbolReaderModule != null)
                                 {
                                     reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolReaderModule.SymbolFilePath);
@@ -6734,7 +6734,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (moduleFile.ManagedModule != null)
                 moduleFile = moduleFile.ManagedModule;
 
-            symbolReaderModule = OpenPdbForModuleFileWithCache(reader, moduleFile);
+            symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
             if (symbolReaderModule == null)
             {
                 reader.m_log.WriteLine("GetSourceLine: Failed to look up PDB for {0}", moduleFile.FilePath);
@@ -6810,53 +6810,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             for (int i = 0; i < Count; i++)
                 yield return this[(CodeAddressIndex)i];
         }
-
-        /// <summary>
-        /// Calls OpenPdbForModuleFile and caches the last entry
-        /// </summary>
-        private unsafe SymbolModule OpenPdbForModuleFileWithCache(SymbolReader reader, TraceModuleFile moduleFile)
-        {
-            SymbolModule symbolReaderModule;
-            if (m_lastModuleFile == moduleFile)
-            {
-                lastNewer = true;
-                symbolReaderModule = m_lastSymbolModule;
-            }
-            else if (m_2lastModuleFile == moduleFile)
-            {
-                symbolReaderModule = m_2lastSymbolModule;
-                lastNewer = false;
-            }
-            else
-            {
-                symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
-                if (symbolReaderModule == null)
-                {
-                    reader.m_log.WriteLine("GetSourceLine: Could not open PDB for {0}", moduleFile.FilePath);
-                    return null;
-                }
-                if (lastNewer)
-                {
-                    m_2lastModuleFile = moduleFile;
-                    m_2lastSymbolModule = symbolReaderModule;
-                    lastNewer = false;
-                }
-                else
-                {
-                    m_lastModuleFile = moduleFile;
-                    m_lastSymbolModule = symbolReaderModule;
-                    lastNewer = true;
-                }
-            }
-            return symbolReaderModule;
-        }
-
-        SymbolModule m_lastSymbolModule;
-        TraceModuleFile m_lastModuleFile;
-        // WE keep two because NGEN source lookup needs both the IL and NGEN pdb. 
-        SymbolModule m_2lastSymbolModule;
-        TraceModuleFile m_2lastModuleFile;
-        bool lastNewer;
 
         /// <summary>
         /// Called when JIT CLR Rundown events are processed. It will look if there is any
