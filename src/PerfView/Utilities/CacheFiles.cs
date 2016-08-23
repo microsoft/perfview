@@ -12,20 +12,34 @@ namespace Utilities
     /// </summary>
     static class CacheFiles
     {
-        public static float KeepTimeInDays { get; set; } 
+        public static float KeepTimeInDays { get; set; }
         public static string CacheDir
         {
             get
             {
                 if (s_CacheDir == null)
                 {
-                    var exeAssembly = Assembly.GetExecutingAssembly();
-                    var exePath = exeAssembly.ManifestModule.FullyQualifiedName;
-                    var exeName = Path.GetFileNameWithoutExtension(exePath);
-                    var tempDir = Environment.GetEnvironmentVariable("TEMP");
+                    Assembly exeAssembly = Assembly.GetExecutingAssembly();
+                    string exePath = exeAssembly.ManifestModule.FullyQualifiedName;
+                    string exeName = Path.GetFileNameWithoutExtension(exePath);
+                    string tempDir = Environment.GetEnvironmentVariable("TEMP");
                     if (tempDir == null)
                         tempDir = ".";
                     s_CacheDir = Path.Combine(tempDir, exeName);
+
+                    string keepTimeEnvVarName = exeName + "_Cache_KeepTimeInDays";
+                    string keepTimeEnvVarValueStr = Environment.GetEnvironmentVariable(keepTimeEnvVarName);
+                    float keepTimeEnvVarValue;
+                    if (keepTimeEnvVarName != null && float.TryParse(keepTimeEnvVarValueStr, out keepTimeEnvVarValue))
+                    {
+                        // Insure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
+                        if (keepTimeEnvVarValue < .007f)
+                            keepTimeEnvVarValue = .007f;
+                        KeepTimeInDays = keepTimeEnvVarValue;
+                    }
+                    else if (KeepTimeInDays == 0)
+                        KeepTimeInDays = 5;
+
                     Directory.CreateDirectory(s_CacheDir);
                 }
                 return s_CacheDir;
@@ -82,9 +96,6 @@ namespace Utilities
 
         static public void CleanupDirectory(string directory, float keepTimeInDays)
         {
-            if (keepTimeInDays == 0)
-                keepTimeInDays = 5;
-
             var nowUTC = DateTime.UtcNow;
             foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
             {
@@ -92,7 +103,7 @@ namespace Utilities
                 {
                     try
                     {
-                        FileUtilities.ForceDelete(file);
+                        File.Delete(file);      // Don't try to hard. If it is in use let it be.  
                     }
                     catch (Exception) { }
                 }
