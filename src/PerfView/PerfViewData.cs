@@ -2046,7 +2046,7 @@ namespace PerfView
             }
         }
 
-        Dictionary<int/*pid*/,Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
+        Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -2117,23 +2117,23 @@ namespace PerfView
             m_jitStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
             m_bgJitEvents = new Dictionary<int, List<object>>();
 
-                // attach callbacks to grab background JIT events
-                var clrPrivate = new ClrPrivateTraceEventParser(source);
-                clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
-                {
-                    if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
-                    m_bgJitEvents[data.ProcessID].Add(data.Clone());
-                };
-                source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
-                {
-                    if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
-                    m_bgJitEvents[data.ProcessID].Add(data.Clone());
-                };
+            // attach callbacks to grab background JIT events
+            var clrPrivate = new ClrPrivateTraceEventParser(source);
+            clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
+            {
+                if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                m_bgJitEvents[data.ProcessID].Add(data.Clone());
+            };
+            source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
+            {
+                if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                m_bgJitEvents[data.ProcessID].Add(data.Clone());
+            };
 
-                // process the model
+            // process the model
             Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             source.Process();
-            foreach(var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
                 if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !m_jitStats.ContainsKey(proc.ProcessID)) m_jitStats.Add(proc.ProcessID, proc);
             Stats.ClrStats.ToHtml(output, m_jitStats.Values.ToList(), fileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
         }
@@ -4085,14 +4085,14 @@ namespace PerfView
             else if (streamName == "Server GC")
             {
                 Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(eventSource);
-                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(eventSource, proc => 
+                Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(eventSource, proc =>
                 {
                     Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.SetSampleIntervalMSec(proc, (float)eventLog.SampleProfileInterval.TotalMilliseconds);
                     Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.SetMutableTraceEventStackSource(proc, stackSource);
                 });
                 eventSource.Process();
-                    return stackSource;
-                }
+                return stackSource;
+            }
             else throw new Exception("Unknown stream " + streamName);
 
             log.WriteLine("Produced {0:n3}K events", stackSource.SampleIndexLimit / 1000.0);
@@ -6268,30 +6268,22 @@ namespace PerfView
             if (m_pdbLookupFailures != null && m_pdbLookupFailures.ContainsKey(module.PdbGuid))  // TODO we are assuming unique PDB names (at least for failures). 
                 return null;
 
-            // We check the PDB age and GUID as a proxy for comparing the module itself.
-            // This is because the module is per-process, and in a trace where there are many
-            // processes of the same application, we end up creating many symbol modules which seems
-            // to create memory leaks and takes a very long time to resolve symbols.
-            if (!(m_lastModule != null && module != null && m_lastModule.PdbGuid == module.PdbGuid && m_lastModule.PdbAge == module.PdbAge))
+
+            if (m_symReader == null)
+                m_symReader = App.GetSymbolReader(m_contextFilePath);
+
+            SymbolModule symbolModule = null;
+            var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
+            if (pdbPath != null)
+                symbolModule = m_symReader.OpenSymbolFile(pdbPath);
+            else
             {
-                m_lastModule = module;
-                m_lastSymModule = null;
-
-                if (m_symReader == null)
-                    m_symReader = App.GetSymbolReader(m_contextFilePath);
-
-                m_log.WriteLine("TYPE LOOKUP: Looking up PDB for Module {0}", module.Path);
-                var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
-                if (pdbPath != null)
-                    m_lastSymModule = m_symReader.OpenSymbolFile(pdbPath);
-                else
-                {
-                    if (m_pdbLookupFailures == null)
-                        m_pdbLookupFailures = new Dictionary<Guid, bool>();
-                    m_pdbLookupFailures.Add(module.PdbGuid, true);
-                }
+                if (m_pdbLookupFailures == null)
+                    m_pdbLookupFailures = new Dictionary<Guid, bool>();
+                m_pdbLookupFailures.Add(module.PdbGuid, true);
             }
-            if (m_lastSymModule == null)
+
+            if (symbolModule == null)
             {
                 m_numFailures++;
                 if (m_numFailures <= 5)
@@ -6318,12 +6310,12 @@ namespace PerfView
             string typeName;
             try
             {
-                typeName = m_lastSymModule.FindNameForRva((uint)typeID);
+                typeName = symbolModule.FindNameForRva((uint)typeID);
             }
             catch (OutOfMemoryException)
             {
                 // TODO find out why this happens?   I think this is because we try to do a ReadRVA 
-                m_log.WriteLine("Error: Caught out of memory exception on file " + m_lastSymModule.SymbolFilePath + ".   Skipping.");
+                m_log.WriteLine("Error: Caught out of memory exception on file " + symbolModule.SymbolFilePath + ".   Skipping.");
                 m_badPdb = module.PdbGuid;
                 return null;
             }
@@ -6340,8 +6332,6 @@ namespace PerfView
         TextWriter m_log;
         string m_contextFilePath;
         SymbolReader m_symReader;
-        SymbolModule m_lastSymModule;
-        Graphs.Module m_lastModule;
         int m_numFailures;
         Guid m_badPdb;        // If we hit a bad PDB remember it to avoid logging too much 
         Dictionary<Guid, bool> m_pdbLookupFailures;

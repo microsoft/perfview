@@ -1,8 +1,11 @@
-
+html, body {
+    height: 100%;
+}
 
 
 body {
   margin: 0;
+  /*margin-bottom: 2em;*/
   display: flex;
   flex-direction: column;
 
@@ -19,6 +22,10 @@ Nav Bar Views
 .nav {
   margin: 0;
   display: flex;
+
+  border-bottom: solid;
+  border-color: #4169e1;
+  border-width: 2px;
 }
 
 /* Wrapper for Dropdown Navbar and Helpful Links */
@@ -106,6 +113,7 @@ Tree View and Welcome View
   margin: 0;
   display: flex;
   flex-direction: row;
+  height: 100%;
 }
 
 .wrapper #sideBarContainer {
@@ -119,24 +127,32 @@ Tree View and Welcome View
 .wrapper #sideBarContainer #dirSelect {
   margin: 0;
   height: 1.5em;
-  background-color: darkgrey;
-}
-
-.wrapper #sideBarContainer #dirSelect {
   background-color: white;
   border: none;
+  border-bottom: solid;
+  border-width: 2px;
+  border-color: #4169e1;
+  border-radius: 0px;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 12px 4px 12px 4px;
+  font-size: 13px;
 }
 
 .wrapper #sideBarContainer #dirSelect::-webkit-calendar-picker-indicator {
   opacity: 100;
 }
 
-.wrapper #sideBarContainer #filterContainer {
+.wrapper #sideBarContainer #filterContainer,
+.wrapper #sideBarContainer #filterContainer form {
+    margin: 0;
+    padding: 0;
   height: 2em;
   background-color: lightgrey;
+}
+
+.wrapper #sideBarContainer #filterContainer input {
+    height: 2em;
 }
 
 .wrapper #sideBarContainer form {
@@ -155,8 +171,10 @@ Tree View and Welcome View
 }
 
 /* Tree Hierarchy */
-.wrapper #treeContainer ul li {
-  font-size: .9em;
+.wrapper #treeContainer li {
+    overflow: hidden;
+    text-overflow: clip;
+    font-size: 12px;
 }
 
 /* Welcome View */
@@ -164,12 +182,13 @@ Tree View and Welcome View
   flex-grow: 1;  /* TODO: May not need this since implementing '.wrapper' */
   margin: 0;
   padding: 0;
-  height: 40em;
+  /*height: 40em;*/
   overflow: auto;
 }
 
-.wrapper #welcome p {
-  font-size: .9em;
+.wrapper #welcome p,
+.wrapper #welcome ul {
+  font-size: .8em;
   margin: .3em;
 }
 /*--------------------*/
@@ -193,6 +212,11 @@ Footer View
   flex-flow: row;
 
   height: 2em;
+
+  margin-bottom: 0;
+  bottom: 0;
+  position: fixed;
+  width: 100%;
 }
 
 #footer #statusBar {

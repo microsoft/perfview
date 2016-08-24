@@ -3247,32 +3247,31 @@ namespace PerfViewExtensibility
         }
 #endif
 
-#if false
+#if false 
         public void Test()
         {
-            LogFile.WriteLine("Starting Listener thread.");
-            using (var source = new ETWTraceEventSource("AppInsightsTestApp.etl"))
+            Cache<string, string> myCache = new Cache<string, string>(8);
+
+            string prev = null;
+            for(int i = 0; ;  i++)
             {
-                source.Dynamic.AddCallbackForProviderEvents(
-                    delegate(string providerName, string eventName)
-                    {
-                        Trace.WriteLine("Checking " + providerName + "  " + eventName);
-                        if (providerName.Contains("Insight") || providerName.Contains("Windows-ASPNET"))
-                            return EventFilterResponse.AcceptEvent;
-                        return EventFilterResponse.RejectProvider;
-                    },
-                    delegate(TraceEvent data)
-                    {
-                        Trace.WriteLine("Testing " + data.ToString());
-                    }
-                    );
-                source.Process();
+                var str = i.ToString() + (i*i).ToString(); 
+
+                LogFile.WriteLine("**** BEFORE ITERATION {0} CACHE\r\n{1}********", i,  myCache.ToString());
+                if (i == 16)
+                    break;
+
+                myCache.Add(str, "Out" + str);
+
+                LogFile.WriteLine("FETCH {0} = {1}", str, myCache.Fetch(str));
+                if (prev != null)
+                    LogFile.WriteLine("FETCH {0} = {1}", prev, myCache.Fetch(prev));
+                prev = str;
             }
-            Trace.WriteLine("Done.");
         }
 #endif
 
-#region private
+        #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>

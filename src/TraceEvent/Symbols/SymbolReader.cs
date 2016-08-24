@@ -29,10 +29,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader(TextWriter log, string nt_symbol_path = null)
         {
-            SymbolPath = nt_symbol_path;
-            if (SymbolPath == null)
-                SymbolPath = Microsoft.Diagnostics.Symbols.SymbolPath.SymbolPathFromEnvironment;
-            log.WriteLine("Created SymbolReader with SymbolPath {0}", nt_symbol_path);
+            this.m_log = log;
+            this.m_symbolModuleCache = new Cache<string, SymbolModule>(10);
+            this.m_pdbPathCache = new Cache<PdbSignature, string>(10);
+
+            m_symbolPath = nt_symbol_path;
+            if (m_symbolPath == null)
+                m_symbolPath = Microsoft.Diagnostics.Symbols.SymbolPath.SymbolPathFromEnvironment;
+            log.WriteLine("Created SymbolReader with SymbolPath {0}", m_symbolPath);
 
             // TODO FIX NOW.  the code below does not support probing a file extension directory.  
             // we work around this by adding more things to the symbol path
@@ -52,9 +56,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
             }
             var newSymPathStr = newSymPath.ToString();
-            // log.WriteLine("Morphed Symbol Path: {0}", newSymPathStr);
-
-            this.m_log = log;
+            m_symbolPath = newSymPathStr;
         }
 
         // These routines find a PDB based on something (either an DLL or a PDB 'signature')
@@ -134,11 +136,15 @@ namespace Microsoft.Diagnostics.Symbols
         /// It is used only to provided better error messages for the log.</param>
         public string FindSymbolFilePath(string pdbFileName, Guid pdbIndexGuid, int pdbIndexAge, string dllFilePath = null, string fileVersion = "")
         {
+            PdbSignature pdbSig = new PdbSignature() { Name = pdbFileName, ID = pdbIndexGuid, Age = pdbIndexAge };
+            string pdbPath = null;
+            if (m_pdbPathCache.TryGet(pdbSig, out pdbPath))
+                return pdbPath;
+
             m_log.WriteLine("FindSymbolFilePath: *{{ Locating PDB {0} GUID {1} Age {2} Version {3}", pdbFileName, pdbIndexGuid, pdbIndexAge, fileVersion);
             if (dllFilePath != null)
                 m_log.WriteLine("FindSymbolFilePath: Pdb is for DLL {0}", dllFilePath);
 
-            string pdbPath = null;
             string pdbIndexPath = null;
             string pdbSimpleName = Path.GetFileName(pdbFileName);        // Make sure the simple name is really a simple name
 
@@ -223,6 +229,8 @@ namespace Microsoft.Diagnostics.Symbols
                     where = " in local cache";
                 m_log.WriteLine("FindSymbolFilePath: *}} Failed to find PDB {0}{1} GUID {2} Age {3} Version {4}", pdbSimpleName, where, pdbIndexGuid, pdbIndexAge, fileVersion);
             }
+
+            m_pdbPathCache.Add(pdbSig, pdbPath);
             return pdbPath;
         }
 
@@ -277,9 +285,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         /// <param name="pdblFilePath">The name of the PDB file to open.</param>
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
-        public SymbolModule OpenSymbolFile(string pdblFilePath)
+        public SymbolModule OpenSymbolFile(string pdbFilePath)
         {
-            var ret = new SymbolModule(this, pdblFilePath);
+            SymbolModule ret;
+            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ret))
+            {
+                ret = new SymbolModule(this, pdbFilePath);
+                m_symbolModuleCache.Add(pdbFilePath, ret);
+            }
             return ret;
         }
 
@@ -295,7 +308,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// The symbol path used to look up PDB symbol files.   Set when the reader is initialized.  
         /// </summary>
-        public string SymbolPath { get; set; }
+        public string SymbolPath { get { return m_symbolPath; }
+            set {
+                m_symbolPath = value;
+                m_symbolModuleCache.Clear();
+                m_pdbPathCache.Clear();
+                m_log.WriteLine("Symbol Path Updated to {0}", m_symbolPath);
+            }
+        }
         /// <summary>
         /// The paths used to look up source files.  defaults to _NT_SOURCE_PATH.  
         /// </summary>
@@ -1261,12 +1281,25 @@ namespace Microsoft.Diagnostics.Symbols
             return path;
         }
 
+        // Used as the key to the m_pdbPathCache.  
+        struct PdbSignature : IEquatable<PdbSignature>
+        {
+            public override int GetHashCode() { return Name.GetHashCode() + ID.GetHashCode(); }
+            public bool Equals(PdbSignature other) { return ID == other.ID && Name == other.Name && Age == other.Age; }
+            public string Name;
+            public Guid ID;
+            public int Age;
+        }
+
         internal TextWriter m_log;
         private List<string> m_deadServers;     // What servers can't be reached right now
-        private DateTime m_lastDeadTimeUtc;        // The last time something went dead.  
-
+        private DateTime m_lastDeadTimeUtc;     // The last time something went dead.  
         private string m_SymbolCacheDirectory;
         private string m_SourceCacheDirectory;
+        private Cache<string, SymbolModule> m_symbolModuleCache;
+        private Cache<PdbSignature, string> m_pdbPathCache;
+        private string m_symbolPath;
+
         #endregion
     }
 
@@ -1723,7 +1756,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (managedPdbPath != null)
                     {
                         m_reader.m_log.WriteLine("Found managed PDB path {0}", managedPdbPath);
-                        m_managedPdb = new SymbolModule(m_reader, managedPdbPath);
+                        m_managedPdb = m_reader.OpenSymbolFile(managedPdbPath);
                     }
                     else
                         m_reader.m_log.WriteLine("Could not find managed PDB {0}", m_managedPdbName);
@@ -1946,7 +1979,7 @@ namespace Microsoft.Diagnostics.Symbols
             return ((int)RVA - (int)other.RVA);
         }
         #region private
-#if false 
+#if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
         {
@@ -2478,7 +2511,7 @@ namespace Microsoft.Diagnostics.Symbols
 
 
         // Here is an example of the srcsrv stream.  
-#if false 
+#if false
 SRCSRV: ini ------------------------------------------------
 VERSION=3
 INDEXVERSION=2
@@ -2620,155 +2653,155 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
     }
 }
 
-    #region private classes
+#region private classes
 
-    internal sealed class ComStreamWrapper : IStream
+internal sealed class ComStreamWrapper : IStream
+{
+    private readonly Stream stream;
+
+    public ComStreamWrapper(Stream stream)
     {
-        private readonly Stream stream;
+        this.stream = stream;
+    }
 
-        public ComStreamWrapper(Stream stream)
+    public void Commit(uint grfCommitFlags)
+    {
+        throw new NotSupportedException();
+    }
+
+    public unsafe void RemoteRead(out byte pv, uint cb, out uint pcbRead)
+    {
+        byte[] buf = new byte[cb];
+
+        int bytesRead = stream.Read(buf, 0, (int)cb);
+        pcbRead = (uint)bytesRead;
+
+        fixed (byte* p = &pv)
         {
-            this.stream = stream;
-        }
-
-        public void Commit(uint grfCommitFlags)
-        {
-            throw new NotSupportedException();
-        }
-
-        public unsafe void RemoteRead(out byte pv, uint cb, out uint pcbRead)
-        {
-            byte[] buf = new byte[cb];
-
-            int bytesRead = stream.Read(buf, 0, (int)cb);
-            pcbRead = (uint)bytesRead;
-
-            fixed (byte* p = &pv)
-            {
-                for (int i = 0; i < bytesRead; i++)
-                    p[i] = buf[i];
-            }
-        }
-
-        public unsafe void RemoteSeek(_LARGE_INTEGER dlibMove, uint origin, out _ULARGE_INTEGER plibNewPosition)
-        {
-            long newPosition = stream.Seek(dlibMove.QuadPart, (SeekOrigin)origin);
-            plibNewPosition.QuadPart = (ulong)newPosition;
-        }
-
-        public void SetSize(_ULARGE_INTEGER libNewSize)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Stat(out tagSTATSTG pstatstg, uint grfStatFlag)
-        {
-            pstatstg = new tagSTATSTG()
-            {
-                cbSize = new _ULARGE_INTEGER() { QuadPart = (ulong)stream.Length }
-            };
-        }
-
-        public unsafe void RemoteWrite(ref byte pv, uint cb, out uint pcbWritten)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Clone(out IStream ppstm)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void RemoteCopyTo(IStream pstm, _ULARGE_INTEGER cb, out _ULARGE_INTEGER pcbRead, out _ULARGE_INTEGER pcbWritten)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void LockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
-        {
-            throw new NotSupportedException();
-        }
-
-        public void Revert()
-        {
-            throw new NotSupportedException();
-        }
-
-        public void UnlockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
-        {
-            throw new NotSupportedException();
+            for (int i = 0; i < bytesRead; i++)
+                p[i] = buf[i];
         }
     }
 
-    namespace Dia2Lib
+    public unsafe void RemoteSeek(_LARGE_INTEGER dlibMove, uint origin, out _ULARGE_INTEGER plibNewPosition)
+    {
+        long newPosition = stream.Seek(dlibMove.QuadPart, (SeekOrigin)origin);
+        plibNewPosition.QuadPart = (ulong)newPosition;
+    }
+
+    public void SetSize(_ULARGE_INTEGER libNewSize)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void Stat(out tagSTATSTG pstatstg, uint grfStatFlag)
+    {
+        pstatstg = new tagSTATSTG()
+        {
+            cbSize = new _ULARGE_INTEGER() { QuadPart = (ulong)stream.Length }
+        };
+    }
+
+    public unsafe void RemoteWrite(ref byte pv, uint cb, out uint pcbWritten)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void Clone(out IStream ppstm)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void RemoteCopyTo(IStream pstm, _ULARGE_INTEGER cb, out _ULARGE_INTEGER pcbRead, out _ULARGE_INTEGER pcbWritten)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void LockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void Revert()
+    {
+        throw new NotSupportedException();
+    }
+
+    public void UnlockRegion(_ULARGE_INTEGER libOffset, _ULARGE_INTEGER cb, uint lockType)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+namespace Dia2Lib
+{
+    /// <summary>
+    /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
+    /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
+    /// Basically it just called the DllGetClassObject interface directly.
+    /// 
+    /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
+    /// From there you can do anything you need.  
+    /// 
+    /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
+    /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Interop.Dia2Lib.dll
+    /// 
+    /// roughly what you need to do is 
+    ///     copy vctools\langapi\idl\dia2_internal.idl .
+    ///     copy vctools\langapi\idl\dia2.idl .
+    ///     copy vctools\langapi\include\cvconst.h .
+    ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
+    ///     midl dia2_internal.idl /D CC_DP_CXX
+    ///     tlbimp dia2_internal.tlb
+    ///     xcopy Dia2Lib.dll Interop.Dia2Lib.dll
+    /// </summary>
+    internal static class DiaLoader
     {
         /// <summary>
-        /// The DiaLoader class knows how to load the msdia140.dll (the Debug Access Interface) (see docs at
-        /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx), without it being registered as a COM object.
-        /// Basically it just called the DllGetClassObject interface directly.
-        /// 
-        /// It has one public method 'GetDiaSourceObject' which knows how to create a IDiaDataSource object. 
-        /// From there you can do anything you need.  
-        /// 
-        /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
-        /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Interop.Dia2Lib.dll
-        /// 
-        /// roughly what you need to do is 
-        ///     copy vctools\langapi\idl\dia2_internal.idl .
-        ///     copy vctools\langapi\idl\dia2.idl .
-        ///     copy vctools\langapi\include\cvconst.h .
-        ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
-        ///     midl dia2_internal.idl /D CC_DP_CXX
-        ///     tlbimp dia2_internal.tlb
-        ///     xcopy Dia2Lib.dll Interop.Dia2Lib.dll
+        /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
         /// </summary>
-        internal static class DiaLoader
+        public static IDiaDataSource3 GetDiaSourceObject()
         {
-            /// <summary>
-            /// Load the msdia100 dll and get a IDiaDataSource from it.  This is your gateway to PDB reading.   
-            /// </summary>
-            public static IDiaDataSource3 GetDiaSourceObject()
+            if (!s_loadedNativeDll)
             {
-                if (!s_loadedNativeDll)
-                {
-                    // Insure that the native DLL we need exist.  
-                    NativeDlls.LoadNative("msdia140.dll");
-                    s_loadedNativeDll = true;
-                }
-
-                // This is the value it was for msdia120 and before 
-                // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
-
-                // This is the value for msdia140.  
-                var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-                var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
-
-                object comObject = null;
-                Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
-                comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-                return (comObject as IDiaDataSource3);
-            }
-            #region private
-            [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
-             InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-            private interface IClassFactory
-            {
-                void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                    ref Guid refiid,
-                                    [MarshalAs(UnmanagedType.Interface)] out object createdObject);
-                void LockServer(bool incrementRefCount);
+                // Insure that the native DLL we need exist.  
+                NativeDlls.LoadNative("msdia140.dll");
+                s_loadedNativeDll = true;
             }
 
-            // Methods
-            [return: MarshalAs(UnmanagedType.Interface)]
-            [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
-            private static extern object DllGetClassObject(
-                [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
-                [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+            // This is the value it was for msdia120 and before 
+            // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
 
-            static bool s_loadedNativeDll;
-            #endregion
+            // This is the value for msdia140.  
+            var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
+            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
+
+            object comObject = null;
+            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
+            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
+            return (comObject as IDiaDataSource3);
         }
+        #region private
+        [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
+         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        private interface IClassFactory
+        {
+            void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
+                                ref Guid refiid,
+                                [MarshalAs(UnmanagedType.Interface)] out object createdObject);
+            void LockServer(bool incrementRefCount);
+        }
+
+        // Methods
+        [return: MarshalAs(UnmanagedType.Interface)]
+        [DllImport("msdia140.dll", CharSet = CharSet.Unicode, ExactSpelling = true, PreserveSig = false)]
+        private static extern object DllGetClassObject(
+            [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
+            [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
+
+        static bool s_loadedNativeDll;
+        #endregion
     }
-    #endregion
+}
+#endregion
 

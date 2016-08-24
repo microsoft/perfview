@@ -11,12 +11,6 @@
 
     public sealed class StackViewerUIController : Controller
     {
-        private readonly IServerAddressesFeature serverAddressesFeature;
-
-        public StackViewerUIController(IServerAddressesFeature serverAddressesFeature)
-        {
-            this.serverAddressesFeature = serverAddressesFeature;
-        }
 
         [Route("ui/stackviewer/summary", Name = "HotSpots")]
         public ActionResult Hotspots(StackViewerViewModel model)
@@ -126,7 +120,7 @@
         
         private string LookupHostname()
         {
-            return this.serverAddressesFeature.Addresses.First();
+            return "http://localhost:50001";  // TODO: This will need to change in production (don't hard-code it)
         }
     }
 }

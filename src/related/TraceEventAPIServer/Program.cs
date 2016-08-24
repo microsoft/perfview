@@ -23,7 +23,7 @@
             services.AddSingleton<ITemporaryPathProvider, TemporaryPathProvider>();
             services.AddSingleton<ICacheExpirationTimeProvider, CacheExpirationTimeProvider>();
             services.AddSingleton<TextWriter, EventSourceTextWriter>();
-            services.AddSingleton(ServerAddressesFeature);
+            //services.AddSingleton(ServerAddressesFeature);
         }
 
         public void Configure(IApplicationBuilder app)
@@ -36,11 +36,12 @@
         {
             var host = new WebHostBuilder()
                 .UseKestrel()
+                .UseUrls("http://localhost:50001")
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Program>()
                 .Build();
 
-            ServerAddressesFeature = host.ServerFeatures.Get<IServerAddressesFeature>();
+            //ServerAddressesFeature = host.ServerFeatures.Get<IServerAddressesFeature>();
 
             host.Run();
         }
