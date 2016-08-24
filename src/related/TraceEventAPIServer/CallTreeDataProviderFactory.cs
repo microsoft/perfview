@@ -9,6 +9,7 @@
     using Microsoft.Diagnostics.Symbols;
     using Microsoft.Diagnostics.Tracing.Etlx;
     using Microsoft.Extensions.Caching.Memory;
+    using System.Text;
 
     public sealed class CallTreeDataProviderFactory : ICallTreeDataProviderFactory
     {
@@ -128,7 +129,7 @@
                     if (!File.Exists(etlxFilePath))
                     {
                         // if it's a zip file
-                        if (string.Equals(Path.GetExtension(filename), ".vspx", StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(Path.GetExtension(filename), ".zip", StringComparison.OrdinalIgnoreCase))
                         {
                             using (ZipArchive archive = ZipFile.OpenRead(filename))
                             {
@@ -164,7 +165,17 @@
                             {
                                 if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
                                 {
-                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                    //
+                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
+                                    //
+                                    try
+                                    {
+                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
+                                    }
+                                    catch
+                                    {
+
+                                    }
                                 }
                             }
                         }
@@ -176,8 +187,10 @@
             lock (this.stackViewerSessionCache)
             {
                 var filterParams = new FilterParams { Name = filename + stacktype, StartTimeRelativeMSec = start, EndTimeRelativeMSec = end, MinInclusiveTimePercent = foldpct, FoldRegExs = foldpats, IncludeRegExs = incpats, ExcludeRegExs = excpats, GroupRegExs = grouppats };
-
-                var stackViewerKey = filterParams.ToString();
+                var keyBuilder = new StringBuilder();
+                keyBuilder.Append(filterParams.Name).Append("?" + filterParams.StartTimeRelativeMSec).Append("?" + filterParams.EndTimeRelativeMSec).Append("?" + filterParams.MinInclusiveTimePercent).Append("?" + filterParams.FoldRegExs).Append("?" + filterParams.IncludeRegExs).Append("?" + filterParams.ExcludeRegExs).Append("?" + filterParams.GroupRegExs); 
+                
+                var stackViewerKey = keyBuilder.ToString();
                 if (this.stackViewerSessionCache.TryGetValue(stackViewerKey, out stackViewerSession))
                 {
                     if (stackViewerSession == null)
@@ -198,7 +211,17 @@
                             {
                                 if (string.IsNullOrEmpty(modulesFilter) || modulesFilter.Split(',').Contains(module.Name))
                                 {
-                                    etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, module.ModuleFile);
+                                    //
+                                    // TODO: lt72: why is this exception occurring and do we care? (it seems like we are just trying to load symbols...)
+                                    //
+                                    try
+                                    {
+                                        etlxFile.TraceLog.CodeAddresses.LookupSymbolsForModule( symbolReader, module.ModuleFile );
+                                    }
+                                    catch
+                                    {
+
+                                    }
                                 }
                             }
                         }

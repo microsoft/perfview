@@ -129,6 +129,7 @@
     <Compile Include="TraceEventSession.cs" />
     <Compile Include="TraceEventStacks.cs" />
     <Compile Include="TraceLog.cs" />
+    <Compile Include="Utilities\Cache.cs" />
     <Compile Include="Utilities\command.cs" />
     <Compile Include="TraceUtilities\HistoryDictionary.cs" />
     <Compile Include="Utilities\StringBuilderCache.cs" />

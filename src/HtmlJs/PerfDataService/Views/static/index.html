@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <script src="../js/settings.js"></script>
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/foundation.css">
+    <link rel="stylesheet" href="../static/foundation-6.2.3-custom/css/app.css">
+
     <link rel="stylesheet" type="text/css" href="home.css">
 
-    <!-- basicContext Library -->
+    <!-- basicContext Theme -->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/basicContext.min.css">
     <!-- <link rel="stylesheet" href="node_modules/basiccontext/dist/themes/default.min.css"> -->
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/themes/bright.min.css">
     <link rel="stylesheet" href="../node_modules/basiccontext/dist/addons/popin.min.css">
     <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+    <!-- jsTree Theme -->
+    <link rel="stylesheet" href="../libraries/jstree/dist/themes/default/style.min.css" />
   </head>
 
   <body>
@@ -16,51 +23,52 @@
 
     <div class="wrapper">
       <div id="sideBarContainer">
-
-          <input id="dirSelect" list="directories" type="text">
-          <datalist id="directories">
-            <option value="dir0"/>
-            <option value="dir1"/>
-            <option value="dir2"/>
-          </datalist>
-
-
-        <div id="filterContainer">
-          <form action="#">
-            <a href="#">Filter</a>
-            <input type="text" name="fname" value="" onkeydown="">
-          </form>
-        </div>
+        <input id="dirSelect" list="recentDirectories" type="text" placeholder="C:\Development\PerfViewData.etl">
+        <datalist id="recentDirectories">
+        </datalist>
 
         <div id="treeContainer">
-          <ul class="mktree" id="mainTree">
-
-          </ul>
         </div>
       </div>
 
       <div id="welcome">
-        <p>Welcome to PerfView!
-  PerfView is an application designed to simplify the collection and analysis of performance data.
-  Pressing the F1 key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the User's Guide . If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the feedback instructions in the documentation.
-  If you are new to PerfView , we strongly recommend reading the tutorial or watch the tutorial videos . It should only take 10-20 minutes to walk through. Also recommend is reading what perfView can do for you .
-  Optimizing Time, or Unmanaged Memory: Collecting ETW Profile Data
-  PerfView can collect a time based ETW trace for investigating CPU and Server Response Time, as well as Wall Clock / Blocked Time , Unmanaged memory or Managed memory . For these cases PerfView has two ways of collecting ETW trace data :
-  •	Run a command and collect data while the command is running. Collect->Run (Alt-R)
-  •	Collect data machine wide by starting and stopping collection manually. Collect->Collect (Alt-C)
-  Optimizing Managed Memory: Collecting .NET Runtime Heap Data
-  PerfView can also collect data about the GC heap of a .NET Runtime process. See GC Heap Quick Start for more details.
-  •	Take a heap snapshot of an existing process Memory->Take Heap Snapshot (Alt-S)
-  To Take a heap snapshot from a Process Dump simply double click on the .DMP file in the file view to the left.
+        <h4>Welcome to PerfView!</h4>
+          <p>
+              PerfView is an application designed to simplify the collection and analysis of performance data.<br><br>
+              Pressing the <b>F1</b> key will give you help for current view. Any blue hyperlinks in the UI also take you to help. For an overview of PerfView see the <a href="help.html#UsersGuide" target="_blank"><u>User's Guide</u></a>. If you wish to ask a question that the documentation did not answer or if you have feedback or a bug report, see the <a href="help.html#Feedback" target="_blank"><u>feedback instructions</u></a> in the documentation.<br><br>
+              <b>If you are new to PerfView</b>, we strongly recommend reading the <a href="help.html#Tutorial" target="_blank"><u>tutorial</u></a> or watch the tutorial <a href="perfViewWebVideos.html" target="_blank"><u>videos</u></a>. It should only take 10-20 minutes to walk through. Also recommend is reading <a href="help.html#WhatPerfViewCanDoForYou" target="_blank"><u>what perfView can do for you</u></a>.<br><br>
 
-  Viewing Existing Profile Data
-  The result of data collection is data stored in data files of varying extensions. The left pane is a list of file names in the current directory that PerfView knows how to open. Simply double click on the file of interest to view the data. You can change the current directory by either double clicking on a subdirectory or typing the name in the textbox in the upper left.
-  If the file contains more than one view of the data then double clicking on the object populates children nodes in the treeview. Double clicking on one of the children will open the viewer for that view. Right clicking and selecting 'Help on Item' will take you to the help for that particular entry in the viewer. There are two main viewers of profile data:
-  •	A stack viewer which allows aggregation and filtering of events with associated stack traces.
-  •	An event viewer which allows filtering of time based events.
+              <b>Optimizing Time, or Unmanaged Memory: Collecting ETW Profile Data</b><br>
+              PerfView can collect a time based ETW trace for investigating <a href="help.html#CPUInvestigation" target="_blank"><u><b>CPU</b></u></a> and <a href="help.html#MakingServerInvestigationEasy" target="_blank"><u><b>Server Response Time</b></u></a>, as well as <a href="help.html#BlockedTimeInvestigation" target="_blank"><u>Wall Clock / Blocked Time</u></a>, <a href="help.html#UnmanagedMemoryAnalysis" target="_blank"><u>Unmanaged memory</u></a> or <a href="help.html#GCHeapNetMemStacks" target="_blank"><u>Managed memory</u></a>. For these cases PerfView has two ways of <a href="help.html#CollectingData" target="_blank"><u>collecting ETW trace data</u></a>:<br>
+          </p>
+              <ul>
+                  <li style="list-style-type: disc; margin-left: 20px;">Run a command and collect data while the command is running. Collect->Run (Alt-R)</li>
+                  <li style="list-style-type: disc; margin-left: 20px;">Collect data machine wide by starting and stopping collection manually. Collect->Collect (Alt-C)</li>
+              </ul><br>
 
-  Diffing Profile Data
-  PerfView has the ability to determine the difference between two traces, which is very useful in doing regression analysis. To use the Diff functionality first view both traces in separate stack view windows and (if necessary) filter out all but the region that represents an equivalent amount of work in each view. Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other window as its baseline. See Diff Help for more.
+          <p>
+              <b>Optimizing Managed Memory: Collecting .NET Runtime Heap Data</b>
+              PerfView can also collect data about the GC heap of a .NET Runtime process. See <a href="#"><u>GC Heap Quick Start</u></a> for more details.<br>
+          </p>
+              <ul>
+                  <li style="list-style-type: disc; margin-left: 20px;">Take a heap snapshot of an existing process Memory->Take Heap Snapshot (Alt-S)</li>
+                  <li style="list-style-type: disc; margin-left: 20px;">To Take a heap snapshot from a Process Dump simply double click on the .DMP file in the file view to the left.</li>
+              </ul><br>
+
+          <p>
+              <b>Viewing Existing Profile Data</b>
+              The result of data collection is data stored in data files of varying extensions. The left pane is a list of file names in the current directory that PerfView knows how to open. Simply double click on the file of interest to view the data. You can change the current directory by either double clicking on a subdirectory or typing the name in the textbox in the upper left.<br>
+              If the file contains more than one view of the data then double clicking on the object populates children nodes in the treeview. Double clicking on one of the children will open the viewer for that view. <b>Right clicking and selecting 'Help on Item'</b> will take you to the help for that particular entry in the viewer. There are two main viewers of profile data:<br>
+          </p>
+              <ul>
+                  <li style="list-style-type: disc; margin-left: 20px;">A stack viewer which allows aggregation and filtering of events with associated stack traces.</li>
+                  <li style="list-style-type: disc; margin-left: 20px;">An event viewer which allows filtering of time based events.</li>
+              </ul><br>
+
+          <p>
+              <b>Diffing Profile Data</b>
+              PerfView has the ability to determine the difference between two traces, which is very useful in doing regression analysis. To use the Diff functionality first view both traces in separate stack view windows and (if necessary) filter out all but the region that represents an equivalent amount of work in each view. Then use the Diff menu on the stack view window of the 'regressed' trace and to select the other window as its baseline. See <a href="help.html#Diff" target="_blank"><u>Diff Help</u></a> for more.
+          </p>
       </div>
     </div>
 
@@ -79,130 +87,64 @@
 
 
       <!-- Let's get some jQuery going here. -->
-      <script type = "text/javascript" src = "../node_modules/jquery/dist/jquery.min.js"></script>
+      <script src="../static/foundation-6.2.3-custom/js/vendor/jquery.js"></script>
       <!-- alternate require method that works for Electron
       <script>window.$ = window.jQuery = require('./node_modules/jquery/dist/jquery.min.js')</script> -->
 
 
+      <script src="../static/foundation-6.2.3-custom/js/vendor/what-input.js"></script>
+      <script src="../static/foundation-6.2.3-custom/js/vendor/foundation.js"></script>
+      <script src="../libraries/bluebird.min.js"></script>
+
       <!-- Template Including -->
       <script>
-        $.get('templates/navbar.html', function(data) {
-          var template = $(data).children();
-          $('.nav').append(template);
-          resizeWelcomeDiv();
-        });
+        var join = Promise.join;
 
-        $.get('templates/footer.html', function(data) {
-          var template = $(data).children();
-          $('#footer').append(template);
-          resizeWelcomeDiv();
-        })
-      </script>
+        var navbar = $.get('templates/navbar.html');
+        var footer = $.get('templates/footer.html');
 
+        join(navbar, footer, function(navbarResult, footerResult) {
+                var nav = $(navbarResult).children();
+                $('.nav').append(nav);
 
-      <script src="../js/Delegate.js"></script>
+                var foot = $(footerResult).children();
+                $('#footer').append(foot);
 
-
-      <!-- Allows for resizing of #welcome if there is too much text.
-      This is unfortunately how it has to be done. Even Facebook.com has
-      to do something like this for their footer (chat windows) bar. -->
-      <script>
-        var navBar, footer;
-
-        /* Try to avoid constantly traversing the DOM as much as we can. */
-        function initVars() {
-          navBar = document.getElementsByClassName("nav")[0];
-          footer = document.getElementById("footer");
-          resizeWelcomeDiv();
-        }
-
-        function resizeWelcomeDiv() {
-          var pageHeight = window.innerHeight;
-          navBarHeight = navBar.offsetHeight;
-          footerHeight = footer.offsetHeight;
-
-          var result = pageHeight - (navBarHeight + footerHeight);
-
-          // console.log("pageHeight - (navBarHeight + footerHeight): " + pageHeight + " - (" + navBarHeight + " + " + footerHeight + ") = " + result);
-          document.getElementById("welcome").style.height = result + "px";
-        }
-
-        window.onload = initVars;
-        window.onresize = resizeWelcomeDiv;
-      </script>
-
-
-      <!-- basicContext Library -->
-      <script src="../node_modules/basiccontext/dist/basicContext.min.js"></script>
-      <!-- alternate require method that works for Electron
-      <script>window.basicContext = require('./node_modules/basiccontext/dist/basicContext.min.js')</script> -->
-
-      <!-- basicContext Menu Test -->
-      <script>
-        document.querySelector('#treeContainer').addEventListener('contextmenu', function(e) {
-          var clicked = function() { alert('Item clicked!') }
-          let items = [
-            { title: 'Help on Item', icon: 'ion-help-buoy', fn: clicked, disabled: true },
-            { title: 'Refresh Dir', icon: 'ion-refresh', fn: clicked },
-            { title: 'Open', icon: 'ion-android-open', fn: clicked },
-            { title: 'Close', icon: 'ion-close', fn: clicked },
-            { title: 'Delete', icon: 'ion-android-remove-circle', fn: clicked },
-            { title: 'Rename', icon: 'ion-edit', fn: clicked },
-            { title: 'Merge', icon: 'ion-merge', fn: clicked },
-            { title: 'Make Local Symbol Dir', icon: 'ion-plus-round', fn: clicked },
-            { title: 'Zip', icon: 'ion-ios-briefcase', fn: clicked },
-            { title: 'UnZip', icon: 'ion-ios-briefcase-outline', fn: clicked }
-          ]
-
-          basicContext.show(items, e)
-        })
-      </script>
-
-
-      <!-- MKTREE Library -->
-      <script type="text/javascript" src="../libraries/mktree/mktree.js"></script>
-      <link rel="stylesheet" href="../libraries/mktree/mktree.css" type="text/css">
-
-
-      <!-- GET Tree View Hierarchy -->
-      <script>
-        // GET all directories and items and append them to tree view
-        $(document).ready( function() {
-          treeView = delegate.httpGet("/api/data/open", function (response) {
-            items = response.items;
-            var htmlFromJSON = createTreeFromJSON(items);
-            $("#mainTree").append(htmlFromJSON);
-            delegate.log("Completed: View");
-          });
-        });
-
-        // Recursively parse JSON tree
-        function createTreeFromJSON(items) {
-          var htmlToAppend = "";
-
-          for (var i = 0; i < items.length; ++i) {
-            var item = items[i];
-
-            if (item.type == "dir"
-            || item.type == "directory"
-            || item.type == "file"
-            || item.type == "folder") {
-              // It's a file
-              htmlToAppend += "<li>" + item.name
-                             + "<ul>\n"
-                             +   createTreeFromJSON(item.items)
-                             + "\n</ul>\n" +
-                             "</li>";
-            } else {
-              // It's an item
-              htmlToAppend += "<li>" + item.name + "</li>";
+                $(document).foundation();
             }
-          }
-
-          return htmlToAppend;
-        }
+        );
       </script>
 
+
+      <!-- jsTree Library -->
+      <script src="../libraries/jstree/dist/jstree.min.js"></script>
+      <!--<script src="../js/jsTreeHandler.js"></script>-->  
+
+
+      <script>
+          $(document).ready(function () {
+              $.getScript("../js/homeDelegate.js", function () {
+                  homeDelegate.changeDirectoryTreePath();
+              });
+
+              // TODO: Pull these from a cache file of the 10 most recently options the user has chosen
+              //$("#recentDirectories").append("<option value=" + homeDelegate.defaultDirectoryTreePath + "/>");
+          });
+
+          $("#dirSelect").keypress(function (e) {
+              // If the user pressed enter in the directory search bar
+              if (e.which == 13) {
+                  var dir = e.currentTarget.value;
+                  
+                  // In case the user specifically passes <drive name>:/
+                  if (dir.charAt(1) == ":" && dir.charAt(dir.length - 1) == "/") {
+                      dir = dir.substring(0, dir.length - 1) + "\/";
+                  }
+
+                  homeDelegate.changeDirectoryTreePath(dir);
+              }
+          });
+      </script>
 
 
       <!-- Do NOT Delete
