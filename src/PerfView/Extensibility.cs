@@ -60,7 +60,7 @@ namespace PerfViewExtensibility
         public static Stacks OpenPerfViewXmlFile(string perfViewXmlFileName)
         {
             var guiState = new StackWindowGuiState();
-            var source = new XmlStackSource(perfViewXmlFileName, delegate(XmlReader reader)
+            var source = new XmlStackSource(perfViewXmlFileName, delegate (XmlReader reader)
             {
                 if (reader.Name == "StackWindowGuiState")
                     guiState.ReadFromXml(reader);
@@ -196,7 +196,7 @@ namespace PerfViewExtensibility
         /// <param name="OnOpened"></param>
         public static void OpenStackViewer(Stacks stacks, Action<StackWindow> OnOpened = null)
         {
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 // TODO FIX NOW Major hacks. 
                 PerfViewStackSource perfViewStackSource;
@@ -230,9 +230,9 @@ namespace PerfViewExtensibility
                         {
                             // Right now we set nothing.  
                             stacks.GuiState = new StackWindowGuiState();
-                            stacks.GuiState.Columns = new List<string> { "NameColumn", 
-                                "ExcPercentColumn", "ExcColumn", "ExcCountColumn", 
-                                "IncPercentColumn", "IncColumn", "IncCountColumn", 
+                            stacks.GuiState.Columns = new List<string> { "NameColumn",
+                                "ExcPercentColumn", "ExcColumn", "ExcCountColumn",
+                                "IncPercentColumn", "IncColumn", "IncCountColumn",
                                 "FoldColumn", "FoldCountColumn" };
                         }
                         perfViewStackSource = gcDumpFile.GetStackSource();
@@ -272,7 +272,7 @@ namespace PerfViewExtensibility
         /// <returns></returns>
         public static void OpenEventViewer(Events events, Action<EventWindow> OnOpened = null)
         {
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 // TODO FIX NOW this is probably a hack?
                 var file = PerfViewFile.Get(events.m_EtlFile.FilePath);
@@ -300,10 +300,10 @@ namespace PerfViewExtensibility
         public static void OpenHtmlReport(string htmlFilePath, string title,
             Action<string, TextWriter, WebBrowserWindow> DoCommand = null, Action<WebBrowserWindow> OnOpened = null)
         {
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 var viewer = new WebBrowserWindow();
-                viewer.Browser.Navigating += delegate(object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
+                viewer.Browser.Navigating += delegate (object sender, System.Windows.Navigation.NavigatingCancelEventArgs e)
                 {
                     if (e.Uri != null)
                     {
@@ -312,7 +312,7 @@ namespace PerfViewExtensibility
                             e.Cancel = true;
                             if (viewer.StatusBar.Visibility != System.Windows.Visibility.Visible)
                                 viewer.StatusBar.Visibility = System.Windows.Visibility.Visible;
-                            viewer.StatusBar.StartWork("Following Hyperlink", delegate()
+                            viewer.StatusBar.StartWork("Following Hyperlink", delegate ()
                             {
                                 if (DoCommand != null)
                                     DoCommand(e.Uri.LocalPath, viewer.StatusBar.LogWriter, viewer);
@@ -348,7 +348,7 @@ namespace PerfViewExtensibility
         {
             if (App.CommandLineArgs.NoGui)
                 return;
-            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+            GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 GuiApp.MainWindow.StatusBar.OpenLog();
             });
@@ -394,15 +394,15 @@ namespace PerfViewExtensibility
 
     public class DataFile : IDisposable
     {        /// <summary>
-        /// The path of the data file
-        /// </summary>
+             /// The path of the data file
+             /// </summary>
         public string FilePath { get { return m_FilePath; } }
         public void Close() { Dispose(); }
         public virtual void Dispose() { }
 
-#region private
+        #region private
         protected string m_FilePath;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -464,7 +464,7 @@ namespace PerfViewExtensibility
             var etlOrEtlXFileName = FilePath;
             UnZipIfNecessary(ref etlOrEtlXFileName, log);
 
-            for (; ; )  // RETRY Loop 
+            for (;;)  // RETRY Loop 
             {
                 var usedAnExistingEtlxFile = false;
                 var etlxFileName = etlOrEtlXFileName;
@@ -486,7 +486,7 @@ namespace PerfViewExtensibility
                         options.SkipMSec = App.CommandLineArgs.SkipMSec;
                         options.OnLostEvents = onLostEvents;
                         options.LocalSymbolsOnly = false;
-                        options.ShouldResolveSymbols = delegate(string moduleFilePath) { return false; };
+                        options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };
 
                         log.WriteLine("Creating ETLX file {0} from {1}", etlxFileName, etlOrEtlXFileName);
                         TraceLog.CreateFromEventTraceLogFile(etlOrEtlXFileName, etlxFileName, options);
@@ -565,16 +565,7 @@ namespace PerfViewExtensibility
             if (moduleFiles.Count > 1)
                 log.WriteLine("Found {0} modules with name {1}", moduleFiles.Count, simpleModuleName);
             foreach (var moduleFile in moduleFiles.Values)
-            {
-                try
-                {
-                    TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
-                }
-                catch (ApplicationException ex)
-                {
-                    log.WriteLine("Error looking up " + moduleFile.FilePath + "\r\n    " + ex.Message);
-                }
-            }
+                TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
         }
 
         /// <summary>
@@ -599,7 +590,7 @@ namespace PerfViewExtensibility
             m_TraceLog.Dispose();
             m_TraceLog = null;
         }
-#region private
+        #region private
 
         private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
         {
@@ -728,7 +719,7 @@ namespace PerfViewExtensibility
 
         TraceLog m_TraceLog;
         TraceProcess m_FilterProcess;       // Only care about this process. 
-#endregion
+        #endregion
     }
 
     public class Events : ETWEventSource
@@ -763,7 +754,7 @@ namespace PerfViewExtensibility
                 csvFile.WriteLine();
 
                 // Write out events 
-                this.ForEach(delegate(EventRecord _event)
+                this.ForEach(delegate (EventRecord _event)
                 {
                     // Have we exceeded MaxRet?
                     if (_event.EventName == null)
@@ -812,7 +803,7 @@ namespace PerfViewExtensibility
             m_EtlFile = etlFile;
         }
 
-#region private
+        #region private
         /// <summary>
         /// Returns a string that is will be exactly one field of a CSV file.  Thus it escapes , and ""
         /// </summary>
@@ -831,7 +822,7 @@ namespace PerfViewExtensibility
         }
 
         internal ETLDataFile m_EtlFile;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1016,8 +1007,8 @@ namespace PerfViewExtensibility
             // TODO logic for getting out of ConfigSettings.  
 
             var ret = new StackWindowGuiState();
-            ret.Columns = new List<string>() { 
-                    "NameColumn", 
+            ret.Columns = new List<string>() {
+                    "NameColumn",
                     "ExcPercentColumn", "ExcColumn", "ExcCountColumn",
                     "IncPercentColumn", "IncColumn", "IncCountColumn",
                     "FoldColumn", "FoldCountColumn",
@@ -1072,7 +1063,7 @@ namespace PerfViewExtensibility
             return sw.ToString();
         }
 
-#region private
+        #region private
         /// <summary>
         /// TODO should not have to specify the ETL file. 
         /// </summary>
@@ -1095,7 +1086,7 @@ namespace PerfViewExtensibility
         {
             StackSourceStacks rawSource = source;
             TraceEventStackSource asTraceEventStackSource = null;
-            for (; ; )
+            for (;;)
             {
                 asTraceEventStackSource = rawSource as TraceEventStackSource;
                 if (asTraceEventStackSource != null)
@@ -1126,10 +1117,10 @@ namespace PerfViewExtensibility
         internal ETLDataFile m_EtlFile;                 // If this stack came from and ETL File this is that file.  
         internal string m_fileName;                     // TODO is this a hack.  This is the file name if present.  
         StackWindowGuiState m_GuiState;
-#endregion
+        #endregion
     }
 
-#region internal classes
+    #region internal classes
     internal static class Extensions
     {
         public static string ExtensionsDirectory
@@ -1163,7 +1154,7 @@ namespace PerfViewExtensibility
                     int lineNum = 0;
                     using (var startupFile = File.OpenText(startupFilePath))
                     {
-                        for (; ; )
+                        for (;;)
                         {
                             lineNum++;
                             line = startupFile.ReadLine();
@@ -1213,7 +1204,7 @@ namespace PerfViewExtensibility
                                 goto Failed;
                             }
                         }
-                    Failed:
+                        Failed:
                         throw new ApplicationException("Error: " + errorMessage + "  '" + line + @"' line " + lineNum + @" in PerfViewExtensions\PerfViewStartup file");
                     }
                 }
@@ -1339,9 +1330,10 @@ namespace PerfViewExtensibility
                             ret.Add(method);
                     }
                 }
-                catch (Exception) {
+                catch (Exception)
+                {
                     App.CommandProcessor.LogFile.WriteLine("Dll " + extensionDllPath + "could not be loaded, assuming it has no user commands");
-                }     
+                }
             }
 
             return ret;
@@ -1508,7 +1500,7 @@ namespace PerfViewExtensibility
         }
 
 
-#region private
+        #region private
         private static string s_ExtensionsDirectory;
 
         private static Dictionary<string, object> LoadedObjects;
@@ -1586,7 +1578,7 @@ namespace PerfViewExtensibility
                     "Could not find user command {0} that takes {1} arguments.  Use /userCommandHelp for help.", methodSpec, args == null ? 0 : args.Length));
             }
         }
-#endregion
+        #endregion
     }
 
 #if false
@@ -1660,7 +1652,7 @@ static class GuiModel
     }
 }
 #endif
-#endregion
+    #endregion
 }
 
 // PerfViewModel contains things that are not very important for the user to see 
@@ -2296,7 +2288,7 @@ namespace PerfViewExtensibility
             using (var source = new ETWTraceEventSource(etlFileName, TraceEventSourceType.MergeAll))
             using (TextWriter output = File.CreateText(outputFileName))
             {
-                source.Clr.TypeBulkType += delegate(GCBulkTypeTraceData data)
+                source.Clr.TypeBulkType += delegate (GCBulkTypeTraceData data)
                 {
                     if (proccessIdInt == 0)
                         proccessIdInt = data.ProcessID;
@@ -2311,7 +2303,7 @@ namespace PerfViewExtensibility
                         typeLookup[typeData.TypeID] = typeData.TypeName;
                     }
                 };
-                source.Clr.GCBulkEdge += delegate(GCBulkEdgeTraceData data)
+                source.Clr.GCBulkEdge += delegate (GCBulkEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
@@ -2319,37 +2311,37 @@ namespace PerfViewExtensibility
                         data.ProcessID, data.TimeStampRelativeMSec, data.Count);
                     edges.Add((GCBulkEdgeTraceData)data.Clone());
                 };
-                source.Clr.GCBulkNode += delegate(GCBulkNodeTraceData data)
+                source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
                     events.Add(data.Clone());
                 };
-                source.Clr.GCBulkRootStaticVar += delegate(GCBulkRootStaticVarTraceData data)
+                source.Clr.GCBulkRootStaticVar += delegate (GCBulkRootStaticVarTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
                     events.Add(data.Clone());
                 };
-                source.Clr.GCBulkRootEdge += delegate(GCBulkRootEdgeTraceData data)
+                source.Clr.GCBulkRootEdge += delegate (GCBulkRootEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
                     events.Add(data.Clone());
                 };
-                source.Clr.GCBulkRootConditionalWeakTableElementEdge += delegate(GCBulkRootConditionalWeakTableElementEdgeTraceData data)
+                source.Clr.GCBulkRootConditionalWeakTableElementEdge += delegate (GCBulkRootConditionalWeakTableElementEdgeTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
                     events.Add(data.Clone());
                 };
-                source.Clr.GCBulkRootCCW += delegate(GCBulkRootCCWTraceData data)
+                source.Clr.GCBulkRootCCW += delegate (GCBulkRootCCWTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
                     events.Add(data.Clone());
                 };
-                source.Clr.GCBulkRCW += delegate(GCBulkRCWTraceData data)
+                source.Clr.GCBulkRCW += delegate (GCBulkRCWTraceData data)
                 {
                     if (proccessIdInt != data.ProcessID)
                         return;
@@ -2545,11 +2537,11 @@ namespace PerfViewExtensibility
                 TextWriter listenTextEditorWriter = null;
                 if (!App.CommandLineArgs.NoGui)
                 {
-                    GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                    GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                     {
                         var logTextWindow = new Controls.TextEditorWindow();
                         // Destroy the session when the widow is closed.  
-                        logTextWindow.Closed += delegate(object sender, EventArgs e) { session.Dispose(); };
+                        logTextWindow.Closed += delegate (object sender, EventArgs e) { session.Dispose(); };
 
                         listenTextEditorWriter = new Controls.TextEditorWriter(logTextWindow.m_TextEditor);
                         logTextWindow.TextEditor.IsReadOnly = true;
@@ -2559,7 +2551,7 @@ namespace PerfViewExtensibility
                 }
 
                 // Add callbacks for any EventSource Events to print them to the Text window
-                Action<TraceEvent> onAnyEvent = delegate(TraceEvent data)
+                Action<TraceEvent> onAnyEvent = delegate (TraceEvent data)
                 {
                     try
                     {
@@ -2580,15 +2572,15 @@ namespace PerfViewExtensibility
                         {
                             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                             {
-                            // This should be null because the BeginInvoke above came before this 
-                            // and both are constrained to run in the same thread, so this has to
-                            // be after it (and thus it is initialized).  
-                            Debug.Assert(listenTextEditorWriter != null);
+                                // This should be null because the BeginInvoke above came before this 
+                                // and both are constrained to run in the same thread, so this has to
+                                // be after it (and thus it is initialized).  
+                                Debug.Assert(listenTextEditorWriter != null);
                                 listenTextEditorWriter.WriteLine("{0}", str);
                             });
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         App.CommandProcessor.LogFile.WriteLine("Error: Exception during event processing of event {0}: {1}", data.EventName, e.Message);
                     }
@@ -2620,9 +2612,9 @@ namespace PerfViewExtensibility
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate(string dirPath, string outFileName)
+                    var dialog = new FileInputAndOutput(delegate (string dirPath, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "DirectorySize", dirPath, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -2663,30 +2655,30 @@ namespace PerfViewExtensibility
             }
         }
 
-		/// <summary>
-		/// Creates a .perfView.xml.zip that represents the profiling data from a perf script output dump. Adding a
-		/// --threadtime tag enables blocked time investigations on the perf script dump.
-		/// </summary>
-		/// <param name="path">The path to the perf script dump, right now, either a file with suffix perf.data.dump,
-		/// .trace.zip or .data.txt will be accepted.</param>
-		/// <param name="threadTime">Option to turn on thread time on the perf script dump.</param>
-		public void PerfScript(string path, string threadTime = null)
-		{
-			bool doThreadTime = threadTime != null && threadTime == "--threadtime";
+        /// <summary>
+        /// Creates a .perfView.xml.zip that represents the profiling data from a perf script output dump. Adding a
+        /// --threadtime tag enables blocked time investigations on the perf script dump.
+        /// </summary>
+        /// <param name="path">The path to the perf script dump, right now, either a file with suffix perf.data.dump,
+        /// .trace.zip or .data.txt will be accepted.</param>
+        /// <param name="threadTime">Option to turn on thread time on the perf script dump.</param>
+        public void PerfScript(string path, string threadTime = null)
+        {
+            bool doThreadTime = threadTime != null && threadTime == "--threadtime";
 
-			var perfScriptStackSource = new ParallelLinuxPerfScriptStackSource(path, doThreadTime);
-			string outputFileName = Path.ChangeExtension(path, ".perfView.xml.zip");
+            var perfScriptStackSource = new ParallelLinuxPerfScriptStackSource(path, doThreadTime);
+            string outputFileName = Path.ChangeExtension(path, ".perfView.xml.zip");
 
-			XmlStackSourceWriter.WriteStackViewAsZippedXml(perfScriptStackSource, outputFileName);
+            XmlStackSourceWriter.WriteStackViewAsZippedXml(perfScriptStackSource, outputFileName);
 
-			if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
-			{
-				if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
-				{
-					GuiApp.MainWindow.OpenNext(outputFileName);
-				}
-			}
-		}
+            if (!App.CommandLineArgs.NoGui && App.CommandLineArgs.LogFile == null)
+            {
+                if (outputFileName.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase) && File.Exists(outputFileName))
+                {
+                    GuiApp.MainWindow.OpenNext(outputFileName);
+                }
+            }
+        }
 
         /// <summary>
         /// Creates a stack source out of the textFileName where each line is a frame (which is directly rooted)
@@ -2727,7 +2719,7 @@ namespace PerfViewExtensibility
             var stackSource = new PerfView.OtherSources.TextStackSource();
             var lineNum = 0;
 
-            stackSource.StackForLine = delegate(StackSourceInterner interner, string line)
+            stackSource.StackForLine = delegate (StackSourceInterner interner, string line)
             {
                 lineNum++;
                 StackSourceCallStackIndex ret = StackSourceCallStackIndex.Invalid;
@@ -2774,9 +2766,9 @@ namespace PerfViewExtensibility
                 if (App.CommandLineArgs.NoGui)
                     throw new ApplicationException("Must specify an input EXE name");
                 // Hop to the GUI thread and get the arguments from a dialog box and then call myself again.  
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate()
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    var dialog = new FileInputAndOutput(delegate(string inExeName, string outFileName)
+                    var dialog = new FileInputAndOutput(delegate (string inExeName, string outFileName)
                     {
                         App.CommandLineArgs.CommandAndArgs = new string[] { "ImageSize", inExeName, outFileName };
                         App.CommandLineArgs.DoCommand = App.CommandProcessor.UserCommand;
@@ -2848,7 +2840,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-#region private
+            #region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -2925,7 +2917,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-#endregion
+            #endregion
         }
 
         /// <summary>
@@ -3015,10 +3007,10 @@ namespace PerfViewExtensibility
                     using (var source = tracelog.Events.GetSource())
                     {
                         Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
-                        Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source,  proc => { proc.Log = tracelog; });
+                        Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.AddCallbackOnProcessStart(source, proc => { proc.Log = tracelog; });
                         source.Process();
                         foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                            if(Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
+                            if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) gcStats.Add(proc);
                     }
                 }
 
@@ -3175,7 +3167,7 @@ namespace PerfViewExtensibility
         private void SortAndPrintProviders(List<Guid> providers, bool markEventSources = false)
         {
             // Sort them by name
-            providers.Sort(delegate(Guid x, Guid y)
+            providers.Sort(delegate (Guid x, Guid y)
             {
                 return string.Compare(TraceEventProviders.GetProviderName(x), TraceEventProviders.GetProviderName(y), StringComparison.OrdinalIgnoreCase);
             });
@@ -3567,7 +3559,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-#endregion
+        #endregion
     }
 }
 
