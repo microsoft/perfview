@@ -941,12 +941,17 @@ namespace Stats
             for (CondemnedReasonGroup i = 0; i < CondemnedReasonGroup.Max; i++)
             {
                 sb.Append("<TD Align=\"center\">");
-                if (i == CondemnedReasonGroup.Induced)
+
+                var perHeapCondemnedReasons = gc.PerHeapCondemnedReasons;
+                if (HeapIndexHighestGen < perHeapCondemnedReasons.Length)
                 {
-                    sb.Append((InducedType)gc.PerHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                    if (i == CondemnedReasonGroup.Induced)
+                    {
+                        sb.Append((InducedType)perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                    }
+                    else
+                        sb.Append(perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
                 }
-                else
-                    sb.Append(gc.PerHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
                 sb.Append("</TD>");
             }
 
