@@ -1001,7 +1001,13 @@ namespace Microsoft.Diagnostics.Symbols
 
             // Allows us to reject files that are not binary (sometimes you get redirected to a 
             // login script and we don't want to blindly accept that).  
-            Predicate<string> onlyBinaryContent = (contentType => contentType.EndsWith("octet-stream")); 
+            Predicate<string> onlyBinaryContent = delegate (string contentType)
+            {
+                bool ret = contentType.EndsWith("octet-stream");
+                if (ret)
+                    m_log.WriteLine("FindSymbolFilePath: expecting octet-stream (Binary) data, got {0} (are you redirected to a login page?)",  contentType);
+                return ret;
+            };
 
             // Just try to fetch the file directly
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
