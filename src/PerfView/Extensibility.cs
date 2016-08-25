@@ -3249,20 +3249,22 @@ namespace PerfViewExtensibility
             {
                 var str = i.ToString() + (i*i).ToString(); 
 
-                LogFile.WriteLine("**** BEFORE ITERATION {0} CACHE\r\n{1}********", i,  myCache.ToString());
-                if (i == 16)
+                Trace.WriteLine(string.Format("**** BEFORE ITERATION {0} CACHE\r\n{1}********", i,  myCache.ToString()));
+                if (i == 48)
                     break;
 
+                Trace.WriteLine(string.Format("ADD {0}", str));
                 myCache.Add(str, "Out" + str);
 
-                LogFile.WriteLine("FETCH {0} = {1}", str, myCache.Fetch(str));
+                if (i % 2 == 0) myCache.Get("00");
+
+                Trace.WriteLine(string.Format("FETCH {0} = {1}", str, myCache.Get(str)));
                 if (prev != null)
-                    LogFile.WriteLine("FETCH {0} = {1}", prev, myCache.Fetch(prev));
+                    Trace.WriteLine(string.Format("FETCH {0} = {1}", prev, myCache.Get(prev)));
                 prev = str;
             }
         }
 #endif
-
         #region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.

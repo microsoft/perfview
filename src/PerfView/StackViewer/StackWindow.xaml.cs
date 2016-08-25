@@ -392,7 +392,8 @@ namespace PerfView
                     justMyApp = @"[ASP.NET Just My App] \Temporary ASP.NET Files\->;!dynamicClass.S->;!=>OTHER";
                 else if (!exeName.StartsWith("IISAspHost", StringComparison.OrdinalIgnoreCase) &&
                         string.Compare(exeName, "WWAHost", StringComparison.OrdinalIgnoreCase) != 0 &&
-                        string.Compare(exeName, "iexplore", StringComparison.OrdinalIgnoreCase) != 0)
+                        string.Compare(exeName, "iexplore", StringComparison.OrdinalIgnoreCase) != 0 &&
+                        string.Compare(exeName, "dotnet", StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     string exePath = FindExePath(stackSource, exeName);
                     if (exePath != null)
