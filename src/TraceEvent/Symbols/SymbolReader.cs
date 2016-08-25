@@ -730,12 +730,16 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// Fetches a file from the server 'serverPath' with pdb signature path 'pdbSigPath' (concatinate them with a / or \ separator
         /// to form a complete URL or path name).   It will place the file in 'fullDestPath'   It will return true if successful
+        /// If 'contentTypeFilter is present, this predicate is called with the URL content type (e.g. application/octet-stream)
+        /// and if it returns false, it fails.   This insures that things that are the wrong content type (e.g. redirects to 
+        /// some sort of login) fail cleanly.  
+        /// 
         /// You should probably be using GetFileFromServer
         /// </summary>
         /// <param name="serverPath">path to server (e.g. \\symbols\symbols or http://symweb) </param>
         /// <param name="pdbIndexPath">pdb path with signature (e.g clr.pdb/1E18F3E494DC464B943EA90F23E256432/clr.pdb)</param>
         /// <param name="fullDestPath">the full path of where to put the file locally </param>
-        internal bool GetPhysicalFileFromServer(string serverPath, string pdbIndexPath, string fullDestPath)
+        internal bool GetPhysicalFileFromServer(string serverPath, string pdbIndexPath, string fullDestPath, Predicate<string> contentTypeFilter = null)
         {
             if (File.Exists(fullDestPath))
                 return true;
@@ -774,6 +778,10 @@ namespace Microsoft.Diagnostics.Symbols
                             alive = true;
                             if (!canceled)
                             {
+                                m_log.WriteLine("FindSymbolFilePath: Got a response content type of {0}", response.ContentType);
+                                if (contentTypeFilter != null && !contentTypeFilter(response.ContentType))
+                                    throw new InvalidOperationException("Bad File Content type " + response.ContentType + " for "  + fullDestPath);
+
                                 using (var fromStream = response.GetResponseStream())
                                     if (CopyStreamToFile(fromStream, fullUri, fullDestPath, ref canceled) == 0)
                                     {
@@ -991,9 +999,13 @@ namespace Microsoft.Diagnostics.Symbols
             if (urlForServer == null)
                 return null;
 
+            // Allows us to reject files that are not binary (sometimes you get redirected to a 
+            // login script and we don't want to blindly accept that).  
+            Predicate<string> onlyBinaryContent = (contentType => contentType.EndsWith("octet-stream")); 
+
             // Just try to fetch the file directly
             m_log.WriteLine("FindSymbolFilePath: Searching Symbol Server {0}.", urlForServer);
-            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath))
+            if (GetPhysicalFileFromServer(urlForServer, fileIndexPath, targetPath, onlyBinaryContent))
                 return targetPath;
 
             // The rest of this compressed file/file pointers stuff is only for remote servers.  
@@ -1003,7 +1015,7 @@ namespace Microsoft.Diagnostics.Symbols
             // See if it is a compressed file by replacing the last character of the name with an _
             var compressedSigPath = fileIndexPath.Substring(0, fileIndexPath.Length - 1) + "_";
             var compressedFilePath = targetPath.Substring(0, targetPath.Length - 1) + "_";
-            if (GetPhysicalFileFromServer(urlForServer, compressedSigPath, compressedFilePath))
+            if (GetPhysicalFileFromServer(urlForServer, compressedSigPath, compressedFilePath, onlyBinaryContent))
             {
                 // Decompress it
                 m_log.WriteLine("FindSymbolFilePath: Expanding {0} to {1}", compressedFilePath, targetPath);
