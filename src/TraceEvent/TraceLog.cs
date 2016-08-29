@@ -6600,6 +6600,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // a managed-only module 
                 reader.m_log.WriteLine("Error: Caught out of memory exception on file " + file.Name + ".   Skipping.");
             }
+            catch (Exception e)
+            {
+                reader.m_log.WriteLine("An exception occurred during symbol lookup.  Continuing...");
+                reader.m_log.WriteLine("Exception: " + e.ToString());
+            }
         }
         /// <summary>
         /// A TraceCodeAddress can contain a method name, but does not contain number information.   To 

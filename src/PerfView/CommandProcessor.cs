@@ -1462,9 +1462,7 @@ namespace PerfView
             using (var symReader = etlFile.GetSymbolReader(LogFile))
             {
                 foreach (var module in focusProcess.LoadedModules)
-                {
                     traceLog.CodeAddresses.LookupSymbolsForModule(symReader, module.ModuleFile);
-                }
             }
         }
 
