@@ -4,6 +4,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
@@ -107,15 +108,13 @@ namespace Microsoft.Diagnostics.Tracing
         }
 #endif
 
-#if false // TODO Decide if we want to expose these or not, ConnenctEventSource may be enough.  These are a bit clunky especially but do allow the
-          // ability to modify events you don't own, which may be useful.  
 
         /// <summary>
         /// Writes an event that did not exist previously into the data stream, The context data (time, process, thread, activity, comes from 'an existing event') 
         /// </summary>
         public unsafe void WriteEvent(Guid providerId, ref EventDescriptor eventDescriptor, TraceEvent template, params object[] payload)
         {
-            if (template != m_curTraceEvent)
+            if (template.eventRecord != m_curTraceEventRecord)
                 throw new InvalidOperationException("Currently can only write the event being processed by the callback");
 
             // Make a copy of the template so we can modify it
@@ -162,7 +161,6 @@ namespace Microsoft.Diagnostics.Tracing
                 m_relogger.Inject(newEvent);
             }
         }
-#endif
 
         #region private
         /// <summary>
@@ -212,7 +210,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_relogger.Cancel();
         }
 
-#if false
         private unsafe void SetPayload(ITraceEvent newEvent, IList<object> payloadArgs)
         {
             // Where we are writing the serialized data in m_scratchBuffer
@@ -222,6 +219,17 @@ namespace Microsoft.Diagnostics.Tracing
             foreach (var payloadArg in payloadArgs)
             {
                 var argType = payloadArg.GetType();
+                if (argType.IsEnum)
+                {
+                    int enumSize = Marshal.SizeOf(Enum.GetUnderlyingType(argType));
+                    if (enumSize == 4)
+                    {
+                        argType = typeof(int);
+                    }
+                    else
+                        throw new NotImplementedException(argType.ToString());
+                }
+
                 if (argType == typeof(string))
                 {
                     var asString = (string)payloadArg;
@@ -237,7 +245,7 @@ namespace Microsoft.Diagnostics.Tracing
                             toPtr[i] = fromPtr[i];
                         toPtr[asString.Length] = '\0';
                     }
-                    curBlobPtr += newCurBlobPtr;
+                    curBlobPtr = newCurBlobPtr;
                 }
                 else if (argType == typeof(int))
                 {
@@ -257,8 +265,14 @@ namespace Microsoft.Diagnostics.Tracing
                     *((double*)&m_scratchBuffer[curBlobPtr]) = (double)payloadArg;
                     curBlobPtr += 8;
                 }
+                else if (argType == typeof(Guid))
+                {
+                    EnsureSratchBufferSpace(curBlobPtr + sizeof(Guid));
+                    *((Guid*)&m_scratchBuffer[curBlobPtr]) = (Guid)payloadArg;
+                    curBlobPtr += sizeof(Guid);
+                }
                 else
-                    throw new NotImplementedException();
+                    throw new NotImplementedException(argType.ToString());
             }
             newEvent.SetPayload(ref *m_scratchBuffer, (uint)curBlobPtr);
         }
@@ -267,14 +281,22 @@ namespace Microsoft.Diagnostics.Tracing
         {
             if (m_scratchBufferSize < requriedSize)
             {
-                if (m_scratchBuffer != null)
-                    Marshal.FreeHGlobal((IntPtr)m_scratchBuffer);
+                var newBuffer = (byte*)Marshal.AllocHGlobal(requriedSize);
 
-                m_scratchBuffer = (byte*)Marshal.AllocHGlobal(requriedSize);
+                if (m_scratchBuffer != null)
+                {
+                    // Copy the contents of the previous buffer into the new one.
+                    for (int i = 0; i < m_scratchBufferSize; i++)
+                        newBuffer[i] = m_scratchBuffer[i];
+
+                    Marshal.FreeHGlobal((IntPtr)m_scratchBuffer);
+                }
+
+                m_scratchBuffer = newBuffer;
+
                 m_scratchBufferSize = requriedSize;
             }
         }
-#endif
 
 #if V4_5_Runtime
 
