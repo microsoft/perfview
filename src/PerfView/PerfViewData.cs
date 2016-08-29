@@ -2418,16 +2418,9 @@ namespace PerfView
                                     {
                                         foreach (var moduleFile in moduleFiles)
                                         {
-                                            try
-                                            {
-                                                // TODO FIX NOW don't throw exceptions, 
-                                                Viewer.StatusBar.Log("[Quick lookup of " + moduleFile.Name + "]");
-                                                traceLog.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
-                                            }
-                                            catch (ApplicationException ex)
-                                            {
-                                                Viewer.StatusBar.Log("[Error looking up " + moduleFile.FilePath + "]\r\n    " + ex.Message);
-                                            }
+                                            // TODO FIX NOW don't throw exceptions, 
+                                            Viewer.StatusBar.Log("[Quick lookup of " + moduleFile.Name + "]");
+                                            traceLog.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
                                         }
                                     }
                                 }
@@ -4795,16 +4788,7 @@ namespace PerfView
             if (moduleFiles.Count > 1)
                 log.WriteLine("Found {0} modules with name {1}", moduleFiles.Count, simpleModuleName);
             foreach (var moduleFile in moduleFiles.Values)
-            {
-                try
-                {
-                    m_traceLog.CodeAddresses.LookupSymbolsForModule(symReader, moduleFile);
-                }
-                catch (ApplicationException ex)
-                {
-                    log.WriteLine("Error looking up " + moduleFile.FilePath + "\r\n    " + ex.Message);
-                }
-            }
+                m_traceLog.CodeAddresses.LookupSymbolsForModule(symReader, moduleFile);
         }
         public SymbolReader GetSymbolReader(TextWriter log, SymbolReaderOptions symbolFlags = SymbolReaderOptions.None)
         {
