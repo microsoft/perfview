@@ -14,6 +14,7 @@ using PerfView.Dialogs;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
 using Microsoft.Diagnostics.Tracing.Session;
+using System.Threading.Tasks;
 
 namespace PerfView
 {
@@ -628,7 +629,7 @@ namespace PerfView
                 symPath = new SymbolPath("SRV*" + symPath.DefaultSymbolCache());
 
             var sourcePath = App.SourcePath;
-            bool hasLocalSymDir = false;
+            string localSymDir = null;
             if (etlFilePath != null)
             {
                 // Add the directory where the file resides and a 'symbols' subdirectory 
@@ -638,14 +639,16 @@ namespace PerfView
                     // Then the directory where the .ETL file lives. 
                     symPath.Insert(filePathDir);
 
-                    // The symbols directory has even higher priority (less likely to have a false positive)
-                    var localSymDir = Path.Combine(filePathDir, "symbols");
+                    // If there is a 'symbols' directory next to the data file, look for symbols there
+                    // as well.   Note that we also put copies of any symbols here as well (see below)
+                    localSymDir = Path.Combine(filePathDir, "symbols");
                     if (Directory.Exists(localSymDir))
                     {
-                        hasLocalSymDir = true;
                         symPath.Insert(localSymDir);
                         symPath.Insert("SRV*" + localSymDir);
                     }
+                    else
+                        localSymDir = null;
 
                     // WPR conventions add any .etl.ngenPDB directory to the path too.   has higher priority still. 
                     var wprSymDir = etlFilePath + ".NGENPDB";
@@ -694,7 +697,6 @@ namespace PerfView
             log.WriteLine("This can be set using the File -> Set Symbol Path dialog on the Stack Viewer.");
             SymbolReader ret = new SymbolReader(log, symPath.ToString());
             ret.SourcePath = sourcePath;
-
             ret.Options = symbolFlags;
 
             if (!AppLog.InternalUser && !App.CommandLineArgs.TrustPdbs)
@@ -711,7 +713,8 @@ namespace PerfView
                 ret.SecurityCheck = (pdbFile => true);
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
-            ret.CacheUnsafeSymbols = hasLocalSymDir;
+            if (localSymDir != null)
+                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log); 
 
             if (symbolFlags == SymbolReaderOptions.None)
                 s_symbolReader = ret;
@@ -719,6 +722,61 @@ namespace PerfView
         }
 
         #region private
+        /// <summary>
+        /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
+        /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
+        /// We log any action we take to 'log'.  
+        /// </summary>
+        private static void CacheInLocalSymDir(string localPdbDir, string pdbPath, Guid pdbGuid, int pdbAge, TextWriter log)
+        {
+            // We do this all in a fire-and-forget task so that it does not block the User.   It is 
+            // optional after all.  
+            Task.Factory.StartNew(delegate ()
+            {
+                try
+                {
+                    var fileName = Path.GetFileName(pdbPath);
+                    if (pdbGuid != Guid.Empty)
+                    {
+                        var pdbPathPrefix = Path.Combine(localPdbDir, fileName);
+                        // There is a non-trivial possibility that someone puts a FILE that is named what we want the dir to be.  
+                        if (File.Exists(pdbPathPrefix))
+                        {
+                            // If the pdb path happens to be the SymbolCacheDir (a definite possibility) then we would
+                            // clobber the source file in our attempt to set up the target.  In this case just give up
+                            // and leave the file as it was.  
+                            if (string.Compare(pdbPath, pdbPathPrefix, StringComparison.OrdinalIgnoreCase) == 0)
+                                return;
+                            log.WriteLine("Removing file {0} from symbol cache to make way for symsrv files.", pdbPathPrefix);
+                            File.Delete(pdbPathPrefix);
+                        }
+                        localPdbDir = Path.Combine(pdbPathPrefix, pdbGuid.ToString("N") + pdbAge.ToString());
+                    }
+
+                    if (!Directory.Exists(localPdbDir))
+                        Directory.CreateDirectory(localPdbDir);
+
+                    var localPdbPath = Path.Combine(localPdbDir, fileName);
+                    var fileExists = File.Exists(localPdbPath);
+                    if (!fileExists || File.GetLastWriteTimeUtc(localPdbPath) != File.GetLastWriteTimeUtc(pdbPath))
+                    {
+                        if (fileExists)
+                            log.WriteLine("WARNING: overwriting existing file {0}.", localPdbPath);
+
+                        log.WriteLine("Copying {0} to local cache {1}", pdbPath, localPdbPath);
+                        // Do it as a copy and a move so that the update is atomic.  
+                        var newLocalPdbPath = localPdbPath + ".new";
+                        FileUtilities.ForceCopy(pdbPath, newLocalPdbPath);
+                        FileUtilities.ForceMove(newLocalPdbPath, localPdbPath);
+                    }
+                }
+                catch (Exception e)
+                {
+                    log.WriteLine("Error trying to update local PDB cache {0}", e.Message);
+                }
+            });
+        }
+
         // Display the splash screen (if it is not already displayed).  
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DisplaySplashScreen()

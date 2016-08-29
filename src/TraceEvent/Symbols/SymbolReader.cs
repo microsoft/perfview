@@ -208,7 +208,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             // TODO can stall if the path is a remote path.   
                             if (PdbMatches(filePath, pdbIndexGuid, pdbIndexAge, false))
-                                pdbPath = this.CacheFileLocally(filePath, pdbIndexGuid, pdbIndexAge);
+                                pdbPath = filePath;
                         }
                         else
                             m_log.WriteLine("FindSymbolFilePath: location {0} is remote and cacheOnly set, giving up.", filePath);
@@ -220,6 +220,8 @@ namespace Microsoft.Diagnostics.Symbols
 
             if (pdbPath != null)
             {
+                if (OnSymbolFileFound != null)
+                    OnSymbolFileFound(pdbPath, pdbIndexGuid, pdbIndexAge);
                 this.m_log.WriteLine("FindSymbolFilePath: *}} Successfully found PDB {0} GUID {1} Age {2} Version {3}", pdbPath, pdbIndexGuid, pdbIndexAge, fileVersion);
             }
             else
@@ -371,14 +373,17 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReaderOptions Options { get; set; }
         /// <summary>
-        /// Cache even the unsafe pdbs to the SymbolCacheDirectory. 
-        /// </summary>
-        public bool CacheUnsafeSymbols { get; set; }
-        /// <summary>
         /// We call back on this when we find a PDB by probing in 'unsafe' locations (like next to the EXE or in the Built location)
         /// If this function returns true, we assume that it is OK to use the PDB.  
         /// </summary>
         public Func<string, bool> SecurityCheck { get; set; }
+
+        /// <summary>
+        /// If set OnSymbolFileFound will be called when a PDB file is found.  
+        /// It is passed the complete local file path, the PDB Guid (may be Guid.Empty) and PDB age.
+        /// </summary>
+        public event Action<string, Guid, int> OnSymbolFileFound;
+
         /// <summary>
         /// A place to log additional messages 
         /// </summary>
@@ -1219,63 +1224,6 @@ namespace Microsoft.Diagnostics.Symbols
         }
 
         /// <summary>
-        /// This is an optional routine.  It is already the case that if you find a PDB on a symbol server
-        /// that it will be cached locally, however if you find it on a network path by NOT using a symbol
-        /// server, it will be used in place.  This is annoying, and this routine makes up for this by
-        /// mimicking this behavior.  Basically if pdbPath is not a local file name, it will copy it to
-        /// the local symbol cache and return the local path. 
-        /// </summary>
-        private string CacheFileLocally(string pdbPath, Guid pdbGuid, int pdbAge)
-        {
-            try
-            {
-                var fileName = Path.GetFileName(pdbPath);
-
-                // Use SymSrv conventions in the cache if the Guid is non-zero, otherwise we simply place it in the cache.  
-                var localPdbDir = SymbolCacheDirectory;
-                if (pdbGuid != Guid.Empty)
-                {
-                    var pdbPathPrefix = Path.Combine(SymbolCacheDirectory, fileName);
-                    // There is a non-trivial possibility that someone puts a FILE that is named what we want the dir to be.  
-                    if (File.Exists(pdbPathPrefix))
-                    {
-                        // If the pdb path happens to be the SymbolCacheDir (a definite possibility) then we would
-                        // clobber the source file in our attempt to set up the target.  In this case just give up
-                        // and leave the file as it was.  
-                        if (string.Compare(pdbPath, pdbPathPrefix, StringComparison.OrdinalIgnoreCase) == 0)
-                            return pdbPath;
-                        m_log.WriteLine("Removing file {0} from symbol cache to make way for symsrv files.", pdbPathPrefix);
-                        File.Delete(pdbPathPrefix);
-                    }
-
-                    localPdbDir = Path.Combine(pdbPathPrefix, pdbGuid.ToString("N") + pdbAge.ToString());
-                }
-                else if (!CacheUnsafeSymbols)
-                    return pdbPath;
-
-                if (!Directory.Exists(localPdbDir))
-                    Directory.CreateDirectory(localPdbDir);
-
-                var localPdbPath = Path.Combine(localPdbDir, fileName);
-                var fileExists = File.Exists(localPdbPath);
-                if (!fileExists || File.GetLastWriteTimeUtc(localPdbPath) != File.GetLastWriteTimeUtc(pdbPath))
-                {
-                    if (fileExists)
-                        m_log.WriteLine("WARNING: overwriting existing file {0}.", localPdbPath);
-
-                    m_log.WriteLine("Copying {0} to local cache {1}", pdbPath, localPdbPath);
-                    File.Copy(pdbPath, localPdbPath, true);
-                }
-                return localPdbPath;
-            }
-            catch (Exception e)
-            {
-                m_log.WriteLine("Error trying to update local PDB cache {0}", e.Message);
-            }
-            return pdbPath;
-        }
-
-        /// <summary>
         /// We may be a 32 bit app which has File system redirection turned on
         /// Morph System32 to SysNative in that case to bypass file system redirection         
         /// </summary>
@@ -1318,7 +1266,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1690,7 +1638,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader SymbolReader { get { return m_reader; } }
 
-        #region private
+#region private
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
@@ -1906,7 +1854,7 @@ namespace Microsoft.Diagnostics.Symbols
         IDiaEnumSymbolsByAddr m_symbolsByAddr;
         string m_pdbPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1996,7 +1944,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             return ((int)RVA - (int)other.RVA);
         }
-        #region private
+#region private
 #if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
@@ -2027,7 +1975,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-        #endregion
+#endregion
     }
 
 
@@ -2198,7 +2146,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-        #region private
+#region private
         /// <summary>
         /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
         /// represented by the 'this' pointer.   This target is iether a ULR or a local file
@@ -2641,7 +2589,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         byte[] m_hash;
         bool m_getSourceCalled;
         bool m_checksumMatches;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2657,7 +2605,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// The line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
-        #region private
+#region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -2667,7 +2615,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-        #endregion
+#endregion
     }
 }
 
@@ -2799,7 +2747,7 @@ namespace Dia2Lib
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }
-        #region private
+#region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
@@ -2818,7 +2766,7 @@ namespace Dia2Lib
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
         static bool s_loadedNativeDll;
-        #endregion
+#endregion
     }
 }
 #endregion
