@@ -1103,7 +1103,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             foreach (TraceModuleFile moduleFile in m_eventLog.ModuleFiles)
             {
-                if (moduleFile.Name.StartsWith("mscorlib.ni", StringComparison.OrdinalIgnoreCase))
+                if (moduleFile.Name.StartsWith("mscorlib.ni", StringComparison.OrdinalIgnoreCase) || moduleFile.Name.StartsWith("system.private.corelib", StringComparison.OrdinalIgnoreCase))
                 {
                     // We can skip V2.0 runtimes (we may have more than one because 64 and 32 bit)  
                     if (!moduleFile.FilePath.Contains("NativeImages_v2"))
@@ -1119,7 +1119,7 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceModuleFile moduleFile = m_eventLog.ModuleFiles[methods.MethodModuleFileIndex(methodIndex)];
                 if (moduleFile == null)
                     continue;
-                if (moduleFile.Name.StartsWith("mscorlib", StringComparison.OrdinalIgnoreCase))
+                if (moduleFile.Name.StartsWith("mscorlib", StringComparison.OrdinalIgnoreCase) || moduleFile.Name.StartsWith("system.private.corelib", StringComparison.OrdinalIgnoreCase))
                 {
                     string name = methods.FullMethodName(methodIndex);
                     if (name.StartsWith("System.Threading.ExecutionContext.Run") ||

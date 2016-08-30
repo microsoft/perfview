@@ -4651,7 +4651,7 @@ namespace PerfView
 
             if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
-                var taskFoldPatBase = "ntoskrnl!%ServiceCopyEnd;mscorlib%!System.Runtime.CompilerServices.Async%MethodBuilder";
+                var taskFoldPatBase = "ntoskrnl!%ServiceCopyEnd;System.Runtime.CompilerServices.Async%MethodBuilder";
                 var taskFoldPat = taskFoldPatBase + ";^STARTING TASK";
                 stackWindow.FoldRegExTextBox.Items.Add(taskFoldPat);
                 stackWindow.FoldRegExTextBox.Items.Add(taskFoldPatBase);
@@ -4746,14 +4746,11 @@ namespace PerfView
 
         /// <summary>
         /// Find symbols for the simple module name 'simpleModuleName.  If 'processId' is non-zero then only search for modules loaded in that
-        /// process, otherwise look systemWide.  
+        /// process, otherwise look systemWide.
         /// </summary>
         public override void LookupSymbolsForModule(string simpleModuleName, TextWriter log, int processId = 0)
         {
             var symReader = GetSymbolReader(log);
-
-            // Remove any extensions.  
-            simpleModuleName = Path.GetFileNameWithoutExtension(simpleModuleName);
 
             // If we have a process, look the DLL up just there
             var moduleFiles = new Dictionary<int, TraceModuleFile>();
@@ -4764,8 +4761,7 @@ namespace PerfView
                 {
                     foreach (var loadedModule in process.LoadedModules)
                     {
-                        var baseName = Path.GetFileNameWithoutExtension(loadedModule.Name);
-                        if (string.Compare(baseName, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                        if (string.Compare(loadedModule.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
                             moduleFiles[(int)loadedModule.ModuleFile.ModuleFileIndex] = loadedModule.ModuleFile;
                     }
                 }
@@ -4776,8 +4772,7 @@ namespace PerfView
             {
                 foreach (var moduleFile in m_traceLog.ModuleFiles)
                 {
-                    var baseName = Path.GetFileNameWithoutExtension(moduleFile.Name);
-                    if (string.Compare(baseName, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                    if (string.Compare(moduleFile.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
                         moduleFiles[(int)moduleFile.ModuleFileIndex] = moduleFile;
                 }
             }
