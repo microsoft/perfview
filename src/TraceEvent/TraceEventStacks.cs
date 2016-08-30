@@ -334,7 +334,19 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     TraceProcess process = m_log.Processes[(ProcessIndex)index];
                     string ptrSize = process.Is64Bit ? "64" : "32";
-                    return "Process" + ptrSize + " " + process.Name + " (" + process.ProcessID + ")";
+                    string cmdLine = process.CommandLine;
+                    if (cmdLine.Length > 0)
+                    {
+                        // Remove the name of the EXE from the command line (thus just the args).  
+                        int endExeNameIdx = -1;
+                        if (cmdLine[0] == '"')
+                            endExeNameIdx = cmdLine.IndexOf('"', 1);
+                        else
+                            endExeNameIdx = cmdLine.IndexOf(' ');
+                        if (0 <= endExeNameIdx)
+                            cmdLine = cmdLine.Substring(endExeNameIdx + 1, cmdLine.Length - endExeNameIdx - 1);
+                    }
+                    return "Process" + ptrSize + " " + process.Name + " (" + process.ProcessID + ") Args: " + cmdLine;
                 }
                 Debug.Assert(false, "Illegal Frame index");
                 return "";
