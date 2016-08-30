@@ -4046,7 +4046,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             {
                 if (Version < 2)
                     return -1;
-                return GetInt32At(4);   // THis is not the standard location see FixupData, we swap the ThreadIDs   See FixupData 
+                return GetInt32At(4);   // This is not the standard location see FixupData, we swap the ThreadIDs   See FixupData 
                 ;
             }
         }
@@ -4056,7 +4056,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             {
                 if (Version < 2)
                     return -1;
-                return GetInt32At(0);   // THis is not the standard location see FixupData, we swap the Process ID   See FixupData 
+                return GetInt32At(0);   // This is not the standard location see FixupData, we swap the Process ID   See FixupData 
                 ;
             }
         }

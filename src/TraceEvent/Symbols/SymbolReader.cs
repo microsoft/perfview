@@ -803,7 +803,7 @@ namespace Microsoft.Diagnostics.Symbols
                                     if (asHttpResonse != null && asHttpResonse.StatusCode == HttpStatusCode.NotFound)
                                     {
                                         sentMessage = true;
-                                        m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
+                                        // m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
                                     }
                                 }
                                 if (!sentMessage)
