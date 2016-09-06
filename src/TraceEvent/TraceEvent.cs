@@ -1764,7 +1764,7 @@ namespace Microsoft.Diagnostics.Tracing
                 rowStartIdx += 16;
             }
         }
-        unsafe private static void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
+        unsafe internal static void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
         {
             Debug.Assert((long)source % 4 == 0);
             Debug.Assert((long)destination % 4 == 0);
