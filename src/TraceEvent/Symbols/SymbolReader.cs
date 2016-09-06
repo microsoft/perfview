@@ -462,13 +462,53 @@ namespace Microsoft.Diagnostics.Symbols
 
                 log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
                 if (!File.Exists(crossGen))
-                    return null;            // Not the crossGen case.  
+                {
+                    // READY_TO_RUN HACK
+                    var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+                    var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
+                    if (!File.Exists(perfViewCrossGen))
+                        return null;
 
-                string pdbDir = Path.GetDirectoryName(pdbPath);
+                    string corClrPath = Path.Combine(imageDir, "coreclr.dll");
+                    if (!File.Exists(corClrPath))
+                    {
+                        log.WriteLine("Could not find coreclr at {0} giving up", corClrPath);
+                        return null;            // Not the crossGen case.  
+                    }
+
+                    using (var clrPE = new PEFile.PEFile(corClrPath))
+                    {
+                        if (!clrPE.Header.IsPE64)
+                        {
+                            log.WriteLine("CoreCLR {0} is not 64 bit", corClrPath);
+                            return null;
+                        }
+                        var version = clrPE.GetFileVersionInfo();
+                        if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
+                        {
+                            log.WriteLine("CoreCLR {0} is not version 1.0.24214", corClrPath);
+                            return null;
+                        }
+                    }
+
+                    // For some reason crossgen only works if it lives in the runtime directory.  
+                    try { File.Copy(perfViewCrossGen, crossGen); } 
+                    catch {
+                        log.WriteLine("Could not copy CrossGen to runtime directory (try again with admin?)", crossGen);
+                        return null;
+                    }
+                }
+
+                // Ready-to-run images always use the IL pdb Guid.  
+                string pdbDir = Path.Combine(outputDirectory, pdbName + "\\" + ilPdbGuid.ToString("N") + pdbAge.ToString());
+                pdbPath = Path.Combine(pdbDir, pdbName);                    // This has the .ni.dll name
+                string crossGenPdbOutputPath = Path.Combine(pdbDir, Path.GetFileName(ilPdbName));   // This has the .dll name 
+
                 Directory.CreateDirectory(pdbDir);
-                var cmdLine = Command.Quote(crossGen) + " /CreatePdb " +
-                    Command.Quote(pdbDir) + " " +
-                    Command.Quote(ngenImageFullPath);
+                var cmdLine = Command.Quote(crossGen)  +
+                    " /CreatePdb " + Command.Quote(pdbDir) + 
+                    " /Platform_Assemblies_Paths " + Command.Quote(imageDir) + 
+                    " " + Command.Quote(ngenImageFullPath);
 
                 var winDir = Environment.GetEnvironmentVariable("winDir");
                 if (winDir == null)
@@ -478,14 +518,17 @@ namespace Microsoft.Diagnostics.Symbols
                 var newPath1 = winDir + @"\Microsoft.NET\Framework\v4.0.30319" + ";" +
                     winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
                 options.AddEnvironmentVariable("PATH", newPath1);
-
+                options.AddCurrentDirectory(imageDir);
+                
                 log.WriteLine("*** CrossGen cmdline: {0}\r\n", cmdLine);
                 var cmd = Command.Run(cmdLine, options);
-                if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
+                if (cmd.ExitCode != 0 || !File.Exists(crossGenPdbOutputPath))
                 {
                     log.WriteLine("CrossGen failed error code {0}", cmd.ExitCode);
                     return null;
                 }
+                // Make it have the .ni.dll name.  
+                FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
                 return pdbPath;
             }
 

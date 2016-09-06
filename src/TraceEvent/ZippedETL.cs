@@ -291,7 +291,6 @@ namespace Microsoft.Diagnostics.Tracing
             var pdbFileList = new List<string>(100);
             foreach (var imageName in ETWTraceEventSource.GetModulesNeedingSymbols(etlFile))
             {
-                Debug.Assert(0 <= imageName.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase));
                 var pdbName = symbolReader.GenerateNGenSymbolsForModule(imageName);
                 if (pdbName != null)
                 {
