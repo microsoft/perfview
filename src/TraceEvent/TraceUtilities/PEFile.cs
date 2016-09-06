@@ -166,6 +166,18 @@ namespace PEFile
         }
 
         /// <summary>
+        /// Gets the major and minor ready-to-run version.   returns true if ready-to-run. 
+        /// </summary>
+        public bool ReadyToRunVersion(out short major, out short minor)
+        {
+            if (!getNativeInfoCalled)
+                GetNativeInfo();
+            major = readyToRunMajor;
+            minor = readyToRunMinor;
+            return isManagedReadyToRun;
+        }
+
+        /// <summary>
         /// Closes any file handles and cleans up resources.  
         /// </summary>
         public void Dispose()
@@ -190,6 +202,8 @@ namespace PEFile
         bool getNativeInfoCalled;
         bool hasPrecomiledManagedCode;
         bool isManagedReadyToRun;
+        short readyToRunMajor;
+        short readyToRunMinor;
 
         struct IMAGE_COR20_HEADER
         {
@@ -246,7 +260,11 @@ namespace PEFile
                     {
                         var r2rHeader = (READYTORUN_HEADER*)FetchRVA(managedHeader->ManagedNativeHeader.VirtualAddress, sizeof(READYTORUN_HEADER), buff);
                         if (r2rHeader->Signature == READYTORUN_SIGNATURE)
+                        {
                             isManagedReadyToRun = true;
+                            readyToRunMajor = r2rHeader->MajorVersion;
+                            readyToRunMinor = r2rHeader->MinorVersion;
+                        }
                     }
                 }
                 FreeBuff(buff);

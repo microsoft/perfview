@@ -202,6 +202,8 @@ namespace Microsoft.Diagnostics.Tracing
             m_scratchBuffer = null;
             m_scratchBufferSize = 0;
             m_relogger = null;
+
+            m_traceLoggingEventId.Dispose();
         }
         /// <summary>
         /// Implements TraceEventDispatcher.StopProcessing
@@ -372,6 +374,11 @@ namespace Microsoft.Diagnostics.Tracing
                     Initialize(rawData);
 
                 Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
+
+                // Give it an event ID if it does not have one.  
+                source.m_traceLoggingEventId.TestForTraceLoggingEventAndFixupIfNeeded(rawData);
+
+                // Lookup the event;
                 TraceEvent anEvent = source.Lookup(rawData);
 
                 source.m_curITraceEvent = eventData;
@@ -522,6 +529,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         ITraceEvent m_curITraceEvent;                                            // Before we make callbacks we remember the ITraceEvent 
         TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent. 
+        TraceLoggingEventId m_traceLoggingEventId;                               // Used to give TraceLogging events Event IDs. 
 
 #endregion
     }

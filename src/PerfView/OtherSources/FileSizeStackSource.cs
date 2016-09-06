@@ -63,7 +63,12 @@ namespace Diagnostics.Tracing.StackSources
                                     if (peFile.HasPrecompiledManagedCode)
                                     {
                                         if (peFile.IsManagedReadyToRun)
-                                            suffix += " (ReadyToRun)";
+                                        {
+                                            short major, minor;
+                                            peFile.ReadyToRunVersion(out major, out minor);
+                                            suffix += " (ReadyToRun(" + major + "." + minor + "))";
+
+                                        }
                                         else
                                             suffix += " (NGEN)";
                                     }

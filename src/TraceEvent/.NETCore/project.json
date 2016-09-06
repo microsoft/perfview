@@ -14,12 +14,13 @@
         "../Ctf/*.cs",
         "../Stacks/*.cs",
         "../TraceUtilities/HistoryDictionary.cs",
-        "../TraceUtilities/PEFile.cs",                // Only needed for KernelTraceEventParser (BuildTime property)
+        "../TraceUtilities/PEFile.cs", // Only needed for KernelTraceEventParser (BuildTime property)
         "../Parsers/clr*.cs",
         "../Parsers/KernelTraceEventParser.cs",
         "../TraceEvent.cs",
         "../ETWTraceEventSource.cs",
         "../TraceEventNativeMethods.cs",
+        "../TraceLoggingEventId.cs",
         "../ZippedETL.cs"
       ],
       "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
