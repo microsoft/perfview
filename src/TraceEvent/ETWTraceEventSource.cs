@@ -231,7 +231,23 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var fileName = data.FileName;
                     if (fileName.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) < 0)
-                        return;
+                    {
+                        // READY_TO_RUN support generate PDBs for ready-to-run images.    
+                        // TODO can rip this out when we don't package read-to-run images
+                        var windowsIdx = fileName.IndexOf(@"\windows\", StringComparison.OrdinalIgnoreCase);
+                        if (0 <= windowsIdx && windowsIdx <= 2)
+                            return;
+                        if (!File.Exists(fileName))
+                            return;
+                        try
+                        {
+                            using (var peFile = new PEFile.PEFile(fileName))
+                            {
+                                if (!peFile.IsManagedReadyToRun)
+                                    return;
+                            }
+                        } catch { return; }
+                    }
 
                     var processId = data.ProcessID;
                     images.Add(new ImageData(processId, fileName, data.ImageBase, data.ImageSize));

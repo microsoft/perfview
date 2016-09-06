@@ -592,15 +592,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-		/// <summary>
-		/// Given a process's virtual address 'address' and an event which acts as a 
-		/// context (determines which process and what time in that process), return 
-		/// a CodeAddressIndex (which represents a particular location in a particular
-		/// method in a particular DLL). It is possible that different addresses will
-		/// go to the same code address for the same address (in different contexts).
-		/// This is because DLLS where loaded in different places in different processes.
-		/// </summary>  
-		public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
+        /// <summary>
+        /// Given a process's virtual address 'address' and an event which acts as a 
+        /// context (determines which process and what time in that process), return 
+        /// a CodeAddressIndex (which represents a particular location in a particular
+        /// method in a particular DLL). It is possible that different addresses will
+        /// go to the same code address for the same address (in different contexts).
+        /// This is because DLLS where loaded in different places in different processes.
+        /// </summary>  
+        public CodeAddressIndex GetCodeAddressIndexAtEvent(Address address, TraceEvent context)
         {
             // TODO optimize for sequential access.  
             EventIndex eventIndex = context.EventIndex;
@@ -1001,7 +1001,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 var moduleFile = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
                 // TODO FIX NOW review:  is using the timestamp the best way to make the association
-                if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
+                if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC && moduleFile.pdbSignature == Guid.Empty)
                 {
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
@@ -1070,10 +1070,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
 
             var ClrRundownParser = new ClrRundownTraceEventParser(rawEvents);
-            Action< ModuleLoadUnloadTraceData> onLoaderRundown = delegate(ModuleLoadUnloadTraceData data)
-            {
-                this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
-            };
+            Action<ModuleLoadUnloadTraceData> onLoaderRundown = delegate (ModuleLoadUnloadTraceData data)
+           {
+               this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ManagedModuleLoadOrUnload(data, false, true);
+           };
 
             ClrRundownParser.LoaderModuleDCStop += onLoaderRundown;
             ClrRundownParser.LoaderModuleDCStart += onLoaderRundown;
@@ -2442,6 +2442,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 data.eventRecord->ExtendedDataCount = 1;
                 data.eventRecord->ExtendedData = (TraceEventNativeMethods.EVENT_HEADER_EXTENDED_DATA_ITEM*)relatedActivityIDs.Count;
                 relatedActivityIDs.Add(*relatedActivityIDPtr);
+            }
+            else
+            {
+                data.eventRecord->ExtendedDataCount = 0;
+                data.eventRecord->ExtendedData = null;
             }
             return isBookkeepingEvent;
         }
@@ -5588,6 +5593,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             var ilModulePath = data.ModuleILPath;
             var nativeModulePath = data.ModuleNativePath;
+            var nativePdbSignature = data.NativePdbSignature;
 
             // If the NGEN image is used as the IL image (happened in CoreCLR case), change the name of the
             // IL image to be a 'fake' non-nGEN image.  We need this because we need a DISTINCT file that
@@ -5599,16 +5605,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (0 <= nisuffix)
                     ilModulePath = ilModulePath.Substring(0, nisuffix) + ilModulePath.Substring(nisuffix + 3);
             }
-            // This is the CoreCLR (First Generation) ready-to-run case.   There still is a native PDB that is distinct
+            // This is the CoreCLR (First Generation) ReadyToRun case.   There still is a native PDB that is distinct
             // from the IL PDB.   Unlike CoreCLR NGEN, it is logged as a IL file, but it has native code (and thus an NativePdbSignature)
             // We treat the image as a native image and dummy up a il image to hang the IL PDB information on.  
-            else if (nativeModulePath.Length == 0 && data.NativePdbSignature != Guid.Empty && data.ManagedPdbSignature != Guid.Empty)
-            {        
+            else if (nativeModulePath.Length == 0 && nativePdbSignature != Guid.Empty && data.ManagedPdbSignature != Guid.Empty)
+            {
                 // And make up a fake .il.dll module for the IL 
                 var suffixPos = ilModulePath.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
                 if (0 < suffixPos)
                 {
-                    nativeModulePath = ilModulePath;        // We treat the image as the native path
+                    nativeModulePath = ilModulePath;                    // We treat the image as the native path
+                    // HACK.   we should fix it so that readyToRun DLLs either use the same GUID as IL or emit the PDB with the native PDB sig. 
+                    nativePdbSignature = data.ManagedPdbSignature;      // We use the managed pdb signature for readyToRun
                     // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }
@@ -5645,9 +5653,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     module.NativeModule.ModuleFile.managedModule.FilePath == module.ModuleFile.FilePath);
 
                 module.NativeModule.ModuleFile.managedModule = module.ModuleFile;
-                if (data.NativePdbSignature != Guid.Empty && module.NativeModule.ModuleFile.pdbSignature == Guid.Empty)
+                if (nativePdbSignature != Guid.Empty)
                 {
-                    module.NativeModule.ModuleFile.pdbSignature = data.NativePdbSignature;
+                    module.NativeModule.ModuleFile.pdbSignature = nativePdbSignature;
                     module.NativeModule.ModuleFile.pdbAge = data.NativePdbAge;
                     module.NativeModule.ModuleFile.pdbName = data.NativePdbBuildPath;
                 }
@@ -7273,8 +7281,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
                 {
-                    symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
-                    return null;
+                        symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
+                        return null;
                 }
                 symbolReaderModule.ExePath = moduleFile.FilePath;
 
