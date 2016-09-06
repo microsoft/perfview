@@ -114,6 +114,7 @@
     <Compile Include="ManifestEnvelope.cs" />
     <Compile Include="Parsers\JScriptTraceEventParser.cs" />
     <Compile Include="Parsers\JSDumpHeapTraceEventParser.cs" />
+    <Compile Include="TraceLoggingEventId.cs" />
     <Compile Include="TraceUtilities\PEFile.cs" />
     <Compile Include="Stacks\CallTree.cs" />
     <Compile Include="Stacks\Histogram.cs" />

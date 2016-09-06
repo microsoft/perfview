@@ -635,6 +635,10 @@ namespace Microsoft.Diagnostics.Tracing
             if (lockObj != null)
                 Monitor.Enter(lockObj);
             Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
+
+            // Give it an event ID if it does not have one.  
+            traceLoggingEventId.TestForTraceLoggingEventAndFixupIfNeeded(rawData);
+
             TraceEvent anEvent = Lookup(rawData);
 #if DEBUG
             anEvent.DisallowEventIndexAccess = DisallowEventIndexAccess;
@@ -676,6 +680,8 @@ namespace Microsoft.Diagnostics.Tracing
                     Marshal.FreeHGlobal((IntPtr)convertedHeader);
                     convertedHeader = null;
                 }
+
+                traceLoggingEventId.Dispose();
 
                 // logFiles = null; Keep the callback delegate alive as long as possible.  
                 base.Dispose(disposing);
@@ -746,6 +752,9 @@ namespace Microsoft.Diagnostics.Tracing
 
         // We do minimal processing to keep track of process names (since they are REALLY handy). 
         private Dictionary<int, string> processNameForID;
+
+        // Used to give TraceLogging events Event IDs. 
+        private TraceLoggingEventId traceLoggingEventId;  
 
         internal override string ProcessName(int processID, long time100ns)
         {
