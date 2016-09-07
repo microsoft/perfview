@@ -625,6 +625,9 @@ useLTTng=1
 # LTTng Installed
 lttngInstalled=0
 
+# Collect hardware events
+collect_HWevents=0
+
 # Set to 1 when the CTRLC_Handler gets invoked.
 handlerInvoked=0
 
@@ -1119,7 +1122,10 @@ ProcessArguments()
 			i=$i+1
 		elif [ "-threadtime" == "$arg" ]
 		then
-			collect_threadTime=1
+		        collect_threadTime=1
+		elif [ "-hwevents" == "$arg" ]
+		then
+  		        collect_HWevents=1
 		elif [ "-perfopt" == "$arg" ]
 		then
 			perfOpt=$value
@@ -1535,6 +1541,7 @@ PrintUsage()
 	echo "By default, collection includes CPU samples collected every ms."
 	echo "	-pid		  : Only collect data from the specified process id."
 	echo "	-threadtime       : Collect context switch events."
+	echo "  -hwevents         : Collect (some) hardware counters."
 	echo ""
 	echo "view options:"
 	echo "	-processfilter	  : Filter data by the specified process name."
@@ -1573,6 +1580,12 @@ BuildPerfRecordArgs()
 		eventsToCollect=( "${eventsToCollect[@]}" "cpu-clock" )
 	fi
 
+	# Enable HW counters event collection
+	if [ $collect_HWevents -eq 1 ]
+	then
+	    collectionArgs="$collectionArgs -e cycles,instructions,branches,cache-misses"
+	fi
+	
 	# Enable context switches.
 	if [ $collect_threadTime -eq 1 ]
 	then
