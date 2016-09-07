@@ -109,7 +109,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// a blob (representing the TraceLogging meta-data for an event) that knows how to 
         /// compare itself so it can be a key to a hash table. 
         /// </summary>
-        struct ProviderMetaDataKey
+        struct ProviderMetaDataKey : IEquatable<ProviderMetaDataKey>
         {
             public ProviderMetaDataKey(Guid* provider, byte opcode, byte* data, int dataSize)
             {
