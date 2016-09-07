@@ -24,27 +24,34 @@ public class DotNetHeapDumper
     {
         bool success = false;
 
-            log.WriteLine("Starting ETW logging on File {0}", etlFileName);
-            using (var session = new TraceEventSession("PerfViewGCHeapETLSession", etlFileName))
-            {
-                session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad);
+        log.WriteLine("Starting ETW logging on File {0}", etlFileName);
+        using (var session = new TraceEventSession("PerfViewGCHeapETLSession", etlFileName))
+        {
+            session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad);
 
-                // Isolate this to a single process.  
-                var options = new TraceEventProviderOptions() { ProcessIDFilter = new List<int>() { processID } };
+            // Isolate this to a single process.  
+            var options = new TraceEventProviderOptions() { ProcessIDFilter = new List<int>() { processID } };
 
-                // For non-project N we need module rundown to figure out the correct module name
-                session.EnableProvider(ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+            // There is a bug in the runtime 4.6.2 and earlier where we only clear the table of types we have already emitted when you ENABLE 
+            // the Clr Provider WITHOUT the ClrTraceEventParser.Keywords.Type keyword.  we achive this by turning on just the GC events, 
+            // (which clears the Type table) and then turn all the events we need on.   
+            // Note we do this here, as well as in Dump() because it only works if the CLR Type keyword is off (and we turn it on below)
+            session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational, (ulong) ClrTraceEventParser.Keywords.GC, options);
+            System.Threading.Thread.Sleep(50);      // Wait for it to complete (it is async)
+
+            // For non-project N we need module rundown to figure out the correct module name
+            session.EnableProvider(ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
                     (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown), options);
 
-                session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
-                    (ulong)(ClrTraceEventParser.Keywords.GCHeapDump | ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames), options);
-                // Project  N support. 
-                session.EnableProvider(ClrTraceEventParser.NativeProviderGuid, TraceEventLevel.Informational,
-                    (ulong)(ClrTraceEventParser.Keywords.GCHeapDump | ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames), options);
+            session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational,
+                (ulong)(ClrTraceEventParser.Keywords.GCHeapDump | ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames), options);
+            // Project  N support. 
+            session.EnableProvider(ClrTraceEventParser.NativeProviderGuid, TraceEventLevel.Informational,
+                (ulong)(ClrTraceEventParser.Keywords.GCHeapDump | ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapAndTypeNames), options);
 
-                success = Dump(processID, memoryGraph, log, dotNetInfo);
-                log.WriteLine("Stopping ETW logging on {0}", etlFileName);
-            }
+            success = Dump(processID, memoryGraph, log, dotNetInfo);
+            log.WriteLine("Stopping ETW logging on {0}", etlFileName);
+        }
 
         log.WriteLine("DumpAsETLFile returns.  Success={0}", success);
         return success;
@@ -82,7 +89,7 @@ public class DotNetHeapDumper
                 // Have to turn on Kernel provider first (before touching Source) so we do it here.     
                 session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
 
-                session.Source.Clr.GCStart += delegate(GCStartTraceData data)
+                session.Source.Clr.GCStart += delegate (GCStartTraceData data)
                 {
                     if (data.ProcessID != processID)
                         return;
@@ -95,7 +102,7 @@ public class DotNetHeapDumper
                     }
                 };
 
-                session.Source.Clr.GCStop += delegate(GCEndTraceData data)
+                session.Source.Clr.GCStop += delegate (GCEndTraceData data)
                 {
                     if (data.ProcessID != processID)
                         return;
@@ -107,7 +114,7 @@ public class DotNetHeapDumper
                     }
                 };
 
-                session.Source.Clr.GCBulkNode += delegate(GCBulkNodeTraceData data)
+                session.Source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                 {
                     if (data.ProcessID != processID)
                         return;
@@ -134,6 +141,12 @@ public class DotNetHeapDumper
             // Request the heap dump.   We try to isolate this to a single process.  
             var options = new TraceEventProviderOptions() { ProcessIDFilter = new List<int>() { processID } };
 
+            // There is a bug in the runtime 4.6.2 and earlier where we only clear the table of types we have already emitted when you ENABLE 
+            // the Clr Provider WITHOUT the ClrTraceEventParser.Keywords.Type keyword.  we achive this by turning on just the GC events, 
+            // (which clears the Type table) and then turn all the events we need on.   
+            session.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Informational, (ulong)ClrTraceEventParser.Keywords.GC, options);
+            System.Threading.Thread.Sleep(50);      // Wait for it to complete (it is async)
+
             // For non-project N we need module rundown to figure out the correct module name
             session.EnableProvider(ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
                 (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown), options);
@@ -142,7 +155,7 @@ public class DotNetHeapDumper
             // Project N support. 
             session.EnableProvider(ClrTraceEventParser.NativeProviderGuid, TraceEventLevel.Informational, (ulong)ClrTraceEventParser.Keywords.GCHeapSnapshot, options);
 
-            for (; ; )
+            for (;;)
             {
                 if (readerTask.Wait(100))
                     break;
