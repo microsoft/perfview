@@ -102,12 +102,6 @@
       <HintPath>..\traceEvent\Interop.Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.Cci">
-      <HintPath>SupportDlls\Microsoft.Cci.dll</HintPath>
-    </Reference>
-    <Reference Include="CciExtensions">
-      <HintPath>SupportDlls\CciExtensions.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
       <HintPath>SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
     </Reference>
