@@ -98,10 +98,6 @@
     </StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Interop.Dia2Lib">
-      <HintPath>..\traceEvent\Interop.Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
       <HintPath>SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
     </Reference>
@@ -556,11 +552,6 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Dia2Lib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\Dia2Lib.dll</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="SupportDlls\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -585,11 +576,6 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\Interop.Dia2Lib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportDlls\tutorial.exe">
       <Type>Non-Resx</Type>
