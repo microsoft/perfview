@@ -431,7 +431,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
-    <None Include="SupportDlls\Eula.rtf" />
+    <None Include="SupportFiles\Eula.rtf" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)\x86\msdia140.dll">
@@ -477,19 +477,19 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
-      <Link>SupportDlls\x64\HeapDump.exe.config</Link>
+      <Link>SupportFiles\x64\HeapDump.exe.config</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
-      <Link>SupportDlls\x64\HeapDump.exe.config</Link>
+      <Link>SupportFiles\x64\HeapDump.exe.config</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x86\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
-      <Link>SupportDlls\x86\HeapDump.exe</Link>
+      <Link>SupportFiles\x86\HeapDump.exe</Link>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
     <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
@@ -553,27 +553,27 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\tutorial.exe">
+    <EmbeddedResource Include="SupportFiles\tutorial.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.exe</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\tutorial.pdb">
+    <EmbeddedResource Include="SupportFiles\tutorial.pdb">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.pdb</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\buildDate.txt">
+    <EmbeddedResource Include="SupportFiles\buildDate.txt">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\buildDate.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\tutorial.cs">
+    <EmbeddedResource Include="SupportFiles\tutorial.cs">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.cs.txt</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\EULA.rtf">
+    <EmbeddedResource Include="SupportFiles\EULA.rtf">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\EULA.rtf</LogicalName>
@@ -582,24 +582,24 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\CsvReader.dll</LogicalName>
-      <Link>SupportDlls\CsvReader.dll</Link>
+      <Link>SupportFiles\CsvReader.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\Zip\$(OutDir)ZipLib.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\ZipLib.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\UsersGuide.htm">
+    <EmbeddedResource Include="SupportFiles\UsersGuide.htm">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\PerfViewWebVideos.htm">
+    <EmbeddedResource Include="SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\PerfViewWebVideos.htm</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\HtmlReportUsersGuide.htm">
+    <EmbeddedResource Include="SupportFiles\HtmlReportUsersGuide.htm">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\HtmlReportUsersGuide.htm</LogicalName>
@@ -620,52 +620,52 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\ExtensionTemplate\Global.csproj.user</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\MainViewer.png">
+    <EmbeddedResource Include="SupportFiles\Images\MainViewer.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\MainViewer.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\StackViewer.png">
+    <EmbeddedResource Include="SupportFiles\Images\StackViewer.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\StackViewer.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\EventViewer.png">
+    <EmbeddedResource Include="SupportFiles\Images\EventViewer.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\EventViewer.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\CallerCalleeView.png">
+    <EmbeddedResource Include="SupportFiles\Images\CallerCalleeView.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\CallerCalleeView.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\CallTreeView.png">
+    <EmbeddedResource Include="SupportFiles\Images\CallTreeView.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\CallTreeView.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\PrunedCallTreeView.png">
+    <EmbeddedResource Include="SupportFiles\Images\PrunedCallTreeView.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\PrunedCallTreeView.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\Ungrouped.png">
+    <EmbeddedResource Include="SupportFiles\Images\Ungrouped.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\Ungrouped.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\SourceCode.png">
+    <EmbeddedResource Include="SupportFiles\Images\SourceCode.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\SourceCode.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\MemoryCollection.png">
+    <EmbeddedResource Include="SupportFiles\Images\MemoryCollection.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\MemoryCollection.png</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Images\ThreadTimeWithStartStop.png">
+    <EmbeddedResource Include="SupportFiles\Images\ThreadTimeWithStartStop.png">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
@@ -748,7 +748,7 @@ xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportDlls\BuildDate.txt"</PreBuildEvent>
+    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
   </PropertyGroup>
   <Import Project="packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets" Condition="Exists('packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
