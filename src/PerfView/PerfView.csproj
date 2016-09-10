@@ -35,6 +35,8 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -98,8 +100,17 @@
     </StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
-      <HintPath>SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
+      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="ReachFramework" />
     <Reference Include="System" />
@@ -117,12 +128,6 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="DiagnosticsHub.Packaging.Interop">
-      <HintPath>SupportDlls\x86\DiagnosticsHub.Packaging.Interop.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx">
-      <HintPath>SupportDlls\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ClrStats.cs" />
@@ -420,6 +425,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="app.config" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -428,75 +434,45 @@
     <None Include="SupportDlls\Eula.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\x86\msdia140.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\x86\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\x86\sd.exe">
+    <EmbeddedResource Include="$(OutDir)x86\sd.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\sd.exe</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\x86\KernelTraceControl.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\x86\KernelTraceControl.Win61.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)x86\KernelTraceControl.Win61.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\arm\KernelTraceControl.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\AMD64\KernelTraceControl.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\KernelTraceControl.dll</LogicalName>
+      <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\AMD64\msdia140.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\msdia140.dll</LogicalName>
+      <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\dbghelp.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\dbghelp.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\dbgeng.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\dbgeng.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\x86\symsrv.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\symsrv.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\dbghelp.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\dbghelp.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\dbgeng.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\dbgeng.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Condition="'$(CROSS_GENERATION_LIVENESS)' == 'true'" Include="SupportDlls\AMD64\symsrv.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\AMD64\symsrv.dll</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -552,27 +528,27 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
+    <EmbeddedResource Include="$(OutDir)Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\x86\DiagnosticsHub.Packaging.dll">
+    <EmbeddedResource Include="$(OutDir)x86\DiagnosticsHub.Packaging.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\x86\DiagnosticsHub.Packaging.Interop.dll">
+    <EmbeddedResource Include="$(OutDir)x86\DiagnosticsHub.Packaging.Interop.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll">
+    <EmbeddedResource Include="$(OutDir)Microsoft.Diagnostics.Tracing.EventSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\OSExtensions.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\OSExtensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
@@ -774,6 +750,13 @@ xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
   <PropertyGroup>
     <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportDlls\BuildDate.txt"</PreBuildEvent>
   </PropertyGroup>
+  <Import Project="packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets" Condition="Exists('packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
