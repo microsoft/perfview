@@ -441,8 +441,6 @@ EVENT 3,589.675: Microsoft-Windows-DotNETRuntime/GarbageCollection/IncreaseMemor
 EVENT 3,601.773: Microsoft-Windows-DotNETRuntimePrivate/Binding/PhaseStart PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,602.718: Microsoft-Windows-DotNETRuntimePrivate/Binding/NgenPhaseStart PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,602.721: Microsoft-Windows-DotNETRuntimePrivate/Binding/NgenPhaseStop PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
-EVENT 3,712.903: Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionErrorCode PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=10; ClrInstanceID=10; Category=0; ErrorCode=-2,147,024,894; 
-EVENT 3,712.909: Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionErrorCode PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=10; ClrInstanceID=10; Category=0; ErrorCode=-2,147,024,894; 
 EVENT 3,712.920: Microsoft-Windows-DotNETRuntimePrivate/Binding/LookupAndProbingPhaseStop PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,716.331: Microsoft-Windows-DotNETRuntimePrivate/Binding/PhaseStart PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=276; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=file:///C:\Users\jef...; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,716.593: Microsoft-Windows-DotNETRuntimePrivate/NgenBinder/NgenBind PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=262; ClrInstanceID=10; BindingID=27,100,840; ReasonCode=START_BIND; AssemblyName=file:///C:/Users/jef...; 
@@ -456,8 +454,6 @@ EVENT 3,757.705: Microsoft-Windows-DotNETRuntimePrivate/NgenBinder/NgenBind PID=
 EVENT 3,760.382: Microsoft-Windows-DotNETRuntimePrivate/Binding/LookupAndProbingPhaseStop PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,760.387: Microsoft-Windows-DotNETRuntimePrivate/Binding/PhaseStop PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
 EVENT 3,816.133: Microsoft-Windows-DotNETRuntimePrivate/Binding/PhaseStop PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=10; 
-EVENT 3,831.352: Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionErrorCode PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=10; ClrInstanceID=10; Category=0; ErrorCode=-2,147,024,894; 
-EVENT 3,831.356: Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionErrorCode PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=10; ClrInstanceID=10; Category=0; ErrorCode=-2,147,024,894; 
 EVENT 3,832.625: Microsoft-Windows-DotNETRuntimePrivate/NgenBinder/NgenBind PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=264; ClrInstanceID=10; BindingID=27,100,552; ReasonCode=START_BIND; AssemblyName=file:///C:/Users/jef...; 
 EVENT 3,962.058: PerfView/ManifestData PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; 
 EVENT 3,982.524: PerfView/CommandLineParameters PID=7184; TID=19132; PName=PerfView; ProceNum=3; DataLen=130; commandLine= /MinSecForTrigger:0...; currentDirectory=C:\temp; version=1.9.0.0; 
@@ -609,7 +605,6 @@ COUNT Microsoft-Windows-DotNETRuntime/ThreadPoolWorkerThread/Wait:10
 COUNT Microsoft-Windows-DotNETRuntime/Type/BulkType:27
 COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/DownloadPhaseStart:15
 COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/DownloadPhaseStop:18
-COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionErrorCode:4
 COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/FusionMessage:470
 COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderAssemblyInitPhaseStart:11
 COUNT Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderAssemblyInitPhaseStop:11

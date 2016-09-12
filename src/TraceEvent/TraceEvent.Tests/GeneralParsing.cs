@@ -16,11 +16,6 @@ namespace TraceEventTests
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
 
-        static GeneralParsing()
-        {
-            // UnzipDataFiles();
-        }
-
         private static bool s_fileUnzipped;
         private static void UnzipDataFiles()
         {
@@ -119,6 +114,13 @@ namespace TraceEventTests
                     if (data.ProviderName == "DotNet")
                         return;
 
+                    // We don't want to use the manifest for CLR Private events since 
+                    // different machines might have different manifests.  
+                    if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
+                    {
+                        if (data.GetType().Name == "DynamicTraceEventData" ||data.EventName.StartsWith("EventID"))
+                            return;
+                    }
                     // TODO FIX NOW, this is broken and should be fixed.  
                     // We are hacking it here so we don't turn off the test completely.  
                     if (eventName == "DotNet/CLR.SKUOrVersion")
@@ -230,11 +232,11 @@ namespace TraceEventTests
                     Trace.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
                 // If this fires, check the output for the TraceLine just before it for more details.  
-                Assert.IsFalse(unexpectedUnknownEvent, "Check trace output for details.");
+                Assert.IsFalse(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
                 Assert.IsTrue(lineNum > 0);     // We had some events.  
 
             }
-            Assert.IsFalse(anyFailure, "Check trace output for details.");
+            Assert.IsFalse(anyFailure, "Check trace output for details.  Search for ERROR");
 #if !DEBUG
             Assert.Inconclusive("Run with Debug build to get Thorough testing.");
 #endif
