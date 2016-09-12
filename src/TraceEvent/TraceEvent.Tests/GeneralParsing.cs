@@ -12,7 +12,7 @@ namespace TraceEventTests
     [TestClass]
     public class GeneralParsing
     {
-        static string TestDataDir = @"..\..\inputs";
+        static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
 
@@ -51,10 +51,12 @@ namespace TraceEventTests
         /// and insures that no more than .1% of the events are 
         /// </summary>
 
+        [DeploymentItem(@"inputs\", "inputs")]
         [TestMethod]
         public void ETW_GeneralParsing_Basic()
         {
             Trace.WriteLine("In ETW_General_Basic");
+            Assert.IsTrue(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
