@@ -3506,7 +3506,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int ProviderVersion { get { return GetInt32At(8); } }
         public int NumberOfProcessors { get { return GetInt32At(12); } }
         internal long EndTime100ns { get { return GetInt64At(16); } }
-        public DateTime EndTime { get { return DateTime.FromFileTime(GetInt64At(16)); } }
+        public DateTime EndTime { get { return ETWTraceEventSource.SafeFromFileTimeUtc(EndTime100ns).ToLocalTime(); } }
         public int TimerResolution { get { return GetInt32At(24); } }
         public int MaxFileSize { get { return GetInt32At(28); } }
         public int LogFileMode { get { return GetInt32At(32); } }

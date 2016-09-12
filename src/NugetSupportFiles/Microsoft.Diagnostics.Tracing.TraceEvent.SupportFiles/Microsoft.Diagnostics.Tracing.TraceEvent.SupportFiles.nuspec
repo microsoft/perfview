@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package >
+  <metadata minClientVersion="2.5">
+    <id>Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles</id>
+    <version>1.0.0</version>
+    <title>Non-Source files needed to Build TraceEvent</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkID=261998</licenseUrl>
+    <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <copyright>Copyright © Microsoft Corporation</copyright>
+    <description> Basically this package contains DLLs that TraceEvent depends on but does not build itself.</description>
+    <tags>TraceEvent</tags>
+  </metadata>
+</package>
