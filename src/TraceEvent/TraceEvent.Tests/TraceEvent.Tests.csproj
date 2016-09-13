@@ -59,6 +59,14 @@
       <Name>TraceEvent</Name>
     </ProjectReference>
   </ItemGroup>
+	
+  <ItemGroup>
+     <TestInputFiles Include="$(ProjectDir)inputs\*.*"/>
+  </ItemGroup>
+  <Target Name="CopyTestDataToOutputDirectory" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="@(TestInputFiles)" DestinationFolder="$(OutDir)inputs" />
+  </Target>
+
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

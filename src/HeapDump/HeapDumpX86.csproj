@@ -18,6 +18,8 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -68,8 +70,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
-      <HintPath>..\perfView\SupportDlls\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
+      <HintPath>..\PerfView\packages\PerfView.SupportFiles.1.0.0\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -151,6 +154,13 @@ if  NOT "%25ERRORLEVEL%25" == "0" (
 )
 "$(ProjectDir)..\tools\corflags.exe" /32bitPref+  "$(TargetPath)"</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\PerfView\packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets" Condition="Exists('..\PerfView\packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\PerfView\packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\PerfView\packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
