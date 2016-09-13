@@ -553,17 +553,17 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\Interop.Dia2Lib.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\Interop.Dia2Lib.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\AMD64\crossGen.exe">
+    <EmbeddedResource Include="SupportFiles\crossGen.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\crossGen.exe</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="SupportDlls\tutorial.exe">
+    <EmbeddedResource Include="SupportFiles\tutorial.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.exe</LogicalName>
