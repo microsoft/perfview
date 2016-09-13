@@ -1,0 +1,149 @@
+﻿<html>
+<head>
+    <title>Understand Perf Reports</title>
+    <meta charset="UTF-8">
+</head>
+<body lang="en-us">
+    <hr />
+    <h3>
+    <a id="UnderstandingGCPerf">Understanding Garbage Collection (GC) 
+        Performance Data</a>
+        </h3>
+    <p>
+        By default PerfView causes the Runtime to log an event at the beginning and 
+        end of each <a href="http://msdn.microsoft.com/en-us/library/0xy59wtx.aspx">.NET 
+        Garbage Collection</a> as well as every time 100K of objects are allocated.&nbsp;&nbsp; 
+        As with all events the precise time is logged, so the amount of time spent in 
+        the GC can be known.&nbsp;&nbsp;&nbsp; Most applications spend less than 10% of 
+        the total CPU time in the GC itself.&nbsp;&nbsp; If your application is over this 
+        %, it usually means that your allocation pattern is such that you are causing 
+        many expensive Gen 2 GCs to occur.&nbsp;&nbsp;&nbsp; </p>
+    <p>
+        If the GC heap is a large percentage of the total memory used then GC heap 
+        optimization then use the Memory->Take Heap Snapshot feature to drill into GC heap usage.  
+        See <a href="http://msdn.microsoft.com/en-us/magazine/dd882521.aspx">Memory 
+        Usage Auditing For .NET Applications</a> for&nbsp; more on memory optimization.&nbsp; 
+        .</p>
+    <p>
+        During SOME&nbsp;GCs 
+        the application itself has to be suspended so the&nbsp; GC can update object 
+        references.&nbsp;&nbsp; Thus the application will pause when a GC happens.&nbsp;&nbsp; 
+        If these pause times are larger than 100ms or so, it can impact the user 
+        experience.&nbsp;&nbsp; The GC statistics will track the maximum and average 
+        pause time to allow you to confirm that this bad GC behavior is not happening.&nbsp;&nbsp;&nbsp; </p>
+    <hr />
+    <h3>
+        <a id="UnderstandingFinalization">Understanding Finalization Performance Data</a>
+    </h3>
+    <p>
+        By enabling the Finalizers option, PerfView causes the Runtime to log an event
+        every time a managed object is finalized, meaning that its finalizer (denoted in C#
+        with the ~ syntax) is executed.  For a detailed look at the costs involved in
+        finalization, see this <a href="http://blogs.msdn.com/b/cbrumme/archive/2004/02/20/77460.aspx">blog post</a>.
+    </p>
+    <p>
+        PerfView is unable to determine the stack that allocated a finalizable object,
+        but it is able to accurately report each type of object that had a finalizer executed
+        along with the number of instances of that type that were finalized.  This data is shown
+        on the GC Stats report in the Finalized Object Counts table.
+    </p>
+    <p>
+        In an ideal application implementation, all finalizable objects would be cleaned up deterministically
+        via an object's IDisposable.Dispose implementation, which should suppress the finalization
+        of the object.  Not deterministically disposing of finalizable objects can lead to degredation
+        of both the reliability and performance of the app.  You can examine the counts reported
+        in the Finalized Object Counts table to determine whether any types have significant numbers
+        of instances being left for finalization.  Based on that, you can examine code that creates instances
+        of these types and determine why those instances are being left for non-deterministic cleanup
+        rather than being cleaned up deterministically with Dispose.
+    </p>
+    <hr />
+    <h3>
+        <a id="UnderstandingJITPerf">Understanding Just In Time 
+        Compiler Performance Data</a></h3>
+    <p>
+        PerfView tracks detailed information of what methods 
+        were Just In Time compiled.&nbsp;&nbsp; This data is mostly useful for 
+        optimizing startup (because that is when most methods get JIT compiled).&nbsp; 
+        If large numbers of methods are being compiled it can noticeably affect startup 
+        time.&nbsp; This report tells you exactly how much time is being spent (in fact 
+        exactly which methods and exactly when they were compiled).&nbsp;&nbsp; If JIT 
+        time is high, the
+        <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">NGen 
+        Tool</a> can be used to precompile the code, and thus eliminate most of this 
+        overhead at startup.&nbsp; </p>
+    <p>
+        As an additional option enabled with the JITInlining feature, PerfView can track
+        all of the decisions made by the JIT about whether to inline or not at every call site.  
+        For very hot paths, the overhead of invoking methods has the potential to add measurable 
+        cost, and it's typical for developers to attempt to streamline their code as much as possible,
+        with the intent that small methods and properties will be inlined in order to avoid these overheads.
+        The information provided by PerfView and the JIT can be valuable in understanding when and where 
+        such attempts fail, with the JIT providing the reason it chose not to inline a particular call site,
+        e.g. the callee had exception handling that prevented inlining, the callee was too big,
+        the callee was explicitly annotated to prevent inlining, etc.  Such information can then be used
+        by the developer to tweak their code in pursuit of a faster outcome.
+    </p>
+    <hr />
+     <h3>
+        <a id="UnderstandingBackgroundJIT">Understanding Background JIT compilation</a></h3>
+    <p>Background JIT compilation is a feature that was introduced in Version 4.5 of the .NET runtime.&nbsp;&nbsp; The basic idea is to take advantage of multiple processors available on most machines to speed up startup time by doing Just in Time (JIT) compilation on a background thread.&nbsp;&nbsp;&nbsp;&nbsp; Note that the .NET runtime&#39;s preferred solution to the cost o JIT compilation is to precompile the code with NGEN.&nbsp;&nbsp; This reduces the cost of JIT compilation to 0, where background JIT compilation cannot do nearly as well (it tends to reduce it by half), so using NGEN as part of application deployment should be considered first.&nbsp; However if&nbsp; using the
+        <a href="\%22http:/msdn.microsoft.com/en-us/magazine/cc163808.aspx\%22">NGen 
+        Tool</a> is impossible (XCOPY deployment, non-admin deployment, silverlight, IL code generated at runtime), background JIT is the next best option.&nbsp; </p>
+    <p>There is a fundamental problem trying to push JIT compilation onto background threads, namely that the set of methods you will want to JIT compile depends on program execution and is not known until just before the method is used.&nbsp; Thus to take advantage of multiple processors you need &#39;oracle&#39; that will tell you the methods you need to compile well before you will actually need to execute them.&nbsp; </p>
+    <p>The solution that the runtime uses is to rely on PREVIOUS runs of the same program to act as this oracle that will predict the methods that need to be compiled.&nbsp; For this to work the runtime will need to store on disk information about what methods were JIT compiled on the last run.&nbsp;&nbsp; Moreover, you really don&#39;t want the COMPLETE list of methods compiled because that list will include methods use well after startup and cause you to JIT compile things that are not that important.&nbsp;&nbsp; Thus to make background JIT compilation work well, we need help from the application.&nbsp;&nbsp; This is exposed in two new methods of the<strong> System.Runtime.ProfilerOptimization</strong> class introduced in .NET Version 4.5</p>
+    <ol>
+        <li><strong>SetProfileRoot(string directoryPath) </strong>- This method is called <strong>once per application</strong> (exe) and designates a directory that is writable by the application where the .NET Framework can store data about what JIT compilations happened during the execution of the program.&nbsp;&nbsp;&nbsp; This directory should be devoted to this purpose (don&#39;t put other files in there).&nbsp;&nbsp; Shared library code typically should NOT call this function because it does not have &#39;ownership&#39; of such a location, and can&#39;t insure that it will only be called once per application.&nbsp; </li>
+        <li><strong>StartProfile(string scenario name)</strong> - This method indicates that you are about to start a operation that is likely to cause JIT compilations to happen.&nbsp;&nbsp; Typically this is called at the VERY START of your program, or right after a user command (mouse click) that may cause a lot of new code to be executed for the first time.&nbsp;&nbsp; You can make this call more than once in an application, once for each place where you expect a lot of JIT compilation to happen. </li>
+    </ol>
+        <p>When your code encounters a &#39;StartProfile&#39; operations the runtime will do the following:</p>
+    <ol>
+        <li>It will look for a file in the &#39;Profile Root&#39; directory (given in the SetProfileRoot call) that matches the name given in the &#39;StartProfile&#39; call.&nbsp;&nbsp;&nbsp; If such a file is found it reads the file in and determines if the data in the file is still applicable to this run.&nbsp; If so it kicks off a background thread that aggressively JIT compiles all the methods on the list.&nbsp; The StartProfile call returns and all the original threads continue to run as normal.&nbsp;&nbsp; Hopefully as these threads continue their execution by the time they encounter methods that were not executed before they will find that the background thread has already JIT compiled the method.&nbsp;&nbsp; The result is that the program runs faster.</li>
+        <li>In addition, the StartProfile call also causes the runtime to remember every method that was ACTUALLY used going forward (note this this may NOT be the same as the list of methods JIT compiled, since background JIT is FORCING methods be be jitted that MIGHT not be used).&nbsp;&nbsp;&nbsp; It keeps monitoring in this way until a couple of seconds goes by without a method being JIT compiled.&nbsp; At that point monitoring stops, and a file is written out (overwriting whatever was there before), of the methods that were used.&nbsp;&nbsp;&nbsp; This file will be used the next time the program is launched. </li>
+    </ol>
+    <p>
+        Thus by placing two simple calls in your program (typically at the beginning of Main()), you can opt into background JIT.&nbsp;
+    </p>
+    <p>
+        Background JIT has the following characteristics</p>
+    <ol>
+        <li>It does not work on the VERY FIRST launch on a given machine.&nbsp;&nbsp; There is no profile and thus nothing to act as the &#39;oracle&#39; that indicates what to compile.</li>
+        <li>It does not work well if what happened on previous launches is a good indication of what will happen this time.&nbsp; For example if a particular program is typically called with command line arguments that make it do very different things on each launch, then background JIT will not work well for the startup case. </li>
+        <li>It DOES self recover, however.&nbsp;&nbsp; For example if the program often gets used with one set of command line argument but occasionally get used with another that will cause it to run very different code paths, then it will work well for most launches (but not the unusual command, and the one after it).&nbsp; </li>
+        <li>You CAN fix the issue described above by introducing more profiles for the same application.&nbsp;&nbsp; If you have a Profile not at START but at the start of each COMMAND then the runtime will keep a profile for each command and each of those will work well.&nbsp; </li>
+        <li>Background JIT compilation tends to only be able push about 1/2 the JIT time of the scenario to the background where it does not impact end-to-end time.&nbsp; This is because often the &#39;main thread&#39; can &#39;catch up&#39; to the background thread and need a method before the background thread could finish compiling it.&nbsp; In a typical case where CPU cost associated with JIT compilation is much larger than execution of the JITTed code, this tends to result in half the methods being compiled by the main thread and half compiled by the background thread.&nbsp;&nbsp; This is what NGENing is better than background JIT compilation.&nbsp; </li>
+    </ol>
+        <h4>Expected Win from Background JIT Compilation</h4>
+    <p>
+        It is important to realize that background JIT compilation does NOT reduce JIT time.&nbsp; If anything it INCREASES it, because it will JIT methods HOPING that they will be used shortly by the application.&nbsp;&nbsp; If they are not used, then that time is &#39;wasted&#39;.&nbsp;&nbsp;&nbsp; However, the time background JIT uses is on a parallel thread (and only is attempted if there are 2 ore&nbsp; more processors), and thus JIT time on the background thread is effectively &#39;free&#39;.&nbsp; Thus the important metric is how much JIT time was REMOVED from the foreground threads.&nbsp;&nbsp; As mentioned, you typically get about half, but the exact number is applications specific, and depends on how well the previous trace predicts the methods that need to be JIT compiled on this run.&nbsp;
+    </p>
+        <h4>Viewing Background JIT Compilation events.&nbsp; </h4>
+    <p>If you have activated background JIT by placing the SetProfileRoot and StartProfile calls into your program you can view its effectiveness by turning on special background JIT compilation events.&nbsp; You do this by checking the &#39;Background JIT&#39; checkbox on the advanced options of the &#39;Collection&#39; dialog box.&nbsp; When you do this, the JITStats report is enhanced in several ways <strong>for processes that have called SetProfileRoot and StartProfile</strong>.</p>
+    <ol>
+        <li>For that process, a set of top level statistics are displayed indicating how many JIT compilations happened in the background.&nbsp; The most important of these metrics is the &#39;<strong>JIT time NOT moved to background thread</strong>&#39;.&nbsp; This is the JIT time that matters because it is left on the foreground thread where it slows down the application.&nbsp; The difference between this number and the JIT time on a run without background JIT is the &#39;win&#39; of performing this optimization.&nbsp; </li>
+        <li>There is a hyperlink to the a CSV spreadsheet displaying detailed diagnostics of the what was JIT compiled in the background as well as what was recorded for the next launch of the program.&nbsp; </li>
+        <li>The &#39;BG&#39; column of each JIT compiled method is set to indicate whether the JIT compilation happened in the background or not.</li>
+    </ol>
+    <p><strong>What can go wrong with background JIT compilation.</strong></p>
+        <p>It your program has used SetProfileRoot and StartProfile, but JIT compilation (as shown in the JITStats view) does not show any or very little background JIT compilation, there are several issues that may be responsible.&nbsp;&nbsp; Fundamentally a important design goal was to insure that background JIT compilation did not change the behavior of the program under <strong>any circumstances</strong>.&nbsp;&nbsp;&nbsp; Unfortunately, it means that the algorithm tends to bail out quickly.&nbsp;&nbsp; In particular</p>
+    <ol>
+        <li>When modules are loaded, a module constructor <strong>could</strong> be called, which <strong>could</strong> have side effects (even this is very rare).&nbsp;&nbsp; Thus if background JITTing would cause a module to be loaded earlier than it otherwise would be, it <strong>could</strong> expose (rare) bugs.&nbsp; Because background JIT had a very high compatibility bar, it protects against this by taging each method with the EXACT modules that were loaded at the time of JIT compilation, and only allows them to be background JIT compiled after all those EXACT modules were also loaded in the current run.&nbsp;&nbsp; Thus if you have a scenario (say a menu opening), where sometimes more or fewer modules are loaded (because previous user actions caused different modules to load), then background JIT may not work well.&nbsp; </li>
+        <li>If you have attached a callback to the <strong>System.Assembly.ModuleResolve</strong> event, it is possible (although extremely unlikely and very bad design) that background JITing could have side effects if the ModuleResolve callback returned different answers on the second run than it did on the first run.&nbsp;&nbsp; Because of this background JIT compilation is suspended the first time an ModuleResolve callback in invoked.</li>
+        <li>Because any module lookup that fails, WILL call the ModuleResolve event before it finally fails, this means that any probing for modules which fail will also inhibit background JIT compilation.&nbsp; </li>
+    </ol>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+</body>
+
+</html>

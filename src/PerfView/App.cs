@@ -355,7 +355,6 @@ namespace PerfView
                     if (Directory.Exists(toDir))
                     {
                         File.Copy(Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll"), Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
-                        File.Copy(Path.Combine(fromDir, "Dia2Lib.dll"), Path.Combine(toDir, "Dia2Lib.dll"));
 
                         // ARM can use the X86 version of the heap dumper.  
                         if (arch == "arm")

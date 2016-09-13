@@ -42,6 +42,11 @@ namespace LinuxTracing.Tests
 			this.TotalBlockedTimeTest(path, expectedTotalBlockedPeriod: 0.0);
 		}
 
+        // These tests are associate with the Linux thread time 
+        // view which we know is broken becasue we are not getting 
+        // the right linux events.   When we get that runnig we can
+        // turn these on. 
+#if false
         [Fact(Skip = "FIX NOW")]
         public void OneCompletedContextSwitch()
 		{
@@ -87,5 +92,6 @@ namespace LinuxTracing.Tests
 
 			Assert.Equal(linearStackSource.TotalBlockedTime, parallelStackSource.TotalBlockedTime);
 		}
+#endif
 	}
 }

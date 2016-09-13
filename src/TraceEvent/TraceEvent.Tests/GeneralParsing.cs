@@ -12,17 +12,15 @@ namespace TraceEventTests
     [TestClass]
     public class GeneralParsing
     {
-        static string TestDataDir = @"..\..\inputs";
+        static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
 
-        static GeneralParsing()
-        {
-            UnzipDataFiles();
-        }
-
+        private static bool s_fileUnzipped;
         private static void UnzipDataFiles()
         {
+            if (s_fileUnzipped)
+                return;
             Trace.WriteLine(string.Format("Current Directory: {0}", Environment.CurrentDirectory));
             Trace.WriteLine(string.Format("TestDataDir Directory: {0}", Path.GetFullPath(TestDataDir)));
             Trace.WriteLine(string.Format("Unzipped Directory: {0}", Path.GetFullPath(UnZippedDataDir)));
@@ -44,6 +42,7 @@ namespace TraceEventTests
                 Assert.IsTrue(File.Exists(etlFilePath));
             }
             Trace.WriteLine("Finished unzipping data");
+            s_fileUnzipped = true;
         }
 
         /// <summary>
@@ -52,12 +51,17 @@ namespace TraceEventTests
         /// and insures that no more than .1% of the events are 
         /// </summary>
 
+        [DeploymentItem(@"inputs\", "inputs")]
         [TestMethod]
         public void ETW_GeneralParsing_Basic()
         {
+            Trace.WriteLine("In ETW_General_Basic");
+            Assert.IsTrue(Directory.Exists(TestDataDir));
+            UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
             Directory.CreateDirectory(OutputDir);
+            Trace.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
 
             bool anyFailure = false;
             foreach (var etlFilePath in Directory.EnumerateFiles(UnZippedDataDir, "*.etl"))
@@ -66,7 +70,7 @@ namespace TraceEventTests
                 if (!etlFilePath.EndsWith("etl", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Trace.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", etlFilePath));
+                Trace.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
                 string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
                 // See if we have a cooresponding baseline file 
@@ -104,6 +108,26 @@ namespace TraceEventTests
                 traceSource.AllEvents += delegate (TraceEvent data)
                 {
                     string eventName = data.ProviderName + "/" + data.EventName;
+
+                    // We are going to skip dynamic events from the CLR provider.
+                    // The issue is that this depends on exactly which manifest is present
+                    // on the machine, and I just don't want to deal with the noise of 
+                    // failures because you have a slightly different one.   
+                    if (data.ProviderName == "DotNet")
+                        return;
+
+                    // We don't want to use the manifest for CLR Private events since 
+                    // different machines might have different manifests.  
+                    if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
+                    {
+                        if (data.GetType().Name == "DynamicTraceEventData" ||data.EventName.StartsWith("EventID"))
+                            return;
+                    }
+                    // TODO FIX NOW, this is broken and should be fixed.  
+                    // We are hacking it here so we don't turn off the test completely.  
+                    if (eventName == "DotNet/CLR.SKUOrVersion")
+                        return;
+
                     int count = IncCount(histogram, eventName);
 
                     // To keep the baseline size under control, we only check at
@@ -111,11 +135,6 @@ namespace TraceEventTests
                     const int MaxEventPerType = 5;
 
                     if (count > MaxEventPerType)
-                        return;
-
-                    // TODO FIX NOW, this is broken and should be fixed.  
-                    // We are hacking it here so we don't turn off the test completely.  
-                    if (eventName == "DotNet/CLR.SKUOrVersion")
                         return;
 
                     string parsedEvent = Parse(data);
@@ -161,9 +180,9 @@ namespace TraceEventTests
                         if (data.EventName != "EventID(65534)" &&       // Manifest events 
                             data.ProviderName != "Microsoft-Windows-DNS-Client" &&
                             eventName != "KernelTraceControl/ImageID/Opcode(34)" &&
-                            eventName != "Windows Kernel/DiskIO/Opcode(16)" && 
+                            eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
                             eventName != "Windows Kernel/SysConfig/Opcode(37)")
-                       {
+                        {
                             Trace.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
                                 etlFilePath, eventName, data.TimeStampRelativeMSec));
 
@@ -178,37 +197,35 @@ namespace TraceEventTests
                 traceSource.Process();
 
                 // Validation after processing, first we check that the histograms are the same as the baseline
-                if (mismatchCount == 0)
+
+                // We also want to check that the count of events is the same as the baseline. 
+                bool histogramMismatch = false;
+                foreach (var keyValue in histogram)
                 {
-                    // We also want to check that the count of events is the same as the baseline. 
-                    bool histogramMismatch = false;
-                    foreach (var keyValue in histogram)
+                    var histogramLine = "COUNT " + keyValue.Key + ":" + keyValue.Value;
+
+                    outputFile.WriteLine(histogramLine);
+                    var expectedistogramLine = baselineFile.ReadLine();
+                    lineNum++;
+
+                    if (!histogramMismatch && expectedistogramLine != histogramLine)
                     {
-                        var histogramLine = "COUNT " + keyValue.Key + ":" + keyValue.Value;
+                        histogramMismatch = true;
+                        Trace.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
+                        Trace.WriteLine(string.Format("   Expected: {0}", histogramLine));
+                        Trace.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
 
-                        outputFile.WriteLine(histogramLine);
-                        var expectedistogramLine = baselineFile.ReadLine();
-                        lineNum++;
-
-                        if (!histogramMismatch && expectedistogramLine != histogramLine)
-                        {
-                            histogramMismatch = true;
-                            Trace.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
-                            Trace.WriteLine(string.Format("   Expected: {0}", histogramLine));
-                            Trace.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
-
-                            Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                            Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                                Path.GetFullPath(outputName),
-                                Path.GetFullPath(baselineName)
-                                ));
-                            Trace.WriteLine("To Update baseline file");
-                            Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                                Path.GetFullPath(outputName),
-                                Path.GetFullPath(baselineName)
-                                ));
-                            anyFailure = true;
-                        }
+                        Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                        Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                            Path.GetFullPath(outputName),
+                            Path.GetFullPath(baselineName)
+                            ));
+                        Trace.WriteLine("To Update baseline file");
+                        Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                            Path.GetFullPath(outputName),
+                            Path.GetFullPath(baselineName)
+                            ));
+                        anyFailure = true;
                     }
                 }
 
@@ -217,16 +234,16 @@ namespace TraceEventTests
                     Trace.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
                 // If this fires, check the output for the TraceLine just before it for more details.  
-                Assert.IsFalse(unexpectedUnknownEvent, "Check trace output for details.");
+                Assert.IsFalse(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
                 Assert.IsTrue(lineNum > 0);     // We had some events.  
 
             }
-            Assert.IsFalse(anyFailure, "Check trace output for details.");
+            Assert.IsFalse(anyFailure, "Check trace output for details.  Search for ERROR");
 #if !DEBUG
             Assert.Inconclusive("Run with Debug build to get Thorough testing.");
 #endif
         }
-        
+
         private static int IncCount(SortedDictionary<string, int> histogram, string eventName)
         {
             int count = 0;
@@ -253,7 +270,7 @@ namespace TraceEventTests
             sb.Append("DataLen=").Append(data.EventDataLength).Append("; ");
 
             string[] payloadNames = data.PayloadNames;
-            for(int i = 0; i < payloadNames.Length; i++)
+            for (int i = 0; i < payloadNames.Length; i++)
             {
                 // Keep the value size under control and remove newlines.  
                 string value = (data.PayloadString(i));

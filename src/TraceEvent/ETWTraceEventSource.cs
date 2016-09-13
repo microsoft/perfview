@@ -406,8 +406,8 @@ namespace Microsoft.Diagnostics.Tracing
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
 
                 // Start time is minimum of all start times
-                DateTime logFileStartTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
-                DateTime logFileEndTimeUTC = DateTime.FromFileTimeUtc(logFiles[i].LogfileHeader.EndTime);
+                DateTime logFileStartTimeUTC = SafeFromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
+                DateTime logFileEndTimeUTC = SafeFromFileTimeUtc(logFiles[i].LogfileHeader.EndTime);
 
                 if (logFileStartTimeUTC < minSessionStartTimeUTC)
                     minSessionStartTimeUTC = logFileStartTimeUTC;
@@ -504,6 +504,14 @@ namespace Microsoft.Diagnostics.Tracing
                     sessionEndTimeQPC += data.TimeStampQPC;
                 }
             };
+        }
+
+        internal static DateTime SafeFromFileTimeUtc(long fileTime)
+        {
+            ulong maxTime = (ulong) DateTime.MaxValue.ToFileTimeUtc();
+            if (maxTime < (ulong)fileTime)
+                return DateTime.MaxValue;
+            return DateTime.FromFileTimeUtc(fileTime);
         }
 
         /// <summary>
