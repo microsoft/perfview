@@ -472,6 +472,12 @@
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <Target Name="CopyTraceEventNativeBinariesToOutDir" BeforeTargets="Build">
+      <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86"/>
+      <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64"/>
+      <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\msdia140.dll" DestinationFolder="$(OutDir)x86"/>
+      <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64"/>
+  </Target>
   <ItemGroup>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
       <Type>Non-Resx</Type>
@@ -745,7 +751,7 @@ echo Done
 mkdir "$(ProjectDir)..\VS"
 echo COPYING xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
-</PostBuildEvent>
+REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
