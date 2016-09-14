@@ -519,8 +519,9 @@ namespace Microsoft.Diagnostics.Symbols
                     winDir + @"\Microsoft.NET\Framework64\v4.0.30319" + ";%PATH%";
                 options.AddEnvironmentVariable("PATH", newPath1);
                 options.AddCurrentDirectory(imageDir);
-                
-                log.WriteLine("*** CrossGen cmdline: {0}\r\n", cmdLine);
+                log.WriteLine("**** Running CrossGen");
+                log.WriteLine("set PATH=" + newPath1);
+                log.WriteLine("{0}\r\n", cmdLine);
                 var cmd = Command.Run(cmdLine, options);
                 if (cmd.ExitCode != 0 || !File.Exists(crossGenPdbOutputPath))
                 {
@@ -528,6 +529,7 @@ namespace Microsoft.Diagnostics.Symbols
                     return null;
                 }
                 // Make it have the .ni.dll name.  
+
                 FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
                 return pdbPath;
             }
