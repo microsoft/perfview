@@ -425,12 +425,12 @@ namespace Microsoft.Diagnostics.Symbols
             Guid ilPdbGuid = Guid.Empty;
             int ilPdbAge = 0;
 
-            string pdbName;
+            string pdbFileName;
             Guid pdbGuid;
             int pdbAge;
             using (var peFile = new PEFile.PEFile(ngenImageFullPath))
             {
-                if (!peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, true))
+                if (!peFile.GetPdbSignature(out pdbFileName, out pdbGuid, out pdbAge, true))
                 {
                     log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
                     return null;
@@ -441,9 +441,10 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // Fast path, the file already exists.
-            pdbName = Path.GetFileName(pdbName);
-            var relPath = pdbName + "\\" + pdbGuid.ToString("N") + pdbAge.ToString() + "\\" + pdbName;
-            var pdbPath = Path.Combine(outputDirectory, relPath);
+            pdbFileName = Path.GetFileName(pdbFileName);
+            string relDirPath = pdbFileName + "\\" + pdbGuid.ToString("N") + pdbAge.ToString();
+            string pdbDir = Path.Combine(outputDirectory, relDirPath);
+            var pdbPath = Path.Combine(pdbDir, pdbFileName);
             if (File.Exists(pdbPath))
                 return pdbPath;
 
@@ -464,7 +465,40 @@ namespace Microsoft.Diagnostics.Symbols
                 if (!File.Exists(crossGen))
                     return null;            // Not the crossGen case.  
 
-                string pdbDir = Path.GetDirectoryName(pdbPath);
+                    using (var clrPE = new PEFile.PEFile(corClrPath))
+                    {
+                        if (!clrPE.Header.IsPE64)
+                        {
+                            log.WriteLine("CoreCLR {0} is not 64 bit", corClrPath);
+                            return null;
+                        }
+                        var version = clrPE.GetFileVersionInfo();
+                        if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
+                        {
+                            log.WriteLine("CoreCLR {0} is not version 1.0.24214", corClrPath);
+                            return null;
+                        }
+                    }
+
+                    // For some reason crossgen only works if it lives in the runtime directory.  
+                    try { File.Copy(perfViewCrossGen, crossGen); } 
+                    catch {
+                        log.WriteLine("Could not copy CrossGen to runtime directory (try again with admin?)", crossGen);
+                        return null;
+                    }
+                }
+
+                string crossGenPdbOutputPath = pdbPath;
+                // ReadyToRun images always use the IL pdb Guid.  
+                if (!ngenImageFullPath.EndsWith(".ni.dll"))     // I am not a normal NGEN dll (thus I am ReadyToRun)
+                {
+                    pdbDir = Path.Combine(outputDirectory, pdbFileName + "\\" + ilPdbGuid.ToString("N") + pdbAge.ToString());
+                    pdbPath = Path.Combine(pdbDir, pdbFileName);                    // This has the .ni.dll name
+                    crossGenPdbOutputPath = Path.Combine(pdbDir, Path.GetFileName(ilPdbName));   // This has the .dll name 
+                    if (File.Exists(pdbPath))
+                        return pdbPath;
+                }
+
                 Directory.CreateDirectory(pdbDir);
                 var cmdLine = Command.Quote(crossGen) + " /CreatePdb " +
                     Command.Quote(pdbDir) + " " +
@@ -485,12 +519,12 @@ namespace Microsoft.Diagnostics.Symbols
                 var cmd = Command.Run(cmdLine, options);
                 if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
                 {
-                    log.WriteLine("CrossGen failed error code {0}", cmd.ExitCode);
+                    log.WriteLine("CrossGen failed to generate {0} exit code {0}", crossGenPdbOutputPath, cmd.ExitCode);
                     return null;
                 }
-                // Make it have the .ni.dll name.  
-
-                FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
+                // Make it have the .ni.dll name if necessary.  
+                if (crossGenPdbOutputPath != pdbPath)
+                    FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
                 return pdbPath;
             }
 
@@ -579,7 +613,7 @@ namespace Microsoft.Diagnostics.Symbols
                 DirectoryUtilities.Clean(tempDir);
                 Directory.CreateDirectory(tempDir);
                 ngenOutputDirectory = tempDir;
-                outputPdbPath = Path.Combine(tempDir, relPath);
+                outputPdbPath = Path.Combine(tempDir, relDirPath, pdbFileName);
                 log.WriteLine("Updating NGEN createPdb output file to {0}", outputPdbPath); // TODO FIX NOW REMOVE (for debugging)
             }
 
