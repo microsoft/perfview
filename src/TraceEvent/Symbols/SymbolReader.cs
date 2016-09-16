@@ -66,9 +66,12 @@ namespace Microsoft.Diagnostics.Symbols
         /// look up the PDB, and will download the PDB to the local cache if necessary.   It will also
         /// generate NGEN pdbs into the local symbol cache unless SymbolReaderFlags.NoNGenPDB is set.   
         /// 
+        /// By default for NGEN images it returns the NGEN pdb.  However if 'ilPDB' is true it returns
+        /// the IL PDB.  
+        /// 
         /// Returns null if the pdb can't be found.  
         /// </summary>
-        public string FindSymbolFilePathForModule(string dllFilePath)
+        public string FindSymbolFilePathForModule(string dllFilePath, bool ilPDB=false)
         {
             m_log.WriteLine("FindSymbolFilePathForModule: searching for PDB for DLL {0}.", dllFilePath);
             try
@@ -81,7 +84,7 @@ namespace Microsoft.Diagnostics.Symbols
                         string pdbName;
                         Guid pdbGuid;
                         int pdbAge;
-                        if (peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, true))
+                        if (peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, !ilPDB))
                         {
                             string fileVersionString = null;
                             var fileVersion = peFile.GetFileVersionInfo();
@@ -89,7 +92,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 fileVersionString = fileVersion.FileVersion;
 
                             var ret = FindSymbolFilePath(pdbName, pdbGuid, pdbAge, dllFilePath, fileVersionString);
-                            if (ret == null && 0 <= dllFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
+                            if (ret == null && (0 <= dllFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) || peFile.IsManagedReadyToRun))
                             {
                                 if ((Options & SymbolReaderOptions.NoNGenSymbolCreation) != 0)
                                     m_log.WriteLine("FindSymbolFilePathForModule: Could not find NGEN image, NoNGenPdb set, giving up.");
