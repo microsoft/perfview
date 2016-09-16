@@ -66,9 +66,12 @@ namespace Microsoft.Diagnostics.Symbols
         /// look up the PDB, and will download the PDB to the local cache if necessary.   It will also
         /// generate NGEN pdbs into the local symbol cache unless SymbolReaderFlags.NoNGenPDB is set.   
         /// 
+        /// By default for NGEN images it returns the NGEN pdb.  However if 'ilPDB' is true it returns
+        /// the IL PDB.  
+        /// 
         /// Returns null if the pdb can't be found.  
         /// </summary>
-        public string FindSymbolFilePathForModule(string dllFilePath)
+        public string FindSymbolFilePathForModule(string dllFilePath, bool ilPDB=false)
         {
             m_log.WriteLine("FindSymbolFilePathForModule: searching for PDB for DLL {0}.", dllFilePath);
             try
@@ -81,7 +84,7 @@ namespace Microsoft.Diagnostics.Symbols
                         string pdbName;
                         Guid pdbGuid;
                         int pdbAge;
-                        if (peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, true))
+                        if (peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, !ilPDB))
                         {
                             string fileVersionString = null;
                             var fileVersion = peFile.GetFileVersionInfo();
@@ -89,7 +92,7 @@ namespace Microsoft.Diagnostics.Symbols
                                 fileVersionString = fileVersion.FileVersion;
 
                             var ret = FindSymbolFilePath(pdbName, pdbGuid, pdbAge, dllFilePath, fileVersionString);
-                            if (ret == null && 0 <= dllFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
+                            if (ret == null && (0 <= dllFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) || peFile.IsManagedReadyToRun))
                             {
                                 if ((Options & SymbolReaderOptions.NoNGenSymbolCreation) != 0)
                                     m_log.WriteLine("FindSymbolFilePathForModule: Could not find NGEN image, NoNGenPdb set, giving up.");
@@ -463,7 +466,19 @@ namespace Microsoft.Diagnostics.Symbols
 
                 log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
                 if (!File.Exists(crossGen))
-                    return null;            // Not the crossGen case.  
+                {
+                    // READY_TO_RUN HACK
+                    var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+                    var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
+                    if (!File.Exists(perfViewCrossGen))
+                        return null;
+
+                    string corClrPath = Path.Combine(imageDir, "coreclr.dll");
+                    if (!File.Exists(corClrPath))
+                    {
+                        log.WriteLine("Could not find coreclr at {0} giving up", corClrPath);
+                        return null;            // Not the crossGen case.  
+                    }
 
                     using (var clrPE = new PEFile.PEFile(corClrPath))
                     {
@@ -500,9 +515,10 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 Directory.CreateDirectory(pdbDir);
-                var cmdLine = Command.Quote(crossGen) + " /CreatePdb " +
-                    Command.Quote(pdbDir) + " " +
-                    Command.Quote(ngenImageFullPath);
+                var cmdLine = Command.Quote(crossGen)  +
+                    " /CreatePdb " + Command.Quote(pdbDir) + 
+                    " /Platform_Assemblies_Paths " + Command.Quote(imageDir) + 
+                    " " + Command.Quote(ngenImageFullPath);
 
                 var winDir = Environment.GetEnvironmentVariable("winDir");
                 if (winDir == null)
@@ -517,7 +533,7 @@ namespace Microsoft.Diagnostics.Symbols
                 log.WriteLine("set PATH=" + newPath1);
                 log.WriteLine("{0}\r\n", cmdLine);
                 var cmd = Command.Run(cmdLine, options);
-                if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
+                if (cmd.ExitCode != 0 || !File.Exists(crossGenPdbOutputPath))
                 {
                     log.WriteLine("CrossGen failed to generate {0} exit code {0}", crossGenPdbOutputPath, cmd.ExitCode);
                     return null;
