@@ -101,15 +101,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.0\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ReachFramework" />
@@ -766,12 +766,12 @@ REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
   <PropertyGroup>
     <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
   </PropertyGroup>
-  <Import Project="packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets" Condition="Exists('packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" />
+  <Import Project="packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\PerfView.SupportFiles.1.0.0\build\PerfView.SupportFiles.targets'))" />
+    <Error Condition="!Exists('packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
