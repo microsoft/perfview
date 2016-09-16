@@ -142,19 +142,19 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Interop.Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\lib\net40\Interop.Dia2Lib.dll</HintPath>
+      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\lib\net40\Interop.Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="OSExtensions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\lib\net40\OSExtensions.dll</HintPath>
+      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\lib\net40\OSExtensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.XML" />
     <Reference Include="TraceReloggerLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\lib\net40\TraceReloggerLib.dll</HintPath>
+      <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\lib\net40\TraceReloggerLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
   </ItemGroup>
@@ -172,11 +172,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
-  <Import Project="..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets" Condition="Exists('..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets')" />
+  <Import Project="..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets" Condition="Exists('..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets'))" />
+    <Error Condition="!Exists('..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.targets'))" />
   </Target>
 </Project>
