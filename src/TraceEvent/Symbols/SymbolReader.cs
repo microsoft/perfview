@@ -425,12 +425,12 @@ namespace Microsoft.Diagnostics.Symbols
             Guid ilPdbGuid = Guid.Empty;
             int ilPdbAge = 0;
 
-            string pdbName;
+            string pdbFileName;
             Guid pdbGuid;
             int pdbAge;
             using (var peFile = new PEFile.PEFile(ngenImageFullPath))
             {
-                if (!peFile.GetPdbSignature(out pdbName, out pdbGuid, out pdbAge, true))
+                if (!peFile.GetPdbSignature(out pdbFileName, out pdbGuid, out pdbAge, true))
                 {
                     log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
                     return null;
@@ -441,9 +441,10 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // Fast path, the file already exists.
-            pdbName = Path.GetFileName(pdbName);
-            var relPath = pdbName + "\\" + pdbGuid.ToString("N") + pdbAge.ToString() + "\\" + pdbName;
-            var pdbPath = Path.Combine(outputDirectory, relPath);
+            pdbFileName = Path.GetFileName(pdbFileName);
+            string relDirPath = pdbFileName + "\\" + pdbGuid.ToString("N") + pdbAge.ToString();
+            string pdbDir = Path.Combine(outputDirectory, relDirPath);
+            var pdbPath = Path.Combine(pdbDir, pdbFileName);
             if (File.Exists(pdbPath))
                 return pdbPath;
 
@@ -499,10 +500,16 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                 }
 
-                // Ready-to-run images always use the IL pdb Guid.  
-                string pdbDir = Path.Combine(outputDirectory, pdbName + "\\" + ilPdbGuid.ToString("N") + pdbAge.ToString());
-                pdbPath = Path.Combine(pdbDir, pdbName);                    // This has the .ni.dll name
-                string crossGenPdbOutputPath = Path.Combine(pdbDir, Path.GetFileName(ilPdbName));   // This has the .dll name 
+                string crossGenPdbOutputPath = pdbPath;
+                // ReadyToRun images always use the IL pdb Guid.  
+                if (!ngenImageFullPath.EndsWith(".ni.dll"))     // I am not a normal NGEN dll (thus I am ReadyToRun)
+                {
+                    pdbDir = Path.Combine(outputDirectory, pdbFileName + "\\" + ilPdbGuid.ToString("N") + pdbAge.ToString());
+                    pdbPath = Path.Combine(pdbDir, pdbFileName);                    // This has the .ni.dll name
+                    crossGenPdbOutputPath = Path.Combine(pdbDir, Path.GetFileName(ilPdbName));   // This has the .dll name 
+                    if (File.Exists(pdbPath))
+                        return pdbPath;
+                }
 
                 Directory.CreateDirectory(pdbDir);
                 var cmdLine = Command.Quote(crossGen)  +
@@ -525,12 +532,12 @@ namespace Microsoft.Diagnostics.Symbols
                 var cmd = Command.Run(cmdLine, options);
                 if (cmd.ExitCode != 0 || !File.Exists(crossGenPdbOutputPath))
                 {
-                    log.WriteLine("CrossGen failed error code {0}", cmd.ExitCode);
+                    log.WriteLine("CrossGen failed to generate {0} exit code {0}", crossGenPdbOutputPath, cmd.ExitCode);
                     return null;
                 }
-                // Make it have the .ni.dll name.  
-
-                FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
+                // Make it have the .ni.dll name if necessary.  
+                if (crossGenPdbOutputPath != pdbPath)
+                    FileUtilities.ForceMove(crossGenPdbOutputPath, pdbPath);
                 return pdbPath;
             }
 
@@ -619,7 +626,7 @@ namespace Microsoft.Diagnostics.Symbols
                 DirectoryUtilities.Clean(tempDir);
                 Directory.CreateDirectory(tempDir);
                 ngenOutputDirectory = tempDir;
-                outputPdbPath = Path.Combine(tempDir, relPath);
+                outputPdbPath = Path.Combine(tempDir, relDirPath, pdbFileName);
                 log.WriteLine("Updating NGEN createPdb output file to {0}", outputPdbPath); // TODO FIX NOW REMOVE (for debugging)
             }
 
