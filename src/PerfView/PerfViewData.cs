@@ -3489,33 +3489,39 @@ namespace PerfView
                     var asPageAccess = data as MemoryPageAccessTraceData;
                     if (asPageAccess != null)
                     {
-                        var pageKind = asPageAccess.PageKind;
                         sample.Metric = 4;      // Convenience since these are 4K pages 
-                        if (pageKind == PageKind.ProcessPrivate)
+
+                        // EMit the kind, which may have a file name argument.  
+                        var pageKind = asPageAccess.PageKind;
+                        string fileName = asPageAccess.FileName;
+                        if (fileName == null)
+                            fileName = "";
+                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
+
+                        // If it is the range of a module, log that as well, as well as it bucket.  
+                        var address = asPageAccess.VirtualAddress;
+                        var process = data.Process();
+                        if (process != null)
                         {
-                            var address = asPageAccess.VirtualAddress;
-                            var process = data.Process();
-                            if (process != null)
+                            var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
+                            if (module != null)
                             {
-                                var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
-                                if (module != null)
+                                if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
                                 {
-                                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
-                                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData CopyOnWrite"), stackIndex);
+                                    // Create a node that indicates where in the file (in buckets) the access was from 
+                                    double normalizeDistance = (address - module.ImageBase) / ((double) module.ModuleFile.ImageSize);
+                                    if (0 <= normalizeDistance && normalizeDistance < 1)
+                                    {
+                                        const int numBuckets = 20;
+                                        int bucket = (int)(normalizeDistance * numBuckets);
+                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
+                                        string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
+                                    }
                                 }
+                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
                             }
                         }
-                        else
-                        {
-                            string fileName = asPageAccess.FileName;
-                            if (fileName.Length > 0)
-                            {
-                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
-                                pageKind = PageKind.File;
-                            }
-                        }
-                        var kindIdx = stackSource.Interner.FrameIntern(pageKind.ToString());
-                        stackIndex = stackSource.Interner.CallStackIntern(kindIdx, stackIndex);
                         goto ADD_EVENT_FRAME;
                     }
 
