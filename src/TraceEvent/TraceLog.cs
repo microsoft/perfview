@@ -1001,7 +1001,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 var moduleFile = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
                 // TODO FIX NOW review:  is using the timestamp the best way to make the association
-                if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC && moduleFile.pdbSignature == Guid.Empty)
+                if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
                 {
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
@@ -5615,8 +5615,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (0 < suffixPos)
                 {
                     nativeModulePath = ilModulePath;                    // We treat the image as the native path
-                    // HACK.   we should fix it so that readyToRun DLLs either use the same GUID as IL or emit the PDB with the native PDB sig. 
-                    nativePdbSignature = data.ManagedPdbSignature;      // We use the managed pdb signature for readyToRun
                     // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }
@@ -5653,7 +5651,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     module.NativeModule.ModuleFile.managedModule.FilePath == module.ModuleFile.FilePath);
 
                 module.NativeModule.ModuleFile.managedModule = module.ModuleFile;
-                if (nativePdbSignature != Guid.Empty)
+                if (nativePdbSignature != Guid.Empty && module.NativeModule.ModuleFile.pdbSignature == Guid.Empty)
                 {
                     module.NativeModule.ModuleFile.pdbSignature = nativePdbSignature;
                     module.NativeModule.ModuleFile.pdbAge = data.NativePdbAge;
@@ -7213,23 +7211,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             string pdbFileName = null;
             // If we have a signature, use it
             if (moduleFile.PdbSignature != Guid.Empty)
-            {
                 pdbFileName = symReader.FindSymbolFilePath(moduleFile.PdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.FileVersion);
-
-                // We have cases where people rename symbol files from the name at build time to match the DLL name see if this is the case
-                // THis is not that important of a case and can be ripped out.  
-                if (pdbFileName == null)
-                {
-                    var simplePdbName = Path.GetFileNameWithoutExtension(moduleFile.PdbName);
-                    var simpleDllName = Path.GetFileNameWithoutExtension(moduleFile.FilePath);
-                    if (string.Compare(simplePdbName, simpleDllName, StringComparison.OrdinalIgnoreCase) != 0)
-                    {
-                        simplePdbName = simpleDllName + ".pdb";
-                        symReader.m_log.WriteLine("The DLL name at build time differs from run time, trying a DLL based PDB name {0}", simplePdbName);
-                        pdbFileName = symReader.FindSymbolFilePath(simplePdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.FileVersion);
-                    }
-                }
-            }
             else
                 symReader.m_log.WriteLine("No PDB signature for {0} in trace.", moduleFile.FilePath);
 
