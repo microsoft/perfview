@@ -2829,6 +2829,30 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+        /// <summary>
+        /// Mainly here for testing
+        /// </summary>
+        /// <param name="dllName"></param>
+        public void LookupSymbolsFor(string dllName, string ILPdb=null)
+        {
+            var symbolReader = App.GetSymbolReader();
+            string ret = symbolReader.FindSymbolFilePathForModule(dllName, (ILPdb??"false") == "true");
+            if (ret != null)
+                LogFile.WriteLine("[Returned PDB {0}]", ret);
+            else
+                LogFile.WriteLine("[Could not find PDB for {0}]", dllName);
+        }
+
+        public void LookupSymbols(string pdbFileName, string pdbGuid, string pdbAge)
+        {
+            var symbolReader = App.GetSymbolReader();
+            string ret = symbolReader.FindSymbolFilePath(pdbFileName, Guid.Parse(pdbGuid), int.Parse(pdbAge));
+            if (ret != null)
+                LogFile.WriteLine("[Returned PDB {0}]", ret);
+            else
+                LogFile.WriteLine("[Could not find PDB for {0}/{1}/{2}]", pdbFileName, pdbGuid, pdbAge);
+        }
+
         class CodeSymbolListener
         {
             public CodeSymbolListener(TraceEventDispatcher source, string targetSymbolCachePath)
