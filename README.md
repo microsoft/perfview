@@ -18,7 +18,7 @@ however it is a significantly better experience if you simply download PerfView 
 If you are already familiar with how GIT, GitHub, and Visual Studio 2015 GIT support works, than you can skip this section.
 However if not the [Setting up a Local GitHub repository with Visual Studio 2015](documentation/SettingUpRepoInVS2015.md) document
 will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2015 installed.  These instructions
-should also mostly work for VS 2013 with GIT extensions installed, but that has not been field-tested).  
+should also mostly work for VS 2013 with GIT extensions installed, but that has not been field-tested.  
 
 ###How to Build and Debug PerfView 
 PerfView is designed to build in Visual Studio 2013 or later.  
