@@ -14,7 +14,22 @@ the user's guide in the source code itself at [PerfView/SupportDlls/UsersGuide.h
 [the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportDlls/UsersGuide.htm?token=AIEUlpLp2aAS0_OgCbvDPMOz6U6leXDvks5XHMNFwA%3D%3D)
 however it is a significantly better experience if you simply download PerfView and select the Help -> User's Guide menu item.  
 
+###Tools Needed to Build PerfView
+
+The only tool you need to build PerfView is Visual Studio 2015.   The [Visual Studio 2015 Community Edition](https://www.microsoft.com/en-us/download/details.aspx?id=48146) 
+can be downloaded *for Free* and has everything you need to fetch PerfView from GitHub, build and test it.    It should also
+be possible to build with Visual Studio 2013, but this is not recommended since we have not tested if this works.   We 
+expect you to download the VS2015 Community addition if you don't already have VS2015.   
+
+PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
+(The ETWCLrProfiler dlls that allow PerfView intercept the .NET Method calls (see .NET Call in the collect dialog)).  
+If you downloaded the VS2015 community addition it does not install the C++ compilation tools by default, but VS should
+detect that the solution needs C++ and ask you to install those tools when you open the solution.   Allow it to do this
+and everything should 'just work'.    
+
 ###Cloning the PerfView GitHub Repository. 
+
+The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.   
 If you are already familiar with how GIT, GitHub, and Visual Studio 2015 GIT support works, than you can skip this section.
 However if not the [Setting up a Local GitHub repository with Visual Studio 2015](documentation/SettingUpRepoInVS2015.md) document
 will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2015 installed.  These instructions

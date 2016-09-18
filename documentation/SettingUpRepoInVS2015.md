@@ -4,15 +4,15 @@ This section tells you how to set up to build a project that is hosted on GitHub
 using Visual Studio 2015.   It also goes through important routine tasks like 
 getting the latest changes from GitHub and submitting a pull request to the master branch.
 
-It will show you how to do this using just Visual Studio 2015.   It will also show
-how to do this with command line GIT as well.    Older version of Visual Studio as
-well as other IDEs are possible, but not covered here.  
+It will show you how to do this using just Visual Studio 2015.   Older version 
+of Visual Studio as well as other IDEs are possible, but not covered here.  
+You can also use 'raw' git commands but I don't cover that here.  
 
 We use the PerfView project https://github.com/Microsoft/perfview as an example but 
 the vast majority of this section applies to any open source GitHub hosted project.  
 
 The step-by-step instructions will not make a whole lot of sense however without
-a certain amount of background knowlege about a basic understanding of what GIT
+a certain amount of background knowledge about a basic understanding of what GIT
 and GitHub do and some of the basic concepts associate with the GIT source code
 control system.  This is where we start.  
 
