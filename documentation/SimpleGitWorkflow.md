@@ -21,7 +21,7 @@ of course you will only have read-only access.
 At this point Visual Studio will create a local clone all the files in a project in the directory you specified.  This represents
 the final state of all files in the default branch (probably 'master').   It also clones repository (thus the history for all time)
 and places it in a hidden .git directory in the directory you specified.   It is this cloned local repository where most GIT 
-commands you do operate. 
+commands you do operate.   By default your clone ended up in %HOMEPATH%\Source\Repos\PerfView.   
 
 Once the clone is complete, you will see the new local repository added to the list under 'Local Repositories'.   
 You can see which one is 'active' because it is bold-faced.   This is the repository that all other VS GIT commands will
