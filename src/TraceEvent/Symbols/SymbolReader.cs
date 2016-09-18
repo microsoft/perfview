@@ -712,7 +712,10 @@ namespace Microsoft.Diagnostics.Symbols
                 var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
                 var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
                 if (!File.Exists(perfViewCrossGen))
+                {
+                    m_log.WriteLine("No CrossGen in PerfView at {0}, giving up", perfViewCrossGen);
                     return null;
+                }
 
                 string corClrPath = Path.Combine(imageDir, "coreclr.dll");
                 if (!File.Exists(corClrPath))
