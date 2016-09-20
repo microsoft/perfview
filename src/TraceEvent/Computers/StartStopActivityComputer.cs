@@ -243,6 +243,18 @@ namespace Microsoft.Diagnostics.Tracing
                 lastHttpServiceDeliverActivityID = Guid.Empty;
             };
 #endif
+            // Show the exception handling call stacks as a seperate Activity.
+            // This can help users notice the time spent in the exception handling logic.
+            var clrExceptionParser = m_source.Clr;
+            clrExceptionParser.ExceptionCatchStart += delegate (ExceptionHandlingTraceData data)
+            {
+                OnStart(data, data.MethodName, null, null, null, "ExceptionHandling");
+            };
+            clrExceptionParser.ExceptionCatchStop += delegate (EmptyTraceData data)
+            {
+                OnStop(data);
+            };
+
             var aspNetParser = new AspNetTraceEventParser(m_source);
             aspNetParser.AspNetReqStart += delegate (AspNetStartTraceData data)
             {
