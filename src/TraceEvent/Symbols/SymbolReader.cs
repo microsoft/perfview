@@ -635,6 +635,13 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         string HandleNetCorePdbs(string ngenImageFullPath, string pdbPath)
         {
+            // We only handle NGEN PDB. 
+            if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+            {
+                m_log.WriteLine("Not a crossGen PDB {0}", pdbPath);
+                return null;
+            }
+
             var ngenImageDir = Path.GetDirectoryName(ngenImageFullPath);
             var pdbDir = Path.GetDirectoryName(pdbPath);
 
@@ -645,10 +652,6 @@ namespace Microsoft.Diagnostics.Symbols
                 m_log.WriteLine("Could not find Crossgen.exe to generate PDBs, giving up.");
                 return null;
             }
-
-            // We only handle NGEN PDB. 
-            if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
-                return null;
 
             var winDir = Environment.GetEnvironmentVariable("winDir");
             if (winDir == null)
@@ -691,12 +694,12 @@ namespace Microsoft.Diagnostics.Symbols
             if (crossGenInputName != ngenImageFullPath)
                 FileUtilities.ForceDelete(crossGenInputName);
 
-                if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
+            if (cmd.ExitCode != 0 || !File.Exists(pdbPath))
             {
                 m_log.WriteLine("CrossGen failed to generate {0} exit code {0}", pdbPath, cmd.ExitCode);
                 return null;
             }
-           
+
             return pdbPath;
         }
 
@@ -706,46 +709,54 @@ namespace Microsoft.Diagnostics.Symbols
             string crossGen = Path.Combine(imageDir, "crossGen.exe");
 
             m_log.WriteLine("Checking for CoreCLR case, looking for CrossGen at {0}", crossGen);
-            if (!File.Exists(crossGen))
+            if (File.Exists(crossGen))
+                return crossGen;
+
+            var m = Regex.Match(imageDir, @"^(.*)\\runtimes\\win.*\\native$", RegexOptions.IgnoreCase);
+            if (m.Success)
             {
-                // READY_TO_RUN HACK
-                var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-                var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
-                if (!File.Exists(perfViewCrossGen))
+                crossGen = Path.Combine(m.Groups[1].Value, "tools", "crossGen.exe");
+                if (File.Exists(crossGen))
+                    return crossGen;
+            }
+
+            // READY_TO_RUN HACK
+            var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+            var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
+            if (!File.Exists(perfViewCrossGen))
+            {
+                m_log.WriteLine("No CrossGen in PerfView at {0}, giving up", perfViewCrossGen);
+                return null;
+            }
+
+            string corClrPath = Path.Combine(imageDir, "coreclr.dll");
+            if (!File.Exists(corClrPath))
+            {
+                m_log.WriteLine("Could not find coreclr at {0} giving up", corClrPath);
+                return null;            // Not the crossGen case.  
+            }
+
+            using (var clrPE = new PEFile.PEFile(corClrPath))
+            {
+                if (!clrPE.Header.IsPE64)
                 {
-                    m_log.WriteLine("No CrossGen in PerfView at {0}, giving up", perfViewCrossGen);
+                    m_log.WriteLine("CoreCLR {0} is not 64 bit", corClrPath);
                     return null;
                 }
-
-                string corClrPath = Path.Combine(imageDir, "coreclr.dll");
-                if (!File.Exists(corClrPath))
+                var version = clrPE.GetFileVersionInfo();
+                if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
                 {
-                    m_log.WriteLine("Could not find coreclr at {0} giving up", corClrPath);
-                    return null;            // Not the crossGen case.  
-                }
-
-                using (var clrPE = new PEFile.PEFile(corClrPath))
-                {
-                    if (!clrPE.Header.IsPE64)
-                    {
-                        m_log.WriteLine("CoreCLR {0} is not 64 bit", corClrPath);
-                        return null;
-                    }
-                    var version = clrPE.GetFileVersionInfo();
-                    if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
-                    {
-                        m_log.WriteLine("CoreCLR {0} is not version 1.0.24214", corClrPath);
-                        return null;
-                    }
-                }
-
-                // For some reason crossgen only works if it lives in the runtime directory.  
-                try { File.Copy(perfViewCrossGen, crossGen); }
-                catch
-                {
-                    m_log.WriteLine("Could not copy CrossGen to runtime directory (try again with admin?)", crossGen);
+                    m_log.WriteLine("CoreCLR {0} is not version 1.0.24214", corClrPath);
                     return null;
                 }
+            }
+
+            // For some reason crossgen only works if it lives in the runtime directory.  
+            try { File.Copy(perfViewCrossGen, crossGen); }
+            catch
+            {
+                m_log.WriteLine("Could not copy CrossGen to runtime directory (try again with admin?)", crossGen);
+                return null;
             }
             return crossGen;
         }
@@ -799,7 +810,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public void Dispose() { }
 
-#region private
+        #region private
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -1366,7 +1377,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1738,7 +1749,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader SymbolReader { get { return m_reader; } }
 
-#region private
+        #region private
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
@@ -1954,7 +1965,7 @@ namespace Microsoft.Diagnostics.Symbols
         IDiaEnumSymbolsByAddr m_symbolsByAddr;
         string m_pdbPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2044,7 +2055,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             return ((int)RVA - (int)other.RVA);
         }
-#region private
+        #region private
 #if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
@@ -2075,7 +2086,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-#endregion
+        #endregion
     }
 
 
@@ -2246,7 +2257,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-#region private
+        #region private
         /// <summary>
         /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
         /// represented by the 'this' pointer.   This target is iether a ULR or a local file
@@ -2689,7 +2700,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         byte[] m_hash;
         bool m_getSourceCalled;
         bool m_checksumMatches;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2705,7 +2716,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// The line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
-#region private
+        #region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -2715,7 +2726,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-#endregion
+        #endregion
     }
 }
 
@@ -2847,7 +2858,7 @@ namespace Dia2Lib
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }
-#region private
+        #region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
@@ -2866,7 +2877,7 @@ namespace Dia2Lib
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
         static bool s_loadedNativeDll;
-#endregion
+        #endregion
     }
 }
 #endregion
