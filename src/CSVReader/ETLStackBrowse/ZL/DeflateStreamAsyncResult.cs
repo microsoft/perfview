@@ -1,8 +1,9 @@
 namespace System.IO.Compression2
 {
-    using System.Threading;
+    using Threading;
 
-    internal class DeflateStreamAsyncResult : IAsyncResult {
+    internal class DeflateStreamAsyncResult : IAsyncResult
+    {
         public byte[] buffer;
         public int offset;
         public int count;
@@ -11,9 +12,7 @@ namespace System.IO.Compression2
         public bool isWrite;
 #pragma warning restore 0414
 
-        private object m_AsyncObject;               // Caller's async object.
-        private object m_AsyncState;                // Caller's state object.
-        private AsyncCallback m_AsyncCallback;      // Caller's callback method.
+        private readonly AsyncCallback m_AsyncCallback;      // Caller's callback method.
 
         private object m_Result;                     // Final IO result to be returned byt the End*() method.
         internal bool m_CompletedSynchronously;      // true if the operation completed synchronously.
@@ -21,43 +20,42 @@ namespace System.IO.Compression2
         private int m_Completed;                     // 0 if not completed >0 otherwise.
         private object m_Event;                      // lazy allocated event to be returned in the IAsyncResult for the client to wait on
 
-        public DeflateStreamAsyncResult(object asyncObject, object asyncState,
+        public DeflateStreamAsyncResult(object asyncState,
                                    AsyncCallback asyncCallback,
-                                   byte[] buffer, int offset, int count) {
-
+                                   byte[] buffer, int offset, int count)
+        {
             this.buffer = buffer;
             this.offset = offset;
             this.count = count;
             m_CompletedSynchronously = true;
-            m_AsyncObject = asyncObject;
-            m_AsyncState = asyncState;
+            AsyncState = asyncState;
             m_AsyncCallback = asyncCallback;
         }
 
         // Interface method to return the caller's state object.
-        public object AsyncState {
-            get {
-                return m_AsyncState;
-            }
-        }
+        public object AsyncState { get; }
 
         // Interface property to return a WaitHandle that can be waited on for I/O completion.
         // This property implements lazy event creation.
         // the event object is only created when this property is accessed,
         // since we're internally only using callbacks, as long as the user is using
         // callbacks as well we will not create an event at all.
-        public WaitHandle AsyncWaitHandle {
-            get {
+        public WaitHandle AsyncWaitHandle
+        {
+            get
+            {
                 // save a copy of the completion status
                 int savedCompleted = m_Completed;
-                if (m_Event == null) {
+                if (m_Event == null)
+                {
                     // lazy allocation of the event:
                     // if this property is never accessed this object is never created
                     Interlocked.CompareExchange(ref m_Event, new ManualResetEvent(savedCompleted != 0), null);
                 }
 
                 ManualResetEvent castedEvent = (ManualResetEvent)m_Event;
-                if (savedCompleted == 0 && m_Completed != 0) {
+                if (savedCompleted == 0 && m_Completed != 0)
+                {
                     // if, while the event was created in the reset state,
                     // the IO operation completed, set the event here.
                     castedEvent.Set();
@@ -67,65 +65,50 @@ namespace System.IO.Compression2
         }
 
         // Interface property, returning synchronous completion status.
-        public bool CompletedSynchronously {
-            get {
-                return m_CompletedSynchronously;
-            }
-        }
+        public bool CompletedSynchronously => m_CompletedSynchronously;
 
         // Interface property, returning completion status.
-        public bool IsCompleted {
-            get {
-                return m_Completed != 0;
-            }
-        }
+        public bool IsCompleted => m_Completed != 0;
 
         // Internal property for setting the IO result.
-        internal object Result {
-            get {
-                return m_Result;
-            }
+        internal object Result => m_Result;
+
+        internal void Close()
+        {
+            ((ManualResetEvent) m_Event)?.Close();
         }
 
-        internal void Close() {
-            if (m_Event != null) {
-                ((ManualResetEvent)m_Event).Close();
-            }
-        }
-
-        internal void InvokeCallback(bool completedSynchronously, object result) {
+        internal void InvokeCallback(bool completedSynchronously, object result)
+        {
             Complete(completedSynchronously, result);
         }
 
-        internal void InvokeCallback(object result) {
+        internal void InvokeCallback(object result)
+        {
             Complete(result);
         }
 
         // Internal method for setting completion.
         // As a side effect, we'll signal the WaitHandle event and clean up.
-        private void Complete(bool completedSynchronously, object result) {
+        private void Complete(bool completedSynchronously, object result)
+        {
             m_CompletedSynchronously = completedSynchronously;
             Complete(result);
         }
 
-        private void Complete(object result) {
+        private void Complete(object result)
+        {
             m_Result = result;
 
-            // Set IsCompleted and the event only after the usercallback method. 
+            // Set IsCompleted and the event only after the user callback method.
             Interlocked.Increment(ref m_Completed);
 
-            if (m_Event != null) {
-                ((ManualResetEvent)m_Event).Set();
-            }
+            ((ManualResetEvent) m_Event)?.Set();
 
-            if (Interlocked.Increment(ref m_InvokedCallback) == 1) {
-                if (m_AsyncCallback != null) {
-                    m_AsyncCallback(this);
-                }
+            if (Interlocked.Increment(ref m_InvokedCallback) == 1)
+            {
+                m_AsyncCallback?.Invoke(this);
             }
         }
-
     }
-
 }
-

@@ -1,13 +1,12 @@
 ﻿namespace System.IO.Compression2
 {
-    using System.IO;
-    using System.Diagnostics;
-    using System.Security.Permissions;
+    using IO;
+    using Security.Permissions;
 
     public class GZipStream : Stream
     {
         private DeflateStream deflateStream;
-        CompressionMode mode;
+        private readonly CompressionMode mode;
 
         public GZipStream(Stream stream, CompressionMode mode)
             : this(stream, mode, false)
@@ -30,55 +29,13 @@
             }
         }
 
-        public void Recycle()
-        {
-            deflateStream.Recycle();
+        public override bool CanRead => deflateStream != null && deflateStream.CanRead;
 
-            if (mode == CompressionMode.Compress) {
-                IFileFormatWriter writeCommand = new GZipFormatter();
-                deflateStream.SetFileFormatWriter(writeCommand);
-            }
-            else {
-                IFileFormatReader readCommand = new GZipDecoder();
-                deflateStream.SetFileFormatReader(readCommand);
-            }
-        }
+        public override bool CanWrite => deflateStream != null && deflateStream.CanWrite;
 
-        public override bool CanRead
-        {
-            get
-            {
-                if (deflateStream == null) {
-                    return false;
-                }
+        public override bool CanSeek => deflateStream != null && deflateStream.CanSeek;
 
-                return deflateStream.CanRead;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                if (deflateStream == null) {
-                    return false;
-                }
-
-                return deflateStream.CanWrite;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                if (deflateStream == null) {
-                    return false;
-                }
-
-                return deflateStream.CanSeek;
-            }
-        }
+        public Stream BaseStream => deflateStream?.BaseStream;
 
         public override long Length
         {
@@ -101,13 +58,29 @@
             }
         }
 
+        public void Recycle()
+        {
+            deflateStream.Recycle();
+
+            if (mode == CompressionMode.Compress)
+            {
+                IFileFormatWriter writeCommand = new GZipFormatter();
+                deflateStream.SetFileFormatWriter(writeCommand);
+            }
+            else
+            {
+                IFileFormatReader readCommand = new GZipDecoder();
+                deflateStream.SetFileFormatReader(readCommand);
+            }
+        }
+
         public override void Flush()
         {
             if (deflateStream == null) {
                 throw new ObjectDisposedException(null, "ObjectDisposed_StreamClosed");
             }
+
             deflateStream.Flush();
-            return;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -174,28 +147,15 @@
         protected override void Dispose(bool disposing)
         {
             try {
-                if (disposing && deflateStream != null) {
-                    deflateStream.Close();
+                if (disposing) {
+                    deflateStream?.Close();
                 }
+
                 deflateStream = null;
             }
             finally {
                 base.Dispose(disposing);
             }
         }
-
-        public Stream BaseStream
-        {
-            get
-            {
-                if (deflateStream != null) {
-                    return deflateStream.BaseStream;
-                }
-                else {
-                    return null;
-                }
-            }
-        }
     }
-
 }
