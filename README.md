@@ -57,7 +57,7 @@ PerfView is designed to build in Visual Studio 2015, however it is likely that 2
    1. Just ignore the load failure (or remove the project from the solution).  The build for the .NET Core version of
    the TraceEvent library is not used by PerfView itself.  Unless you want this .NET Core version of the library you 
    can simply ignore it (it is there so we don't break the .NET Core version inadvertantly)
-   2. Go to the (VS 2015 Upgrade site](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs#) and install
+   2. Go to the [VS 2015 Upgrade site](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs#) and install
    Update 3 or later.   
 
 ###Deploying your new version of Perfview
