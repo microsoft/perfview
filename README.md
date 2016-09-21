@@ -10,8 +10,8 @@ The PerfView executable is ultimately published at the
 It is a standalone executable file (packaged in a ZIP archive). You can be running it in less than a minute!  
 
 The PerfView user's guide is part of the application itself, however you can get the .HTM file for it in 
-the user's guide in the source code itself at [PerfView/SupportDlls/UsersGuide.htm](src/PerfView/SupportDlls/UsersGuide.htm) or
-[the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportDlls/UsersGuide.htm?token=AIEUlpLp2aAS0_OgCbvDPMOz6U6leXDvks5XHMNFwA%3D%3D)
+the user's guide in the source code itself at [PerfView/SupportFiles/UsersGuide.htm](src/PerfView/SupportFiles/UsersGuide.htm) or
+[the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportFiles/UsersGuide.htm)
 however it is a significantly better experience if you simply download PerfView and select the Help -> User's Guide menu item.  
 
 ###Tools Needed to Build PerfView
