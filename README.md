@@ -49,7 +49,7 @@ PerfView is designed to build in Visual Studio 2015, however it is likely that 2
   and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.   
   (it is annoying that this is not part of the .sln file...).  
 
-  * *If TraceEventCore fails to load in the solution*.   One of the projects in the solution is 'TraceEventCore' which 
+  * **If TraceEventCore fails to load in the solution**.   One of the projects in the solution is 'TraceEventCore' which 
   builds the TraceEvent library for use in the [.NET Core runtime](https://dotnet.github.io/).   It uses a new kind of 
   project file call .xproj, for which older version of Visual Studio 2015 may not suport out of the box.  If this happens 
   you have two options.  
