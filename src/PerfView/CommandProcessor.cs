@@ -2262,6 +2262,8 @@ namespace PerfView
                 cmdLineArgs += " /SkipMSec:" + parsedArgs.SkipMSec.ToString("f3");
             if (parsedArgs.NoGui)
                 cmdLineArgs += " /NoGui";
+            if (parsedArgs.NoWait)
+                cmdLineArgs += " /NoWait";
 
             if (s_UserModeSessionName != "PerfViewSession")
                 cmdLineArgs += " /SessionName:" + s_UserModeSessionName;
