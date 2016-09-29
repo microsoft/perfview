@@ -84,11 +84,8 @@ namespace PerfView
             // If we created a new console (collect command), prompt before closing it so the user has a chance to look at it.
             if (newConsoleCreated)
             {
-                if (newConsoleCreated)
-                {
-                    Console.WriteLine("Press enter to close window.");
-                    Console.ReadLine();
-                }
+                Console.WriteLine("Press enter to close window.");
+                Console.ReadLine();
             }
 
             return retCode;
