@@ -822,7 +822,10 @@ namespace Microsoft.Diagnostics.Symbols
                 if (File.Exists(filePath))
                 {
                     if (checkSecurity && !CheckSecurity(filePath))
+                    {
+                        m_log.WriteLine("FindSymbolFilePath: Aborting, security check failed on {0}", filePath);
                         return false;
+                    }
 
                     if (pdbGuid == Guid.Empty)
                     {
@@ -839,7 +842,9 @@ namespace Microsoft.Diagnostics.Symbols
                 else
                     m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
             }
-            catch { }
+            catch(Exception e) {
+                m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
+            }
             return false;
         }
 
