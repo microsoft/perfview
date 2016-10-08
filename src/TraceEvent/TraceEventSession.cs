@@ -2486,32 +2486,33 @@ namespace Microsoft.Diagnostics.Tracing.Session
             var ret = new Dictionary<string, ProfileSourceInfo>(StringComparer.OrdinalIgnoreCase);
 
             // Figure out how much space we need.  
-            int retLen = 0;
+            int sourceListLen = 0;
             var result = TraceEventNativeMethods.TraceQueryInformation(0,
                 TraceEventNativeMethods.TRACE_INFO_CLASS.TraceProfileSourceListInfo,
-                null, 0, ref retLen);
-            Debug.Assert(sizeof(TraceEventNativeMethods.PROFILE_SOURCE_INFO) <= retLen);     // Not enough space.  
-            if (retLen != 0)
+                null, 0, ref sourceListLen);
+            Debug.Assert(sizeof(TraceEventNativeMethods.PROFILE_SOURCE_INFO) <= sourceListLen);     // Not enough space.  
+            if (sourceListLen != 0)
             {
                 // Do it for real.  
-                byte* buffer = stackalloc byte[retLen];
+                byte* sourceListBuff = stackalloc byte[sourceListLen];
                 result = TraceEventNativeMethods.TraceQueryInformation(0,
                     TraceEventNativeMethods.TRACE_INFO_CLASS.TraceProfileSourceListInfo,
-                    buffer, retLen, ref retLen);
+                    sourceListBuff, sourceListLen, ref sourceListLen);
 
                 if (result == 0)
                 {
                     var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL();
-                    var profileSource = (TraceEventNativeMethods.PROFILE_SOURCE_INFO*)buffer;
+                    var profileSource = (TraceEventNativeMethods.PROFILE_SOURCE_INFO*)sourceListBuff;
                     for (;;)
                     {
                         char* namePtr = (char*)&profileSource[1];       // points off the end of the array;
 
                         interval.Source = profileSource->Source;
                         interval.Interval = 0;
+                        int intervalInfoLen = 0;
                         result = TraceEventNativeMethods.TraceQueryInformation(0,
                             TraceEventNativeMethods.TRACE_INFO_CLASS.TraceSampledProfileIntervalInfo,
-                            &interval, sizeof(TraceEventNativeMethods.TRACE_PROFILE_INTERVAL), ref retLen);
+                            &interval, sizeof(TraceEventNativeMethods.TRACE_PROFILE_INTERVAL), ref intervalInfoLen);
                         if (result != 0)
                             Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(result));
 
@@ -2528,7 +2529,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                             break;
                         var newProfileSource = (TraceEventNativeMethods.PROFILE_SOURCE_INFO*)(profileSource->NextEntryOffset + (byte*)profileSource);
                         Debug.Assert(profileSource < newProfileSource);
-                        Debug.Assert((byte*)newProfileSource < &buffer[retLen]);
+                        Debug.Assert((byte*)newProfileSource < &sourceListBuff[sourceListLen]);
                         profileSource = newProfileSource;
                     }
                 }

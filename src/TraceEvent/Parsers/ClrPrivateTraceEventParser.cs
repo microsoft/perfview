@@ -4584,6 +4584,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate
         AllocDuringSweep = 10,
         AllocDuringBGC = 11,
     }
+    public enum BGCPhase
+    {
+        BGC1stNonConcurrent = 0,
+        BGC1stConcurrent = 1,
+        BGC2ndNonConcurrent = 2,
+        BGC2ndConcurrent = 3,
+    }
     public enum ModuleRangeSectionType
     {
         ModuleSection = 0x1,

@@ -364,6 +364,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 {
                     var process = data.Process();
                     var mang = currentManagedProcess(data);
+                    mang.GC.m_stats.lastSuspendReason = data.Reason;
                     switch (data.Reason)
                     {
                         case GCSuspendEEReason.SuspendForGC:
@@ -554,7 +555,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                         _gc.StartRelativeMSec = data.TimeStampRelativeMSec;
                         stats.GC.GCs.Add(_gc);
-
                         if (_gc.Type == GCType.BackgroundGC)
                         {
                             stats.GC.m_stats.currentBGC = _gc;
@@ -747,13 +747,62 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 clrPrivate.GCBGCStart += delegate (GCNoUserDataTraceData data)
                 {
                     var stats = currentManagedProcess(data);
-                    if (stats.GC.m_stats.currentBGC != null)
+                    TraceGC _gc = stats.GC.m_stats.currentBGC;
+                    if (_gc != null)
                     {
                         if (stats.GC.m_stats.backgroundGCThreads == null)
                         {
                             stats.GC.m_stats.backgroundGCThreads = new Dictionary<int, object>(16);
                         }
                         stats.GC.m_stats.backgroundGCThreads[data.ThreadID] = null;
+                        _gc.BGCCurrentPhase = BGCPhase.BGC1stNonConcurrent;
+                    }
+                };
+
+                clrPrivate.GCBGC1stNonCondStop += delegate (GCNoUserDataTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = stats.GC.m_stats.currentBGC;
+                    if (_gc != null)
+                    {
+                        _gc.BGCCurrentPhase = BGCPhase.BGC1stConcurrent;
+                    }
+                };
+
+                clrPrivate.GCBGC2ndNonConStart += delegate (GCNoUserDataTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = stats.GC.m_stats.currentBGC;
+                    if (_gc != null)
+                    {
+                        _gc.BGCCurrentPhase = BGCPhase.BGC2ndNonConcurrent;
+                    }
+                };
+
+                clrPrivate.GCBGC2ndConStart += delegate (GCNoUserDataTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = stats.GC.m_stats.currentBGC;
+                    if (_gc != null)
+                    {
+                        _gc.BGCCurrentPhase = BGCPhase.BGC2ndConcurrent;
+                    }
+                };
+
+                clrPrivate.GCBGCRevisit += delegate (BGCRevisitTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
+                    if (_gc != null)
+                    {
+                        Debug.Assert(_gc.Type == GCType.BackgroundGC);
+                        int iStateIndex = ((_gc.BGCCurrentPhase == BGCPhase.BGC1stConcurrent) ?
+                                           (int)TraceGC.BGCRevisitState.Concurrent :
+                                           (int)TraceGC.BGCRevisitState.NonConcurrent);
+                        int iHeapTypeIndex = ((data.IsLarge == 1) ? (int)TraceGC.HeapType.LOH : (int)TraceGC.HeapType.SOH);
+                        _gc.EnsureBGCRevisitInfoAlloc();
+                        (_gc.BGCRevisitInfoArr[iStateIndex][iHeapTypeIndex]).PagesRevisited += data.Pages;
+                        (_gc.BGCRevisitInfoArr[iStateIndex][iHeapTypeIndex]).ObjectsRevisited += data.Objects;
                     }
                 };
 
@@ -1376,6 +1425,26 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     /// </summary>
     public class TraceGC
     {
+        public enum BGCRevisitState
+        {
+            Concurrent = 0,
+            NonConcurrent = 1,
+            MaxState = 2,
+        }
+
+        public enum HeapType
+        {
+            SOH = 0,
+            LOH = 1,
+            MaxType = 2,
+        }
+
+        public struct BGCRevisitInfo
+        {
+            public long PagesRevisited;
+            public long ObjectsRevisited;
+        }
+
         public TraceGC(int heapCount)
         {
             HeapCount = heapCount;
@@ -1451,6 +1520,25 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Marks if the GC is in a completed state
         /// </summary>
         public bool IsComplete;
+        // 
+        // The 2 fields below would only make sense if the type is BackgroundGC.
+        // 
+        public BGCPhase BGCCurrentPhase;
+        public BGCRevisitInfo[][] BGCRevisitInfoArr;
+        public double BGCFinalPauseMSec;
+
+        public void EnsureBGCRevisitInfoAlloc()
+        {
+            if (BGCRevisitInfoArr == null)
+            {
+                BGCRevisitInfoArr = new TraceGC.BGCRevisitInfo[(int)TraceGC.BGCRevisitState.MaxState][];
+                for (int i = 0; i < (int)TraceGC.BGCRevisitState.MaxState; i++)
+                {
+                    BGCRevisitInfoArr[i] = new TraceGC.BGCRevisitInfo[(int)TraceGC.HeapType.MaxType];
+                }
+            }
+        }
+
         /// <summary>
         /// Server GC histories
         /// </summary>
@@ -3592,7 +3680,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             if (suspendThreadIDBGC > 0)
             {
-                _event.PauseDurationMSec += RestartEEMSec - suspendTimeRelativeMSec;
+                double pause = RestartEEMSec - suspendTimeRelativeMSec;
+                _event.PauseDurationMSec += pause;
+                if (lastSuspendReason == GCSuspendEEReason.SuspendForGCPrep)
+                {
+                    _event.BGCFinalPauseMSec = pause;
+                }
             }
             else
             {
@@ -3706,6 +3799,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         internal int suspendThreadIDGC = -1;
         internal double suspendTimeRelativeMSec = -1;
         internal double suspendEndTimeRelativeMSec = -1;
+        internal GCSuspendEEReason lastSuspendReason;
 
         // This records the amount of CPU time spent at the end of last GC.
         internal double ProcessCpuAtLastGC = 0;
