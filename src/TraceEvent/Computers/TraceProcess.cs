@@ -34,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             {
                 processes = new TraceProcesses(null /* TraceLog */, source);
                 // establish listeners
-                SetupCallbacks(source);
+                if(m_currentSource != source) SetupCallbacks(source);
 
                 source.UserData["Computers/Processes"] = processes;
             }
@@ -43,22 +43,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
-            Debug.Assert(m_currentSource == source);
-
             if (source.UserData.ContainsKey("Computers/Processes")) return source.UserData["Computers/Processes"] as TraceProcesses;
             else return null;
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
-            Debug.Assert(m_currentSource == _event.Source);
-
             return _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
         }
 
         public static void AddCallbackOnProcessStart(this TraceEventDispatcher source, Action<TraceProcess> OnProcessStart)
         {
-            Debug.Assert(m_currentSource == source);
-
             var processes = source.Processes();
             Debug.Assert(processes != null);
             processes.OnInitialized += OnProcessStart;
@@ -66,8 +60,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
         {
-            Debug.Assert(m_currentSource == process.Source);
-
             if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
             var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
             if (!map.ContainsKey(process.ProcessIndex)) map[process.ProcessIndex] = sampleIntervalMSec;
@@ -75,8 +67,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static float SampleIntervalMSec(this TraceProcess process)
         {
-            Debug.Assert(m_currentSource == process.Source);
-
             if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
             var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex];
@@ -96,7 +86,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // Process level events. 
             kernelParser.ProcessStartGroup += delegate (ProcessTraceData data)
             {
-                data.Process().ProcessStart(data);
+                // do not use .Process() to retrive the process, since you need to pass in a special flag indicating that 
+                //  this is a process start event
+                var process = data.source.Processes().GetOrCreateProcess(data.ProcessID, data.TimeStampQPC, data.Opcode == TraceEventOpcode.Start);
+
+                process.ProcessStart(data);
                 // Don't filter them out (not that many, useful for finding command line)
             };
 
@@ -572,11 +566,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         // called from TraceLog.CopyRawEvents
         internal void ProcessStart(ProcessTraceData data)
         {
-            if (data.Opcode == TraceEventOpcode.DataCollectionStart) { }
+            if (data.Opcode == TraceEventOpcode.DataCollectionStart)
+            {
+                this.startTimeQPC = 0; // this.startTimeQPC = log.sessionStartTimeQPC;
+            }
             else
             {
                 Debug.Assert(data.Opcode == TraceEventOpcode.Start);
                 Debug.Assert(endTimeQPC == long.MaxValue); // We would create a new Process record otherwise 
+                this.startTimeQPC = data.TimeStampQPC;
             }
             CommandLine = data.CommandLine;
             ImageFileName = data.ImageFileName;
