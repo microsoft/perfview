@@ -8101,7 +8101,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         /// Returns the edge at the given zero-based index (index less than Count).   The returned MemoryProcessMemInfoValues 
         /// points the the data in MemoryProcessMemInfoTraceData so it cannot live beyond that lifetime.  
         /// </summary>
-        public MemoryProcessMemInfoValues Values(int index) { return new MemoryProcessMemInfoValues(this, 4 + index * HostOffset(20, 4)); }
+        public MemoryProcessMemInfoValues Values(int index) { return new MemoryProcessMemInfoValues(this, 4 + index * ElementSize); }
 
         #region Private
         internal MemoryProcessMemInfoTraceData(Action<MemoryProcessMemInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -8120,7 +8120,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         }
         protected unsafe internal override void Validate()
         {
-            Debug.Assert(EventDataLength == 4 + HostOffset(20, 4) * Count);
+            Debug.Assert(EventDataLength == 4 + ElementSize * Count);
         }
         public unsafe override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8136,10 +8136,46 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 XmlAttrib(sb, "CommitPageCount", proc.CommitPageCount);
                 XmlAttrib(sb, "VirtualSizeInPages", proc.VirtualSizeInPages);
                 XmlAttrib(sb, "PrivateWorkingSetPageCount", proc.PrivateWorkingSetPageCount);
+                if (Version >= 2)
+                {
+                    XmlAttrib(sb, "StoreSizePageCount", proc.StoreSizePageCount);
+                    XmlAttrib(sb, "StoredPageCount", proc.StoredPageCount);
+                    XmlAttrib(sb, "CommitDebtInPages", proc.CommitDebtInPages);
+                    XmlAttrib(sb, "SharedCommitInPages", proc.SharedCommitInPages);
+                }
                 sb.AppendLine("/>");
             }
             sb.AppendLine("</Event>");
             return sb;
+        }
+        // This event has an array of MemoryProcessMemInfoValues. This returns the size of each of these instance.
+        internal int ElementSize
+        {
+            get
+            {
+                if (Version >= 2)
+                {
+                    // <data name="ProcessID" inType="win:UInt32" outType="xs:unsignedInt"></data>
+                    // <data name="WorkingSetPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="CommitPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="VirtualSizeInPages" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="PrivateWorkingSetPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="StoreSizePageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="StoredPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="CommitDebtInPages" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="SharedCommitInPages" inType="win:Pointer" outType="win:HexInt64"></data>
+                    return HostOffset(9 * 4, 8);
+                }
+                else
+                {
+                    // <data name="ProcessID" inType="win:UInt32" outType="xs:unsignedInt"></data>
+                    // <data name="WorkingSetPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="CommitPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="VirtualSizeInPages" inType="win:Pointer" outType="win:HexInt64"></data>
+                    // <data name="PrivateWorkingSetPageCount" inType="win:Pointer" outType="win:HexInt64"></data>
+                    return HostOffset(5 * 4, 4);
+                }
+            }
         }
 
         public override string[] PayloadNames
@@ -8147,7 +8183,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Count", "ProcessID", "WorkingSetPageCount", "CommitPageCount", "VirtualSizeInPages", "PrivateWorkingSetPageCount" };
+                    payloadNames = new string[] { "Count", "ProcessID", "WorkingSetPageCount", "CommitPageCount", "VirtualSizeInPages", "PrivateWorkingSetPageCount", "StoreSizePageCount", "StoredPageCount", "CommitDebtInPages", "SharedCommitInPages" };
                 return payloadNames;
             }
         }
@@ -8170,6 +8206,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                     return Values(0).VirtualSizeInPages;
                 case 5:
                     return Values(0).PrivateWorkingSetPageCount;
+                case 6:
+                    return Values(0).StoreSizePageCount;
+                case 7:
+                    return Values(0).StoredPageCount;
+                case 8:
+                    return Values(0).CommitDebtInPages;
+                case 9:
+                    return Values(0).SharedCommitInPages;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -8190,6 +8234,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public long CommitPageCount { get { return (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 8, 1)); } }
         public long VirtualSizeInPages { get { return (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 12, 2)); } }
         public long PrivateWorkingSetPageCount { get { return (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 16, 3)); } }
+        public long StoreSizePageCount { get { return m_data.Version >= 2 ? (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 20, 4)) : 0; } }
+        public long StoredPageCount { get { return m_data.Version >= 2 ? (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 24, 5)) : 0; } }
+        public long CommitDebtInPages { get { return m_data.Version >= 2 ? (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 28, 6)) : 0; } }
+        public long SharedCommitInPages { get { return m_data.Version >= 2 ? (long)m_data.GetAddressAt(m_data.HostOffset(m_baseOffset + 32, 7)) : 0; } }
 
         #region private
         internal IntPtr RawData { get { return (IntPtr)(((byte*)m_data.userData) + m_baseOffset); } }
