@@ -1928,6 +1928,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public bool IsNotCompacting()
         {
+            if (GlobalHeapHistory == null) return true;
             return ((GlobalHeapHistory.GlobalMechanisms & (GCGlobalMechanisms.Compaction)) != 0);
         }
         /// <summary>
@@ -1939,11 +1940,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             // Older versions of the runtime does not have this event. So even for a complete GC, we may not have this
             // info.
-            if (PerHeapCondemnedReasons == null)
+            if (PerHeapCondemnedReasons == null || PerHeapCondemnedReasons.Length == 0)
                 return;
 
             int HeapIndexHighestGen = 0;
-            if (PerHeapCondemnedReasons.Length != 1)
+            if (PerHeapCondemnedReasons.Length > 1)
             {
                 HeapIndexHighestGen = FindFirstHighestCondemnedHeap();
             }
