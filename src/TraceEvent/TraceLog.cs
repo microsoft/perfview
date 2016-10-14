@@ -1793,7 +1793,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             ushort originalUserDataLength = data.eventRecord->UserDataLength;
 
             // change the size so that the array of information is exactly 1 count in size. 
-            data.eventRecord->UserDataLength = (ushort)(data.HostOffset(20, 4) + 4);
+            data.eventRecord->UserDataLength = (ushort)(data.ElementSize + 4);
             int newCount = 1;
             // For every MemInfoWSData (that is for every process) 
             for (int i = 0; i < data.Count; i++)
