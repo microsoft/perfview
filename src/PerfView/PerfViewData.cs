@@ -5184,7 +5184,7 @@ namespace PerfView
             {
                 warning = "WARNING: The ETLX file was truncated at " + eventCountAtTrucation + " events.\r\n" +
                     "This is to keep the ETLX file size under 4GB, however all rundown events are processed.\r\n" +
-                    "Use /SkipMSec:XXX to see the later parts of the file.\r\n" +
+                    "Use /SkipMSec:XXX after clearing the cache (File->Clear Temp Files) to see the later parts of the file.\r\n" +
                     "See log for more details.";
             }
 
