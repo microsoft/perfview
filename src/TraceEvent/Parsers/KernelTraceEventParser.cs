@@ -2048,6 +2048,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
+        /// <summary>
+        /// Rasied every 0.5s with memory metrics of the current machine.
+        /// </summary>
+        public event Action<MemInfoTraceData> MemoryMemInfo
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new MemInfoTraceData(value, 1, 1, "MemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 1, MemoryProviderGuid);
+            }
+        }
+
         // TODO Added by hand without proper body decode.  
         public event Action<EmptyTraceData> MemoryPFMappedSectionCreate
         {
@@ -2844,7 +2860,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[191];
+                var templates = new TraceEvent[192];
                 templates[0] = new EventTraceHeaderTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 0, "Header", ProviderGuid, ProviderName, null);
                 templates[1] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 5, "Extension", ProviderGuid, ProviderName, null);
                 templates[2] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 32, "EndExtension", ProviderGuid, ProviderName, null);
@@ -2976,71 +2992,72 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[124] = new MemoryPageAccessTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 130, "PageAccess", ProviderGuid, ProviderName, null);
                 templates[125] = new MemoryProcessMemInfoTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 125, "ProcessMemInfo", ProviderGuid, ProviderName, null);
                 templates[126] = new MemoryProcessMemInfoTraceData(null, 2, 2, "MemoryProcessMemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", null);
-                templates[127] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 73, "PFMappedSectionCreate", ProviderGuid, ProviderName);
-                templates[128] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 76, "SessionDCStop", ProviderGuid, ProviderName);
-                templates[129] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 79, "PFMappedSectionDelete", ProviderGuid, ProviderName);
-                templates[130] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 115, "InMemoryStoreFault", ProviderGuid, ProviderName);
-                templates[131] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 119, "PageRelease", ProviderGuid, ProviderName);
-                templates[132] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 120, "RangeAccess", ProviderGuid, ProviderName);
-                templates[133] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 121, "RangeRelease", ProviderGuid, ProviderName);
-                templates[134] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 122, "Combine", ProviderGuid, ProviderName);
-                templates[135] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 123, "KernelMemUsage", ProviderGuid, ProviderName);
-                templates[136] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 124, "MMStats", ProviderGuid, ProviderName);
-                templates[137] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 126, "MemInfoSessionWS", ProviderGuid, ProviderName);
-                templates[138] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 127, "VirtualRotate", ProviderGuid, ProviderName);
-                templates[139] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 128, "VirtualAllocDCStart", ProviderGuid, ProviderName);
-                templates[140] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 129, "VirtualAllocDCStop", ProviderGuid, ProviderName);
-                templates[141] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 131, "RemoveFromWS", ProviderGuid, ProviderName);
-                templates[142] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 132, "WSSharableRundown", ProviderGuid, ProviderName);
-                templates[143] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 133, "InMemoryActiveRundown", ProviderGuid, ProviderName);
-                templates[144] = new SampledProfileTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 46, "Sample", ProviderGuid, ProviderName, null);
-                templates[145] = new PMCCounterProfTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 47, "PMCSample", ProviderGuid, ProviderName, null);
-                templates[146] = new SystemPathsTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 33, "SystemPaths", ProviderGuid, ProviderName);
-                templates[147] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 72, "SetInterval", ProviderGuid, ProviderName, null);
-                templates[148] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 73, "CollectionStart", ProviderGuid, ProviderName, null);
-                templates[149] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 74, "CollectionEnd", ProviderGuid, ProviderName, null);
-                templates[150] = new SysCallEnterTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 51, "SysClEnter", ProviderGuid, ProviderName, null);
-                templates[151] = new SysCallExitTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 52, "SysClExit", ProviderGuid, ProviderName, null);
-                templates[152] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 67, "ISR", ProviderGuid, ProviderName, null);
-                templates[153] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 66, "ThreadedDPC", ProviderGuid, ProviderName, null);
-                templates[154] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 68, "DPC", ProviderGuid, ProviderName, null);
-                templates[155] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 69, "TimerDPC", ProviderGuid, ProviderName, null);
-                templates[156] = new EmptyTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 58, "DebuggerEnabled", ProviderGuid, ProviderName);
-                templates[157] = new StackWalkStackTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 32, "Stack", ProviderGuid, ProviderName, null);
-                templates[158] = new StackWalkRefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 37, "StackKeyKernel", ProviderGuid, ProviderName, null);
-                templates[159] = new StackWalkRefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 38, "StackKeyUser", ProviderGuid, ProviderName, null);
-                templates[160] = new StackWalkDefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 35, "KeyDelete", ProviderGuid, ProviderName, null);
-                templates[161] = new StackWalkDefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 36, "KeyRundown", ProviderGuid, ProviderName, null);
-                templates[162] = new ALPCSendMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 33, "SendMessage", ProviderGuid, ProviderName, null);
-                templates[163] = new ALPCReceiveMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 34, "ReceiveMessage", ProviderGuid, ProviderName, null);
-                templates[164] = new ALPCWaitForReplyTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 35, "WaitForReply", ProviderGuid, ProviderName, null);
-                templates[165] = new ALPCWaitForNewMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 36, "WaitForNewMessage", ProviderGuid, ProviderName, null);
-                templates[166] = new ALPCUnwaitTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 37, "Unwait", ProviderGuid, ProviderName, null);
-                templates[167] = new EmptyTraceData(null, 0xFFFF, 14, "LostEvent", LostEventTaskGuid, 32, "", ProviderGuid, ProviderName);
-                templates[168] = new SystemConfigCPUTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 10, "CPU", ProviderGuid, ProviderName, null);
-                templates[169] = new SystemConfigPhyDiskTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 11, "PhyDisk", ProviderGuid, ProviderName, null);
-                templates[170] = new SystemConfigLogDiskTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 12, "LogDisk", ProviderGuid, ProviderName, null);
-                templates[171] = new SystemConfigNICTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 13, "NIC", ProviderGuid, ProviderName, null);
-                templates[172] = new SystemConfigVideoTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 14, "Video", ProviderGuid, ProviderName, null);
-                templates[173] = new SystemConfigServicesTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 15, "Services", ProviderGuid, ProviderName, null);
-                templates[174] = new SystemConfigPowerTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 16, "Power", ProviderGuid, ProviderName, null);
-                templates[175] = new SystemConfigIRQTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 21, "IRQ", ProviderGuid, ProviderName, null);
-                templates[176] = new SystemConfigPnPTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 22, "PnP", ProviderGuid, ProviderName, null);
-                templates[177] = new SystemConfigNetworkTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 17, "Network", ProviderGuid, ProviderName, null);
-                templates[178] = new SystemConfigIDEChannelTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 23, "IDEChannel", ProviderGuid, ProviderName, null);
-                templates[179] = new VirtualAllocTraceData(null, 0xFFFF, 0, "VirtualMem", VirtualAllocTaskGuid, 98, "Alloc", ProviderGuid, ProviderName, null);
-                templates[180] = new VirtualAllocTraceData(null, 0xFFFF, 0, "VirtualMem", VirtualAllocTaskGuid, 99, "Free", ProviderGuid, ProviderName, null);
-                templates[181] = new DispatcherReadyThreadTraceData(null, 0xFFFF, 0, "Dispatcher", ReadyThreadTaskGuid, 50, "ReadyThread", ProviderGuid, ProviderName, null);
-                templates[182] = new StringTraceData(null, 0xFFFF, 0, "PerfInfo", PerfInfoTaskGuid, 34, "Mark", ProviderGuid, ProviderName, false);
-                templates[183] = new BuildInfoTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 32, "BuildInfo", ProviderGuid, ProviderName);
-                templates[184] = new VolumeMappingTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 35, "VolumeMapping", ProviderGuid, ProviderName);
-                templates[185] = new StringTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 34, "UnknownVolume", ProviderGuid, ProviderName, true);
+                templates[127] = new MemInfoTraceData(null, 1, 1, "MemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State);
+                templates[128] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 73, "PFMappedSectionCreate", ProviderGuid, ProviderName);
+                templates[129] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 76, "SessionDCStop", ProviderGuid, ProviderName);
+                templates[130] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 79, "PFMappedSectionDelete", ProviderGuid, ProviderName);
+                templates[131] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 115, "InMemoryStoreFault", ProviderGuid, ProviderName);
+                templates[132] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 119, "PageRelease", ProviderGuid, ProviderName);
+                templates[133] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 120, "RangeAccess", ProviderGuid, ProviderName);
+                templates[134] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 121, "RangeRelease", ProviderGuid, ProviderName);
+                templates[135] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 122, "Combine", ProviderGuid, ProviderName);
+                templates[136] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 123, "KernelMemUsage", ProviderGuid, ProviderName);
+                templates[137] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 124, "MMStats", ProviderGuid, ProviderName);
+                templates[138] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 126, "MemInfoSessionWS", ProviderGuid, ProviderName);
+                templates[139] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 127, "VirtualRotate", ProviderGuid, ProviderName);
+                templates[140] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 128, "VirtualAllocDCStart", ProviderGuid, ProviderName);
+                templates[141] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 129, "VirtualAllocDCStop", ProviderGuid, ProviderName);
+                templates[142] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 131, "RemoveFromWS", ProviderGuid, ProviderName);
+                templates[143] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 132, "WSSharableRundown", ProviderGuid, ProviderName);
+                templates[144] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 133, "InMemoryActiveRundown", ProviderGuid, ProviderName);
+                templates[145] = new SampledProfileTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 46, "Sample", ProviderGuid, ProviderName, null);
+                templates[146] = new PMCCounterProfTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 47, "PMCSample", ProviderGuid, ProviderName, null);
+                templates[147] = new SystemPathsTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 33, "SystemPaths", ProviderGuid, ProviderName);
+                templates[148] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 72, "SetInterval", ProviderGuid, ProviderName, null);
+                templates[149] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 73, "CollectionStart", ProviderGuid, ProviderName, null);
+                templates[150] = new SampledProfileIntervalTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 74, "CollectionEnd", ProviderGuid, ProviderName, null);
+                templates[151] = new SysCallEnterTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 51, "SysClEnter", ProviderGuid, ProviderName, null);
+                templates[152] = new SysCallExitTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 52, "SysClExit", ProviderGuid, ProviderName, null);
+                templates[153] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 67, "ISR", ProviderGuid, ProviderName, null);
+                templates[154] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 66, "ThreadedDPC", ProviderGuid, ProviderName, null);
+                templates[155] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 68, "DPC", ProviderGuid, ProviderName, null);
+                templates[156] = new DPCTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 69, "TimerDPC", ProviderGuid, ProviderName, null);
+                templates[157] = new EmptyTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 58, "DebuggerEnabled", ProviderGuid, ProviderName);
+                templates[158] = new StackWalkStackTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 32, "Stack", ProviderGuid, ProviderName, null);
+                templates[159] = new StackWalkRefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 37, "StackKeyKernel", ProviderGuid, ProviderName, null);
+                templates[160] = new StackWalkRefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 38, "StackKeyUser", ProviderGuid, ProviderName, null);
+                templates[161] = new StackWalkDefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 35, "KeyDelete", ProviderGuid, ProviderName, null);
+                templates[162] = new StackWalkDefTraceData(null, 0xFFFF, 12, "StackWalk", StackWalkTaskGuid, 36, "KeyRundown", ProviderGuid, ProviderName, null);
+                templates[163] = new ALPCSendMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 33, "SendMessage", ProviderGuid, ProviderName, null);
+                templates[164] = new ALPCReceiveMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 34, "ReceiveMessage", ProviderGuid, ProviderName, null);
+                templates[165] = new ALPCWaitForReplyTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 35, "WaitForReply", ProviderGuid, ProviderName, null);
+                templates[166] = new ALPCWaitForNewMessageTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 36, "WaitForNewMessage", ProviderGuid, ProviderName, null);
+                templates[167] = new ALPCUnwaitTraceData(null, 0xFFFF, 13, "ALPC", ALPCTaskGuid, 37, "Unwait", ProviderGuid, ProviderName, null);
+                templates[168] = new EmptyTraceData(null, 0xFFFF, 14, "LostEvent", LostEventTaskGuid, 32, "", ProviderGuid, ProviderName);
+                templates[169] = new SystemConfigCPUTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 10, "CPU", ProviderGuid, ProviderName, null);
+                templates[170] = new SystemConfigPhyDiskTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 11, "PhyDisk", ProviderGuid, ProviderName, null);
+                templates[171] = new SystemConfigLogDiskTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 12, "LogDisk", ProviderGuid, ProviderName, null);
+                templates[172] = new SystemConfigNICTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 13, "NIC", ProviderGuid, ProviderName, null);
+                templates[173] = new SystemConfigVideoTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 14, "Video", ProviderGuid, ProviderName, null);
+                templates[174] = new SystemConfigServicesTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 15, "Services", ProviderGuid, ProviderName, null);
+                templates[175] = new SystemConfigPowerTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 16, "Power", ProviderGuid, ProviderName, null);
+                templates[176] = new SystemConfigIRQTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 21, "IRQ", ProviderGuid, ProviderName, null);
+                templates[177] = new SystemConfigPnPTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 22, "PnP", ProviderGuid, ProviderName, null);
+                templates[178] = new SystemConfigNetworkTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 17, "Network", ProviderGuid, ProviderName, null);
+                templates[179] = new SystemConfigIDEChannelTraceData(null, 0xFFFF, 15, "SystemConfig", SystemConfigTaskGuid, 23, "IDEChannel", ProviderGuid, ProviderName, null);
+                templates[180] = new VirtualAllocTraceData(null, 0xFFFF, 0, "VirtualMem", VirtualAllocTaskGuid, 98, "Alloc", ProviderGuid, ProviderName, null);
+                templates[181] = new VirtualAllocTraceData(null, 0xFFFF, 0, "VirtualMem", VirtualAllocTaskGuid, 99, "Free", ProviderGuid, ProviderName, null);
+                templates[182] = new DispatcherReadyThreadTraceData(null, 0xFFFF, 0, "Dispatcher", ReadyThreadTaskGuid, 50, "ReadyThread", ProviderGuid, ProviderName, null);
+                templates[183] = new StringTraceData(null, 0xFFFF, 0, "PerfInfo", PerfInfoTaskGuid, 34, "Mark", ProviderGuid, ProviderName, false);
+                templates[184] = new BuildInfoTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 32, "BuildInfo", ProviderGuid, ProviderName);
+                templates[185] = new VolumeMappingTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 35, "VolumeMapping", ProviderGuid, ProviderName);
+                templates[186] = new StringTraceData(null, 0xFFFF, 0, "SysConfig", SysConfigTaskGuid, 34, "UnknownVolume", ProviderGuid, ProviderName, true);
                 // templates[146] = new BatchedSampledProfileTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 55, "BatchedSample", ProviderGuid, ProviderName, null);
-                templates[186] = new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 32, "CreateHandle", ProviderGuid, ProviderName, null);
-                templates[187] = new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 33, "CloseHandle", ProviderGuid, ProviderName, null);
-                templates[188] = new ObjectDuplicateHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 34, "DuplicateHandle", ProviderGuid, ProviderName, null);
-                templates[189] = new ObjectTypeNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null);
-                templates[190] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
+                templates[187] = new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 32, "CreateHandle", ProviderGuid, ProviderName, null);
+                templates[188] = new ObjectHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 33, "CloseHandle", ProviderGuid, ProviderName, null);
+                templates[189] = new ObjectDuplicateHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 34, "DuplicateHandle", ProviderGuid, ProviderName, null);
+                templates[190] = new ObjectTypeNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null);
+                templates[191] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
 
                 s_templates = templates;
             }
@@ -8638,6 +8655,84 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         private event Action<MemorySystemMemInfoTraceData> Action;
         protected internal override void SetState(object newState) { state = (KernelTraceEventParserState)newState; }
         private KernelTraceEventParserState state;
+        #endregion
+    }
+
+    public sealed class MemInfoTraceData : TraceEvent
+    {
+        public byte PriorityLevels { get { return (byte)GetByteAt(0); } }
+        public long ZeroPageCount { get { return (long)GetAddressAt(1); } }
+        public long FreePageCount { get { return (long)GetAddressAt(HostOffset(5, 1)); } }
+        public long ModifiedPageCount { get { return (long)GetAddressAt(HostOffset(9, 2)); } }
+        public long ModifiedNoWritePageCount { get { return (long)GetAddressAt(HostOffset(13, 3)); } }
+        public long BadPageCount { get { return (long)GetAddressAt(HostOffset(17, 4)); } }
+
+        #region Private
+        internal MemInfoTraceData(Action<MemInfoTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MemInfoTraceData>)value; }
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected unsafe internal override void Validate()
+        {
+            Debug.Assert(EventDataLength >= HostOffset(17, 1) + 4);
+        }
+        public unsafe override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "PriorityLevels", PriorityLevels);
+            XmlAttribHex(sb, "ZeroPageCount", ZeroPageCount);
+            XmlAttribHex(sb, "FreePageCount", FreePageCount);
+            XmlAttribHex(sb, "ModifiedPageCount", ModifiedPageCount);
+            XmlAttribHex(sb, "ModifiedNoWritePageCount", ModifiedNoWritePageCount);
+            XmlAttribHex(sb, "BadPageCount", BadPageCount);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "PriorityLevels", "ZeroPageCount", "FreePageCount", "ModifiedPageCount", "ModifiedNoWritePageCount", "BadPageCount" };
+                return payloadNames;
+            }
+        }
+        /// <summary>
+        /// The fields after 'Count' are the first value in the array of working sets.   
+        /// </summary>
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return PriorityLevels;
+                case 1:
+                    return ZeroPageCount;
+                case 2:
+                    return FreePageCount;
+                case 3:
+                    return ModifiedPageCount;
+                case 4:
+                    return ModifiedNoWritePageCount;
+                case 5:
+                    return BadPageCount;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+        private event Action<MemInfoTraceData> Action;
         #endregion
     }
 
