@@ -37,7 +37,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // ensure there are base processes
             source.NeedProcesses();
 
-            TraceLoadedDotNetRuntime.SetupCallbacks(source);
+            if (m_currentSource != source) TraceLoadedDotNetRuntime.SetupCallbacks(source);
             source.UserData["Computers/LoadedDotNetRuntimes"] = new Dictionary<ProcessIndex, DotNetRuntime>();
 
             m_currentSource = source;
@@ -47,7 +47,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         {
             Debug.Assert(process.Source != null);
             Debug.Assert(m_currentSource == process.Source);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+            Dictionary<ProcessIndex, DotNetRuntime> map = process.Source.UserData["Computers/LoadedDotNetRuntimes"] as Dictionary<ProcessIndex, DotNetRuntime>;
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].Runtime;
             else return null;
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Debug.Assert(m_currentSource == process.Source);
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
             if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
-            map[process.ProcessIndex].OnLoaded = OnDotNetRuntimeLoaded;
+            map[process.ProcessIndex].OnLoaded += OnDotNetRuntimeLoaded;
         }
 
         public static void SetMutableTraceEventStackSource(this TraceProcess process, MutableTraceEventStackSource stackSource)
@@ -77,6 +77,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].StackSource;
             else return null;
+        }
+
+        public static bool HasMutableTraceEventStackSource(this TraceEventDispatcher source)
+        {
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)source.UserData["Computers/LoadedDotNetRuntimes"];
+            return map.Any(kv => kv.Value.StackSource != null);
         }
 
         #region private
@@ -280,37 +286,40 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 source.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
                 {
                     RecentCpuSamples.Add(new ThreadWorkSpan(data));
-                    TraceLoadedDotNetRuntime loadedRuntime = null;
-                    TraceProcess gcProcess = null;
-                    foreach (var proc in source.Processes())
+                    if (source.HasMutableTraceEventStackSource())
                     {
-                        var tmpMang = proc.LoadedDotNetRuntime();
-                        if (tmpMang == null) continue;
-
-                        TraceGC e = TraceGarbageCollector.GetCurrentGC(tmpMang);
-                        // If we are in the middle of a GC.
-                        if (e != null)
+                        TraceLoadedDotNetRuntime loadedRuntime = null;
+                        TraceProcess gcProcess = null;
+                        foreach (var proc in source.Processes())
                         {
-                            if ((e.Type != GCType.BackgroundGC) && (tmpMang.GC.m_stats.IsServerGCUsed == 1))
+                            var tmpMang = proc.LoadedDotNetRuntime();
+                            if (tmpMang == null) continue;
+
+                            TraceGC e = TraceGarbageCollector.GetCurrentGC(tmpMang);
+                            // If we are in the middle of a GC.
+                            if (e != null)
                             {
-                                e.AddServerGcSample(new ThreadWorkSpan(data));
-                                loadedRuntime = tmpMang;
-                                gcProcess = proc;
+                                if ((e.Type != GCType.BackgroundGC) && (tmpMang.GC.m_stats.IsServerGCUsed == 1))
+                                {
+                                    e.AddServerGcSample(new ThreadWorkSpan(data));
+                                    loadedRuntime = tmpMang;
+                                    gcProcess = proc;
+                                }
                             }
                         }
-                    }
 
-                    if (loadedRuntime != null && gcProcess != null && gcProcess.MutableTraceEventStackSource() != null)
-                    {
-                        var stackSource = gcProcess.MutableTraceEventStackSource();
-                        TraceGC e = TraceGarbageCollector.GetCurrentGC(loadedRuntime);
-                        StackSourceSample sample = new StackSourceSample(stackSource);
-                        sample.Metric = 1;
-                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                        var nodeName = string.Format("Server GCs #{0} in {1} (PID:{2})", e.Number, gcProcess.Name, gcProcess.ProcessID);
-                        var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
-                        sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
-                        stackSource.AddSample(sample);
+                        if (loadedRuntime != null && gcProcess != null && gcProcess.MutableTraceEventStackSource() != null)
+                        {
+                            var stackSource = gcProcess.MutableTraceEventStackSource();
+                            TraceGC e = TraceGarbageCollector.GetCurrentGC(loadedRuntime);
+                            StackSourceSample sample = new StackSourceSample(stackSource);
+                            sample.Metric = 1;
+                            sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                            var nodeName = string.Format("Server GCs #{0} in {1} (PID:{2})", e.Number, gcProcess.Name, gcProcess.ProcessID);
+                            var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
+                            sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                            stackSource.AddSample(sample);
+                        }
                     }
 
                     TraceProcess tmpProc = data.Process();
@@ -1919,6 +1928,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// <returns></returns>
         public bool IsNotCompacting()
         {
+            if (GlobalHeapHistory == null) return true;
             return ((GlobalHeapHistory.GlobalMechanisms & (GCGlobalMechanisms.Compaction)) != 0);
         }
         /// <summary>
@@ -1930,11 +1940,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         {
             // Older versions of the runtime does not have this event. So even for a complete GC, we may not have this
             // info.
-            if (PerHeapCondemnedReasons == null)
+            if (PerHeapCondemnedReasons == null || PerHeapCondemnedReasons.Length == 0)
                 return;
 
             int HeapIndexHighestGen = 0;
-            if (PerHeapCondemnedReasons.Length != 1)
+            if (PerHeapCondemnedReasons.Length > 1)
             {
                 HeapIndexHighestGen = FindFirstHighestCondemnedHeap();
             }
