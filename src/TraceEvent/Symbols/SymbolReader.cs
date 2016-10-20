@@ -2455,7 +2455,6 @@ namespace Microsoft.Diagnostics.Symbols
 
                     // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
                     string addToPath = null;
-#if !PUBLIC_ONLY                // SD.exe is a Microsoft-internal source code control system.
                     if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
                     {
                         if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
@@ -2463,7 +2462,6 @@ namespace Microsoft.Diagnostics.Symbols
                         addToPath = archToolsDir;
                     }
                     else
-#endif
                     if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
                     {
                         var tfExe = Command.FindOnPath("tf.exe");
