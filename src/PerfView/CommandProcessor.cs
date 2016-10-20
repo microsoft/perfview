@@ -2929,150 +2929,69 @@ namespace PerfView
         private static void ParseProviderSpec(string providerSpec, TraceEventLevel level, TraceEventKeyword matchAnyKeywords,
             TraceEventProviderOptions options, List<ParsedProvider> retList, TextWriter log)
         {
-            // Is it a EventSource specification (@path#eventSourceName?)
-            if (providerSpec.StartsWith("@"))
+            // Is it a normal GUID 
+            Guid providerGuid;
+            if (Regex.IsMatch(providerSpec, "........-....-....-....-............"))
             {
-                int atIndex = providerSpec.IndexOf('#', 1);
-                string eventSourceName = null;
-                if (atIndex < 0)
-                    atIndex = providerSpec.Length;
-                else
-                    eventSourceName = providerSpec.Substring(atIndex + 1);
-
-                string fileName = providerSpec.Substring(1, atIndex - 1);
-                if (!File.Exists(fileName))
-                {
-                    var exe = fileName + ".exe";
-                    if (File.Exists(exe))
-                        fileName = exe;
-                    else
-                    {
-                        var dll = fileName + ".dll";
-                        if (File.Exists(dll))
-                            fileName = dll;
-                    }
-                }
-
-                if (log != null)
-                    log.WriteLine("Looking for event sources in {0}", fileName);
-                foreach (Type eventSource in EventSourceFinder.GetEventSourcesInFile(fileName))
-                {
-                    string candidateEventSourceName = EventSourceFinder.GetName(eventSource);
-                    if (log != null)
-                        log.WriteLine("Found EventSource {0} in file.", candidateEventSourceName);
-
-                    bool useProvider = false;
-                    if (eventSourceName == null)
-                        useProvider = true;
-                    else
-                    {
-                        if (String.Compare(eventSourceName, candidateEventSourceName, StringComparison.OrdinalIgnoreCase) == 0)
-                            useProvider = true;
-                        else
-                        {
-                            int dot = candidateEventSourceName.LastIndexOf('.');
-                            if (dot >= 0)
-                                candidateEventSourceName = candidateEventSourceName.Substring(dot + 1);
-
-                            if (String.Compare(eventSourceName, candidateEventSourceName, StringComparison.OrdinalIgnoreCase) == 0)
-                                useProvider = true;
-                            else
-                            {
-                                if (candidateEventSourceName.EndsWith("EventSource", StringComparison.OrdinalIgnoreCase))
-                                    candidateEventSourceName = candidateEventSourceName.Substring(0, candidateEventSourceName.Length - 11);
-
-                                if (String.Compare(eventSourceName, candidateEventSourceName, StringComparison.OrdinalIgnoreCase) == 0)
-                                    useProvider = true;
-
-                            }
-                        }
-                    }
-                    if (useProvider)
-                    {
-                        retList.Add(new ParsedProvider()
-                        {
-                            Name = EventSourceFinder.GetName(eventSource),
-                            Guid = EventSourceFinder.GetGuid(eventSource),
-                            Level = level,
-                            MatchAnyKeywords = matchAnyKeywords,
-                            Options = options
-                        });
-                    }
-                }
-                if (retList.Count == 0)
-                {
-                    if (eventSourceName != null)
-                        throw new ApplicationException("EventSource " + eventSourceName + " not found in " + fileName);
-                    else
-                        throw new ApplicationException("No types deriving from EventSource found in " + fileName);
-                }
+                if (!Guid.TryParse(providerSpec, out providerGuid))
+                    throw new ApplicationException("Could not parse Guid '" + providerSpec + "'");
             }
+            else if (providerSpec.StartsWith("*"))
+            {
+                // We allow you to specify EventSources without knowing where they came from with the * syntax.  
+                providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerSpec.Substring(1));
+            }
+            // Is it specially known.  TODO should we remove some of these?
+            else if (string.Compare(providerSpec, "Clr", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = ClrTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "ClrRundown", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = ClrRundownTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "ClrStress", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = ClrStressTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "ClrPrivate", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = ClrPrivateTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "ClrNative", StringComparison.OrdinalIgnoreCase) == 0)           // ProjectN
+                providerGuid = ClrTraceEventParser.NativeProviderGuid;
+            else if (string.Compare(providerSpec, "ClrNativePrivate", StringComparison.OrdinalIgnoreCase) == 0)    // ProjectN Private
+                providerGuid = ClrPrivateTraceEventParser.NativeProviderGuid;
+            else if (string.Compare(providerSpec, "ASP.Net", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35");
+            else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid("d781ca11-61c0-4387-b83d-af52d3d2dd6a");
+            else if (string.Compare(providerSpec, ".NetTasks", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 220, 0xd7, 0xb5);
+            else if (string.Compare(providerSpec, ".NetFramework", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid(0x8e9f5090, 0x2d75, 0x4d03, 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);
+            else if (string.Compare(providerSpec, ".NetPLinq", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid(0x159eeeec, 0x4a14, 0x4418, 0xa8, 0xfe, 250, 0xab, 0xcd, 0x98, 120, 0x87);
+            else if (string.Compare(providerSpec, ".NetConcurrentCollections", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid(0x35167f8e, 0x49b2, 0x4b96, 0xab, 0x86, 0x43, 0x5b, 0x59, 0x33, 0x6b, 0x5e);
+            else if (string.Compare(providerSpec, ".NetSync", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid(0xec631d38, 0x466b, 0x4290, 0x93, 6, 0x83, 0x49, 0x71, 0xba, 2, 0x17);
+            else if (string.Compare(providerSpec, "MeasurementBlock", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54");
+            else if (string.Compare(providerSpec, "CodeMarkers", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E");
+            else if (string.Compare(providerSpec, "Heap Trace Provider", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = HeapTraceProviderTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = HeapTraceProviderTraceEventParser.HeapRangeProviderGuid;
             else
             {
-                // Is it a normal GUID 
-                Guid providerGuid;
-                if (Regex.IsMatch(providerSpec, "........-....-....-....-............"))
-                {
-                    if (!Guid.TryParse(providerSpec, out providerGuid))
-                        throw new ApplicationException("Could not parse Guid '" + providerSpec + "'");
-                }
-                else if (providerSpec.StartsWith("*"))
-                {
-                    // We allow you to specify EventSources without knowing where they came from with the * syntax.  
-                    providerGuid = TraceEventProviders.GetEventSourceGuidFromName(providerSpec.Substring(1));
-                }
-                // Is it specially known.  TODO should we remove some of these?
-                else if (string.Compare(providerSpec, "Clr", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = ClrTraceEventParser.ProviderGuid;
-                else if (string.Compare(providerSpec, "ClrRundown", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = ClrRundownTraceEventParser.ProviderGuid;
-                else if (string.Compare(providerSpec, "ClrStress", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = ClrStressTraceEventParser.ProviderGuid;
-                else if (string.Compare(providerSpec, "ClrPrivate", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = ClrPrivateTraceEventParser.ProviderGuid;
-                else if (string.Compare(providerSpec, "ClrNative", StringComparison.OrdinalIgnoreCase) == 0)           // ProjectN
-                    providerGuid = ClrTraceEventParser.NativeProviderGuid;
-                else if (string.Compare(providerSpec, "ClrNativePrivate", StringComparison.OrdinalIgnoreCase) == 0)    // ProjectN Private
-                    providerGuid = ClrPrivateTraceEventParser.NativeProviderGuid;
-                else if (string.Compare(providerSpec, "ASP.Net", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35");
-                else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid("d781ca11-61c0-4387-b83d-af52d3d2dd6a");
-                else if (string.Compare(providerSpec, ".NetTasks", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 220, 0xd7, 0xb5);
-                else if (string.Compare(providerSpec, ".NetFramework", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid(0x8e9f5090, 0x2d75, 0x4d03, 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);
-                else if (string.Compare(providerSpec, ".NetPLinq", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid(0x159eeeec, 0x4a14, 0x4418, 0xa8, 0xfe, 250, 0xab, 0xcd, 0x98, 120, 0x87);
-                else if (string.Compare(providerSpec, ".NetConcurrentCollections", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid(0x35167f8e, 0x49b2, 0x4b96, 0xab, 0x86, 0x43, 0x5b, 0x59, 0x33, 0x6b, 0x5e);
-                else if (string.Compare(providerSpec, ".NetSync", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid(0xec631d38, 0x466b, 0x4290, 0x93, 6, 0x83, 0x49, 0x71, 0xba, 2, 0x17);
-                else if (string.Compare(providerSpec, "MeasurementBlock", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54");
-                else if (string.Compare(providerSpec, "CodeMarkers", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E");
-                else if (string.Compare(providerSpec, "Heap Trace Provider", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = HeapTraceProviderTraceEventParser.ProviderGuid;
-                else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
-                    providerGuid = HeapTraceProviderTraceEventParser.HeapRangeProviderGuid;
-                else
-                {
-                    providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
-                    // Look it up by name 
-                    if (providerGuid == Guid.Empty)
-                        throw new ApplicationException("Could not find provider name '" + providerSpec + "'");
-                }
-
-                retList.Add(new ParsedProvider()
-                {
-                    Name = providerSpec,
-                    Guid = providerGuid,
-                    Level = level,
-                    MatchAnyKeywords = matchAnyKeywords,
-                    Options = options
-                });
+                providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
+                // Look it up by name 
+                if (providerGuid == Guid.Empty)
+                    throw new ApplicationException("Could not find provider name '" + providerSpec + "'");
             }
+
+            retList.Add(new ParsedProvider()
+            {
+                Name = providerSpec,
+                Guid = providerGuid,
+                Level = level,
+                MatchAnyKeywords = matchAnyKeywords,
+                Options = options
+            });
         }
 
         private static ulong ParseKeywords(string matchKeywordString, string providerName)
@@ -3158,45 +3077,6 @@ namespace PerfView
             return manifest;
         }
 
-
-        // TODO load it its own appdomain so we can unload them properly.
-        public static IEnumerable<Type> GetEventSourcesInFile(string fileName, bool allowInvoke = false)
-        {
-            System.Reflection.Assembly assembly;
-            try
-            {
-                if (allowInvoke)
-                    assembly = System.Reflection.Assembly.LoadFrom(fileName);
-                else
-                    assembly = System.Reflection.Assembly.ReflectionOnlyLoadFrom(fileName);
-            }
-            catch (Exception e)
-            {
-                // Convert to an application exception TODO is this a good idea?
-                throw new ApplicationException(e.Message);
-            }
-
-            Dictionary<Assembly, Assembly> soFar = new Dictionary<Assembly, Assembly>();
-            GetStaticReferencedAssemblies(assembly, soFar);
-
-            List<Type> eventSources = new List<Type>();
-            foreach (Assembly subAssembly in soFar.Keys)
-            {
-                try
-                {
-                    foreach (Type type in subAssembly.GetTypes())
-                    {
-                        if (type.BaseType != null && type.BaseType.Name == "EventSource")
-                            eventSources.Add(type);
-                    }
-                }
-                catch (Exception)
-                {
-                    Debug.WriteLine("Problem loading {0} module, skipping.", subAssembly.GetName().Name);
-                }
-            }
-            return eventSources;
-        }
         #region private
 
         private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
