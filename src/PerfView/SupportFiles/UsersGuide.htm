@@ -4108,6 +4108,22 @@
                             the most interesting providers start with Microsoft-Windows in their name.
                         </li>
                         <li>
+                            The syntax @<em>filePath</em>#e<em>ventSourceName.&nbsp; </em>This syntax is used
+                            for .NET EventSource Providers.&nbsp;&nbsp; (Provided in V4.5 of the .NET Runtime
+                            under System.Diagnostics.Tracing.EventSource).&nbsp;&nbsp;&nbsp; EventSources are
+                            the way to generate ETW events in managed code.&nbsp;&nbsp; To specify an event
+                            source you specify&nbsp; <em>filePath</em> is the path of a file in which the event
+                            source is defined (or any of its static dependencies, for a managed application
+                            you can typically specify the EXE of the program.), <em>&nbsp;EventSourceName</em>
+                            is the name of the Eventsource within the file.&nbsp; The #<em>eventSourceName</em>
+                            is optional, and if omitted all events sources within the file are enabled.&nbsp;&nbsp;&nbsp;
+                            Finally <em>fileName </em>itself can be omitted (but not that @) if the &#39;run&#39;
+                            command is specified and EXE path can be determined from the command line.&nbsp;
+                            If so, the filename of the exe is used as the filename to look up event sources.&nbsp;&nbsp;&nbsp;&nbsp;
+                            Thus in the case where you wish to turn on all event sources that are in the exe
+                            (or any static dependency of the exe) then the specification &#39;@&#39; is sufficient.&nbsp;
+                        </li>
+                        <li>
                             The syntax <em>*EventSourceName</em>.&nbsp;&nbsp; This is another way of specifying
                             an EventSource provider.&nbsp;&nbsp; Every ETW provider is uniquely identified by
                             a GUID that is specified when the EventSource is created.&nbsp; However it is strongly
