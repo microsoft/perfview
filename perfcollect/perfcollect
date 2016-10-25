@@ -1122,10 +1122,10 @@ ProcessArguments()
 			i=$i+1
 		elif [ "-threadtime" == "$arg" ]
 		then
-		        collect_threadTime=1
+			collect_threadTime=1
 		elif [ "-hwevents" == "$arg" ]
 		then
-  		        collect_HWevents=1
+			collect_HWevents=1
 		elif [ "-perfopt" == "$arg" ]
 		then
 			perfOpt=$value
@@ -1583,7 +1583,7 @@ BuildPerfRecordArgs()
 	# Enable HW counters event collection
 	if [ $collect_HWevents -eq 1 ]
 	then
-	    collectionArgs="$collectionArgs -e cycles,instructions,branches,cache-misses"
+		collectionArgs="$collectionArgs -e cycles,instructions,branches,cache-misses"
 	fi
 	
 	# Enable context switches.
