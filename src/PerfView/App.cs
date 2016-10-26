@@ -625,7 +625,7 @@ namespace PerfView
                 symPath = new SymbolPath("SRV*" + symPath.DefaultSymbolCache());
 
             var sourcePath = App.SourcePath;
-            string localSymDir = null;
+            string localSymDir = symPath.DefaultSymbolCache();
             if (etlFilePath != null)
             {
                 // Add the directory where the file resides and a 'symbols' subdirectory 
@@ -637,14 +637,13 @@ namespace PerfView
 
                     // If there is a 'symbols' directory next to the data file, look for symbols there
                     // as well.   Note that we also put copies of any symbols here as well (see below)
-                    localSymDir = Path.Combine(filePathDir, "symbols");
-                    if (Directory.Exists(localSymDir))
+                    string potentiallocalSymDir = Path.Combine(filePathDir, "symbols");
+                    if (Directory.Exists(potentiallocalSymDir))
                     {
-                        symPath.Insert(localSymDir);
-                        symPath.Insert("SRV*" + localSymDir);
+                        symPath.Insert(potentiallocalSymDir);
+                        symPath.Insert("SRV*" + potentiallocalSymDir);
+                        localSymDir = potentiallocalSymDir;
                     }
-                    else
-                        localSymDir = null;
 
                     // WPR conventions add any .etl.ngenPDB directory to the path too.   has higher priority still. 
                     var wprSymDir = etlFilePath + ".NGENPDB";

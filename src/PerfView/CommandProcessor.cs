@@ -2272,6 +2272,8 @@ namespace PerfView
                 cmdLineArgs += " /NoRundown";
             if (parsedArgs.NoNGenRundown)
                 cmdLineArgs += " /NoNGenRundown";
+            if (parsedArgs.ForceNgenRundown)
+                cmdLineArgs += " /ForceNgenRundown";
             if (parsedArgs.NoClrRundown)
                 cmdLineArgs += " /NoClrRundown";
             if (parsedArgs.Merge.HasValue)
