@@ -27,6 +27,7 @@ public class DotNetHeapDumper
         log.WriteLine("Starting ETW logging on File {0}", etlFileName);
         using (var session = new TraceEventSession("PerfViewGCHeapETLSession", etlFileName))
         {
+            session.BufferSizeMB = 256;
             session.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad);
 
             // Isolate this to a single process.  
