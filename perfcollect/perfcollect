@@ -1363,7 +1363,8 @@ ProcessCollectedData()
 	                then
 	                    IFS=""
 	                    LogAppend "Generating PerfMap for ${path}"
-	                    RunSilent "${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}"
+	                    LogAppend "Running ${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path}"
+	                    ${crossgenCmd} /Trusted_Platform_Assemblies $imagePaths /CreatePerfMap . ${path} >> $logFile 2>&1
 	                    IFS=":"
 	                else
 	                    LogAppend "Skipping ${path}"
