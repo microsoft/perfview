@@ -473,11 +473,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="CopyTraceEventNativeBinariesToOutDir" BeforeTargets="Build">
-      <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86"/>
-      <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64"/>
-      <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\msdia140.dll" DestinationFolder="$(OutDir)x86"/>
-      <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64"/>
-      <Copy SourceFiles="supportFiles\crossGen.exe" DestinationFolder="$(OutDir)amd64"/>
+    <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86" />
+    <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
+    <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
+    <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
+    <Copy SourceFiles="supportFiles\crossGen.exe" DestinationFolder="$(OutDir)amd64" />
   </Target>
   <ItemGroup>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
