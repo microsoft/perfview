@@ -1054,24 +1054,7 @@ namespace PerfView
             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
             var issueID = userName.Replace(" ", "") + "-" + DateTime.Now.ToString("yyyy'-'MM'-'dd'.'HH'.'mm'.'ss");
             string screenShotPath = null;
-            string feedbackFile = null;
-            if (crash)
-            {
-                feedbackFile = CrashLogFilePath;
-                try
-                {
-                    screenShotPath = Path.Combine(FeedbackDirectory, "ScreenShot." + issueID + ".png");
-                    ScreenShot.TakeDesktopScreenShot(screenShotPath);
-                }
-                catch (Exception)
-                {
-                    screenShotPath = null;
-                }
-            }
-            else
-            {
-                feedbackFile = FeedbackFilePath;
-            }
+            string feedbackFile = FeedbackFilePath;
             var logPath = Path.Combine(FeedbackDirectory, "UserLog." + issueID + ".txt");
 
             sw.WriteLine("**********************************************************************");
