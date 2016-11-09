@@ -2012,12 +2012,6 @@ namespace PerfView
 
                         // TODO FIX NOW this is a hack
                         var notepad2 = Command.FindOnPath("notepad2.exe");
-                        if (notepad2 == null && AppLog.InternalUser)
-                        {
-                            var clrMainNotepad2 = @"\\clrmain\tools\x86\notepad2.exe";
-                            if (SymbolPath.ComputerNameExists("clrmain", 300) && File.Exists(clrMainNotepad2))
-                                notepad2 = clrMainNotepad2;
-                        }
 
                         Window dialogParentWindow = this;
                         if (notepad2 != null)
