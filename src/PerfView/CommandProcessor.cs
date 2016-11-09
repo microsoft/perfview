@@ -2017,6 +2017,8 @@ namespace PerfView
                 log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
                 return;
             }
+            log.WriteLine("Profiler DLL to load is {0}", profilerDll);
+
 
             log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
