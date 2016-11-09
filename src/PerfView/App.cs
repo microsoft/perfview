@@ -1053,7 +1053,6 @@ namespace PerfView
             var userName = Environment.GetEnvironmentVariable("USERNAME");
             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
             var issueID = userName.Replace(" ", "") + "-" + DateTime.Now.ToString("yyyy'-'MM'-'dd'.'HH'.'mm'.'ss");
-            string screenShotPath = null;
             string feedbackFile = FeedbackFilePath;
             var logPath = Path.Combine(FeedbackDirectory, "UserLog." + issueID + ".txt");
 
@@ -1064,8 +1063,6 @@ namespace PerfView
             sw.WriteLine("UserDomain: {0}", userDomain);
             sw.WriteLine("PerfView Version Number: {0}", VersionNumber);
             sw.WriteLine("PerfView Build Date: {0}", BuildDate);
-            if (screenShotPath != null)
-                sw.WriteLine("Screenshot: {0}", screenShotPath);
 
             try
             {
