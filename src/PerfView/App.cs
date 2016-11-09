@@ -1010,6 +1010,7 @@ namespace PerfView
         /// </summary>
         public static void LogUsage(string eventName, string arg1 = "", string arg2 = "")
         {
+#if !PUBLIC_ONLY
             if (!CanSendFeedback)
                 return;
             try
@@ -1035,6 +1036,7 @@ namespace PerfView
                     File.Move(usagePath, Path.ChangeExtension(usagePath, ".prev.csv"));
             }
             catch (Exception) { }
+#endif
         }
         /// <summary>
         /// Called if you wish to send feedback to the developer.  Returns true if successful
@@ -1042,6 +1044,11 @@ namespace PerfView
         /// </summary>
         public static bool SendFeedback(string message, bool crash)
         {
+#if PUBLIC_ONLY
+            return false;
+#else 
+            if (!CanSendFeedback)
+                return false;
             StringWriter sw = new StringWriter();
             var userName = Environment.GetEnvironmentVariable("USERNAME");
             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
@@ -1090,6 +1097,7 @@ namespace PerfView
             sw.Write("    ");
             sw.WriteLine(message.Replace("\n", "\n    "));
             return WriteFeedbackToLog(feedbackFile, sw.ToString());
+#endif
         }
         public static string VersionNumber
         {
@@ -1112,7 +1120,7 @@ namespace PerfView
             }
         }
 
-        #region private
+#region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1155,7 +1163,7 @@ namespace PerfView
             }
             return false;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1201,9 +1209,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-        #region private
+#region private
         TextWriter m_verboseLog;
         TextWriter m_terseLog;
-        #endregion
+#endregion
     }
 }
