@@ -2540,12 +2540,6 @@ namespace Microsoft.Diagnostics.Symbols
                         return tfexe;
                 }
             }
-#if !PUBLIC_ONLY
-            // If we can get \\clrmain we keep a copy there.  
-            string standAloneTF = @"\\clrmain\tools\StandAloneTF";
-            if (SymbolPath.ComputerNameExists("clrmain", 1000) && Directory.Exists(standAloneTF))
-                return Path.Combine(standAloneTF, "tf.exe");
-#endif
             return null;
         }
 
