@@ -2665,8 +2665,9 @@ namespace PerfView
                         // The runtime does method rundown first then the module rundown.  This means if you have a large
                         // number of methods and method rundown does not complete you don't get ANYTHING.   To avoid this
                         // we first trigger all module (loader) rundown and then trigger the method rundown
-                        EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                            (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown));
+                        if ((rundownKeywords & ClrRundownTraceEventParser.Keywords.Loader) != 0)
+                            EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                                (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown));
                         Thread.Sleep(500);                  // Give it some time to complete, so we don't have so many events firing simultaneously.  
                         // when we do the method rundown below.  
 
