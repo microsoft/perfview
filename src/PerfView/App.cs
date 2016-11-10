@@ -971,7 +971,12 @@ namespace PerfView
                         if (s_ProbedForFeedbackAt.Ticks == 0)
                         {
                             s_ProbedForFeedbackAt = DateTime.Now;
-                            s_CanSendFeedback = SymbolPath.ComputerNameExists(FeedbackServer) && WriteFeedbackToLog(FeedbackFilePath, "");
+                            // Only collect data in the REDMOND domain EUROPE has rules about telemetry.  
+                            var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
+                            if (userDomain != "REDMOND")
+                                s_CanSendFeedback = false;
+                            else
+                                s_CanSendFeedback = SymbolPath.ComputerNameExists(FeedbackServer) && WriteFeedbackToLog(FeedbackFilePath, "");
                         }
                         else
                         {
@@ -1052,6 +1057,7 @@ namespace PerfView
             StringWriter sw = new StringWriter();
             var userName = Environment.GetEnvironmentVariable("USERNAME");
             var userDomain = Environment.GetEnvironmentVariable("USERDOMAIN");
+
             var issueID = userName.Replace(" ", "") + "-" + DateTime.Now.ToString("yyyy'-'MM'-'dd'.'HH'.'mm'.'ss");
             string feedbackFile = FeedbackFilePath;
             var logPath = Path.Combine(FeedbackDirectory, "UserLog." + issueID + ".txt");
