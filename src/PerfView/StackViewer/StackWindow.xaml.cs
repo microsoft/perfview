@@ -2774,7 +2774,8 @@ namespace PerfView
 
                 StackWindows.Remove(this);
                 UpdateDiffMenus(StackWindows);
-                DataSource.ViewClosing(this);
+                if (DataSource != null)
+                    DataSource.ViewClosing(this);
                 // Insure our parent is visible
                 DoOpenParent(null, null);
 
