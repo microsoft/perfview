@@ -2748,6 +2748,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(0 < MaxEventIndex);
         }
 
+        // Path  GetFileNameWithoutExtension will throw on illegal chars, which is too strong, so avoid that here.  
+        internal static string GetFileNameWithoutExtensionNoIllegalChars(string filePath)
+        {
+            int lastBackslashIdx = filePath.LastIndexOf('\\');
+            if (lastBackslashIdx < 0)
+                lastBackslashIdx = 0;
+            else
+                lastBackslashIdx++;
+            int dotIdx = filePath.LastIndexOf('.');
+            if (dotIdx < lastBackslashIdx)
+                dotIdx = filePath.Length;
+            return filePath.Substring(lastBackslashIdx, dotIdx - lastBackslashIdx);
+        }
+
 #if DEBUG
         /// <summary>
         /// Returns true if 'str' has only normal ASCII (printable) characters.
@@ -4547,26 +4561,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             get
             {
                 if (name == null)
-                {
-                    // This is GetFileNameWithoutExtension without the error checking for illegal characters
-                    // name = Path.GetFileNameWithoutExtension(ImageFileName);
-                    //try
-                    //{
-                    //    name = Path.GetFileNameWithoutExtension(ImageFileName);
-                    //    return name;    
-                    //}
-                    //catch (Exception e) { }
-
-                    int lastBackslashIdx = ImageFileName.LastIndexOf('\\');
-                    if (lastBackslashIdx < 0)
-                        lastBackslashIdx = 0;
-                    else
-                        lastBackslashIdx++;
-                    int dotIdx = ImageFileName.LastIndexOf('.');
-                    if (dotIdx < lastBackslashIdx)
-                        dotIdx = ImageFileName.Length;
-                    name = ImageFileName.Substring(lastBackslashIdx, dotIdx - lastBackslashIdx);
-                }
+                    name = TraceLog.GetFileNameWithoutExtensionNoIllegalChars(ImageFileName);
                 return name;
             }
         }
@@ -8310,11 +8305,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (name == null)
                 {
                     var filePath = FilePath;
-                    if (filePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
-                        filePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                        name = Path.GetFileNameWithoutExtension(filePath);
-                    else
-                        name = Path.GetFileName(filePath);
+                    name = TraceLog.GetFileNameWithoutExtensionNoIllegalChars(filePath);
                 }
                 return name;
             }

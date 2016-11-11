@@ -18,8 +18,7 @@ namespace Utilities
                 || ex is System.Xml.XmlException
                 || ex is NotSupportedException 
                 || ex is ArgumentException && 
-                    (ex.Message.StartsWith("Illegal characters in path", StringComparison.OrdinalIgnoreCase) || 
-                    (ex.Message.StartsWith("parsing", StringComparison.OrdinalIgnoreCase)))     // regex error message 
+                    (ex.Message.StartsWith("parsing", StringComparison.OrdinalIgnoreCase))     // regex error message 
                 || ex.GetType().Name == "SerializationException") // We do this to avoid loading the FastSerialziation DLL (which may fail)
             {
                 userLevel = true;
