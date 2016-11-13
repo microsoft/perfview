@@ -79,7 +79,7 @@ namespace PerfView
 #endif
 
         // view options
-        public string Process;              // A process name to focus on.  
+        public string Process;              // A process name to focus on.
 
         // run Options 
         public string[] CommandAndArgs;     // This is broken up into words
@@ -93,6 +93,7 @@ namespace PerfView
         public string[] StopOnEtwEvent;
         public string StopOnException;
         public int StopOnGCOverMsec;
+        public int StopOnBGCFinalPauseOverMsec; // Stop on a BGC whose final pause is over this many ms
         public float DecayToZeroHours;          //causes 'StopOn*OverMSec' timeouts to decay to zero over this time period
         public int MinSecForTrigger;            // affects StopOnPerfCounter
         public string StopOnEventLogMessage;    // stop collection on event logs
@@ -236,13 +237,16 @@ namespace PerfView
 
             int StopOnRequestOverMsec = 0;
             int StopOnGCSuspendOverMSec = 0;
+
             // These are basically special cases of the /StopOnEtwEvent
             parser.DefineOptionalQualifier("StopOnRequestOverMsec", ref StopOnRequestOverMsec,
                 "Trigger a stop of a collect command if there is any IIS request that is longer than the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnGCOverMsec", ref StopOnGCOverMsec,
                 "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) is longer than the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnGCSuspendOverMSec", ref StopOnGCSuspendOverMSec,
-                "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) where suspending for the GC took over the given number of MSec .");
+                "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) where suspending for the GC took over the given number of MSec.");
+            parser.DefineOptionalQualifier("StopOnBGCFinalPauseOverMsec", ref StopOnBGCFinalPauseOverMsec,
+               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnAppFabricOverMsec", ref StopOnAppFabricOverMsec,
                 "Trigger a stop of a collect command if there is a AppFabric request is longer than the given number of MSec.");
 
