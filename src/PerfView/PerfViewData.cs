@@ -947,6 +947,39 @@ namespace PerfView
                         writer.WriteLine("<title>{0}</title>", Title);
                         writer.WriteLine("<meta charset=\"UTF-8\"/>");
                         writer.WriteLine("<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>");
+
+                        // Add basic styling to the generated HTML
+                        writer.WriteLine(@"
+<style>
+body {
+    font-family: Segoe UI Light, Helvetica, sans-serif;
+}
+
+tr:hover {
+    background-color: #eeeeee;
+}
+
+th {
+    background-color: #eeeeee;
+    font-family: Helvetica;
+    padding: 4px;
+    font-size: small;
+    font-weight: normal;
+}
+
+td {
+    font-family: Consolas, monospace;
+    font-size: small;
+    padding: 3px;
+    padding-bottom: 5px;
+}
+
+table {
+    border-collapse: collapse;
+}
+</style>
+");
+
                         writer.WriteLine("</head>");
                         writer.WriteLine("<body>");
                         WriteHtmlBody(trace, writer, reportFileName, worker.LogWriter);
@@ -1015,7 +1048,6 @@ namespace PerfView
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
         {
             writer.WriteLine("<H2>Information on the Trace and Machine</H2>");
-            writer.WriteLine("<Center>");
             writer.WriteLine("<Table Border=\"1\">");
             writer.WriteLine("<TR><TD>Machine Name</TD><TD Align=\"Center\">{0}</TD></TR>",
                 string.IsNullOrEmpty(dataFile.MachineName) ? "&nbsp;" : dataFile.MachineName);
@@ -1037,9 +1069,9 @@ namespace PerfView
             writer.WriteLine("<TR><TD>Trace Start Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionStartTime);
             writer.WriteLine("<TR><TD>Trace End Time</TD><TD Align=\"Center\">{0:MM/dd/yyyy HH:mm:ss.fff}</TD></TR>", dataFile.SessionEndTime);
             writer.WriteLine("<TR><TD>Trace Duration (Sec)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", dataFile.SessionDuration.TotalSeconds);
-            writer.WriteLine("<TR><TD>CPU Frequency (Mhz)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.CpuSpeedMHz);
+            writer.WriteLine("<TR><TD>CPU Frequency (MHz)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.CpuSpeedMHz);
             writer.WriteLine("<TR><TD>Number Of Processors</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.NumberOfProcessors);
-            writer.WriteLine("<TR><TD>Memory Size (Meg)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.MemorySizeMeg);
+            writer.WriteLine("<TR><TD>Memory Size (MB)</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.MemorySizeMeg);
             writer.WriteLine("<TR><TD>Pointer Size</TD><TD Align=\"Center\">{0}</TD></TR>", dataFile.PointerSize);
             writer.WriteLine("<TR><TD>Sample Profile Interval (MSec) </TD><TD Align=\"Center\">{0:n2}</TD></TR>", dataFile.SampleProfileInterval.TotalMilliseconds);
             writer.WriteLine("<TR><TD>Total Events</TD><TD Align=\"Center\">{0:n0}</TD></TR>", dataFile.EventCount);
@@ -1062,7 +1094,6 @@ namespace PerfView
             else
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>", logPath);
             writer.WriteLine("</Table>");
-            writer.WriteLine("</Center>");
         }
 
         protected override string DoCommand(string command, StatusBar worker)
