@@ -1,5 +1,5 @@
 
-// This code is needed if you wish to use refection in the .NET COre way (using GetTypeInfo()).  
+// This code is needed if you wish to use refection in the .NET Core way (using GetTypeInfo()).  
 // But you also want the code to compile the same code to run on say V4.0 runtimes.  
 
 
