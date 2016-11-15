@@ -26,7 +26,7 @@ namespace Stats
     {
         public static void ToHtml(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime,  string fileName, bool doServerGCReport = false)
         {
-            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
+            writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
             writer.WriteLine("<UL>");
             if (runtime.GC.Stats().GCVersionInfoMismatch)
                 writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
