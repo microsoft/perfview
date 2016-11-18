@@ -246,7 +246,8 @@ namespace PerfView
             parser.DefineOptionalQualifier("StopOnGCSuspendOverMSec", ref StopOnGCSuspendOverMSec,
                 "Trigger a stop of a collect command if there is a .NET Garbage Collection (GC) where suspending for the GC took over the given number of MSec.");
             parser.DefineOptionalQualifier("StopOnBGCFinalPauseOverMsec", ref StopOnBGCFinalPauseOverMsec,
-               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec.");
+               "Trigger a stop of a collect command if there is a background .NET Garbage Collection (GC) whose final pause is longer than the given number of MSec. To work correctly, "+
+               "this requires that heap survival and movement tracking is not enabled.");
             parser.DefineOptionalQualifier("StopOnAppFabricOverMsec", ref StopOnAppFabricOverMsec,
                 "Trigger a stop of a collect command if there is a AppFabric request is longer than the given number of MSec.");
 
