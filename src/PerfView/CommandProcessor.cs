@@ -1713,6 +1713,16 @@ namespace PerfView
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
                 }
+
+                if (parsedArgs.StopOnBGCFinalPauseOverMsec > 0)
+                {
+                    LogFile.WriteLine("[Enabling StopOnBGCFinalPauseOverMsec {0}.]", parsedArgs.StopOnBGCFinalPauseOverMsec);
+                    triggers.Add(ETWEventTrigger.BgcFinalPauseTooLong(parsedArgs.StopOnBGCFinalPauseOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
+                    {
+                        TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
+                    }));
+                }
+
                 if (parsedArgs.StopOnException != null)
                 {
                     LogFile.WriteLine("[Enabling StopOnException {0}.]", parsedArgs.StopOnException);
@@ -2227,6 +2237,9 @@ namespace PerfView
                 cmdLineArgs += " /StopOnAppFabricOverMsec:" + parsedArgs.StopOnAppFabricOverMsec;
             if (parsedArgs.StopOnGCOverMsec != 0)
                 cmdLineArgs += " /StopOnGcOverMsec:" + parsedArgs.StopOnGCOverMsec;
+            if (parsedArgs.StopOnBGCFinalPauseOverMsec != 0)
+                cmdLineArgs += " /StopOnBGCFinalPauseOverMsec:" + parsedArgs.StopOnBGCFinalPauseOverMsec;
+
             if (parsedArgs.StopOnEtwEvent != null)
                 cmdLineArgs += " /StopOnEtwEvent:" + Command.Quote(string.Join(",", parsedArgs.StopOnEtwEvent));
             if (parsedArgs.StopOnException != null)
