@@ -1092,7 +1092,7 @@ table {
             if (logPath != null && File.Exists(logPath))
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
             else
-                writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>", logPath);
+                writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>");
             writer.WriteLine("</Table>");
         }
 
