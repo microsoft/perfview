@@ -472,8 +472,6 @@ public class Commands : CommandEnvironment
         {
             if (processName != null)
                 CommandLineArgs.Process = processName;
-            if (processName != null)
-                CommandLineArgs.Process = processName;
             TraceProcess process = null;
             if (CommandLineArgs.Process != null)
             {

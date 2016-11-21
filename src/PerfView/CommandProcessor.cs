@@ -1,11 +1,8 @@
-﻿using Microsoft.Diagnostics.Symbols;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
-using Microsoft.Diagnostics.Tracing.Parsers.JScript;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
@@ -14,9 +11,7 @@ using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -772,7 +767,7 @@ namespace PerfView
                         // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
                         var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
                         if (!File.Exists(cmdExe))
-                            cmdExe.Replace("SysNative", "System32");
+                            cmdExe = cmdExe.Replace("SysNative", "System32");
 
                         commandLine = cmdExe + " /c " + commandLine;
                         var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
@@ -1055,14 +1050,14 @@ namespace PerfView
                 // We are in the wow, so run this in 64 bit if we need 
                 var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
                 if (!File.Exists(cmdExe))
-                    cmdExe.Replace("SysNative", "System32");
+                    cmdExe = cmdExe.Replace("SysNative", "System32");
 
                 commandToRun = cmdExe + " /c " + commandToRun;
                 var cmd = Command.Run(commandToRun, new CommandOptions().AddOutputStream(LogFile).AddNoThrow().AddTimeout(60000));
                 if (cmd.ExitCode != 0)
                     LogFile.WriteLine("Error: On Stop command return error code {0}", cmd.ExitCode);
 
-                LogFile.WriteLine("/StopCommand complete ", commandToRun);
+                LogFile.WriteLine("/StopCommand complete {0}", commandToRun);
             }
 
             // We put this last because it can take a while.  
@@ -1629,7 +1624,7 @@ namespace PerfView
                 // We are in the wow, so run this in 64 bit if we need 
                 var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "Cmd.exe");
                 if (!File.Exists(cmdExe))
-                    cmdExe.Replace("SysNative", "System32");
+                    cmdExe = cmdExe.Replace("SysNative", "System32");
 
                 commandToRun = cmdExe + " /c " + commandToRun;
 
@@ -1713,6 +1708,16 @@ namespace PerfView
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
                 }
+
+                if (parsedArgs.StopOnBGCFinalPauseOverMsec > 0)
+                {
+                    LogFile.WriteLine("[Enabling StopOnBGCFinalPauseOverMsec {0}.]", parsedArgs.StopOnBGCFinalPauseOverMsec);
+                    triggers.Add(ETWEventTrigger.BgcFinalPauseTooLong(parsedArgs.StopOnBGCFinalPauseOverMsec, parsedArgs.DecayToZeroHours, parsedArgs.Process, LogFile, delegate (ETWEventTrigger trigger)
+                    {
+                        TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
+                    }));
+                }
+
                 if (parsedArgs.StopOnException != null)
                 {
                     LogFile.WriteLine("[Enabling StopOnException {0}.]", parsedArgs.StopOnException);
@@ -2227,6 +2232,9 @@ namespace PerfView
                 cmdLineArgs += " /StopOnAppFabricOverMsec:" + parsedArgs.StopOnAppFabricOverMsec;
             if (parsedArgs.StopOnGCOverMsec != 0)
                 cmdLineArgs += " /StopOnGcOverMsec:" + parsedArgs.StopOnGCOverMsec;
+            if (parsedArgs.StopOnBGCFinalPauseOverMsec != 0)
+                cmdLineArgs += " /StopOnBGCFinalPauseOverMsec:" + parsedArgs.StopOnBGCFinalPauseOverMsec;
+
             if (parsedArgs.StopOnEtwEvent != null)
                 cmdLineArgs += " /StopOnEtwEvent:" + Command.Quote(string.Join(",", parsedArgs.StopOnEtwEvent));
             if (parsedArgs.StopOnException != null)
@@ -2979,8 +2987,6 @@ namespace PerfView
                 providerGuid = new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E");
             else if (string.Compare(providerSpec, "Heap Trace Provider", StringComparison.OrdinalIgnoreCase) == 0)
                 providerGuid = HeapTraceProviderTraceEventParser.ProviderGuid;
-            else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
-                providerGuid = HeapTraceProviderTraceEventParser.HeapRangeProviderGuid;
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);

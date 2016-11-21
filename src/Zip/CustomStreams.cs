@@ -82,8 +82,8 @@ namespace System.IO.Compression
         }
         private void ThrowIfCantRead()
         {
-            if (!CanWrite)
-                throw new NotSupportedException(System.IO.Compression.Messages.WritingNotSupported);
+            if (!CanRead)
+                throw new NotSupportedException(System.IO.Compression.Messages.ReadingNotSupported);
         }
         private void ThrowIfCantWrite()
         {

@@ -1,23 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Shapes;
-using System.Windows.Documents;
-using System.Windows.Data;
-using System.ComponentModel;
-using System.Globalization;
-
-using Microsoft.Diagnostics.Tracing;
 using Address = System.UInt64;
-using Stats;
 using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfView
@@ -119,7 +105,7 @@ namespace PerfView
         void LaunchViewer(List<IProcess> selectedProcesses)
         {
             // Single process only
-            if (selectedProcesses == null && (selectedProcesses.Count != 1))
+            if (selectedProcesses != null && selectedProcesses.Count != 1)
             {
                 return;
             }

@@ -1,23 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
-using Microsoft.Diagnostics.Tracing;
+
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.JIT;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using Utilities;
 using Address = System.UInt64;
 
 namespace Stats
@@ -92,7 +83,7 @@ namespace Stats
             }
             else
             {
-                writer.WriteLine("<LI><I>No JIT Inlining data available.  Consider enabling the JITInlining option.</I></LI>", stats.ProcessID);
+                writer.WriteLine("<LI><I>No JIT Inlining data available.  Consider enabling the JITInlining option.</I></LI>");
             }
             writer.WriteLine("<LI> <A HREF=\"{0}#UnderstandingJITPerf\">JIT Perf Users Guide</A></LI>", usersGuideFile);
             writer.WriteLine("</UL>");
