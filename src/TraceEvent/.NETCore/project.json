@@ -19,13 +19,13 @@
 
         // TODO These are Windows Specific.  Should included in the windows OS build.
 
-        // "../TraceEventSession.cs",             // CoreLib V2.0 should unblock
-        // "../../OSExtensions/OSExtensions.cs",  // TODO should be in its own DLL
+        "../TraceEventSession.cs",             // CoreLib V2.0 should unblock
+        "../../OSExtensions/OSExtensions.cs",  // TODO should be in its own DLL
         "../TraceLoggingEventId.cs",
         "../ETWTraceEventSource.cs",
         "../TraceEventNativeMethods.cs",
-        // "../DynamicTraceEventParser.cs",       // relatively easy to unblock 
-        // "../RegisteredTraceEventParser.cs",
+        "../DynamicTraceEventParser.cs",       // relatively easy to unblock 
+        "../RegisteredTraceEventParser.cs",
         "../ManifestEnvelope.cs",
         "../Parsers/KernelTraceEventParser.cs",
         "../Parsers/ClrPrivateTraceEventParser.cs",
@@ -34,6 +34,7 @@
         "../Parsers/AspNetTraceEventParser.cs",
         "../Parsers/JScriptTraceEventParser.cs",
         "../Parsers/FrameworkTraceEventParser.cs",
+        "../Parsers/SymbolTraceEventParser.cs",
         "../TraceUtilities/PEFile.cs" // Only needed for KernelTraceEventParser (BuildTime property)
         // "../TraceLog.cs"
         // "../Symbols/SymbolPath.cs",
