@@ -2079,7 +2079,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public override string ToString()
         {
-            return string.Format("Symbol({0}, RVA=0x{2:x}", Name, RVA);
+            return string.Format("Symbol({0}, RVA=0x{1:x}", Name, RVA);
         }
 
         internal Symbol(SymbolModule module, IDiaSymbol diaSymbol)

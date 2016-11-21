@@ -111,8 +111,7 @@ namespace Triggers
                             m_count++;
                             if (m_count > MinSecForTrigger)
                             {
-                                if (m_triggered != null)
-                                    m_triggered(this);
+                                m_triggered?.Invoke(this);
                             }
                         }
                         else
