@@ -111,8 +111,7 @@ namespace Triggers
                             m_count++;
                             if (m_count > MinSecForTrigger)
                             {
-                                if (m_triggered != null)
-                                    m_triggered(this);
+                                m_triggered?.Invoke(this);
                             }
                         }
                         else
@@ -378,6 +377,33 @@ namespace Triggers
             ret.Start();
             return ret;
         }
+
+        public static ETWEventTrigger BgcFinalPauseTooLong(int triggerDurationMSec, float decayToZeroHours, string processFilter, TextWriter log, Action<ETWEventTrigger> onTriggered)
+        {
+            var ret = new ETWEventTrigger(log);
+            ret.TriggerMSec = triggerDurationMSec;
+            ret.DecayToZeroHours = decayToZeroHours;
+            ret.OnTriggered = onTriggered;
+            ret.m_triggerName = "StopOnBGCFinalPauseOverMsec";
+            ret.ProcessFilter = processFilter;
+            ret.StartStopID = "ThreadID";
+
+            ret.ProviderGuid = ClrTraceEventParser.ProviderGuid;
+            ret.ProviderLevel = TraceEventLevel.Informational;
+            ret.ProviderKeywords = (ulong)ClrTraceEventParser.Keywords.GC;
+            ret.StartEvent = "GC/SuspendEEStart";
+            ret.StopEvent = "GC/RestartEEStop";
+
+            ret.TriggerPredicate = delegate (TraceEvent data)
+            {
+                var suspendEETraceData = (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCSuspendEETraceData)data;
+                return suspendEETraceData.Reason == GCSuspendEEReason.SuspendForGCPrep;
+            };
+
+            ret.Start();
+            return ret;
+        }
+        
         /// <summary>
         /// Stops on a Gen 2 GC.  
         /// </summary>

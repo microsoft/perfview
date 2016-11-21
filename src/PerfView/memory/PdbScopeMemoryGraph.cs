@@ -1,5 +1,4 @@
-﻿using FastSerialization;
-using Graphs;
+﻿using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using System;
 using System.Collections.Generic;
@@ -143,12 +142,12 @@ public class PdbScopeMemoryGraph : MemoryGraph
                                                 RootIndex = nodeIndex;
                                                 foundBestRoot = 1;
                                             }
-                                            else if (1 < foundBestRoot & name.Contains("DllMainCRTStartup"))
+                                            else if (1 < foundBestRoot && name.Contains("DllMainCRTStartup"))
                                             {
                                                 RootIndex = nodeIndex;
                                                 foundBestRoot = 1;
                                             }
-                                            else if (2 < foundBestRoot & name.Contains("Main"))
+                                            else if (2 < foundBestRoot && name.Contains("Main"))
                                             {
                                                 RootIndex = nodeIndex;
                                                 foundBestRoot = 2;

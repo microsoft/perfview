@@ -200,9 +200,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     // duplicate the TraceProcess and create an instance of TraceManagedProcess
                     mang = new TraceLoadedDotNetRuntime(proc);
 
+                    // The TraceProcess infrastructure relies on Kernel Events to properly set key process information (like process name)
+                    // Set process name directly if not set
+                    // This is needed for linux traces or traces on Windows which do not have backProcessing enabled (very rare)
+                    if (string.IsNullOrWhiteSpace(proc.Name))
+                        proc.name = data.ProcessName;
+
                     // fire callback and associate this DotNetRuntime with this process
                     proc.OnDotNetRuntimeLoaded(mang);
-
                 }
             };
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Management;
 using System.Text;
@@ -214,14 +213,13 @@ namespace PerfView
                 {
                     ticks = (long.Parse(tempString) * ((long)((System.TimeSpan.TicksPerMillisecond / 1000))));
                 }
-                if (((((((((year < 0)
-                            || (month < 0))
-                            || (day < 0))
-                            || (hour < 0))
-                            || (minute < 0))
-                            || (minute < 0))
-                            || (second < 0))
-                            || (ticks < 0)))
+                if ((year < 0)
+                    || (month < 0)
+                    || (day < 0)
+                    || (hour < 0)
+                    || (minute < 0)
+                    || (second < 0)
+                    || (ticks < 0))
                 {
                     throw new System.ArgumentOutOfRangeException();
                 }
