@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -136,7 +134,6 @@ namespace PerfView
             m_processID = process.ProcessID;
             m_process = process;
             m_pointerSize = 4;          // We guess this,  It is OK for this to be wrong.
-            m_typeNameSymbolResolver =
             m_typeNameSymbolResolver = GCHeapSimulators.TypeNameSymbolResolvers[process.Log.FilePath];
             if (m_typeNameSymbolResolver == null)
             {

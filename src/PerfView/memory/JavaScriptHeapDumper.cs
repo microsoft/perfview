@@ -48,7 +48,7 @@ public class JavaScriptHeapDumper
 
             if (success)
             {
-                log.WriteLine("Merging JS and Kernel data ", etlFileName);
+                log.WriteLine("Merging JS and Kernel data ");
                 TraceEventSession.MergeInPlace(etlFileName, log);
             }
         }

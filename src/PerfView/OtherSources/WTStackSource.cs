@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
@@ -43,7 +40,7 @@ namespace Diagnostics.Tracing.StackSources
 #if DEBUG
             public override string ToString()
             {
-                return string.Format("<Elem CallStack=\"{0}\" FirstCallStack=\"{0}\"ExclInstrSoFar=\"{1}\"/>",
+                return string.Format("<Elem CallStack=\"{0}\" FirstCallStack=\"{1}\"ExclInstrSoFar=\"{2}\"/>",
                     CallStackIndex, FirstCallStackIndex, ExclInstrSoFar);
             }
 #endif

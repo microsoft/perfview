@@ -1383,7 +1383,7 @@ namespace Stats
                     }
 
                     writer.WriteLine(string.Format("<rect x='{0}' y='2' width='{1}' height='30' style='fill:{2};' >", x, width, color));
-                    writer.WriteLine(string.Format("<title>{0} (PID: {1} TIP: {2} Priority: {3} Timestamp:{4:0.00} Duration: {4}ms WR:{5})</title>",
+                    writer.WriteLine(string.Format("<title>{0} (PID: {1} TIP: {2} Priority: {3} Timestamp:{4:0.00} Duration: {5}ms WR:{6})</title>",
                         span.ProcessName, span.ProcessId, span.ThreadId, span.Priority, span.AbsoluteTimestampMsc, (int)span.DurationMsc, span.WaitReason));
                     writer.WriteLine("</rect>");
                 }
