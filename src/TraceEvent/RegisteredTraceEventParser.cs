@@ -382,7 +382,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
+#if DOTNET_CORE // TODO Review after .NET Core 2.0 
+                manifest.WriteLine("  <resources culture=\"{0}\">", "en-us");
+#else
                 manifest.WriteLine("  <resources culture=\"{0}\">", Thread.CurrentThread.CurrentCulture.IetfLanguageTag);
+#endif
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -394,7 +398,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             return manifest.ToString(); ;
         }
 
-        #region private
+#region private
         private static string MakeLegalIdentifier(string name)
         {
             // TODO FIX NOW beef this up.
@@ -494,7 +498,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         return ret;
                     }
                 }
-#endif 
+#endif
 
             // TODO cache the buffer?, handle more types, handle structs...
             int buffSize = 9000;
@@ -700,7 +704,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return false;
             }
 
-        #region private
+#region private
 
             // TODO we may not need all of these.  
             internal const byte InTypeTypeMask = 31;
@@ -716,7 +720,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             TraceEvent data;
             int offset;
             int eventMetaDataEnd;
-        #endregion // private
+#endregion // private
         }
 
 #endif

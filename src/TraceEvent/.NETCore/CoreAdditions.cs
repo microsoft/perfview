@@ -16,7 +16,6 @@ namespace System.Security
     }
 }
 
-
 namespace System.Runtime.InteropServices
 {
     //
@@ -59,7 +58,7 @@ namespace System
     }
 }
 
-#if !NOT_WINDOWS
+#if DOTNET_CORE
 
 namespace System.Diagnostics
 {

@@ -521,7 +521,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     flags |= (KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread);
 
                 bool systemTraceProvider = false;
-                var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+                var version = WindowsVersionMajorMinor();
                 if (version < 60)
                     throw new NotSupportedException("Kernel Event Tracing is only supported on Windows 6.0 (Vista) and above.");
                 if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE || m_kernelSession != null)
@@ -612,7 +612,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                 }
 
-                if (dwErr == 5 && Environment.OSVersion.Version.Major > 5)      // On Vista and we get a 'Accessed Denied' message
+                if (dwErr == 5 && WindowsVersionMajorMinor() > 50)      // On Vista and we get a 'Accessed Denied' message
                     throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
                 m_IsActive = true;
@@ -675,7 +675,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         var parameters = new TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS { Version = TraceEventNativeMethods.ENABLE_TRACE_PARAMETERS_VERSION };
                         hr = TraceEventNativeMethods.EnableTraceEx2(
                             m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_DISABLE_PROVIDER,
-                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);         
+                            0, 0, 0, EnableProviderTimeoutMSec, ref parameters);
                     }
                     catch (EntryPointNotFoundException)
                     {
@@ -914,7 +914,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     }
                     int hr = TraceEventNativeMethods.EnableTraceEx2(
                         m_SessionHandle, ref providerGuid, TraceEventNativeMethods.EVENT_CONTROL_CODE_CAPTURE_STATE,
-                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);     
+                        (byte)TraceEventLevel.Verbose, matchAnyKeywords, 0, EnableProviderTimeoutMSec, ref parameters);
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(hr));
                 }
             }
@@ -1316,6 +1316,16 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 }
                 return s_providerNames;
             }
+        }
+
+        // Returns 10 * Major + Minor version number for Windows.   Thus Windows 8 is 62 
+        internal static int WindowsVersionMajorMinor()
+        {
+#if DOTNET_CORE  // TODO FIX NOW Can remove after .NET Core 2.0 allows 
+            return 63;
+#else
+            return Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+#endif
         }
 
         // We support file based, in memory circular, and real time.  
@@ -1846,7 +1856,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 Thread.Sleep(100);  // Give it some time to stop. 
                 retCode = TraceEventNativeMethods.StartTraceW(out m_SessionHandle, m_SessionName, properties);
             }
-            if (retCode == 5 && Environment.OSVersion.Version.Major > 5)      // On Vista and we get a 'Accessed Denied' message
+            if (retCode == 5 && WindowsVersionMajorMinor() > 50)      // On Vista and we get a 'Accessed Denied' message
                 throw new UnauthorizedAccessException("Error Starting ETW:  Access Denied (Administrator rights required to start ETW)");
             if (retCode != 0)
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(retCode));
@@ -2479,7 +2489,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public static unsafe Dictionary<string, ProfileSourceInfo> GetInfo()
         {
-            var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+            var version = TraceEventSession.WindowsVersionMajorMinor();
             if (version < 62)
                 throw new ApplicationException("Profile source only availabe on Win8 and beyond.");
 
@@ -2549,7 +2559,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public static unsafe void Set(int[] profileSourceIDs, int[] profileSourceIntervals)
         {
-            var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+            var version = TraceEventSession.WindowsVersionMajorMinor();
             if (version < 62)
                 throw new ApplicationException("Profile source only available on Win8 and beyond.");
 
