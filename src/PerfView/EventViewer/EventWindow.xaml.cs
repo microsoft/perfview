@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -456,6 +457,84 @@ namespace PerfView
             ProcessFilterTextBox.Text = GetCellStringValue(selectedCells[0]);
             Update();
         }
+        private void DoShowEventCounterGraph(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (EventTypes.SelectedItems.Count != 1)
+            {
+                return;
+            }
+            if (!((string)EventTypes.SelectedItems[0]).EndsWith("/EventCounters"))
+            {
+                return;
+            }
+            Update();
+            EventCounterWindow eventCounterWindow = new EventCounterWindow();
+            double t = 0;
+            m_source.ForEach(delegate (EventRecord event_)
+            {
+                string rest = event_.Rest;
+                if (rest == null)
+                {
+                    return false;
+                }
+                int meanStart = rest.IndexOf("Mean=");
+                if (meanStart == -1)
+                {
+                    return false;
+                }
+                
+                int standardDerivationStart = rest.IndexOf(", StandardDerivation");
+                if (standardDerivationStart == -1)
+                {
+                    return false;
+                }
+
+                int intervalSecStart = rest.IndexOf("IntervalSec=");
+                if (intervalSecStart == -1)
+                {
+                    return false;
+                }
+
+                int closeBraceStart = rest.IndexOf(" }");
+                if (closeBraceStart == -1)
+                {
+                    return false;
+                }
+
+                int meanEnd = meanStart + "Mean=".Length;
+                int intervalSecEnd = intervalSecStart + "IntervalSec=".Length;
+
+                if (standardDerivationStart < meanEnd)
+                {
+                    return false;
+                }
+                if (closeBraceStart < intervalSecStart)
+                {
+                    return false;
+                }
+
+                string meanPart = rest.Substring(meanEnd, standardDerivationStart - meanEnd);
+                string intervalSecPart = rest.Substring(intervalSecEnd, closeBraceStart - intervalSecEnd);
+                double mean;
+                double intervalSec;
+                if (!double.TryParse(meanPart, out mean))
+                {
+                    return false;
+                }
+                if (!double.TryParse(intervalSecPart, out intervalSec))
+                {
+                    return false;
+                }
+
+                eventCounterWindow.EventPoints.Add(new EventCounterPoint(t, mean));
+                t += intervalSec;
+
+                return true;
+            });
+
+            eventCounterWindow.Show();
+        }
+            
         private void DoRangeFilter(object sender, ExecutedRoutedEventArgs e)
         {
             if (Histogram.IsFocused)
@@ -1112,6 +1191,10 @@ namespace PerfView
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Alt) });
         public static RoutedUICommand OpenAnyStartStopStacksCommand = new RoutedUICommand("Open Any Start Stop Stacks", "OpenAnyStartStopStacks", typeof(EventWindow));
         public static RoutedUICommand OpenAnyTaskTreeStacksCommand = new RoutedUICommand("Open Any TaskTree Stacks", "OpenAnyTaskTreeStacks", typeof(EventWindow));
+
+        public static RoutedUICommand ShowEventCounterGraphCommand = new RoutedUICommand("Show EventCounter Graph", "ShowEventCounterGraph",
+            typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.G, ModifierKeys.Control) });
+
         public static RoutedUICommand SetProcessFilterCommand = new RoutedUICommand("Set Process Filter", "SetProcessFilter",
             typeof(EventWindow), new InputGestureCollection() { new KeyGesture(Key.P, ModifierKeys.Control) });
         public static RoutedUICommand SetRangeFilterCommand = new RoutedUICommand("Set Range Filter", "SetRangeFilter",
