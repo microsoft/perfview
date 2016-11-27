@@ -447,7 +447,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (filePath.EndsWith("clr.dll", StringComparison.OrdinalIgnoreCase) || filePath.EndsWith("mscorwks.dll", StringComparison.OrdinalIgnoreCase))
                     {
                         seenThreadPoolDll = true;
-                        if (prevFilePath.EndsWith("ntoskrnl.exe", StringComparison.OrdinalIgnoreCase))
+                        if (prevFilePath != null && prevFilePath.EndsWith("ntoskrnl.exe", StringComparison.OrdinalIgnoreCase))
                             return false;
                     }
                     else if (!filePath.EndsWith("webengine4.dll", StringComparison.OrdinalIgnoreCase))
