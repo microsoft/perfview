@@ -1544,7 +1544,7 @@ namespace PerfView
             TakeHeapShapshot(null);
         }
 
-        // The Help menu callbacksC:\Users\vancem\Documents\etw\EtwClrProfiler\Debug\x86\EtwClrProfiler.dll
+        // The Help menu callbacks
         internal void DoCommandLineHelp(object sender, RoutedEventArgs e)
         {
             var editor = new TextEditorWindow();
@@ -1552,6 +1552,7 @@ namespace PerfView
             editor.Height = 600;
             editor.Title = "PerfView Command Line Help";
             editor.TextEditor.AppendText(CommandLineArgs.GetHelpString(120));
+            editor.TextEditor.IsReadOnly = true;
             editor.Show();
         }
         internal void DoUserCommandHelp(object sender, RoutedEventArgs e)
@@ -1565,6 +1566,7 @@ namespace PerfView
             editor.Height = 600;
             editor.Title = "PerfView Command Line Help";
             editor.TextEditor.AppendText(sw.ToString());
+            editor.TextEditor.IsReadOnly = true;
             editor.Show();
         }
 
