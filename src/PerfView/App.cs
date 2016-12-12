@@ -170,6 +170,10 @@ namespace PerfView
                 }
             }
 
+            // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
+            if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
+                throw new ApplicationException("Error: InMemoryCircularBuffer currently can't be used with separate Start and Stop processes.");
+
             if (CommandLineArgs.NoGui)
             {
                 if (SupportFiles.ProcessArch != "ARM")
@@ -235,7 +239,6 @@ namespace PerfView
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
                 App.LogFileName = CommandLineArgs.LogFile;
-
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
