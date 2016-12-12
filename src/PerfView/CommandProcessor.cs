@@ -949,6 +949,13 @@ namespace PerfView
 
         public void Stop(CommandLineArgs parsedArgs)
         {
+            if (parsedArgs.DataFile == null)
+                parsedArgs.DataFile = "PerfViewData.etl";
+
+            // The DataFile does not have the .zip associated with it (it is implied)
+            if (parsedArgs.DataFile.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
+
             LaunchPerfViewElevatedIfNeeded("Stop", parsedArgs);
 
             if (parsedArgs.DumpHeap)
@@ -1030,7 +1037,7 @@ namespace PerfView
             UninstallETWClrProfiler(LogFile);
 
             if (dataFile == null || !File.Exists(dataFile))
-                LogFile.WriteLine("Warning: no data generated.\n");
+                LogFile.WriteLine("Warning: no data generated. (Separate Start and Stop does not work with /InMemoryCircularBuffer)\n");
             else
             {
                 parsedArgs.DataFile = dataFile;
