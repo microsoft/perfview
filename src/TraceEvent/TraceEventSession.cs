@@ -2561,8 +2561,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public static unsafe void Set(int profileSourceID, int profileSourceInterval)
         {
-            var profileSourceIDs = new int[1];
-            var profileSourceIntervals = new int[1];
+            var profileSourceIDs = new int[1] { profileSourceID };
+            var profileSourceIntervals = new int[1] { profileSourceInterval };
             Set(profileSourceIDs, profileSourceIntervals);
         }
 
