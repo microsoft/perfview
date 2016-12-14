@@ -4,7 +4,9 @@
   "buildOptions": {
     "allowUnsafe": true,
     "define": [
-      "NOT_WINDOWS", "DOTNET_CORE"
+      "DOTNET_CORE",
+      "DOTNET_CORE_HACK",           // SHOULD BE REMOVED
+      "NO_DYNAMIC_TRACEEVENTPARSER" // SHOULD BE REMOVED
     ],
     "compile": {
       "include": [
@@ -53,7 +55,7 @@
       "repository": {
         "url": "https://github.com/Microsoft/PerfView"
       }
-    },
+    }
 
     //"include": [ "../**/*.cs", "../../FastSerialization/*.cs", "../../Utilities/*.cs", "../../OSExtensions/*.cs" ],
     //"exclude": [ "obj", "../obj", "../**/*.Tests" ]
@@ -92,8 +94,8 @@
     "System.Threading.Thread": "4.0.0", // For Thread.Sleep()
     "System.Threading.Tasks.Parallel": "4.0.1", // For Parallel
     "System.Diagnostics.Process": "4.1.0", // For ThreadWaitReason, ThreadState (in KernelTraceEventParser).
-    "System.IO.UnmanagedMemoryStream": "4.0.1",  // for PEFile header reading.
-    "Microsoft.Win32.Registry": "4.0.0",
+    "System.IO.UnmanagedMemoryStream": "4.0.1", // for PEFile header reading.
+    "Microsoft.Win32.Registry": "4.0.0"
 
     // "Microsoft.NETCore.App": "1.0.0",
     // "Microsoft.NETCore.App": "1.0.0"

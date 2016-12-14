@@ -513,6 +513,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public unsafe bool EnableKernelProvider(KernelTraceEventParser.Keywords flags, KernelTraceEventParser.Keywords stackCapture = KernelTraceEventParser.Keywords.None)
         {
+            // Setting stack capture implies that it is on.  
+            flags |= stackCapture;
             lock (this)
             {
                 // many of the kernel events are missing the process or thread information and have to be fixed up.  In order to do this I need the
@@ -740,7 +742,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
         /// <summary>
-        /// CLose the session and clean up any resources associated with the session.     It is OK to call this more than once.  
+        /// Close the session and clean up any resources associated with the session.     It is OK to call this more than once.  
         /// This API is OK to call from one thread while Process() is being run on another.   Calling Dispose is on 
         /// a real time session is the way you can force a real time session to stop in a timely manner.  
         /// </summary>
