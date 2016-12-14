@@ -2550,6 +2550,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             return ret;
         }
+
+        /// <summary>
+        /// Sets a single Profile Source (CPU machine counters) that will be used if PMC (Precise Machine Counters)
+        /// are turned on.   The profileSourceID is the ID field from the ProfileSourceInfo returned from 'GetInfo()'.
+        /// and the profileSourceInterval is the interval between sampples (the number of events before a stack
+        /// is recoreded.    If you need more that one (the OS allows up to 4 I think), use the variation of this
+        /// routine that takes two int[].   Calling this will clear all Profiler sources previously set (it is NOT
+        /// additive).  
+        /// </summary>
+        public static unsafe void Set(int profileSourceID, int profileSourceInterval)
+        {
+            var profileSourceIDs = new int[1];
+            var profileSourceIntervals = new int[1];
+            Set(profileSourceIDs, profileSourceIntervals);
+        }
+
         /// <summary>
         /// Sets the Profile Sources (CPU machine counters) that will be used if PMC (Precise Machine Counters)
         /// are turned on.   Each CPU counter is given a id (the profileSourceID) and has an interval 
