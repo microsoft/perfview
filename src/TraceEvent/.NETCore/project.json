@@ -5,8 +5,8 @@
     "allowUnsafe": true,
     "define": [
       "DOTNET_CORE",
-      "DOTNET_CORE_HACK",           // SHOULD BE REMOVED
-      "NO_DYNAMIC_TRACEEVENTPARSER" // SHOULD BE REMOVED
+      "DOTNET_CORE_HACK", // SHOULD BE REMOVED
+      "NO_DYNAMIC_TRACEEVENTPARSER" // Can be removed when DynamicTraceEventParser is included. 
     ],
     "compile": {
       "include": [
