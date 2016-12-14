@@ -6,7 +6,7 @@
     "define": [
       "DOTNET_CORE",
       "DOTNET_CORE_HACK", // SHOULD BE REMOVED
-      "NO_DYNAMIC_TRACEEVENTPARSER" // Can be removed when DynamicTraceEventParser is included. 
+      "NO_DYNAMIC_TRACEEVENTPARSER" // Can be removed when DynamicTraceEventParser is included.
     ],
     "compile": {
       "include": [
@@ -21,13 +21,15 @@
 
         // TODO These are Windows Specific.  Should included in the windows OS build.
 
-        // TODO ENABLE "../TraceEventSession.cs",             // CoreLib V2.0 should unblock
-        // TODO ENABLE "../../OSExtensions/OSExtensions.cs",  // TODO should be in its own DLL
+        /**** TODO ENABLE 
+        "../TraceEventSession.cs", // CoreLib V2.0 should unblock
+        "../../OSExtensions/OSExtensions.cs", // TODO should be in its own DLL
+        "../DynamicTraceEventParser.cs", // relatively easy to unblock
+        "../RegisteredTraceEventParser.cs",
+        ****/
         "../TraceLoggingEventId.cs",
         "../ETWTraceEventSource.cs",
         "../TraceEventNativeMethods.cs",
-        // TODO ENABLE "../DynamicTraceEventParser.cs", // relatively easy to unblock
-        // TODO ENABLE "../RegisteredTraceEventParser.cs",
         "../ManifestEnvelope.cs",
         "../Parsers/KernelTraceEventParser.cs",
         "../Parsers/ClrPrivateTraceEventParser.cs",
@@ -43,7 +45,7 @@
         // "../Symbols/SymbolReader.cs",
         // "../ETWReloggerTraceEventSource.cs"
       ],
-      "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
+      "exclude": [ "obj", "../obj", "../**/ *.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
     },
 
     // TODO FIX NOW remove 618 (obsolete warning) supression.
