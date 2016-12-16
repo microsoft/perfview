@@ -65,7 +65,7 @@ namespace Graphs
             // Create the new root node.
             _RootNode = new MemoryNodeBuilder(_NewMemoryGraph, "[.NET Generation Aware Roots]");
 
-            // Create old gen root notes.
+            // Create old gen root nodes.
             if (_GenerationToCondemn < 1)
             {
                 _Gen1RootNode = _RootNode.FindOrCreateChild("[Gen1 Roots]");
