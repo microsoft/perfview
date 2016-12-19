@@ -746,7 +746,7 @@ namespace Microsoft.Diagnostics.Symbols
                 var version = clrPE.GetFileVersionInfo();
                 if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
                 {
-                    m_log.WriteLine("CoreCLR {0} is not version 1.0.24214", corClrPath);
+                    m_log.WriteLine("CoreCLR {0} is version {1} not version 1.0.24214", corClrPath, version.FileVersion);
                     return null;
                 }
             }
