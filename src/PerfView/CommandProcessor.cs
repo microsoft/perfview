@@ -949,6 +949,13 @@ namespace PerfView
 
         public void Stop(CommandLineArgs parsedArgs)
         {
+            if (parsedArgs.DataFile == null)
+                parsedArgs.DataFile = "PerfViewData.etl";
+
+            // The DataFile does not have the .zip associated with it (it is implied)
+            if (parsedArgs.DataFile.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                parsedArgs.DataFile = parsedArgs.DataFile.Substring(0, parsedArgs.DataFile.Length - 4);
+
             LaunchPerfViewElevatedIfNeeded("Stop", parsedArgs);
 
             if (parsedArgs.DumpHeap)
@@ -1030,7 +1037,7 @@ namespace PerfView
             UninstallETWClrProfiler(LogFile);
 
             if (dataFile == null || !File.Exists(dataFile))
-                LogFile.WriteLine("Warning: no data generated.\n");
+                LogFile.WriteLine("Warning: no data generated. (Separate Start and Stop does not work with /InMemoryCircularBuffer)\n");
             else
             {
                 parsedArgs.DataFile = dataFile;
@@ -2024,7 +2031,6 @@ namespace PerfView
             }
             log.WriteLine("Profiler DLL to load is {0}", profilerDll);
 
-
             log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
             {
@@ -2037,6 +2043,12 @@ namespace PerfView
                 key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
                 key.SetValue("COR_PROFILER_PATH", profilerDll);
                 key.SetValue("COR_ENABLE_PROFILING", 1);
+
+                // Also enable CoreCLR Profiling 
+                key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
+                key.SetValue("CORECLR_PROFILER_PATH", profilerDll);
+                key.SetValue("CORECLR_ENABLE_PROFILING", 1);
+
                 key.SetValue("PerfView_Keywords", profilerKeywords);
             }
 
@@ -2063,6 +2075,12 @@ namespace PerfView
                     key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
                     key.SetValue("COR_PROFILER_PATH", profilerNativeDll);
                     key.SetValue("COR_ENABLE_PROFILING", 1);
+
+                    // Also enable CoreCLR Profiling 
+                    key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
+                    key.SetValue("CORECLR_PROFILER_PATH", profilerNativeDll);
+                    key.SetValue("CORECLR_ENABLE_PROFILING", 1);
+
                     key.SetValue("PerfView_Keywords", profilerKeywords);
 
                 }
@@ -2086,8 +2104,12 @@ namespace PerfView
                 key.DeleteValue("COR_PROFILER", false);
                 key.DeleteValue("COR_PROFILER_PATH", false);
                 key.DeleteValue("COR_ENABLE_PROFILING", false);
-                key.DeleteValue("PerfView_Keywords", false);
 
+                key.DeleteValue("CORECLR_PROFILER", false);
+                key.DeleteValue("CORECLR_PROFILER_PATH", false);
+                key.DeleteValue("CORECLR_ENABLE_PROFILING", false);
+
+                key.DeleteValue("PerfView_Keywords", false);
             }
             if (Environment.Is64BitOperatingSystem)
             {
