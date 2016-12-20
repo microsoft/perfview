@@ -1680,7 +1680,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     if (module.unloadTimeQPC == long.MaxValue)
                     {
                         // simulate a module unload, and resolve all code addresses in the module's range.   
-                        CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, module.ImageBase, module.ModuleFile.ImageSize, delegate (ref TraceCodeAddresses.CodeAddressInfo info)
+                        CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, module.ImageBase, module.ModuleFile.ImageSize, false, delegate (ref TraceCodeAddresses.CodeAddressInfo info)
                         {
                             if (info.moduleFileIndex == Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid)
                                 info.moduleFileIndex = module.ModuleFile.ModuleFileIndex;
@@ -5574,7 +5574,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
                 // Look for all code addresses those that don't have modules that are in my range are assumed to be mine.  
                 var moduleFileIndex = module.ModuleFile.ModuleFileIndex;
-                Process.Log.CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, data.ImageBase, data.ImageSize,
+                Process.Log.CodeAddresses.ForAllUnresolvedCodeAddressesInRange(process, data.ImageBase, data.ImageSize, false,
                     delegate (ref Microsoft.Diagnostics.Tracing.Etlx.TraceCodeAddresses.CodeAddressInfo info)
                     {
                         if (info.moduleFileIndex == Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid)
@@ -6830,7 +6830,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             ModuleFileIndex moduleFileIndex = Microsoft.Diagnostics.Tracing.Etlx.ModuleFileIndex.Invalid;
             TraceManagedModule module = null;
             TraceProcess process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-            ForAllUnresolvedCodeAddressesInRange(process, data.MethodStartAddress, data.MethodSize, delegate (ref CodeAddressInfo info)
+            ForAllUnresolvedCodeAddressesInRange(process, data.MethodStartAddress, data.MethodSize, true, delegate (ref CodeAddressInfo info)
                 {
                     // If we already resolved, that means that the address was reused, so only add something if it does not already have 
                     // information associated with it.  
@@ -6860,7 +6860,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             MethodIndex methodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             TraceProcess process = log.Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
-            ForAllUnresolvedCodeAddressesInRange(process, data.MethodStartAddress, (int)data.MethodSize, delegate (ref CodeAddressInfo info)
+            ForAllUnresolvedCodeAddressesInRange(process, data.MethodStartAddress, (int)data.MethodSize, true, delegate (ref CodeAddressInfo info)
                 {
                     // If we already resolved, that means that the address was reused, so only add something if it does not already have 
                     // information associated with it.  
@@ -6899,9 +6899,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal delegate void ForAllCodeAddrAction(ref CodeAddressInfo codeAddrInfo);
         /// <summary>
         /// Allows you to get a callback for each code address that is in the range from start to 
-        /// start+length within the process 'process'.   
+        /// start+length within the process 'process'.   If 'considerResolved' is true' then the address range
+        /// is considered resolved and future calls to this routine will not find the addresses (since they are resolved).  
         /// </summary>
-        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, int length, ForAllCodeAddrAction body)
+        internal void ForAllUnresolvedCodeAddressesInRange(TraceProcess process, Address start, int length, bool considerResolved, ForAllCodeAddrAction body)
         {
             if (process.codeAddressesInProcess == null)
                 return;
@@ -6935,12 +6936,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     break;
 
                 body(ref codeAddresses.UnderlyingArray[(int)codeAddrIdx]);
-                if (removeAddressAfterCallback)
+                if (considerResolved && removeAddressAfterCallback)
                     process.codeAddressesInProcess.Remove(codeAddr);
                 curIdx++;
             }
 
-            if (curIdx != startIdx)
+            if (considerResolved && curIdx != startIdx)
             {
                 // OK we called back on the code addresses in the range.   Remove what we just iterated over in bulk.  
                 // Trace.WriteLine(string.Format("Removing {0} unresolved code addresses out of {1} because of range {2:x} len {3:x} from process {4} ({5})",
@@ -7258,8 +7259,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
                 {
-                        symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
-                        return null;
+                    symReader.m_log.WriteLine("ERROR: the PDB we opened does not match the PDB desired.  PDB GUID = " + symbolReaderModule.PdbGuid + " DESIRED GUID = " + moduleFile.PdbSignature);
+                    return null;
                 }
                 symbolReaderModule.ExePath = moduleFile.FilePath;
 
