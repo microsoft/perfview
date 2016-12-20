@@ -476,7 +476,6 @@
     <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
     <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
     <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
-    <Copy SourceFiles="supportFiles\crossGen.exe" DestinationFolder="$(OutDir)amd64" />
   </Target>
   <ItemGroup>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
@@ -563,11 +562,6 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\crossGen.exe">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\amd64\crossGen.exe</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\tutorial.exe">
       <Type>Non-Resx</Type>
