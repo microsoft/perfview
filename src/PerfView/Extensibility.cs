@@ -2587,6 +2587,14 @@ namespace PerfViewExtensibility
                 };
 
                 session.Source.Dynamic.All += onAnyEvent;
+                // Add support for EventWriteStrings (which are not otherwise parsable).  
+                session.Source.UnhandledEvents += delegate (TraceEvent data)
+                {
+                    string formattedMessage = data.FormattedMessage;
+                    if (formattedMessage != null)
+                        listenTextEditorWriter.WriteLine("{0} {1} Message=\"{2}\"",
+                            data.TimeStamp.ToString("HH:mm:ss.fff"), data.EventName, formattedMessage);
+                };
 
                 // Enable all the providers the users asked for
 
