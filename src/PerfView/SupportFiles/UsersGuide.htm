@@ -8035,6 +8035,21 @@
         </li>
         -->
         <li>
+            Version 1.9.46 1/4/17
+            <ul>
+                <li> 
+                    Added the GIT commit hash to the module information in the 'Modules' Excel table in the 'Processes' view.  
+                     This commit will also show up in the ImageLoad event in the 'events view.   Useful for finding the source
+                     code for a particular module.   This information is fetched from  the 'FileVersion field of the version
+                    information for the file (what fileVersion -v returns).  It is looking for 'Commit Hash: HASH'.  If it does
+                    not find this on FileVersion, it looks on the ProductVersion field. 
+                </li>
+                <li>
+                    Extend the UserCommand Listen command to take full ETW provider specs rather that just the ETW provider name 
+                </li>
+            </ul>
+        </li> 
+        <li>
             Version 1.9.45 12/19/16
             <ul>
                 <li> Fixed problem getting symbols for System.Private.CoreLib.ni.dll by using /ForceNGENRundown. </li>

@@ -1013,7 +1013,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 if (lastFileVersionData != null && data.TimeStampQPC == lastFileVersionData.TimeStampQPC)
+                {
                     moduleFile.fileVersion = lastFileVersionData.FileVersion;
+                    moduleFile.productVersion = lastFileVersionData.ProductVersion;
+                    moduleFile.productName = lastFileVersionData.ProductName;
+                }
 
                 /* allow these to remain in the trace.  Otherwise you can't just look at the events view and look up DLL info
                  * which is pretty convenient.   If we have a good image view that we can remove these. 
@@ -3064,7 +3068,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 62; }
+            get { return 64; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -7207,7 +7211,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             string pdbFileName = null;
             // If we have a signature, use it
             if (moduleFile.PdbSignature != Guid.Empty)
-                pdbFileName = symReader.FindSymbolFilePath(moduleFile.PdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.FileVersion);
+                pdbFileName = symReader.FindSymbolFilePath(moduleFile.PdbName, moduleFile.PdbSignature, moduleFile.PdbAge, moduleFile.FilePath, moduleFile.ProductVersion);
             else
                 symReader.m_log.WriteLine("No PDB signature for {0} in trace.", moduleFile.FilePath);
 
@@ -8341,6 +8345,42 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Returns the file version string that is optionally embedded in the DLL's resources.   Returns the empty string if not present. 
         /// </summary>
         public string FileVersion { get { return fileVersion; } }
+
+        /// <summary>
+        /// Returns the product name  recorded in the file version information.     Returns empty string if not present
+        /// </summary>
+        public string ProductName { get { return productName; } }
+
+        /// <summary>
+        /// Returns a version string for the product as a whole (could include GIT source code hash).    Returns empty string if not present
+        /// </summary>
+        public string ProductVersion { get { return productVersion; } }
+
+        /// <summary>
+        /// If the Product Version fields has a GIT Commit Hash component, this returns it,  Otherwise it is empty.   
+        /// </summary>
+        public string GitCommitHash
+        {
+            get
+            {
+                // First see if the commit hash is on the file version 
+                if (!string.IsNullOrEmpty(fileVersion))
+                {
+                    Match m = Regex.Match(fileVersion, @"Commit Hash:\s*(\S+)", RegexOptions.CultureInvariant);
+                    if (m.Success)
+                        return m.Groups[1].Value;
+                }
+                // or the product version.  
+                if (!string.IsNullOrEmpty(productVersion))
+                {
+                    Match m = Regex.Match(productVersion, @"Commit Hash:\s*(\S+)", RegexOptions.CultureInvariant);
+                    if (m.Success)
+                        return m.Groups[1].Value;
+                }
+                return "";
+            }
+        }
+
         /// <summary>
         /// Returns the time the DLL was built as a DateTime.  
         /// </summary>
@@ -8387,6 +8427,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.imageBase = imageBase;
             this.moduleFileIndex = moduleFileIndex;
             this.fileVersion = "";
+            this.productVersion = "";
             this.pdbName = "";
         }
 
@@ -8401,9 +8442,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal Guid pdbSignature;
         internal int pdbAge;
         internal string fileVersion;
+        internal string productName;
+        internal string productVersion;
         internal int timeDateStamp;
         internal int codeAddressesInModule;
         internal TraceModuleFile managedModule;
+
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -8415,6 +8459,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Write(pdbSignature);
             serializer.Write(pdbAge);
             serializer.Write(fileVersion);
+            serializer.Write(productVersion);
             serializer.Write(timeDateStamp);
             serializer.Write((int)moduleFileIndex);
             serializer.Write(codeAddressesInModule);
@@ -8430,6 +8475,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out pdbSignature);
             deserializer.Read(out pdbAge);
             deserializer.Read(out fileVersion);
+            deserializer.Read(out productVersion);
             deserializer.Read(out timeDateStamp);
             moduleFileIndex = (ModuleFileIndex)deserializer.ReadInt();
             deserializer.Read(out codeAddressesInModule);
