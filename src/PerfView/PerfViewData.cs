@@ -1281,7 +1281,7 @@ table {
             {
                 //add headers 
                 string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
-                writer.WriteLine("ProcessName{0}ProcessID{0}Name{0}FileVersion{0}BuildTime{0}FilePath", listSeparator);
+                writer.WriteLine("ProcessName{0}ProcessID{0}Name{0}FileVersion{0}Commit{0}BuildTime{0}FilePath{0}", listSeparator);
                 foreach (TraceProcess process in processes)  //turn into private function 
                 {
                     foreach (TraceLoadedModule module in process.LoadedModules)
@@ -1290,6 +1290,7 @@ table {
                         writer.Write("{0}{1}", process.ProcessID, listSeparator);
                         writer.Write("{0}{1}", module.ModuleFile.Name, listSeparator);
                         writer.Write("{0}{1}", module.ModuleFile.FileVersion, listSeparator);
+                        writer.Write("{0}{1}", module.ModuleFile.GitCommitHash, listSeparator);
                         writer.Write("{0}{1}", PerfViewExtensibility.Events.EscapeForCsv(module.ModuleFile.BuildTime.ToString(), listSeparator), listSeparator);
                         writer.Write("{0}", module.ModuleFile.FilePath);
                         writer.WriteLine();
@@ -5209,7 +5210,7 @@ table {
                 // TODO see if we can get the buffer size out of the ETL file to give a good number in the message. 
                 warning = "WARNING: There were " + numberOfLostEvents + " lost events in the trace.\r\n" +
                     "Some analysis might be invalid.\r\n" +
-                    "Use /InMemoryCircularBuffer    to avoid this in future traces.";
+                    "Use /InMemoryCircularBuffer or /BufferSize:256 to avoid this in future traces.";
             }
             else
             {

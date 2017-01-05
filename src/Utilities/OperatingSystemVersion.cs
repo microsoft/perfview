@@ -21,10 +21,10 @@ namespace Utilities
         /// </summary>
         public static bool AtLeast(int requiredOSVersion)
         {
-#if !NOT_WINDOWS
+#if !DOTNET_CORE
             int osVersion = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
 #else
-            // FIX NOW. we assume we are on windows 10 if we ar running .NET Core 
+            // FIX NOW. we assume we are on windows 10 if we are running .NET Core 
             // Need to actually PINVOKE to something.   
             int osVersion = 100;
 #endif

@@ -4,7 +4,9 @@
   "buildOptions": {
     "allowUnsafe": true,
     "define": [
-      "NOT_WINDOWS", "DOTNET_CORE"
+      "DOTNET_CORE",
+      "DOTNET_CORE_HACK", // SHOULD BE REMOVED
+      "NO_DYNAMIC_TRACEEVENTPARSER" // Can be removed when DynamicTraceEventParser is included.
     ],
     "compile": {
       "include": [
@@ -19,13 +21,15 @@
 
         // TODO These are Windows Specific.  Should included in the windows OS build.
 
-        // TODO ENABLE "../TraceEventSession.cs",             // CoreLib V2.0 should unblock
-        // TODO ENABLE "../../OSExtensions/OSExtensions.cs",  // TODO should be in its own DLL
+        /**** TODO ENABLE 
+        "../TraceEventSession.cs", // CoreLib V2.0 should unblock
+        "../../OSExtensions/OSExtensions.cs", // TODO should be in its own DLL
+        "../DynamicTraceEventParser.cs", // relatively easy to unblock
+        "../RegisteredTraceEventParser.cs",
+        ****/
         "../TraceLoggingEventId.cs",
         "../ETWTraceEventSource.cs",
         "../TraceEventNativeMethods.cs",
-        // TODO ENABLE "../DynamicTraceEventParser.cs", // relatively easy to unblock
-        // TODO ENABLE "../RegisteredTraceEventParser.cs",
         "../ManifestEnvelope.cs",
         "../Parsers/KernelTraceEventParser.cs",
         "../Parsers/ClrPrivateTraceEventParser.cs",
@@ -41,7 +45,7 @@
         // "../Symbols/SymbolReader.cs",
         // "../ETWReloggerTraceEventSource.cs"
       ],
-      "exclude": [ "obj", "../obj", "../**/*.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
+      "exclude": [ "obj", "../obj", "../**/ *.Tests", "../Utilities/command.cs", "../../Utilities/DotNetCore.cs" ]
     },
 
     // TODO FIX NOW remove 618 (obsolete warning) supression.
@@ -53,7 +57,7 @@
       "repository": {
         "url": "https://github.com/Microsoft/PerfView"
       }
-    },
+    }
 
     //"include": [ "../**/*.cs", "../../FastSerialization/*.cs", "../../Utilities/*.cs", "../../OSExtensions/*.cs" ],
     //"exclude": [ "obj", "../obj", "../**/*.Tests" ]
@@ -92,8 +96,8 @@
     "System.Threading.Thread": "4.0.0", // For Thread.Sleep()
     "System.Threading.Tasks.Parallel": "4.0.1", // For Parallel
     "System.Diagnostics.Process": "4.1.0", // For ThreadWaitReason, ThreadState (in KernelTraceEventParser).
-    "System.IO.UnmanagedMemoryStream": "4.0.1",  // for PEFile header reading.
-    "Microsoft.Win32.Registry": "4.0.0",
+    "System.IO.UnmanagedMemoryStream": "4.0.1", // for PEFile header reading.
+    "Microsoft.Win32.Registry": "4.0.0"
 
     // "Microsoft.NETCore.App": "1.0.0",
     // "Microsoft.NETCore.App": "1.0.0"

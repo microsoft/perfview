@@ -187,7 +187,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-#if !NOT_WINDOWS
+#if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
         /// <summary>
         /// For convenience, we provide a property returns a DynamicTraceEventParser that knows 
         /// how to parse all event providers that dynamically log their schemas into the event streams.
@@ -395,7 +395,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ bool useClassicETW;
         internal /*protected*/ ClrTraceEventParser _CLR;
         internal /*protected*/ KernelTraceEventParser _Kernel;
-#if !NOT_WINDOWS
+#if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
 #endif //  !NOT_WINDOWS
@@ -595,7 +595,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
                 // Old EventSources did not have tasks for event names so we make an exception for these 
-#if !NOT_WINDOWS 
+#if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
                 Debug.Assert(!string.IsNullOrEmpty(taskName) || (this is DynamicTraceEventData && ProviderName == "TplEtwProvider"));
 #endif
                 return taskName;
@@ -1166,7 +1166,7 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
             sb.AppendLine().Append(" ");
 
-#if !DOTNET_V35 && !NOT_WINDOWS
+#if !DOTNET_V35 && !DOTNET_CORE_HACK
             if (ActivityID != Guid.Empty || RelatedActivityID != Guid.Empty)
             {
                 if (ActivityID != Guid.Empty)
@@ -2521,7 +2521,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal virtual EventFilterResponse OnNewEventDefintion(TraceEvent template, bool mayHaveExistedBefore)
         {
-#if !NOT_WINDOWS
+#if !NOT_WINDOWS && !NO_DYNAMIC_TRACEEVENTPARSER
             Debug.Assert(template is DynamicTraceEventData);
 #endif
             EventFilterResponse combinedResponse = EventFilterResponse.RejectProvider;      // This is the combined result from all subscriptions. 
@@ -2607,7 +2607,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Actually Register it with the source.     
             source.RegisterEventTemplate(templateWithCallback);
-#if !DOTNET_V35 && !NOT_WINDOWS
+#if !DOTNET_V35 && !DOTNET_CORE_HACK
             Debug.Assert(templateWithCallback.source == Source ||
                 (templateWithCallback.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
                  Source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
@@ -3164,7 +3164,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private unsafe void Insert(TraceEvent template)
         {
-#if !DOTNET_V35 && !NOT_WINDOWS
+#if !DOTNET_V35 && !DOTNET_CORE_HACK
             Debug.Assert(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.source == this);
             Debug.Assert(!(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif
