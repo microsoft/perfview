@@ -597,6 +597,14 @@ namespace PerfView
                                 new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
                                 TraceEventLevel.Verbose, ulong.MaxValue);
 
+                            EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
+                                new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
+                                TraceEventLevel.Informational, ulong.MaxValue);
+
+                            EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
+                                new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
+                                TraceEventLevel.Informational, ulong.MaxValue);
+
                             // Turn on Power stuff
                             EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
                             EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
@@ -2810,7 +2818,7 @@ namespace PerfView
                     providerStr = "@" + wildCardFileName;
                 }
 
-                RETRY:
+            RETRY:
                 // Handle : style keyword, level and stacks description. 
                 m = Regex.Match(rest, @"^([^:=]*)(:(.*))?$");
                 if (m.Success)
