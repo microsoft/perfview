@@ -513,6 +513,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         public unsafe bool EnableKernelProvider(KernelTraceEventParser.Keywords flags, KernelTraceEventParser.Keywords stackCapture = KernelTraceEventParser.Keywords.None)
         {
+            // Setting stack capture implies that it is on.  
+            flags |= stackCapture;
             lock (this)
             {
                 // many of the kernel events are missing the process or thread information and have to be fixed up.  In order to do this I need the
@@ -740,7 +742,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
         }
         /// <summary>
-        /// CLose the session and clean up any resources associated with the session.     It is OK to call this more than once.  
+        /// Close the session and clean up any resources associated with the session.     It is OK to call this more than once.  
         /// This API is OK to call from one thread while Process() is being run on another.   Calling Dispose is on 
         /// a real time session is the way you can force a real time session to stop in a timely manner.  
         /// </summary>
@@ -2548,6 +2550,22 @@ namespace Microsoft.Diagnostics.Tracing.Session
             }
             return ret;
         }
+
+        /// <summary>
+        /// Sets a single Profile Source (CPU machine counters) that will be used if PMC (Precise Machine Counters)
+        /// are turned on.   The profileSourceID is the ID field from the ProfileSourceInfo returned from 'GetInfo()'.
+        /// and the profileSourceInterval is the interval between sampples (the number of events before a stack
+        /// is recoreded.    If you need more that one (the OS allows up to 4 I think), use the variation of this
+        /// routine that takes two int[].   Calling this will clear all Profiler sources previously set (it is NOT
+        /// additive).  
+        /// </summary>
+        public static unsafe void Set(int profileSourceID, int profileSourceInterval)
+        {
+            var profileSourceIDs = new int[1] { profileSourceID };
+            var profileSourceIntervals = new int[1] { profileSourceInterval };
+            Set(profileSourceIDs, profileSourceIntervals);
+        }
+
         /// <summary>
         /// Sets the Profile Sources (CPU machine counters) that will be used if PMC (Precise Machine Counters)
         /// are turned on.   Each CPU counter is given a id (the profileSourceID) and has an interval 
