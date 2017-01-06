@@ -188,9 +188,7 @@ namespace Microsoft.Diagnostics.Tracing
                                 // Inside the function, it will filter the events by 'EventName'. 
                                 // It will only process "Microsoft.EntityFrameworkCore.BeforeExecuteCommand" and "Microsoft.AspNetCore.Hosting.BeginRequest".
                                 if (TryProcessDiagnosticSourceStartEvents(data))
-                                {
                                     return;
-                                }
                             }
 
                             string extraStartInfo = null;
@@ -659,7 +657,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-                NextNibble:
+            NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                     break;
                 if (nibble <= (uint)NumberListCodes.LastImmediateValue)
@@ -946,60 +944,53 @@ namespace Microsoft.Diagnostics.Tracing
         bool TryProcessDiagnosticSourceStartEvents(TraceEvent data)
         {
             Debug.Assert(data.ProviderGuid == MicrosoftDiagnosticsDiagnosticSourceProvider);
-            bool result = false;
             try
             {
-                var eventName = data.PayloadByName("EventName") as string;
-                switch (eventName)
+                string taskName = data.PayloadByName("EventName") as string;
+                if (taskName == null)
+                    return false;
+                string extraInfo = null;
+
+                // In the converter from 'DiagnosticSource' to ETW, we have some default configurations.
+                // By default, SQL (EntityFramework) DiagnosticSource event will be converted to 'Activity2Start' and 'Activity2Stop' events
+                // of provider 'Microsoft-Diagnostics-DiagnosticSource'. Meanwhile, the sql command will be in the payload.
+                // The following code is used to make the call stack looks better (converting 'Activity2Start' to 'SQLCommand')
+                // and showing the SQL command.
+                // Details:
+                //https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
+
+                
+                StructValue[] args = data.PayloadByName("Arguments") as StructValue[];
+                if (args != null)
                 {
-                    case "Microsoft.EntityFrameworkCore.BeforeExecuteCommand":
+                    var sb = Utilities.StringBuilderCache.Acquire(64);
+                    bool first = true;
+                    foreach (StructValue arg in args)
+                    {
+                        string key = arg["Key"] as string;
+                        object value = arg["Value"] as string;
+                        if (key != null && value != null)
                         {
-                            // In the converter from 'DiagnosticSource' to ETW, we have some default configurations.
-                            // By default, SQL (EntityFramework) DiagnosticSource event will be converted to 'Activity2Start' and 'Activity2Stop' events
-                            // of provider 'Microsoft-Diagnostics-DiagnosticSource'. Meanwhile, the sql command will be in the payload.
-                            // The following code is used to make the call stack looks better (converting 'Activity2Start' to 'SQLCommand')
-                            // and showing the SQL command.
-                            // Details:
-                            //https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
-                            if (0 < data.PayloadNames.Length)
+                            string valueStr = value.ToString();
+                            if (!string.IsNullOrEmpty(valueStr))
                             {
-                                var arguments = data.PayloadByName("Arguments") as StructValue[];
-                                if (arguments != null)
-                                {
-                                    // Try to extract SQL command of the EntityFramework event.
-                                    foreach (var payload in arguments)
-                                    {
-                                        object tmp;
-                                        if (payload.TryGetValue("Key", out tmp)
-                                            && tmp.ToString() == "CommandText")
-                                        {
-                                            if (payload.TryGetValue("Value", out tmp))
-                                            {
-                                                OnStart(data, tmp.ToString(), null, null, null, "SQLCommand");
-                                                result = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
+                                if (!first)
+                                    sb.Append(' ');
+                                sb.Append(key).Append("=").Append('"').Append(valueStr).Append('"');
                             }
                         }
-                        break;
-                    case "Microsoft.AspNetCore.Hosting.BeginRequest":
-                        {
-                            // Just change the name from "Activity1Start" to "AspNetCoreHosting".
-                            OnStart(data, null, null, null, null, "AspNetCoreHosting");
-                            result = true;
-                        }
-                        break;
+                        first = false;
+                    }
+                    extraInfo = Utilities.StringBuilderCache.GetStringAndRelease(sb);
                 }
+                OnStart(data, extraInfo, null, null, null, taskName);
+                return true;
             }
             catch (Exception ex)
             {
                 Trace.WriteLine("Threw exception while processing DiagnosticSource start events: " + ex.Message);
             }
-
-            return result;
+            return false;
         }
 
         void FixAndProcessFrameworkEvents(TraceEvent data)
@@ -1243,8 +1234,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (_knownType == null)
                 {
+                    bool noSuffix = false;
                     StringBuilder sb = Utilities.StringBuilderCache.Acquire();
-
                     switch (TaskName)
                     {
                         case "RecHttp":
@@ -1313,12 +1304,12 @@ namespace Microsoft.Diagnostics.Tracing
                             }
                         default:
                             {
-                                // Custom
-                                sb.Append(TaskName);
+                                noSuffix = true;  // Return the empty string. 
                                 break;
                             }
                     }
-                    sb.Append(" Activities");
+                    if (!noSuffix)
+                        sb.Append(" Activities");
                     _knownType = Utilities.StringBuilderCache.GetStringAndRelease(sb);
                 }
 
@@ -1390,7 +1381,7 @@ namespace Microsoft.Diagnostics.Tracing
                 stackIdx = Creator.GetActivityStack(outputStackSource, stackIdx);
 
                 // Add type name to the list of frames. Skip ASP.NET as it adds unnecessary complexity in most cases
-                if (KnownType != "ASP.NET Activities")
+                if (KnownType.Length != 0 && KnownType != "ASP.NET Activities")
                     stackIdx = outputStackSource.Interner.CallStackIntern(outputStackSource.Interner.FrameIntern(KnownType), stackIdx);
             }
 

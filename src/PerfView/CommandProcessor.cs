@@ -598,9 +598,20 @@ namespace PerfView
                                 TraceEventLevel.Verbose, ulong.MaxValue);
 
                             // TODO should we have stacks on for everything?
+                            var diagSourceOptions = new TraceEventProviderOptions() { StacksEnabled = true };
+                            // The removal of IgnoreShortCutKeywords turns on HTTP incomming and SQL events
+                            // The spec below turns on outgoing Http requests.  
+                            string filterSpec =
+                                "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
+                                "Request.RequestUri" +
+                                "\n" +
+                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" + 
+                                "Response.StatusCode";
+                            diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
+                            const ulong IgnoreShortCutKeywords = 0x0800;
                             EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
-                                TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
+                                TraceEventLevel.Informational, ulong.MaxValue-IgnoreShortCutKeywords, diagSourceOptions);
 
                             // TODO should stacks be enabled?
                             EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
@@ -1628,7 +1639,7 @@ namespace PerfView
         }
 #endif
 
-        #region private
+#region private
         private void DisableNetMonTrace()
         {
             string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
@@ -2794,7 +2805,7 @@ namespace PerfView
 
         TextWriter m_logFile;
         bool m_aborted;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2956,7 +2967,7 @@ namespace PerfView
             return ret;
         }
 
-        #region private
+#region private
 
         private static IList<int> ParseIntList(string spaceSeparatedList)
         {
@@ -3070,7 +3081,7 @@ namespace PerfView
             }
             return returnValue;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -3120,7 +3131,7 @@ namespace PerfView
             return manifest;
         }
 
-        #region private
+#region private
 
         private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
         {
@@ -3149,6 +3160,6 @@ namespace PerfView
                 }
             }
         }
-        #endregion
+#endregion
     }
 }

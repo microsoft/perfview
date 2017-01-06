@@ -17,6 +17,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData;
 using Address = System.UInt64;
 
 // #Introduction 
@@ -957,7 +958,12 @@ namespace Microsoft.Diagnostics.Tracing
                         if (!first)
                             sb.Append(',');
                         first = false;
-                        sb.Append(elem.ToString());
+
+                        var asStruct = elem as StructValue;
+                        if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
+                            sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
+                        else 
+                            sb.Append(elem.ToString());
                     }
                     sb.Append(']');
                     return sb.ToString();
