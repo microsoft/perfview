@@ -148,7 +148,7 @@
                             ZippedETLReader reader = new ZippedETLReader(filename, Console.Out);
                             reader.SymbolDirectory = defaultSymbolCache;
                             reader.EtlFileName = Path.ChangeExtension(etlxFilePath, etlExtension);
-                            reader.UnpackAchive();
+                            reader.UnpackArchive();
                             TraceLog.CreateFromEventTraceLogFile(reader.EtlFileName, etlxFilePath);
                         }
                         else

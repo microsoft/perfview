@@ -5315,7 +5315,7 @@ table {
                 }
                 log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
 
-                etlReader.UnpackAchive();
+                etlReader.UnpackArchive();
                 inputFileName = unzipedEtlFile;
             }
         }
