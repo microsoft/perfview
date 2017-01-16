@@ -35,7 +35,7 @@ namespace TraceEventTests
                     var zipReader = new ZippedETLReader(dataFile);
                     zipReader.SymbolDirectory = Path.Combine(UnZippedDataDir, "Symbols");
                     zipReader.EtlFileName = etlFilePath;
-                    zipReader.UnpackAchive();
+                    zipReader.UnpackArchive();
                 }
                 else
                     Trace.WriteLine(string.Format("using cached ETL file {0}", etlFilePath));
