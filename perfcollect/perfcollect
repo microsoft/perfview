@@ -810,7 +810,7 @@ InstallPerf_SUSE()
 	EnsureRoot
 
 	# Install perf.
-	zypper install perf
+	zypper install perf zip unzip
 }
 
 IsUbuntu()
