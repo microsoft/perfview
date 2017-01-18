@@ -38,16 +38,6 @@
 # set -x
 
 ######################################
-## Configuration
-######################################
-
-# The location of the perf executable.
-perfcmd=/usr/bin/perf
-
-# The location of the lttng executable.
-lttngcmd=/usr/bin/lttng
-
-######################################
 ## Collection Options
 ## NOTE: These values represent the collection defaults.
 ######################################
@@ -750,6 +740,26 @@ EnsureRoot()
 }
 
 ######################################
+# Command Discovery
+######################################
+DiscoverCommands()
+{
+	perfcmd=`GetCommandFullPath "perf"`
+	lttngcmd=`GetCommandFullPath "lttng"`
+	zipcmd=`GetCommandFullPath "zip"`
+	unzipcmd=`GetCommandFullPath "unzip"`
+}
+
+GetCommandFullPath()
+{
+	local fullPath=`which $1`
+	if [ "$?" -eq "0" ]
+	then
+		echo $fullPath
+	fi
+}
+
+######################################
 # Prerequisite Installation
 ######################################
 IsRHEL()
@@ -1002,37 +1012,56 @@ SupportsAutoInstall()
 
 EnsurePrereqsInstalled()
 {
+	# Discover commands and then determine if they're all present.
+	DiscoverCommands
+
 	# If perf is not installed, then bail, as it is currently required.
-	if ! [ -f $perfcmd ]
+	if [ "$perfcmd" == "" ]
 	then
 		RedText
 		echo "Perf not installed."
 		if  [ "$(SupportsAutoInstall)" == "1" ]
 		then
 			echo "Run ./perfcollect install"
-			echo "or install perf manually to $perfcmd."
+			echo "or install perf manually."
 		else
-			echo "Install perf to $perfcmd to proceed."
+			echo "Install perf to proceed."
 		fi
 		ResetText
 		exit 1
 	fi
 
 	# If LTTng is installed, consider using it.
-	if ! [ -f $lttngcmd ]
+	if [ "$lttngcmd" == "" ]
 	then
 		RedText
 		echo "LTTng not installed."
 		if  [ "$(SupportsAutoInstall)" == "1" ]
 		then
 			echo "Run ./perfcollect install"
-			echo "or install LTTng manually to $perfcmd."
+			echo "or install LTTng manually."
 		else
-			echo "Install perf to $perfcmd to proceed."
+			echo "Install LTTng to proceed."
 		fi
 		ResetText
 		exit 1
 
+	fi
+
+	# If zip or unzip are not installing, then bail.
+	if [ "$zipcmd" == "" ] || [ "$unzipcmd" == "" ]
+	then
+		RedText
+		echo "Zip and unzip are not installed."
+		if [ "$(SupportsAutoInstall)" == "1" ]
+		then
+			echo "Run ./perfcollect install"
+			echo "or install zip and unzip manually."
+		else
+			echo "Install zip and unzip to proceed."
+		fi
+		ResetText
+		exit 1
 	fi
 }
 
@@ -1477,7 +1506,7 @@ ProcessCollectedData()
 	# Compress the data.
 	local archiveSuffix=".zip"
 	local archiveName=$directoryName$archiveSuffix
-	RunSilent "zip -r $archiveName $directoryName"
+	RunSilent "$zipcmd -r $archiveName $directoryName"
 
 	# Move back to the original directory.
 	popd > /dev/null
@@ -1723,7 +1752,7 @@ DoView()
 	local tempDir=`mktemp -d`
 	
 	# Extract the trace files.
-	unzip $inputTraceName -d $tempDir
+	$unzipcmd $inputTraceName -d $tempDir
 	
 	# Move the to temp directory.
 	pushd $tempDir
