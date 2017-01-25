@@ -17,6 +17,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
+using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData;
 using Address = System.UInt64;
 
 // #Introduction 
@@ -412,6 +413,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
+            // Anything that is out of bounds is limited. 
+            // This is important becasuse we use 0 and MaxValue to repsesent unknown
+            // but in analysis we don't expect all times to be limited to the trace.   
+            if (QPCTime < sessionStartTimeQPC)
+                QPCTime = sessionStartTimeQPC;
+            if (QPCTime > sessionEndTimeQPC)
+                QPCTime = sessionEndTimeQPC;
+
             Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
             long diff = (QPCTime - sessionStartTimeQPC);
@@ -957,7 +966,12 @@ namespace Microsoft.Diagnostics.Tracing
                         if (!first)
                             sb.Append(',');
                         first = false;
-                        sb.Append(elem.ToString());
+
+                        var asStruct = elem as StructValue;
+                        if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
+                            sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
+                        else 
+                            sb.Append(elem.ToString());
                     }
                     sb.Append(']');
                     return sb.ToString();

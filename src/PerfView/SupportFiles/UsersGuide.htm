@@ -8022,7 +8022,6 @@
         <li>Version 1.4.1 - 1/XX/2013
             <ul>
             <li>XXX</li>
-
               <li>Improved the performance of the stack-view substantially by building a simplified regular expression matcher
                     instead of using System.Text.RegularExpressions.  This should improve 'update' speeds in the stack viewer
                     in common scenarios by of 2 </li>
@@ -8034,6 +8033,46 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.50 1/24/17
+            <ul>
+                <li> Fixed issue where the 'processes' view was giving negative start times and other bogus values.  
+                </li>
+            </ul>
+        </li> 
+        <li>
+            Version 1.9.49 1/6/17
+            <ul>
+                <li>
+                    Better names for start-stop coming from Diagnsotics Sources.  
+                    This helps for doing ASP.NET Core uses DiagnosticSource for both
+                    incomming and outgoing HTTP requests. 
+                    use    
+                </li>
+            </ul>
+        </li> 
+        <li>
+            Version 1.9.47 1/5/17
+            <ul>
+                <li> Enable DiagnosticSource and ApplicationsInsight providers by default.  
+                </li>
+            </ul>
+        </li> 
+        <li>
+            Version 1.9.46 1/4/17
+            <ul>
+                <li> 
+                    Added the GIT commit hash to the module information in the 'Modules' Excel table in the 'Processes' view.  
+                     This commit will also show up in the ImageLoad event in the 'events view.   Useful for finding the source
+                     code for a particular module.   This information is fetched from  the 'FileVersion field of the version
+                    information for the file (what fileVersion -v returns).  It is looking for 'Commit Hash: HASH'.  If it does
+                    not find this on FileVersion, it looks on the ProductVersion field. 
+                </li>
+                <li>
+                    Extend the UserCommand Listen command to take full ETW provider specs rather that just the ETW provider name 
+                </li>
+            </ul>
+        </li> 
         <li>
             Version 1.9.45 12/19/16
             <ul>

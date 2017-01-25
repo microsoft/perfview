@@ -720,45 +720,8 @@ namespace Microsoft.Diagnostics.Symbols
                     return crossGen;
             }
 
-            // READY_TO_RUN HACK
-            var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-            var perfViewCrossGen = Path.Combine(toolsDir, @"amd64\crossGen.exe");
-            if (!File.Exists(perfViewCrossGen))
-            {
-                m_log.WriteLine("No CrossGen in PerfView at {0}, giving up", perfViewCrossGen);
-                return null;
-            }
-
-            string corClrPath = Path.Combine(imageDir, "coreclr.dll");
-            if (!File.Exists(corClrPath))
-            {
-                m_log.WriteLine("Could not find coreclr at {0} giving up", corClrPath);
-                return null;            // Not the crossGen case.  
-            }
-
-            using (var clrPE = new PEFile.PEFile(corClrPath))
-            {
-                if (!clrPE.Header.IsPE64)
-                {
-                    m_log.WriteLine("CoreCLR {0} is not 64 bit", corClrPath);
-                    return null;
-                }
-                var version = clrPE.GetFileVersionInfo();
-                if (version == null || !version.FileVersion.StartsWith("1.0.24214"))
-                {
-                    m_log.WriteLine("CoreCLR {0} is version {1} not version 1.0.24214", corClrPath, version.FileVersion);
-                    return null;
-                }
-            }
-
-            // For some reason crossgen only works if it lives in the runtime directory.  
-            try { File.Copy(perfViewCrossGen, crossGen); }
-            catch
-            {
-                m_log.WriteLine("Could not copy CrossGen to runtime directory (try again with admin?)", crossGen);
-                return null;
-            }
-            return crossGen;
+            m_log.WriteLine("Could not find crossgen, giving up");
+            return null;
         }
 
         // TODO remove after 12/2015

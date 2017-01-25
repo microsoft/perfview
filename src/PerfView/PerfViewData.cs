@@ -1281,7 +1281,7 @@ table {
             {
                 //add headers 
                 string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
-                writer.WriteLine("ProcessName{0}ProcessID{0}Name{0}FileVersion{0}BuildTime{0}FilePath", listSeparator);
+                writer.WriteLine("ProcessName{0}ProcessID{0}Name{0}FileVersion{0}Commit{0}BuildTime{0}FilePath{0}", listSeparator);
                 foreach (TraceProcess process in processes)  //turn into private function 
                 {
                     foreach (TraceLoadedModule module in process.LoadedModules)
@@ -1290,6 +1290,7 @@ table {
                         writer.Write("{0}{1}", process.ProcessID, listSeparator);
                         writer.Write("{0}{1}", module.ModuleFile.Name, listSeparator);
                         writer.Write("{0}{1}", module.ModuleFile.FileVersion, listSeparator);
+                        writer.Write("{0}{1}", module.ModuleFile.GitCommitHash, listSeparator);
                         writer.Write("{0}{1}", PerfViewExtensibility.Events.EscapeForCsv(module.ModuleFile.BuildTime.ToString(), listSeparator), listSeparator);
                         writer.Write("{0}", module.ModuleFile.FilePath);
                         writer.WriteLine();
