@@ -732,7 +732,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             sb.Append(", ");
                         else
                             first = false;
-                        sb.Append(keyvalue.Key).Append("=");
+                        sb.Append(keyvalue.Key).Append(":");
                         WriteAsJSon(sb, keyvalue.Value);
                     }
                     sb.Append(" }");
@@ -790,7 +790,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            public bool ContainsKey(string key) { throw new NotImplementedException(); }
+            public bool ContainsKey(string key) {
+                object value;
+                return TryGetValue(key, out value);
+            }
             public ICollection<string> Keys { get { throw new NotImplementedException(); } }
             public bool Remove(string key) { throw new NotImplementedException(); }
             public ICollection<object> Values { get { throw new NotImplementedException(); } }

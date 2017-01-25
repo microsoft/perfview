@@ -2527,7 +2527,7 @@ namespace PerfViewExtensibility
         /// By default the output goes to a GUI window but you can use the /LogFile option to 
         /// redirect it elsewhere.  
         /// </summary>
-        /// <param name="etwProviderNames"> a comma separated list of event sources or registered ETW provider</param>
+        /// <param name="etwProviderNames"> a comma separated list of providers specs (just like /Providers value)</param>
         public void Listen(string etwProviderNames)
         {
             var sessionName = "PerfViewListen";
@@ -2587,12 +2587,22 @@ namespace PerfViewExtensibility
                 };
 
                 session.Source.Dynamic.All += onAnyEvent;
+                // Add support for EventWriteStrings (which are not otherwise parsable).  
+                session.Source.UnhandledEvents += delegate (TraceEvent data)
+                {
+                    string formattedMessage = data.FormattedMessage;
+                    if (formattedMessage != null)
+                        listenTextEditorWriter.WriteLine("{0} {1} Message=\"{2}\"",
+                            data.TimeStamp.ToString("HH:mm:ss.fff"), data.EventName, formattedMessage);
+                };
 
                 // Enable all the providers the users asked for
-                foreach (string providerName in etwProviderNames.Split(','))
+
+                var parsedProviders = ProviderParser.ParseProviderSpecs(etwProviderNames.Split(','), null, LogFile);
+                foreach(var parsedProvider in parsedProviders)
                 {
-                    LogFile.WriteLine("Enabling provider {0}", providerName);
-                    session.EnableProvider(providerName);
+                    LogFile.WriteLine("Enabling provider {0}:{1:x}:{2}", parsedProvider.Name, (ulong) parsedProvider.MatchAnyKeywords, parsedProvider.Level);
+                    session.EnableProvider(parsedProvider.Name, parsedProvider.Level, (ulong)parsedProvider.MatchAnyKeywords, parsedProvider.Options);
                 }
 
                 // Start listening for events.  
