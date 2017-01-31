@@ -135,6 +135,7 @@
     <Compile Include="JitStats.cs" />
     <Compile Include="OtherSources\Linux\LinuxPerfScriptEventParser.cs" />
     <Compile Include="OtherSources\Linux\LinuxPerfScriptStackSource.cs" />
+    <Compile Include="OtherSources\XmlTreeStackSource.cs" />
     <Compile Include="sigparser.cs">
       <Link>Utilities\sigparser.cs</Link>
     </Compile>
