@@ -360,7 +360,7 @@ namespace PerfView
                 if (KernelBaseCheckBox.IsChecked ?? false)
                     m_args.KernelEvents = (KernelTraceEventParser.Keywords)(KernelTraceEventParser.Keywords.Default - KernelTraceEventParser.Keywords.Profile);
                 if (CpuSamplesCheckBox.IsChecked ?? false)
-                    m_args.KernelEvents |= KernelTraceEventParser.Keywords.Default;
+                    m_args.KernelEvents |= KernelTraceEventParser.Keywords.Profile;
 
                 if (ThreadTimeCheckbox.IsChecked ?? false)
                     m_args.KernelEvents |= KernelTraceEventParser.Keywords.ThreadTime;

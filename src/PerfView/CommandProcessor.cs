@@ -461,9 +461,9 @@ namespace PerfView
                     PerfViewLogger.Log.SessionParameters(s_UserModeSessionName, userFileName ?? "",
                         userModeSession.BufferSizeMB, userModeSession.CircularBufferMB);
 
-                    // If you turn on allocation sampling, then you also need the types and names.  
+                    // If you turn on allocation sampling, then you also need the types and names and deaths.  
                     if ((parsedArgs.ClrEvents & (ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh | ClrTraceEventParser.Keywords.GCSampledObjectAllocationLow)) != 0)
-                        parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type;
+                        parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement;
 
                     if (parsedArgs.Wpr)
                         SetWPRProviders(userModeSession);
