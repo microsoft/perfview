@@ -2360,8 +2360,7 @@
                         </li>
                         <li>
                             <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
-                            Show the stacks
-                            where any Windows OS Handle were created, duplicated or closed.  When handles are created
+                            Show the stacks where any Windows OS Handle were created, duplicated or closed.  When handles are created
                             or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
                             a close() on a handle occurs and PerfView has seen a 'create' or 'dumplicate' event for it
                             it will use that stack for the close (this is very much like what is done for memory allocation
@@ -3915,7 +3914,7 @@
             kernel events the creation and closing of Window OS kernel handles to be logged.
             You will see 'Windows Kernel/Object/*' events to show up in the 'events' view as well
             as activating the <a href="#WindowsHandleRefCountStacks">Windows OS Handle Stacks</a> view (as well as the 'Any Stacks' view).
-            Adding the Hanldle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Hanldle)
+            Adding the Handle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Handle)
             can be used to turn this option on the comand line.
         </li>
         <li>
