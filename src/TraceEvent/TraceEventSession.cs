@@ -1832,8 +1832,31 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 curID++;
             }
 
-            // Confirm we did not overflow.  
-            Debug.Assert(curID <= stackTracingIdsMax);
+				// ALPC
+			if((stackCapture & KernelTraceEventParser.Keywords.AdvancedLocalProcedureCalls) != 0) {
+				stackTracingIds[curID].EventGuid = KernelTraceEventParser.ALPCTaskGuid;
+				stackTracingIds[curID].Type = 33;  // send message   
+				curID++;
+
+				stackTracingIds[curID].EventGuid = KernelTraceEventParser.ALPCTaskGuid;
+				stackTracingIds[curID].Type = 34;  // receive message   
+				curID++;
+
+				stackTracingIds[curID].EventGuid = KernelTraceEventParser.ALPCTaskGuid;
+				stackTracingIds[curID].Type = 35;  // wait for reply
+				curID++;
+
+				stackTracingIds[curID].EventGuid = KernelTraceEventParser.ALPCTaskGuid;
+				stackTracingIds[curID].Type = 36;  // wait for new message
+				curID++;
+
+				stackTracingIds[curID].EventGuid = KernelTraceEventParser.ALPCTaskGuid;
+				stackTracingIds[curID].Type = 37;  // unwait
+				curID++;
+			}
+
+			// Confirm we did not overflow.  
+			Debug.Assert(curID <= stackTracingIdsMax);
             return curID;
         }
         private void InsureStarted(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* properties = null)
