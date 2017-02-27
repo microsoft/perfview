@@ -752,11 +752,7 @@ DiscoverCommands()
 
 GetCommandFullPath()
 {
-	local fullPath=`which $1`
-	if [ "$?" -eq "0" ]
-	then
-		echo $fullPath
-	fi
+	echo `command -v $1`
 }
 
 ######################################
