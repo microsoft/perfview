@@ -2180,7 +2180,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
     public enum TraceEventSessionOptions
     {
         /// <summary>
-        /// Create a new session, fail if the session already exists.  This is the default.  
+        /// Create a new session, stop and recreated it if it already exists.  This is the default.  
         /// </summary>
         Create = 0,
         /// <summary>

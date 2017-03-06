@@ -4231,7 +4231,7 @@
         </li>
         <li>
             The <strong><a id="CPUCountersTextBox">Cpu Ctrs TextBox</a></strong> -&nbsp; On
-            Window 8 and above, PerfView has the ability to sample stacks based on CPU sampling
+            PerfView has the ability to sample stacks based on CPU sampling
             counters (like instructionsRetired, DCache Miss rates Branch Mispredictions etc)
             in addition to the standard sampling based on time. To turn these on you enter a
             space-separated list of strings of the form <strong>CpuCtrName:RolloverCount</strong>,
@@ -4245,7 +4245,8 @@
             If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
             and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
             do your collection and the turn it back on without losing your virtual machines (although it is a pain).
-            Hopefully this will be fixed in Win 10.
+            Hopefully this will be fixed in Win 10.  In addition to the GUI you can access this feature
+            using the command line /CpuCounters:XXX qualifer.   (See PerfView -> Command Line Help for more)
             <p>
                 If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
                 suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
