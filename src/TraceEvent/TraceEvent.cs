@@ -412,6 +412,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
+            // Anything that is out of bounds is limited. 
+            // This is important becasuse we use 0 and MaxValue to repsesent unknown
+            // but in analysis we don't expect all times to be limited to the trace.   
+            if (QPCTime < sessionStartTimeQPC)
+                QPCTime = sessionStartTimeQPC;
+            if (QPCTime > sessionEndTimeQPC)
+                QPCTime = sessionEndTimeQPC;
+
             Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
             long diff = (QPCTime - sessionStartTimeQPC);
