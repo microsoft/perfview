@@ -461,9 +461,9 @@ namespace PerfView
                     PerfViewLogger.Log.SessionParameters(s_UserModeSessionName, userFileName ?? "",
                         userModeSession.BufferSizeMB, userModeSession.CircularBufferMB);
 
-                    // If you turn on allocation sampling, then you also need the types and names.  
+                    // If you turn on allocation sampling, then you also need the types and names and deaths.  
                     if ((parsedArgs.ClrEvents & (ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh | ClrTraceEventParser.Keywords.GCSampledObjectAllocationLow)) != 0)
-                        parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type;
+                        parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement;
 
                     if (parsedArgs.Wpr)
                         SetWPRProviders(userModeSession);
@@ -3014,7 +3014,8 @@ namespace PerfView
                 providerGuid = new Guid("AFF081FE-0247-4275-9C4E-021F3DC1DA35");
             else if (string.Compare(providerSpec, "Win32HeapRanges", StringComparison.OrdinalIgnoreCase) == 0)
                 providerGuid = new Guid("d781ca11-61c0-4387-b83d-af52d3d2dd6a");
-            else if (string.Compare(providerSpec, ".NetTasks", StringComparison.OrdinalIgnoreCase) == 0)
+            else if (string.Compare(providerSpec, ".NetTasks", StringComparison.OrdinalIgnoreCase) == 0 ||
+                string.Compare(providerSpec, "System.Threading.Tasks.TplEventSource", StringComparison.OrdinalIgnoreCase) == 0)
                 providerGuid = new Guid(0x2e5dba47, 0xa3d2, 0x4d16, 0x8e, 0xe0, 0x66, 0x71, 0xff, 220, 0xd7, 0xb5);
             else if (string.Compare(providerSpec, ".NetFramework", StringComparison.OrdinalIgnoreCase) == 0)
                 providerGuid = new Guid(0x8e9f5090, 0x2d75, 0x4d03, 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);

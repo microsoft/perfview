@@ -182,6 +182,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                          | ThreadTransfer | GCHeapAndTypeNames | Codesymbols,
 
             /// <summary>
+            /// What is needed to get symbols for JIT compiled code.  
+            /// </summary>
+            JITSymbols = Jit | StopEnumeration | JittedMethodILToNativeMap | SupressNGen | Loader,
+
+            /// <summary>
             /// This provides the flags commonly needed to take a heap .NET Heap snapshot with ETW.  
             /// </summary>
             GCHeapSnapshot = GC | GCHeapCollect | GCHeapDump | GCHeapAndTypeNames | Type,

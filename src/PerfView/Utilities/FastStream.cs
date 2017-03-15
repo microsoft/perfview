@@ -417,9 +417,6 @@ namespace PerfView.Utilities
 				ret = this.MoveNextHelper();
 			}
 
-#if DEBUG
-            nextChars = Encoding.Default.GetString(buffer, (int)this.bufferIndex, Math.Min(40, buffer.Length - (int)bufferIndex));
-#endif
 			return ret;
 		}
         public bool EndOfStream { get { return this.streamReadIn == 0; } }
@@ -586,13 +583,12 @@ namespace PerfView.Utilities
 		private FastStream next;
         private bool IsDisposed;
 
-#if DEBUG
-        string nextChars;
+
+        // Use PeekString(int) to get more characters.  
         public override string ToString()
         {
-            return nextChars;
+            return Encoding.Default.GetString(buffer, (int)this.bufferIndex, Math.Min(80, buffer.Length - (int)bufferIndex));
         }
-#endif
         #endregion
     }
 }

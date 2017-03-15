@@ -769,6 +769,7 @@ namespace PerfView
             new OffProfPerfViewFile(),
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
+            new XmlTreeFile(),
         };
 
         #region private
@@ -5383,6 +5384,17 @@ table {
             stackWindow.RemoveColumn("IncCountColumn");
             stackWindow.RemoveColumn("ExcCountColumn");
             stackWindow.RemoveColumn("FoldCountColumn");
+        }
+    }
+
+    class XmlTreeFile : PerfViewFile
+    {
+        public override string FormatName { get { return "Tree XML FILE"; } }
+        public override string[] FileExtensions { get { return new string[] { ".tree.xml" }; } }
+
+        protected internal override StackSource OpenStackSourceImpl(TextWriter log)
+        {
+            return new XmlTreeStackSource(FilePath);
         }
     }
 

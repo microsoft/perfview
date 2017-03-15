@@ -2360,8 +2360,7 @@
                         </li>
                         <li>
                             <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
-                            Show the stacks
-                            where any Windows OS Handle were created, duplicated or closed.  When handles are created
+                            Show the stacks where any Windows OS Handle were created, duplicated or closed.  When handles are created
                             or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
                             a close() on a handle occurs and PerfView has seen a 'create' or 'dumplicate' event for it
                             it will use that stack for the close (this is very much like what is done for memory allocation
@@ -2561,8 +2560,7 @@
         <li>
             <strong>
                 <a id="XmlPerfViewFile">
-                    (PerfView Stack Views .PerfView.XML or .PerfView.XML.ZIP
-                    files)
+                    PerfView Stack Views (.PerfView.XML or .PerfView.XML.ZIP files)
                 </a>
             </strong> - PerfView has the ability to save the data in a stack viewer
             as an XML file (or a ZIPed XML file).&nbsp;&nbsp; This is what the &#39;Save&#39;
@@ -2573,6 +2571,15 @@
             generate this XML file using another program and thus view external data using PerfView's
             powerful stack viewer.   PerfView supports both perfView.xml as well as a perfView.json
             variation.
+        </li>
+        <li>
+            <strong>
+                <a id="XmlTreeFile">Xml Tree Views (*.tree.xml files)
+                </a>
+            </strong> - XmlTree files are files that encode tree based data as XML trees where
+            each frame of the callstack is represented by and XML 'node' element.   Currently
+            this works for the export format for the Java YourKit profiler, but will include 
+            other export formats that have roughly the same structure.   
         </li>
         <li>
             <strong><a id="VmmapPerfViewFile">VMMAP data (.mmp files)</a></strong> - PerfView
@@ -3915,7 +3922,7 @@
             kernel events the creation and closing of Window OS kernel handles to be logged.
             You will see 'Windows Kernel/Object/*' events to show up in the 'events' view as well
             as activating the <a href="#WindowsHandleRefCountStacks">Windows OS Handle Stacks</a> view (as well as the 'Any Stacks' view).
-            Adding the Hanldle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Hanldle)
+            Adding the Handle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Handle)
             can be used to turn this option on the comand line.
         </li>
         <li>
@@ -4232,7 +4239,7 @@
         </li>
         <li>
             The <strong><a id="CPUCountersTextBox">Cpu Ctrs TextBox</a></strong> -&nbsp; On
-            Window 8 and above, PerfView has the ability to sample stacks based on CPU sampling
+            PerfView has the ability to sample stacks based on CPU sampling
             counters (like instructionsRetired, DCache Miss rates Branch Mispredictions etc)
             in addition to the standard sampling based on time. To turn these on you enter a
             space-separated list of strings of the form <strong>CpuCtrName:RolloverCount</strong>,
@@ -4246,7 +4253,8 @@
             If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
             and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
             do your collection and the turn it back on without losing your virtual machines (although it is a pain).
-            Hopefully this will be fixed in Win 10.
+            Hopefully this will be fixed in Win 10.  In addition to the GUI you can access this feature
+            using the command line /CpuCounters:XXX qualifer.   (See PerfView -> Command Line Help for more)
             <p>
                 If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
                 suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because
@@ -8033,6 +8041,23 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.51 1/31/17
+            <ul>
+                <li>
+                    Added suport for reading files from the YourKit java profiler.  This works for both their CPU trees
+                    as well as their object allcoation trees.  These XML files need to be named '*.tree.xml' for perfview 
+                    to recognize the file as something it understands.   See XmlTreeStackSource for more details.  
+                </li>
+            </ul>
+        </li> 
+        <li>
+            Version 1.9.50 1/24/17
+            <ul>
+                <li> Fixed issue where the 'processes' view was giving negative start times and other bogus values.  
+                </li>
+            </ul>
+        </li> 
         <li>
             Version 1.9.49 1/6/17
             <ul>
