@@ -477,6 +477,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             else
                             {
                                 _gc.PauseDurationMSec = data.TimeStampRelativeMSec - _gc.PauseStartRelativeMSec;
+                                _gc.GCEnd();
                                 if (_gc.HeapStats != null)
                                 {
                                     _gc.OnEnd(stats.GC); // set IsComplete = true;
@@ -828,7 +829,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         _gc.DurationMSec = data.TimeStampRelativeMSec - _gc.StartRelativeMSec;
                         _gc.Generation = data.Depth;
-                        _gc.GCEnd();
                         Debug.Assert(_gc.Number == data.Count);
                     }
                 };
