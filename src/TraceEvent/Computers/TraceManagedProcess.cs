@@ -828,7 +828,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         _gc.DurationMSec = data.TimeStampRelativeMSec - _gc.StartRelativeMSec;
                         _gc.Generation = data.Depth;
-                        _gc.GCEnd();
                         Debug.Assert(_gc.Number == data.Count);
                     }
                 };
@@ -2074,6 +2073,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
 
             // calculate core gc process values
             details.m_stats.ProcessDuration = GetProcessDuration(details.m_stats, details.GCs, this);
+
+            BlockingGCEnd();
         }
 
         internal static double GetProcessDuration(GCStats stats, List<TraceGC> GCs, TraceGC gc)
@@ -2475,7 +2476,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         }
 
-        internal void GCEnd()
+        internal void BlockingGCEnd()
         {
             ConvertMarkTimes();
             foreach (var serverHeap in ServerGcHeapHistories)
