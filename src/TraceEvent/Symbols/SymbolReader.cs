@@ -703,6 +703,21 @@ namespace Microsoft.Diagnostics.Symbols
             return pdbPath;
         }
 
+        private static string getNugetPackageDir()
+        {
+            string homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
+            if (homeDrive == null)
+                return null;
+            string homePath = Environment.GetEnvironmentVariable("HOMEPATH");
+            if (homePath == null)
+                return null;
+
+            var nugetPackageDir = homeDrive + homePath + @"\.nuget\packages";
+            if (!Directory.Exists(nugetPackageDir))
+                return null;
+            return nugetPackageDir;
+        }
+
         private string GetCrossGenExePath(string ngenImageFullPath)
         {
             var imageDir = Path.GetDirectoryName(ngenImageFullPath);
@@ -712,6 +727,38 @@ namespace Microsoft.Diagnostics.Symbols
             if (File.Exists(crossGen))
                 return crossGen;
 
+            string coreclr = Path.Combine(imageDir, "coreclr.dll");
+            if (File.Exists(coreclr))
+            {
+                DateTime coreClrTimeStamp = File.GetLastWriteTimeUtc(coreclr);
+                m_log.WriteLine("Found coreclr: at  {0}, timestamp {1}", coreclr, coreClrTimeStamp);
+                string nugetDir = getNugetPackageDir();
+                if (nugetDir != null)
+                {
+                    m_log.WriteLine("Found nuget package dir: at  {0}", nugetDir);
+                    foreach (var runtimeDir in Directory.GetDirectories(nugetDir, "runtime.win*.microsoft.netcore.runtime.coreclr"))
+                    {
+                        foreach (var runtimeVersionDir in Directory.GetDirectories(runtimeDir))
+                        {
+                            foreach (var osarchDir in Directory.GetDirectories(Path.Combine(runtimeVersionDir, "runtimes"), "win*"))
+                            {
+                                string packageCoreCLR = Path.Combine(osarchDir, @"native\coreclr.dll");
+                                DateTime packageCoreClrTimeStamp = File.GetLastWriteTimeUtc(packageCoreCLR);
+                                m_log.WriteLine("Checking timestamp of file {0} = {1}", packageCoreCLR, packageCoreClrTimeStamp);
+                                if (File.Exists(packageCoreCLR) && packageCoreClrTimeStamp == coreClrTimeStamp)
+                                {
+                                    crossGen = Path.Combine(runtimeVersionDir, @"tools\crossgen.exe");
+                                    m_log.WriteLine("Found matching CoreCLR, probing for crossgen at {0}", crossGen);
+                                    if (File.Exists(crossGen))
+                                        return crossGen;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Check if you are running the runtime out of the nuget directory itself 
             var m = Regex.Match(imageDir, @"^(.*)\\runtimes\\win.*\\native$", RegexOptions.IgnoreCase);
             if (m.Success)
             {
@@ -773,7 +820,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public void Dispose() { }
 
-        #region private
+#region private
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -1345,7 +1392,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1717,7 +1764,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader SymbolReader { get { return m_reader; } }
 
-        #region private
+#region private
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
@@ -1933,7 +1980,7 @@ namespace Microsoft.Diagnostics.Symbols
         IDiaEnumSymbolsByAddr m_symbolsByAddr;
         string m_pdbPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2023,7 +2070,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             return ((int)RVA - (int)other.RVA);
         }
-        #region private
+#region private
 #if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
@@ -2054,7 +2101,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-        #endregion
+#endregion
     }
 
 
@@ -2225,7 +2272,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-        #region private
+#region private
         /// <summary>
         /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
         /// represented by the 'this' pointer.   This target is iether a ULR or a local file
@@ -2660,7 +2707,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         byte[] m_hash;
         bool m_getSourceCalled;
         bool m_checksumMatches;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2676,7 +2723,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// The line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
-        #region private
+#region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -2686,7 +2733,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-        #endregion
+#endregion
     }
 }
 
@@ -2818,7 +2865,7 @@ namespace Dia2Lib
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }
-        #region private
+#region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
@@ -2837,7 +2884,7 @@ namespace Dia2Lib
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
         static bool s_loadedNativeDll;
-        #endregion
+#endregion
     }
 }
 #endregion
