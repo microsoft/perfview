@@ -8053,6 +8053,44 @@
             </ul>
         </li>
         -->
+		<li>
+            Version 1.9.23 8/30/16
+            <ul>
+                <li>
+                    Fixed issues with Activity views in .NET Core.
+                </li>
+				<li>
+                    Added the command line arguments to the process node in the stack viewers
+                </li>
+				<li>
+                    Hack to make ready-to-run PDB lookup work (really needs crossGen to be fixed, but this makes things work in the mean time)
+                </li>
+            </ul>
+        </li>
+		<li>
+            Version 1.9.22 8/29/16
+            <ul>
+                <li>
+                    If you place a 'symbols' directory next to a data file, PerfView will place any PDBs needed in that directory. This is a handy feature when you are sharing data with other people with data files that are private builds. Unfortunately, a few versions back this logic was broken. This update fixes this
+                </li>
+            </ul>
+        </li>
+		<li>
+            Version 1.9.21 8/10/16
+            <ul>
+                <li>
+                    Removed Just My app for dotnet.exe hosts since it is does more harm than good.
+                </li>
+            </ul>
+        </li>
+		<li>
+            Version 1.9.20 8/9/16
+            <ul>
+                <li>
+                    Fixed broken opening of .diagsession files.
+                </li>
+            </ul>
+        </li>
         <li>
             Version 1.9.19 6/17/16
             <ul>
