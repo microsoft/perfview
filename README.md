@@ -8,7 +8,11 @@ started information.
 ### Getting PerfView 
 The PerfView executable is ultimately published at the 
 [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567). 
-It is a standalone executable file (packaged in a ZIP archive). You can be running it in less than a minute!
+It is a standalone executable file (packaged in a ZIP archive). You can be running it in a few clicks. Click the 
+[PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567), click download, open resulting downloaded
+zip file, and either execute it directly (double click on it in the ZIP archive, or better, copy it to your machine (e.g. drag it 
+to your desktop and then double click it from there).   It is a single EXE with no installation.  You can be running in literally seconds.
+
 
 #### Getting the Latest Version of PerfView
 
