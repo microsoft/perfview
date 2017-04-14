@@ -18,10 +18,10 @@ In this case you have the choice of building it yourself (see bellow) or using o
 
 ### Learning about PerfView 
 
-The PerfView user's guide is part of the application itself, however you can get the .HTM file for it in 
-the user's guide in the source code itself at [PerfView/SupportFiles/UsersGuide.htm](src/PerfView/SupportFiles/UsersGuide.htm) or
-[the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportFiles/UsersGuide.htm)
-however it is a significantly better experience if you simply download PerfView and select the Help -> User's Guide menu item.  
+The PerfView user's guide is part of the application itself, however you his this 
+[Users Guide link](http://htmlpreview.github.io/?https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm) 
+to see the [master HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browswer.  You can also simply
+download PerfView using the instructions above and select the Help -> User's Guide menu item. 
 
 ### Tools Needed to Build PerfView
 
