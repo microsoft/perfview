@@ -27,6 +27,14 @@ The PerfView user's guide is part of the application itself, however you his thi
 to see the [GitHub HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browser.  You can also simply
 download PerfView using the instructions above and select the Help -> User's Guide menu item. 
 
+# Building PerfView Yourself
+
+If you just want to do a performance investigation, you don't need to build PerfView yourself.  
+Just use the one from the download center or the github release site.  
+However if you want new features or just want to contribute to a PerfView to make it better (see issues for things people want)
+you can do that by following the rest of these instructions.
+
+
 ### Tools Needed to Build PerfView
 
 The only tool you need to build PerfView is Visual Studio 2015.   The [Visual Studio 2015 Community Edition](https://www.microsoft.com/en-us/download/details.aspx?id=48146) 
