@@ -4059,7 +4059,9 @@
             providers (including the default ones) except for those needed to do a .NET GC Heap
             analysis. In this mode relatively few events are logged, so you can collect data
             about a large period of time (say an hour), in a reasonable size (say 200Meg). This
-            option shows you stacks for a SAMPLING of GC allocations.
+            option shows you stacks for a SAMPLING of GC allocations.   In addition to the GC
+            events it also turns on hte <a href="#MemInfoCheckBox">MemInfo</a> and <a href="#VirtualAllocCheckBox">VirtualAlloc</a> events, which are useful
+            for tracking down memory issues.   
             The /GCOnly command line option achieves the same efffect.
         </li>
         <li>
