@@ -29,8 +29,8 @@ download PerfView using the instructions above and select the Help -> User's Gui
 
 # Building PerfView Yourself
 
-If you just want to do a performance investigation, you don't need to build PerfView yourself.  
-Just use the one from the download center or the github release site.  
+If you just want to do a performance investigation, you don't need to build PerfView yourself.
+Just use the one from the download center or the github release site.
 However if you want new features or just want to contribute to a PerfView to make it better (see issues for things people want)
 you can do that by following the rest of these instructions.
 
