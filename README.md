@@ -24,7 +24,7 @@ In this case you have the choice of building it yourself (see bellow) or using o
 
 The PerfView user's guide is part of the application itself, however you his this 
 [Users Guide link](http://htmlpreview.github.io/?https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm) 
-to see the [master HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browswer.  You can also simply
+to see the [GitHub HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browser.  You can also simply
 download PerfView using the instructions above and select the Help -> User's Guide menu item. 
 
 ### Tools Needed to Build PerfView
