@@ -9,7 +9,7 @@
   <!--Target CLR v4.0-->
   <PropertyGroup>
     <AllowCrossTargeting>true</AllowCrossTargeting>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.5</TargetFrameworkVersion>
   </PropertyGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
   <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
@@ -152,6 +152,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.XML" />
     <Reference Include="TraceReloggerLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\lib\net40\TraceReloggerLib.dll</HintPath>
@@ -162,10 +164,6 @@
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
       <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
       <Name>FastSerialization</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Zip\Zip.csproj">
-      <Project>{6fa47d21-6b1c-40e1-ad6b-d9139fa4123b}</Project>
-      <Name>Zip</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

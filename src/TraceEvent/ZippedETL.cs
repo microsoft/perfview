@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
 
-#if V4_5_Runtime || PERFVIEW
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -53,7 +52,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is the name of the output archive.  By default is the same as the ETL file name 
         /// with a .zip' suffix added (thus it will typically be .etl.zip).  
         /// </summary>
-        public string ZipArchivePath { get; set; }
+        public string ZipArchivePath { get; set; } 
 
         /// <summary>
         /// If set this is where messages about progress and detailed error information goes.  
@@ -483,4 +482,3 @@ namespace Microsoft.Diagnostics.Tracing
         #endregion // private
     }
 }
-#endif // V4_5_Runtime

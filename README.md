@@ -1,20 +1,41 @@
-# PerfView
+ This # PerfView
 PerfView is a performance-analysis tool that helps isolate CPU- and memory-related performance issues.
 
 If you are unfamiliar with PerfView, there are [PerfView video tutorials](http://channel9.msdn.com/Series/PerfView-Tutorial). 
 As well as [Vance Morrison's blog](http://blogs.msdn.com/b/vancem/archive/tags/perfview) which also gives overview and getting 
 started information. 
 
+### Getting PerfView 
 The PerfView executable is ultimately published at the 
 [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567). 
-It is a standalone executable file (packaged in a ZIP archive). You can be running it in less than a minute!  
+It is a standalone executable file (packaged in a ZIP archive). You can be running it in a few clicks. Click the 
+[PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567), click download, open resulting downloaded
+zip file, and either execute it directly (double click on it in the ZIP archive, or better, copy it to your machine (e.g. drag it 
+to your desktop and then double click it from there).   It is a single EXE with no installation.  You can be running in literally seconds.
 
-The PerfView user's guide is part of the application itself, however you can get the .HTM file for it in 
-the user's guide in the source code itself at [PerfView/SupportFiles/UsersGuide.htm](src/PerfView/SupportFiles/UsersGuide.htm) or
-[the raw view](https://raw.githubusercontent.com/Microsoft/perfview/master/src/PerfView/SupportFiles/UsersGuide.htm)
-however it is a significantly better experience if you simply download PerfView and select the Help -> User's Guide menu item.  
 
-###Tools Needed to Build PerfView
+#### Getting the Latest Version of PerfView
+
+The version on the Download site officially signed by Microsoft so is a 'safe' choice, but it typically is also 
+months old.   If you need a recient bug fix or feature, it may not be in the offical version on the download site.
+In this case you have the choice of building it yourself (see bellow) or using one of the release on the [Release Tab on this site](https://github.com/Microsoft/perfview/releases).  
+
+### Learning about PerfView 
+
+The PerfView user's guide is part of the application itself, however you his this 
+[Users Guide link](http://htmlpreview.github.io/?https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm) 
+to see the [GitHub HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browser.  You can also simply
+download PerfView using the instructions above and select the Help -> User's Guide menu item. 
+
+# Building PerfView Yourself
+
+If you just want to do a performance investigation, you don't need to build PerfView yourself.
+Just use the one from the download center or the github release site.
+However if you want new features or just want to contribute to a PerfView to make it better (see issues for things people want)
+you can do that by following the rest of these instructions.
+
+
+### Tools Needed to Build PerfView
 
 The only tool you need to build PerfView is Visual Studio 2015.   The [Visual Studio 2015 Community Edition](https://www.microsoft.com/en-us/download/details.aspx?id=48146) 
 can be downloaded *for Free* and has everything you need to fetch PerfView from GitHub, build and test it.    It should also
@@ -27,7 +48,7 @@ If you downloaded the VS2015 community addition it does not install the C++ comp
 detect that the solution needs C++ and ask you to install those tools when you open the solution.   Allow it to do this
 and everything should 'just work'.    
 
-###Cloning the PerfView GitHub Repository. 
+### Cloning the PerfView GitHub Repository. 
 
 The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.   
 If you are already familiar with how GIT, GitHub, and Visual Studio 2015 GIT support works, than you can skip this section.
@@ -35,7 +56,7 @@ However if not the [Setting up a Local GitHub repository with Visual Studio 2015
 will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2015 installed.  These instructions
 should also mostly work for VS 2013 with GIT extensions installed, but that has not been field-tested.  
 
-###How to Build and Debug PerfView 
+### How to Build and Debug PerfView 
 PerfView is designed to build in Visual Studio 2015, however it is likely that 2013 can be made to work without too much trouble.  
 
   * The solution file is src/PerfView/Perfview.sln.  Opening this file in Visual Studio (or double clicking on it in 
@@ -60,7 +81,7 @@ PerfView is designed to build in Visual Studio 2015, however it is likely that 2
    2. Go to the [VS 2015 Upgrade site](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs#) and install
    Update 3 or later.   
 
-###Deploying your new version of Perfview
+### Deploying your new version of Perfview
 You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus first set your build configuration to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
 Next build (Build -> Build Solution (Ctr-Shift-B)).   The result will be that in the src\perfView\bin\Release directory there will be among other things  a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
 
@@ -97,8 +118,9 @@ You can get a lot of value out of the source code base simply by being able to b
 through it or make a local, specialized feature.    But the real power of open source software happens when
 you contribute back to shared code base and thus help the community as a whole.   **while we encourage this it 
 requires significantly more effort on your part**.   If you are interested in stepping up, see the 
-[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start.  
-###Code Organization 
+[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start. 
+
+### Code Organization 
 
 The code is broken in several main sections:
 
@@ -119,3 +141,12 @@ The code is broken in several main sections:
   * CSVReader - old code that lets PerfView read .ETL.CSV files generated by XPERF (probably will delete)
   * Zip - a clone of System.IO.Compression.dll so that PerfView run on pre V4.5 runtimes (probably will delete)
   * [HtmlJs](src/HtmlJs/Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support). (experimental)
+
+
+### Other Documenation
+
+These docs are for specialized scenarios 
+
+  * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
+does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
+nuget package when these files need to be updated.  
