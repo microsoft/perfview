@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PerfView</RootNamespace>
     <AssemblyName>PerfView</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
@@ -119,6 +119,8 @@
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Management" />
     <Reference Include="System.Printing" />
     <Reference Include="System.Runtime.Serialization" />
@@ -424,7 +426,9 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -595,11 +599,6 @@
       <LogicalName>.\CsvReader.dll</LogicalName>
       <Link>SupportFiles\CsvReader.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\Zip\$(OutDir)ZipLib.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\ZipLib.dll</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\UsersGuide.htm">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -698,10 +697,6 @@
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
       <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
       <Name>TraceEvent</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Zip\Zip.csproj">
-      <Project>{6FA47D21-6B1C-40E1-AD6B-D9139FA4123B}</Project>
-      <Name>Zip</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

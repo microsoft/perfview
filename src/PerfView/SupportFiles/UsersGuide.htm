@@ -2360,8 +2360,7 @@
                         </li>
                         <li>
                             <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
-                            Show the stacks
-                            where any Windows OS Handle were created, duplicated or closed.  When handles are created
+                            Show the stacks where any Windows OS Handle were created, duplicated or closed.  When handles are created
                             or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
                             a close() on a handle occurs and PerfView has seen a 'create' or 'dumplicate' event for it
                             it will use that stack for the close (this is very much like what is done for memory allocation
@@ -3923,7 +3922,7 @@
             kernel events the creation and closing of Window OS kernel handles to be logged.
             You will see 'Windows Kernel/Object/*' events to show up in the 'events' view as well
             as activating the <a href="#WindowsHandleRefCountStacks">Windows OS Handle Stacks</a> view (as well as the 'Any Stacks' view).
-            Adding the Hanldle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Hanldle)
+            Adding the Handle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Handle)
             can be used to turn this option on the comand line.
         </li>
         <li>
@@ -4060,7 +4059,9 @@
             providers (including the default ones) except for those needed to do a .NET GC Heap
             analysis. In this mode relatively few events are logged, so you can collect data
             about a large period of time (say an hour), in a reasonable size (say 200Meg). This
-            option shows you stacks for a SAMPLING of GC allocations.
+            option shows you stacks for a SAMPLING of GC allocations.   In addition to the GC
+            events it also turns on hte <a href="#MemInfoCheckBox">MemInfo</a> and <a href="#VirtualAllocCheckBox">VirtualAlloc</a> events, which are useful
+            for tracking down memory issues.   
             The /GCOnly command line option achieves the same efffect.
         </li>
         <li>
@@ -4240,7 +4241,7 @@
         </li>
         <li>
             The <strong><a id="CPUCountersTextBox">Cpu Ctrs TextBox</a></strong> -&nbsp; On
-            Window 8 and above, PerfView has the ability to sample stacks based on CPU sampling
+            PerfView has the ability to sample stacks based on CPU sampling
             counters (like instructionsRetired, DCache Miss rates Branch Mispredictions etc)
             in addition to the standard sampling based on time. To turn these on you enter a
             space-separated list of strings of the form <strong>CpuCtrName:RolloverCount</strong>,
@@ -4254,7 +4255,8 @@
             If you do have the hypervisor installed, then you can go to Control Panel -> Programs and Features -> Turn Windows Features on and off
             and deselect the Hyper-V -> Hyper-V platform.   You will need to reboot after doing this.   Note that you can do this
             do your collection and the turn it back on without losing your virtual machines (although it is a pain).
-            Hopefully this will be fixed in Win 10.
+            Hopefully this will be fixed in Win 10.  In addition to the GUI you can access this feature
+            using the command line /CpuCounters:XXX qualifer.   (See PerfView -> Command Line Help for more)
             <p>
                 If you select the &#39;Ctrs&#39; button, it will show you a drop down list with some
                 suggestions to start with.&nbsp;&nbsp; If you only see 'Timer' it is usually because

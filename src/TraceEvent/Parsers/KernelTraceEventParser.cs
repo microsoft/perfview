@@ -3781,7 +3781,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int ParentID { get { if (Version >= 1) return GetInt32At(HostOffset(8, 1)); return (int)GetAddressAt(HostOffset(4, 1)); } }
         // Skipping UserSID
         public string KernelImageFileName { get { if (Version >= 1) return GetUTF8StringAt(GetKernelImageNameOffset()); return ""; } }
-        public string ImageFileName { get { return state.KernelToUser(KernelImageFileName); } }
+        public string ImageFileName
+        {
+            get
+            {
+                try
+                {
+                    return state.KernelToUser(KernelImageFileName);
+                }
+                catch { }
+                return "";
+            }
+        }
 
         public Address DirectoryTableBase { get { if (Version >= 3) return GetAddressAt(HostOffset(20, 1)); return 0; } }
         public ProcessFlags Flags { get { if (Version >= 4) return (ProcessFlags)GetInt32At(HostOffset(24, 2)); return 0; } }
@@ -3793,8 +3804,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         {
             get
             {
-                if (Version >= 2)
-                    return GetUnicodeStringAt(SkipUTF8String(GetKernelImageNameOffset())); return "";
+                try
+                {
+                    if (Version >= 2)
+                        return GetUnicodeStringAt(SkipUTF8String(GetKernelImageNameOffset()));
+                }
+                catch { }
+                return "";
             }
         }
         public string PackageFullName

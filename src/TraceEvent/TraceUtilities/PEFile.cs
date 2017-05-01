@@ -1,5 +1,4 @@
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
-#define PEFILE_PUBLIC
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;

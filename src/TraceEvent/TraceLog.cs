@@ -131,6 +131,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return traceLog.realTimeSource;
         }
 
+        /// <summary>
+        /// CReates a ETLX file an Lttng Text file 'filePath'.    
+        /// </summary>
         public static string CreateFromLttngTextDataFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null)
         {
             // Create the etlx file path.
@@ -8573,22 +8576,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             switch (kind)
             {
-                case ActivityKind.Invalid: return nameof(ActivityKind.Invalid);
-                case ActivityKind.Initial: return nameof(ActivityKind.Initial);
-                case ActivityKind.TaskScheduled: return nameof(ActivityKind.TaskScheduled);
-                case ActivityKind.TaskStarted: return nameof(ActivityKind.TaskStarted);
-                case ActivityKind.AwaitTaskScheduled: return nameof(ActivityKind.AwaitTaskScheduled);
-                case ActivityKind.ClrThreadStart: return nameof(ActivityKind.ClrThreadStart);
-                case ActivityKind.ClrThreadPool: return nameof(ActivityKind.ClrThreadPool);
-                case ActivityKind.ClrIOThreadPool: return nameof(ActivityKind.ClrIOThreadPool);
-                case ActivityKind.FxThreadPool: return nameof(ActivityKind.FxThreadPool);
-                case ActivityKind.FxTransfer: return nameof(ActivityKind.FxTransfer);
-                case ActivityKind.FxAsyncIO: return nameof(ActivityKind.FxAsyncIO);
-                case ActivityKind.FxWinRTDispatch: return nameof(ActivityKind.FxWinRTDispatch);
-                case ActivityKind.Implied: return nameof(ActivityKind.Implied);
-                case ActivityKind.TaskWait: return nameof(ActivityKind.TaskWait);
-                case ActivityKind.TaskWaitSynchronous: return nameof(ActivityKind.TaskWaitSynchronous);
-                case ActivityKind.FxTimer: return nameof(ActivityKind.FxTimer);
+                case ActivityKind.Invalid: return "Invalid";
+                case ActivityKind.Initial: return "Initial";
+                case ActivityKind.TaskScheduled: return "TaskScheduled";
+                case ActivityKind.TaskStarted: return "TaskStarted";
+                case ActivityKind.AwaitTaskScheduled: return "AwaitTaskScheduled";
+                case ActivityKind.ClrThreadStart: return "ClrThreadStart";
+                case ActivityKind.ClrThreadPool: return "ClrThreadPool";
+                case ActivityKind.ClrIOThreadPool: return "ClrIOThreadPool";
+                case ActivityKind.FxThreadPool: return "FxThreadPool";
+                case ActivityKind.FxTransfer: return "FxTransfer";
+                case ActivityKind.FxAsyncIO: return "FxAsyncIO";
+                case ActivityKind.FxWinRTDispatch: return "FxWinRTDispatch";
+                case ActivityKind.Implied: return "Implied";
+                case ActivityKind.TaskWait: return "TaskWait";
+                case ActivityKind.TaskWaitSynchronous: return "TaskWaitSynchronous";
+                case ActivityKind.FxTimer: return "FxTimer";
                 default:
                     Debug.Fail("Missing ActivityKind case statement.");
                     return kind.ToString();

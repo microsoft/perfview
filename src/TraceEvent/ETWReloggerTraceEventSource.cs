@@ -1,4 +1,4 @@
-﻿// #define V4_5_Runtime
+﻿#define V4_5_Runtime
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
+
+#pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -93,19 +95,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// (e.g. timestamp, proesssID, threadID ...) will be derived from the current event being processed by
         /// the input stream.  
         /// </summary>
-#if V4_5_Runtime
         public void ConnectEventSource(EventSource eventSource)
         {
             if (m_eventListener == null)
                 m_eventListener = new ReloggerEventListener(this);
             m_eventListener.EnableEvents(eventSource, EventLevel.Verbose, (EventKeywords)(-1));
         }
-#else
-        public void ConnectEventSource(object eventSource)
-        {
-            throw new NotSupportedException("TraceEvent built for V4.0, need to build for V4.5 to support EventSource.");
-        }
-#endif
 
 #if false // TODO Decide if we want to expose these or not, ConnenctEventSource may be enough.  These are a bit clunky especially but do allow the
           // ability to modify events you don't own, which may be useful.  
@@ -187,13 +182,11 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 if (m_relogger != null)
                     Marshal.FinalReleaseComObject(m_relogger);      // Force the com object to die.  
-#if V4_5_Runtime
                 if (m_eventListener != null)
                 {
                     m_eventListener.Dispose();
                     m_eventListener = null;
                 }
-#endif
                 GC.SuppressFinalize(this);
             }
 
@@ -214,7 +207,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_relogger.Cancel();
         }
 
-#if false
         private unsafe void SetPayload(ITraceEvent newEvent, IList<object> payloadArgs)
         {
             // Where we are writing the serialized data in m_scratchBuffer
@@ -276,9 +268,6 @@ namespace Microsoft.Diagnostics.Tracing
                 m_scratchBufferSize = requriedSize;
             }
         }
-#endif
-
-#if V4_5_Runtime
 
         /// <summary>
         /// This is used by the ConnectEventSource to route events from the EventSource to the relogger. 
@@ -346,7 +335,6 @@ namespace Microsoft.Diagnostics.Tracing
             ETWReloggerTraceEventSource m_relogger;
             bool[] m_sentManifest;                  // indexed by EventSource identity (index)
         }
-#endif
 
         /// <summary>
         /// This is the class the Win32 APIs call back on.  
@@ -457,7 +445,6 @@ namespace Microsoft.Diagnostics.Tracing
             ETWReloggerTraceEventSource m_source;
         }
 
-#if V4_5_Runtime
         internal unsafe void SendManifest(byte[] rawManifest, EventSource eventSource)
         {
             ManifestEnvelope envelope = new ManifestEnvelope();
@@ -469,15 +456,13 @@ namespace Microsoft.Diagnostics.Tracing
             envelope.TotalChunks = (ushort)((dataLeft + (ManifestEnvelope.MaxChunkSize - 1)) / ManifestEnvelope.MaxChunkSize);
             envelope.ChunkNumber = 0;
 
-            var manifestDescr = new EventDescriptor(0xFFFE, 1, 0, 0, 0xFE, 0xFFFE, -1);
-
             if (m_curITraceEvent == null)
                 throw new InvalidOperationException("Currently can only write the event being processed by the callback");
             // Make a copy of the template so we can modify it
             var manifestEvent = m_relogger.CreateEventInstance(m_traceHandleForFirstStream, 0);
 
-            _EVENT_DESCRIPTOR* ptrDescr = (_EVENT_DESCRIPTOR*)&manifestDescr;
-            manifestEvent.SetEventDescriptor(ref *ptrDescr);
+            var manifestDescr = new _EVENT_DESCRIPTOR() { Id = 0xFFFE, Task = 0xFFFE, Opcode = 0xFE, Keyword = ulong.MaxValue };
+            manifestEvent.SetEventDescriptor(ref manifestDescr);
 
             // Set the provider to the EventSoruce
             Guid providerGuid = eventSource.Guid;
@@ -517,7 +502,6 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(envelope.ChunkNumber == envelope.TotalChunks);
         }
         EventListener m_eventListener;
-#endif
 
         CTraceRelogger m_relogger;
         ulong m_traceHandleForFirstStream;

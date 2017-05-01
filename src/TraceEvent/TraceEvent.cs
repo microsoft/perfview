@@ -17,7 +17,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData;
 using Address = System.UInt64;
 
 // #Introduction 
@@ -464,8 +463,11 @@ namespace Microsoft.Diagnostics.Tracing
 
             // We expect all the time variables used to compute this to be set.   
             Debug.Assert(_syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
-            long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq);
-            var ret = new DateTime(_syncTimeUTC.Ticks + inTicks, DateTimeKind.Utc);
+            long inTicks = (long)((QPCTime - _syncTimeQPC) * 10000000.0 / _QPCFreq) + _syncTimeUTC.Ticks;
+            // Avoid illegal DateTime values.   
+            if (inTicks < 0 || DateTime.MaxValue.Ticks < inTicks)
+                inTicks = DateTime.MaxValue.Ticks;
+            var ret = new DateTime(inTicks, DateTimeKind.Utc);
             return ret;
         }
 
@@ -967,7 +969,7 @@ namespace Microsoft.Diagnostics.Tracing
                             sb.Append(',');
                         first = false;
 
-                        var asStruct = elem as StructValue;
+                        var asStruct = elem as IDictionary<string, object>;
                         if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
                             sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
                         else 
@@ -2692,6 +2694,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <returns>A TraceEventDispatcher for the given trace file.</returns>
         public static TraceEventDispatcher GetDispatcherFromFileName(string traceFileName)
         {
+#if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
 #if !NOT_WINDOWS
@@ -2701,7 +2704,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return new ETWTraceEventSource(traceFileName);
 #endif
             else
-                return null;
+#endif 
+                    return null;
         }
 
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However

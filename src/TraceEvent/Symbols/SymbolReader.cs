@@ -288,7 +288,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// Given the path name to a particular PDB file, load it so that you can resolve symbols in it.  
         /// </summary>
-        /// <param name="pdblFilePath">The name of the PDB file to open.</param>
+        /// <param name="pdbFilePath">The name of the PDB file to open.</param>
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
         public SymbolModule OpenSymbolFile(string pdbFilePath)
         {
@@ -703,6 +703,21 @@ namespace Microsoft.Diagnostics.Symbols
             return pdbPath;
         }
 
+        private static string getNugetPackageDir()
+        {
+            string homeDrive = Environment.GetEnvironmentVariable("HOMEDRIVE");
+            if (homeDrive == null)
+                return null;
+            string homePath = Environment.GetEnvironmentVariable("HOMEPATH");
+            if (homePath == null)
+                return null;
+
+            var nugetPackageDir = homeDrive + homePath + @"\.nuget\packages";
+            if (!Directory.Exists(nugetPackageDir))
+                return null;
+            return nugetPackageDir;
+        }
+
         private string GetCrossGenExePath(string ngenImageFullPath)
         {
             var imageDir = Path.GetDirectoryName(ngenImageFullPath);
@@ -712,6 +727,38 @@ namespace Microsoft.Diagnostics.Symbols
             if (File.Exists(crossGen))
                 return crossGen;
 
+            string coreclr = Path.Combine(imageDir, "coreclr.dll");
+            if (File.Exists(coreclr))
+            {
+                DateTime coreClrTimeStamp = File.GetLastWriteTimeUtc(coreclr);
+                m_log.WriteLine("Found coreclr: at  {0}, timestamp {1}", coreclr, coreClrTimeStamp);
+                string nugetDir = getNugetPackageDir();
+                if (nugetDir != null)
+                {
+                    m_log.WriteLine("Found nuget package dir: at  {0}", nugetDir);
+                    foreach (var runtimeDir in Directory.GetDirectories(nugetDir, "runtime.win*.microsoft.netcore.runtime.coreclr"))
+                    {
+                        foreach (var runtimeVersionDir in Directory.GetDirectories(runtimeDir))
+                        {
+                            foreach (var osarchDir in Directory.GetDirectories(Path.Combine(runtimeVersionDir, "runtimes"), "win*"))
+                            {
+                                string packageCoreCLR = Path.Combine(osarchDir, @"native\coreclr.dll");
+                                DateTime packageCoreClrTimeStamp = File.GetLastWriteTimeUtc(packageCoreCLR);
+                                m_log.WriteLine("Checking timestamp of file {0} = {1}", packageCoreCLR, packageCoreClrTimeStamp);
+                                if (File.Exists(packageCoreCLR) && packageCoreClrTimeStamp == coreClrTimeStamp)
+                                {
+                                    crossGen = Path.Combine(runtimeVersionDir, @"tools\crossgen.exe");
+                                    m_log.WriteLine("Found matching CoreCLR, probing for crossgen at {0}", crossGen);
+                                    if (File.Exists(crossGen))
+                                        return crossGen;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Check if you are running the runtime out of the nuget directory itself 
             var m = Regex.Match(imageDir, @"^(.*)\\runtimes\\win.*\\native$", RegexOptions.IgnoreCase);
             if (m.Success)
             {
@@ -773,7 +820,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public void Dispose() { }
 
-        #region private
+#region private
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -823,6 +870,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <param name="serverPath">path to server (e.g. \\symbols\symbols or http://symweb) </param>
         /// <param name="pdbIndexPath">pdb path with signature (e.g clr.pdb/1E18F3E494DC464B943EA90F23E256432/clr.pdb)</param>
         /// <param name="fullDestPath">the full path of where to put the file locally </param>
+        /// <param name="contentTypeFilter">if present this allows you to filter out urls that dont match this ContentType.</param>
         internal bool GetPhysicalFileFromServer(string serverPath, string pdbIndexPath, string fullDestPath, Predicate<string> contentTypeFilter = null)
         {
             if (File.Exists(fullDestPath))
@@ -856,13 +904,14 @@ namespace Microsoft.Diagnostics.Symbols
                         var fullUri = BuildFullUri(serverPath, pdbIndexPath);
                         try
                         {
+                            m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
+
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
                             req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
                             var response = req.GetResponse();
                             alive = true;
                             if (!canceled)
                             {
-                                m_log.WriteLine("FindSymbolFilePath: Got a response content type of {0}", response.ContentType);
                                 if (contentTypeFilter != null && !contentTypeFilter(response.ContentType))
                                     throw new InvalidOperationException("Bad File Content type " + response.ContentType + " for " + fullDestPath);
 
@@ -887,7 +936,7 @@ namespace Microsoft.Diagnostics.Symbols
                                     if (asHttpResonse != null && asHttpResonse.StatusCode == HttpStatusCode.NotFound)
                                     {
                                         sentMessage = true;
-                                        // m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
+                                        m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
                                     }
                                 }
                                 if (!sentMessage)
@@ -1088,8 +1137,8 @@ namespace Microsoft.Diagnostics.Symbols
             Predicate<string> onlyBinaryContent = delegate (string contentType)
             {
                 bool ret = contentType.EndsWith("octet-stream");
-                if (ret)
-                    m_log.WriteLine("FindSymbolFilePath: expecting octet-stream (Binary) data, got {0} (are you redirected to a login page?)", contentType);
+                if (!ret)
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got {0} (are you redirected to a login page?)", contentType);
                 return ret;
             };
 
@@ -1345,7 +1394,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1717,7 +1766,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader SymbolReader { get { return m_reader; } }
 
-        #region private
+#region private
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
@@ -1933,7 +1982,7 @@ namespace Microsoft.Diagnostics.Symbols
         IDiaEnumSymbolsByAddr m_symbolsByAddr;
         string m_pdbPath;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2023,7 +2072,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             return ((int)RVA - (int)other.RVA);
         }
-        #region private
+#region private
 #if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
@@ -2054,7 +2103,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-        #endregion
+#endregion
     }
 
 
@@ -2225,7 +2274,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-        #region private
+#region private
         /// <summary>
         /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
         /// represented by the 'this' pointer.   This target is iether a ULR or a local file
@@ -2276,6 +2325,8 @@ namespace Microsoft.Diagnostics.Symbols
         ///  SRCSRV: end ------------------------------------------------
         ///  
         /// </summary>
+        /// <param name="target">returns the target source file path</param>
+        /// <param name="command">returns the command to fetch the target source file</param>
         /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
         /// directory where source files can be fetched to.  Typically the returned file is under this directory
         /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
@@ -2660,7 +2711,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         byte[] m_hash;
         bool m_getSourceCalled;
         bool m_checksumMatches;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2676,7 +2727,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// The line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
-        #region private
+#region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -2686,7 +2737,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-        #endregion
+#endregion
     }
 }
 
@@ -2818,7 +2869,7 @@ namespace Dia2Lib
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }
-        #region private
+#region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
@@ -2837,7 +2888,7 @@ namespace Dia2Lib
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
         static bool s_loadedNativeDll;
-        #endregion
+#endregion
     }
 }
 #endregion
