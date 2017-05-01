@@ -17,7 +17,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using static Microsoft.Diagnostics.Tracing.Parsers.DynamicTraceEventData;
 using Address = System.UInt64;
 using StartStopKey = System.Guid;   // The start-stop key is unique in the trace.  We incorperate the process as well as activity ID to achieve this.
 
@@ -960,12 +959,12 @@ namespace Microsoft.Diagnostics.Tracing
                 //https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
 
                 
-                StructValue[] args = data.PayloadByName("Arguments") as StructValue[];
+                var args = data.PayloadByName("Arguments") as DynamicTraceEventData.StructValue[];
                 if (args != null)
                 {
                     var sb = Utilities.StringBuilderCache.Acquire(64);
                     bool first = true;
-                    foreach (StructValue arg in args)
+                    foreach (var arg in args)
                     {
                         string key = arg["Key"] as string;
                         object value = arg["Value"] as string;

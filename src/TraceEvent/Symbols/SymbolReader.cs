@@ -288,7 +288,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// Given the path name to a particular PDB file, load it so that you can resolve symbols in it.  
         /// </summary>
-        /// <param name="pdblFilePath">The name of the PDB file to open.</param>
+        /// <param name="pdbFilePath">The name of the PDB file to open.</param>
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
         public SymbolModule OpenSymbolFile(string pdbFilePath)
         {
@@ -870,6 +870,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <param name="serverPath">path to server (e.g. \\symbols\symbols or http://symweb) </param>
         /// <param name="pdbIndexPath">pdb path with signature (e.g clr.pdb/1E18F3E494DC464B943EA90F23E256432/clr.pdb)</param>
         /// <param name="fullDestPath">the full path of where to put the file locally </param>
+        /// <param name="contentTypeFilter">if present this allows you to filter out urls that dont match this ContentType.</param>
         internal bool GetPhysicalFileFromServer(string serverPath, string pdbIndexPath, string fullDestPath, Predicate<string> contentTypeFilter = null)
         {
             if (File.Exists(fullDestPath))
@@ -903,13 +904,14 @@ namespace Microsoft.Diagnostics.Symbols
                         var fullUri = BuildFullUri(serverPath, pdbIndexPath);
                         try
                         {
+                            m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
+
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
                             req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
                             var response = req.GetResponse();
                             alive = true;
                             if (!canceled)
                             {
-                                m_log.WriteLine("FindSymbolFilePath: Got a response content type of {0}", response.ContentType);
                                 if (contentTypeFilter != null && !contentTypeFilter(response.ContentType))
                                     throw new InvalidOperationException("Bad File Content type " + response.ContentType + " for " + fullDestPath);
 
@@ -934,7 +936,7 @@ namespace Microsoft.Diagnostics.Symbols
                                     if (asHttpResonse != null && asHttpResonse.StatusCode == HttpStatusCode.NotFound)
                                     {
                                         sentMessage = true;
-                                        // m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
+                                        m_log.WriteLine("FindSymbolFilePath: Probe of {0} was not found.", fullUri);
                                     }
                                 }
                                 if (!sentMessage)
@@ -1135,8 +1137,8 @@ namespace Microsoft.Diagnostics.Symbols
             Predicate<string> onlyBinaryContent = delegate (string contentType)
             {
                 bool ret = contentType.EndsWith("octet-stream");
-                if (ret)
-                    m_log.WriteLine("FindSymbolFilePath: expecting octet-stream (Binary) data, got {0} (are you redirected to a login page?)", contentType);
+                if (!ret)
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got {0} (are you redirected to a login page?)", contentType);
                 return ret;
             };
 
@@ -2323,6 +2325,8 @@ namespace Microsoft.Diagnostics.Symbols
         ///  SRCSRV: end ------------------------------------------------
         ///  
         /// </summary>
+        /// <param name="target">returns the target source file path</param>
+        /// <param name="command">returns the command to fetch the target source file</param>
         /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
         /// directory where source files can be fetched to.  Typically the returned file is under this directory
         /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something

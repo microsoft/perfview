@@ -17,7 +17,10 @@ namespace Utilities
     /// It has the property that if you are in the maxEntries/2 most commonly fetched
     /// things, you very unlikely to be evicted once you are in the cache.   
     /// </summary>
-    public class Cache<K, T> where T : class where K : IEquatable<K>
+#if UTILITIES_PUBLIC
+    public 
+#endif
+    class Cache<K, T> where T : class where K : IEquatable<K>
     {
         /// <summary>
         /// maxEntries currently is only set in the constructor.   Thus this is a finite sized cache
@@ -40,6 +43,9 @@ namespace Utilities
             Clear();
         }
 
+        /// <summary>
+        /// Fetches the value from the cache with key 'key'.  Returns default(T) if not present
+        /// </summary>
         public T Get(K key)
         {
             T retVal;
@@ -47,6 +53,9 @@ namespace Utilities
             return retVal;
         }
 
+        /// <summary>
+        /// Fetches the value from the cache with key 'key'.  Returns false if not present.
+        /// </summary>
         public bool TryGet(K key, out T valueRet)
         {
             int hash = key.GetHashCode();
@@ -73,6 +82,9 @@ namespace Utilities
             }
         }
 
+        /// <summary>
+        /// Adds 'key' with value 'value' to the cache. 
+        /// </summary>
         public void Add(K key, T value)
         {
             int hash = key.GetHashCode();
@@ -110,6 +122,9 @@ namespace Utilities
             m_freeEntries = (ushort)m_entries.Length;
         }
 
+        /// <summary>
+        /// Sets the maxiumum number of key-value pairs the cache will keep.  (after that old ones are remvoed). 
+        /// </summary>
         public int MaxEntries
         {
             get { return m_entries.Length; }

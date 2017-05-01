@@ -41,7 +41,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
                         case "Section":
                             {
                                 Section section = new Section();
-                                section.Start = Address.Parse(reader.GetAttribute("Start"));
+                                Address.TryParse(reader.GetAttribute("Start"), out section.Start);
                                 section.Size = uint.Parse(reader.GetAttribute("Size"));
                                 section.Name = reader.GetAttribute("Name");
                                 sections.Enqueue(section);
@@ -50,7 +50,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
                         case "Module":
                             if (imageBase == 0)
                             {
-                                imageBase = Address.Parse(reader.GetAttribute("Base"));
+                                Address.TryParse(reader.GetAttribute("Base"), out imageBase);
                                 sizeOfImageHeader = 1024;        // We are using the file size number 
                                 NodeIndex nodeIndex = GetNodeIndex(imageBase);
                                 NodeTypeIndex typeIndex = CreateType("Image Header");
