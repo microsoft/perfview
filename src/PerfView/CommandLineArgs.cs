@@ -387,10 +387,15 @@ namespace PerfView
             {
                 // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
                 // For stack parsing.  
-                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad;
+                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.Thread | KernelTraceEventParser.Keywords.ImageLoad | KernelTraceEventParser.Keywords.VirtualAlloc;
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
                             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
                             ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
+
+                // This is not quite correct if you have providers of your own, but this covers the most important case.  
+                if (Providers == null)
+                    Providers = new string[] { "Microsoft-Windows-Kernel-Memory:0x60" };
+
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCOnly.etl";
             }
