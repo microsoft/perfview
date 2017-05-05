@@ -21,10 +21,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}</ProjectGuid>
     <Keyword>AtlProj</Keyword>
-    <SccProjectName>SAK</SccProjectName>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccProvider>SAK</SccProvider>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
