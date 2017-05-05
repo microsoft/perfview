@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{6BAC7496-6953-41B8-9042-AAE45405A095}</ProjectGuid>
@@ -32,35 +32,35 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
+    <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
-    <NoWarn>1591 0436</NoWarn>
-    <Prefer32Bit>false</Prefer32Bit>
+    <NoWarn>1591,0436</NoWarn>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
+    <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
-    <NoWarn>1591 0436</NoWarn>
+    <NoWarn>1591,0436</NoWarn>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <Prefer32Bit>false</Prefer32Bit>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>performance.ico</ApplicationIcon>
@@ -465,7 +465,7 @@
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
       <Link>SupportFiles\x64\HeapDump.exe.config</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x86\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\AnyCPU\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
@@ -706,19 +706,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>REM Need to set the path for EditBin to work properly.  
-set path=%25path%25;$(DevEnvDir)
-if "$(PlatformName)" == "x86" (
-    echo Updating X86 build to be large address aware
-    "$(DevEnvDir)..\..\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\editbin.exe" /LARGEADDRESSAWARE "$(TargetPath)"
-    if  NOT "%25ERRORLEVEL%25" == "0" (
-        echo EDITBIN Failed
-        exit /b %25ERRORLEVEL%25
-    )
-    "$(ProjectDir)..\tools\corflags.exe" /32bitPref+  "$(TargetPath)"
-)
-echo Done
-mkdir "$(ProjectDir)..\VS"
+    <PostBuildEvent>mkdir "$(ProjectDir)..\VS"
 echo COPYING xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
