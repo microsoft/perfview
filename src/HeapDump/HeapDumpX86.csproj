@@ -39,26 +39,6 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\$(Platform)\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;APPROXDUMP_WRITE;STANDALONE_EXE</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\Release\$(Platform)\</OutputPath>
-    <DefineConstants>TRACE;APPROXDUMP_WRITE;STANDALONE_EXE</DefineConstants>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -145,8 +125,7 @@ set path=%25path%25;$(DevEnvDir)
 if  NOT "%25ERRORLEVEL%25" == "0" (
     echo EDITBIN Failed
     exit /b %25ERRORLEVEL%25
-)
-"$(ProjectDir)..\tools\corflags.exe" /32bitPref+  "$(TargetPath)"</PostBuildEvent>
+)</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
