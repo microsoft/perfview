@@ -71,7 +71,7 @@
     <Compile Include="ETLStackBrowse\ZL\OutputWindow.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj">
       <Project>{B68F4968-A7CF-41CC-AD6E-373DB5E67944}</Project>
       <Name>TraceEvent</Name>
     </ProjectReference>
