@@ -11,20 +11,6 @@
     <AssemblyName>Global</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <!-- Determine if we are building 'next to' the main PerfView sources -->
-    <PerfViewProj>$(MSBuildProjectDirectory)\..\..\PerfView\PerfView.csproj</PerfViewProj>
-    <BuildingPerfView>$([System.IO.File]::Exists($(PerfViewProj)))</BuildingPerfView>
-    <!-- Determine if we are building 'next to' the main PerfView sources -->
-    <PerfViewExe Condition="  '$(BuildingPerfView)' == 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView\bin\$(Configuration)\PerfView.exe</PerfViewExe>
-    <PerfViewExe Condition="  '$(BuildingPerfView)' != 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView.exe</PerfViewExe>
-    <PerfViewRefAsm Condition=" '$(BuildingPerfView)' == 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView\bin\$(Configuration)\PerfView.exe</PerfViewRefAsm>
-    <PerfViewRefAsm Condition=" '$(BuildingPerfView)' != 'True' ">$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\PerfView.exe</PerfViewRefAsm>
-    <CsvReaderRefAsm Condition=" '$(BuildingPerfView)' == 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView\bin\$(Configuration)\CsvReader.dll</CsvReaderRefAsm>
-    <CsvReaderRefAsm Condition=" '$(BuildingPerfView)' != 'True' ">$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\CsvReader.dll</CsvReaderRefAsm>
-    <TraceEventRefAsm Condition=" '$(BuildingPerfView)' == 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView\bin\$(Configuration)\Microsoft.Diagnostics.Tracing.TraceEvent.dll</TraceEventRefAsm>
-    <TraceEventRefAsm Condition=" '$(BuildingPerfView)' != 'True' ">$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\Microsoft.Diagnostics.Tracing.TraceEvent.dll</TraceEventRefAsm>
-    <FastSerializationRefAsm Condition=" '$(BuildingPerfView)' == 'True' ">$(MSBuildProjectDirectory)\..\..\PerfView\bin\$(Configuration)\Microsoft.Diagnostics.FastSerialization.dll</FastSerializationRefAsm>
-    <FastSerializationRefAsm Condition=" '$(BuildingPerfView)' != 'True' ">$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\Microsoft.Diagnostics.FastSerialization.dll</FastSerializationRefAsm>
     <SccProjectName>SAK</SccProjectName>
     <SccLocalPath>SAK</SccLocalPath>
     <SccAuxPath>SAK</SccAuxPath>
@@ -54,10 +40,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="$(PerfViewRefAsm)" />
-    <Reference Include="$(TraceEventRefAsm)" />
-    <Reference Include="$(FastSerializationRefAsm)" />
-    <Reference Include="$(CsvReaderRefAsm)" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -67,6 +49,50 @@
   <ItemGroup>
     <Compile Include="Commands.cs" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- Determine if we are building 'next to' the main PerfView sources -->
+    <PerfViewProj>$(MSBuildProjectDirectory)\..\..\PerfView\PerfView.csproj</PerfViewProj>
+    <BuildingPerfView>$([System.IO.File]::Exists($(PerfViewProj)))</BuildingPerfView>
+  </PropertyGroup>
+  <Choose>
+    <When Condition=" '$(BuildingPerfView)' == 'True' ">
+      <!-- Use project references -->
+      <ItemGroup>
+        <ProjectReference Include="..\..\CSVReader\CSVReader.csproj">
+          <Project>{f7d0f851-9b0d-4224-91ab-7fc12477f206}</Project>
+          <Name>CSVReader</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\..\FastSerialization\FastSerialization.csproj">
+          <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
+          <Name>FastSerialization</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\..\PerfView\PerfView.csproj">
+          <Project>{6bac7496-6953-41b8-9042-aae45405a095}</Project>
+          <Name>PerfView</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\..\traceEvent\TraceEvent.csproj">
+          <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
+          <Name>TraceEvent</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <!-- Use standard references -->
+      <PropertyGroup>
+        <PerfViewExe>$(MSBuildProjectDirectory)\..\..\PerfView.exe</PerfViewExe>
+        <PerfViewRefAsm>$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\PerfView.exe</PerfViewRefAsm>
+        <CsvReaderRefAsm>$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\CsvReader.dll</CsvReaderRefAsm>
+        <TraceEventRefAsm>$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\Microsoft.Diagnostics.Tracing.TraceEvent.dll</TraceEventRefAsm>
+        <FastSerializationRefAsm>$(AppData)\PerfView\$([System.IO.File]::GetLastWriteTime($(PerfViewExe)).ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff"))\Microsoft.Diagnostics.FastSerialization.dll</FastSerializationRefAsm>
+      </PropertyGroup>
+      <ItemGroup>
+        <Reference Include="$(PerfViewRefAsm)" />
+        <Reference Include="$(TraceEventRefAsm)" />
+        <Reference Include="$(FastSerializationRefAsm)" />
+        <Reference Include="$(CsvReaderRefAsm)" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>
