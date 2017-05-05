@@ -68,17 +68,6 @@ PerfView is designed to build in Visual Studio 2015, however it is likely that 2
   and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.   
   (it is annoying that this is not part of the .sln file...).  
 
-  * **If TraceEventCore fails to load in the solution**:  One of the projects in the solution is 'TraceEventCore' which 
-  builds the TraceEvent library for use in the [.NET Core runtime](https://dotnet.github.io/).   It uses a new kind of 
-  project file call .xproj, for which older version of Visual Studio 2015 may not suport out of the box.  If this happens 
-  you have two options.  
-   
-   1. Just ignore the load failure (or remove the project from the solution).  The build for the .NET Core version of
-   the TraceEvent library is not used by PerfView itself.  Unless you want this .NET Core version of the library you 
-   can simply ignore it (it is there so we don't break the .NET Core version inadvertantly)
-   2. Go to the [VS 2015 Upgrade site](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs#) and install
-   Update 3 or later.   
-
 ### Deploying your new version of Perfview
 You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus first set your build configuration to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
 Next build (Build -> Build Solution (Ctr-Shift-B)).   The result will be that in the src\perfView\bin\Release directory there will be among other things  a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
