@@ -6038,9 +6038,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     {
         public Address ViewBase { get { return GetAddressAt(0); } }
         public Address FileKey { get { return GetAddressAt(HostOffset(4, 1)); } }
-        public Address MiscInfo { get { return (Address)GetInt64At(HostOffset(8, 2)); } }
+        public long MiscInfo { get { return GetInt64At(HostOffset(8, 2)); } }
         public Address ViewSize { get { return GetAddressAt(HostOffset(16, 2)); } }
         public string FileName { get { return state.FileIDToName(FileKey, TimeStampQPC); } }
+
+        // In Version 3 we have byte offset field 
+        public long ByteOffset { get { if (Version < 3) return 0; else return GetInt64At(HostOffset(20, 3)); } }
+
+        // TODO I am not actually that certain of this parsing.   Which Version ByteOffset got put in, and what the layout is on 32 bit.
+        // but this does work on Win 10 (which uses Version 3) and for 64 bit which is the most important.    
+        // Process ID = Version < 3 ? GetInt32At(HostOffset(20, 3)) : GetInt32At(HostOffset(28, 3))
 
         #region Private
         internal MapFileTraceData(Action<MapFileTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -6067,6 +6074,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "FileKey", FileKey);
             XmlAttribHex(sb, "MiscInfo", MiscInfo);
             XmlAttribHex(sb, "ViewSize", ViewSize);
+            XmlAttribHex(sb, "ByteOffset", ByteOffset);
             XmlAttrib(sb, "FileName", FileName);
             sb.Append("/>");
             return sb;
@@ -6077,7 +6085,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ViewBase", "FileKey", "MiscInfo", "ViewSize", "FileName" };
+                    payloadNames = new string[] { "ViewBase", "FileKey", "MiscInfo", "ViewSize", "ByteOffset", "FileName" };
                 return payloadNames;
             }
         }
@@ -6095,7 +6103,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 3:
                     return ViewSize;
                 case 4:
+                    return ByteOffset;
+                case 5:
                     return FileName;
+
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -6104,8 +6115,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
 
         internal unsafe override void FixupData()
         {
-            Debug.Assert(eventRecord->EventHeader.ProcessId == -1 || eventRecord->EventHeader.ProcessId == GetInt32At(HostOffset(20, 3)));
-            eventRecord->EventHeader.ProcessId = GetInt32At(HostOffset(20, 3));
+            int processIDFromEvent = Version < 3 ? GetInt32At(HostOffset(20, 3)) : GetInt32At(HostOffset(28, 3));
+            Debug.Assert(eventRecord->EventHeader.ProcessId == -1 || eventRecord->EventHeader.ProcessId == processIDFromEvent);
+            eventRecord->EventHeader.ProcessId = processIDFromEvent;
         }
 
         private event Action<MapFileTraceData> Action;
