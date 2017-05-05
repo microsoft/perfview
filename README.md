@@ -35,27 +35,26 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tool you need to build PerfView is Visual Studio 2015.   The [Visual Studio 2015 Community Edition](https://www.microsoft.com/en-us/download/details.aspx?id=48146) 
-can be downloaded *for Free* and has everything you need to fetch PerfView from GitHub, build and test it.    It should also
-be possible to build with Visual Studio 2013, but this is not recommended since we have not tested if this works.   We 
-expect you to download the VS2015 Community addition if you don't already have VS2015.   
+The only tool you need to build PerfView is Visual Studio 2017.   The [Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/) 
+can be downloaded *for Free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you
+to download Visual Studio 2017 Community Edition if you don't already have Visual Studio 2017.
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
 (The ETWCLrProfiler dlls that allow PerfView intercept the .NET Method calls (see .NET Call in the collect dialog)).  
-If you downloaded the VS2015 community addition it does not install the C++ compilation tools by default, but VS should
-detect that the solution needs C++ and ask you to install those tools when you open the solution.   Allow it to do this
-and everything should 'just work'.    
+If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
+but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
+to do this and everything should 'just work'.    
 
 ### Cloning the PerfView GitHub Repository. 
 
 The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.   
-If you are already familiar with how GIT, GitHub, and Visual Studio 2015 GIT support works, than you can skip this section.
-However if not the [Setting up a Local GitHub repository with Visual Studio 2015](documentation/SettingUpRepoInVS2015.md) document
-will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2015 installed.  These instructions
-should also mostly work for VS 2013 with GIT extensions installed, but that has not been field-tested.  
+If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, than you can skip this section.
+However if not the [Setting up a Local GitHub repository with Visual Studio 2017](documentation/SettingUpRepoInVS.md) document
+will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2017 installed.
 
 ### How to Build and Debug PerfView 
-PerfView is designed to build in Visual Studio 2015, however it is likely that 2013 can be made to work without too much trouble.  
+
+PerfView is developed in Visual Studio 2017 using features through C# 7.
 
   * The solution file is src/PerfView/Perfview.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the windows explorer) and selecting the Build -> Build Solution, 
@@ -85,11 +84,11 @@ Next build (Build -> Build Solution (Ctr-Shift-B)).   The result will be that in
   explict 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found' 
   issues in the 'Global' project.  These can be ignored until you get every other part of the build working. 
 
-  * One of the invariants of the repo is that if you are running VS 2015 and you simply sync and build the PerfView.sln
-  file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then we need to
-  either fix the repo or update the advice above.   Thus it is reasonable to open an GitHub issue.   If you do this, the goal
-  is to fix the problem, which means you have to put enough information into the issue to do that.   This includes 
-  exactly what you tried, and what the error messages were.   
+  * One of the invariants of the repo is that if you are running Visual Studio 2017 and you simply sync and build the
+  PerfView.sln file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then
+  we need to either fix the repo or update the advice above.   Thus it is reasonable to open an GitHub issue.   If you
+  do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
+  This includes exactly what you tried, and what the error messages were.
 
 ### Running Tests
 

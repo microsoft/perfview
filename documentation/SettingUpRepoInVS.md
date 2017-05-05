@@ -1,12 +1,12 @@
-#GitHub Repository Setup with Visual Studio 2015
+#GitHub Repository Setup with Visual Studio 2017
 
 This section tells you how to set up to build a project that is hosted on GitHub, 
-using Visual Studio 2015.   If you don't already have Visual Studio 2015, you 
-can get the community edition for free from [this link](https://www.microsoft.com/en-us/download/details.aspx?id=48146).  
+using Visual Studio 2017.   If you don't already have Visual Studio 2017, you 
+can get the community edition for free from [this link](https://www.visualstudio.com/vs/community/).  
 This section also goes through important routine tasks like getting the latest 
 changes from GitHub and submitting a pull request to the master branch.
 
-It will show you how to do this using just Visual Studio 2015.   Older version 
+It will show you how to do this using just Visual Studio 2017.   Older version 
 of Visual Studio as well as other IDEs are possible, but not covered here.  
 You can also use 'raw' git commands but I don't cover that here.  
 
