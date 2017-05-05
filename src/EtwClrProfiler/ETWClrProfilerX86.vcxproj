@@ -27,7 +27,6 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -44,6 +43,10 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(VisualStudioVersion)'=='15.0'">
+    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolsetVersion>v141</PlatformToolsetVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(VisualStudioVersion)'=='14.0'">
     <PlatformToolset>v140</PlatformToolset>

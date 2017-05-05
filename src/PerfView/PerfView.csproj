@@ -734,7 +734,7 @@
 set path=%25path%25;$(DevEnvDir)
 if "$(PlatformName)" == "x86" (
     echo Updating X86 build to be large address aware
-    "$(DevEnvDir)..\..\vc\bin\editbin.exe" /LARGEADDRESSAWARE "$(TargetPath)"
+    "$(DevEnvDir)..\..\VC\Tools\MSVC\14.10.25017\bin\HostX86\x86\editbin.exe" /LARGEADDRESSAWARE "$(TargetPath)"
     if  NOT "%25ERRORLEVEL%25" == "0" (
         echo EDITBIN Failed
         exit /b %25ERRORLEVEL%25
