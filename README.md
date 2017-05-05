@@ -1,4 +1,4 @@
- This # PerfView
+# PerfView
 PerfView is a performance-analysis tool that helps isolate CPU- and memory-related performance issues.
 
 If you are unfamiliar with PerfView, there are [PerfView video tutorials](http://channel9.msdn.com/Series/PerfView-Tutorial). 
