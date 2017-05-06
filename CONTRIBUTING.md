@@ -1,8 +1,7 @@
-
-#Contributing to the PerfView repository. 
+#Contributing to the PerfView repository
 
 First and foremost, we want to thank you for your willingness the help make PerfView better.
-Here we describe a bunch of rules/advice associated with doing so. You may end up 
+Here we describe a bunch of rules / advice associated with doing so. You may end up 
 getting frustrated with the process.   This guide is our attempt to keep that frustration
 as low as possible.   
 
@@ -15,7 +14,7 @@ to weigh the bad against the good that comes along with it.
 
 2. Consistency is good.   Bugs are basically a kind of inconsistency (the program does 
 not work as a simple understanding would assume). There are, of course, feature additions
-that make consistency better, but it is all to easy for new features to NOT be consistent
+that make consistency better, but it is all too easy for new features to NOT be consistent
 with existing features. 
 
 3. In addition to the benefit of the new behavior, you must also carefully consider
@@ -32,7 +31,7 @@ and may make other scenarios slower (e.g. startup, etc.) (point 3).   As the kee
 have the responsibility to weigh these other factors, and we may decide that the bad outweighs
 the good.
 
-A rejected pull request is a failure for repo as a whole because it means that multiple people 
+A rejected pull request is a failure for the repo as a whole because it means that multiple people 
 spent time on things that ultimately did not benefit the repo.   We want to avoid that.  There 
 is a simple heuristic that helps:
 
@@ -57,7 +56,7 @@ you
    discussion on the issue to insure that you stay on track.   
 
 Performance improvements are often a point of contention.   Improvements that make the code
-smaller/simpler are great, but often this is not the case.   If you are adding complexity as
+smaller / simpler are great, but often this is not the case.   If you are adding complexity as
 part of your improvement (e.g. adding a cache), again, you have to follow the rule above
 and get it pre-vetted, or be willing to abandon the change.   For performance changes in
 general we will probably ask you to take measurements to quantify exactly how much improvement
