@@ -346,7 +346,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// After setting any properties to override default behavior, calling this method
         /// will actually do the unpacking.  
         /// </summary>
-        public void UnpackAchive()
+        public void UnpackArchive()
         {
             if (Log == null)
                 Log = new StringWriter();
