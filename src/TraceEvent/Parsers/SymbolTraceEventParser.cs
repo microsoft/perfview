@@ -418,6 +418,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         // Seems to always be 0
         // public int ProcessID { get { return GetInt32At(HostOffset(8, 2)); } }
         public int TimeDateStamp { get { return GetInt32At(HostOffset(12, 2)); } }
+
+        public DateTime BuildTime { get { return PEFile.PEHeader.TimeDateStampToDate(TimeDateStamp); } }
+
         public string OriginalFileName { get { return GetUnicodeStringAt(HostOffset(16, 2)); } }
 
         #region Private
@@ -446,7 +449,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
             {
                 if (payloadNames == null)
                 {
-                    payloadNames = new string[] { "ImageBase", "ImageSize", "ProcessID", "TimeDateStamp", "OriginalFileName" };
+                    payloadNames = new string[] { "ImageBase", "ImageSize", "ProcessID", "TimeDateStamp", "BuildTime", "OriginalFileName" };
                 }
                 return payloadNames;
 
@@ -465,6 +468,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
                 case 3:
                     return TimeDateStamp;
                 case 4:
+                    return BuildTime;
+                case 5:
                     return OriginalFileName;
                 default:
                     Debug.Assert(false, "bad index value");
@@ -477,6 +482,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
             XmlAttribHex(sb, "ImageBase", ImageBase);
             XmlAttribHex(sb, "ImageSize", ImageSize);
             XmlAttribHex(sb, "TimeDateStamp", TimeDateStamp);
+            XmlAttrib(sb, "BuildTime", BuildTime);
             XmlAttrib(sb, "OriginalFileName", OriginalFileName);
             sb.Append("/>");
             return sb;
