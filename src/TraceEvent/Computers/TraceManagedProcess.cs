@@ -290,14 +290,27 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 var clrRundown = new ClrRundownTraceEventParser(source);
                 clrRundown.RuntimeStart += doAtRuntimeStart;
                 source.Clr.RuntimeStart += doAtRuntimeStart;
+                Dictionary<TraceProcess, TraceLoadedDotNetRuntime> processRuntimes = null;
 
                 CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(1000);
                 source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
                 {
+                    if (processRuntimes == null)
+                    {
+                        // lazy initialization
+                        processRuntimes = new Dictionary<TraceProcess, TraceLoadedDotNetRuntime>();
+                        foreach (var proc in source.Processes())
+                        {
+                            var runtime = proc.LoadedDotNetRuntime();
+                            if (runtime != null)
+                                processRuntimes[proc] = runtime;
+                        }
+                    }
+
                     RecentThreadSwitches.Add(new ThreadWorkSpan(data));
                     TraceProcess tmpProc = data.Process();
-                    TraceLoadedDotNetRuntime mang = tmpProc.LoadedDotNetRuntime();
-                    if (mang != null)
+                    TraceLoadedDotNetRuntime mang;
+                    if (processRuntimes.TryGetValue(tmpProc, out mang))
                     {
                         mang.GC.m_stats.ThreadId2Priority[data.NewThreadID] = data.NewThreadPriority;
                         int heapIndex = mang.GC.m_stats.IsServerGCThread(data.ThreadID);
@@ -307,10 +320,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         }
                     }
 
-                    foreach (var proc in source.Processes())
+                    foreach (var pair in processRuntimes)
                     {
-                        mang = proc.LoadedDotNetRuntime();
-                        if (mang == null) continue;
+                        var proc = pair.Key;
+                        mang = pair.Value;
 
                         TraceGC _gc = TraceGarbageCollector.GetCurrentGC(mang);
                         // If we are in the middle of a GC.
