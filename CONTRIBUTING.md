@@ -1,5 +1,5 @@
-
-#Contributing to the PerfView repository. 
+ 
+# Contributing to the PerfView repository. 
 
 First and foremost, we want to thank you for your willingness the help make PerfView better.
 Here we describe a bunch of rules/advice associated with doing so. You may end up 
@@ -63,11 +63,11 @@ and get it pre-vetted, or be willing to abandon the change.   For performance ch
 general we will probably ask you to take measurements to quantify exactly how much improvement
 there was.    There is more work than just modifying the code. 
 
-##Coding Standards
+## Coding Standards
 
 See [PerfView Coding Standards](documentation/CodingStandards.md). 
 
-##Testing and Contributing tests
+## Testing and Contributing tests
 
 There are a number of *.Test projects that are unit tests that need to be run before checking in.
 You can run these tests in visual studio by selecting the Test -> Run -> All Tests menu entry.
