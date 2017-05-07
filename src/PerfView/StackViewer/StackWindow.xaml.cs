@@ -317,9 +317,26 @@ namespace PerfView
                     var oldCallTree = m_callTree;
                     m_callTree = newCallTree;
 
+                    // Gather current sorting information
+                    var sortDescriptions = ByNameDataGrid.Grid.Items.SortDescriptions.ToArray();
+                    var sortDirections = ByNameDataGrid.Grid.Columns.Select(c => c.SortDirection).ToArray();
+
                     // SignalPropertyChange the ByName Tab 
                     m_byNameView = byNameItems;
                     ByNameDataGrid.Grid.ItemsSource = m_byNameView;
+
+                    // Reapply the previous sort after setting ItemsSource
+                    ByNameDataGrid.Grid.Items.SortDescriptions.Clear();
+                    foreach (var description in sortDescriptions)
+                    {
+                        ByNameDataGrid.Grid.Items.SortDescriptions.Add(description);
+                    }
+
+                    for (int i = 0; i < sortDirections.Length; i++)
+                    {
+                        var direction = sortDirections[i];
+                        ByNameDataGrid.Grid.Columns[i].SortDirection = direction;
+                    }
 
                     // SignalPropertyChange the Caller-Callee Tab
                     SetFocus(null);
