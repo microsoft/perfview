@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -68,6 +69,16 @@ namespace PerfView
                     e.ClipboardRowContent[i] = new DataGridClipboardCellContent(clipboardContent.Item, clipboardContent.Column, morphedContent);
                 }
             };
+
+            // By default sort columns in descending order when they are clicked for the first time
+            Grid.Sorting +=
+                (sender, e) =>
+                {
+                    if (e.Column.SortDirection == null)
+                        e.Column.SortDirection = ListSortDirection.Ascending;
+
+                    e.Handled = false;
+                };
         }
 
         public bool Find(string pat)
