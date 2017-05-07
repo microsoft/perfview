@@ -664,8 +664,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Get all the users data from the original source.   Note that this happens by reference, which means 
             // that even though we have not built up the state yet (since we have not scanned the data yet), it will
             // still work properly (by the time we look at this user data, it will be updated). 
-            foreach (string key in source.UserData.Keys)
-                newLog.UserData[key] = source.UserData[key];
+            foreach (var pair in source.UserData)
+                newLog.UserData[pair.Key] = pair.Value;
 
             // Avoid partially written files by writing to a temp and moving atomically to the final destination.  
             string etlxTempPath = etlxFilePath + ".new";
@@ -737,8 +737,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Get all the users data from the original source.   Note that this happens by reference, which means 
             // that even though we have not built up the state yet (since we have not scanned the data yet), it will
             // still work properly (by the time we look at this user data, it will be updated). 
-            foreach (string key in source.UserData.Keys)
-                newLog.UserData[key] = source.UserData[key];
+            foreach (var pair in source.UserData)
+                newLog.UserData[pair.Key] = pair.Value;
 
             // Avoid partially written files by writing to a temp and moving atomically to the
             // final destination.  
@@ -2909,15 +2909,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 serializer.Log("</WriteCollection>\r\n");
             });
 
-            serializer.Log("<WriteCollection name=\"userData\" count=\"" + userData.Count + "\">\r\n");
-            serializer.Write(userData.Count);
-            foreach (KeyValuePair<string, object> pair in UserData)
+            serializer.Log("<WriteCollection name=\"userData\" count=\"" + UserData.Count + "\">\r\n");
+            serializer.Write(UserData.Count);
+            foreach (KeyValuePair<KnownUserData, object> pair in UserData)
             {
-                serializer.Write(pair.Key);
+                serializer.Write(TraceEventSource.GetUserDataKey(pair.Key));
                 IFastSerializable asFastSerializable = (IFastSerializable)pair.Value;
                 serializer.Write(asFastSerializable);
             }
-            serializer.Write(userData.Count);                   // Redundant as a checksum
+            serializer.Write(UserData.Count);                   // Redundant as a checksum
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(sampleProfileInterval100ns);
@@ -3050,7 +3050,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 string key;
                 deserializer.Read(out key);
                 IFastSerializable value = deserializer.ReadObject();
-                userData[key] = value;
+                UserData[GetOrCreateKnownUserData(key)] = value;
             }
             checkCount = deserializer.ReadInt();
             if (count != checkCount)
@@ -3646,10 +3646,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         internal TraceLogEventSource(TraceEvents events, bool ownsItsTraceLog = false)
+            : base(events.Log.UserData)
         {
             this.events = events;
             this.unhandledEventTemplate.source = TraceLog;
-            this.userData = TraceLog.UserData;
             this.ownsItsTraceLog = ownsItsTraceLog;
         }
 
