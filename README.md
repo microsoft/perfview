@@ -1,5 +1,4 @@
- This # PerfView
-PerfView is a performance-analysis tool that helps isolate CPU- and memory-related performance issues.
+PerfView is a free performance-analysis tool that helps isolate CPU and memory-related performance issues.  It is a Windows tool, but it also has some support analyzing data collected on Linux machines.  It works for a wide variety of scenarios, but as a number of special features for investiating performance issues in code written for the .NET runtime.  
 
 If you are unfamiliar with PerfView, there are [PerfView video tutorials](http://channel9.msdn.com/Series/PerfView-Tutorial). 
 As well as [Vance Morrison's blog](http://blogs.msdn.com/b/vancem/archive/tags/perfview) which also gives overview and getting 
@@ -12,7 +11,6 @@ It is a standalone executable file (packaged in a ZIP archive). You can be runni
 [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567), click download, open resulting downloaded
 zip file, and either execute it directly (double click on it in the ZIP archive, or better, copy it to your machine (e.g. drag it 
 to your desktop and then double click it from there).   It is a single EXE with no installation.  You can be running in literally seconds.
-
 
 #### Getting the Latest Version of PerfView
 
