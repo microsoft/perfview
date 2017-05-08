@@ -1521,6 +1521,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// Mark time information per heap.  Key is the heap number
         /// </summary>
         public Dictionary<int /*heap number*/, MarkInfo> PerHeapMarkTimes;      // The dictionary of heap number and info on time it takes to mark various roots.
+        internal bool fMarkTimesConverted;
         /// <summary>
         /// Time since the last EE restart
         /// </summary>
@@ -2489,12 +2490,29 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         // to the actual time that it took for each mark.
         private void ConvertMarkTimes()
         {
+            if (fMarkTimesConverted)
+            {
+                return;
+            }
+
             if (PerHeapMarkTimes != null)
             {
                 foreach (KeyValuePair<int, MarkInfo> item in PerHeapMarkTimes)
                 {
                     if (item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] == 0.0)
                         item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] = StartRelativeMSec;
+
+                    if (item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] > StartRelativeMSec)
+                    {
+                        if (item.Value.MarkTimes[(int)MarkRootType.MarkOlder] == 0.0)
+                        {
+                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkOlder];
+                        }
+                        else
+                        {
+                            item.Value.MarkTimes[(int)MarkRootType.MarkOverflow] -= item.Value.MarkTimes[(int)MarkRootType.MarkHandles];
+                        }
+                    }
 
                     if (Generation == 2)
                         item.Value.MarkTimes[(int)MarkRootType.MarkOlder] = 0;
@@ -2507,6 +2525,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                     item.Value.MarkTimes[(int)MarkRootType.MarkSizedRef] -= StartRelativeMSec;
                 }
             }
+            fMarkTimesConverted = true;
         }
 
         // For true/false groups, return whether that group is set.
@@ -2540,7 +2559,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             BGCAllocWaitReason ReasonLOHAlloc = (BGCAllocWaitReason)reason;
 
             if ((ReasonLOHAlloc == BGCAllocWaitReason.GetLOHSeg) ||
-                (ReasonLOHAlloc == BGCAllocWaitReason.AllocDuringSweep))
+                (ReasonLOHAlloc == BGCAllocWaitReason.AllocDuringSweep) ||
+                (ReasonLOHAlloc == BGCAllocWaitReason.AllocDuringBGC))
             {
                 if (LOHWaitThreads == null)
                 {
