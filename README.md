@@ -54,7 +54,7 @@ will lead you through the basics of doing this.   All it assumes is that you hav
 
 ### How to Build and Debug PerfView 
 
-PerfView is developed in Visual Studio 2017 using features through C# 7.
+PerfView is developed in Visual Studio 2017 using features through C# 6.
 
   * The solution file is Perfview.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the windows explorer) and selecting the Build -> Build Solution, 
