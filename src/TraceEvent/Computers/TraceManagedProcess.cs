@@ -121,6 +121,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// Returns the .NET startup flags
         /// </summary>
         public StartupFlags StartupFlags { get; internal set; }
+        /// <summary>
+        /// Date and time of when the runtime was built
+        /// This is useful when a more detailed version is not present
+        /// </summary>
+        public DateTime RuntimeBuiltTime { get; internal set; }
 
         /// <summary>
         /// Garbage Collector (GC) specific details about this process
@@ -170,6 +175,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         {
             runtimeVersion = new Version(0, 0, 0, 0);
             StartupFlags = StartupFlags.None;
+            RuntimeBuiltTime = default(DateTime);
         }
 
         /// <summary>
@@ -233,7 +239,9 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                TraceProcess process = data.Process();
                TraceLoadedDotNetRuntime mang = currentManagedProcess(data);
 
-               mang.runtimeVersion = new Version(data.VMMajorVersion, data.VMMinorVersion, data.VMBuildNumber, data.VMQfeNumber);
+               // replace the current runtimeversion if it is currently not set, or this version has information including revision (eg. qfe number)
+               if (mang.runtimeVersion.Major == 0 || data.VMQfeNumber > 0)
+                   mang.runtimeVersion = new Version(data.VMMajorVersion, data.VMMinorVersion, data.VMBuildNumber, data.VMQfeNumber);
                mang.StartupFlags = data.StartupFlags;
                // proxy for bitness, given we don't have a traceevent to pass through
                process.Is64Bit = (data.RuntimeDllPath.ToLower().Contains("framework64"));
@@ -243,6 +251,35 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
            };
             clrRundownParser.RuntimeStart += doAtRuntimeStart;
             source.Clr.RuntimeStart += doAtRuntimeStart;
+
+            var symbolParser = new SymbolTraceEventParser(source);
+            symbolParser.ImageIDFileVersion += delegate (FileVersionTraceData data)
+            {
+                TraceProcess process = data.Process();
+
+                if (string.Equals(data.OrigFileName, "clr.dll", StringComparison.OrdinalIgnoreCase) || string.Equals(data.OrigFileName, "mscorwks.dll", StringComparison.OrdinalIgnoreCase) || string.Equals(data.OrigFileName, "coreclr.dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    // this will create a mang instance for this process
+                    TraceLoadedDotNetRuntime mang = currentManagedProcess(data);
+                    Version version;
+                    // replace the current runtimeVersion if there is not good revision information
+                    if ((mang.runtimeVersion.Major == 0 || mang.runtimeVersion.Revision == 0) && Version.TryParse(data.ProductVersion, out version))
+                        mang.runtimeVersion = new Version(version.Major, version.Minor, version.Build, version.Revision);
+                    if (mang.RuntimeBuiltTime == default(DateTime)) mang.RuntimeBuiltTime = data.BuildTime;
+                }
+            };
+            symbolParser.ImageID += delegate (ImageIDTraceData data)
+            {
+                TraceProcess process = data.Process();
+
+                if (string.Equals(data.OriginalFileName, "clr.dll", StringComparison.OrdinalIgnoreCase) || string.Equals(data.OriginalFileName, "mscorwks.dll", StringComparison.OrdinalIgnoreCase) || string.Equals(data.OriginalFileName, "coreclr.dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    // this will create a mang instance for this process
+                    TraceLoadedDotNetRuntime mang = currentManagedProcess(data);
+                    // capture the CLR build stamp to provide deeper version information (when version information is not present)
+                    if (mang.RuntimeBuiltTime == default(DateTime)) mang.RuntimeBuiltTime = data.BuildTime;
+                }
+            };
 
             //
             // GC
