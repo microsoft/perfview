@@ -2398,7 +2398,7 @@ namespace PerfView
         public void LaunchPerfViewElevated(string command, CommandLineArgs parsedArgs)
         {
             Debug.Assert(!App.IsElevated);
-            var perfView = SupportFiles.ExePath;
+            var perfView = SupportFiles.ExePathForRelaunch;
 
             if (parsedArgs.RestartingToElevelate != null)
                 throw new ApplicationException("PerfView has attempted to restart to gain Administrative Permissions but failed to do so.");

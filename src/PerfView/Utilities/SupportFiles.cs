@@ -178,6 +178,29 @@ namespace Utilities
             }
         }
         /// <summary>
+        /// The path to the executable for relaunching PerfView with administrator privileges.
+        /// </summary>
+        public static string ExePathForRelaunch
+        {
+            get
+            {
+                if (s_exePathForRelaunch == null)
+                {
+                    // As a special case, handle the 64-bit entry point of PerfView64
+                    var entryAssembly = Assembly.GetEntryAssembly();
+                    if (string.Equals(entryAssembly.ManifestModule.Name, "PerfView64.exe", StringComparison.OrdinalIgnoreCase))
+                    {
+                        s_exePathForRelaunch = entryAssembly.ManifestModule.FullyQualifiedName;
+                    }
+                    else
+                    {
+                        s_exePathForRelaunch = ExePath;
+                    }
+                }
+                return s_exePathForRelaunch;
+            }
+        }
+        /// <summary>
         /// Get the name of the architecture of the current process
         /// </summary>
         public static string ProcessArch
@@ -323,7 +346,8 @@ namespace Utilities
 
         private static string s_supportFileDir;
         private static string s_supportFileDirBase;
-        internal static string s_exePath;
+        private static string s_exePath;
+        private static string s_exePathForRelaunch;
         private static List<string> s_managedDllSearchPaths;
 #endregion
     }
