@@ -447,7 +447,9 @@ namespace Stats
                 writer.WriteLine("/>");
             }
 
-            if (gc.PerHeapHistories != null && gc.PerHeapHistories.Count > 0)
+            // I am seeing a GC with SuspendEE/RestartEE/HeapStats events yet in the middle we are missing GlobalHistory and some of
+            // the PerHeapHistory events so need to compensate for that.
+            if (gc.PerHeapHistories != null && gc.GlobalHeapHistory != null && gc.PerHeapHistories.Count > 0)
             {
                 writer.WriteLine("      <PerHeapHistories Count=\"{0}\" MemoryLoad=\"{1}\">",
                                  gc.PerHeapHistories.Count,
@@ -484,6 +486,11 @@ namespace Stats
                                 writer.Write(" MarkOldGen =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOlder]);
                                 if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOlder]);
                                 writer.Write("\"");
+                            }
+                            if (mt.MarkTimes[(int)MarkRootType.MarkOverflow] != 0.0)
+                            {
+                                writer.Write(" MarkOverflow =\"{0:n3}", mt.MarkTimes[(int)MarkRootType.MarkOverflow]);
+                                if (mt.MarkPromoted != null) writer.Write("({0})", mt.MarkPromoted[(int)MarkRootType.MarkOverflow]);
                             }
                         }
                     }
