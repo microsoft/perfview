@@ -2435,7 +2435,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return;
 
             // Use reflection to see what events have declared 
-            MethodInfo[] methods = GetType().GetTypeInfo().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
             {
                 var addMethod = methods[i];
