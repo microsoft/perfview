@@ -403,7 +403,8 @@ namespace PerfView
             if (GCCollectOnly)
             {
                 // TODO this logic is cloned.  We need it in only one place.  If you update it do the other location as well
-                KernelEvents = KernelTraceEventParser.Keywords.Process;     // For process names
+                // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
+                KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;     
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
                 ClrEventLevel = TraceEventLevel.Informational;
                 NoRundown = true;

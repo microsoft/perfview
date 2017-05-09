@@ -430,7 +430,8 @@ namespace PerfView
                 {
                     m_args.GCCollectOnly = true;
 
-                    m_args.KernelEvents = KernelTraceEventParser.Keywords.Process;     // For process names
+                    // The process events are so we get process names.  The ImageLoad events are so that we get version information about the DLLs 
+                    m_args.KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;
                     m_args.ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
                     m_args.ClrEventLevel = TraceEventLevel.Informational;
                     m_args.NoRundown = true;
