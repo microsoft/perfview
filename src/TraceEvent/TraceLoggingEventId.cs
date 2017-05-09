@@ -24,7 +24,6 @@ namespace Microsoft.Diagnostics.Tracing
         /// Checks to see if eventRecord has TraceLogging meta data associated with it (EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
         /// and if so updates EventHeader.Id to be an event ID unique to that provider/opcode/meta-data blob. 
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TestForTraceLoggingEventAndFixupIfNeeded(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // This method is designed to be inlined and thus have very low overhead for the non-tracelogging case.   
