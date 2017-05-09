@@ -233,7 +233,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (fileName.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase) < 0)
                     {
                         // READY_TO_RUN support generate PDBs for ready-to-run images.    
-                        // TODO can rip this out when we don't package read-to-run images
+                        // TODO can rip this out when we don't package ready-to-run images
                         var windowsIdx = fileName.IndexOf(@"\windows\", StringComparison.OrdinalIgnoreCase);
                         if (0 <= windowsIdx && windowsIdx <= 2)
                             return;
@@ -246,7 +246,8 @@ namespace Microsoft.Diagnostics.Tracing
                                 if (!peFile.IsManagedReadyToRun)
                                     return;
                             }
-                        } catch { return; }
+                        }
+                        catch { return; }
                     }
 
                     var processId = data.ProcessID;
@@ -508,7 +509,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal static DateTime SafeFromFileTimeUtc(long fileTime)
         {
-            ulong maxTime = (ulong) DateTime.MaxValue.ToFileTimeUtc();
+            ulong maxTime = (ulong)DateTime.MaxValue.ToFileTimeUtc();
             if (maxTime < (ulong)fileTime)
                 return DateTime.MaxValue;
             return DateTime.FromFileTimeUtc(fileTime);
@@ -778,7 +779,7 @@ namespace Microsoft.Diagnostics.Tracing
         private Dictionary<int, string> processNameForID;
 
         // Used to give TraceLogging events Event IDs. 
-        private TraceLoggingEventId traceLoggingEventId;  
+        private TraceLoggingEventId traceLoggingEventId;
 
         internal override string ProcessName(int processID, long time100ns)
         {
