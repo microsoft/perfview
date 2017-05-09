@@ -2056,7 +2056,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new MemInfoTraceData(value, 1, 1, "MemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State));
+                source.RegisterEventTemplate(new MemInfoTraceData(value, 1, 1, "MemoryMemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State));
             }
             remove
             {
@@ -2992,7 +2992,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[124] = new MemoryPageAccessTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 130, "PageAccess", ProviderGuid, ProviderName, null);
                 templates[125] = new MemoryProcessMemInfoTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 125, "ProcessMemInfo", ProviderGuid, ProviderName, null);
                 templates[126] = new MemoryProcessMemInfoTraceData(null, 2, 2, "MemoryProcessMemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", null);
-                templates[127] = new MemInfoTraceData(null, 1, 1, "MemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State);
+                templates[127] = new MemInfoTraceData(null, 1, 1, "MemoryMemInfo", Guid.Empty, 0, "", MemoryProviderGuid, "Microsoft-Windows-Kernel-Memory", State);
                 templates[128] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 73, "PFMappedSectionCreate", ProviderGuid, ProviderName);
                 templates[129] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 76, "SessionDCStop", ProviderGuid, ProviderName);
                 templates[130] = new EmptyTraceData(null, 0xFFFF, 10, "Memory", MemoryTaskGuid, 79, "PFMappedSectionDelete", ProviderGuid, ProviderName);
