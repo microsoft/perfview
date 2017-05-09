@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,19 +11,20 @@ namespace Microsoft.Diagnostics.Tracing
     /// <summary>
     /// TraceLoggingEvnetId is a class that manages assigning event IDs (small 64k numbers)
     /// to TraceLogging Style events (which don't have them).  Because TraceEvent uses EventIDs
-    /// so fundamentally this difficiency is very problematic.   
+    /// so fundamentally this deficiency is very problematic.   
     /// 
     /// Arguably this should have been done by the ETW system itself.  
     /// 
     /// You use it by calling TestForTraceLoggingEventAndFixupIfNeeded on eventRecords.  
     /// You also have to explicitly call 'Dispose' when you are done with this class.  
     /// </summary>
-    internal unsafe struct TraceLoggingEventId
+    internal unsafe struct TraceLoggingEventId : IDisposable
     {
         /// <summary>
         /// Checks to see if eventRecord has TraceLogging meta data associated with it (EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
         /// and if so updates EventHeader.Id to be an event ID unique to that provider/opcode/meta-data blob. 
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TestForTraceLoggingEventAndFixupIfNeeded(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             // This method is designed to be inlined and thus have very low overhead for the non-tracelogging case.   
@@ -38,8 +40,8 @@ namespace Microsoft.Diagnostics.Tracing
             if (m_traceLoggingEventMap == null)
                 return;
 
-            foreach (var key in m_traceLoggingEventMap.Keys)
-                Marshal.FreeHGlobal((IntPtr)key.Provider);
+            foreach (var kvp in m_traceLoggingEventMap)
+                Marshal.FreeHGlobal((IntPtr)kvp.Key.Provider);
             m_traceLoggingEventMap = null;
             m_nextTraceLoggingIDForProvider = null;
         }
@@ -75,7 +77,7 @@ namespace Microsoft.Diagnostics.Tracing
                 m_nextTraceLoggingIDForProvider = new Dictionary<Guid, ushort>();
             }
 
-            // Check if I am i the table of assigned eventIds for this meta-data- blob
+            // Check if I am in the table of assigned eventIds for this meta-data- blob
             ProviderMetaDataKey key = new ProviderMetaDataKey(&eventRecord->EventHeader.ProviderId, eventRecord->EventHeader.Opcode, (byte*)metaData->DataPtr, metaData->DataSize);
             ushort ret;
             if (!m_traceLoggingEventMap.TryGetValue(key, out ret))
