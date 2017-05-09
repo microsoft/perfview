@@ -32,7 +32,9 @@ namespace Stats
                 writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
             if (!string.IsNullOrEmpty(stats.CommandLine))
                 writer.WriteLine("<LI>CommandLine: {0}</LI>", stats.CommandLine);
-            writer.WriteLine("<LI>Runtime Version: {0}</LI>", runtime.RuntimeVersion != null ? runtime.RuntimeVersion : "<Unknown Runtime Version>");
+            var runtimeBuiltTime = "";
+            if (runtime.RuntimeBuiltTime != default(DateTime)) runtimeBuiltTime = string.Format(" (built on {0})", runtime.RuntimeBuiltTime);
+            writer.WriteLine("<LI>Runtime Version: {0}{1}</LI>", runtime.RuntimeVersion ?? "&lt;Unknown Runtime Version&gt;", runtimeBuiltTime);
             writer.WriteLine("<LI>CLR Startup Flags: {0}</LI>", runtime.StartupFlags.ToString());
             writer.WriteLine("<LI>Total CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
             writer.WriteLine("<LI>Total GC CPU Time: {0:n0} msec</LI>", runtime.GC.Stats().TotalCpuMSec);
