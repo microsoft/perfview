@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{6BAC7496-6953-41B8-9042-AAE45405A095}</ProjectGuid>
@@ -16,10 +16,6 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -35,8 +31,7 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <LangVersion>6</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -44,53 +39,29 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;PERFVIEW</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
+    <NoWarn>1591,0436</NoWarn>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;PERFVIEW</DefineConstants>
+    <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
-    <NoWarn>1591 0436</NoWarn>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
-    <NoWarn>1591 0436</NoWarn>
+    <NoWarn>1591,0436</NoWarn>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <Prefer32Bit>false</Prefer32Bit>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>performance.ico</ApplicationIcon>
@@ -101,15 +72,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ReachFramework" />
@@ -495,7 +466,7 @@
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
       <Link>SupportFiles\x64\HeapDump.exe.config</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x86\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\AnyCPU\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
@@ -533,7 +504,7 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\PerfView\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="..\..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -736,32 +707,20 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>REM Need to set the path for EditBin to work properly.  
-set path=%25path%25;$(DevEnvDir)
-if "$(PlatformName)" == "x86" (
-    echo Updating X86 build to be large address aware
-    "$(DevEnvDir)..\..\vc\bin\editbin.exe" /LARGEADDRESSAWARE "$(TargetPath)"
-    if  NOT "%25ERRORLEVEL%25" == "0" (
-        echo EDITBIN Failed
-        exit /b %25ERRORLEVEL%25
-    )
-    "$(SolutionDir)..\tools\corflags.exe" /32bitPref+  "$(TargetPath)"
-)
-echo Done
-mkdir "$(ProjectDir)..\VS"
+    <PostBuildEvent>mkdir "$(ProjectDir)..\VS"
 echo COPYING xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
 REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(SolutionDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
+    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(ProjectDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
   </PropertyGroup>
-  <Import Project="packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
+  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets'))" />
+    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

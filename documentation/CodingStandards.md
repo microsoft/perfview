@@ -1,18 +1,17 @@
-#Coding Standard in the PerfView Codebase
-
+# Coding Standard in the PerfView Codebase
 
 If you are going to contribute to a codebase, you need to 'follow suit'
 and conform to the standards that are already in place.   Here is what
 PerfView uses.  
 
-##Indenting and other spacing conventions. 
+## Indenting and other spacing conventions. 
 
 The PerfView codebase was developed using Visual Studio, and uses
 indenting and spacing standards that are the default in Visual Studio.
 You can use Ctrl-K Ctrl-D (reformat) to make your code conform to 
 this.   
 
-##Layout of a Class
+## Layout of a Class
 
 Items in a class should be ordered and structured to make reading the
 as a **public contract** easy.   In particular
@@ -35,7 +34,7 @@ should be near each other.
 developer to find all the state in an object (since that is what
 really defines its semantics.  
        
-##Naming conventions
+## Naming conventions
 
 1. We follow standard .NET Naming conventions (PascalCase for Types
        methods and properties, camelCase for parameters and local variables)
@@ -48,7 +47,7 @@ really defines its semantics.
 3. Pick descriptive names. Visual Studio makes it easy to rename a 
        variable so fix the name if it 'morphed' as the code was written. 
 
-##Minimum Commenting
+## Minimum Commenting
 
 PerfView is probably commented more than most code bases.  We wish
 to keep it that way.  Here is what is expected.
@@ -66,7 +65,7 @@ to keep it that way.  Here is what is expected.
        especially true if there is some condition (invariant) that is maintained
        for that variable.   These are VERY valuable to document.   
  
-##When in Doubt
+## When in Doubt
 
 When in doubt, make your code look like the code around it.   You can't
 go too far wrong if you do that.   

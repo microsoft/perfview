@@ -13,10 +13,7 @@
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <LangVersion>6</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -75,7 +72,7 @@
     <Compile Include="ETLStackBrowse\ZL\OutputWindow.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj">
       <Project>{B68F4968-A7CF-41CC-AD6E-373DB5E67944}</Project>
       <Name>TraceEvent</Name>
     </ProjectReference>
