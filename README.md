@@ -4,6 +4,8 @@ If you are unfamiliar with PerfView, there are [PerfView video tutorials](http:/
 As well as [Vance Morrison's blog](http://blogs.msdn.com/b/vancem/archive/tags/perfview) which also gives overview and getting 
 started information. 
 
+[![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
+
 ### Getting PerfView 
 The PerfView executable is ultimately published at the 
 [PerfView download Site](http://www.microsoft.com/en-us/download/details.aspx?id=28567). 

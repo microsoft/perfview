@@ -16,6 +16,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView", "src\PerfView\Pe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4068F9B-607A-4531-98A8-DE9B392C2D2C}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		documentation\CodingStandards.md = documentation\CodingStandards.md
 		CONTRIBUTING.md = CONTRIBUTING.md
 		src\PerfView\Local.testsettings = src\PerfView\Local.testsettings
