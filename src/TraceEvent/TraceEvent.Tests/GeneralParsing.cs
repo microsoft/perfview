@@ -12,9 +12,28 @@ namespace TraceEventTests
     [TestClass]
     public class GeneralParsing
     {
+        static string OriginalBaselineDir = FindInputDir();
         static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
+
+        /// <summary>
+        ///  Tries to find the original place in the source base where input data comes from 
+        ///  This may not always work if the tests are copied away from the source code (cloud test does this).  
+        /// </summary>
+        /// <returns></returns>
+        private static string FindInputDir()
+        {
+            string dir = Environment.CurrentDirectory;
+            while (dir != null)
+            {
+                string candidate = Path.Combine(dir, @"TraceEvent\TraceEvent.Tests\inputs");
+                if (Directory.Exists(candidate))
+                    return Path.GetFullPath(candidate);
+                dir = Path.GetDirectoryName(dir);
+            }
+            return @"%PERFVIEW%\src\TraceEvent\TraceEvent.Tests\inputs";
+        }
 
         private static bool s_fileUnzipped;
         private static void UnzipDataFiles()
@@ -120,7 +139,7 @@ namespace TraceEventTests
                     // different machines might have different manifests.  
                     if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
                     {
-                        if (data.GetType().Name == "DynamicTraceEventData" ||data.EventName.StartsWith("EventID"))
+                        if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
                             return;
                     }
                     // TODO FIX NOW, this is broken and should be fixed.  
@@ -168,7 +187,7 @@ namespace TraceEventTests
                             Trace.WriteLine("To Update baseline file");
                             Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
                                 Path.GetFullPath(outputName),
-                                Path.GetFullPath(baselineName)
+                                Path.Combine(OriginalBaselineDir, Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt")
                                 ));
                         }
                     }
