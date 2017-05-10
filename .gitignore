@@ -10,6 +10,7 @@ OSExtentions.cs
 *.sln.docstates
 *.csproj.metaproj
 *.sln.metaproj
+!Global.csproj.user
 
 # VS 2015 stuff
 .vs/
@@ -51,7 +52,6 @@ dlldata.c
 *.meta
 *.obj
 *.pch
-*.pdb
 *.pgc
 *.pgd
 *.rsp
