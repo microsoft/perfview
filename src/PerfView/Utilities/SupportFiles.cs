@@ -124,7 +124,7 @@ namespace Utilities
             get
             {
                 {
-                    var exeLastWriteTime = File.GetLastWriteTime(ExePath);
+                    var exeLastWriteTime = File.GetLastWriteTime(MainAssemblyPath);
                     var version = exeLastWriteTime.ToString("VER.yyyy'-'MM'-'dd'.'HH'.'mm'.'ss.fff");
                     s_supportFileDir = Path.Combine(SupportFileDirBase, version);
                 }
@@ -144,14 +144,14 @@ namespace Utilities
             {
                 if (s_supportFileDirBase == null)
                 {
-                    string appName = Path.GetFileNameWithoutExtension(ExePath);
+                    string appName = Path.GetFileNameWithoutExtension(MainAssemblyPath);
 
                     string appData = Environment.GetEnvironmentVariable(appName + "_APPDATA");
                     if (appData == null)
                     {
                         appData = Environment.GetEnvironmentVariable("APPDATA");
                         if (appData == null)
-                            appData = Path.GetFileName(ExePath);
+                            appData = Path.GetFileName(MainAssemblyPath);
                     }
                     s_supportFileDirBase = Path.Combine(appData, appName);
                 }
@@ -160,21 +160,20 @@ namespace Utilities
             set { s_supportFileDirBase = value; }
         }
         /// <summary>
-        /// The path to the executable.   You should not be writing here! that is what SupportFileDir is for.  
+        /// The path to the assembly containing <see cref="SupportFiles"/>. You should not be writing here! that is what
+        /// <see cref="SupportFileDir"/> is for.
         /// </summary>
-        public static string ExePath
+        public static string MainAssemblyPath
         {
             get
             {
-                if (s_exePath == null)
+                if (s_mainAssemblyPath == null)
                 {
-                    // We used to use GetEntryAssembly, but that means you can use the EXE as a component 
-                    // of some other EXE.   This means that SupportFiles.cs needs to be in the main exe.  
-                    var exeAssembly = Assembly.GetExecutingAssembly();
-                    s_exePath = exeAssembly.ManifestModule.FullyQualifiedName;
-                    Debug.Assert(s_exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+                    var mainAssembly = Assembly.GetExecutingAssembly();
+                    s_mainAssemblyPath = mainAssembly.ManifestModule.FullyQualifiedName;
                 }
-                return s_exePath;
+
+                return s_mainAssemblyPath;
             }
         }
         /// <summary>
@@ -346,7 +345,7 @@ namespace Utilities
 
         private static string s_supportFileDir;
         private static string s_supportFileDirBase;
-        private static string s_exePath;
+        private static string s_mainAssemblyPath;
         private static string s_exePathForRelaunch;
         private static List<string> s_managedDllSearchPaths;
 #endregion

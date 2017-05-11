@@ -363,10 +363,10 @@ namespace PerfView
                 }
 
                 // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
-                var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.ExePath));
+                var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.MainAssemblyPath));
                 if (!File.Exists(targetExe))
                 {
-                    File.Copy(SupportFiles.ExePath, targetExe);
+                    File.Copy(SupportFiles.MainAssemblyPath, targetExe);
                     // This file indicates that we need to copy the extensions if we use this EXE to run from
                     File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
                 }
@@ -431,7 +431,7 @@ namespace PerfView
                 return;
 
             // Is the EXE on a network share 
-            var exe = SupportFiles.ExePath;
+            var exe = SupportFiles.MainAssemblyPath;
             if (!exe.StartsWith(@"\\"))
                 return;
 

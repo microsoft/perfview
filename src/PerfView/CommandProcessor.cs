@@ -1527,7 +1527,7 @@ namespace PerfView
             var extensionDebugName = extensionProjName + ".user";
             var extensionDebugData = File.ReadAllText(Path.Combine(SupportFiles.SupportFileDir, @"ExtensionTemplate\Global.csproj.user"));
             extensionDebugData = Regex.Replace(extensionDebugData, "<StartProgram>.*</StartProgram>",
-                "<StartProgram>" + SupportFiles.ExePath + "</StartProgram>");
+                "<StartProgram>" + SupportFiles.MainAssemblyPath + "</StartProgram>");
             extensionDebugData = Regex.Replace(extensionDebugData, "Global", parsedArgs.ExtensionName);
             File.WriteAllText(extensionDebugName, extensionDebugData);
             LogFile.WriteLine("Created new project {0}", extensionProjName);
