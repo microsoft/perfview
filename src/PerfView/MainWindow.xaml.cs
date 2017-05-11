@@ -1475,7 +1475,7 @@ namespace PerfView
         }
         private void DoVideoClick(object sender, RoutedEventArgs e)
         {
-            var videoUrl = Path.Combine(Path.GetDirectoryName(SupportFiles.ExePath), @"PerfViewVideos\PerfViewVideos.htm");
+            var videoUrl = Path.Combine(Path.GetDirectoryName(SupportFiles.MainAssemblyPath), @"PerfViewVideos\PerfViewVideos.htm");
             if (!File.Exists(videoUrl))
             {
                 if (!AllowNativateToWeb)
