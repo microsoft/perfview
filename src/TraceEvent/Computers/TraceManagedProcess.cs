@@ -196,12 +196,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             // See if the source knows about the CLR Private provider, if it does, then 
             var clrPrivate = new ClrPrivateTraceEventParser(source);
 
+            Dictionary<TraceProcess, TraceLoadedDotNetRuntime> processRuntimes = new Dictionary<TraceProcess, TraceLoadedDotNetRuntime>();
+
             // if any clr event is fired, this process is managed
             Action<TraceEvent> createManagedProc = delegate (TraceEvent data)
             {
                 var proc = data.Process(); // this will create an instance, if one does not exist
-                var mang = proc.LoadedDotNetRuntime();
-                if (mang == null)
+                TraceLoadedDotNetRuntime mang;
+                if (!processRuntimes.TryGetValue(proc, out mang))
                 {
                     // duplicate the TraceProcess and create an instance of TraceManagedProcess
                     mang = new TraceLoadedDotNetRuntime(proc);
@@ -214,6 +216,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                     // fire callback and associate this DotNetRuntime with this process
                     proc.OnDotNetRuntimeLoaded(mang);
+                    processRuntimes.Add(proc, mang);
                 }
             };
 
@@ -222,11 +225,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
             Func<TraceEvent, TraceLoadedDotNetRuntime> currentManagedProcess = delegate (TraceEvent data)
             {
-                TraceLoadedDotNetRuntime mang = data.Process().LoadedDotNetRuntime();
-                if (mang == null)
+                TraceLoadedDotNetRuntime mang;
+                if (!processRuntimes.TryGetValue(data.Process(), out mang))
                 {
                     createManagedProc(data);
-                    mang = data.Process().LoadedDotNetRuntime();
+                    mang = processRuntimes[data.Process()];
 
                     Debug.Assert(mang != null);
                 }
@@ -290,23 +293,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 var clrRundown = new ClrRundownTraceEventParser(source);
                 clrRundown.RuntimeStart += doAtRuntimeStart;
                 source.Clr.RuntimeStart += doAtRuntimeStart;
-                Dictionary<TraceProcess, TraceLoadedDotNetRuntime> processRuntimes = null;
 
                 CircularBuffer<ThreadWorkSpan> RecentThreadSwitches = new CircularBuffer<ThreadWorkSpan>(1000);
                 source.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
                 {
-                    if (processRuntimes == null)
-                    {
-                        // lazy initialization
-                        processRuntimes = new Dictionary<TraceProcess, TraceLoadedDotNetRuntime>();
-                        foreach (var proc in source.Processes())
-                        {
-                            var runtime = proc.LoadedDotNetRuntime();
-                            if (runtime != null)
-                                processRuntimes[proc] = runtime;
-                        }
-                    }
-
                     RecentThreadSwitches.Add(new ThreadWorkSpan(data));
                     TraceProcess tmpProc = data.Process();
                     TraceLoadedDotNetRuntime mang;
@@ -345,10 +335,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         TraceLoadedDotNetRuntime loadedRuntime = null;
                         TraceProcess gcProcess = null;
-                        foreach (var proc in source.Processes())
+                        foreach (var pair in processRuntimes)
                         {
-                            var tmpMang = proc.LoadedDotNetRuntime();
-                            if (tmpMang == null) continue;
+                            var proc = pair.Key;
+                            var tmpMang = pair.Value;
 
                             TraceGC e = TraceGarbageCollector.GetCurrentGC(tmpMang);
                             // If we are in the middle of a GC.
@@ -378,8 +368,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
 
                     TraceProcess tmpProc = data.Process();
-                    var mang = tmpProc.LoadedDotNetRuntime();
-                    if (mang != null)
+                    TraceLoadedDotNetRuntime mang;
+                    if (processRuntimes.TryGetValue(tmpProc, out mang))
                     {
                         int heapIndex = mang.GC.m_stats.IsServerGCThread(data.ThreadID);
 
