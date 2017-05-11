@@ -1178,7 +1178,7 @@ table {
             {
                 var csvFile = CacheFiles.FindFile(FilePath, ".processesSummary.csv");
                 if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     this.MakeProcessesCsv(m_processes, csvFile);
                 }
@@ -1190,7 +1190,7 @@ table {
             {
                 var csvFile = CacheFiles.FindFile(FilePath, ".processesModule.csv");
                 if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     this.MakeModuleCsv(m_processes, csvFile);
                 }
@@ -1759,7 +1759,7 @@ table {
                 {
                     var csvFile = CacheFiles.FindFile(FilePath, ".aspnet.requests.csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         CreateCSVFile(m_requests, csvFile);
                     }
@@ -1950,7 +1950,7 @@ table {
             {
                 var csvFile = CacheFiles.FindFile(FilePath, ".eventstats.csv");
                 if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     //make the csv
                     this.MakeEventStatCsv(m_counts, csvFile);
@@ -2002,7 +2002,7 @@ table {
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + raw + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         if (raw.Length != 0)
                             Stats.GcStats.PerGenerationCsv(csvFile, mang);
@@ -2023,7 +2023,7 @@ table {
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(gcProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats.Finalization." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         Stats.GcStats.ToCsvFinalization(csvFile, mang);
                     }
@@ -2042,7 +2042,7 @@ table {
                     var xmlOutputName = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".xml");
                     var csvFile = CacheFiles.FindFile(FilePath, ".gcStats." + processId.ToString() + ".csv");
                     if (!File.Exists(xmlOutputName) || File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         using (var writer = File.CreateText(xmlOutputName))
                             Stats.GcStats.ToXml(writer, gcProc, mang, "");
@@ -2097,7 +2097,7 @@ table {
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                         Stats.JitStats.ToCsv(csvFile, mang);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -2114,7 +2114,7 @@ table {
                     var mang = Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(jitProc);
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                         Stats.JitStats.ToInliningCsv(csvFile, mang);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -2132,7 +2132,7 @@ table {
                     List<object> events = m_bgJitEvents[processId];
                     var csvFile = CacheFiles.FindFile(FilePath, ".BGjitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
-                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.ExePath))
+                        File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                         Stats.JitStats.BackgroundDiagCsv(csvFile, mang, events);
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
