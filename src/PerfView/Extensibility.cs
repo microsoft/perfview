@@ -1129,7 +1129,7 @@ namespace PerfViewExtensibility
             {
                 if (s_ExtensionsDirectory == null)
                 {
-                    var exeDir = Path.GetDirectoryName(SupportFiles.ExePath);
+                    var exeDir = Path.GetDirectoryName(SupportFiles.MainAssemblyPath);
                     // This is for development ease development of perfView itself.  
                     if (exeDir.EndsWith(@"\perfView\bin\Release", StringComparison.OrdinalIgnoreCase))
                         exeDir = exeDir.Substring(0, exeDir.Length - 20);
