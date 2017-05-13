@@ -1,9 +1,9 @@
 ﻿namespace System.IO.Compression2
 {
-    using System.IO;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Security.Permissions;
+    using IO;
+    using Diagnostics;
+    using Threading;
+    using Security.Permissions;
 
     public class DeflateStream : Stream
     {
@@ -13,11 +13,11 @@
         internal delegate void AsyncWriteDelegate(byte[] array, int offset, int count, bool isAsync);
 
         private Stream _stream;
-        private CompressionMode _mode;
-        private bool _leaveOpen;
-        private Inflater inflater;
-        private Deflater deflater;
-        private byte[] buffer;
+        private readonly CompressionMode _mode;
+        private readonly bool _leaveOpen;
+        private readonly Inflater inflater;
+        private readonly Deflater deflater;
+        private readonly byte[] buffer;
 
         private int asyncOperations;
         private readonly AsyncCallback m_CallBack;
@@ -60,7 +60,7 @@
 
             switch (_mode) {
                 case CompressionMode.Decompress:
-                    if (!(_stream.CanRead)) {
+                    if (!_stream.CanRead) {
                         throw new ArgumentException("NotReadableStream", "stream");
                     }
                     inflater = new Inflater();
@@ -69,13 +69,13 @@
                     break;
 
                 case CompressionMode.Compress:
-                    if (!(_stream.CanWrite)) {
+                    if (!_stream.CanWrite) {
                         throw new ArgumentException("NotWriteableStream", "stream");
                     }
 
                     deflater = new Deflater();
 
-                    m_AsyncWriterDelegate = new AsyncWriteDelegate(this.InternalWrite);
+                    m_AsyncWriterDelegate = new AsyncWriteDelegate(InternalWrite);
                     m_CallBack = new AsyncCallback(WriteCallback);
                     break;
 
@@ -107,7 +107,7 @@
                     return false;
                 }
 
-                return (_mode == CompressionMode.Decompress && _stream.CanRead);
+                return _mode == CompressionMode.Decompress && _stream.CanRead;
             }
         }
 
@@ -119,7 +119,7 @@
                     return false;
                 }
 
-                return (_mode == CompressionMode.Compress && _stream.CanWrite);
+                return _mode == CompressionMode.Compress && _stream.CanWrite;
             }
         }
 
@@ -189,7 +189,7 @@
                 }
 
                 if (inflater.Finished()) {
-                    // if we finished decompressing, we can't have anything left in the outputwindow.
+                    // if we finished decompressing, we can't have anything left in the output window.
                     Debug.Assert(inflater.AvailableOutput == 0, "We should have copied all stuff out!");
                     break;
                 }
@@ -257,7 +257,7 @@
                 ValidateParameters(array, offset, count);
 
                 DeflateStreamAsyncResult userResult = new DeflateStreamAsyncResult(
-                        this, asyncState, asyncCallback, array, offset, count);
+                        asyncState, asyncCallback, array, offset, count);
                 userResult.isWrite = false;
 
                 // Try to read decompressed data in output buffer
@@ -265,17 +265,17 @@
                 if (bytesRead != 0) {
                     // If decompression output buffer is not empty, return immediately.
                     // 'true' means we complete synchronously.
-                    userResult.InvokeCallback(true, (object)bytesRead);
+                    userResult.InvokeCallback(true, bytesRead);
                     return userResult;
                 }
 
                 if (inflater.Finished()) {
                     // end of compression stream
-                    userResult.InvokeCallback(true, (object)0);
+                    userResult.InvokeCallback(true, 0);
                     return userResult;
                 }
 
-                // If there is no data on the output buffer and we are not at 
+                // If there is no data on the output buffer and we are not at
                 // the end of the stream, we need to get more data from the base stream
                 _stream.BeginRead(buffer, 0, buffer.Length, m_CallBack, userResult);
                 userResult.m_CompletedSynchronously &= userResult.IsCompleted;
@@ -288,7 +288,7 @@
             }
         }
 
-        // callback function for asynchrous reading on base stream
+        // callback function for asynchronous reading on base stream
         private void ReadCallback(IAsyncResult baseStreamResult)
         {
             DeflateStreamAsyncResult outerResult = (DeflateStreamAsyncResult)baseStreamResult.AsyncState;
@@ -300,7 +300,7 @@
 
                 if (bytesRead <= 0) {
                     // This indicates the base stream has received EOF
-                    outerResult.InvokeCallback((object)0);
+                    outerResult.InvokeCallback(0);
                     return;
                 }
 
@@ -309,12 +309,12 @@
                 bytesRead = inflater.Inflate(outerResult.buffer, outerResult.offset, outerResult.count);
                 if (bytesRead == 0 && !inflater.Finished()) {
                     // We could have read in head information and didn't get any data.
-                    // Read from the base stream again.   
-                    // Need to solve recusion.
+                    // Read from the base stream again.
+                    // Need to solve recursion.
                     _stream.BeginRead(buffer, 0, buffer.Length, m_CallBack, outerResult);
                 }
                 else {
-                    outerResult.InvokeCallback((object)bytesRead);
+                    outerResult.InvokeCallback(bytesRead);
                 }
             }
             catch (Exception exc) {
@@ -358,7 +358,7 @@
             }
 
             if (myResult.Result is Exception) {
-                throw (Exception)(myResult.Result);
+                throw (Exception)myResult.Result;
             }
 
             return (int)myResult.Result;
@@ -456,8 +456,8 @@
                 try {
                     // Attempt to close the stream even if there was an IO error from Flushing.
                     // Note that Stream.Close() can potentially throw here (may or may not be
-                    // due to the same Flush error). In this case, we still need to ensure 
-                    // cleaning up internal resources, hence the finally block.  
+                    // due to the same Flush error). In this case, we still need to ensure
+                    // cleaning up internal resources, hence the finally block.
                     if (disposing && !_leaveOpen && _stream != null) {
                         _stream.Close();
                     }
@@ -483,7 +483,7 @@
                 ValidateParameters(array, offset, count);
 
                 DeflateStreamAsyncResult userResult = new DeflateStreamAsyncResult(
-                        this, asyncState, asyncCallback, array, offset, count);
+                        asyncState, asyncCallback, array, offset, count);
                 userResult.isWrite = true;
 
                 m_AsyncWriterDelegate.BeginInvoke(array, offset, count, true, m_CallBack, userResult);
@@ -497,7 +497,7 @@
             }
         }
 
-        // callback function for asynchrous reading on base stream
+        // callback function for asynchronous reading on base stream
         private void WriteCallback(IAsyncResult asyncResult)
         {
             DeflateStreamAsyncResult outerResult = (DeflateStreamAsyncResult)asyncResult.AsyncState;
@@ -548,18 +548,11 @@
             }
 
             if (myResult.Result is Exception) {
-                throw (Exception)(myResult.Result);
+                throw (Exception)myResult.Result;
             }
         }
 
 
-        public Stream BaseStream
-        {
-            get
-            {
-                return _stream;
-            }
-        }
+        public Stream BaseStream => _stream;
     }
-
 }

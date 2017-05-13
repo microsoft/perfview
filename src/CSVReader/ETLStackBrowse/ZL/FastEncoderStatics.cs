@@ -1,9 +1,9 @@
 namespace System.IO.Compression2
 {
-    using System.Diagnostics;
-    using System.Globalization;
+    using Diagnostics;
 
-    internal static class FastEncoderStatics {
+    internal static class FastEncoderStatics
+    {
         // static information for encoding, DO NOT MODIFY
 
         internal static readonly byte[] FastEncoderTreeStructureData = {
@@ -34,12 +34,12 @@ namespace System.IO.Compression2
         //
         // Optimisation: unlike the other encoders, here we have an array of codes for each currentMatch
         // length (not just each currentMatch length slot), complete with all the extra bits filled in, in
-        // a single array element.  
+        // a single array element.
         //
         // There are many advantages to doing this:
         //
         // 1. A single array lookup on g_FastEncoderLiteralCodeInfo, instead of separate array lookups
-        //    on g_LengthLookup (to get the length slot), g_FastEncoderLiteralTreeLength, 
+        //    on g_LengthLookup (to get the length slot), g_FastEncoderLiteralTreeLength,
         //    g_FastEncoderLiteralTreeCode, g_ExtraLengthBits, and g_BitMask
         //
         // 2. The array is an array of ULONGs, so no access penalty, unlike for accessing those USHORT
@@ -48,8 +48,8 @@ namespace System.IO.Compression2
         //
         // Note, if we could guarantee that codeLen <= 16 always, then we could skip an if statement here.
         //
-        // A completely different optimisation is used for the distance codes since, obviously, a table for 
-        // all 8192 distances combining their extra bits is not feasible.  The distance codeinfo table is 
+        // A completely different optimisation is used for the distance codes since, obviously, a table for
+        // all 8192 distances combining their extra bits is not feasible.  The distance codeinfo table is
         // made up of code[], len[] and # extraBits for this code.
         //
         // The advantages are similar to the above; a ULONG array instead of a USHORT and BYTE array, better
@@ -58,7 +58,7 @@ namespace System.IO.Compression2
 
 
         // Encoding information for literal and Length.
-        // The least 5 significant bits are the length 
+        // The least 5 significant bits are the length
         // and the rest is the code bits.
 
         internal static readonly uint[] FastEncoderLiteralCodeInfo = {
@@ -162,16 +162,34 @@ namespace System.IO.Compression2
         internal const int BFinalNoCompressionHeaderBitCount = 3;
         internal const int MaxCodeLen = 16;
 
-        static private byte[] distLookup;
+        private static readonly byte[] distLookup;
 
-        static FastEncoderStatics() {
+        static FastEncoderStatics()
+        {
             distLookup = new byte[512];
             GenerateSlotTables();
         }
 
+        /// <summary>
+        /// Reverse 'length' of the bits in code
+        /// </summary>
+        public static uint BitReverse(uint code, int length)
+        {
+            uint new_code = 0;
+
+            Debug.Assert(length > 0 && length <= 16, "Invalid len");
+            do
+            {
+                new_code |= code & 1;
+                new_code <<= 1;
+                code >>= 1;
+            } while (--length > 0);
+
+            return new_code >> 1;
+        }
 
         // Generate the global slot tables which allow us to convert a distance
-        // (0..32K) to a distance slot (0..29) 
+        // (0..32K) to a distance slot (0..29)
         //
         // Distance table
         //   Extra           Extra               Extra
@@ -188,7 +206,8 @@ namespace System.IO.Compression2
         //   8   3  17-24   18   8    513-768   28   13 16385-24576
         //   9   3  25-32   19   8   769-1024   29   13 24577-32768
 
-        static internal void GenerateSlotTables() {
+        internal static void GenerateSlotTables()
+        {
             // Initialize the mapping length (0..255) -> length code (0..28)
             //int length = 0;
             //for (code = 0; code < FastEncoderStatics.NumLengthBaseCodes-1; code++) {
@@ -200,38 +219,25 @@ namespace System.IO.Compression2
             // Initialize the mapping dist (0..32K) -> dist code (0..29)
             int dist = 0;
             int code;
-            for (code = 0; code < 16; code++) {
-                for (int n = 0; n < (1 << FastEncoderStatics.ExtraDistanceBits[code]); n++)
+            for (code = 0; code < 16; code++)
+            {
+                for (int n = 0; n < 1 << ExtraDistanceBits[code]; n++)
                     distLookup[dist++] = (byte)code;
             }
 
-            dist >>= 7; // from now on, all distances are divided by 128 
+            dist >>= 7; // from now on, all distances are divided by 128
 
-            for (; code < FastEncoderStatics.NumDistBaseCodes; code++) {
-                for (int n = 0; n < (1 << (FastEncoderStatics.ExtraDistanceBits[code] - 7)); n++)
+            for (; code < NumDistBaseCodes; code++)
+            {
+                for (int n = 0; n < 1 << (ExtraDistanceBits[code] - 7); n++)
                     distLookup[256 + dist++] = (byte)code;
             }
         }
 
         // Return the position slot (0...29) of a match offset (0...32767)
-        static internal int GetSlot(int pos) {
-            return distLookup[((pos) < 256) ? (pos) : (256 + ((pos) >> 7))];
+        internal static int GetSlot(int pos)
+        {
+            return distLookup[pos < 256 ? pos : 256 + (pos >> 7)];
         }
-
-        // Reverse 'length' of the bits in code
-        public static uint BitReverse(uint code, int length) {
-            uint new_code = 0;
-
-            Debug.Assert(length > 0 && length <= 16, "Invalid len");
-            do {
-                new_code |= (code & 1);
-                new_code <<= 1;
-                code >>= 1;
-            } while (--length > 0);
-
-            return new_code >> 1;
-        }
-
     }
 }
-
