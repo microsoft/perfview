@@ -1,23 +1,17 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.IO;
-using System.Reflection;
+using Xunit;
 
 namespace Tests
 {
-    [TestClass]
     public class CtfTraceTests
     {
         static string TestDataDirectory = @"..\..\inputs";
 
-        [TestMethod]
+        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
         public void LTTng_GCAllocationTick()
         {
-            Assert.Inconclusive();
-            return;
-
             int allocTicks = 0, allocTicksFromAll = 0;
 
             string[] files = new string[] { "auto-20160204-132425.trace.zip", "auto-20151103-132930.trace.zip", "auto-20160204-162218.tracego.zip" };
@@ -95,15 +89,13 @@ namespace Tests
                 }
             }
 
-            Assert.IsTrue(allocTicks > 0);
-            Assert.AreEqual(allocTicks, allocTicksFromAll);
+            Assert.True(allocTicks > 0);
+            Assert.Equal(allocTicks, allocTicksFromAll);
         }
 
-        [TestMethod]
+        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
         public void LTTng_GCStartStopEvents()
         {
-            Assert.Inconclusive("Issue https://github.com/Microsoft/perfview/issues/102 track this.");
-
             string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
 
             using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
