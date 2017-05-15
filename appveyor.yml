@@ -1,0 +1,23 @@
+version: 1.0.{build}
+branches:
+  only:
+  - master
+image:
+- Visual Studio 2015
+- Visual Studio 2017
+init:
+- git config --global core.autocrlf true
+configuration:
+- Debug
+- Release
+before_build:
+- nuget restore
+build:
+  project: PerfView.sln
+  verbosity: minimal
+# preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
+cache:
+  - packages -> **\packages.config
+artifacts:
+- path: 'src\PerfView\bin\Release\PerfView.exe'
+- path: 'src\PerfView64\bin\Release\PerfView64.exe'
