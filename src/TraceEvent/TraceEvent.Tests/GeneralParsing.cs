@@ -291,17 +291,23 @@ namespace TraceEventTests
             string[] payloadNames = data.PayloadNames;
             for (int i = 0; i < payloadNames.Length; i++)
             {
-                // Keep the value size under control and remove newlines.  
-                string value = (data.PayloadString(i));
+                // Normalize DateTime to UTC so tests work in any timezone. 
+                object value = data.PayloadValue(i);
+                string valueStr;
+                if (value is DateTime)
+                    valueStr = ((DateTime)value).ToUniversalTime().ToString("yy/MM/dd HH:mm:ss.ffffff");
+                else
+                    valueStr = (data.PayloadString(i));
 
                 // To debug this set first chance exeption handing before calling PayloadString above.
-                Assert.IsFalse(value.Contains("EXCEPTION_DURING_VALUE_LOOKUP"), "Exception during event Payload Processing");
+                Assert.IsFalse(valueStr.Contains("EXCEPTION_DURING_VALUE_LOOKUP"), "Exception during event Payload Processing");
 
-                if (value.Length > 20)
-                    value = value.Substring(0, 20) + "...";
-                value = value.Replace("\n", "\\n").Replace("\r", "\\r");
+                // Keep the value size under control and remove newlines.  
+                if (valueStr.Length > 20)
+                    valueStr = valueStr.Substring(0, 20) + "...";
+                valueStr = valueStr.Replace("\n", "\\n").Replace("\r", "\\r");
 
-                sb.Append(payloadNames[i]).Append('=').Append(value).Append("; ");
+                sb.Append(payloadNames[i]).Append('=').Append(valueStr).Append("; ");
             }
 
             return sb.ToString();
