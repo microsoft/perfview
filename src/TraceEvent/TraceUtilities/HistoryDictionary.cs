@@ -36,6 +36,13 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             else
             {
                 Debug.Assert(entry != null);
+                var firstEntry = entry;
+
+                // See if we can jump ahead.  Currently we only do this of the first entry, 
+                // But you could imagine using some of the other nodes's skipAhead entries.   
+                if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime < startTime)
+                    entry = firstEntry.skipAhead;
+
                 for (; ; )
                 {
                     if (entry.next == null)
@@ -58,6 +65,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                     }
                     entry = entry.next;
                 }
+                firstEntry.skipAhead = entry.next;
             }
             count++;
         }
@@ -68,8 +76,15 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             HistoryValue entry;
             if (entries.TryGetValue((long)id, out entry))
             {
-                // The entries are shorted smallest to largest.  
+                // The entries are sorted smallest to largest.  
                 // We want the last entry that is smaller (or equal) to the target time) 
+
+                var firstEntry = entry;
+                // See if we can jump ahead.  Currently we only do this of the first entry, 
+                // But you could imagine using some of the other nodes's skipAhead entries.   
+                if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime < time)
+                    entry = firstEntry.skipAhead;
+
                 HistoryValue last = null;
                 for (; ; )
                 {
@@ -83,6 +98,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                 if (last != null)
                 {
                     value = last.value;
+                    firstEntry.skipAhead = last;
                     return true;
                 }
             }
@@ -127,6 +143,7 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                 {
                     --count;
                     entry = entry.next;
+                    entry.skipAhead = null;     // Throw away optimization data.
                 }
                 entries.Remove((long)id);
             }
@@ -156,6 +173,10 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
             internal long startTime;
             internal T value;
             internal HistoryValue next;
+            // To improve getting to the end quickly, we allow nodes to store values that 'skip ahead'.
+            // Today we only use this field for the first node to skip to the end (for fast append) 
+            // The only strong invarient for this field is that it point further up the same list.  
+            internal HistoryValue skipAhead;   
             #endregion
         }
         #region private
