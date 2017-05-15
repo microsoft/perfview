@@ -25,6 +25,19 @@ The PerfView user's guide is part of the application itself, however you his thi
 to see the [GitHub HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browser.  You can also simply
 download PerfView using the instructions above and select the Help -> User's Guide menu item. 
 
+### Developer information
+
+This repository uses [AppVeyor](https://www.appveyor.com/) to automatically build and test pull requests, which allows
+the community to easily view build results. The build status reflected here is the AppVeyor build status of the
+**master** branch.
+
+[![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
+
+> :warning: Builds produced by AppVeyor are not considered official builds of PerfView, and are not signed or otherwise
+> validated for safety or security in any way. This build integration is provided as a convenience for community
+> participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
+> information about official builds, see [Getting PerfView](#getting-perfview) above.
+
 # Building PerfView Yourself
 
 If you just want to do a performance investigation, you don't need to build PerfView yourself.
