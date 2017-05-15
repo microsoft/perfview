@@ -142,6 +142,17 @@ namespace TraceEventTests
                         if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
                             return;
                     }
+                    // Same problem with classic OS events.   We don't want to rely on the OS to parse since this could vary between baseline and test. 
+                    else if (data.ProviderName == "MSNT_SystemTrace")
+                    {
+                        // However we to allow a couple of 'known good' ones through so we test some aspects of the OS parsing logic in TraceEvent.   
+                        if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
+                            return;
+                    }
+                    // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too agressive about 
+                    // turning them off, however becasuse I want those code paths tested
+
+
                     // TODO FIX NOW, this is broken and should be fixed.  
                     // We are hacking it here so we don't turn off the test completely.  
                     if (eventName == "DotNet/CLR.SKUOrVersion")
