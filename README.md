@@ -28,10 +28,12 @@ download PerfView using the instructions above and select the Help -> User's Gui
 ### Developer information
 
 This repository uses [AppVeyor](https://www.appveyor.com/) to automatically build and test pull requests, which allows
-the community to easily view build results. The build status reflected here is the AppVeyor build status of the
-**master** branch.
+the community to easily view build results. Code coverage is provided by [codecov.io](https://codecov.io). The build and
+coverage status reflected here is the AppVeyor build status of the **master** branch.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/fxtu3xa874whk2w0?svg=true)](https://ci.appveyor.com/project/sharwell/perfview)
+
+[![codecov](https://codecov.io/gh/Microsoft/perfview/branch/master/graph/badge.svg)](https://codecov.io/gh/Microsoft/perfview)
 
 > :warning: Builds produced by AppVeyor are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
