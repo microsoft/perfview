@@ -93,16 +93,21 @@ namespace Microsoft.Diagnostics.Tracing
                     if (!ProcessOneFile())
                     {
                         OnCompleted();
+                        Debug.Assert(sessionEndTimeQPC != long.MaxValue);       // Not a real time session
                         return false;
                     }
                 }
                 OnCompleted();
+                Debug.Assert(sessionEndTimeQPC != long.MaxValue);       // Not a real time session
                 return true;
             }
             else
             {
                 var ret = ProcessOneFile();
-                OnCompleted();
+
+                // If the session is real time, set he sessionEndTime (since the session is stopping).  
+                if (sessionEndTimeQPC == long.MaxValue)
+                    sessionEndTimeQPC = QPCTime.GetUTCTimeAsQPC(DateTime.UtcNow); OnCompleted();
                 return ret;
             }
         }
