@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -15,6 +16,8 @@
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <LangVersion>6</LangVersion>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -38,13 +41,20 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <Private>True</Private>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="Microsoft.Diagnostics.Runtime, Version=0.8.31.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -119,12 +129,11 @@
     </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets'))" />
+    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

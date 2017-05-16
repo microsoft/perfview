@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="2.5">
     <id>PerfView.SupportFiles</id>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <title>Non-Source files needed to Build PerfView</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>

@@ -1,5 +1,9 @@
 REM copies from an existing build to a nuget package creation area (so that *.MakeNuget.bat works)
-xcopy /s ..\PerfView\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.1\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
+REM
+REM *** This is mostly a template for doing the copy.      ****  
+REM *** Most likey you want this to be the current version ****
+REM 
+xcopy /s ..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\amd64\KernelTraceControl.dll

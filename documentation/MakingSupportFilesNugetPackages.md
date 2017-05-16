@@ -26,10 +26,15 @@ Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.0.
 
 ## Step 1 populate binaries you are not updating
 
-
 It is likely that you only need to update a subset of all the DLLs in the package.  Thus you
-need to start with an existing set.  You can do this by running the PerfView.SupportFiles.Populate.bat
-script.  This will copy all the files out of the 'packages' directory to form a baseline.  
+need to start with an existing set.  You can do this by running editing and running the 
+PerfView.SupportFiles.Populate.bat script.  
+
+1.  First look in packages directory to see what the latest version is and modify 
+    the PerfView.SupportFiles.Populate.bat copy from that.   
+2.  Then you can run the batch file.   This copies that files you are currently using
+    to form a baseline for the new package.
+
 This batch script also has a list of the files it is going to copy so that even if you don't
 have the existing nuget package, you can populate the new package 'by hand' from 'raw' files.
 
@@ -43,6 +48,6 @@ is to update the version number in the PerfView.SupportFiles.nuspec file.
 There is a script called PerfView.SupportFiles.MakeNuget.bat which does this.  It is a one line
 script, and generates a new *.nupkg in the current directory.  
 
-## Step 4 Upload to https://www.nuget.org/
+## Step 4 Upload to [Nuget.org](https://www.nuget.org/)
 
 Simply go to https://www.nuget.org/ log in, and follow the instructions on the 'Upload Package' link.
