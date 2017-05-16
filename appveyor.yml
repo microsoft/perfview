@@ -19,5 +19,5 @@ build:
 cache:
   - packages -> **\packages.config
 artifacts:
-- path: 'src\PerfView\bin\Release\PerfView.exe'
-- path: 'src\PerfView64\bin\Release\PerfView64.exe'
+- path: 'src\PerfView\bin\$(configuration)\PerfView.exe'
+- path: 'src\PerfView64\bin\$(configuration)\PerfView64.exe'
