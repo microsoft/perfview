@@ -141,9 +141,9 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
                 // Fix up the count by the number of entries we remove.  
                 while (entry != null)
                 {
+                    entry.skipAhead = null;     // Throw away optimization data.
                     --count;
                     entry = entry.next;
-                    entry.skipAhead = null;     // Throw away optimization data.
                 }
                 entries.Remove((long)id);
             }
