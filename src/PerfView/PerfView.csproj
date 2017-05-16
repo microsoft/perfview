@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props" Condition="Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" />
+  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -32,6 +34,8 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <LangVersion>6</LangVersion>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -72,16 +76,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <Private>True</Private>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Interop.Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.1\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+    </Reference>
+    <Reference Include="OSExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
     </Reference>
     <Reference Include="ReachFramework" />
     <Reference Include="System" />
@@ -98,6 +108,10 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="TraceReloggerLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\TraceReloggerLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -409,49 +423,49 @@
     <None Include="SupportFiles\Eula.rtf" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\x86\msdia140.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\msdia140.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)x86\sd.exe">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\sd.exe</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)x86\KernelTraceControl.Win61.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)arm\KernelTraceControl.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)amd64\msdia140.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="CopyTraceEventNativeBinariesToOutDir" BeforeTargets="Build">
-    <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86" />
-    <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
-    <Copy SourceFiles="..\TraceEvent\$(OutDir)x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
-    <Copy SourceFiles="..\TraceEvent\$(OutDir)amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
+    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86" />
+    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
+    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
+    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
   </Target>
   <ItemGroup>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
@@ -509,32 +523,32 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)x86\DiagnosticsHub.Packaging.dll">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)x86\DiagnosticsHub.Packaging.Interop.dll">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.Interop.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)Microsoft.Diagnostics.Tracing.EventSource.dll">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.Diagnostics.Tracing.EventSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\OSExtensions.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\OSExtensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)\Interop.Dia2Lib.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\Interop.Dia2Lib.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
@@ -715,12 +729,12 @@ REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
   <PropertyGroup>
     <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(ProjectDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
   </PropertyGroup>
-  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.1\build\PerfView.SupportFiles.targets'))" />
+    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

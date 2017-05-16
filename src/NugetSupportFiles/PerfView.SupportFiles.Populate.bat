@@ -1,6 +1,6 @@
 REM copies from an existing build to a nuget package creation area (so that *.MakeNuget.bat works)
-xcopy /s /y ..\PerfView\packages\PerfView.SupportFiles.1.0.1\*.dll PerfView.SupportFiles
-xcopy /s /y ..\PerfView\packages\PerfView.SupportFiles.1.0.1\*.exe PerfView.SupportFiles
+xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.1\*.dll PerfView.SupportFiles
+xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.1\*.exe PerfView.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\x86\DiagnosticsHub.Packaging.dll
