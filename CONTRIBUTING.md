@@ -73,7 +73,4 @@ You can run these tests in Visual Studio by selecting the Test -> Run -> All Tes
 These tests need to be run on the DEBUG configuration (that is with asserts) for them to 
 have really good effectiveness (the code has lots of asserts).   
 
-In particular if you see a warning when running the ETW_GeneralParsing_Basic test that is 
-an indication that did not run on a DEBUG build. 
-
 The tests should run in less than 1 minute total.   

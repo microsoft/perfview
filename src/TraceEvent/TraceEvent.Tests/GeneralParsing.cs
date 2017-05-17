@@ -1,15 +1,14 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing;
 using System.Diagnostics;
 using System.Text;
 using System.Collections.Generic;
+using Xunit;
 
 namespace TraceEventTests
 {
-    [TestClass]
     public class GeneralParsing
     {
         static string OriginalBaselineDir = FindInputDir();
@@ -58,7 +57,7 @@ namespace TraceEventTests
                 }
                 else
                     Trace.WriteLine(string.Format("using cached ETL file {0}", etlFilePath));
-                Assert.IsTrue(File.Exists(etlFilePath));
+                Assert.True(File.Exists(etlFilePath));
             }
             Trace.WriteLine("Finished unzipping data");
             s_fileUnzipped = true;
@@ -70,12 +69,11 @@ namespace TraceEventTests
         /// and insures that no more than .1% of the events are 
         /// </summary>
 
-        [DeploymentItem(@"inputs\", "inputs")]
-        [TestMethod]
+        [Fact]
         public void ETW_GeneralParsing_Basic()
         {
             Trace.WriteLine("In ETW_General_Basic");
-            Assert.IsTrue(Directory.Exists(TestDataDir));
+            Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
@@ -264,14 +262,11 @@ namespace TraceEventTests
                     Trace.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
                 // If this fires, check the output for the TraceLine just before it for more details.  
-                Assert.IsFalse(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
-                Assert.IsTrue(lineNum > 0);     // We had some events.  
+                Assert.False(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
+                Assert.True(lineNum > 0);     // We had some events.  
 
             }
-            Assert.IsFalse(anyFailure, "Check trace output for details.  Search for ERROR");
-#if !DEBUG
-            Assert.Inconclusive("Run with Debug build to get Thorough testing.");
-#endif
+            Assert.False(anyFailure, "Check trace output for details.  Search for ERROR");
         }
 
         private static int IncCount(SortedDictionary<string, int> histogram, string eventName)
@@ -311,7 +306,7 @@ namespace TraceEventTests
                     valueStr = (data.PayloadString(i));
 
                 // To debug this set first chance exeption handing before calling PayloadString above.
-                Assert.IsFalse(valueStr.Contains("EXCEPTION_DURING_VALUE_LOOKUP"), "Exception during event Payload Processing");
+                Assert.False(valueStr.Contains("EXCEPTION_DURING_VALUE_LOOKUP"), "Exception during event Payload Processing");
 
                 // Keep the value size under control and remove newlines.  
                 if (valueStr.Length > 20)
