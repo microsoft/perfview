@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Collections.Generic;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
@@ -15,6 +16,13 @@ namespace TraceEventTests
         static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
+
+        private readonly ITestOutputHelper _output;
+
+        public GeneralParsing(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         /// <summary>
         ///  Tries to find the original place in the source base where input data comes from 
@@ -72,13 +80,13 @@ namespace TraceEventTests
         [Fact]
         public void ETW_GeneralParsing_Basic()
         {
-            Trace.WriteLine("In ETW_General_Basic");
+            _output.WriteLine("In ETW_General_Basic");
             Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
             Directory.CreateDirectory(OutputDir);
-            Trace.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            _output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
 
             bool anyFailure = false;
             foreach (var etlFilePath in Directory.EnumerateFiles(UnZippedDataDir, "*.etl"))
@@ -87,7 +95,7 @@ namespace TraceEventTests
                 if (!etlFilePath.EndsWith("etl", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Trace.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
+                _output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
                 string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
                 // See if we have a cooresponding baseline file 
@@ -102,11 +110,11 @@ namespace TraceEventTests
                     baselineFile = File.OpenText(baselineName);
                 else
                 {
-                    Trace.WriteLine("WARNING: No baseline file");
-                    Trace.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
-                    Trace.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
-                    Trace.WriteLine("To Create a baseline file");
-                    Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                    _output.WriteLine("WARNING: No baseline file");
+                    _output.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
+                    _output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
+                    _output.WriteLine("To Create a baseline file");
+                    _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
                         Path.GetFullPath(outputName),
                         Path.GetFullPath(baselineName)
                         ));
@@ -183,18 +191,18 @@ namespace TraceEventTests
                         {
                             firstFailLineNum = lineNum;
                             anyFailure = true;
-                            Trace.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
-                            Trace.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
-                            Trace.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
+                            _output.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
+                            _output.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
+                            _output.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
 
-                            Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                            Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                            _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                            _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
                                 Path.GetFullPath(outputName),
                                 Path.GetFullPath(baselineName)
                                 ));
 
-                            Trace.WriteLine("To Update baseline file");
-                            Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                            _output.WriteLine("To Update baseline file");
+                            _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
                                 Path.GetFullPath(outputName),
                                 Path.Combine(OriginalBaselineDir, Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt")
                                 ));
@@ -211,7 +219,7 @@ namespace TraceEventTests
                             eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
                             eventName != "Windows Kernel/SysConfig/Opcode(37)")
                         {
-                            Trace.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
+                            _output.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
                                 etlFilePath, eventName, data.TimeStampRelativeMSec));
 
                             // Assert throws an exception which gets swallowed in Process() so instead
@@ -239,17 +247,17 @@ namespace TraceEventTests
                     if (!histogramMismatch && expectedistogramLine != histogramLine)
                     {
                         histogramMismatch = true;
-                        Trace.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
-                        Trace.WriteLine(string.Format("   Expected: {0}", histogramLine));
-                        Trace.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
+                        _output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
+                        _output.WriteLine(string.Format("   Expected: {0}", histogramLine));
+                        _output.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
 
-                        Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                        Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                        _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                        _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
                             Path.GetFullPath(outputName),
                             Path.GetFullPath(baselineName)
                             ));
-                        Trace.WriteLine("To Update baseline file");
-                        Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                        _output.WriteLine("To Update baseline file");
+                        _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
                             Path.GetFullPath(outputName),
                             Path.GetFullPath(baselineName)
                             ));
@@ -259,7 +267,7 @@ namespace TraceEventTests
 
                 outputFile.Close();
                 if (mismatchCount > 0)
-                    Trace.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
+                    _output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
                 // If this fires, check the output for the TraceLine just before it for more details.  
                 Assert.False(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
