@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using System.IO;
-using System.IO.Compression2;
+using System.IO.Compression;
 
 namespace ETLStackBrowse
 {
@@ -784,7 +784,7 @@ namespace ETLStackBrowse
                             currentSegmentOffset = offset;
                             cbScratch = 0;
 
-                            gstm = new GZipStream(src, CompressionMode.Decompress, true);
+                            gstm = new GZipStream(src, CompressionMode.Decompress, leaveOpen: true);
 
                             while (offset > 0)
                             {
@@ -889,15 +889,12 @@ namespace ETLStackBrowse
 
                         currentSegment++;
                         currentSegmentOffset = 0;
+                        gstm.Close();
+                        gstm = null;
                         if (currentSegment < offsets.Count)
                         {
                             src.Seek(offsets[currentSegment], SeekOrigin.Begin);
-                            gstm.Recycle();
-                        }
-                        else
-                        {
-                            gstm.Close();
-                            gstm = null;
+                            gstm = new GZipStream(src, CompressionMode.Decompress, leaveOpen: true);
                         }
                     }
                 }

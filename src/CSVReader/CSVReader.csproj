@@ -46,30 +46,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ETLStackBrowse\Trace.cs" />
     <Compile Include="ETLStackBrowse\TraceInterface.cs" />
-    <Compile Include="ETLStackBrowse\ZL\BlockType.cs" />
-    <Compile Include="ETLStackBrowse\ZL\compressionmode.cs" />
-    <Compile Include="ETLStackBrowse\ZL\CompressionTracing.cs" />
-    <Compile Include="ETLStackBrowse\ZL\CopyEncoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\DeflateInput.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Deflater.cs" />
-    <Compile Include="ETLStackBrowse\ZL\deflatestream.cs" />
-    <Compile Include="ETLStackBrowse\ZL\DeflateStreamAsyncResult.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoderStatics.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoderWindow.cs" />
-    <Compile Include="ETLStackBrowse\ZL\fileformats.cs" />
-    <Compile Include="ETLStackBrowse\ZL\gzipdecoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\gzipstream.cs" />
-    <Compile Include="ETLStackBrowse\ZL\GZipUtils.cs" />
-    <Compile Include="ETLStackBrowse\ZL\HuffmanTree.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Inflater.cs" />
-    <Compile Include="ETLStackBrowse\ZL\InflaterState.cs" />
-    <Compile Include="ETLStackBrowse\ZL\inputbuffer.cs" />
-    <Compile Include="ETLStackBrowse\ZL\InvalidDataException.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Match.cs" />
-    <Compile Include="ETLStackBrowse\ZL\MatchState.cs" />
-    <Compile Include="ETLStackBrowse\ZL\OutputBuffer.cs" />
-    <Compile Include="ETLStackBrowse\ZL\OutputWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TraceEvent\TraceEvent.csproj">
