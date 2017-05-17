@@ -73,7 +73,6 @@ namespace PerfView
             if (args.CommandLine != null)
             {
                 CommandToRunTextBox.Text = args.CommandLine;
-                // CommandToRunTextBox.SelectAll();
             }
 
             DataFileNameTextBox.Text = args.DataFile;
@@ -310,7 +309,10 @@ namespace PerfView
                         StringBuilder sb = new StringBuilder();
                         foreach (string item in CommandToRunTextBox.Items)
                         {
-                            if (item != "")
+                            // Since we save the Run history as a single string using ";" as a separator,
+                            // we choose not to save any item that contains a ";". If this is a real problem,
+                            // perhaps we can store a set of strings instead of a single string.
+                            if ((item != "") && !item.Contains(";"))
                             {
                                 if (sb.Length != 0)
                                     sb.Append(';');
