@@ -42,7 +42,7 @@
         <TextBlock Grid.Row="1" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The command line of the process to run while collecting data.">
                 <Hyperlink Command="Help" CommandParameter="CommandToRunTextBox">Command:</Hyperlink>
         </TextBlock>
-        <TextBox  Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1"  Name="CommandToRunTextBox" VerticalAlignment="Center" KeyDown="CommandToRunKeyDown"  />
+        <controls:HistoryComboBox Grid.Row="1" Margin="0,5,0,0"  Grid.Column="1" x:Name="CommandToRunTextBox" VerticalAlignment="Center" KeyDown="CommandToRunKeyDown"  />
 
         <TextBlock Grid.Row="2" Grid.Column="0" Margin="5,0" VerticalAlignment="Center" KeyboardNavigation.IsTabStop="False" ToolTip="The name of the data file to create." >
             <Hyperlink Command="Help" CommandParameter="DataFileNameTextBox">Data File:</Hyperlink>
