@@ -157,7 +157,6 @@ namespace LinuxTracing.Tests
 				});
 		}
 
-		[Fact(Skip = "Fails non-deteministically with file access issue")]
 		public void NonSchedHeader()
 		{
 			string path = Constants.GetTestingPerfDumpPath("onegeneric");
