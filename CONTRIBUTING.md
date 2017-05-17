@@ -69,7 +69,7 @@ See [PerfView Coding Standards](documentation/CodingStandards.md).
 ## Testing and Contributing tests
 
 There are a number of *.Test projects that are unit tests that need to be run before checking in.
-You can run these tests in visual studio by selecting the Test -> Run -> All Tests menu entry.
+You can run these tests in Visual Studio by selecting the Test -> Run -> All Tests menu entry.
 These tests need to be run on the DEBUG configuration (that is with asserts) for them to 
 have really good effectiveness (the code has lots of asserts).   
 

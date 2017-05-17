@@ -21,31 +21,30 @@ by a '#region private' grouping.   This makes Visual Studio's
 outlining feature (Ctrl-M Ctrl-O) collapse things so that you 
 only see the public contract for the class.  
 
-
 2. Public methods should be ordered so that constructors or other
-'generators' are first, then properties then methods. 
+'generators' are first, then properties, then methods.
 
 3. To the degree possible the most important/common methods should
 come first in the class, and methods that are used together 
 should be near each other.   
 
-4. Fields should be private and placed TOGETHER LAST in the class 
-(In the #region private).   That makes it relatively easy for 
-developer to find all the state in an object (since that is what
-really defines its semantics.  
-       
+4. Fields should be private and placed TOGETHER, LAST in the class 
+(in the #region private).   That makes it relatively easy for 
+developers to find all the state in an object (since that is what
+really defines its semantics).
+
 ## Naming conventions
 
-1. We follow standard .NET Naming conventions (PascalCase for Types
-       methods and properties, camelCase for parameters and local variables)
+1. We follow standard .NET Naming conventions (PascalCase for types,
+   methods, and properties; camelCase for parameters and local variables)
 
-2. Private instance field names begin with a m_ (member).   It is also 
-       acceptable to use the class library convention of omitting the m (thus prefix
-       instance fields begin with _) If the field is static the prefix is s_.   
-       Embedding the type in the variable (Hungarian notation) is NOT used.
+2. Private instance field names begin with a `m_` (member).   It is also 
+   acceptable to use the class library convention of omitting the m (thus prefix
+   instance fields begin with `_`) If the field is static the prefix is `s_`.
+   Embedding the type in the variable (Hungarian notation) is NOT used.
 
 3. Pick descriptive names. Visual Studio makes it easy to rename a 
-       variable so fix the name if it 'morphed' as the code was written. 
+   variable so fix the name if it 'morphed' as the code was written. 
 
 ## Minimum Commenting
 
