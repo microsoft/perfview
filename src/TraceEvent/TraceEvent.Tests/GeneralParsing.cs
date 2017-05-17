@@ -92,7 +92,7 @@ namespace TraceEventTests
         [MemberData(nameof(TestEtlFiles))]
         public void ETW_GeneralParsing_Basic(string etlFileName)
         {
-            _output.WriteLine("In ETW_General_Basic");
+            _output.WriteLine($"In {nameof(ETW_GeneralParsing_Basic)}(\"{etlFileName}\")");
             Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
