@@ -64,11 +64,17 @@ namespace PerfView
             m_mainWindow = mainWindow;
 
             CurrentDirTextBox.Text = Environment.CurrentDirectory;
+
+            // Initialize the CommandToRun history if available. 
+            var commandToRunHistory = App.ConfigData["CommandToRunHistory"];
+            if (commandToRunHistory != null)
+                CommandToRunTextBox.SetHistory(commandToRunHistory.Split(';'));
+
             if (args.CommandLine != null)
             {
                 CommandToRunTextBox.Text = args.CommandLine;
-                CommandToRunTextBox.SelectAll();
             }
+
             DataFileNameTextBox.Text = args.DataFile;
             RundownTimeoutTextBox.Text = args.RundownTimeout.ToString();
             SampleIntervalTextBox.Text = args.CpuSampleMSec.ToString();
@@ -295,7 +301,28 @@ namespace PerfView
                 }
 
                 if (!m_isCollect)
+                {
                     m_args.CommandLine = CommandToRunTextBox.Text;
+
+                    if (CommandToRunTextBox.AddToHistory(m_args.CommandLine))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (string item in CommandToRunTextBox.Items)
+                        {
+                            // Since we save the Run history as a single string using ";" as a separator,
+                            // we choose not to save any item that contains a ";". If this is a real problem,
+                            // perhaps we can store a set of strings instead of a single string.
+                            if ((item != "") && !item.Contains(";"))
+                            {
+                                if (sb.Length != 0)
+                                    sb.Append(';');
+                                sb.Append(item);
+                            }
+                        }
+                        App.ConfigData["CommandToRunHistory"] = sb.ToString();
+                    }
+                }
+
                 m_args.DataFile = DataFileNameTextBox.Text;
 
                 if (!int.TryParse(RundownTimeoutTextBox.Text, out m_args.RundownTimeout))
