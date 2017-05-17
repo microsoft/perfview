@@ -116,7 +116,7 @@ namespace TraceEventTests
                 int firstFailLineNum = 0;
                 int mismatchCount = 0;
                 int lineNum = 0;
-                var histogram = new SortedDictionary<string, int>();
+                var histogram = new SortedDictionary<string, int>(StringComparer.Ordinal);
 
                 // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during developent of test itself
                 TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(etlFilePath));
