@@ -64,11 +64,18 @@ namespace PerfView
             m_mainWindow = mainWindow;
 
             CurrentDirTextBox.Text = Environment.CurrentDirectory;
+
+            // Initialize the CommandToRun history if available. 
+            var commandToRunHistory = App.ConfigData["CommandToRunHistory"];
+            if (commandToRunHistory != null)
+                CommandToRunTextBox.SetHistory(commandToRunHistory.Split(';'));
+
             if (args.CommandLine != null)
             {
                 CommandToRunTextBox.Text = args.CommandLine;
-                CommandToRunTextBox.SelectAll();
+                // CommandToRunTextBox.SelectAll();
             }
+
             DataFileNameTextBox.Text = args.DataFile;
             RundownTimeoutTextBox.Text = args.RundownTimeout.ToString();
             SampleIntervalTextBox.Text = args.CpuSampleMSec.ToString();
@@ -295,7 +302,25 @@ namespace PerfView
                 }
 
                 if (!m_isCollect)
+                {
                     m_args.CommandLine = CommandToRunTextBox.Text;
+
+                    if (CommandToRunTextBox.AddToHistory(m_args.CommandLine))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (string item in CommandToRunTextBox.Items)
+                        {
+                            if (item != "")
+                            {
+                                if (sb.Length != 0)
+                                    sb.Append(';');
+                                sb.Append(item);
+                            }
+                        }
+                        App.ConfigData["CommandToRunHistory"] = sb.ToString();
+                    }
+                }
+
                 m_args.DataFile = DataFileNameTextBox.Text;
 
                 if (!int.TryParse(RundownTimeoutTextBox.Text, out m_args.RundownTimeout))
