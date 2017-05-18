@@ -1,11 +1,13 @@
 ﻿using System;
-using System.IO;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing;
-using System.Diagnostics;
-using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
@@ -15,6 +17,13 @@ namespace TraceEventTests
         static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
+
+        private readonly ITestOutputHelper _output;
+
+        public GeneralParsing(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         /// <summary>
         ///  Tries to find the original place in the source base where input data comes from 
@@ -63,209 +72,214 @@ namespace TraceEventTests
             s_fileUnzipped = true;
         }
 
+        public static IEnumerable<object[]> TestEtlFiles
+        {
+            get
+            {
+                // The test data is contained in files of the same name, but with a .zip extension.
+                // Only the names are returned since the extracted files will be in a different directory.
+                return from file in Directory.EnumerateFiles(TestDataDir, "*.etl.zip")
+                       select new[] { Path.GetFileNameWithoutExtension(file) };
+            }
+        }
+
         /// <summary>
         /// This test simply scans all the events in the ETL.ZIP files in TestDataDir
         /// and scans them (so you should get asserts if there is parsing problem)
         /// and insures that no more than .1% of the events are 
         /// </summary>
-
-        [Fact]
-        public void ETW_GeneralParsing_Basic()
+        [Theory]
+        [MemberData(nameof(TestEtlFiles))]
+        public void ETW_GeneralParsing_Basic(string etlFileName)
         {
-            Trace.WriteLine("In ETW_General_Basic");
+            _output.WriteLine($"In {nameof(ETW_GeneralParsing_Basic)}(\"{etlFileName}\")");
             Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
             Directory.CreateDirectory(OutputDir);
-            Trace.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            _output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
 
+            string etlFilePath = Path.Combine(UnZippedDataDir, etlFileName);
             bool anyFailure = false;
-            foreach (var etlFilePath in Directory.EnumerateFiles(UnZippedDataDir, "*.etl"))
+            _output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
+            string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
+
+            // See if we have a cooresponding baseline file 
+            string baselineName = Path.Combine(Path.GetFullPath(TestDataDir),
+                Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
+            string outputName = Path.Combine(OutputDir,
+                Path.GetFileNameWithoutExtension(etlFilePath) + ".txt");
+            TextWriter outputFile = File.CreateText(outputName);
+
+            StreamReader baselineFile = null;
+            if (File.Exists(baselineName))
+                baselineFile = File.OpenText(baselineName);
+            else
             {
-                // *.etl includes *.etlx (don't know why), filter those out.   
-                if (!etlFilePath.EndsWith("etl", StringComparison.OrdinalIgnoreCase))
-                    continue;
+                _output.WriteLine("WARNING: No baseline file");
+                _output.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
+                _output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
+                _output.WriteLine("To Create a baseline file");
+                _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                    Path.GetFullPath(outputName),
+                    Path.GetFullPath(baselineName)
+                    ));
+            }
 
-                Trace.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
-                string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
+            bool unexpectedUnknownEvent = false;
+            int firstFailLineNum = 0;
+            int mismatchCount = 0;
+            int lineNum = 0;
+            var histogram = new SortedDictionary<string, int>(StringComparer.Ordinal);
 
-                // See if we have a cooresponding baseline file 
-                string baselineName = Path.Combine(Path.GetFullPath(TestDataDir),
-                    Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
-                string outputName = Path.Combine(OutputDir,
-                    Path.GetFileNameWithoutExtension(etlFilePath) + ".txt");
-                TextWriter outputFile = File.CreateText(outputName);
+            // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during developent of test itself
+            TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(etlFilePath));
 
-                StreamReader baselineFile = null;
-                if (File.Exists(baselineName))
-                    baselineFile = File.OpenText(baselineName);
-                else
+            var traceSource = traceLog.Events.GetSource();
+            traceSource.AllEvents += delegate (TraceEvent data)
+            {
+                string eventName = data.ProviderName + "/" + data.EventName;
+
+                // We are going to skip dynamic events from the CLR provider.
+                // The issue is that this depends on exactly which manifest is present
+                // on the machine, and I just don't want to deal with the noise of 
+                // failures because you have a slightly different one.   
+                if (data.ProviderName == "DotNet")
+                    return;
+
+                // We don't want to use the manifest for CLR Private events since 
+                // different machines might have different manifests.  
+                if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
                 {
-                    Trace.WriteLine("WARNING: No baseline file");
-                    Trace.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
-                    Trace.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
-                    Trace.WriteLine("To Create a baseline file");
-                    Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                    if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
+                        return;
+                }
+                // Same problem with classic OS events.   We don't want to rely on the OS to parse since this could vary between baseline and test. 
+                else if (data.ProviderName == "MSNT_SystemTrace")
+                {
+                    // However we to allow a couple of 'known good' ones through so we test some aspects of the OS parsing logic in TraceEvent.   
+                    if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
+                        return;
+                }
+                // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too agressive about 
+                // turning them off, however becasuse I want those code paths tested
+
+
+                // TODO FIX NOW, this is broken and should be fixed.  
+                // We are hacking it here so we don't turn off the test completely.  
+                if (eventName == "DotNet/CLR.SKUOrVersion")
+                    return;
+
+                int count = IncCount(histogram, eventName);
+
+                // To keep the baseline size under control, we only check at
+                // most 5 of each event type.  
+                const int MaxEventPerType = 5;
+
+                if (count > MaxEventPerType)
+                    return;
+
+                string parsedEvent = Parse(data);
+                lineNum++;
+                outputFile.WriteLine(parsedEvent);      // Make the new output file.
+
+                string expectedParsedEvent = null;
+                if (baselineFile != null)
+                    expectedParsedEvent = baselineFile.ReadLine();
+                if (expectedParsedEvent == null)
+                    expectedParsedEvent = "";
+
+                // If we have baseline, it should match what we have in the file.  
+                if (baselineFile != null && parsedEvent != expectedParsedEvent)
+                {
+                    mismatchCount++;
+                    if (firstFailLineNum == 0)
+                    {
+                        firstFailLineNum = lineNum;
+                        anyFailure = true;
+                        _output.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
+                        _output.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
+                        _output.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
+
+                        _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                        _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                            Path.GetFullPath(outputName),
+                            Path.GetFullPath(baselineName)
+                            ));
+
+                        _output.WriteLine("To Update baseline file");
+                        _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                            Path.GetFullPath(outputName),
+                            Path.Combine(OriginalBaselineDir, Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt")
+                            ));
+                    }
+                }
+
+                // Even if we don't have a baseline, we can check that the event names are OK.  
+                if (0 <= eventName.IndexOf('('))   // Unknown events have () in them 
+                {
+                    // Some expected events we don't handle today.   
+                    if (data.EventName != "EventID(65534)" &&       // Manifest events 
+                        data.ProviderName != "Microsoft-Windows-DNS-Client" &&
+                        eventName != "KernelTraceControl/ImageID/Opcode(34)" &&
+                        eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
+                        eventName != "Windows Kernel/SysConfig/Opcode(37)")
+                    {
+                        _output.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
+                            etlFilePath, eventName, data.TimeStampRelativeMSec));
+
+                        // Assert throws an exception which gets swallowed in Process() so instead
+                        // we remember that we failed and assert outside th callback.  
+                        unexpectedUnknownEvent = true;
+                    }
+                }
+            };
+
+            /********************* PROCESSING ***************************/
+            traceSource.Process();
+
+            // Validation after processing, first we check that the histograms are the same as the baseline
+
+            // We also want to check that the count of events is the same as the baseline. 
+            bool histogramMismatch = false;
+            foreach (var keyValue in histogram)
+            {
+                var histogramLine = "COUNT " + keyValue.Key + ":" + keyValue.Value;
+
+                outputFile.WriteLine(histogramLine);
+                var expectedistogramLine = baselineFile.ReadLine();
+                lineNum++;
+
+                if (!histogramMismatch && expectedistogramLine != histogramLine)
+                {
+                    histogramMismatch = true;
+                    _output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
+                    _output.WriteLine(string.Format("   Expected: {0}", histogramLine));
+                    _output.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
+
+                    _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                    _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
                         Path.GetFullPath(outputName),
                         Path.GetFullPath(baselineName)
                         ));
+                    _output.WriteLine("To Update baseline file");
+                    _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                        Path.GetFullPath(outputName),
+                        Path.GetFullPath(baselineName)
+                        ));
+                    anyFailure = true;
                 }
-
-                bool unexpectedUnknownEvent = false;
-                int firstFailLineNum = 0;
-                int mismatchCount = 0;
-                int lineNum = 0;
-                var histogram = new SortedDictionary<string, int>();
-
-                // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during developent of test itself
-                TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(etlFilePath));
-
-                var traceSource = traceLog.Events.GetSource();
-                traceSource.AllEvents += delegate (TraceEvent data)
-                {
-                    string eventName = data.ProviderName + "/" + data.EventName;
-
-                    // We are going to skip dynamic events from the CLR provider.
-                    // The issue is that this depends on exactly which manifest is present
-                    // on the machine, and I just don't want to deal with the noise of 
-                    // failures because you have a slightly different one.   
-                    if (data.ProviderName == "DotNet")
-                        return;
-
-                    // We don't want to use the manifest for CLR Private events since 
-                    // different machines might have different manifests.  
-                    if (data.ProviderName == "Microsoft-Windows-DotNETRuntimePrivate")
-                    {
-                        if (data.GetType().Name == "DynamicTraceEventData" || data.EventName.StartsWith("EventID"))
-                            return;
-                    }
-                    // Same problem with classic OS events.   We don't want to rely on the OS to parse since this could vary between baseline and test. 
-                    else if (data.ProviderName == "MSNT_SystemTrace")
-                    {
-                        // However we to allow a couple of 'known good' ones through so we test some aspects of the OS parsing logic in TraceEvent.   
-                        if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
-                            return;
-                    }
-                    // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too agressive about 
-                    // turning them off, however becasuse I want those code paths tested
-
-
-                    // TODO FIX NOW, this is broken and should be fixed.  
-                    // We are hacking it here so we don't turn off the test completely.  
-                    if (eventName == "DotNet/CLR.SKUOrVersion")
-                        return;
-
-                    int count = IncCount(histogram, eventName);
-
-                    // To keep the baseline size under control, we only check at
-                    // most 5 of each event type.  
-                    const int MaxEventPerType = 5;
-
-                    if (count > MaxEventPerType)
-                        return;
-
-                    string parsedEvent = Parse(data);
-                    lineNum++;
-                    outputFile.WriteLine(parsedEvent);      // Make the new output file.
-
-                    string expectedParsedEvent = null;
-                    if (baselineFile != null)
-                        expectedParsedEvent = baselineFile.ReadLine();
-                    if (expectedParsedEvent == null)
-                        expectedParsedEvent = "";
-
-                    // If we have baseline, it should match what we have in the file.  
-                    if (baselineFile != null && parsedEvent != expectedParsedEvent)
-                    {
-                        mismatchCount++;
-                        if (firstFailLineNum == 0)
-                        {
-                            firstFailLineNum = lineNum;
-                            anyFailure = true;
-                            Trace.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
-                            Trace.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
-                            Trace.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
-
-                            Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                            Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                                Path.GetFullPath(outputName),
-                                Path.GetFullPath(baselineName)
-                                ));
-
-                            Trace.WriteLine("To Update baseline file");
-                            Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                                Path.GetFullPath(outputName),
-                                Path.Combine(OriginalBaselineDir, Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt")
-                                ));
-                        }
-                    }
-
-                    // Even if we don't have a baseline, we can check that the event names are OK.  
-                    if (0 <= eventName.IndexOf('('))   // Unknown events have () in them 
-                    {
-                        // Some expected events we don't handle today.   
-                        if (data.EventName != "EventID(65534)" &&       // Manifest events 
-                            data.ProviderName != "Microsoft-Windows-DNS-Client" &&
-                            eventName != "KernelTraceControl/ImageID/Opcode(34)" &&
-                            eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
-                            eventName != "Windows Kernel/SysConfig/Opcode(37)")
-                        {
-                            Trace.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
-                                etlFilePath, eventName, data.TimeStampRelativeMSec));
-
-                            // Assert throws an exception which gets swallowed in Process() so instead
-                            // we remember that we failed and assert outside th callback.  
-                            unexpectedUnknownEvent = true;
-                        }
-                    }
-                };
-
-                /********************* PROCESSING ***************************/
-                traceSource.Process();
-
-                // Validation after processing, first we check that the histograms are the same as the baseline
-
-                // We also want to check that the count of events is the same as the baseline. 
-                bool histogramMismatch = false;
-                foreach (var keyValue in histogram)
-                {
-                    var histogramLine = "COUNT " + keyValue.Key + ":" + keyValue.Value;
-
-                    outputFile.WriteLine(histogramLine);
-                    var expectedistogramLine = baselineFile.ReadLine();
-                    lineNum++;
-
-                    if (!histogramMismatch && expectedistogramLine != histogramLine)
-                    {
-                        histogramMismatch = true;
-                        Trace.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
-                        Trace.WriteLine(string.Format("   Expected: {0}", histogramLine));
-                        Trace.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
-
-                        Trace.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                        Trace.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                            Path.GetFullPath(outputName),
-                            Path.GetFullPath(baselineName)
-                            ));
-                        Trace.WriteLine("To Update baseline file");
-                        Trace.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                            Path.GetFullPath(outputName),
-                            Path.GetFullPath(baselineName)
-                            ));
-                        anyFailure = true;
-                    }
-                }
-
-                outputFile.Close();
-                if (mismatchCount > 0)
-                    Trace.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
-
-                // If this fires, check the output for the TraceLine just before it for more details.  
-                Assert.False(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
-                Assert.True(lineNum > 0);     // We had some events.  
-
             }
+
+            outputFile.Close();
+            if (mismatchCount > 0)
+                _output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
+
+            // If this fires, check the output for the TraceLine just before it for more details.  
+            Assert.False(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
+            Assert.True(lineNum > 0);     // We had some events.  
+
             Assert.False(anyFailure, "Check trace output for details.  Search for ERROR");
         }
 
