@@ -3,6 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:src="clr-namespace:Controls"
         Closing="Window_Closing" 
-        Title="TextEditorWindow" Height="448" Width="758">
+        Title="TextEditorWindow" Height="900" Width="1300">
     <src:TextEditorControl x:Name="m_TextEditor"/>
 </Window>
