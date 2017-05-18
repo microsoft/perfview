@@ -10,11 +10,28 @@ init:
 configuration:
 - Debug
 - Release
+environment:
+  matrix:
+    - image_flag: 2015
+    - image_flag: 2017
+matrix:
+  exclude:
+    - image: Visual Studio 2015
+      image_flag: 2017
+    - image: Visual Studio 2017
+      image_flag: 2015
 before_build:
 - nuget restore
 build:
   project: PerfView.sln
   verbosity: minimal
+test_script:
+- .\packages\OpenCover.4.6.519\tools\OpenCover.Console.exe -register:user -target:"%xunit20%\xunit.console.x86.exe" -targetargs:"C:\projects\perfview\src\LinuxEvent.Tests\bin\%configuration%\LinuxTracing.Tests.exe -noshadow -appveyor" -threshold:1 -oldStyle -returntargetcode -filter:+[*]* -excludebyattribute:*.ExcludeFromCodeCoverage* -excludebyfile:*\*Designer.cs -hideskipped:All -output:.\PerfView_coverage.xml
+- .\packages\OpenCover.4.6.519\tools\OpenCover.Console.exe -register:user -target:"%xunit20%\xunit.console.x86.exe" -targetargs:"C:\projects\perfview\src\TraceEvent\Ctf\CtfTracing.Tests\bin\%configuration%\Tests.dll -noshadow -appveyor" -threshold:1 -oldStyle -returntargetcode -filter:+[*]* -excludebyattribute:*.ExcludeFromCodeCoverage* -excludebyfile:*\*Designer.cs -hideskipped:All -mergeoutput -output:.\PerfView_coverage.xml
+- .\packages\OpenCover.4.6.519\tools\OpenCover.Console.exe -register:user -target:"%xunit20%\xunit.console.x86.exe" -targetargs:"C:\projects\perfview\src\TraceEvent\TraceEvent.Tests\bin\%configuration%\TraceEventTests.dll -noshadow -appveyor" -threshold:1 -oldStyle -returntargetcode -filter:+[*]* -excludebyattribute:*.ExcludeFromCodeCoverage* -excludebyfile:*\*Designer.cs -hideskipped:All -mergeoutput -output:.\PerfView_coverage.xml
+- "SET PATH=C:\\Python34;C:\\Python34\\Scripts;%PATH%"
+- pip install codecov
+- codecov -n "VS%image_flag% %configuration%" -f "PerfView_coverage.xml" -F "%image_flag%,%configuration%"
 # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
 cache:
   - packages -> **\packages.config
