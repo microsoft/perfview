@@ -10,11 +10,26 @@ init:
 configuration:
 - Debug
 - Release
+environment:
+  matrix:
+    - image_flag: 2015
+    - image_flag: 2017
+matrix:
+  exclude:
+    - image: Visual Studio 2015
+      image_flag: 2017
+    - image: Visual Studio 2017
+      image_flag: 2015
 before_build:
 - nuget restore
 build:
   project: PerfView.sln
   verbosity: minimal
+test_script:
+- .\packages\OpenCover.4.6.519\tools\OpenCover.Console.exe -register:user -target:"vstest.console.exe" -targetargs:"/logger:Appveyor C:\projects\perfview\src\TraceEvent\Ctf\CtfTracing.Tests\bin\%configuration%\Tests.dll C:\projects\perfview\src\TraceEvent\TraceEvent.Tests\bin\%configuration%\TraceEventTests.dll" -returntargetcode -excludebyattribute:*.ExcludeFromCodeCoverage* -excludebyfile:*\*Designer.cs -hideskipped:All -output:.\PerfView_coverage.xml
+- "SET PATH=C:\\Python34;C:\\Python34\\Scripts;%PATH%"
+- pip install codecov
+- codecov -f "PerfView_coverage.xml" -F "%image_flag%,%configuration%"
 # preserve "packages" directory in the root of build folder but will reset it if packages.config is modified
 cache:
   - packages -> **\packages.config
