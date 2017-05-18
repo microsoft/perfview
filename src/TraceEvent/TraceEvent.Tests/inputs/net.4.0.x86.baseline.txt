@@ -488,6 +488,8 @@ COUNT KernelTraceControl/ImageID/None:25
 COUNT KernelTraceControl/ImageID/Opcode37:44
 COUNT KernelTraceControl/MetaData/EventInfo:6
 COUNT KernelTraceControl/MetaData/EventMapInfo:1
+COUNT MSNT_SystemTrace/Image/KernelBase:1
+COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-Windows-DNS-Client/EventID(1001):3
 COUNT Microsoft-Windows-DNS-Client/EventID(1019):1
 COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49110
@@ -551,8 +553,6 @@ COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_ENABLE:
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_REGISTER:43
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_UNREGISTER:39
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP:2
-COUNT MSNT_SystemTrace/Image/KernelBase:1
-COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT PerfView/ClrEnableParameters:2
 COUNT PerfView/CommandLineParameters:3
 COUNT PerfView/KernelEnableParameters:1
@@ -593,8 +593,8 @@ COUNT Windows Kernel/SystemConfig/CPU:1
 COUNT Windows Kernel/SystemConfig/IDEChannel:2
 COUNT Windows Kernel/SystemConfig/IRQ:13
 COUNT Windows Kernel/SystemConfig/LogDisk:1
-COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/NIC:3
+COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/PhyDisk:1
 COUNT Windows Kernel/SystemConfig/PnP:118
 COUNT Windows Kernel/SystemConfig/Power:1

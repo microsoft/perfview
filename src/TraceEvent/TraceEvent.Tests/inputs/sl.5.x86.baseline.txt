@@ -579,6 +579,8 @@ COUNT KernelTraceControl/ImageID/None:40
 COUNT KernelTraceControl/ImageID/Opcode37:96
 COUNT KernelTraceControl/MetaData/EventInfo:69
 COUNT KernelTraceControl/MetaData/EventMapInfo:24
+COUNT MSNT_SystemTrace/Image/KernelBase:1
+COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-JScript/MethodRundown/DCEndComplete:1
 COUNT Microsoft-JScript/MethodRundown/DCEndInit:1
 COUNT Microsoft-JScript/MethodRundown/DCStartComplete:1
@@ -600,7 +602,6 @@ COUNT Microsoft-Windows-DNS-Client/EventID(3018):2
 COUNT Microsoft-Windows-DNS-Client/EventID(3019):2
 COUNT Microsoft-Windows-DNS-Client/EventID(3020):2
 COUNT Microsoft-Windows-DotNETRuntime/AppDomainResourceManagement/ThreadCreated:4
-COUNT Microsoft-Windows-DotNETRuntime/GarbageCollection/IncreaseMemoryPressure:1
 COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:11438
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:2
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizeObject:22
@@ -613,6 +614,7 @@ COUNT Microsoft-Windows-DotNETRuntime/GC/Start:234
 COUNT Microsoft-Windows-DotNETRuntime/GC/Stop:234
 COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart:235
 COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop:235
+COUNT Microsoft-Windows-DotNETRuntime/GarbageCollection/IncreaseMemoryPressure:1
 COUNT Microsoft-Windows-DotNETRuntime/Loader/AppDomainLoad:2
 COUNT Microsoft-Windows-DotNETRuntime/Loader/AppDomainUnload:2
 COUNT Microsoft-Windows-DotNETRuntime/Loader/AssemblyLoad:9
@@ -668,8 +670,6 @@ COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_ENABLE:
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_REGISTER:74
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_UNREGISTER:66
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP:1
-COUNT MSNT_SystemTrace/Image/KernelBase:1
-COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT PerfView/ClrEnableParameters:2
 COUNT PerfView/CommandLineParameters:3
 COUNT PerfView/KernelEnableParameters:1
@@ -715,8 +715,8 @@ COUNT Windows Kernel/SysConfig/VolumeMapping:9
 COUNT Windows Kernel/SystemConfig/CPU:1
 COUNT Windows Kernel/SystemConfig/IDEChannel:2
 COUNT Windows Kernel/SystemConfig/LogDisk:1
-COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/NIC:3
+COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/PhyDisk:1
 COUNT Windows Kernel/SystemConfig/PnP:100
 COUNT Windows Kernel/SystemConfig/Power:1

@@ -941,6 +941,8 @@ COUNT KernelTraceControl/ImageID/Opcode(34):2
 COUNT KernelTraceControl/ImageID/Opcode37:4394
 COUNT KernelTraceControl/MetaData/EventInfo:153
 COUNT KernelTraceControl/MetaData/EventMapInfo:30
+COUNT MSNT_SystemTrace/Image/KernelBase:1
+COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-IE/Mshtml_CMarkup_Layout/Start:1056
 COUNT Microsoft-IE/Mshtml_CMarkup_Layout/Stop:1056
 COUNT Microsoft-IE/Mshtml_CWindow_Script/Start:45
@@ -1015,7 +1017,6 @@ COUNT Microsoft-Windows-DNS-Client/DnsServerForInterface:2
 COUNT Microsoft-Windows-DotNETRuntime/AppDomainResourceManagement/ThreadCreated:16
 COUNT Microsoft-Windows-DotNETRuntime/Contention/Start:1
 COUNT Microsoft-Windows-DotNETRuntime/Contention/Stop:1
-COUNT Microsoft-Windows-DotNETRuntime/GarbageCollection/IncreaseMemoryPressure:5
 COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:52713
 COUNT Microsoft-Windows-DotNETRuntime/GC/BulkSurvivingObjectRanges:202
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:4
@@ -1035,6 +1036,7 @@ COUNT Microsoft-Windows-DotNETRuntime/GC/Stop:1050
 COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart:1052
 COUNT Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop:1052
 COUNT Microsoft-Windows-DotNETRuntime/GC/Triggered:1050
+COUNT Microsoft-Windows-DotNETRuntime/GarbageCollection/IncreaseMemoryPressure:5
 COUNT Microsoft-Windows-DotNETRuntime/IOThreadCreation/Start:7
 COUNT Microsoft-Windows-DotNETRuntime/IOThreadCreation/Stop:6
 COUNT Microsoft-Windows-DotNETRuntime/IOThreadRetirement/Stop:1
@@ -1090,8 +1092,6 @@ COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_ENABLE:
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_REGISTER:98
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_PROVIDER/ETW_OPCODE_UNREGISTER:113
 COUNT Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP:1
-COUNT MSNT_SystemTrace/Image/KernelBase:1
-COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT PerfView/ClrEnableParameters:1
 COUNT PerfView/CommandLineParameters:3
 COUNT PerfView/ManifestData:3
@@ -1154,8 +1154,8 @@ COUNT Windows Kernel/SysConfig/VolumeMapping:9
 COUNT Windows Kernel/SystemConfig/CPU:1
 COUNT Windows Kernel/SystemConfig/IDEChannel:2
 COUNT Windows Kernel/SystemConfig/LogDisk:1
-COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/NIC:3
+COUNT Windows Kernel/SystemConfig/Network:1
 COUNT Windows Kernel/SystemConfig/PhyDisk:1
 COUNT Windows Kernel/SystemConfig/PnP:100
 COUNT Windows Kernel/SystemConfig/Power:1
