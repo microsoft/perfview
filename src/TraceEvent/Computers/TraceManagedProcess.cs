@@ -1010,6 +1010,59 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             finalizationCount + 1 :
                             1;
                 };
+
+                source.Clr.TypeBulkType += data =>
+                {
+                    var stats = currentManagedProcess(data);
+                    var typeMapping = stats.GC.m_stats.TypeMapping;
+
+                    var clonedData = data;
+                    clonedData = (GCBulkTypeTraceData)clonedData.Clone();
+
+                    var count = clonedData.Count;
+                    for (int i = 0; i < count; i++)
+                    {
+                        var bulkTypeValues = clonedData.Values(i);
+                        var typeId = bulkTypeValues.TypeID;
+                        if (typeMapping.ContainsKey(typeId))
+                            continue;
+
+                        typeMapping[typeId] = bulkTypeValues;
+                    }
+                };
+
+                source.Clr.GCFinalizeObject += data =>
+                {
+                    var stats = currentManagedProcess(data);
+                    long finalizationCount;
+                    stats.GC.m_stats.FinalizedObjectsSlim.TryGetValue(data.TypeID, out finalizationCount);
+                    stats.GC.m_stats.FinalizedObjectsSlim[data.TypeID] = finalizationCount + 1;
+                };
+
+                source.Completed += () =>
+                {
+                    foreach (var process in source.Processes())
+                    {
+                        var stats = process.LoadedDotNetRuntime();
+                        if (stats == null)
+                            continue;
+
+                        if (stats.GC.m_stats.FinalizedObjectsSlim.Count == 0)
+                            continue;
+
+                        var typeMapping = stats.GC.m_stats.TypeMapping;
+                        if (typeMapping.Count == 0)
+                            continue;
+
+                        stats.GC.m_stats.FinalizedObjects.Clear();
+                        var typeNameCache = new Dictionary<Address, string>();
+                        foreach (var pair in stats.GC.m_stats.FinalizedObjectsSlim)
+                        {
+                            var typeName = GetTypeName(pair.Key, typeNameCache, typeMapping);
+                            stats.GC.m_stats.FinalizedObjects[typeName] = pair.Value;
+                        }
+                    }
+                };
             }
 
             //
@@ -1228,6 +1281,47 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     });
                 };
             }
+        }
+
+        private static string GetTypeName(
+            Address typeID,
+            Dictionary<Address, string> typeNameCache,
+            Dictionary<Address, GCBulkTypeValues> typeMapping)
+        {
+            string typeName;
+            if (typeNameCache.TryGetValue(typeID, out typeName))
+                return typeName;
+
+            GCBulkTypeValues bulkTypeValues;
+            if (typeMapping.TryGetValue(typeID, out bulkTypeValues))
+            {
+                typeName = bulkTypeValues.TypeName;
+                var parameterCount = bulkTypeValues.TypeParameterCount;
+                if (parameterCount > 0)
+                {
+                    // avoid stack overflow if a type is somehow recursive
+                    typeNameCache[typeID] = "?";
+
+                    for (int i = 0; i < parameterCount; i++)
+                    {
+                        if (i == 0)
+                            typeName += "<";
+                        else
+                            typeName += ", ";
+
+                        typeName += GetTypeName(bulkTypeValues.TypeParameterID(i), typeNameCache, typeMapping);
+                    }
+
+                    typeName += ">";
+                }
+            }
+            else
+            {
+                typeName = "??? 0x" + typeID.ToString("X8");
+            }
+
+            typeNameCache[typeID] = typeName;
+            return typeName;
         }
 
         private Version runtimeVersion;
@@ -3656,6 +3750,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         /// List of finalizer objects
         /// </summary>
         public Dictionary<string, long> FinalizedObjects = new Dictionary<string, long>();
+        /// <summary>
+        /// Map from <see cref="Parsers.Clr.FinalizeObjectTraceData.TypeID"/> to the number of instances of the type
+        /// which were finalized.
+        /// </summary>
+        public Dictionary<Address, long> FinalizedObjectsSlim = new Dictionary<Address, long>();
+        /// <summary>
+        /// Map from <see cref="GCBulkTypeValues.TypeID"/> to a <see cref="GCBulkTypeValues"/> containing information
+        /// about the type.
+        /// </summary>
+        public Dictionary<Address, GCBulkTypeValues> TypeMapping = new Dictionary<Address, GCBulkTypeValues>();
         /// <summary>
         /// Percentage of time spent paused as compared to the process lifetime
         /// </summary>
