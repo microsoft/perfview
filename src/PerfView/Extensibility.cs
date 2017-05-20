@@ -2843,6 +2843,7 @@ namespace PerfViewExtensibility
         /// Mainly here for testing
         /// </summary>
         /// <param name="dllName"></param>
+        /// <param name="ILPdb"></param>
         public void LookupSymbolsFor(string dllName, string ILPdb=null)
         {
             var symbolReader = App.GetSymbolReader();
@@ -3096,9 +3097,9 @@ namespace PerfViewExtensibility
                 OpenHtmlReport(outputFileName, "JITStats report");
         }
 
-        /// <summary>
-        /// Given a PDB file, dump the source server information in the PDB file.
-        /// </summary>
+        ///// <summary>
+        ///// Given a PDB file, dump the source server information in the PDB file.
+        ///// </summary>
         //public void DumpSourceServerStream(string pdbFile)
         //{
         //    SymbolReader reader = new SymbolReader(LogFile);
