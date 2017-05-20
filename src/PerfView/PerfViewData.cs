@@ -4893,7 +4893,9 @@ table {
             bool hasObjectUpdate = false;
             bool hasGCEvents = false;
             bool hasProjectNExecutionTracingEvents = false;
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
             bool hasProcessEvents = false;
+#pragma warning restore CS0219 // Variable is assigned but its value is never used
 
             var stackEvents = new List<TraceEventCounts>();
             foreach (var counts in tracelog.Stats)
