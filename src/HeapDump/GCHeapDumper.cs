@@ -1020,7 +1020,7 @@ public class GCHeapDumper
                     if (iCorDebug != null)
                     {
                         m_log.WriteLine("Attaching to silverlight process {0} from a {1} process.", processID,
-                            Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
+                            Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86);
                         iCorDebug.DebugActiveProcess((uint)processID, 0, out proc);
                     }
                     if (proc == null)
@@ -2942,7 +2942,9 @@ internal static class GCRootNames
         }
         return ret;
     }
-    public static int pointerSize = Marshal.SizeOf(typeof(IntPtr));
+
+    public static readonly int pointerSize = IntPtr.Size;
+
     public static bool IsReferenceType(CorElementType elementType)
     {
         switch (elementType)

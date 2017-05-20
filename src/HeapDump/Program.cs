@@ -270,19 +270,15 @@ class Program
 
     private static int PointerSizeForProcess(int processID)
     {
-        var ret = 4;
-        var procArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-        if (string.Compare(procArch, "AMD64", StringComparison.OrdinalIgnoreCase) != 0)
-            return ret;
-        ret = 8;
+        if (!Environment.Is64BitOperatingSystem)
+            return 4;
+
         var process = Process.GetProcessById(processID);
         bool is32Bit = false;
         if (!IsWow64Process(process.Handle, out is32Bit))
             throw new ApplicationException("Could not access process " + processID + " to determine target process architecture.");
         GC.KeepAlive(process);
-        if (is32Bit)
-            ret = 4;
-        return ret;
+        return is32Bit ? 4 : 8;
     }
 
     [DllImport("kernel32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
