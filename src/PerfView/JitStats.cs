@@ -24,12 +24,16 @@ namespace Stats
 
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">JIT Stats for for Process {1,5}: {2}</font><A></H3>",stats.ProcessID, stats.ProcessID, stats.Name);
             writer.WriteLine("<UL>");
+#pragma warning disable CS0618 // Type or member is obsolete
             if (!runtime.JIT.Stats().IsClr4)
+#pragma warning restore CS0618 // Type or member is obsolete
                 writer.WriteLine("<LI><Font color=\"red\">Warning: Could not confirm that a V4.0 CLR was loaded.  JitTime or ILSize can only be computed for V4.0 runtimes.  Otherwise their value will appear as 0.</font></LI>");
             if (!string.IsNullOrEmpty(stats.CommandLine))
                 writer.WriteLine("<LI>CommandLine: {0}</LI>", stats.CommandLine);
             writer.WriteLine("<LI>Process CPU Time: {0:n0} msec</LI>", stats.CPUMSec);
+#pragma warning disable CS0618 // Type or member is obsolete
             if (runtime.JIT.Stats().BackgroundJitThread != 0 || runtime.JIT.Stats().BackgroundJitAbortedAtMSec != 0)
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 writer.WriteLine("<LI>This process uses Background JIT compilation (System.Runtime.ProfileOptimize)</LI>");
                 writer.WriteLine(" <UL>");
@@ -40,6 +44,7 @@ namespace Stats
                     writer.WriteLine(" <LI><font color=\"red\">Re-collect the trace enabling \"Background JIT\" events on the collection menu to fix this.</font></LI>");
                 }
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (runtime.JIT.Stats().BackgroundJitAbortedAtMSec != 0)
                 {
                     writer.WriteLine("  <LI><font color=\"red\">WARNING: Background JIT aborted at {0:n3} Msec</font></LI>", runtime.JIT.Stats().BackgroundJitAbortedAtMSec);
@@ -47,6 +52,7 @@ namespace Stats
                         runtime.JIT.Stats().LastAssemblyLoadNameBeforeAbort, runtime.JIT.Stats().LastAssemblyLoadBeforeAbortSuccessful ? "successfully" : "unsuccessfully",
                         runtime.JIT.Stats().LastAssemblyLoadBeforeAbortMSec);
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 if (runtime.JIT.Stats().BackgroundJitThread != 0)
                 {
@@ -175,7 +181,9 @@ namespace Stats
                 if (backgroundJitEnabled)
                 {
                     writer.Write("<TD Align=\"Center\">{0:n3}</TD><TD Align=\"Left\">{1}</TD>",
+#pragma warning disable CS0618 // Type or member is obsolete
                         _event.DistanceAhead, _event.IsBackGround ? "Not blocked" : _event.BlockedReason);
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
                 writer.WriteLine("</TR>");
                 eventCount++;
@@ -226,7 +234,9 @@ namespace Stats
                     var csvMethodName = _event.MethodName.Replace(",", " ");    // Insure there are no , in the name 
                     writer.WriteLine("{1:f3}{0}{2:f3}{0}{3}{0}{4}{0}{5}{0}{6}{0}{7}{0}{8}{0}{9}{0}{10}", listSeparator,
                         _event.StartTimeMSec, _event.CompileCpuTimeMSec, _event.ThreadID, _event.ILSize,
+#pragma warning disable CS0618 // Type or member is obsolete
                         _event.NativeSize, csvMethodName, (_event.IsBackGround ? "BG" : "JIT"), _event.ModuleILPath, _event.DistanceAhead, _event.BlockedReason);
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
         }
@@ -349,8 +359,10 @@ namespace Stats
             {
                 writer.Write(" ModuleILPath="); writer.Write(XmlUtilities.XmlQuote(info.ModuleILPath));
             }
+#pragma warning disable CS0618 // Type or member is obsolete
             writer.Write(" DistanceAhead={0}", StringUtilities.QuotePadLeft(info.DistanceAhead.ToString("n3"), 10));
             writer.Write(" BlockedReason="); writer.Write(XmlUtilities.XmlQuote(info.BlockedReason));
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.WriteLine("/>");
         }
     }

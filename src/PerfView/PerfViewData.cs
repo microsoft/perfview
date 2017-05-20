@@ -2715,7 +2715,9 @@ table {
             {
                 var startStopSource = new MutableTraceEventStackSource(eventLog);
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
                 computer.UseTasks = true;
                 computer.GroupByStartStopActivity = true;
                 computer.ExcludeReadyThread = true;

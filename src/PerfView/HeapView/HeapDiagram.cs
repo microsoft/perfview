@@ -696,10 +696,12 @@ namespace PerfView
 
             foreach (TraceGC gc in m_data.events)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 double g0 = gc.GenSizeBeforeMB[(int)Gens.Gen0];
                 double g1 = gc.GenSizeBeforeMB[(int)Gens.Gen1];
                 double g2 = gc.GenSizeBeforeMB[(int)Gens.Gen2];
                 double g3 = gc.GenSizeBeforeMB[(int)Gens.GenLargeObj];
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 CheckMax(ref maxHeap, g0 + g1 + g2 + g3);
             }
@@ -742,17 +744,21 @@ namespace PerfView
 
                 render.DrawGCEvent(
                     start, end, gen, lastEnd,
+#pragma warning disable CS0618 // Type or member is obsolete
                     gc.GenBudgetMB(Gens.Gen0), gc.GenBudgetMB(Gens.GenLargeObj),
+#pragma warning restore CS0618 // Type or member is obsolete
                     gcTime,
                     gc.IsInduced(), gcBarList);
 
                 // double smallAloc  = gc.AllocedSinceLastGCBasedOnAllocTickMB[0];
                 // double largeAlloc = gc.AllocedSinceLastGCBasedOnAllocTickMB[1];
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 double g0 = gc.GenSizeBeforeMB[(int)Gens.Gen0];
                 double g1 = gc.GenSizeBeforeMB[(int)Gens.Gen1];
                 double g2 = gc.GenSizeBeforeMB[(int)Gens.Gen2];
                 double g3 = gc.GenSizeBeforeMB[(int)Gens.GenLargeObj];
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 sizeCurves.Add(start);
                 sizeCurves.Add(g0);
@@ -763,10 +769,12 @@ namespace PerfView
 
                 if (gc.HeapStats != null) // May not be complete, no HeapStats, assuming the same
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     g0 = gc.GenSizeAfterMB(Gens.Gen0);
                     g1 = gc.GenSizeAfterMB(Gens.Gen1);
                     g2 = gc.GenSizeAfterMB(Gens.Gen2);
                     g3 = gc.GenSizeAfterMB(Gens.GenLargeObj);
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
 
                 sizeCurves.Add(end);

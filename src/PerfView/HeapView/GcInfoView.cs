@@ -129,6 +129,7 @@ namespace PerfView
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double SizeBefore
         {
             get
@@ -137,6 +138,7 @@ namespace PerfView
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public double SizeAfter
         {
             get

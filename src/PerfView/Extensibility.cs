@@ -3622,7 +3622,9 @@ public static class TraceEventStackSourceExtensions
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
         computer.ExcludeReadyThread = true;
         computer.GenerateThreadTimeStacks(stackSource);
 
@@ -3633,7 +3635,9 @@ public static class TraceEventStackSourceExtensions
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
         computer.GenerateThreadTimeStacks(stackSource);
 
         return stackSource;
@@ -3643,7 +3647,9 @@ public static class TraceEventStackSourceExtensions
         // Use MutableTraceEventStackSource to disable activity tracing support
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+#pragma warning disable CS0618 // Type or member is obsolete
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
         computer.UseTasks = true;
         computer.ExcludeReadyThread = true;
         computer.GenerateThreadTimeStacks(stackSource);
@@ -3655,7 +3661,9 @@ public static class TraceEventStackSourceExtensions
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
         computer.UseTasks = true;
         computer.GroupByAspNetRequest = true;
         computer.ExcludeReadyThread = true;
@@ -3668,7 +3676,9 @@ public static class TraceEventStackSourceExtensions
         var stackSource = new MutableTraceEventStackSource(eventLog);
         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
 
+#pragma warning disable CS0618 // Type or member is obsolete
         var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+#pragma warning restore CS0618 // Type or member is obsolete
         computer.ExcludeReadyThread = true;
         computer.GroupByAspNetRequest = true;
         computer.GenerateThreadTimeStacks(stackSource);
