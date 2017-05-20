@@ -1231,8 +1231,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
 
         private Version runtimeVersion;
-        private Microsoft.Diagnostics.Tracing.Etlx.TraceLog TraceLog;
-        private MutableTraceEventStackSource stackSource;
 
         #endregion
     }
