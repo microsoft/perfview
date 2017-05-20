@@ -344,6 +344,7 @@ namespace ClrMemory
         }
 
 #if !ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO remove when CLRMD has been updated. 
+        [Obsolete]
         public override int TypeIndexLimit
         {
             get
