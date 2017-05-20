@@ -85,12 +85,12 @@ namespace Utilities
                     return System.Reflection.Assembly.LoadFrom(fileName);
 
                 // Also look in processor specific location
-                fileName = Path.Combine(SupportFileDir, ProcessArch, simpleName + ".dll");
+                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
                     return System.Reflection.Assembly.LoadFrom(fileName);
 
                 // And look for an exe (we need this for HeapDump.exe)
-                fileName = Path.Combine(SupportFileDir, ProcessArch, simpleName + ".exe");
+                fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
                     return System.Reflection.Assembly.LoadFrom(fileName);
 
@@ -191,22 +191,39 @@ namespace Utilities
                 return s_exePath;
             }
         }
+
         /// <summary>
         /// Get the name of the architecture of the current process
         /// </summary>
-        public static string ProcessArch
+        public static ProcessorArchitecture ProcessArch
         {
             get
             {
-                if (s_ProcessArch == null)
+                if (s_ProcessArch == ProcessorArchitecture.None)
                 {
-                    s_ProcessArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                    // This should not be needed, but when I run PerfView under VS from an extension on an X64 machine
-                    // the environment variable is wrong.  
-                    if (s_ProcessArch == "AMD64" && System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 4)
-                        s_ProcessArch = "x86";
+                    var processorArchitecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+                    if (!Enum.TryParse(processorArchitecture, ignoreCase: true, result: out s_ProcessArch))
+                        s_ProcessArch = Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
                 }
+
                 return s_ProcessArch;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
+        /// currently executing process.
+        /// </summary>
+        public static string ProcessArchitectureDirectory
+        {
+            get
+            {
+                if (s_ProcessArchDirectory == null)
+                {
+                    s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
+                }
+
+                return s_ProcessArchDirectory;
             }
         }
 
@@ -217,16 +234,16 @@ namespace Utilities
         /// <param name="relativePath"></param>
         public static void LoadNative(string relativePath)
         {
-            var archPath = Path.Combine(ProcessArch, relativePath);
+            var archPath = Path.Combine(ProcessArchitectureDirectory, relativePath);
             var fullPath = Path.Combine(SupportFileDir, archPath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)
             {
                 if (!File.Exists(fullPath))
                 {
-                    if (ProcessArch != "x86")
+                    if (ProcessArch != ProcessorArchitecture.X86)
                     {
-                        var x86FullPath = Path.Combine(SupportFileDir, Path.Combine("x86", relativePath));
+                        var x86FullPath = Path.Combine(SupportFileDir, "x86", relativePath);
                         if (File.Exists(x86FullPath))
                             throw new ApplicationException("This operation is not supported for the " + ProcessArch + " architecture.");
                     }
@@ -261,7 +278,6 @@ namespace Utilities
             // problematic.   Instead use GetExecutingAssembly, which means that you have to put SupportFiles.cs
             // in your main program 
             var resourceAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            var archPrefix = @".\" + ProcessArch;
             foreach (var resourceName in resourceAssembly.GetManifestResourceNames())
             {
                 if (resourceName.StartsWith(@".\"))
@@ -332,7 +348,8 @@ namespace Utilities
         private static extern IntPtr LoadLibrary(string lpFileName);
 
 
-        private static string s_ProcessArch;
+        private static ProcessorArchitecture s_ProcessArch;
+        private static string s_ProcessArchDirectory;
 
 
         private static string s_supportFileDir;

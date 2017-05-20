@@ -44,7 +44,7 @@ namespace PerfView
             try
             {
                 // Can't display on ARM because the SplashScreen is WPF
-                var noGui = SupportFiles.ProcessArch == "ARM" ||
+                var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
                     (args.Length > 0 && string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0);
 
                 // If we need to install, display the splash screen early, otherwise wait
@@ -110,7 +110,7 @@ namespace PerfView
             // Figure out where output goes and set CommandProcessor.LogFile
 
             // On ARM we don't have a GUI
-            if (SupportFiles.ProcessArch == "ARM")
+            if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
                 CommandLineArgs.NoGui = true;
 
             // If the operation is to collect, we also need to create a new console
@@ -176,7 +176,7 @@ namespace PerfView
 
             if (CommandLineArgs.NoGui)
             {
-                if (SupportFiles.ProcessArch != "ARM")
+                if (SupportFiles.ProcessArch != ProcessorArchitecture.Arm)
                     CloseSplashScreen();
                 if (needNewConsole && !newConsoleCreated)
                     newConsoleCreated = CreateConsole();
@@ -343,7 +343,7 @@ namespace PerfView
                 File.Copy(tutorialTxt, tutorial);
 
                 // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
-                if (string.Compare(SupportFiles.ProcessArch, "arm", StringComparison.OrdinalIgnoreCase) == 0)
+                if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
                     DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
 
                 // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
@@ -466,7 +466,7 @@ namespace PerfView
                     var srcTraceEventPdb = Path.Combine(Path.GetDirectoryName(exe), "TraceEvent.pdb");
                     if (File.Exists(srcTraceEventPdb))
                     {
-                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArch, "TraceEvent.pdb");
+                        var dstTraceEventPdb = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "TraceEvent.pdb");
                         File.Copy(srcTraceEventPdb, dstTraceEventPdb);
                     }
 
@@ -563,7 +563,7 @@ namespace PerfView
                         symPath.Add(Microsoft.Diagnostics.Symbols.SymbolPath.MicrosoftSymbolServerPath);
                     else if (symPath.Elements.Count == 0)
                     {
-                        if (SupportFiles.ProcessArch == "ARM" || App.CommandLineArgs.NoGui)
+                        if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm || App.CommandLineArgs.NoGui)
                         {
                             App.CommandProcessor.LogFile.WriteLine("WARNING NO _NT_SYMBOL_PATH set ...");
                             persistSymPath = false;     // If we could not interact with the user, don't persist the answer.  

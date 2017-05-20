@@ -16,7 +16,7 @@ class NativeDlls
     public static void LoadNative(string simpleName)
     {
         var thisDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-        var dllName = Path.Combine(Path.Combine(thisDllDir, ProcessArch), simpleName);
+        var dllName = Path.Combine(Path.Combine(thisDllDir, ProcessArchitectureDirectory), simpleName);
         var ret = LoadLibrary(dllName);
         if (ret == IntPtr.Zero)
         {
@@ -25,22 +25,33 @@ class NativeDlls
         }
     }
 
-    public static string ProcessArch
+    public static ProcessorArchitecture ProcessArch
     {
         get
         {
-            if (s_ProcessArch == null)
-            {
-                s_ProcessArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                // THis should not be necessary, but the VS hosting process says its AMD64 but is in fact a 32 bit process. 
-                if (s_ProcessArch == "AMD64" && IntPtr.Size == 4)
-                    s_ProcessArch = "x86";
-            }
-            return s_ProcessArch;
+            return IntPtr.Size == 8 ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
         }
     }
+
+    /// <summary>
+    /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
+    /// currently executing process.
+    /// </summary>
+    public static string ProcessArchitectureDirectory
+    {
+        get
+        {
+            if (s_ProcessArchDirectory == null)
+            {
+                s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
+            }
+
+            return s_ProcessArchDirectory;
+        }
+    }
+
     #region private
-    private static string s_ProcessArch;
+    private static string s_ProcessArchDirectory;
 
 
     [System.Runtime.InteropServices.DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
