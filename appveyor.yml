@@ -39,3 +39,4 @@ cache:
 artifacts:
 - path: 'src\PerfView\bin\$(configuration)\PerfView.exe'
 - path: 'src\PerfView64\bin\$(configuration)\PerfView64.exe'
+- path: 'src\TraceEvent\bin\$(configuration)\*.nupkg'
