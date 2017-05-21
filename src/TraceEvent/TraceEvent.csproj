@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props" Condition="Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props')" />
   <Import Project="..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props" Condition="Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" />
   <PropertyGroup>
     <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
@@ -161,6 +162,31 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <NuGetManifest Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec">
+      <Symbols>true</Symbols>
+    </NuGetManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
+      <Link>amd64\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
+      <Link>amd64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
+      <Link>x86\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
+      <Link>x86\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
@@ -169,5 +195,8 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props'))" />
+    <Error Condition="!Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props'))" />
+    <Error Condition="!Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets'))" />
   </Target>
+  <Import Project="..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets" Condition="Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets')" />
 </Project>
