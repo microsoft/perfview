@@ -292,6 +292,7 @@
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
             <WPFToolKit:DataGridTextColumn 
+                x:Name="FirstTimeColumn"
                 IsReadOnly="True"
                 Binding="{Binding FirstTimeRelativeMSec, StringFormat={}{0:n3}}" 
                 HeaderStyle="{StaticResource CenterAlign}"
@@ -308,6 +309,7 @@
                 </WPFToolKit:DataGridTextColumn.Header>
             </WPFToolKit:DataGridTextColumn>
             <WPFToolKit:DataGridTextColumn 
+                x:Name="LastTimeColumn"
                 IsReadOnly="True"
                 Binding="{Binding LastTimeRelativeMSec, StringFormat={}{0:n3}}" 
                 HeaderStyle="{StaticResource CenterAlign}"
