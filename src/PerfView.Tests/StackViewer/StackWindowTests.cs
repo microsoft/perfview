@@ -10,7 +10,6 @@ using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfViewTests.Utilities;
-using Utilities;
 using Xunit;
 using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;
 
@@ -20,11 +19,22 @@ namespace PerfViewTests.StackViewer
     {
         [WpfFact]
         [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
+        [UseCulture("en-US")]
+        public void TestSetTimeRange()
+        {
+            TestSetTimeRangeWithSpaceImpl(CultureInfo.CurrentCulture);
+        }
+
+        [WpfFact]
+        [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
         [UseCulture("ru-RU")]
         public void TestSetTimeRangeWithSpace()
         {
-            var culture = CultureInfo.CurrentCulture;
+            TestSetTimeRangeWithSpaceImpl(CultureInfo.CurrentCulture);
+        }
 
+        private void TestSetTimeRangeWithSpaceImpl(CultureInfo culture)
+        {
             // Create the main application
             AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
@@ -32,13 +42,13 @@ namespace PerfViewTests.StackViewer
             GuiApp.MainWindow = new MainWindow();
             var factory = new JoinableTaskFactory(new JoinableTaskContext());
 
-            // Avoid showing the PerfView main window when the test window closes
-            GuiApp.MainWindow.Activated += (sender, e) => GuiApp.MainWindow.Close();
-
             // Create the controls
             var stackWindowTask = factory.RunAsync(async () =>
             {
                 await factory.SwitchToMainThreadAsync();
+
+                // The main window has to be visible or the Closing event will not be raised on owned windows.
+                GuiApp.MainWindow.Show();
 
                 var file = new TimeRangeFile();
                 await OpenAsync(factory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
@@ -74,13 +84,17 @@ namespace PerfViewTests.StackViewer
                     StackWindow.SetTimeRangeCommand.Execute(null, stackWindow.ByNameDataGrid);
 
                     // Yield so command takes effect
-                    await Task.Yield();
+                    await Task.Delay(20);
 
                     Assert.Equal(selected.FirstTimeRelativeMSec.ToString("n3", culture), stackWindow.StartTextBox.Text);
                     Assert.Equal(selected.LastTimeRelativeMSec.ToString("n3", culture), stackWindow.EndTextBox.Text);
+
+                    stackWindow.Close();
                 }
                 finally
                 {
+                    await factory.SwitchToMainThreadAsync();
+                    await Task.Yield();
                     frame.Continue = false;
                 }
             }, JoinableTaskCreationOptions.LongRunning);
