@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -203,54 +204,67 @@ namespace PerfView
             // This part may take a little bit of time, so we pass it off to another
             // thread (to keep the UI responsive, and then when it is done call
             // back (this.BeginInvoke), to finish it off. 
-            ThreadPool.QueueUserWorkItem(delegate
+            ThreadPool.QueueUserWorkItem(delegate (object state)
             {
+                var oldCulture = Tuple.Create(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
+                var culture = (Tuple<CultureInfo, CultureInfo>)state;
                 try
                 {
+                    Thread.CurrentThread.CurrentCulture = culture.Item1;
+                    Thread.CurrentThread.CurrentUICulture = culture.Item2;
+
                     try
                     {
-                        m_worker = Thread.CurrentThread;    // At this point we can be aborted.  
-                        // If abort was called before m_worker was initialized we need to kill this thread ourselves.  
-                        if (m_abortStarted)
-                            throw new ThreadInterruptedException();
-                        work();
-                        Debug.Assert(m_endWorkStarted, "User did not call EndWork before returning from work body.");
-                    }
-                    catch (Exception ex)
-                    {
-                        EndWork(delegate()
+                        try
                         {
-                            if (!(ex is ThreadInterruptedException))
+                            m_worker = Thread.CurrentThread;    // At this point we can be aborted.  
+                            // If abort was called before m_worker was initialized we need to kill this thread ourselves.  
+                            if (m_abortStarted)
+                                throw new ThreadInterruptedException();
+                            work();
+                            Debug.Assert(m_endWorkStarted, "User did not call EndWork before returning from work body.");
+                        }
+                        catch (Exception ex)
+                        {
+                            EndWork(delegate()
                             {
-                                bool userLevel;
-                                var errorMessage = ExceptionMessage.GetUserMessage(ex, out userLevel);
-                                if (userLevel)
-                                    LogError(errorMessage);
-                                else
+                                if (!(ex is ThreadInterruptedException))
                                 {
-                                    Log(errorMessage);
-                                    LogError("An exceptional condition occurred, see log for details.");
+                                    bool userLevel;
+                                    var errorMessage = ExceptionMessage.GetUserMessage(ex, out userLevel);
+                                    if (userLevel)
+                                        LogError(errorMessage);
+                                    else
+                                    {
+                                        Log(errorMessage);
+                                        LogError("An exceptional condition occurred, see log for details.");
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
+                        Debug.Assert(m_worker == null || m_abortStarted);     // EndWork should have been called and nulled this out.   
+
+                        // If we started an abort, then a thread-interrupt might happen at any time until the abort is completed.  
+                        // Thus we should wait around until the abort completes.  
+                        if (m_abortStarted)
+                            while (!m_abortDidInterrupt)
+                                Thread.Sleep(1);
                     }
-                    Debug.Assert(m_worker == null || m_abortStarted);     // EndWork should have been called and nulled this out.   
+                    catch (ThreadInterruptedException) { }      // we 'expect' ThreadInterruptedException so don't let them leak out. 
 
-                    // If we started an abort, then a thread-interrupt might happen at any time until the abort is completed.  
-                    // Thus we should wait around until the abort completes.  
+                    // Cancellation completed, means that the thread is dead.   We don't allow another work item on this StatusBar 
+                    // The current thread is dead.
+
+                    Debug.Assert(m_endWorkStarted);
                     if (m_abortStarted)
-                        while (!m_abortDidInterrupt)
-                            Thread.Sleep(1);
+                        Log("Cancellation Complete on thread " + Thread.CurrentThread.ManagedThreadId + " : (Elapsed Time: " + Duration.TotalSeconds.ToString("f3") + " sec)");
                 }
-                catch (ThreadInterruptedException) { }      // we 'expect' ThreadInterruptedException so don't let them leak out. 
-
-                // Cancellation completed, means that the thread is dead.   We don't allow another work item on this StatusBar 
-                // The current thread is dead.
-
-                Debug.Assert(m_endWorkStarted);
-                if (m_abortStarted)
-                    Log("Cancellation Complete on thread " + Thread.CurrentThread.ManagedThreadId + " : (Elapsed Time: " + Duration.TotalSeconds.ToString("f3") + " sec)");
-            });
+                finally
+                {
+                    Thread.CurrentThread.CurrentCulture = oldCulture.Item1;
+                    Thread.CurrentThread.CurrentUICulture = oldCulture.Item2;
+                }
+            }, Tuple.Create(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture));
         }
         /// <summary>
         /// This is used by the thread off the GUI thread to post back a response.  It also informs
