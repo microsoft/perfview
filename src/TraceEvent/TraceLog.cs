@@ -732,6 +732,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // (which includes registered), an kernel)   
             // TODO add an option that allows users to add their own here.   
             var dynamicParser = source.Dynamic;
+            var clrParser = source.Clr;
             var kernelParser = source.Kernel;
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 

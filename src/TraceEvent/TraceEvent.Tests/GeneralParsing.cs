@@ -17,6 +17,7 @@ namespace TraceEventTests
         static string TestDataDir = @".\inputs";
         static string UnZippedDataDir = @".\unzipped";
         static string OutputDir = @".\output";
+        static string NewBaselineDir = @".\newBaseLines";
 
         private readonly ITestOutputHelper _output;
 
@@ -108,6 +109,8 @@ namespace TraceEventTests
             // See if we have a cooresponding baseline file 
             string baselineName = Path.Combine(Path.GetFullPath(TestDataDir),
                 Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
+            string newBaselineName = Path.Combine(NewBaselineDir,
+                Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
             string outputName = Path.Combine(OutputDir,
                 Path.GetFileNameWithoutExtension(etlFilePath) + ".txt");
             TextWriter outputFile = File.CreateText(outputName);
@@ -122,7 +125,7 @@ namespace TraceEventTests
                 _output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
                 _output.WriteLine("To Create a baseline file");
                 _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                    Path.GetFullPath(outputName),
+                    Path.GetFullPath(newBaselineName),
                     Path.GetFullPath(baselineName)
                     ));
             }
@@ -204,14 +207,8 @@ namespace TraceEventTests
 
                         _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
                         _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                            Path.GetFullPath(outputName),
+                            Path.GetFullPath(newBaselineName),
                             Path.GetFullPath(baselineName)
-                            ));
-
-                        _output.WriteLine("To Update baseline file");
-                        _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                            Path.GetFullPath(outputName),
-                            Path.Combine(OriginalBaselineDir, Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt")
                             ));
                     }
                 }
@@ -260,12 +257,7 @@ namespace TraceEventTests
 
                     _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
                     _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                        Path.GetFullPath(outputName),
-                        Path.GetFullPath(baselineName)
-                        ));
-                    _output.WriteLine("To Update baseline file");
-                    _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                        Path.GetFullPath(outputName),
+                        Path.GetFullPath(newBaselineName),
                         Path.GetFullPath(baselineName)
                         ));
                     anyFailure = true;
@@ -274,7 +266,16 @@ namespace TraceEventTests
 
             outputFile.Close();
             if (mismatchCount > 0)
+            {
                 _output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
+
+                if (!Directory.Exists(NewBaselineDir))
+                    Directory.CreateDirectory(NewBaselineDir);
+                File.Copy(outputName, newBaselineName, true);
+
+                _output.WriteLine(string.Format("To Update: xcopy /s \"{0}\" \"{1}\"", 
+                    Path.GetFullPath(NewBaselineDir), OriginalBaselineDir));
+            }
 
             // If this fires, check the output for the TraceLine just before it for more details.  
             Assert.False(unexpectedUnknownEvent, "Check trace output for details.  Search for ERROR");
