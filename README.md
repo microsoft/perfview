@@ -109,7 +109,10 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   we need to either fix the repo or update the advice above.   Thus it is reasonable to open an GitHub issue.   If you
   do this, the goal is to fix the problem, which means you have to put enough information into the issue to do that.
   This includes exactly what you tried, and what the error messages were.
-
+  
+  * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
+  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that hte Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
+  
 ### Running Tests
 
 PerfView has a number of *.Test projects that have automated tests.  They can be run in Visual Studio by selecting the
