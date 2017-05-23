@@ -1001,7 +1001,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     }
                 };
 
-                clrPrivate.GCFinalizeObject += data =>
+                source.Clr.GCFinalizeObject += data =>
                 {
                     var stats = currentManagedProcess(data);
                     long finalizationCount;
@@ -1010,6 +1010,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                             finalizationCount + 1 :
                             1;
                 };
+
             }
 
             //
