@@ -66,7 +66,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PreprocessToFile>false</PreprocessToFile>
-      <AdditionalIncludeDirectories>$(NetFxKitsDir)\include\um</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(NetFxKitsDir)\include\um;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
