@@ -187,6 +187,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
