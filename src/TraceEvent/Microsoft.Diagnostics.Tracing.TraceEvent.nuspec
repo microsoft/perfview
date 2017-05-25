@@ -18,7 +18,6 @@
       -- TraceEventSession which can enable ETW providers,
       -- EtwTraceEventSource which lets you read the stream of ETW events, and
       -- TraceLog which is is digested form of ETW events which include decoded stack traces associated with the events.
-      -- A Programmers Guide for using the classes above.
 
       Also see the TraceEvent Samples NuGet package for example uses of this library.
     </description>
@@ -29,11 +28,6 @@
   </metadata>
 
   <files>
-    <!-- User information -->
-    <!--<file src="License-Stable.rtf" target="License-Stable.rtf" />-->
-    <file src="ReadMe.txt" target="ReadMe.txt" />
-    <file src="ReleaseNotes.txt" target="ReleaseNotes.txt" />
-
     <!-- Support for native binaries -->
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.targets" target="build\Microsoft.Diagnostics.Tracing.TraceEvent.targets" />
 
