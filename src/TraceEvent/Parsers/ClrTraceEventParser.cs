@@ -204,8 +204,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 {
                     GCBulkTypeValues value = data.Values(i);
                     string typeName = value.TypeName;
-                    // TODO the GCBulkType events are logged after the event that needed it.  It really
+                    // The GCBulkType events are logged after the event that needed it.  It really
                     // should be before, but we compensate by setting the startTime to 0
+                    // Ideally the CLR logs the types before they are used.  
                     state.SetTypeIDToName(data.ProcessID, value.TypeID, 0, typeName);
                 }
             });
@@ -1716,7 +1717,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[29] = new GCMarkTraceData(null, 26, 1, "GC", GCTaskGuid, 29, "MarkFinalizeQueueRoots", ProviderGuid, ProviderName);
                 templates[30] = new GCMarkTraceData(null, 27, 1, "GC", GCTaskGuid, 30, "MarkHandles", ProviderGuid, ProviderName);
                 templates[31] = new GCMarkTraceData(null, 28, 1, "GC", GCTaskGuid, 31, "MarkCards", ProviderGuid, ProviderName);
-                templates[32] = new FinalizeObjectTraceData(null, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName, null);
+                templates[32] = new FinalizeObjectTraceData(null, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName, state: null);
                 templates[33] = new SetGCHandleTraceData(null, 30, 1, "GC", GCTaskGuid, 33, "SetGCHandle", ProviderGuid, ProviderName);
                 templates[34] = new DestroyGCHandleTraceData(null, 31, 1, "GC", GCTaskGuid, 34, "DestoryGCHandle", ProviderGuid, ProviderName);
                 templates[35] = new PinObjectAtGCTimeTraceData(null, 33, 1, "GC", GCTaskGuid, 36, "PinObjectAtGCTime", ProviderGuid, ProviderName);
@@ -2923,10 +2924,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         /// syntax   e.g. System.WeakReference`1[System.Diagnostics.Tracing.EtwSession]
         /// </summary>
         public string TypeName { get { return m_data.GetUnicodeStringAt(m_baseOffset + 25); } }
-
-        // TODO we will ultimately want to add a 'BaseTypeName' which returns just the 
-        // generic base without the generic args (so that users can build up the generic type
-        // in whatever syntax they desire. 
 
         public int TypeParameterCount
         {
@@ -9959,7 +9956,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     /// 
     ///     * TypeID to TypeName mapping, 
     /// </summary>
-    // [SecuritySafeCritical]
     internal class ClrTraceEventParserState : IFastSerializable
     {
         internal void SetTypeIDToName(int processID, Address typeId, long timeQPC, string typeName)
@@ -9972,7 +9968,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
 
         internal string TypeIDToName(int processID, Address typeId, long timeQPC)
         {
-            lazyTypeIDToName.FinishRead();      // We don't read fileIDToName from the disk unless we need to, check
+            // We don't read lazyTypeIDToName from the disk unless we need to, check
+            lazyTypeIDToName.FinishRead();      
             string ret;
             if (_typeIDToName == null || !_typeIDToName.TryGetValue(typeId + ((ulong)processID << 48), timeQPC, out ret))
                 return "";
