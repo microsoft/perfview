@@ -35,6 +35,7 @@
     <file src="$OutDir$amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
     <file src="$OutDir$amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
     <file src="$OutDir$x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
+    <file src="$OutDir$x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
     <file src="$OutDir$x86\msdia140.dll" target="lib\native\x86\msdia140.dll" />
 
     <!-- Libraries and sources -->
