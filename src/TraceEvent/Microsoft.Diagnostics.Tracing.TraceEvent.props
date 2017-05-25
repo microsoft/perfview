@@ -6,6 +6,11 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\native\x86\KernelTraceControl.Win61.dll')" Include="$(MSBuildThisFileDirectory)..\lib\native\x86\KernelTraceControl.Win61.dll">
+      <Link>x86\KernelTraceControl.Win61.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\native\x86\msdia140.dll')" Include="$(MSBuildThisFileDirectory)..\lib\native\x86\msdia140.dll">
       <Link>x86\msdia140.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
