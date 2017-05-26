@@ -2044,7 +2044,7 @@ namespace PerfView
         {
             log.WriteLine("Insuring that the .NET CLR Profiler is installed.");
 
-            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArch + "\\EtwClrProfiler.dll");
+            var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
             if (!File.Exists(profilerDll))
             {
                 log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
@@ -2534,7 +2534,7 @@ namespace PerfView
                           "    See 'ASP.NET events' in help for more details.";
             LogFile.WriteLine(message);
 
-            if (App.CommandLineArgs.NoGui || SupportFiles.ProcessArch == "ARM")
+            if (App.CommandLineArgs.NoGui || SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
             {
                 LogFile.WriteLine("[ASP.NET events will not fire, see log for details.]");
                 return;

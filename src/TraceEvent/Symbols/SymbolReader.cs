@@ -2465,7 +2465,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     log.WriteLine("Trying to generate the file {0}.", target);
                     var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-                    var archToolsDir = Path.Combine(toolsDir, Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"));
+                    var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
                     // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
                     string addToPath = null;

@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.HeapDump;
 using Microsoft.Diagnostics.Runtime;
@@ -19,7 +20,7 @@ namespace Microsoft.Diagnostics.CrossGenerationLiveness
         private const int AttachTimeoutInMsec = 60000;
         private const int WaitForEventTimeoutInMsec = 5000;
 
-        private static string s_ProcessArch;
+        private static string s_ProcessArchDirectory;
 
         private int _PID;
         private int _GenerationToTrigger;
@@ -212,7 +213,7 @@ namespace Microsoft.Diagnostics.CrossGenerationLiveness
         /// </summary>
         public static void LoadNative(string relativePath)
         {
-            var fullPath = Path.Combine(RootDir, ProcessArch, relativePath);
+            var fullPath = Path.Combine(RootDir, ProcessArchitectureDirectory, relativePath);
             var ret = LoadLibrary(fullPath);
             if (ret == IntPtr.Zero)
             {
@@ -223,19 +224,28 @@ namespace Microsoft.Diagnostics.CrossGenerationLiveness
         /// <summary>
         /// Get the name of the architecture of the current process.
         /// </summary>
-        private static string ProcessArch
+        private static ProcessorArchitecture ProcessArch
         {
             get
             {
-                if (s_ProcessArch == null)
+                return Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
+            }
+        }
+
+        /// <summary>
+        /// Gets the name of the directory containing compiled binaries (DLLs) which have the same architecture as the
+        /// currently executing process.
+        /// </summary>
+        public static string ProcessArchitectureDirectory
+        {
+            get
+            {
+                if (s_ProcessArchDirectory == null)
                 {
-                    s_ProcessArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                    // This should not be needed, but when I run PerfView under VS from an extension on an X64 machine
-                    // the environment variable is wrong.  
-                    if (s_ProcessArch == "AMD64" && System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 4)
-                        s_ProcessArch = "x86";
+                    s_ProcessArchDirectory = ProcessArch.ToString().ToLowerInvariant();
                 }
-                return s_ProcessArch;
+
+                return s_ProcessArchDirectory;
             }
         }
 
