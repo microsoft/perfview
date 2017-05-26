@@ -49,7 +49,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436</NoWarn>
+    <NoWarn>1591,0436,0618</NoWarn>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -63,7 +63,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436</NoWarn>
+    <NoWarn>1591,0436,0618</NoWarn>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
