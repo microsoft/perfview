@@ -3227,15 +3227,13 @@ namespace PerfViewExtensibility
             if (!App.IsElevated)
                 throw new ApplicationException("Must be Administrator (elevated).");
 
-            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-            var trueArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (trueArch != null)
+            if (Environment.Is64BitOperatingSystem)
             {
                 // TODO FIX NOW.   Find a way of determing which architecture a dump is
                 try
                 {
                     log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
-                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, trueArch);
+                    PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.Amd64);
                     return; // Yeah! success the first time
                 }
                 catch (Exception e)
@@ -3244,19 +3242,23 @@ namespace PerfViewExtensibility
                     if (e is ApplicationException)
                     {
                         log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
-                        PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+                        PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.X86);
                         return;
                     }
                     throw;
                 }
             }
-            PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, arch);
+            else
+            {
+                PrintSerializedExceptionFromProcessDumpThroughHeapDump(inputDumpFile, log, ProcessorArchitecture.X86);
+            }
 
         }
 
-        private void PrintSerializedExceptionFromProcessDumpThroughHeapDump(string inputDumpFile, TextWriter log, string arch)
+        private void PrintSerializedExceptionFromProcessDumpThroughHeapDump(string inputDumpFile, TextWriter log, ProcessorArchitecture arch)
         {
-            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, arch + @"\HeapDump.exe");
+            var directory = arch.ToString().ToLowerInvariant();
+            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, directory, "HeapDump.exe");
             var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
             options.AddOutputStream(LogFile);
 
