@@ -82,32 +82,28 @@ namespace PerfView
         /// </summary>
         public static void DumpGCHeap(string processDumpFile, string outputFile, TextWriter log, string qualifiers = "")
         {
-
-            // Determine if we are on a 64 bit system.  
-            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-            var trueArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-            if (trueArch != null)
+            // Determine if we are on a 64 bit system.
+            if (Environment.Is64BitOperatingSystem)
             {
                 // TODO FIX NOW.   Find a way of determing which architecture a dump is
                 try
                 {
                     log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
-                    DumpGCHeap("/processDump " + qualifiers, processDumpFile, outputFile, log, trueArch);
+                    DumpGCHeap("/processDump " + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.Amd64);
                     return; // Yeah! success the first time
                 }
-                catch (Exception e)
+                catch (ApplicationException)
                 {
                     // It might have failed because this was a 32 bit dump, if so try again.  
-                    if (e is ApplicationException)
-                    {
-                        log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
-                        DumpGCHeap("/processDump" + qualifiers, processDumpFile, outputFile, log, arch);
-                        return;
-                    }
-                    throw;
+                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
+                    DumpGCHeap("/processDump" + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.X86);
+                    return;
                 }
             }
-            DumpGCHeap("/processDump", processDumpFile, outputFile, log, arch);
+            else
+            {
+                DumpGCHeap("/processDump", processDumpFile, outputFile, log, ProcessorArchitecture.X86);
+            }
         }
         /// <summary>
         /// Given a name or a process ID, return the process ID for it.  If it is a name
@@ -143,9 +139,10 @@ namespace PerfView
         }
 
         #region private
-        private static void DumpGCHeap(string qualifiers, string inputArg, string outputFile, TextWriter log, string arch)
+        private static void DumpGCHeap(string qualifiers, string inputArg, string outputFile, TextWriter log, ProcessorArchitecture arch)
         {
-            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, arch + @"\HeapDump.exe");
+            var directory = arch == ProcessorArchitecture.X86 ? "x86" : "amd64";
+            var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, Path.Combine(directory, "HeapDump.exe"));
 
             var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
             if (log != null)
@@ -167,31 +164,25 @@ namespace PerfView
         }
 
         /// <summary>
-        /// Returns the x86 or AMD64 that indicates the architecture of the process with 'processID'
+        /// Returns processor architecture for a process with a specific process ID.
         /// </summary>
-        private static string GetArchForProcess(int processID)
+        private static ProcessorArchitecture GetArchForProcess(int processID)
         {
-            // I assume that I am always a 32 bit process.  
-            Debug.Assert(System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 4);
-
             try
             {
-                // TO make error paths simple always try to access the process here even throw we don't need it 
-                // for a 32 bit machine. 
+                // To make error paths simple always try to access the process here even though we don't need it
+                // for a 32 bit machine.
                 var process = Process.GetProcessById(processID);
 
-                // Get the true processor architecture.  
-                var procArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
-                if (procArch == null)
-                    procArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
-                if (procArch != "AMD64")        // Currently only AMD64 has a wow. 
-                    return procArch;
+                // Currently only AMD64 has a wow.
+                if (!Environment.Is64BitOperatingSystem)
+                    return ProcessorArchitecture.X86;
 
                 bool is32Bit = false;
                 bool ret = IsWow64Process(process.Handle, out is32Bit);
                 GC.KeepAlive(process);
                 if (ret)
-                    return is32Bit ? "x86" : "AMD64";
+                    return is32Bit ? ProcessorArchitecture.X86 : ProcessorArchitecture.Amd64;
             }
             catch (System.Runtime.InteropServices.ExternalException e)
             {
