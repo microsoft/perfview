@@ -3082,7 +3082,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 64; }
+            get { return 65; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
