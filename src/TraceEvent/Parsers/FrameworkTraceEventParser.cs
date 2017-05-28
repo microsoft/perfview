@@ -16,8 +16,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
     public sealed class FrameworkEventSourceTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "FrameworkEventSource";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x8e9f5090), unchecked((short) 0x2d75), unchecked((short) 0x4d03), 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);
+        public static readonly string ProviderName = "FrameworkEventSource";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x8e9f5090), unchecked((short) 0x2d75), unchecked((short) 0x4d03), 0x8a, 0x81, 0xe5, 0xaf, 0xbf, 0x85, 0xda, 0xf1);
         public enum Keywords : long
         {
             Loader = 0x1,

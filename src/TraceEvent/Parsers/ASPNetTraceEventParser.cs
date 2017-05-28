@@ -14,8 +14,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class AspNetTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "AspNetTrace";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0xaff081fe), unchecked((short) 0x0247), unchecked((short) 0x4275), 0x9c, 0x4e, 0x02, 0x1f, 0x3d, 0xc1, 0xda, 0x35);
+        public static readonly string ProviderName = "AspNetTrace";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0xaff081fe), unchecked((short) 0x0247), unchecked((short) 0x4275), 0x9c, 0x4e, 0x02, 0x1f, 0x3d, 0xc1, 0xda, 0x35);
         public AspNetTraceEventParser(TraceEventSource source) : base(source) {}
 
         public enum Keywords
@@ -956,7 +956,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.AspNet
                     callback(template);
         }
 
-        private static Guid AspNetReqTaskGuid = new Guid(unchecked((int) 0x06a01367), unchecked((short) 0x79d3), unchecked((short) 0x4594), 0x8e, 0xb3, 0xc7, 0x21, 0x60, 0x3c, 0x46, 0x79);
+        private static readonly Guid AspNetReqTaskGuid = new Guid(unchecked((int) 0x06a01367), unchecked((short) 0x79d3), unchecked((short) 0x4594), 0x8e, 0xb3, 0xc7, 0x21, 0x60, 0x3c, 0x46, 0x79);
     #endregion
     }
 }

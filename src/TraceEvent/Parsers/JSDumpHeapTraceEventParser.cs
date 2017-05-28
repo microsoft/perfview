@@ -17,8 +17,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class JSDumpHeapTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "Microsoft-IE-JSDumpHeap";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x7f8e35ca), unchecked((short) 0x68e8), unchecked((short) 0x41b9), 0x86, 0xfe, 0xd6, 0xad, 0xc5, 0xb3, 0x27, 0xe7);
+        public static readonly string ProviderName = "Microsoft-IE-JSDumpHeap";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x7f8e35ca), unchecked((short) 0x68e8), unchecked((short) 0x41b9), 0x86, 0xfe, 0xd6, 0xad, 0xc5, 0xb3, 0x27, 0xe7);
         public enum Keywords : long
         {
             jsdumpheap = 0x00000020,
@@ -151,12 +151,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     callback(template);
         }
 
-        private static Guid JSDumpHeapEnvelopeTaskGuid = new Guid(unchecked((int) 0xfff80bb3), unchecked((short) 0x0541), unchecked((short) 0x4423), 0xb2, 0x6b, 0x8c, 0x4a, 0x5a, 0xf9, 0x06, 0xff);
-        private static Guid JSDumpHeapBulkNodeTaskGuid = new Guid(unchecked((int) 0x89b4a9e6), unchecked((short) 0x156f), unchecked((short) 0x4ff2), 0x8c, 0x93, 0xcd, 0x86, 0xb1, 0xbc, 0xe9, 0xa4);
-        private static Guid JSDumpHeapBulkAttributeTaskGuid = new Guid(unchecked((int) 0xb171ef0b), unchecked((short) 0xd1fb), unchecked((short) 0x4901), 0x98, 0x47, 0xe1, 0x3d, 0x58, 0x3b, 0xfa, 0x86);
-        private static Guid JSDumpHeapBulkEdgeTaskGuid = new Guid(unchecked((int) 0xec5809c8), unchecked((short) 0xef06), unchecked((short) 0x456c), 0xbe, 0x69, 0xe8, 0xdc, 0xdf, 0x75, 0x54, 0xba);
-        private static Guid JSDumpHeapStringTableTaskGuid = new Guid(unchecked((int) 0x8a019204), unchecked((short) 0x6cc0), unchecked((short) 0x41f3), 0x8f, 0xae, 0xe1, 0x90, 0xdd, 0xfd, 0x05, 0xa7);
-        private static Guid JSDumpHeapDoubleTableTaskGuid = new Guid(unchecked((int) 0xeaa70a14), unchecked((short) 0xd1c3), unchecked((short) 0x4939), 0x8c, 0xa7, 0x39, 0x3c, 0x2f, 0x75, 0xfa, 0x58);
+        private static readonly Guid JSDumpHeapEnvelopeTaskGuid = new Guid(unchecked((int) 0xfff80bb3), unchecked((short) 0x0541), unchecked((short) 0x4423), 0xb2, 0x6b, 0x8c, 0x4a, 0x5a, 0xf9, 0x06, 0xff);
+        private static readonly Guid JSDumpHeapBulkNodeTaskGuid = new Guid(unchecked((int) 0x89b4a9e6), unchecked((short) 0x156f), unchecked((short) 0x4ff2), 0x8c, 0x93, 0xcd, 0x86, 0xb1, 0xbc, 0xe9, 0xa4);
+        private static readonly Guid JSDumpHeapBulkAttributeTaskGuid = new Guid(unchecked((int) 0xb171ef0b), unchecked((short) 0xd1fb), unchecked((short) 0x4901), 0x98, 0x47, 0xe1, 0x3d, 0x58, 0x3b, 0xfa, 0x86);
+        private static readonly Guid JSDumpHeapBulkEdgeTaskGuid = new Guid(unchecked((int) 0xec5809c8), unchecked((short) 0xef06), unchecked((short) 0x456c), 0xbe, 0x69, 0xe8, 0xdc, 0xdf, 0x75, 0x54, 0xba);
+        private static readonly Guid JSDumpHeapStringTableTaskGuid = new Guid(unchecked((int) 0x8a019204), unchecked((short) 0x6cc0), unchecked((short) 0x41f3), 0x8f, 0xae, 0xe1, 0x90, 0xdd, 0xfd, 0x05, 0xa7);
+        private static readonly Guid JSDumpHeapDoubleTableTaskGuid = new Guid(unchecked((int) 0xeaa70a14), unchecked((short) 0xd1c3), unchecked((short) 0x4939), 0x8c, 0xa7, 0x39, 0x3c, 0x2f, 0x75, 0xfa, 0x58);
     #endregion
     }
 }

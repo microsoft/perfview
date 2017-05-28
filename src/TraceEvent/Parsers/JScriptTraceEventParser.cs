@@ -15,8 +15,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class JScriptTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "Microsoft-JScript";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x57277741), unchecked((short) 0x3638), unchecked((short) 0x4a4b), 0xbd, 0xba, 0x0a, 0xc6, 0xe4, 0x5d, 0xa5, 0x6c);
+        public static readonly string ProviderName = "Microsoft-JScript";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x57277741), unchecked((short) 0x3638), unchecked((short) 0x4a4b), 0xbd, 0xba, 0x0a, 0xc6, 0xe4, 0x5d, 0xa5, 0x6c);
         public enum Keywords : long
         {
             JScriptRuntime = 0x1,
@@ -1996,45 +1996,45 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #endif
         }
 
-        private static Guid Jscript_Projection_ResolveTypeTaskGuid = new Guid(unchecked((int) 0x65e6ec90), unchecked((short) 0x7758), unchecked((short) 0x4fa8), 0xb8, 0x8a, 0x26, 0x11, 0x97, 0x15, 0x1e, 0x49);
-        private static Guid Jscript_Projection_ConstructRuntimeClassTaskGuid = new Guid(unchecked((int) 0xfa44b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
-        private static Guid Jscript_Projection_MethodCallTaskGuid = new Guid(unchecked((int) 0xe044b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xb6, 0x61);
-        private static Guid Jscript_Projection_RawMethodCallTaskGuid = new Guid(unchecked((int) 0xc944b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
-        private static Guid Jscript_Projection_InvokesJsDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x23);
-        private static Guid Jscript_Projection_InvokeNativeDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0xfda8), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x24);
-        private static Guid Jscript_Projection_AddEventListenerTaskGuid = new Guid(unchecked((int) 0x9a9c947d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x23);
-        private static Guid Jscript_Projection_RemoveEventListenerTaskGuid = new Guid(unchecked((int) 0xab9c947d), unchecked((short) 0x8aef), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x02);
-        private static Guid Jscript_Projection_GetTypeMetaDataInformationTaskGuid = new Guid(unchecked((int) 0x6d44b4fa), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x31);
-        private static Guid Jscript_Projection_SetEventHandlerTaskGuid = new Guid(unchecked((int) 0x4c42d2ac), unchecked((short) 0x7b3e), unchecked((short) 0x48ab), 0x91, 0xce, 0xc7, 0xe3, 0xff, 0xac, 0xf8, 0xbf);
-        private static Guid Jscript_Projection_RemoveAllEventsAndEventHandlersTaskGuid = new Guid(unchecked((int) 0xb4fb623e), unchecked((short) 0xa94c), unchecked((short) 0x4226), 0xb0, 0xe4, 0xfc, 0x82, 0x53, 0xf2, 0x9d, 0xe5);
-        private static Guid Jscript_Projection_InvokeEventTaskGuid = new Guid(unchecked((int) 0xf0c3c89f), unchecked((short) 0xc1d3), unchecked((short) 0x46e6), 0x85, 0x23, 0x2d, 0x4b, 0x71, 0xe2, 0x91, 0x94);
-        private static Guid Jscript_Projection_InvokeEventEvParamPrepTaskGuid = new Guid(unchecked((int) 0x670b4b95), unchecked((short) 0xbaf8), unchecked((short) 0x42e1), 0xa1, 0xfd, 0xbf, 0xd4, 0x78, 0xcb, 0xf7, 0x20);
-        private static Guid Jscript_Projection_GetExprFromConcreteTypeNameTaskGuid = new Guid(unchecked((int) 0x90df5cdf), unchecked((short) 0x6eed), unchecked((short) 0x47a4), 0xb6, 0x98, 0x54, 0x8c, 0x7a, 0xbf, 0x4f, 0xe9);
-        private static Guid Jscript_Projection_GetTypeFromTypeNamePartsTaskGuid = new Guid(unchecked((int) 0x17395d83), unchecked((short) 0x1e5c), unchecked((short) 0x43ad), 0xa5, 0xd4, 0x41, 0x63, 0x1d, 0x33, 0x4f, 0x3c);
-        private static Guid Jscript_Projection_ReferenceOrArrayGetValueTaskGuid = new Guid(unchecked((int) 0x97b5c7a6), unchecked((short) 0x8cc5), unchecked((short) 0x4e4d), 0xbb, 0x85, 0x38, 0x87, 0xed, 0x68, 0x73, 0x04);
-        private static Guid Jscript_Projection_PropertyValueVarFromGRCNTaskGuid = new Guid(unchecked((int) 0x8a960840), unchecked((short) 0x27ea), unchecked((short) 0x487f), 0xb7, 0xc0, 0x7a, 0x6e, 0x87, 0x64, 0x56, 0x3e);
-        private static Guid Jscript_Projection_VarFromGRCNTaskGuid = new Guid(unchecked((int) 0x9fcf06d2), unchecked((short) 0x7907), unchecked((short) 0x46b4), 0xa2, 0xe4, 0x4b, 0x56, 0x32, 0x94, 0x59, 0x65);
-        private static Guid Jscript_Projection_WriteIReferenceTaskGuid = new Guid(unchecked((int) 0x1ebc5e72), unchecked((short) 0x4c4a), unchecked((short) 0x455e), 0xa9, 0xaa, 0x53, 0xc1, 0x1b, 0x32, 0xe3, 0xe1);
-        private static Guid Jscript_Projection_WriteInspectableTaskGuid = new Guid(unchecked((int) 0x48b75069), unchecked((short) 0xb48d), unchecked((short) 0x404b), 0x95, 0x45, 0x92, 0x40, 0xb6, 0x9c, 0xb7, 0xf3);
-        private static Guid Jscript_Projection_GetNonArrayTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x60990a40), unchecked((short) 0x3dc5), unchecked((short) 0x418e), 0x8c, 0x2e, 0x08, 0xe5, 0xfa, 0xde, 0x7f, 0x8d);
-        private static Guid Jscript_Projection_GetNonArrayBasicTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x3d8fedce), unchecked((short) 0xcf8e), unchecked((short) 0x4d65), 0x8e, 0xb9, 0xbd, 0x1c, 0xbb, 0xc8, 0x90, 0xd5);
-        private static Guid Jscript_Projection_GetTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x1dc3ab0f), unchecked((short) 0x3c64), unchecked((short) 0x405a), 0x98, 0x52, 0x58, 0x95, 0xc1, 0x33, 0xf9, 0xa8);
-        private static Guid Jscript_Projection_GetBasicTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x4110d5bd), unchecked((short) 0x5ff8), unchecked((short) 0x4ff2), 0xa3, 0x3d, 0xd1, 0xb9, 0x2b, 0x12, 0x76, 0x06);
-        private static Guid Jscript_GC_ResetMarksTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd4);
-        private static Guid Jscript_GC_ScanRootsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd5);
-        private static Guid Jscript_GC_ScanStackTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd6);
-        private static Guid Jscript_GC_MarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd7);
-        private static Guid Jscript_GC_RescanTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd8);
-        private static Guid Jscript_GC_SweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd9);
-        private static Guid Jscript_GC_SetupBackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xda);
-        private static Guid Jscript_GC_BackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdb);
-        private static Guid Jscript_GC_TransferSweptObjectsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdc);
-        private static Guid Jscript_GC_DisposeTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdd);
-        private static Guid Jscript_GC_BackgroundMarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xde);
-        private static Guid Jscript_GC_ResetWriteWatchTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdf);
-        private static Guid Jscript_GC_IdleCollectTaskGuid = new Guid(unchecked((int) 0x196a6ce6), unchecked((short) 0x8826), unchecked((short) 0x4d5f), 0x9b, 0x33, 0x55, 0xba, 0x2d, 0x3a, 0xcc, 0xbe);
-        private static Guid Jscript_Page_Allocator_SizeTaskGuid = new Guid(unchecked((int) 0x313cb172), unchecked((short) 0x9dd2), unchecked((short) 0x4f8c), 0xa4, 0x1f, 0xba, 0xf7, 0x42, 0x64, 0x74, 0x90);
-        private static Guid Jscript_Recycler_AllocationTaskGuid = new Guid(unchecked((int) 0x2d68a40e), unchecked((short) 0xb890), unchecked((short) 0x4c6f), 0x8c, 0x2e, 0xb4, 0xc8, 0x56, 0xcc, 0x21, 0xcf);
+        private static readonly Guid Jscript_Projection_ResolveTypeTaskGuid = new Guid(unchecked((int) 0x65e6ec90), unchecked((short) 0x7758), unchecked((short) 0x4fa8), 0xb8, 0x8a, 0x26, 0x11, 0x97, 0x15, 0x1e, 0x49);
+        private static readonly Guid Jscript_Projection_ConstructRuntimeClassTaskGuid = new Guid(unchecked((int) 0xfa44b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
+        private static readonly Guid Jscript_Projection_MethodCallTaskGuid = new Guid(unchecked((int) 0xe044b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xb6, 0x61);
+        private static readonly Guid Jscript_Projection_RawMethodCallTaskGuid = new Guid(unchecked((int) 0xc944b46d), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x21);
+        private static readonly Guid Jscript_Projection_InvokesJsDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x23);
+        private static readonly Guid Jscript_Projection_InvokeNativeDelegateTaskGuid = new Guid(unchecked((int) 0x9a94b47d), unchecked((short) 0xfda8), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x24);
+        private static readonly Guid Jscript_Projection_AddEventListenerTaskGuid = new Guid(unchecked((int) 0x9a9c947d), unchecked((short) 0x8adf), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x23);
+        private static readonly Guid Jscript_Projection_RemoveEventListenerTaskGuid = new Guid(unchecked((int) 0xab9c947d), unchecked((short) 0x8aef), unchecked((short) 0x5dc2), 0x0a, 0x86, 0x16, 0x7d, 0xe9, 0x8f, 0xad, 0x02);
+        private static readonly Guid Jscript_Projection_GetTypeMetaDataInformationTaskGuid = new Guid(unchecked((int) 0x6d44b4fa), unchecked((short) 0x38df), unchecked((short) 0x4cc2), 0x0a, 0x76, 0x16, 0x7d, 0xe9, 0x8f, 0xa6, 0x31);
+        private static readonly Guid Jscript_Projection_SetEventHandlerTaskGuid = new Guid(unchecked((int) 0x4c42d2ac), unchecked((short) 0x7b3e), unchecked((short) 0x48ab), 0x91, 0xce, 0xc7, 0xe3, 0xff, 0xac, 0xf8, 0xbf);
+        private static readonly Guid Jscript_Projection_RemoveAllEventsAndEventHandlersTaskGuid = new Guid(unchecked((int) 0xb4fb623e), unchecked((short) 0xa94c), unchecked((short) 0x4226), 0xb0, 0xe4, 0xfc, 0x82, 0x53, 0xf2, 0x9d, 0xe5);
+        private static readonly Guid Jscript_Projection_InvokeEventTaskGuid = new Guid(unchecked((int) 0xf0c3c89f), unchecked((short) 0xc1d3), unchecked((short) 0x46e6), 0x85, 0x23, 0x2d, 0x4b, 0x71, 0xe2, 0x91, 0x94);
+        private static readonly Guid Jscript_Projection_InvokeEventEvParamPrepTaskGuid = new Guid(unchecked((int) 0x670b4b95), unchecked((short) 0xbaf8), unchecked((short) 0x42e1), 0xa1, 0xfd, 0xbf, 0xd4, 0x78, 0xcb, 0xf7, 0x20);
+        private static readonly Guid Jscript_Projection_GetExprFromConcreteTypeNameTaskGuid = new Guid(unchecked((int) 0x90df5cdf), unchecked((short) 0x6eed), unchecked((short) 0x47a4), 0xb6, 0x98, 0x54, 0x8c, 0x7a, 0xbf, 0x4f, 0xe9);
+        private static readonly Guid Jscript_Projection_GetTypeFromTypeNamePartsTaskGuid = new Guid(unchecked((int) 0x17395d83), unchecked((short) 0x1e5c), unchecked((short) 0x43ad), 0xa5, 0xd4, 0x41, 0x63, 0x1d, 0x33, 0x4f, 0x3c);
+        private static readonly Guid Jscript_Projection_ReferenceOrArrayGetValueTaskGuid = new Guid(unchecked((int) 0x97b5c7a6), unchecked((short) 0x8cc5), unchecked((short) 0x4e4d), 0xbb, 0x85, 0x38, 0x87, 0xed, 0x68, 0x73, 0x04);
+        private static readonly Guid Jscript_Projection_PropertyValueVarFromGRCNTaskGuid = new Guid(unchecked((int) 0x8a960840), unchecked((short) 0x27ea), unchecked((short) 0x487f), 0xb7, 0xc0, 0x7a, 0x6e, 0x87, 0x64, 0x56, 0x3e);
+        private static readonly Guid Jscript_Projection_VarFromGRCNTaskGuid = new Guid(unchecked((int) 0x9fcf06d2), unchecked((short) 0x7907), unchecked((short) 0x46b4), 0xa2, 0xe4, 0x4b, 0x56, 0x32, 0x94, 0x59, 0x65);
+        private static readonly Guid Jscript_Projection_WriteIReferenceTaskGuid = new Guid(unchecked((int) 0x1ebc5e72), unchecked((short) 0x4c4a), unchecked((short) 0x455e), 0xa9, 0xaa, 0x53, 0xc1, 0x1b, 0x32, 0xe3, 0xe1);
+        private static readonly Guid Jscript_Projection_WriteInspectableTaskGuid = new Guid(unchecked((int) 0x48b75069), unchecked((short) 0xb48d), unchecked((short) 0x404b), 0x95, 0x45, 0x92, 0x40, 0xb6, 0x9c, 0xb7, 0xf3);
+        private static readonly Guid Jscript_Projection_GetNonArrayTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x60990a40), unchecked((short) 0x3dc5), unchecked((short) 0x418e), 0x8c, 0x2e, 0x08, 0xe5, 0xfa, 0xde, 0x7f, 0x8d);
+        private static readonly Guid Jscript_Projection_GetNonArrayBasicTypeAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x3d8fedce), unchecked((short) 0xcf8e), unchecked((short) 0x4d65), 0x8e, 0xb9, 0xbd, 0x1c, 0xbb, 0xc8, 0x90, 0xd5);
+        private static readonly Guid Jscript_Projection_GetTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x1dc3ab0f), unchecked((short) 0x3c64), unchecked((short) 0x405a), 0x98, 0x52, 0x58, 0x95, 0xc1, 0x33, 0xf9, 0xa8);
+        private static readonly Guid Jscript_Projection_GetBasicTypedArrayAsPropertyValueTaskGuid = new Guid(unchecked((int) 0x4110d5bd), unchecked((short) 0x5ff8), unchecked((short) 0x4ff2), 0xa3, 0x3d, 0xd1, 0xb9, 0x2b, 0x12, 0x76, 0x06);
+        private static readonly Guid Jscript_GC_ResetMarksTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd4);
+        private static readonly Guid Jscript_GC_ScanRootsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd5);
+        private static readonly Guid Jscript_GC_ScanStackTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd6);
+        private static readonly Guid Jscript_GC_MarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd7);
+        private static readonly Guid Jscript_GC_RescanTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd8);
+        private static readonly Guid Jscript_GC_SweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xd9);
+        private static readonly Guid Jscript_GC_SetupBackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xda);
+        private static readonly Guid Jscript_GC_BackgroundSweepTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdb);
+        private static readonly Guid Jscript_GC_TransferSweptObjectsTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdc);
+        private static readonly Guid Jscript_GC_DisposeTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdd);
+        private static readonly Guid Jscript_GC_BackgroundMarkTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xde);
+        private static readonly Guid Jscript_GC_ResetWriteWatchTaskGuid = new Guid(unchecked((int) 0x56aa7888), unchecked((short) 0xcd74), unchecked((short) 0x471f), 0xb4, 0x80, 0x25, 0xd2, 0x57, 0xce, 0xdc, 0xdf);
+        private static readonly Guid Jscript_GC_IdleCollectTaskGuid = new Guid(unchecked((int) 0x196a6ce6), unchecked((short) 0x8826), unchecked((short) 0x4d5f), 0x9b, 0x33, 0x55, 0xba, 0x2d, 0x3a, 0xcc, 0xbe);
+        private static readonly Guid Jscript_Page_Allocator_SizeTaskGuid = new Guid(unchecked((int) 0x313cb172), unchecked((short) 0x9dd2), unchecked((short) 0x4f8c), 0xa4, 0x1f, 0xba, 0xf7, 0x42, 0x64, 0x74, 0x90);
+        private static readonly Guid Jscript_Recycler_AllocationTaskGuid = new Guid(unchecked((int) 0x2d68a40e), unchecked((short) 0xb890), unchecked((short) 0x4c6f), 0x8c, 0x2e, 0xb4, 0xc8, 0x56, 0xcc, 0x21, 0xcf);
     #endregion
     }
 }
