@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
@@ -20,84 +19,61 @@ namespace PerfViewTests.StackViewer
         [WpfFact]
         [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
         [UseCulture("en-US")]
-        public void TestSetTimeRange()
+        public Task TestSetTimeRangeAsync()
         {
-            TestSetTimeRangeWithSpaceImpl(CultureInfo.CurrentCulture);
+            return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
         }
 
         [WpfFact]
         [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
         [UseCulture("ru-RU")]
-        public void TestSetTimeRangeWithSpace()
+        public Task TestSetTimeRangeWithSpaceAsync()
         {
-            TestSetTimeRangeWithSpaceImpl(CultureInfo.CurrentCulture);
+            return TestSetTimeRangeWithSpaceImplAsync(CultureInfo.CurrentCulture);
         }
 
-        private void TestSetTimeRangeWithSpaceImpl(CultureInfo culture)
+        private Task TestSetTimeRangeWithSpaceImplAsync(CultureInfo culture)
         {
-            // Create the controls
-            var stackWindowTask = JoinableTaskFactory.RunAsync(async () =>
+            Func<Task<StackWindow>> setupAsync = async () =>
             {
                 await JoinableTaskFactory.SwitchToMainThreadAsync();
-
-                // The main window has to be visible or the Closing event will not be raised on owned windows.
-                GuiApp.MainWindow.Show();
 
                 var file = new TimeRangeFile();
                 await OpenAsync(JoinableTaskFactory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
                 var stackSource = file.GetStackSource();
                 return stackSource.Viewer;
-            });
+            };
 
-            // Create the dispatcher for a UI thread
-            var frame = new DispatcherFrame();
-
-            // Launch a background thread to drive interaction with the controls
-            TaskCompletionSource<VoidResult> readyTrigger = new TaskCompletionSource<VoidResult>();
-            var testDriver = JoinableTaskFactory.RunAsync(async () =>
+            Func<StackWindow, Task> cleanupAsync = async stackWindow =>
             {
-                await readyTrigger.Task.ConfigureAwait(false);
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                // Show the window
-                var stackWindow = await stackWindowTask.Task.ConfigureAwait(false);
+                stackWindow.Close();
+            };
 
-                try
-                {
-                    await JoinableTaskFactory.SwitchToMainThreadAsync();
+            Func<StackWindow, Task> testDriverAsync = async stackWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
 
-                    var byNameView = stackWindow.m_byNameView;
-                    var row = byNameView.FindIndex(node => node.FirstTimeRelativeMSec > 0 && node.FirstTimeRelativeMSec < node.LastTimeRelativeMSec);
-                    CallTreeNodeBase selected = byNameView[row];
+                var byNameView = stackWindow.m_byNameView;
+                var row = byNameView.FindIndex(node => node.FirstTimeRelativeMSec > 0 && node.FirstTimeRelativeMSec < node.LastTimeRelativeMSec);
+                CallTreeNodeBase selected = byNameView[row];
 
-                    var selectedCells = stackWindow.ByNameDataGrid.Grid.SelectedCells;
-                    selectedCells.Clear();
-                    selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.FirstTimeColumn));
-                    selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.LastTimeColumn));
+                var selectedCells = stackWindow.ByNameDataGrid.Grid.SelectedCells;
+                selectedCells.Clear();
+                selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.FirstTimeColumn));
+                selectedCells.Add(new DataGridCellInfo(byNameView[row], stackWindow.ByNameDataGrid.LastTimeColumn));
 
-                    StackWindow.SetTimeRangeCommand.Execute(null, stackWindow.ByNameDataGrid);
+                StackWindow.SetTimeRangeCommand.Execute(null, stackWindow.ByNameDataGrid);
 
-                    // Yield so command takes effect
-                    await Task.Delay(20);
+                // Wait for any background processing to complete
+                await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
 
-                    Assert.Equal(selected.FirstTimeRelativeMSec.ToString("n3", culture), stackWindow.StartTextBox.Text);
-                    Assert.Equal(selected.LastTimeRelativeMSec.ToString("n3", culture), stackWindow.EndTextBox.Text);
+                Assert.Equal(selected.FirstTimeRelativeMSec.ToString("n3", culture), stackWindow.StartTextBox.Text);
+                Assert.Equal(selected.LastTimeRelativeMSec.ToString("n3", culture), stackWindow.EndTextBox.Text);
+            };
 
-                    stackWindow.Close();
-                }
-                finally
-                {
-                    await JoinableTaskFactory.SwitchToMainThreadAsync();
-                    await Task.Yield();
-                    frame.Continue = false;
-                }
-            }, JoinableTaskCreationOptions.LongRunning);
-
-            readyTrigger.SetResult(default(VoidResult));
-
-            Dispatcher.PushFrame(frame);
-
-            // Ensure failures in testDriver cause the whole test to fail
-            testDriver.Join();
+            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
         }
 
         private static Task OpenAsync(JoinableTaskFactory factory, PerfViewTreeItem item, Window parentWindow, StatusBar worker)
