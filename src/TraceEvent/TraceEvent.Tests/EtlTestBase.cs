@@ -12,17 +12,23 @@ namespace TraceEventTests
 {
     public abstract class EtlTestBase
     {
-        internal static readonly string OriginalBaselineDir = FindInputDir();
-        internal static readonly string TestDataDir = @".\inputs";
-        internal static readonly string UnZippedDataDir = @".\unzipped";
-        internal static readonly string OutputDir = @".\output";
+        protected static readonly string OriginalBaselineDir = FindInputDir();
+        protected static readonly string TestDataDir = @".\inputs";
+        protected static readonly string UnZippedDataDir = @".\unzipped";
+        protected static readonly string BaseOutputDir = @".\output";
 
         protected EtlTestBase(ITestOutputHelper output)
         {
             Output = output;
+            OutputDir = Path.Combine(BaseOutputDir, Guid.NewGuid().ToString("N").Substring(0, 8));
         }
 
         protected ITestOutputHelper Output
+        {
+            get;
+        }
+
+        protected string OutputDir
         {
             get;
         }
@@ -56,7 +62,6 @@ namespace TraceEventTests
             Trace.WriteLine(string.Format("Current Directory: {0}", Environment.CurrentDirectory));
             Trace.WriteLine(string.Format("TestDataDir Directory: {0}", Path.GetFullPath(TestDataDir)));
             Trace.WriteLine(string.Format("Unzipped Directory: {0}", Path.GetFullPath(UnZippedDataDir)));
-            Trace.WriteLine(string.Format("Output Directory: {0}", Path.GetFullPath(OutputDir)));
 
             foreach (var dataFile in Directory.EnumerateFiles(TestDataDir, "*.etl.zip"))
             {
