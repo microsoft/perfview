@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.Windows.Input;
 using Utilities;
 using Microsoft.Diagnostics.Utilities;
+using System.Threading.Tasks;
 
 namespace PerfView
 {
@@ -162,15 +163,17 @@ namespace PerfView
         public void StartWork(string message, Action work, Action finally_ = null)
         {
             // We only call this from the GUI thread
-            Debug.Assert(Dispatcher.Thread == Thread.CurrentThread);
-            if (m_working)
+            if (Dispatcher.Thread != Thread.CurrentThread)
+                throw new InvalidOperationException("Work can only be started from the UI thread.");
+
+            // Because we are only called on the GUI thread, there is no race.
+            if (m_work != null)
             {
                 // PerfViewLogger.Log.DebugMessage("Must cancel " + m_workMessage + " before starting " + message);
                 LogError("Must first cancel: " + m_workMessage + " before starting " + message);
                 return;
             }
             // PerfViewLogger.Log.DebugMessage("Starting Working " + message);
-            m_working = true;       // Because we are only called on the GUI thread, there is no race. 
             m_abortStarted = false;
             m_abortDidInterrupt = false;
             m_endWorkStarted = false;
@@ -198,20 +201,18 @@ namespace PerfView
             LogWriter.WriteLine(completeMessage);
             m_loggedStatus = false;
 
-            SignalPropertyChange("IsWorking");
-            SignalPropertyChange("IsNotWorking");
-
             // This part may take a little bit of time, so we pass it off to another
             // thread (to keep the UI responsive, and then when it is done call
-            // back (this.BeginInvoke), to finish it off. 
-            ThreadPool.QueueUserWorkItem(delegate (object state)
+            // back (this.BeginInvoke), to finish it off.
+            var currentCulture = CultureInfo.CurrentCulture;
+            var currentUICulture = CultureInfo.CurrentUICulture;
+            m_work = Task.Run(() =>
             {
                 var oldCulture = Tuple.Create(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
-                var culture = (Tuple<CultureInfo, CultureInfo>)state;
                 try
                 {
-                    Thread.CurrentThread.CurrentCulture = culture.Item1;
-                    Thread.CurrentThread.CurrentUICulture = culture.Item2;
+                    Thread.CurrentThread.CurrentCulture = currentCulture;
+                    Thread.CurrentThread.CurrentUICulture = currentUICulture;
 
                     try
                     {
@@ -264,7 +265,10 @@ namespace PerfView
                     Thread.CurrentThread.CurrentCulture = oldCulture.Item1;
                     Thread.CurrentThread.CurrentUICulture = oldCulture.Item2;
                 }
-            }, Tuple.Create(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture));
+            });
+
+            SignalPropertyChange("IsWorking");
+            SignalPropertyChange("IsNotWorking");
         }
         /// <summary>
         /// This is used by the thread off the GUI thread to post back a response.  It also informs
@@ -275,7 +279,7 @@ namespace PerfView
         {
             // EndWork should only be called from the worker.  
             Debug.Assert(m_worker == null || Thread.CurrentThread == m_worker);
-            Debug.Assert(m_working, "Called EndWork before work was started");
+            Debug.Assert(m_work != null, "Called EndWork before work was started");
             m_endWorkStarted = true;
             Dispatcher.BeginInvoke((Action)delegate()
             {
@@ -300,7 +304,7 @@ namespace PerfView
                     if (m_parentWindow != null)
                         m_parentWindow.Cursor = m_origCursor;
 
-                    m_working = false;
+                    m_work = null;
                     SignalPropertyChange("IsWorking");
                     SignalPropertyChange("IsNotWorking");
                     if (response != null)
@@ -321,7 +325,7 @@ namespace PerfView
         {
             if (!silent)
                 Log("Abort Requested.");
-            if (!m_working)
+            if (m_work == null)
             {
                 if (!silent)
                     Log("No work in progress.  Abort skipped.");
@@ -380,11 +384,33 @@ namespace PerfView
         /// <summary>
         /// returns true if we have started work and have not completed it. 
         /// </summary>
-        public bool IsWorking { get { return m_working; } }
+        public bool IsWorking { get { return m_work != null; } }
         /// <summary>
         /// returns true if we there is no pending work. 
         /// </summary>
-        public bool IsNotWorking { get { return !m_working; } }
+        public bool IsNotWorking { get { return m_work == null; } }
+
+        /// <summary>
+        /// Waits for any outstanding work to complete.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public async Task WaitForWorkCompleteAsync()
+        {
+            while (true)
+            {
+                if (!IsWorking)
+                    return;
+
+                var work = m_work;
+                if (work != null)
+                {
+                    await work.ConfigureAwait(false);
+                }
+
+                await Task.Delay(TimeSpan.FromMilliseconds(1)).ConfigureAwait(false);
+            }
+        }
+
         /// <summary>
         /// Give a textBox, expand the selection to select the whole number
         /// returns true if successful.  Meant to be used for TextBox doubleClick events.  
@@ -467,7 +493,7 @@ namespace PerfView
         Brush m_blinkColor;
         Window m_parentWindow;
         System.Windows.Input.Cursor m_origCursor;
-        bool m_working;
+        Task m_work;
         Action m_finally;                   // work that is done wehther the command succeeds or not 
         bool m_loggedStatus;                // Did we send anything to the status bar?
 
