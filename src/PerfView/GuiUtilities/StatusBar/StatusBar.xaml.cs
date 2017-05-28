@@ -267,8 +267,8 @@ namespace PerfView
                 }
             });
 
-            SignalPropertyChange("IsWorking");
-            SignalPropertyChange("IsNotWorking");
+            SignalPropertyChange(nameof(IsWorking));
+            SignalPropertyChange(nameof(IsNotWorking));
         }
         /// <summary>
         /// This is used by the thread off the GUI thread to post back a response.  It also informs
@@ -305,8 +305,8 @@ namespace PerfView
                         m_parentWindow.Cursor = m_origCursor;
 
                     m_work = null;
-                    SignalPropertyChange("IsWorking");
-                    SignalPropertyChange("IsNotWorking");
+                    SignalPropertyChange(nameof(IsWorking));
+                    SignalPropertyChange(nameof(IsNotWorking));
                     if (response != null)
                         response();
                     if (m_finally != null)
