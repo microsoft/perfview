@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -11,77 +9,13 @@ using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
-    public class GeneralParsing
+    public class GeneralParsing : EtlTestBase
     {
-        static string OriginalBaselineDir = FindInputDir();
-        static string TestDataDir = @".\inputs";
-        static string UnZippedDataDir = @".\unzipped";
-        static string OutputDir = @".\output";
         static string NewBaselineDir = @".\newBaseLines";
 
-        private readonly ITestOutputHelper _output;
-
         public GeneralParsing(ITestOutputHelper output)
+            : base(output)
         {
-            _output = output;
-        }
-
-        /// <summary>
-        ///  Tries to find the original place in the source base where input data comes from 
-        ///  This may not always work if the tests are copied away from the source code (cloud test does this).  
-        /// </summary>
-        /// <returns></returns>
-        private static string FindInputDir()
-        {
-            string dir = Environment.CurrentDirectory;
-            while (dir != null)
-            {
-                string candidate = Path.Combine(dir, @"TraceEvent\TraceEvent.Tests\inputs");
-                if (Directory.Exists(candidate))
-                    return Path.GetFullPath(candidate);
-                dir = Path.GetDirectoryName(dir);
-            }
-            return @"%PERFVIEW%\src\TraceEvent\TraceEvent.Tests\inputs";
-        }
-
-        private static bool s_fileUnzipped;
-        private static void UnzipDataFiles()
-        {
-            if (s_fileUnzipped)
-                return;
-            Trace.WriteLine(string.Format("Current Directory: {0}", Environment.CurrentDirectory));
-            Trace.WriteLine(string.Format("TestDataDir Directory: {0}", Path.GetFullPath(TestDataDir)));
-            Trace.WriteLine(string.Format("Unzipped Directory: {0}", Path.GetFullPath(UnZippedDataDir)));
-            Trace.WriteLine(string.Format("Output Directory: {0}", Path.GetFullPath(OutputDir)));
-
-            foreach (var dataFile in Directory.EnumerateFiles(TestDataDir, "*.etl.zip"))
-            {
-                string etlFilePath = Path.Combine(UnZippedDataDir, Path.GetFileNameWithoutExtension(dataFile));
-                if (!File.Exists(etlFilePath) || File.GetLastWriteTimeUtc(etlFilePath) < File.GetLastWriteTimeUtc(dataFile))
-                {
-                    Trace.WriteLine(string.Format("Unzipping File {0} -> {1}", dataFile, etlFilePath));
-                    var zipReader = new ZippedETLReader(dataFile);
-                    zipReader.SymbolDirectory = Path.Combine(UnZippedDataDir, "Symbols");
-                    zipReader.EtlFileName = etlFilePath;
-                    zipReader.UnpackArchive();
-                }
-                else
-                    Trace.WriteLine(string.Format("using cached ETL file {0}", etlFilePath));
-                Assert.True(File.Exists(etlFilePath));
-            }
-            Trace.WriteLine("Finished unzipping data");
-            s_fileUnzipped = true;
-        }
-
-        public static IEnumerable<object[]> TestEtlFiles
-        {
-            get
-            {
-                // The test data is contained in files of the same name, but with a .zip extension.
-                // Only the names are returned since the extracted files will be in a different directory.
-                return from file in Directory.EnumerateFiles(TestDataDir, "*.etl.zip")
-                       select new[] { Path.GetFileNameWithoutExtension(file) };
-            }
         }
 
         /// <summary>
@@ -93,17 +27,12 @@ namespace TraceEventTests
         [MemberData(nameof(TestEtlFiles))]
         public void ETW_GeneralParsing_Basic(string etlFileName)
         {
-            _output.WriteLine($"In {nameof(ETW_GeneralParsing_Basic)}(\"{etlFileName}\")");
-            Assert.True(Directory.Exists(TestDataDir));
-            UnzipDataFiles();
-            if (Directory.Exists(OutputDir))
-                Directory.Delete(OutputDir, true);
-            Directory.CreateDirectory(OutputDir);
-            _output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            Output.WriteLine($"In {nameof(ETW_GeneralParsing_Basic)}(\"{etlFileName}\")");
+            PrepareTestData();
 
             string etlFilePath = Path.Combine(UnZippedDataDir, etlFileName);
             bool anyFailure = false;
-            _output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
+            Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
             string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
             // See if we have a cooresponding baseline file 
@@ -120,11 +49,11 @@ namespace TraceEventTests
                 baselineFile = File.OpenText(baselineName);
             else
             {
-                _output.WriteLine("WARNING: No baseline file");
-                _output.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
-                _output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
-                _output.WriteLine("To Create a baseline file");
-                _output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
+                Output.WriteLine("WARNING: No baseline file");
+                Output.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
+                Output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
+                Output.WriteLine("To Create a baseline file");
+                Output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
                     Path.GetFullPath(newBaselineName),
                     Path.GetFullPath(baselineName)
                     ));
@@ -201,12 +130,12 @@ namespace TraceEventTests
                     {
                         firstFailLineNum = lineNum;
                         anyFailure = true;
-                        _output.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
-                        _output.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
-                        _output.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
+                        Output.WriteLine(string.Format("ERROR: File {0}: event not equal to expected on line {1}", etlFilePath, lineNum));
+                        Output.WriteLine(string.Format("   Expected: {0}", expectedParsedEvent));
+                        Output.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
 
-                        _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                        _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                        Output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                        Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
                             Path.GetFullPath(newBaselineName),
                             Path.GetFullPath(baselineName)
                             ));
@@ -223,7 +152,7 @@ namespace TraceEventTests
                         eventName != "Windows Kernel/DiskIO/Opcode(16)" &&
                         eventName != "Windows Kernel/SysConfig/Opcode(37)")
                     {
-                        _output.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
+                        Output.WriteLine(string.Format("ERROR: File {0}: has unknown event {1} at {2:n3} MSec",
                             etlFilePath, eventName, data.TimeStampRelativeMSec));
 
                         // Assert throws an exception which gets swallowed in Process() so instead
@@ -251,12 +180,12 @@ namespace TraceEventTests
                 if (!histogramMismatch && expectedistogramLine != histogramLine)
                 {
                     histogramMismatch = true;
-                    _output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
-                    _output.WriteLine(string.Format("   Expected: {0}", histogramLine));
-                    _output.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
+                    Output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
+                    Output.WriteLine(string.Format("   Expected: {0}", histogramLine));
+                    Output.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
 
-                    _output.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                    _output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
+                    Output.WriteLine("To Compare output and baseline (baseline is SECOND)");
+                    Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
                         Path.GetFullPath(newBaselineName),
                         Path.GetFullPath(baselineName)
                         ));
@@ -267,13 +196,13 @@ namespace TraceEventTests
             outputFile.Close();
             if (mismatchCount > 0)
             {
-                _output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
+                Output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
                 if (!Directory.Exists(NewBaselineDir))
                     Directory.CreateDirectory(NewBaselineDir);
                 File.Copy(outputName, newBaselineName, true);
 
-                _output.WriteLine(string.Format("To Update: xcopy /s \"{0}\" \"{1}\"", 
+                Output.WriteLine(string.Format("To Update: xcopy /s \"{0}\" \"{1}\"", 
                     Path.GetFullPath(NewBaselineDir), OriginalBaselineDir));
             }
 
