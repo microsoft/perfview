@@ -1,4 +1,6 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
+using FastSerialization;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -191,7 +193,45 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// </summary>
             GCHeapSnapshot = GC | GCHeapCollect | GCHeapDump | GCHeapAndTypeNames | Type,
         };
-        public ClrTraceEventParser(TraceEventSource source) : base(source) { }
+        public ClrTraceEventParser(TraceEventSource source) : base(source)
+        {
+
+            // Subscribe to the GCBulkType events and remember the TypeID -> TypeName mapping. 
+            ClrTraceEventParserState state = State;
+            AddCallbackForEvents<GCBulkTypeTraceData>(delegate (GCBulkTypeTraceData data)
+            {
+                for (int i = 0; i < data.Count; i++)
+                {
+                    GCBulkTypeValues value = data.Values(i);
+                    string typeName = value.TypeName;
+                    // The GCBulkType events are logged after the event that needed it.  It really
+                    // should be before, but we compensate by setting the startTime to 0
+                    // Ideally the CLR logs the types before they are used.  
+                    state.SetTypeIDToName(data.ProcessID, value.TypeID, 0, typeName);
+                }
+            });
+
+        }
+
+        /// <summary>
+        /// Fetch the state object associedated with this parser and cast it to
+        /// the ClrTraceEventParserState type.   This state object contains any
+        /// informtion that you need from one event to another to decode events.
+        /// (typically ID->Name tables).  
+        /// </summary>
+        internal ClrTraceEventParserState State
+        {
+            get
+            {
+                ClrTraceEventParserState ret = (ClrTraceEventParserState)StateObject;
+                if (ret == null)
+                {
+                    ret = new ClrTraceEventParserState();
+                    StateObject = ret;
+                }
+                return ret;
+            }
+        }
 
         public event Action<GCStartTraceData> GCStart
         {
@@ -612,7 +652,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new FinalizeObjectTraceData(value, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName));
+                RegisterTemplate(new FinalizeObjectTraceData(value, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName, State));
             }
             remove
             {
@@ -1677,7 +1717,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[29] = new GCMarkTraceData(null, 26, 1, "GC", GCTaskGuid, 29, "MarkFinalizeQueueRoots", ProviderGuid, ProviderName);
                 templates[30] = new GCMarkTraceData(null, 27, 1, "GC", GCTaskGuid, 30, "MarkHandles", ProviderGuid, ProviderName);
                 templates[31] = new GCMarkTraceData(null, 28, 1, "GC", GCTaskGuid, 31, "MarkCards", ProviderGuid, ProviderName);
-                templates[32] = new FinalizeObjectTraceData(null, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName);
+                templates[32] = new FinalizeObjectTraceData(null, 29, 1, "GC", GCTaskGuid, 32, "FinalizeObject", ProviderGuid, ProviderName, state: null);
                 templates[33] = new SetGCHandleTraceData(null, 30, 1, "GC", GCTaskGuid, 33, "SetGCHandle", ProviderGuid, ProviderName);
                 templates[34] = new DestroyGCHandleTraceData(null, 31, 1, "GC", GCTaskGuid, 34, "DestoryGCHandle", ProviderGuid, ProviderName);
                 templates[35] = new PinObjectAtGCTimeTraceData(null, 33, 1, "GC", GCTaskGuid, 36, "PinObjectAtGCTime", ProviderGuid, ProviderName);
@@ -2878,7 +2918,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public int TypeNameID { get { return m_data.GetInt32At(m_baseOffset + 16); } }
         public TypeFlags Flags { get { return (TypeFlags)m_data.GetInt32At(m_baseOffset + 20); } }
         public byte CorElementType { get { return (byte)m_data.GetByteAt(m_baseOffset + 24); } }
+
+        /// <summary>
+        /// Note that this method returns the type name with generic parameters in .NET Runtime
+        /// syntax   e.g. System.WeakReference`1[System.Diagnostics.Tracing.EtwSession]
+        /// </summary>
         public string TypeName { get { return m_data.GetUnicodeStringAt(m_baseOffset + 25); } }
+
         public int TypeParameterCount
         {
             get
@@ -4265,7 +4311,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 int ret = int.MinValue;
 
                 if (Version >= 3) ret = GetInt32At(HostOffset(26, 6));
-                else Debug.Assert(false, "RunningFreeListEfficiency invalid Version : " +Version);
+                else Debug.Assert(false, "RunningFreeListEfficiency invalid Version : " + Version);
 
                 Debug.Assert(ret >= 0);
                 return ret;
@@ -4325,7 +4371,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                 if (ret == 0) return gc_heap_compact_reason.not_specified;
                 int index = IndexOfSetBit(ret);
                 if (index >= 0 && index < (int)gc_heap_compact_reason.max_compact_reasons_count) return (gc_heap_compact_reason)index;
-                Debug.Assert(false, index +" >= 0 && " +  index + " < " + (int)gc_heap_compact_reason.max_compact_reasons_count);
+                Debug.Assert(false, index + " >= 0 && " + index + " < " + (int)gc_heap_compact_reason.max_compact_reasons_count);
                 return gc_heap_compact_reason.not_specified;
             }
         }
@@ -4335,7 +4381,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 int ret = 0;
 
-                if(Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 1);
+                if (Version == 0) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 1);
                 else if (Version == 2) ret = GetInt32At(SizeOfGenData * maxGenData + sizeof(int) * 3);
                 else if (Version >= 3) ret = GetInt32At(HostOffset(42, 6));
                 else Debug.Assert(false, "ExpandMechanisms invalid Version : " + Version);
@@ -4446,7 +4492,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             {
                 Debug.Assert((int)genNumber < maxGenData);
                 // each GenData structure contains 10 pointers sized integers 
-                return new GCPerHeapHistoryGenData(Version, GetIntPtrArray( SizeOfGenData * (int)genNumber, EntriesInGenData ) );
+                return new GCPerHeapHistoryGenData(Version, GetIntPtrArray(SizeOfGenData * (int)genNumber, EntriesInGenData));
             }
             else if (Version >= 3)
             {
@@ -4460,7 +4506,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             }
         }
 
-        public bool VersionRecognized { get { int ver;  return ParseMinorVersion(out ver); } }
+        public bool VersionRecognized { get { int ver; return ParseMinorVersion(out ver); } }
 
         #region Private
         public int MinorVersion
@@ -4519,7 +4565,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private int IndexOfSetBit(int pow2)
         {
             int index = 0;
-            while((pow2 & 1) != 1 && pow2 > 0)
+            while ((pow2 & 1) != 1 && pow2 > 0)
             {
                 pow2 >>= 1;
                 index++;
@@ -4531,7 +4577,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private long[] GetIntPtrArray(int offset, int count)
         {
             long[] arr = new long[count];
-            for(int i=0; i< count; i++)
+            for (int i = 0; i < count; i++)
             {
                 arr[i] = GetIntPtrAt(offset);
                 offset += base.HostSizePtr(1);
@@ -4558,7 +4604,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         internal protected override void Validate()
         {
-            Debug.Assert( VersionRecognized );
+            Debug.Assert(VersionRecognized);
         }
 
         public int EntriesInGenData
@@ -4592,9 +4638,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             if (HasCondemnReasons1) XmlAttrib(sb, "CondemnReasons1", CondemnReasons1);
             XmlAttrib(sb, "CompactMechanisms", CompactMechanisms);
             XmlAttrib(sb, "ExpandMechanisms", ExpandMechanisms);
-            if(HasConcurrentCompactMechanisms) XmlAttrib(sb, "ConcurrentCompactMechanisms", ConcurrentCompactMechanisms);
+            if (HasConcurrentCompactMechanisms) XmlAttrib(sb, "ConcurrentCompactMechanisms", ConcurrentCompactMechanisms);
             XmlAttrib(sb, "HeapIndex", HeapIndex);
-            if(HasExtraGen0Commit) XmlAttrib(sb, "ExtraGen0Commit", ExtraGen0Commit);
+            if (HasExtraGen0Commit) XmlAttrib(sb, "ExtraGen0Commit", ExtraGen0Commit);
             if (HasCount) XmlAttrib(sb, "Count", Count);
             if (HasMemoryPressure) XmlAttrib(sb, "MemoryPressure", MemoryPressure);
             sb.Append("/>");
@@ -4680,7 +4726,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private Delegate Action;
         #endregion
     }
-    
+
     public enum GCExpandMechanism : uint
     {
         None = 0,
@@ -5101,7 +5147,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public GCReason Reason { get { return (GCReason)GetInt32At(20); } }
         public GCGlobalMechanisms GlobalMechanisms { get { return (GCGlobalMechanisms)GetInt32At(24); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(28); return 0; } }
-        public bool HasClrInstanceID {  get { return Version >= 1; } }
+        public bool HasClrInstanceID { get { return Version >= 1; } }
         public int PauseMode { get { if (Version >= 2) return GetInt32At(30); return 0; } }
         public bool HasPauseMode { get { return (Version >= 2); } }
         public int MemoryPressure { get { if (Version >= 2) return GetInt32At(34); return 0; } }
@@ -5290,11 +5336,25 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public Address ObjectID { get { return GetAddressAt(HostOffset(4, 1)); } }
         public int ClrInstanceID { get { return GetInt16At(HostOffset(8, 2)); } }
 
+        /// <summary>
+        /// Gets the full type name including generic parameters in runtime syntax
+        /// For example System.WeakReference`1[System.Diagnostics.Tracing.EtwSession]
+        /// </summary>
+        public string TypeName
+        {
+            get
+            {
+                return state.TypeIDToName(ProcessID, TypeID, TimeStampQPC);
+            }
+        }
+
         #region Private
-        internal FinalizeObjectTraceData(Action<FinalizeObjectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal FinalizeObjectTraceData(Action<FinalizeObjectTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, ClrTraceEventParserState state)
+
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.Action = action;
+            this.state = state;
         }
         protected internal override void Dispatch()
         {
@@ -5313,8 +5373,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttribHex(sb, "TypeID", TypeID);
+            XmlAttrib(sb, "TypeName", TypeName);
             XmlAttribHex(sb, "ObjectID", ObjectID);
+            XmlAttribHex(sb, "TypeID", TypeID);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
             sb.Append("/>");
             return sb;
@@ -5325,7 +5386,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TypeID", "ObjectID", "ClrInstanceID" };
+                    payloadNames = new string[] { "TypeName", "ObjectID", "TypeID", "ClrInstanceID" };
                 return payloadNames;
             }
         }
@@ -5335,10 +5396,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             switch (index)
             {
                 case 0:
-                    return TypeID;
+                    return TypeName;
                 case 1:
                     return ObjectID;
                 case 2:
+                    return TypeID;
+                case 3:
                     return ClrInstanceID;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -5347,6 +5410,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
 
         private event Action<FinalizeObjectTraceData> Action;
+        protected internal override void SetState(object newState) { state = (ClrTraceEventParserState)newState; }
+        private ClrTraceEventParserState state;
         #endregion
     }
     public sealed class SetGCHandleTraceData : TraceEvent
@@ -9882,4 +9947,85 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         Demotion = 0x8,
         CardBundles = 0x10,
     }
+
+    #region private types
+    /// <summary>
+    /// ClrTraceEventParserState holds all information that is shared among all events that is
+    /// needed to decode Clr events.   This class is registered with the source so that it will be
+    /// persisted.  Things in here include
+    /// 
+    ///     * TypeID to TypeName mapping, 
+    /// </summary>
+    internal class ClrTraceEventParserState : IFastSerializable
+    {
+        internal void SetTypeIDToName(int processID, Address typeId, long timeQPC, string typeName)
+        {
+            if (_typeIDToName == null)
+                _typeIDToName = new HistoryDictionary<string>(500);
+
+            _typeIDToName.Add(typeId + ((ulong)processID << 48), timeQPC, typeName);
+        }
+
+        internal string TypeIDToName(int processID, Address typeId, long timeQPC)
+        {
+            // We don't read lazyTypeIDToName from the disk unless we need to, check
+            lazyTypeIDToName.FinishRead();      
+            string ret;
+            if (_typeIDToName == null || !_typeIDToName.TryGetValue(typeId + ((ulong)processID << 48), timeQPC, out ret))
+                return "";
+            return ret;
+        }
+
+        #region private 
+
+        void IFastSerializable.ToStream(Serializer serializer)
+        {
+            lazyTypeIDToName.Write(serializer, delegate
+            {
+                if (_typeIDToName == null)
+                {
+                    serializer.Write(0);
+                    return;
+                }
+                serializer.Log("<WriteCollection name=\"typeIDToName\" count=\"" + _typeIDToName.Count + "\">\r\n");
+                serializer.Write(_typeIDToName.Count);
+                foreach (HistoryDictionary<string>.HistoryValue entry in _typeIDToName.Entries)
+                {
+                    serializer.Write((long)entry.Key);
+                    serializer.Write(entry.StartTime);
+                    serializer.Write(entry.Value);
+                }
+                serializer.Log("</WriteCollection>\r\n");
+            });
+        }
+
+        void IFastSerializable.FromStream(Deserializer deserializer)
+        {
+            lazyTypeIDToName.Read(deserializer, delegate
+            {
+                int count;
+                deserializer.Read(out count);
+                Debug.Assert(count >= 0);
+                deserializer.Log("<Marker name=\"typeIDToName\"/ count=\"" + count + "\">");
+                if (count > 0)
+                {
+                    if (_typeIDToName == null)
+                        _typeIDToName = new HistoryDictionary<string>(count);
+                    for (int i = 0; i < count; i++)
+                    {
+                        long key; deserializer.Read(out key);
+                        long startTimeQPC; deserializer.Read(out startTimeQPC);
+                        string value; deserializer.Read(out value);
+                        _typeIDToName.Add((Address)key, startTimeQPC, value);
+                    }
+                }
+            });
+        }
+
+        private DeferedRegion lazyTypeIDToName;
+        HistoryDictionary<string> _typeIDToName;
+        #endregion // private 
+    }
+    #endregion  // private types
+
 }

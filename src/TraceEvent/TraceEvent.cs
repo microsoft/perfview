@@ -1661,7 +1661,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         /// <summary>
         /// If this TraceEvent belongs to a parser that needs state, then this callback will set the state.  
-        /// Currently only used on KernelTraceEventParser.  
+        /// Parsers with state are reasonably rare, the main examples are KernelTraceEventParser and ClrTraceEventParser.    
         /// </summary>
         protected internal virtual void SetState(object state) { }
 
