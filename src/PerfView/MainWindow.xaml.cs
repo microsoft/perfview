@@ -1265,8 +1265,7 @@ namespace PerfView
                     if (openNext != null)
                         Open(openNext);
 
-                    if (continuation != null)
-                        continuation();
+                    continuation?.Invoke();
                 });
             }, finally_);
         }

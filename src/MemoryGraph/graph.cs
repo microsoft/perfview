@@ -1610,8 +1610,7 @@ public class SpanningTree
             }
 
             // Return the node.  
-            if (callback != null)
-                callback(node.Index);
+            callback?.Invoke(node.Index);
         }
     }
 

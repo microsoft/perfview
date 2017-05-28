@@ -258,8 +258,7 @@ namespace PerfViewExtensibility
                         perfViewStackSource.ConfigureStackWindow(stackWindow);
 
                     LogFile.WriteLine("[Opened stack viewer {0}]", filePath);
-                    if (OnOpened != null)
-                        OnOpened(stackWindow);
+                    OnOpened?.Invoke(stackWindow);
                 });
                 stackWindow.Show();
             });

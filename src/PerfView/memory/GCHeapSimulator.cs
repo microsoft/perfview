@@ -81,8 +81,7 @@ namespace PerfView
         GCHeapSimulator CreateNewSimulator(TraceProcess process)
         {
             var ret = new GCHeapSimulator(m_source, process, m_stackSource, m_log, UseOnlyAllocTicks);
-            if (OnNewGCHeapSimulator != null)
-                OnNewGCHeapSimulator(ret);
+            OnNewGCHeapSimulator?.Invoke(ret);
             return ret;
         }
 
@@ -364,8 +363,7 @@ namespace PerfView
                 {
                     Debug.WriteLine(string.Format("Destroying {0:x} from Gen {1}", liveObjectPair.Key, curGenNum));
                     m_currentHeapSize -= (uint)liveObjectPair.Value.RepresentativeSize;
-                    if (OnObjectDestroy != null)
-                        OnObjectDestroy(gcTime, m_condemedGenerationNum, liveObjectPair.Key, liveObjectPair.Value);
+                    OnObjectDestroy?.Invoke(gcTime, m_condemedGenerationNum, liveObjectPair.Key, liveObjectPair.Value);
                 }
 
                 curGen.Clear();
