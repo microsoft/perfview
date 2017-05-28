@@ -731,7 +731,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic 
             // (which includes registered), an kernel)   
             // TODO add an option that allows users to add their own here.   
+            // Note that I am not using the variables below, I am fetching the value so that it has the side
+            // effect of creating this parser (which will in turn indicate to the system that I care about the
+            // state these parsers generate as part of their operation).  
             var dynamicParser = source.Dynamic;
+            var clrParser = source.Clr;
             var kernelParser = source.Kernel;
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 
@@ -3078,7 +3082,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 64; }
+            get { return 65; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
