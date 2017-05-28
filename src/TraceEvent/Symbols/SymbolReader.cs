@@ -2887,6 +2887,11 @@ namespace Dia2Lib
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid rclsid,
             [In, MarshalAs(UnmanagedType.LPStruct)] Guid riid);
 
+        /// <summary>
+        /// Used to ensure the native library is loaded at least once prior to trying to use it. No protection is
+        /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
+        /// after use.
+        /// </summary>
         static bool s_loadedNativeDll;
 #endregion
     }
