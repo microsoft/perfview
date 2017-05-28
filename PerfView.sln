@@ -14,13 +14,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView", "src\PerfView\Pe
 		{80345889-A13D-4F2D-A096-98B95C55BF45} = {80345889-A13D-4F2D-A096-98B95C55BF45}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{CD74A439-1DFC-4FA7-ABB3-3BC6CA1F7B48}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\CodingStandards.md = documentation\CodingStandards.md
+		documentation\MakingSupportFilesNugetPackages.md = documentation\MakingSupportFilesNugetPackages.md
+		documentation\OpenSourceGitWorkflow.md = documentation\OpenSourceGitWorkflow.md
+		documentation\SettingUpRepoInVS.md = documentation\SettingUpRepoInVS.md
+		documentation\SimpleGitWorkflow.md = documentation\SimpleGitWorkflow.md
+		documentation\TraceEventProgrammersGuide.md = documentation\TraceEventProgrammersGuide.md
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4068F9B-607A-4531-98A8-DE9B392C2D2C}"
 	ProjectSection(SolutionItems) = preProject
 		appveyor.yml = appveyor.yml
-		documentation\CodingStandards.md = documentation\CodingStandards.md
 		CONTRIBUTING.md = CONTRIBUTING.md
 		README.md = README.md
-		documentation\SettingUpRepoInVS.md = documentation\SettingUpRepoInVS.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpInterface", "src\HeapDumpInterface\HeapDumpInterface.csproj", "{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}"
