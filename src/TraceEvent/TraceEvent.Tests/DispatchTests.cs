@@ -632,13 +632,15 @@ namespace TraceEventTests
         [Fact]
         public void DispatcherTests()
         {
+            const int IterationCount = 2000;
+
             var asParserServices = (ITraceParserServices)m_dispatcher;
             var curCallbackCount = m_dispatcher.DistinctCallbackCount();
             Output.WriteLine("Callback Count {0}", curCallbackCount);
             var r = new Random(10);
 
             bool verbose = false;
-            for (int i = 1; i < 50000; i++)
+            for (int i = 1; i < IterationCount; i++)
             {
                 if (i == -1 || i == -2)
                 {
@@ -761,7 +763,7 @@ namespace TraceEventTests
             sw.WriteLine("");
 
             sw.WriteLine("Visited");
-            foreach (var key in m_visited.Keys)
+            foreach (var key in m_visited)
             {
                 sw.WriteLine("  {0} {1} {2}", key.GetHashCode(), key.ProviderGuid, key.eventID);
             }
@@ -793,13 +795,13 @@ namespace TraceEventTests
                 SendEvent(template.ProviderGuid, (int)template.eventID, template.lookupAsClassic);
 
             foreach (var template in m_inactiveTemplates)
-                Assert.True(!m_visited.ContainsKey(template));
+                Assert.True(!m_visited.Contains(template));
 
             foreach (var template in m_activeTemplates)
-                Assert.True(m_visited.ContainsKey(template));
+                Assert.True(m_visited.Contains(template));
 
             foreach (var template in m_repeatTemplates)
-                Assert.True(m_visited.ContainsKey(template));
+                Assert.True(m_visited.Contains(template));
         }
 
         Action<EmptyTraceData> MakeTarget(int i)
@@ -809,13 +811,12 @@ namespace TraceEventTests
 
         void Target(EmptyTraceData data)
         {
-            Assert.True(!m_visited.ContainsKey(data));
-            m_visited.Add(data, true);
+            Assert.True(m_visited.Add(data));
         }
 
         int m_dummy;
         TraceEventDispatcher m_dispatcher;
-        Dictionary<EmptyTraceData, bool> m_visited = new Dictionary<EmptyTraceData, bool>();
+        HashSet<EmptyTraceData> m_visited = new HashSet<EmptyTraceData>();
         List<EmptyTraceData> m_inactiveTemplates = new List<EmptyTraceData>();
         List<EmptyTraceData> m_activeTemplates = new List<EmptyTraceData>();
         List<EmptyTraceData> m_repeatTemplates = new List<EmptyTraceData>();
