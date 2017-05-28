@@ -180,7 +180,6 @@ namespace PerfView
         public double SkipMSec;
         public bool ForceNgenRundown;
         public bool DumpHeap;
-        public bool Finalizers;
 
         // Collect options
         public bool NoGui;
@@ -421,8 +420,9 @@ namespace PerfView
                     KernelTraceEventParser.Keywords.Interrupt;
             }
 
+            bool Finalizers = false;
             parser.DefineOptionalQualifier("DumpHeap", ref DumpHeap, "Capture a heap snapshot on profile stop");
-            parser.DefineOptionalQualifier("Finalizers", ref Finalizers, "Track the number of objects of each type finalized.");
+            parser.DefineOptionalQualifier("Finalizers", ref Finalizers, "(Obsolete) This option is accepted for backward compatibility with tooling, but is no longer used.");
             parser.DefineOptionalQualifier("ClrEventLevel", ref ClrEventLevel, "The verbosity for CLR events");
             parser.DefineOptionalQualifier("ClrEvents", ref ClrEvents,
                 "A comma separated list of .NET CLR events to turn on.  See Users guide for details.");

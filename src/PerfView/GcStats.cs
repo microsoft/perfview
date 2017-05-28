@@ -71,7 +71,7 @@ namespace Stats
             }
             else
             {
-                writer.WriteLine("<LI><I>No finalized object counts available. No objects were finalized and/or the Finalizers option was not selected.</I></LI>");
+                writer.WriteLine("<LI><I>No finalized object counts available. No objects were finalized and/or the trace did not include the necessary information.</I></LI>");
             }
             writer.WriteLine("</UL>");
             writer.WriteLine("<Center>");

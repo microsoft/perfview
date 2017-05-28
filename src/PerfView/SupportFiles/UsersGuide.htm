@@ -4079,18 +4079,6 @@
             the Additional Providers textbox.&nbsp;&nbsp;&nbsp;
             The option /Providers=ClrStress can achive this at the command line.
         </li>
-        <li>
-            The <strong><a id="FinalizersCheckBox">Finalizers Checkbox</a></strong> - Turns on
-            .NET events that fire whenever an object is finalized, and tracks how many instances
-            of each finalizable object have their finalizers invoked.  The resulting counts are
-            shown on the <a href="#GCStats">GC Stats Report</a>.  This option can be useful in
-            tracking down reliability problems related to non-deterministic resource cleanup, helping
-            to identify objects that are being left for finalization rather than being disposed of
-            deterministically.  Not disposing of finalizable objects can also have a performance impact
-            on applications, as finalizable objects always survive at least one garbage collection, and
-            as a single finalization thread is responsible for processing all finalizers serially.  The
-            /Finalizers command line option achieves the same effect.
-        </li>
 
         <li>
             The <strong><a id="MemInfoCheckBox">MemInfo Checkbox</a></strong> - Turns on
