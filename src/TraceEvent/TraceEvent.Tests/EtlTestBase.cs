@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.Tracing;
 using Xunit;
 using Xunit.Abstractions;
@@ -45,6 +46,8 @@ namespace TraceEventTests
         }
 
         private static bool s_fileUnzipped;
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
         private static void UnzipDataFiles()
         {
             if (s_fileUnzipped)
