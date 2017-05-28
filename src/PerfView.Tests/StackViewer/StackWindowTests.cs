@@ -15,7 +15,7 @@ using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;
 
 namespace PerfViewTests.StackViewer
 {
-    public class StackWindowTests
+    public class StackWindowTests : PerfViewTestBase
     {
         [WpfFact]
         [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
@@ -35,23 +35,16 @@ namespace PerfViewTests.StackViewer
 
         private void TestSetTimeRangeWithSpaceImpl(CultureInfo culture)
         {
-            // Create the main application
-            AppLog.s_IsUnderTest = true;
-            App.CommandLineArgs = new CommandLineArgs();
-            App.CommandProcessor = new CommandProcessor();
-            GuiApp.MainWindow = new MainWindow();
-            var factory = new JoinableTaskFactory(new JoinableTaskContext());
-
             // Create the controls
-            var stackWindowTask = factory.RunAsync(async () =>
+            var stackWindowTask = JoinableTaskFactory.RunAsync(async () =>
             {
-                await factory.SwitchToMainThreadAsync();
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 // The main window has to be visible or the Closing event will not be raised on owned windows.
                 GuiApp.MainWindow.Show();
 
                 var file = new TimeRangeFile();
-                await OpenAsync(factory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
+                await OpenAsync(JoinableTaskFactory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
                 var stackSource = file.GetStackSource();
                 return stackSource.Viewer;
             });
@@ -61,7 +54,7 @@ namespace PerfViewTests.StackViewer
 
             // Launch a background thread to drive interaction with the controls
             TaskCompletionSource<VoidResult> readyTrigger = new TaskCompletionSource<VoidResult>();
-            var testDriver = factory.RunAsync(async () =>
+            var testDriver = JoinableTaskFactory.RunAsync(async () =>
             {
                 await readyTrigger.Task.ConfigureAwait(false);
 
@@ -70,7 +63,7 @@ namespace PerfViewTests.StackViewer
 
                 try
                 {
-                    await factory.SwitchToMainThreadAsync();
+                    await JoinableTaskFactory.SwitchToMainThreadAsync();
 
                     var byNameView = stackWindow.m_byNameView;
                     var row = byNameView.FindIndex(node => node.FirstTimeRelativeMSec > 0 && node.FirstTimeRelativeMSec < node.LastTimeRelativeMSec);
@@ -93,7 +86,7 @@ namespace PerfViewTests.StackViewer
                 }
                 finally
                 {
-                    await factory.SwitchToMainThreadAsync();
+                    await JoinableTaskFactory.SwitchToMainThreadAsync();
                     await Task.Yield();
                     frame.Continue = false;
                 }
@@ -105,8 +98,6 @@ namespace PerfViewTests.StackViewer
 
             // Ensure failures in testDriver cause the whole test to fail
             testDriver.Join();
-
-            GuiApp.MainWindow.Close();
         }
 
         private static Task OpenAsync(JoinableTaskFactory factory, PerfViewTreeItem item, Window parentWindow, StatusBar worker)
