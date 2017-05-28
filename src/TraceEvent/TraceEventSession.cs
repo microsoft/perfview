@@ -2190,9 +2190,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 return s_IsEtwFilteringSupported.Value;
             }
         }
-        #region private
+
+        /// <summary>
+        /// This is the backing field for the lazily-computed <see cref="FilteringSupported"/> property.
+        /// </summary>
         private static bool? s_IsEtwFilteringSupported;
-        #endregion
     }
 
 
