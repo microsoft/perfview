@@ -386,8 +386,7 @@ namespace PerfView
 
                     // TODO this is a bit of a hack, as it might replace other instances of the string.  
                     Title = Regex.Replace(Title, @" Stacks(\([^)]*\))? ", " Stacks(" + CallTree.Root.InclusiveMetric.ToString("n0") + " metric) ");
-                    if (onComplete != null)
-                        onComplete();
+                    onComplete?.Invoke();
                 });
             });
         }

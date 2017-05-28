@@ -1208,10 +1208,7 @@ namespace PerfView
 
             dc.DrawGeometry(null, new Pen(Brushes.Brown, 1), new RectangleGeometry(rect));
 
-            if (m_addExtra != null)
-            {
-                m_addExtra(dc, m_startPoint, m_endPoint);
-            }
+            m_addExtra?.Invoke(dc, m_startPoint, m_endPoint);
         }
 
         ContextMenu m_selectMenu;

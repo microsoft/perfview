@@ -524,8 +524,7 @@ namespace PerfView
                         {
                             m_timer.IsEnabled = false;
                             Hide();
-                            if (m_continuation != null)
-                                m_continuation();
+                            m_continuation?.Invoke();
                         },
                         delegate
                         {

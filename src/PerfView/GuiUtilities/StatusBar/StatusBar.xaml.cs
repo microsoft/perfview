@@ -307,10 +307,8 @@ namespace PerfView
                     m_work = null;
                     SignalPropertyChange(nameof(IsWorking));
                     SignalPropertyChange(nameof(IsNotWorking));
-                    if (response != null)
-                        response();
-                    if (m_finally != null)
-                        m_finally();
+                    response?.Invoke();
+                    m_finally?.Invoke();
                 }
             });
             m_worker = null;        // After we call end-work, you don't want to be able to abort the thread
@@ -476,9 +474,7 @@ namespace PerfView
         public event PropertyChangedEventHandler PropertyChanged;
         private void SignalPropertyChange(string propertyName)
         {
-            var propertyChanged = PropertyChanged;
-            if (propertyChanged != null)
-                propertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         // These are GUI state, and only the GUI thread cares about it.    

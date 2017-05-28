@@ -119,9 +119,7 @@ namespace System.IO.Compression2
             }
 
             if (Interlocked.Increment(ref m_InvokedCallback) == 1) {
-                if (m_AsyncCallback != null) {
-                    m_AsyncCallback(this);
-                }
+                m_AsyncCallback?.Invoke(this);
             }
         }
 
