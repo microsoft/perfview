@@ -19,16 +19,16 @@ namespace TraceEventTests
         [MemberData(nameof(TestEtlFiles))]
         public void RunTests(string etlFileName)
         {
-            Output.WriteLine($"In {nameof(ObservableTests)}.{nameof(RunTests)}(\"{etlFileName}\")");
+            Console.WriteLine($"In {nameof(ObservableTests)}.{nameof(RunTests)}(\"{etlFileName}\")");
             PrepareTestData();
 
             string etlFilePath = Path.Combine(UnZippedDataDir, etlFileName);
 
-            Output.WriteLine("Start ObservableTests");
+            Console.WriteLine("Start ObservableTests");
             using (var source = new ETWTraceEventSource(etlFilePath))
             {
                 var startCallbackCount = source.CallbackCount();
-                Output.WriteLine("StartCallbackCount = " + startCallbackCount);
+                Console.WriteLine("StartCallbackCount = " + startCallbackCount);
 
                 var clrParser = new ClrTraceEventParser(source);
                 var eventSourceParser = new DynamicTraceEventParser(source);
@@ -40,13 +40,13 @@ namespace TraceEventTests
                 IObservable<TraceEvent> allTasks = eventSourceParser.Observe("System.Threading.Tasks.TplEventSource", null);
 
                 var cnt = 0;
-                using (var gcSub = Subscribe(gcTicks, gcTickData => Output.WriteLine("Got Tick {0}", gcTickData.AllocationAmount), () => Output.WriteLine("Ticks Completed.")))
-                using (var manifestSub = Subscribe(perfViewTicks, manifestData => Output.WriteLine("Got PerfView Tick {0:f4}", manifestData.TimeStampRelativeMSec), () => Output.WriteLine("Manifests Completed")))
+                using (var gcSub = Subscribe(gcTicks, gcTickData => Console.WriteLine("Got Tick {0}", gcTickData.AllocationAmount), () => Console.WriteLine("Ticks Completed.")))
+                using (var manifestSub = Subscribe(perfViewTicks, manifestData => Console.WriteLine("Got PerfView Tick {0:f4}", manifestData.TimeStampRelativeMSec), () => Console.WriteLine("Manifests Completed")))
                 using (var allTasksSub = Subscribe(allTasks, delegate(TraceEvent allTasksData) { 
                     if (allTasksData.EventName != "ManifestData") 
-                        Output.WriteLine("Got AllTasks: Data = {0}", allTasksData);
-                }, () => Output.WriteLine("allTasks Completed")))
-                using (var logSub = Subscribe(logMessages, logMessageData => Output.WriteLine("Got PerfView Log Message {0}", logMessageData.PayloadByName("message")), () => Output.WriteLine("Log Messages Completed")))
+                        Console.WriteLine("Got AllTasks: Data = {0}", allTasksData);
+                }, () => Console.WriteLine("allTasks Completed")))
+                using (var logSub = Subscribe(logMessages, logMessageData => Console.WriteLine("Got PerfView Log Message {0}", logMessageData.PayloadByName("message")), () => Console.WriteLine("Log Messages Completed")))
                 {
                     IDisposable allPerfSub = null;
                     allPerfSub = Subscribe(allPerfView,
@@ -55,21 +55,21 @@ namespace TraceEventTests
                              cnt++;
                              if (cnt >= 5)
                              {
-                                 Output.WriteLine("Canceling allPerfiew");
+                                 Console.WriteLine("Canceling allPerfiew");
                                  allPerfSub.Dispose();
                                  allPerfSub = null;
                              }
-                             Output.WriteLine("allPerfView {0}", allPerfViewData);
 
+                             Console.WriteLine("allPerfView {0}", allPerfViewData);
                          },
-                         () => Output.WriteLine("allPerfView Completed"));
+                         () => Console.WriteLine("allPerfView Completed"));
                     source.Process();
 
                     if (allPerfSub != null)
                         allPerfSub.Dispose();
                 }
                 var endCallbackCount = source.CallbackCount();
-                Output.WriteLine("endCallbackCount = " + endCallbackCount);
+                Console.WriteLine("endCallbackCount = " + endCallbackCount);
             }
             Console.WriteLine("Done ObservableTests");
         }
