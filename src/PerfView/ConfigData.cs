@@ -67,6 +67,7 @@ namespace Utilities
         }
         public void Write(string xmlFileName)
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(xmlFileName)));
             XmlWriterSettings settings = new XmlWriterSettings();
             using (XmlWriter writer = XmlWriter.Create(xmlFileName, new XmlWriterSettings() { Indent = true, NewLineOnAttributes = true }))
                 WriteData(writer);
