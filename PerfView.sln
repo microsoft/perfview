@@ -56,6 +56,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent.Tests", "src\Tra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView64", "src\PerfView64\PerfView64.csproj", "{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView.Tests", "src\PerfView.Tests\PerfView.Tests.csproj", "{A0248EF2-8C39-478A-951E-324DDF4FF3EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -118,6 +120,10 @@ Global
 		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{A0248EF2-8C39-478A-951E-324DDF4FF3EC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2928,10 +2928,17 @@ namespace PerfView
                 EndTextBox.Text = val2.ToString("n3");
 
             // See if we are pasting a range into the start text box
-            if (string.IsNullOrWhiteSpace(StartTextBox.Text))
+            if (double.TryParse(StartTextBox.Text, out val1))
+            {
+                StartTextBox.Text = val1.ToString("n3");
+            }
+            else if (string.IsNullOrWhiteSpace(StartTextBox.Text))
+            {
                 StartTextBox.Text = "0";
+            }
             else
             {
+                // TODO: This only works for cultures where a space is not the numeric group separator
                 var match = Regex.Match(StartTextBox.Text, @"^\s*([\d\.,]+)\s+([\d\.,]+)\s*$");
                 if (match.Success)
                 {
@@ -2948,14 +2955,12 @@ namespace PerfView
                         return false;
                     }
                 }
-                else if (!double.TryParse(StartTextBox.Text, out val1))
+                else
                 {
                     StatusBar.LogError("Invalid number " + StartTextBox.Text);
                     StartTextBox.Text = "0";
                     return false;
                 }
-                else
-                    StartTextBox.Text = val1.ToString("n3");
             }
 
             if (val2 < val1)
