@@ -15,7 +15,7 @@ namespace TraceEventTests
         {
         }
 
-        [Theory]
+        [Theory(Skip = "https://github.com/Microsoft/perfview/issues/249")]
         [MemberData(nameof(TestEtlFiles))]
         public void RunTests(string etlFileName)
         {
