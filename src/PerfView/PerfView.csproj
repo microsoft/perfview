@@ -49,7 +49,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436</NoWarn>
+    <NoWarn>1591,0436,0618</NoWarn>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -63,7 +63,7 @@
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436</NoWarn>
+    <NoWarn>1591,0436,0618</NoWarn>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
@@ -80,9 +80,9 @@
       <Private>True</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Interop.Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
       <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
@@ -123,9 +123,7 @@
     <Compile Include="OtherSources\Linux\LinuxPerfScriptEventParser.cs" />
     <Compile Include="OtherSources\Linux\LinuxPerfScriptStackSource.cs" />
     <Compile Include="OtherSources\XmlTreeStackSource.cs" />
-    <Compile Include="sigparser.cs">
-      <Link>Utilities\sigparser.cs</Link>
-    </Compile>
+    <Compile Include="sigparser.cs" />
     <Compile Include="..\heapDump\GCHeapDump.cs">
       <Link>memory\GCHeapDump.cs</Link>
     </Compile>
@@ -427,31 +425,37 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\msdia140.dll</LogicalName>
+      <Link>x86\msdia140.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\sd.exe</LogicalName>
+      <Link>x86\sd.exe</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
+      <Link>x86\KernelTraceControl.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\KernelTraceControl.Win61.dll</LogicalName>
+      <Link>x86\KernelTraceControl.Win61.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\arm\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
+      <Link>arm\KernelTraceControl.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
+      <Link>amd64\KernelTraceControl.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -459,6 +463,7 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
+      <Link>amd64\msdia140.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="CopyTraceEventNativeBinariesToOutDir" BeforeTargets="Build">
@@ -472,30 +477,32 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
-      <Link>SupportFiles\x64\HeapDump.exe.config</Link>
+      <Link>amd64\HeapDump.exe</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
-      <Link>SupportFiles\x64\HeapDump.exe.config</Link>
+      <Link>amd64\HeapDump.exe.config</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\AnyCPU\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
-      <Link>SupportFiles\x86\HeapDump.exe</Link>
+      <Link>x86\HeapDump.exe</Link>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
     <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
+      <Link>x86\EtwClrProfiler.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
+      <Link>amd64\EtwClrProfiler.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(OutDir)\PerfView.xml">
       <Type>Non-Resx</Type>
@@ -507,51 +514,61 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
+      <Link>Microsoft.Diagnostics.Tracing.TraceEvent.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\FastSerialization\$(OutDir)Microsoft.Diagnostics.FastSerialization.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
+      <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
+      <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
+      <Link>x86\Microsoft.Diagnostics.Runtime.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</LogicalName>
+      <Link>Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
+      <Link>x86\DiagnosticsHub.Packaging.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.Interop.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
+      <Link>x86\DiagnosticsHub.Packaging.Interop.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.Diagnostics.Tracing.EventSource.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
+      <Link>Microsoft.Diagnostics.Tracing.EventSource.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\OSExtensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
+      <Link>OSExtensions.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\Interop.Dia2Lib.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
+      <Link>Interop.Dia2Lib.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\tutorial.exe">
       <Type>Non-Resx</Type>
@@ -582,7 +599,7 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\CsvReader.dll</LogicalName>
-      <Link>SupportFiles\CsvReader.dll</Link>
+      <Link>CsvReader.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\UsersGuide.htm">
       <Type>Non-Resx</Type>
@@ -604,16 +621,19 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\ExtensionTemplate\Commands.cs</LogicalName>
+      <Link>ExtensionTemplate\Commands.cs</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\PerfViewExtensions\GlobalSrc\Global.csproj">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\ExtensionTemplate\Global.csproj</LogicalName>
+      <Link>ExtensionTemplate\Global.csproj</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="..\PerfViewExtensions\GlobalSrc\Global.csproj.user">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\ExtensionTemplate\Global.csproj.user</LogicalName>
+      <Link>ExtensionTemplate\Global.csproj.user</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\Images\MainViewer.png">
       <Type>Non-Resx</Type>

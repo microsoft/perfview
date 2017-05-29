@@ -28,7 +28,6 @@
     <AssemblyAttributeComVisible>false</AssemblyAttributeComVisible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <NoWarn>0649;0169</NoWarn>
     <LangVersion>6</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -41,7 +40,7 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>0649 0618</NoWarn>
+    <NoWarn>0649,0618</NoWarn>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisIgnoreGeneratedCode>true</CodeAnalysisIgnoreGeneratedCode>
@@ -55,7 +54,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>0649 0618</NoWarn>
+    <NoWarn>0649,0618</NoWarn>
     <UseVSHostingProcess>false</UseVSHostingProcess>
     <DocumentationFile>bin\Release\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>

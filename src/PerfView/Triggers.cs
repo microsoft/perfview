@@ -189,9 +189,11 @@ namespace Triggers
         {
             m_monitoringDone = true;
 
+#if PERFVIEW
             var cmd = m_cmd;
             if (cmd != null)
                 cmd.Kill();
+#endif
         }
         public override string Status
         {
@@ -289,7 +291,9 @@ namespace Triggers
         private bool m_instanceExists;
         private TextWriter m_log;
         public event Action<PerformanceCounterTrigger> m_triggered;
+#if PERFVIEW
         private Utilities.Command m_cmd;
+#endif
 
         private Task m_task;
         private volatile bool m_monitoringDone;
