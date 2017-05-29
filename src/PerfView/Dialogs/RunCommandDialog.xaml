@@ -359,11 +359,7 @@
                     </TextBlock>
                     <CheckBox Grid.Row="0" Grid.Column="12" Name="HeapSnapshotCheckBox" VerticalAlignment="Center" />
 
-                    <TextBlock Grid.Row="0" Grid.Column="13" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2"
-                               ToolTip="Track the number of objects of each type finalized." >
-                    <Hyperlink Command="Help" CommandParameter="FinalizersCheckBox">Finalizers:</Hyperlink>
-                    </TextBlock>
-                    <CheckBox Grid.Column="14" Name="FinalizersCheckBox" VerticalAlignment="Center" Margin="0,2" />
+                    <CheckBox Grid.Row="0" Grid.Column="14" VerticalAlignment="Center" Visibility="Hidden" Margin="0,2" />
                 </Grid>
 
                 <!-- Additional Providers -->
