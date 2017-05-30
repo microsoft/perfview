@@ -212,8 +212,7 @@ namespace PerfView
             {
                 m_mainWindow.Focus();
 
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             }
         }
 

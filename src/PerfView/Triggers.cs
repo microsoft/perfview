@@ -239,8 +239,7 @@ namespace Triggers
                     m_log.WriteLine("Error: heapdump failed with error code {0}", m_cmd.ExitCode);
                 else
                 {
-                    if (m_triggered != null)
-                        m_triggered(this);
+                    m_triggered?.Invoke(this);
                 }
                 m_cmd = null;
             });

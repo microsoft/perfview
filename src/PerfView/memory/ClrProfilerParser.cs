@@ -587,8 +587,7 @@ namespace ClrProfiler
 						ProfilerStackTraceID firstStackId = GetStackIdForFileId(fileFirstStackId);
 						VerboseDebug("Module " + moduleId + " Addr=" + address + " stack=S" + firstStackId + " name=" + name);
 						ProfilerModule newModule = CreateModule((ProfilerModuleID)moduleId, name, address, firstStackId);
-						if (ModuleLoad != null)
-							ModuleLoad(newModule);
+						ModuleLoad?.Invoke(newModule);
 					}
 				}
 				else if (c == 'y')
