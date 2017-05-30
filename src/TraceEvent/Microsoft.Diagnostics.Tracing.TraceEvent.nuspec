@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<package>
+  <metadata minClientVersion="2.5">
+    <id>Microsoft.Diagnostics.Tracing.TraceEvent</id>
+    <version>0.0.0</version>
+    <title>Microsoft TraceEvent Library</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
+    <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>
+      Event Tracing for Windows (ETW) is a powerful logging mechanism built into the Windows OS and is used extensively in Windows. You can also log ETW events yourself code using the System.Diagnostics.Tracing.EventSource class.
+
+      The TraceEvent library conains the classes needed to control ETW providers (including EventSources) and parse the events they emit.
+
+      The library includes
+      -- TraceEventSession which can enable ETW providers,
+      -- EtwTraceEventSource which lets you read the stream of ETW events, and
+      -- TraceLog which is is digested form of ETW events which include decoded stack traces associated with the events.
+
+      Also see the TraceEvent Samples NuGet package for example uses of this library.
+    </description>
+    <summary>TraceEvent is a .NET Framework library for capturing and analyzing ETW events.</summary>
+    <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/V$version$</releaseNotes>
+    <copyright>Copyright © Microsoft Corporation</copyright>
+    <tags>TraceEvent EvenSource Microsoft ETW Event Tracing for Windows</tags>
+  </metadata>
+
+  <files>
+    <!-- Support for native binaries -->
+    <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="build\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
+
+    <!-- Native binaries -->
+    <file src="$OutDir$amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
+    <file src="$OutDir$amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
+    <file src="$OutDir$x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
+    <file src="$OutDir$x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
+    <file src="$OutDir$x86\msdia140.dll" target="lib\native\x86\msdia140.dll" />
+
+    <!-- Libraries and sources -->
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net45" />
+    <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net45" />
+    <file exclude="obj\**\*.cs" src="**\*.cs" target="src" />
+    <file src="obj\$Configuration$\**\*.cs" target="src\obj\$Configuration$" />
+  </files>
+
+</package>
