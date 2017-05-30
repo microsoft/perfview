@@ -108,6 +108,6 @@ class PerfViewLogger : Microsoft.Diagnostics.Tracing.EventSource
 
     // Remember the real time where we started and stopped the trace so they are there event 
     // If the Start and Stop events get lost (because of circular buffering)
-    public static DateTime StartTime;
-    public static DateTime StopTime;
+    public static DateTime StartTime = DateTime.Now;
+    public static DateTime StopTime = DateTime.MaxValue;
 }
