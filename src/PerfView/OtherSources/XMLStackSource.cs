@@ -38,8 +38,7 @@ namespace Diagnostics.Tracing.StackSources
                 writer.WriteStartElement("StackWindow");
                 XmlStackSourceWriter.WriteStacks(source, writer);
 
-                if (additionalData != null)
-                    additionalData(writer);
+                additionalData?.Invoke(writer);
                 writer.WriteEndElement();
             }
         }

@@ -2787,8 +2787,8 @@ internal static class GCRootNames
                                         // Console.WriteLine("Succeeded with thread local field {0}", fieldName);
                                     }
                                 }
-                                if (onClass != null)
-                                    onClass(className, moduleName);
+
+                                onClass?.Invoke(className, moduleName);
                             }
                             catch (Exception e)
                             {

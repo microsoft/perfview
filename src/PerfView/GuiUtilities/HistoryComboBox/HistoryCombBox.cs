@@ -107,9 +107,7 @@ namespace Controls
 
             if (prevFocus)
             {
-                var textEntered = TextEntered;
-                if (textEntered != null)
-                    textEntered(sender, e);
+                TextEntered?.Invoke(sender, e);
                 ValueUpdate();
             }
         }
@@ -148,9 +146,7 @@ namespace Controls
             if (enter != null)
                 Enter(sender, e);
 
-            var textEntered = TextEntered;
-            if (textEntered != null)
-                textEntered(sender, e);
+            TextEntered?.Invoke(sender, e);
 
             ValueUpdate();
         }

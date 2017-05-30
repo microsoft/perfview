@@ -81,9 +81,7 @@ namespace PerfView
         public event PropertyChangedEventHandler PropertyChanged;
         protected void FirePropertyChanged(string propertyName)
         {
-            var propertyChanged = PropertyChanged;
-            if (propertyChanged != null)
-                propertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         /// <summary>
@@ -186,8 +184,7 @@ namespace PerfView
             if (mainWindow != null)
                 mainWindow.OpenPath(FilePath);
 
-            if (doAfter != null)
-                doAfter();
+            doAfter?.Invoke();
         }
         /// <summary>
         /// Close the file
@@ -266,8 +263,7 @@ namespace PerfView
         // Groups do no semantic action.   All the work is in the visual GUI part.  
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
-            if (doAfter != null)
-                doAfter();
+            doAfter?.Invoke();
         }
         public override void Close() { }
 
@@ -483,8 +479,8 @@ namespace PerfView
 
                         if (continuation != null)
                             continuation(doAfter);
-                        else if (doAfter != null)
-                            doAfter();
+                        else
+                            doAfter?.Invoke();
                     });
                 });
             }
@@ -650,8 +646,7 @@ namespace PerfView
                 // By default we have a singleton source (which we don't show on the GUI) and we immediately open it
                 m_singletonStackSource = new PerfViewStackSource(this, "");
                 m_singletonStackSource.Open(parentWindow, worker);
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             };
         }
 
@@ -1011,10 +1006,8 @@ table {
                                     {
                                         if (message != null)
                                             Viewer.StatusBar.Log(message);
-                                        if (continuation != null)
-                                        {
-                                            continuation();
-                                        }
+
+                                        continuation?.Invoke();
                                     });
                                 });
                             }
@@ -1026,16 +1019,14 @@ table {
                         WebBrowserWindow.Navigate(Viewer.Browser, reportFileName);
                         Viewer.Show();
 
-                        if (doAfter != null)
-                            doAfter();
+                        doAfter?.Invoke();
                     });
                 });
             }
             else
             {
                 Viewer.Focus();
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             }
         }
 
@@ -2244,13 +2235,12 @@ table {
                     {
                         m_Children = newChildren;
                         FirePropertyChanged("Children");
-                        if (doAfter != null)
-                            doAfter();
+                        doAfter?.Invoke();
                     });
                 });
             }
-            if (doAfter != null)
-                doAfter();
+
+            doAfter?.Invoke();
         }
         /// <summary>
         /// Close the file
@@ -2322,16 +2312,14 @@ table {
                             throw new ApplicationException("Not a file type that supports the EventView.");
                         Viewer = new EventWindow(parentWindow, this);
                         Viewer.Show();
-                        if (doAfter != null)
-                            doAfter();
+                        doAfter?.Invoke();
                     });
                 });
             }
             else
             {
                 Viewer.Focus();
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             }
         }
         public override void Close() { }
@@ -2482,8 +2470,7 @@ table {
                                             Viewer.Width = width;
                                         }
                                         FirstAction(Viewer);
-                                        if (doAfter != null)
-                                            doAfter();
+                                        doAfter?.Invoke();
                                     });
                                 });
                             });
@@ -2514,8 +2501,7 @@ table {
             else
             {
                 Viewer.Focus();
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             }
         }
 
@@ -5886,8 +5872,7 @@ table {
                 // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
                 m_singletonStackSource = new PerfViewStackSource(this, "");
                 m_singletonStackSource.Open(parentWindow, worker);
-                if (doAfter != null)
-                    doAfter();
+                doAfter?.Invoke();
             };
         }
 
@@ -6649,10 +6634,7 @@ table {
 
                         IsExpanded = true;
 
-                        if (doAfter != null)
-                        {
-                            doAfter();
-                        }
+                        doAfter?.Invoke();
                     });
                 });
             }
