@@ -56,6 +56,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\PerfView.TestUtilities\PerfView.TestUtilities.csproj">
+      <Project>{fe5cc86d-e87e-4560-8004-8852f3de6794}</Project>
+      <Name>PerfView.TestUtilities</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\TraceEvent.csproj">
       <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
       <Name>TraceEvent</Name>
