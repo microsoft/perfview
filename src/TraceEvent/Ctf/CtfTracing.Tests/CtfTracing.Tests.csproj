@@ -52,6 +52,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\..\PerfView.TestUtilities\DebugAssertionTests.cs">
+      <Link>DebugAssertionTests.cs</Link>
+    </Compile>
     <Compile Include="CtfTraceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
