@@ -20,6 +20,10 @@ namespace Profiler
             CLRMetaHost mh = new CLRMetaHost();
             foreach (CLRRuntimeInfo rti in mh.EnumerateInstalledRuntimes())
             {
+                string versionString = rti.GetVersionString();
+                if (versionString.StartsWith("v2."))
+                    continue;
+
                 string libPath = Path.Combine(rti.GetRuntimeDirectory(), fileName);
                 if (DoesFileMatch(libPath, timestamp, sizeOfImage))
                 {
