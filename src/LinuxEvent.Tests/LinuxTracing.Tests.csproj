@@ -60,6 +60,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\PerfView.TestUtilities\DebugAssertionTests.cs">
+      <Link>DebugAssertionTests.cs</Link>
+    </Compile>
     <Compile Include="BlockedTimeTests.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="EventParseTests.cs" />
