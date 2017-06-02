@@ -498,11 +498,7 @@ namespace Utilities
                 outputStream.WriteLine("RUN CMD: " + commandLine);
             }
 #endif
-#if false
-            // Make sure we kill this task when Ctrl C or appdomain unloads
-            if (!options.noWait)
-                AddCommandToCleanupList(this);
-#endif
+
             try
             {
                 process.Start();
@@ -755,57 +751,6 @@ namespace Utilities
         private StringBuilder output;
         private CommandOptions options;
         private TextWriter outputStream;
-
-#if false 
-        // Control C support.  Kill any commands if control C is hit or process exits.  
-        private static List<WeakReference> s_commandsToCleanup = SetupControlC();
-        private static bool s_controlCProcessed;
-
-        private static List<WeakReference> SetupControlC()
-        {
-            Console.CancelKeyPress += OnControlC;
-            AppDomain.CurrentDomain.DomainUnload += OnControlC;
-            return new List<WeakReference>(); 
-        }
-        private static void OnControlC(object sender, EventArgs e)
-        {
-            lock (s_commandsToCleanup)
-            {
-                if (!s_controlCProcessed)
-                {
-                    Console.WriteLine("Command Cleanup");
-                    foreach (WeakReference commandToCleanupRef in s_commandsToCleanup)
-                    {
-                        var commandToCleanup = commandToCleanupRef.Target as Command;
-                        if (commandToCleanup != null && !commandToCleanup.HasExited)
-                        {
-                            Console.WriteLine("Killing {0}", commandToCleanup.commandLine);
-                            commandToCleanup.Kill();
-                        }
-                    }
-                    s_controlCProcessed = true;
-                    s_commandsToCleanup.Clear();
-                }
-            }
-        }
-
-        private void AddCommandToCleanupList(Command cmd)
-        {
-            lock (s_commandsToCleanup)
-            {
-                foreach (WeakReference cmdElemRef in s_commandsToCleanup)
-                {
-                    var cmdElem = cmdElemRef.Target as Command;
-                    if (cmdElem == null || cmdElem.HasExited)
-                    {
-                        cmdElemRef.Target = cmd;
-                        return;
-                    }
-                }
-                s_commandsToCleanup.Add(new WeakReference(cmd));
-            }
-        }
-#endif
         #endregion
     }
 }
