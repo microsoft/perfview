@@ -29,10 +29,7 @@ namespace Utilities
     /// on Command itself), because it is reasonably common to want to have a set
     /// of options passed to several commands, which is not easily possible otherwise. 
     /// </summary>
-#if COMMAND_PUBLIC 
-    public 
-#endif
-    sealed class CommandOptions
+    public sealed class CommandOptions
     {
         /// <summary>
         /// Can be assigned to the Timeout Property to indicate infinite timeout. 
@@ -297,10 +294,7 @@ namespace Utilities
     /// of System.Diagnostics.Process, and knows how to capture output and otherwise
     /// makes calling commands very easy.
     /// </summary>
-#if COMMAND_PUBLIC 
-    public 
-#endif
-    sealed class Command
+    public sealed class Command
     {
         /// <summary>
         /// The time the process started.  
