@@ -32,22 +32,37 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
     /// </summary>
     public static class TraceLoadedDotNetRuntimeExtensions
     {
+        internal static readonly string LoadedDotNetRuntimesKey = "Computers/LoadedDotNetRuntimes";
+
+        /// <summary>
+        /// Starts gathering .NET runtime information for a trace. If the trace was previously gathering this
+        /// information, the information collected so far is cleared.
+        /// </summary>
+        /// <remarks>
+        /// <para>This method also calls <see cref="TraceProcessesExtensions.NeedProcesses"/> to gather process
+        /// information from a trace.</para>
+        /// </remarks>
+        /// <param name="source">The source.</param>
         public static void NeedLoadedDotNetRuntimes(this TraceEventDispatcher source)
         {
-            // ensure there are base processes
+            // initialize and/or reset the processes information
             source.NeedProcesses();
 
-            if (m_currentSource != source) TraceLoadedDotNetRuntime.SetupCallbacks(source);
-            source.UserData["Computers/LoadedDotNetRuntimes"] = new Dictionary<ProcessIndex, DotNetRuntime>();
-
-            m_currentSource = source;
+            bool previouslyRegistered = source.UserData.ContainsKey(LoadedDotNetRuntimesKey);
+            source.UserData[LoadedDotNetRuntimesKey] = new Dictionary<ProcessIndex, DotNetRuntime>();
+            if (!previouslyRegistered)
+                TraceLoadedDotNetRuntime.SetupCallbacks(source);
         }
 
         public static TraceLoadedDotNetRuntime LoadedDotNetRuntime(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
-            Dictionary<ProcessIndex, DotNetRuntime> map = process.Source.UserData["Computers/LoadedDotNetRuntimes"] as Dictionary<ProcessIndex, DotNetRuntime>;
+
+            object runtimes;
+            if (!process.Source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                throw new InvalidOperationException("This source is not gathering .NET runtime information.");
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = runtimes as Dictionary<ProcessIndex, DotNetRuntime>;
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].Runtime;
             else return null;
         }
@@ -55,8 +70,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void AddCallbackOnDotNetRuntimeLoad(this TraceProcess process, Action<TraceLoadedDotNetRuntime> OnDotNetRuntimeLoaded)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+
+            object runtimes;
+            if (!process.Source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                throw new InvalidOperationException("This source is not gathering .NET runtime information.");
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)runtimes;
             if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
             map[process.ProcessIndex].OnLoaded += OnDotNetRuntimeLoaded;
         }
@@ -64,8 +83,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static void SetMutableTraceEventStackSource(this TraceProcess process, MutableTraceEventStackSource stackSource)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+
+            object runtimes;
+            if (!process.Source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                throw new InvalidOperationException("This source is not gathering .NET runtime information.");
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)runtimes;
             if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
             map[process.ProcessIndex].StackSource = stackSource;
         }
@@ -73,15 +96,23 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         public static MutableTraceEventStackSource MutableTraceEventStackSource(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Debug.Assert(m_currentSource == process.Source);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+
+            object runtimes;
+            if (!process.Source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                throw new InvalidOperationException("This source is not gathering .NET runtime information.");
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)runtimes;
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex].StackSource;
             else return null;
         }
 
         public static bool HasMutableTraceEventStackSource(this TraceEventDispatcher source)
         {
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)source.UserData["Computers/LoadedDotNetRuntimes"];
+            object runtimes;
+            if (!source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                throw new InvalidOperationException("This source is not gathering .NET runtime information.");
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)runtimes;
             return map.Any(kv => kv.Value.StackSource != null);
         }
 
@@ -96,7 +127,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         internal static void OnDotNetRuntimeLoaded(this TraceProcess process, TraceLoadedDotNetRuntime runtime)
         {
             Debug.Assert(process.Source != null);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData[LoadedDotNetRuntimesKey];
             if (!map.ContainsKey(process.ProcessIndex)) map.Add(process.ProcessIndex, new DotNetRuntime());
             map[process.ProcessIndex].Runtime = runtime;
             if (map[process.ProcessIndex].OnLoaded != null) map[process.ProcessIndex].OnLoaded(runtime);
@@ -105,15 +136,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         internal static void OnDotNetRuntimeUnloaded(this TraceProcess process)
         {
             Debug.Assert(process.Source != null);
-            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
-            if (map.ContainsKey(process.ProcessIndex))
-            {
-                // remove this runtime, since the process has terminated
-                map.Remove(process.ProcessIndex);
-            }
-        }
 
-        private static TraceEventDispatcher m_currentSource; // used to ensure non-concurrent usage
+            object runtimes;
+            if (!process.Source.UserData.TryGetValue(LoadedDotNetRuntimesKey, out runtimes))
+                return;
+
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)runtimes;
+
+            // remove this runtime, since the process has terminated
+            map.Remove(process.ProcessIndex);
+        }
         #endregion
     }
 
