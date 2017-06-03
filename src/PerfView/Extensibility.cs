@@ -12,6 +12,7 @@ using System.Threading;
 using System.Xml;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.PEFile;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using PerfView;
@@ -1239,7 +1240,7 @@ namespace PerfViewExtensibility
             {
                 foreach (var dll in Directory.GetFiles(ExtensionsDirectory, "*.dll", SearchOption.TopDirectoryOnly))
                 {
-                    using (var peFile = new PEFile.PEFile(dll))
+                    using (var peFile = new PEFile(dll))
                     {
                         if (!peFile.Header.IsManaged || peFile.Header.IsPE64)
                             continue;

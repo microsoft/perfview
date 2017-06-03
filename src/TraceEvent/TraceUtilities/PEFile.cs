@@ -6,7 +6,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Text;
 
-namespace PEFile
+namespace Microsoft.Diagnostics.Tracing.PEFile
 {
     /// <summary>
     /// PEFile is a reader for the information in a Portable Exectable (PE) FILE.   This is what EXEs and DLLs are.  

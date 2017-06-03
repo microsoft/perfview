@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using Microsoft.Diagnostics.Tracing.PEFile;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using System.Runtime.InteropServices;
 
@@ -58,7 +59,7 @@ namespace Diagnostics.Tracing.StackSources
                             string fileName = Path.Combine(directoryPath, member.Name);
                             try
                             {
-                                using (var peFile = new PEFile.PEFile(fileName))
+                                using (var peFile = new PEFile(fileName))
                                 {
                                     suffix = peFile.Header.IsManaged ? " (MANAGED)" : " (UNMANAGED)";
                                     if (peFile.Header.IsPE64)

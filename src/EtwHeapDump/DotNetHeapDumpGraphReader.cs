@@ -5,6 +5,7 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
+using Microsoft.Diagnostics.Tracing.PEFile;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -632,7 +633,7 @@ public class DotNetHeapDumpGraphReader
             m_log.WriteLine("No PDB information for {0} in ETL file, looking for it directly", module.Path);
             if (File.Exists(module.Path))
             {
-                using (var modulePEFile = new PEFile.PEFile(module.Path))
+                using (var modulePEFile = new PEFile(module.Path))
                 {
                     if (!modulePEFile.GetPdbSignature(out module.PdbName, out module.PdbGuid, out module.PdbAge))
                         m_log.WriteLine("Could not get PDB information for {0}", module.Path);

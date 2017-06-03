@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
+using Microsoft.Diagnostics.Tracing.PEFile;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System.Threading.Tasks;
@@ -73,7 +74,7 @@ namespace Microsoft.Diagnostics.Symbols
                 dllFilePath = BypassSystem32FileRedirection(dllFilePath);
                 if (File.Exists(dllFilePath))
                 {
-                    using (var peFile = new PEFile.PEFile(dllFilePath))
+                    using (var peFile = new PEFile(dllFilePath))
                     {
                         string pdbName;
                         Guid pdbGuid;
@@ -265,7 +266,7 @@ namespace Microsoft.Diagnostics.Symbols
                     m_log.WriteLine("Probing file {0}", filePath);
                     if (File.Exists(filePath))
                     {
-                        using (PEFile.PEFile file = new PEFile.PEFile(filePath))
+                        using (PEFile file = new PEFile(filePath))
                         {
                             if ((file.Header.TimeDateStampSec == buildTimestamp) && (file.Header.SizeOfImage == sizeOfImage))
                                 return filePath;
@@ -433,7 +434,7 @@ namespace Microsoft.Diagnostics.Symbols
             string pdbFileName;
             Guid pdbGuid;
             int pdbAge;
-            using (var peFile = new PEFile.PEFile(ngenImageFullPath))
+            using (var peFile = new PEFile(ngenImageFullPath))
             {
                 if (!peFile.GetPdbSignature(out pdbFileName, out pdbGuid, out pdbAge, true))
                 {
@@ -474,7 +475,7 @@ namespace Microsoft.Diagnostics.Symbols
             var isV4_5Runtime = false;
 
             Match m;
-            using (var peFile = new PEFile.PEFile(ngenexe))
+            using (var peFile = new PEFile(ngenexe))
             {
                 var fileVersionInfo = peFile.GetFileVersionInfo();
                 if (fileVersionInfo != null)

@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.PEFile;
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Properties;
@@ -168,8 +169,8 @@ namespace PerfView
             if (!traceEventDllPath.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
             {
                 var correctTraceEventDll = Path.Combine(SupportFiles.SupportFileDir, "Microsoft.Diagnostics.Tracing.TraceEvent.dll");
-                using (var fileInUse = new PEFile.PEFile(traceEventDllPath))
-                using (var correctFile = new PEFile.PEFile(correctTraceEventDll))
+                using (var fileInUse = new PEFile(traceEventDllPath))
+                using (var correctFile = new PEFile(correctTraceEventDll))
                 {
                     if (fileInUse.Header.TimeDateStampSec != correctFile.Header.TimeDateStampSec)
                         throw new ApplicationException("Error using the wrong Microsoft.Diagnostics.Tracing.TraceEvent.dll.\r\n" +
