@@ -13,10 +13,7 @@ namespace PEFile
     /// 
     /// It can read both 32 and 64 bit PE files.  
     /// </summary>
-#if PEFILE_PUBLIC
-    public
-#endif
-    unsafe sealed class PEFile : IDisposable
+    public unsafe sealed class PEFile : IDisposable
     {
         /// <summary>
         /// Create a new PEFile header reader that inspects the 
@@ -302,10 +299,7 @@ namespace PEFile
     /// PEFile are read or mapped into memory, this class can parse it when given a poitner to it. 
     /// It can read both 32 and 64 bit PE files.  
     /// </summary>
-#if PEFILE_PUBLIC
-    public
-#endif
-    unsafe sealed class PEHeader
+    public unsafe sealed class PEHeader
     {
         /// <summary>
         /// Returns a PEHeader for void* pointer in memory.  It does NO validity checking. 
@@ -665,10 +659,7 @@ namespace PEFile
     /// <summary>
     /// The Machine types supported by the portable executable (PE) File format
     /// </summary>
-#if PEFILE_PUBLIC
-    public
-#endif
-    enum MachineType : ushort
+    public enum MachineType : ushort
     {
         /// <summary>
         /// Unknown machine type
@@ -695,10 +686,7 @@ namespace PEFile
     /// <summary>
     /// Represents a Portable Executable (PE) Data directory.  This is just a well known optional 'Blob' of memory (has a starting point and size)
     /// </summary>
-#if PEFILE_PUBLIC
-    public
-#endif
-    struct IMAGE_DATA_DIRECTORY
+    public struct IMAGE_DATA_DIRECTORY
     {
         /// <summary>
         /// The start of the data blob when the file is mapped into memory
@@ -713,10 +701,7 @@ namespace PEFile
     /// <summary>
     /// FileVersionInfo represents the extended version formation that is optionally placed in the PE file resource area. 
     /// </summary>
-#if PEFILE_PUBLIC
-    public
-#endif
-    unsafe sealed class FileVersionInfo
+    public unsafe sealed class FileVersionInfo
     {
         // TODO incomplete, but this is all I need.  
         /// <summary>

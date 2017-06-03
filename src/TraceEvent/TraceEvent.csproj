@@ -32,7 +32,7 @@
   </Target>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);PEFILE_PUBLIC;PERFVIEW</DefineConstants>
+    <DefineConstants>$(DefineConstants);PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
