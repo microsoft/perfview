@@ -1,6 +1,5 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using System.Diagnostics;
-using Utilities;
 
 // Welcome to the TraceEvent code base. This _README.cs file is your table of contents.
 // 

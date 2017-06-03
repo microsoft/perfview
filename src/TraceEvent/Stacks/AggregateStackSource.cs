@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Utilities;
 
 namespace Diagnostics.Tracing.StackSources
 {

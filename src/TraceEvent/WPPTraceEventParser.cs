@@ -8,7 +8,6 @@ using System.Xml;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using FastSerialization;
-using Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System.IO;
 using System.Diagnostics.Tracing;

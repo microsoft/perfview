@@ -17,7 +17,7 @@ using System.Diagnostics;               // for StackTrace; Process
 using System.Threading;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Tracing.Utilities
 {
 
     /// <summary>

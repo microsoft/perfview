@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using Utilities;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using System.Threading.Tasks;
 using System.Threading;

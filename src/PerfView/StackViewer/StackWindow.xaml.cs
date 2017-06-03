@@ -17,6 +17,7 @@ using System.Xml;
 using Controls;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Graphs;
 using PerfView.Dialogs;
 using PerfViewModel;

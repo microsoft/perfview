@@ -10,6 +10,7 @@ using System.Windows.Input;
 using System.Windows.Navigation;
 using Controls;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using PerfView.GuiUtilities;
 using PerfView;
 using Utilities;

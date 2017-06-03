@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Tracing.Utilities
 {
     /// <summary>
     /// A finite cache based with a least reciently used algorithm for replacement.   

@@ -5,6 +5,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
 using System;

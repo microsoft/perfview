@@ -23,7 +23,6 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using Utilities;
 using Address = System.UInt64;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Utilities;

@@ -31,6 +31,7 @@ using System.ComponentModel;
 #if !PERFVIEW_COLLECT
 using Graphs;
 using EventSources;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using PerfView.Dialogs;
 using PerfView.GuiUtilities;
 #endif

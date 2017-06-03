@@ -11,11 +11,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Compatibility;
+using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Address = System.UInt64;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Utilities;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.
 namespace Microsoft.Diagnostics.Tracing

@@ -16,7 +16,6 @@ using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Win32;
-using Utilities;
 
 namespace Microsoft.Diagnostics.Tracing.Session
 {

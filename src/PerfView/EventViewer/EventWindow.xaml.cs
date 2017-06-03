@@ -15,6 +15,7 @@ using System.Windows.Media;
 using EventSources;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Utilities;
 using System.Windows.Data;
 using Microsoft.Diagnostics.Tracing.Etlx;

@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Properties;
 using Microsoft.Diagnostics.Symbols;

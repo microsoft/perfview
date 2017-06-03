@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace Utilities
+namespace Microsoft.Diagnostics.Tracing.Stacks
 {
     /// <summary>
     /// A class that maps contiguous indices from various sources from and to a single range of contiguous indices.

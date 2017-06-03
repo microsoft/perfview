@@ -3,6 +3,7 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Utilities;
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
-using Utilities;
 using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present

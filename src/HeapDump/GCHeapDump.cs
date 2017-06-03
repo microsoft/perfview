@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Utilities;
 #if PERFVIEW
 using System.Xml;
+using Microsoft.Diagnostics.Tracing.Utilities;
 #endif
 
 /// <summary>
@@ -213,7 +214,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 #if PERFVIEW
         // TODO FIX NOW, need to work for PerfView64
         var heapDumpExe = Path.Combine(Utilities.SupportFiles.SupportFileDir, @"amd64\HeapDump.exe");
-        var cmd = Utilities.Command.Run(heapDumpExe + " /GetProcessesWithGCHeaps");
+        var cmd = Command.Run(heapDumpExe + " /GetProcessesWithGCHeaps");
         var info = new ProcessInfo();
 
         int idx = 0;
