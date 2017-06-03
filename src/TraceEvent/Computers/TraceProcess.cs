@@ -27,24 +27,30 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
     /// </summary>
     public static class TraceProcessesExtensions
     {
+        internal static readonly string ProcessesKey = "Computers/Processes";
+
+        /// <summary>
+        /// Starts gathering process information for a trace. If the trace was previously gathering this information,
+        /// the information collected so far is cleared.
+        /// </summary>
+        /// <param name="source">The source.</param>
         public static void NeedProcesses(this TraceEventDispatcher source)
         {
-            TraceProcesses processes = source.Processes();
-            if (processes == null || m_currentSource != source)
+            bool previouslyRegistered = source.UserData.ContainsKey(ProcessesKey);
+            source.UserData[ProcessesKey] = new TraceProcesses(log: null, source: source);
+            if (!previouslyRegistered)
             {
-                processes = new TraceProcesses(null /* TraceLog */, source);
-                // establish listeners
-                if(m_currentSource != source) SetupCallbacks(source);
-
-                source.UserData["Computers/Processes"] = processes;
+                // First time NeedProcesses was called; establish listeners
+                SetupCallbacks(source);
             }
-
-            m_currentSource = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
-            if (source.UserData.ContainsKey("Computers/Processes")) return source.UserData["Computers/Processes"] as TraceProcesses;
-            else return null;
+            object processes;
+            if (source.UserData.TryGetValue(ProcessesKey, out processes))
+                return (TraceProcesses)processes;
+
+            return null;
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
@@ -143,8 +149,6 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 process.PeakWorkingSet = (double)data.PeakWorkingSetSize;
             });
         }
-
-        private static TraceEventDispatcher m_currentSource; // used to verify non-concurrent usage
         #endregion
     }
     
