@@ -84,7 +84,7 @@ namespace ClrProfiler
         {
             if (frameIndex < StackSourceFrameIndex.Start)
                 return System.Enum.GetName(typeof(StackSourceFrameIndex), frameIndex);      // TODO can be more efficient
-            frameIndex = (StackSourceFrameIndex)((int)frameIndex - StackSourceFrameIndex.Start);
+            frameIndex = (StackSourceFrameIndex)(frameIndex - StackSourceFrameIndex.Start);
 
             // a frame index might be a CLRProfiler method index, or it might be CLRProfiler nodeId index
             if ((uint)frameIndex < (uint)m_clrProfiler.MethodIdLimit)
