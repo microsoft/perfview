@@ -5,6 +5,7 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // #define DEBUG_SERIALIZE
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel; // For Win32Excption;
 using System.Diagnostics;
@@ -257,24 +258,35 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public static bool ComputerNameExists(string computerName, int timeoutMSec = 700)
         {
-            if (computerName == s_lastComputerNameLookupFailure)
-                return false;
-            try
-            {
-                System.Net.IPHostEntry ipEntry = null;
-                var result = System.Net.Dns.BeginGetHostEntry(computerName, null, null);
-                if (result.AsyncWaitHandle.WaitOne(timeoutMSec))
-                    ipEntry = System.Net.Dns.EndGetHostEntry(result);
-                if (ipEntry != null)
-                    return true;
-            }
-            catch (Exception) { }
-            s_lastComputerNameLookupFailure = computerName;
-            return false;
+            bool result;
+            if (s_computerNameLookupCache.TryGetValue(computerName, out result))
+                return result;
+
+            return s_computerNameLookupCache.GetOrAdd(
+                computerName,
+                name =>
+                {
+                    try
+                    {
+                        System.Net.IPHostEntry ipEntry = null;
+                        var asyncResult = System.Net.Dns.BeginGetHostEntry(computerName, null, null);
+                        if (asyncResult.AsyncWaitHandle.WaitOne(timeoutMSec))
+                            ipEntry = System.Net.Dns.EndGetHostEntry(asyncResult);
+
+                        if (ipEntry != null)
+                            return true;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    return false;
+                });
         }
+
         #region private
         private List<SymbolPathElement> m_elements;
-        private static string s_lastComputerNameLookupFailure = "";
+        private static readonly ConcurrentDictionary<string, bool> s_computerNameLookupCache
+            = new ConcurrentDictionary<string, bool>();
 
         /// <summary>
         /// This is the backing field for the lazily-computed <see cref="MicrosoftSymbolServerPath"/> property.
