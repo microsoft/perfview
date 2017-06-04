@@ -50,11 +50,12 @@ class NativeDlls
         }
     }
 
-    #region private
+    /// <summary>
+    /// This is the backing field for the lazily-computed <see cref="ProcessArchitectureDirectory"/> property.
+    /// </summary>
     private static string s_ProcessArchDirectory;
 
 
     [System.Runtime.InteropServices.DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadLibrary(string lpFileName);
-    #endregion
 }
