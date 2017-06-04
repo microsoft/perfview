@@ -16,6 +16,7 @@
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
     <LangVersion>6</LangVersion>
+    <Features>strict</Features>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
