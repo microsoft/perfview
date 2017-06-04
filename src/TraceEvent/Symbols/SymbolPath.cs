@@ -275,6 +275,10 @@ namespace Microsoft.Diagnostics.Symbols
         #region private
         private List<SymbolPathElement> m_elements;
         private static string s_lastComputerNameLookupFailure = "";
+
+        /// <summary>
+        /// This is the backing field for the lazily-computed <see cref="MicrosoftSymbolServerPath"/> property.
+        /// </summary>
         private static string s_MicrosoftSymbolServerPath;
         #endregion
     }
