@@ -16,10 +16,7 @@ namespace FastSerialization
     /// <summary>
     /// A MemoryStreamReader is an implementation of the IStreamReader interface that works over a given byte[] array.  
     /// </summary>
-#if STREAMREADER_PUBLIC
-    public
-#endif
-    class MemoryStreamReader : IStreamReader
+    public class MemoryStreamReader : IStreamReader
     {
         /// <summary>
         /// Create a IStreamReader (reads binary data) from a given byte buffer
@@ -187,10 +184,7 @@ namespace FastSerialization
     /// <summary>
     /// A StreamWriter is an implementation of the IStreamWriter interface that generates a byte[] array. 
     /// </summary>
-#if STREAMREADER_PUBLIC
-    public
-#endif
-    class MemoryStreamWriter : IStreamWriter
+    public class MemoryStreamWriter : IStreamWriter
     {
         /// <summary>
         /// Create IStreamWriter that writes its data to an internal byte[] buffer.  It will grow as needed. 
@@ -538,10 +532,7 @@ namespace FastSerialization
     /// <summary>
     /// A IOStreamStreamReader hooks a MemoryStreamReader up to an input System.IO.Stream.  
     /// </summary>
-#if STREAMREADER_PUBLIC
-    public
-#endif
-    class IOStreamStreamReader : MemoryStreamReader, IDisposable
+    public class IOStreamStreamReader : MemoryStreamReader, IDisposable
     {
         /// <summary>
         /// Create a new IOStreamStreamReader from the given file.  
@@ -682,10 +673,7 @@ namespace FastSerialization
     /// GetPointer API lets you access data from the stream as raw byte 
     /// blobs without having to copy the data.  
     /// </summary>
-#if STREAMREADER_PUBLIC
-    public
-#endif
-    unsafe sealed class PinnedStreamReader : IOStreamStreamReader
+    public unsafe sealed class PinnedStreamReader : IOStreamStreamReader
     {
         /// <summary>
         /// Create a new PinnedStreamReader that gets its data from a given file.  You can optionally set the size of the read buffer.  
@@ -848,10 +836,7 @@ namespace FastSerialization
     /// <summary>
     /// A IOStreamStreamWriter hooks a MemoryStreamWriter up to an output System.IO.Stream
     /// </summary>
-#if STREAMREADER_PUBLIC
-    public
-#endif
-    class IOStreamStreamWriter : MemoryStreamWriter, IDisposable
+    public class IOStreamStreamWriter : MemoryStreamWriter, IDisposable
     {
         /// <summary>
         /// Create a IOStreamStreamWriter that writes its data to a given file that it creates
