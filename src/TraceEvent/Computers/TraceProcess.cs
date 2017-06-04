@@ -382,7 +382,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         private TraceEventDispatcher source;
         internal event Action<TraceProcess> OnInitialized;
 
-        static private GrowableArray<TraceProcess>.Comparison<int> compareByProcessID = delegate (int processID, TraceProcess process)
+        private static readonly Func<int, TraceProcess, int> compareByProcessID = delegate (int processID, TraceProcess process)
         {
             return (processID - process.ProcessID);
         };

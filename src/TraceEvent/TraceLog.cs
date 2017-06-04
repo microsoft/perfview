@@ -3427,7 +3427,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             eventsToStacks.Insert(whereToInsertIndex, new EventsToStackIndex(eventIndex, stackIndex));
         }
 
-        private GrowableArray<EventsToStackIndex>.Comparison<EventIndex> stackComparer = delegate (EventIndex eventID, EventsToStackIndex elem)
+        private static readonly Func<EventIndex, EventsToStackIndex, int> stackComparer = delegate (EventIndex eventID, EventsToStackIndex elem)
             { return TraceEvent.Compare(eventID, elem.EventIndex); };
 
 #endregion
@@ -3446,7 +3446,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public Address Address;
             public CodeAddressIndex CodeAddressIndex;
         }
-        private GrowableArray<EventsToCodeAddressIndex>.Comparison<EventIndex> CodeAddressComparer = delegate (EventIndex eventIndex, EventsToCodeAddressIndex elem)
+        private static readonly Func<EventIndex, EventsToCodeAddressIndex, int> CodeAddressComparer = delegate (EventIndex eventIndex, EventsToCodeAddressIndex elem)
             { return TraceEvent.Compare(eventIndex, elem.EventIndex); };
 
 #endregion
@@ -4506,7 +4506,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private GrowableArray<TraceProcess> processesByPID;     // The threads ordered by processID.  
         private TraceLog log;
 
-        static private GrowableArray<TraceProcess>.Comparison<int> compareByProcessID = delegate (int processID, TraceProcess process)
+        private static readonly Func<int, TraceProcess, int> compareByProcessID = delegate (int processID, TraceProcess process)
         {
             return (processID - process.ProcessID);
         };
@@ -5809,7 +5809,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // I should not have to look at entries further away 
         }
-        static internal GrowableArray<TraceLoadedModule>.Comparison<ulong> compareByKey = delegate (ulong x, TraceLoadedModule y)
+        internal static readonly Func<ulong, TraceLoadedModule, int> compareByKey = delegate (ulong x, TraceLoadedModule y)
         {
             if (x > y.key)
                 return 1;
