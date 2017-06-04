@@ -419,11 +419,26 @@ namespace FastSerialization
         /// Create a serializer writes 'entryObject' to a file.  
         /// </summary>
         public Serializer(string filePath, IFastSerializable entryObject) : this(new IOStreamStreamWriter(filePath), entryObject) { }
+
         /// <summary>
-        /// TODO FIX NOW, do we want the serializer to close the stream?
-        /// Create a serializer that writes 'entryObject' to a System.IO.Stream.   The serializer will close the stream when it closes.  
+        /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The serializer
+        /// will close the stream when it closes.
         /// </summary>
-        public Serializer(Stream outputStream, IFastSerializable entryObject) : this(new IOStreamStreamWriter(outputStream), entryObject) { }
+        public Serializer(Stream outputStream, IFastSerializable entryObject)
+            : this(outputStream, entryObject, false)
+        {
+        }
+
+        /// <summary>
+        /// Create a serializer that writes <paramref name="entryObject"/> to a <see cref="Stream"/>. The
+        /// <paramref name="leaveOpen"/> parameter determines whether the serializer will close the stream when it
+        /// closes.
+        /// </summary>
+        public Serializer(Stream outputStream, IFastSerializable entryObject, bool leaveOpen)
+            : this(new IOStreamStreamWriter(outputStream, leaveOpen: leaveOpen), entryObject)
+        {
+        }
+
         /// <summary>
         /// Create a serializer that writes 'entryObject' another IStreamWriter 
         /// </summary>
@@ -893,10 +908,25 @@ namespace FastSerialization
         /// Create a Deserializer that reads its data from a given file
         /// </summary>
         public Deserializer(string filePath) : this(new IOStreamStreamReader(filePath), filePath) { }
+
         /// <summary>
         /// Create a Deserializer that reads its data from a given System.IO.Stream.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
-        public Deserializer(Stream inputStream, string streamName) : this(new IOStreamStreamReader(inputStream), streamName) { }
+        public Deserializer(Stream inputStream, string streamName)
+            : this(new IOStreamStreamReader(inputStream), streamName)
+        {
+        }
+
+        /// <summary>
+        /// Create a Deserializer that reads its data from a given System.IO.Stream. The
+        /// <paramref name="leaveOpen"/> parameter determines whether the deserializer will close the stream when it
+        /// closes.
+        /// </summary>
+        public Deserializer(Stream inputStream, string streamName, bool leaveOpen)
+            : this(new IOStreamStreamReader(inputStream, leaveOpen: leaveOpen), streamName)
+        {
+        }
+
         /// <summary>
         /// Create a Deserializer that reads its data from a given IStreamReader.   The stream will be closed when the Deserializer is done with it.  
         /// </summary>
