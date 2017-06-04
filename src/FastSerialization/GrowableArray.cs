@@ -15,10 +15,7 @@ namespace System.Collections.Generic
     /// is really meant to be embedded in other structures.
     /// </summary>
     [DebuggerDisplay("Count = {Count}")]
-#if GROWABLEARRAY_PUBLIC
-    public 
-#endif
-    struct GrowableArray<T>
+    public struct GrowableArray<T>
     {
         /// <summary>
         /// Create a growable array with the given initial size it will grow as needed.  There is also the

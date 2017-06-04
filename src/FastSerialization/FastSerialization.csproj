@@ -12,10 +12,6 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC</DefineConstants>
-  </PropertyGroup>
-
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
     <FilesToSign Include="$(TargetPath)">
