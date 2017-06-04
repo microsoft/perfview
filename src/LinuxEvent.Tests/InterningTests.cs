@@ -19,8 +19,8 @@ namespace LinuxTracing.Tests
 			Assert.Equal(expectedStackCount, stackSource.Interner.CallStackCount);
 		}
 
-        [Fact(Skip = "FIX NOW")]
-        public void OneSample()
+		[Fact]
+		public void OneSample()
 		{
 			string path = Constants.GetTestingPerfDumpPath("onegeneric");
 			this.InterningStackCountTest(path, expectedStackCount: 3);
