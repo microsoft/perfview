@@ -74,10 +74,7 @@ namespace FastSerialization
     /// consumed by the IStreamWriter.WriteLabel method. On reading you can use
     /// IStreamReader.Current and and IStreamReader. 
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    enum StreamLabel : uint
+    public enum StreamLabel : uint
     {
         /// <summary>
         /// Represents a stream label that is not a valid value
@@ -94,10 +91,7 @@ namespace FastSerialization
     /// 
     /// See also IStreamReader
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    interface IStreamWriter : IDisposable
+    public interface IStreamWriter : IDisposable
     {
         /// <summary>
         /// Write a byte to a stream
@@ -149,10 +143,7 @@ namespace FastSerialization
     /// part of a System.IO.Stream with a few helpers for primitive types.
     /// 
     /// See also IStreamWriter
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    interface IStreamReader : IDisposable
+    public interface IStreamReader : IDisposable
     {
         /// <summary>
         /// Read a byte from the stream
@@ -210,10 +201,7 @@ namespace FastSerialization
     /// <summary>
     /// Support for higher level operations on IStreamWriter and IStreamReader
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    static class IStreamWriterExentions
+    public static class IStreamWriterExentions
     {
         /// <summary>
         /// Writes a Guid to stream 'writer' as sequence of 8 bytes
@@ -281,10 +269,7 @@ namespace FastSerialization
     /// time the forward references is written.  Instead the ID is written, and later that ID is 
     /// associated with the target location (using DefineForwardReference).   
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    enum ForwardReference : int
+    public enum ForwardReference : int
     {
         /// <summary>
         /// Returned when no appropriate ForwardReference exists.  
@@ -448,10 +433,7 @@ namespace FastSerialization
     ///     * StreamLabel to SerializationTrailer
     ///     * End of stream
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    sealed class Serializer : IDisposable
+    public sealed class Serializer : IDisposable
     {
         /// <summary>
         /// Create a serializer writes 'entryObject' to a file.  
@@ -948,10 +930,7 @@ namespace FastSerialization
     /// 
     /// see #SerializerIntroduction for more
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    sealed class Deserializer : IDisposable
+    public sealed class Deserializer : IDisposable
     {
         /// <summary>
         /// Create a Deserializer that reads its data from a given file
@@ -2004,10 +1983,7 @@ namespace FastSerialization
     /// If not it used the information to read in the deferred region and returns.  Thus this FinishRead
     /// should be called before any deferred field is used.  
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    struct DeferedRegion
+    public struct DeferedRegion
     {
         /// <summary>
         /// see #DeferedRegionOverview.  
@@ -2099,10 +2075,7 @@ namespace FastSerialization
     /// however the serializer will assume a default implementation of IFastSerializableVersion (that
     /// Returns version 1 and assumes all versions are allowed to deserialize it.  
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    interface IFastSerializable
+    public interface IFastSerializable
     {
         /// <summary>
         /// Given a Serializer, write yourself to the output stream. Conceptually this routine is NOT
@@ -2149,10 +2122,7 @@ namespace FastSerialization
     /// default constructor (typically 0 or null).  This makes is relatively easy to keep MinimumVersion = 0
     /// (the ideal case).  
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    interface IFastSerializableVersion
+    public interface IFastSerializableVersion
     {
         /// <summary>
         /// This is the version number for the serialization CODE (that is the app decoding the format)
@@ -2236,10 +2206,7 @@ namespace FastSerialization
     /// <summary>
     /// Thrown when the deserializer detects an error. 
     /// </summary>
-#if FASTSERIALIZATION_PUBLIC
-    public
-#endif
-    class SerializationException : Exception
+    public class SerializationException : Exception
     {
         /// <summary>
         /// Thown when a error occurs in serialization.  

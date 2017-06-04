@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
+    <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC</DefineConstants>
   </PropertyGroup>
 
   <!-- ******************* Signing Support *********************** -->
