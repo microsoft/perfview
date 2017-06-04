@@ -4273,7 +4273,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException(); // GetEnumerator
+            return ((IEnumerable<TraceEvent>)this).GetEnumerator();
         }
 
         internal abstract class EventEnumeratorBase
@@ -4308,7 +4308,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             public void Reset()
             {
-                throw new Exception("The method or operation is not implemented.");
+                throw new NotSupportedException();
             }
             protected unsafe TraceEvent GetNext()
             {
