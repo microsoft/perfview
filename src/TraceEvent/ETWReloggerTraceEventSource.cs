@@ -368,19 +368,25 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // Lookup the event;
                 TraceEvent anEvent = source.Lookup(rawData);
+                try
+                {
+                    source.m_curITraceEvent = eventData;
+                    source.m_curTraceEventRecord = anEvent.eventRecord;
 
-                source.m_curITraceEvent = eventData;
-                source.m_curTraceEventRecord = anEvent.eventRecord;
+                    // Keep in mind that for UnhandledTraceEvent 'PrepForCallback' has NOT been called, which means the
+                    // opcode, guid and eventIds are not correct at this point.  The ToString() routine WILL call
+                    // this so if that is in your debug window, it will have this side effect (which is good and bad)
+                    // Looking at rawData will give you the truth however. 
+                    anEvent.DebugValidate();
 
-                // Keep in mind that for UnhandledTraceEvent 'PrepForCallback' has NOT been called, which means the
-                // opcode, guid and eventIds are not correct at this point.  The ToString() routine WILL call
-                // this so if that is in your debug window, it will have this side effect (which is good and bad)
-                // Looking at rawData will give you the truth however. 
-                anEvent.DebugValidate();
-
-                if (anEvent.NeedsFixup)
-                    anEvent.FixupData();
-                source.Dispatch(anEvent);
+                    if (anEvent.NeedsFixup)
+                        anEvent.FixupData();
+                    source.Dispatch(anEvent);
+                }
+                finally
+                {
+                    anEvent.eventRecord = null;
+                }
 
                 // Release the COM object aggressively  Otherwise you build up quite a few of these before 
                 // the GC kicks in and cleans them all up.  

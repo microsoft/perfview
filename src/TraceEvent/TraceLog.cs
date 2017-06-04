@@ -571,9 +571,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private unsafe void DispatchClonedEvent(TraceEvent toSend)
         {
             TraceEvent eventInRealTimeSource = this.realTimeSource.Lookup(toSend.eventRecord);
-            eventInRealTimeSource.userData = toSend.userData;
-            eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original. 
-            this.realTimeSource.Dispatch(eventInRealTimeSource);
+            try
+            {
+                eventInRealTimeSource.userData = toSend.userData;
+                eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original. 
+                this.realTimeSource.Dispatch(eventInRealTimeSource);
+            }
+            finally
+            {
+                eventInRealTimeSource.eventRecord = null;
+            }
 
             // Optimization, remove 'toSend' from the finalization queue.  
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
@@ -3665,7 +3672,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             finally
             {
-                events.log.FreeReader(asBase.reader);
+                // Avoid freeing 'this'.
+                asBase.lookup = null;
+                enumerator.Dispose();
             }
             OnCompleted();
             return true;
@@ -4276,11 +4285,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 lookup = events.Log.AllocLookup();
             }
             public TraceEvent Current { get { return current; } }
+
             public void Dispose()
             {
-                events.Log.FreeReader(reader);
-                events.Log.FreeLookup(lookup);
+                Dispose(true);
+                GC.SuppressFinalize(this);
             }
+
+            protected virtual unsafe void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    if (current != null)
+                        current.eventRecord = null;
+
+                    if (reader != null)
+                        events.Log.FreeReader(reader);
+                    if (lookup != null)
+                        events.Log.FreeLookup(lookup);
+                }
+            }
+
             public void Reset()
             {
                 throw new Exception("The method or operation is not implemented.");
@@ -4344,10 +4369,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 events.Log.SeekToTimeOnPage(reader, events.startTimeQPC, pageIndex, out indexOnPage, positions);
                 lookup.currentID = (EventIndex)(pageIndex * TraceLog.eventsPerPage + indexOnPage);
             }
-            public bool MoveNext()
+
+            public unsafe bool MoveNext()
             {
                 for (; ; )
                 {
+                    if (current != null)
+                        current.eventRecord = null;
+
                     current = GetNext();
                     if (current.TimeStampQPC == long.MaxValue || current.TimeStampQPC > events.endTimeQPC)
                         return false;
@@ -4357,6 +4386,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         return true;
                 }
             }
+
             public new object Current { get { return current; } }
         }
 
@@ -4372,7 +4402,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 positions = new StreamLabel[TraceLog.eventsPerPage];
                 events.Log.SeekToTimeOnPage(reader, endTime, pageIndex, out indexOnPage, positions);
             }
-            public bool MoveNext()
+
+            public unsafe bool MoveNext()
             {
                 for (; ; )
                 {
@@ -4387,6 +4418,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         --indexOnPage;
                     reader.Goto(positions[indexOnPage]);
                     lookup.currentID = (EventIndex)(pageIndex * TraceLog.eventsPerPage + indexOnPage);
+
+                    if (current != null)
+                        current.eventRecord = null;
+
                     current = GetNext();
 
                     if (current.TimeStampQPC < events.startTimeQPC)
@@ -4397,6 +4432,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                         return true;
                 }
             }
+
             public new object Current { get { return current; } }
         }
 

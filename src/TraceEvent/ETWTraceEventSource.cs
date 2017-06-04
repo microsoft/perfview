@@ -661,30 +661,45 @@ namespace Microsoft.Diagnostics.Tracing
             if (stopProcessing)
                 return;
 
-            if (lockObj != null)
-                Monitor.Enter(lockObj);
-            Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
+            bool lockTaken = false;
 
-            // Give it an event ID if it does not have one.  
-            traceLoggingEventId.TestForTraceLoggingEventAndFixupIfNeeded(rawData);
+            try
+            {
+                if (lockObj != null)
+                    Monitor.TryEnter(lockObj, ref lockTaken);
 
-            TraceEvent anEvent = Lookup(rawData);
+                Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
+
+                // Give it an event ID if it does not have one.  
+                traceLoggingEventId.TestForTraceLoggingEventAndFixupIfNeeded(rawData);
+
+                TraceEvent anEvent = Lookup(rawData);
+                try
+                {
 #if DEBUG
-            anEvent.DisallowEventIndexAccess = DisallowEventIndexAccess;
+                    anEvent.DisallowEventIndexAccess = DisallowEventIndexAccess;
 #endif
-            // Keep in mind that for UnhandledTraceEvent 'PrepForCallback' has NOT been called, which means the
-            // opcode, guid and eventIds are not correct at this point.  The ToString() routine WILL call
-            // this so if that is in your debug window, it will have this side effect (which is good and bad)
-            // Looking at rawData will give you the truth however. 
-            anEvent.DebugValidate();
+                    // Keep in mind that for UnhandledTraceEvent 'PrepForCallback' has NOT been called, which means the
+                    // opcode, guid and eventIds are not correct at this point.  The ToString() routine WILL call
+                    // this so if that is in your debug window, it will have this side effect (which is good and bad)
+                    // Looking at rawData will give you the truth however. 
+                    anEvent.DebugValidate();
 
-            if (anEvent.NeedsFixup)
-                anEvent.FixupData();
+                    if (anEvent.NeedsFixup)
+                        anEvent.FixupData();
 
-            Dispatch(anEvent);
-
-            if (lockObj != null)
-                Monitor.Exit(lockObj);
+                    Dispatch(anEvent);
+                }
+                finally
+                {
+                    anEvent.eventRecord = null;
+                }
+            }
+            finally
+            {
+                if (lockTaken)
+                    Monitor.Exit(lockObj);
+            }
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace TraceEventTests
         {
         }
 
-        [Theory(Skip = "https://github.com/Microsoft/perfview/issues/249")]
+        [Theory]
         [MemberData(nameof(TestEtlFiles))]
         public void RunTests(string etlFileName)
         {
@@ -23,6 +23,43 @@ namespace TraceEventTests
             PrepareTestData();
 
             string etlFilePath = Path.Combine(UnZippedDataDir, etlFileName);
+
+            Action<GCAllocationTickTraceData> handleGCAllocationTick = data =>
+            {
+                Assert.True(data.AllocationAmount64 >= 0);
+            };
+            Action handleGCAllocationTickComplete = () =>
+            {
+                Console.WriteLine("Ticks Completed.");
+            };
+
+            Action<TraceEvent> handlePerfViewTick = data =>
+            {
+                Console.WriteLine("Got PerfView Tick {0:f4}", data.TimeStampRelativeMSec);
+            };
+            Action handlePerfViewTickComplete = () =>
+            {
+                Console.WriteLine("Manifests Completed");
+            };
+
+            Action<TraceEvent> handleAllTasks = data =>
+            {
+                if (data.EventName != "ManifestData")
+                    Console.WriteLine("Got AllTasks: Data = {0}", data);
+            };
+            Action handleAllTasksComplete = () =>
+            {
+                Console.WriteLine("allTasks Completed");
+            };
+
+            Action<TraceEvent> handleLogMessage = data =>
+            {
+                Console.WriteLine("Got PerfView Log Message {0}", data.PayloadByName("message"));
+            };
+            Action handleLogMessageComplete = () =>
+            {
+                Console.WriteLine("Log Messages Completed");
+            };
 
             Console.WriteLine("Start ObservableTests");
             using (var source = new ETWTraceEventSource(etlFilePath))
@@ -40,13 +77,10 @@ namespace TraceEventTests
                 IObservable<TraceEvent> allTasks = eventSourceParser.Observe("System.Threading.Tasks.TplEventSource", null);
 
                 var cnt = 0;
-                using (var gcSub = Subscribe(gcTicks, gcTickData => Console.WriteLine("Got Tick {0}", gcTickData.AllocationAmount), () => Console.WriteLine("Ticks Completed.")))
-                using (var manifestSub = Subscribe(perfViewTicks, manifestData => Console.WriteLine("Got PerfView Tick {0:f4}", manifestData.TimeStampRelativeMSec), () => Console.WriteLine("Manifests Completed")))
-                using (var allTasksSub = Subscribe(allTasks, delegate(TraceEvent allTasksData) { 
-                    if (allTasksData.EventName != "ManifestData") 
-                        Console.WriteLine("Got AllTasks: Data = {0}", allTasksData);
-                }, () => Console.WriteLine("allTasks Completed")))
-                using (var logSub = Subscribe(logMessages, logMessageData => Console.WriteLine("Got PerfView Log Message {0}", logMessageData.PayloadByName("message")), () => Console.WriteLine("Log Messages Completed")))
+                using (var gcSub = Subscribe(gcTicks, handleGCAllocationTick, handleGCAllocationTickComplete))
+                using (var manifestSub = Subscribe(perfViewTicks, handlePerfViewTick, handlePerfViewTickComplete))
+                using (var allTasksSub = Subscribe(allTasks, handleAllTasks, handleAllTasksComplete))
+                using (var logSub = Subscribe(logMessages, handleLogMessage, handleLogMessageComplete))
                 {
                     IDisposable allPerfSub = null;
                     allPerfSub = Subscribe(allPerfView,

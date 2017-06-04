@@ -2990,6 +2990,10 @@ namespace Microsoft.Diagnostics.Tracing
         /// that TraceEvent does NOT have a copy of the data, but rather just a pointer to it. 
         /// This data is ONLY valid during the callback. 
         /// </summary>
+        /// <remarks>
+        /// <para>The caller of this method is expected to set <see cref="TraceEvent.eventRecord"/> back to
+        /// <see langword="null"/> after the call returns.</para>
+        /// </remarks>
         internal protected void Dispatch(TraceEvent anEvent)
         {
             if (userDefinedDispatch == null)
@@ -2998,7 +3002,6 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 // Rare case, there is a dispatch hook, call it (which may call the original Dispatch logic)
                 userDefinedDispatch(anEvent);
-                anEvent.eventRecord = null;
             }
         }
 
@@ -3023,8 +3026,14 @@ namespace Microsoft.Diagnostics.Tracing
                             nextEvent.eventRecord = anEvent.eventRecord;
                             nextEvent.userData = anEvent.userData;
                             nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;
+                            try
+                            {
+                                nextEvent.Dispatch();
+                            }
+                            finally
+                            {
+                                nextEvent.eventRecord = null;
+                            }
                         }
                     }
                 }
@@ -3034,7 +3043,6 @@ namespace Microsoft.Diagnostics.Tracing
                         unhandledEventTemplate.PrepForCallback();
                     AllEvents(anEvent);
                 }
-                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)

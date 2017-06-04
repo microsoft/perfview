@@ -745,7 +745,14 @@ namespace TraceEventTests
                 rawData->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_CLASSIC_HEADER;
 
             var event_ = m_dispatcher.Lookup(rawData);
-            m_dispatcher.Dispatch(event_);
+            try
+            {
+                m_dispatcher.Dispatch(event_);
+            }
+            finally
+            {
+                event_.eventRecord = null;
+            }
         }
 
         public string Dump()

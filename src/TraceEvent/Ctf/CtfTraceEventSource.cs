@@ -517,11 +517,18 @@ namespace Microsoft.Diagnostics.Tracing
                 var hdr = InitEventRecord(header, entry.Reader, etw);
                 TraceEvent traceEvent = Lookup(hdr);
                 traceEvent.eventRecord = hdr;
-                traceEvent.userData = entry.Reader.BufferPtr;
-                traceEvent.EventTypeUserData = evt;
+                try
+                {
+                    traceEvent.userData = entry.Reader.BufferPtr;
+                    traceEvent.EventTypeUserData = evt;
 
-                traceEvent.DebugValidate();
-                Dispatch(traceEvent);
+                    traceEvent.DebugValidate();
+                    Dispatch(traceEvent);
+                }
+                finally
+                {
+                    traceEvent.eventRecord = null;
+                }
             }
 
             sessionEndTimeQPC = (long)lastTimestamp;
