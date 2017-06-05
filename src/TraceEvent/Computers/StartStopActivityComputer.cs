@@ -1407,12 +1407,6 @@ namespace Microsoft.Diagnostics.Tracing
             Creator = creator;
             ExtraInfo = extraInfo;
             Index = (StartStopActivityIndex)index;
-
-            // generate a ID that makes this unique among all children of the creator. 
-            if (creator == null)
-                myChildID = (++s_nextChildID);
-            else
-                myChildID = (++creator.nextChildID);
         }
 
         /// <summary>
@@ -1427,10 +1421,6 @@ namespace Microsoft.Diagnostics.Tracing
                 this.DurationMSec = stopTimeRelativeMSec - StartTimeRelativeMSec;
             }
         }
-
-        static int s_nextChildID;       // Used to generate small IDs 
-        private int myChildID;
-        private int nextChildID;
 
         // these are used to implement deferred stops.  
         internal ActivityIndex activityIndex;     // the index for the task that was active at the time of the stop.  
