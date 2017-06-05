@@ -48,8 +48,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (m_SampleInfo.IsGraphSource)
                     m_samplesToTreeNodes = new CallTreeNode[m_SampleInfo.SampleIndexLimit];
 
-                // TODO FIX NOW I turned of Parallelism because there were signs of races and 
-                // I had higher priorities.   I would like to turn this back on.   
                 if (DisableParallelism)
                     value.ForEach(AddSample);
                 else
@@ -211,6 +209,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Turns off logic for computing call trees in parallel.   Safer but slower.  
         /// </summary>
+        /// <remarks>
+        /// <para>This is off by default following indications of race conditions.</para>
+        /// </remarks>
         public bool DisableParallelism { get; set; } = true;
 
         /// <summary>
