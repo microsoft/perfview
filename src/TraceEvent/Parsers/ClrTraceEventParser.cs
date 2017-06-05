@@ -28,11 +28,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class ClrTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "Microsoft-Windows-DotNETRuntime";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0xe13c0d23), unchecked((short)0xccbc), unchecked((short)0x4e12), 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4);
+        public static readonly string ProviderName = "Microsoft-Windows-DotNETRuntime";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xe13c0d23), unchecked((short)0xccbc), unchecked((short)0x4e12), 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4);
 
         // Project N and the Desktop have separate guids.  
-        public static Guid NativeProviderGuid = new Guid(0x47c3ba0c, 0x77f1, 0x4eb0, 0x8d, 0x4d, 0xae, 0xf4, 0x47, 0xf1, 0x6a, 0x85);
+        public static readonly Guid NativeProviderGuid = new Guid(0x47c3ba0c, 0x77f1, 0x4eb0, 0x8d, 0x4d, 0xae, 0xf4, 0x47, 0xf1, 0x6a, 0x85);
 
         /// <summary>
         ///  Keywords are passed to TraceEventSession.EnableProvider to enable particular sets of
@@ -1823,31 +1823,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        private static Guid GCTaskGuid = new Guid(unchecked((int)0x044973cd), unchecked((short)0x251f), unchecked((short)0x4dff), 0xa3, 0xe9, 0x9d, 0x63, 0x07, 0x28, 0x6b, 0x05);
-        private static Guid WorkerThreadCreationV2TaskGuid = new Guid(unchecked((int)0xcfc4ba53), unchecked((short)0xfb42), unchecked((short)0x4757), 0x8b, 0x70, 0x5f, 0x5d, 0x51, 0xfe, 0xe2, 0xf4);
-        private static Guid IOThreadCreationTaskGuid = new Guid(unchecked((int)0xc71408de), unchecked((short)0x42cc), unchecked((short)0x4f81), 0x9c, 0x93, 0xb8, 0x91, 0x2a, 0xbf, 0x2a, 0x0f);
-        private static Guid WorkerThreadRetirementV2TaskGuid = new Guid(unchecked((int)0xefdf1eac), unchecked((short)0x1d5d), unchecked((short)0x4e84), 0x89, 0x3a, 0x19, 0xb8, 0x0f, 0x69, 0x21, 0x76);
-        private static Guid IOThreadRetirementTaskGuid = new Guid(unchecked((int)0x840c8456), unchecked((short)0x6457), unchecked((short)0x4eb7), 0x9c, 0xd0, 0xd2, 0x8f, 0x01, 0xc6, 0x4f, 0x5e);
-        private static Guid ThreadpoolSuspensionV2TaskGuid = new Guid(unchecked((int)0xc424b3e3), unchecked((short)0x2ae0), unchecked((short)0x416e), 0xa0, 0x39, 0x41, 0x0c, 0x5d, 0x8e, 0x5f, 0x14);
-        private static Guid ExceptionTaskGuid = new Guid(unchecked((int)0x300ce105), unchecked((short)0x86d1), unchecked((short)0x41f8), 0xb9, 0xd2, 0x83, 0xfc, 0xbf, 0xf3, 0x2d, 0x99);
-        private static Guid ContentionTaskGuid = new Guid(unchecked((int)0x561410f5), unchecked((short)0xa138), unchecked((short)0x4ab3), 0x94, 0x5e, 0x51, 0x64, 0x83, 0xcd, 0xdf, 0xbc);
-        private static Guid MethodTaskGuid = new Guid(unchecked((int)0x3044f61a), unchecked((short)0x99b0), unchecked((short)0x4c21), 0xb2, 0x03, 0xd3, 0x94, 0x23, 0xc7, 0x3b, 0x00);
-        private static Guid LoaderTaskGuid = new Guid(unchecked((int)0xd00792da), unchecked((short)0x07b7), unchecked((short)0x40f5), 0x97, 0xeb, 0x5d, 0x97, 0x4e, 0x05, 0x47, 0x40);
-        private static Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
-        private static Guid StrongNameVerificationTaskGuid = new Guid(unchecked((int)0x15447a14), unchecked((short)0xb523), unchecked((short)0x46ae), 0xb7, 0x5b, 0x02, 0x3f, 0x90, 0x0b, 0x43, 0x93);
-        private static Guid AuthenticodeVerificationTaskGuid = new Guid(unchecked((int)0xb17304d9), unchecked((short)0x5afa), unchecked((short)0x4da6), 0x9f, 0x7b, 0x5a, 0x4f, 0xa7, 0x31, 0x29, 0xb6);
-        private static Guid AppDomainResourceManagementTaskGuid = new Guid(unchecked((int)0x88e83959), unchecked((short)0x6185), unchecked((short)0x4e0b), 0x95, 0xb8, 0x0e, 0x4a, 0x35, 0xdf, 0x61, 0x22);
-        private static Guid ILStubTaskGuid = new Guid(unchecked((int)0xd00792da), unchecked((short)0x07b7), unchecked((short)0x40f5), 0x00, 0x00, 0x5d, 0x97, 0x4e, 0x05, 0x47, 0x40);
-        private static Guid ThreadPoolWorkerThreadTaskGuid = new Guid(unchecked((int)0x8a9a44ab), unchecked((short)0xf681), unchecked((short)0x4271), 0x88, 0x10, 0x83, 0x0d, 0xab, 0x9f, 0x56, 0x21);
-        private static Guid ThreadPoolWorkerThreadRetirementTaskGuid = new Guid(unchecked((int)0x402ee399), unchecked((short)0xc137), unchecked((short)0x4dc0), 0xa5, 0xab, 0x3c, 0x2d, 0xea, 0x64, 0xac, 0x9c);
-        private static Guid ThreadPoolWorkerThreadAdjustmentTaskGuid = new Guid(unchecked((int)0x94179831), unchecked((short)0xe99a), unchecked((short)0x4625), 0x88, 0x24, 0x23, 0xca, 0x5e, 0x00, 0xca, 0x7d);
-        private static Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
-        private static Guid ClrPerfTrackTaskGuid = new Guid(unchecked((int)0xeac685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xec);
-        private static Guid TypeTaskGuid = new Guid(unchecked((int)0x003e5a9b), unchecked((short)0x4757), unchecked((short)0x4d3e), 0xb4, 0xa1, 0xe4, 0x7b, 0xfb, 0x48, 0x94, 0x08);
-        private static Guid ThreadPoolWorkingThreadCountTaskGuid = new Guid(unchecked((int)0x1b032b96), unchecked((short)0x767c), unchecked((short)0x42e4), 0x84, 0x81, 0xcb, 0x52, 0x8a, 0x66, 0xd7, 0xbd);
-        private static Guid ThreadPoolTaskGuid = new Guid(unchecked((int)0xead685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xe9);
-        private static Guid ThreadTaskGuid = new Guid(unchecked((int)0x641994c5), unchecked((short)0x16f2), unchecked((short)0x4123), 0x91, 0xa7, 0xa2, 0x99, 0x9d, 0xd7, 0xbf, 0xc3);
-        private static Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
+        private static readonly Guid GCTaskGuid = new Guid(unchecked((int)0x044973cd), unchecked((short)0x251f), unchecked((short)0x4dff), 0xa3, 0xe9, 0x9d, 0x63, 0x07, 0x28, 0x6b, 0x05);
+        private static readonly Guid WorkerThreadCreationV2TaskGuid = new Guid(unchecked((int)0xcfc4ba53), unchecked((short)0xfb42), unchecked((short)0x4757), 0x8b, 0x70, 0x5f, 0x5d, 0x51, 0xfe, 0xe2, 0xf4);
+        private static readonly Guid IOThreadCreationTaskGuid = new Guid(unchecked((int)0xc71408de), unchecked((short)0x42cc), unchecked((short)0x4f81), 0x9c, 0x93, 0xb8, 0x91, 0x2a, 0xbf, 0x2a, 0x0f);
+        private static readonly Guid WorkerThreadRetirementV2TaskGuid = new Guid(unchecked((int)0xefdf1eac), unchecked((short)0x1d5d), unchecked((short)0x4e84), 0x89, 0x3a, 0x19, 0xb8, 0x0f, 0x69, 0x21, 0x76);
+        private static readonly Guid IOThreadRetirementTaskGuid = new Guid(unchecked((int)0x840c8456), unchecked((short)0x6457), unchecked((short)0x4eb7), 0x9c, 0xd0, 0xd2, 0x8f, 0x01, 0xc6, 0x4f, 0x5e);
+        private static readonly Guid ThreadpoolSuspensionV2TaskGuid = new Guid(unchecked((int)0xc424b3e3), unchecked((short)0x2ae0), unchecked((short)0x416e), 0xa0, 0x39, 0x41, 0x0c, 0x5d, 0x8e, 0x5f, 0x14);
+        private static readonly Guid ExceptionTaskGuid = new Guid(unchecked((int)0x300ce105), unchecked((short)0x86d1), unchecked((short)0x41f8), 0xb9, 0xd2, 0x83, 0xfc, 0xbf, 0xf3, 0x2d, 0x99);
+        private static readonly Guid ContentionTaskGuid = new Guid(unchecked((int)0x561410f5), unchecked((short)0xa138), unchecked((short)0x4ab3), 0x94, 0x5e, 0x51, 0x64, 0x83, 0xcd, 0xdf, 0xbc);
+        private static readonly Guid MethodTaskGuid = new Guid(unchecked((int)0x3044f61a), unchecked((short)0x99b0), unchecked((short)0x4c21), 0xb2, 0x03, 0xd3, 0x94, 0x23, 0xc7, 0x3b, 0x00);
+        private static readonly Guid LoaderTaskGuid = new Guid(unchecked((int)0xd00792da), unchecked((short)0x07b7), unchecked((short)0x40f5), 0x97, 0xeb, 0x5d, 0x97, 0x4e, 0x05, 0x47, 0x40);
+        private static readonly Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
+        private static readonly Guid StrongNameVerificationTaskGuid = new Guid(unchecked((int)0x15447a14), unchecked((short)0xb523), unchecked((short)0x46ae), 0xb7, 0x5b, 0x02, 0x3f, 0x90, 0x0b, 0x43, 0x93);
+        private static readonly Guid AuthenticodeVerificationTaskGuid = new Guid(unchecked((int)0xb17304d9), unchecked((short)0x5afa), unchecked((short)0x4da6), 0x9f, 0x7b, 0x5a, 0x4f, 0xa7, 0x31, 0x29, 0xb6);
+        private static readonly Guid AppDomainResourceManagementTaskGuid = new Guid(unchecked((int)0x88e83959), unchecked((short)0x6185), unchecked((short)0x4e0b), 0x95, 0xb8, 0x0e, 0x4a, 0x35, 0xdf, 0x61, 0x22);
+        private static readonly Guid ILStubTaskGuid = new Guid(unchecked((int)0xd00792da), unchecked((short)0x07b7), unchecked((short)0x40f5), 0x00, 0x00, 0x5d, 0x97, 0x4e, 0x05, 0x47, 0x40);
+        private static readonly Guid ThreadPoolWorkerThreadTaskGuid = new Guid(unchecked((int)0x8a9a44ab), unchecked((short)0xf681), unchecked((short)0x4271), 0x88, 0x10, 0x83, 0x0d, 0xab, 0x9f, 0x56, 0x21);
+        private static readonly Guid ThreadPoolWorkerThreadRetirementTaskGuid = new Guid(unchecked((int)0x402ee399), unchecked((short)0xc137), unchecked((short)0x4dc0), 0xa5, 0xab, 0x3c, 0x2d, 0xea, 0x64, 0xac, 0x9c);
+        private static readonly Guid ThreadPoolWorkerThreadAdjustmentTaskGuid = new Guid(unchecked((int)0x94179831), unchecked((short)0xe99a), unchecked((short)0x4625), 0x88, 0x24, 0x23, 0xca, 0x5e, 0x00, 0xca, 0x7d);
+        private static readonly Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
+        private static readonly Guid ClrPerfTrackTaskGuid = new Guid(unchecked((int)0xeac685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xec);
+        private static readonly Guid TypeTaskGuid = new Guid(unchecked((int)0x003e5a9b), unchecked((short)0x4757), unchecked((short)0x4d3e), 0xb4, 0xa1, 0xe4, 0x7b, 0xfb, 0x48, 0x94, 0x08);
+        private static readonly Guid ThreadPoolWorkingThreadCountTaskGuid = new Guid(unchecked((int)0x1b032b96), unchecked((short)0x767c), unchecked((short)0x42e4), 0x84, 0x81, 0xcb, 0x52, 0x8a, 0x66, 0xd7, 0xbd);
+        private static readonly Guid ThreadPoolTaskGuid = new Guid(unchecked((int)0xead685f6), unchecked((short)0x2104), unchecked((short)0x4dec), 0x88, 0xfd, 0x91, 0xe4, 0x25, 0x42, 0x21, 0xe9);
+        private static readonly Guid ThreadTaskGuid = new Guid(unchecked((int)0x641994c5), unchecked((short)0x16f2), unchecked((short)0x4123), 0x91, 0xa7, 0xa2, 0x99, 0x9d, 0xd7, 0xbf, 0xc3);
+        private static readonly Guid CodeSymbolsTaskGuid = new Guid(unchecked((int)0x53aedf69), unchecked((short)0x2049), unchecked((short)0x4f7d), 0x93, 0x45, 0xd3, 0x01, 0x8b, 0x5c, 0x4d, 0x80);
 
 
         // TODO remove if project N's Guids are harmonized with the desktop 
@@ -9347,8 +9347,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class ClrRundownTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "Microsoft-Windows-DotNETRuntimeRundown";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0xa669021c), unchecked((short)0xc450), unchecked((short)0x4609), 0xa0, 0x35, 0x5a, 0xf5, 0x9a, 0xf4, 0xdf, 0x18);
+        public static readonly string ProviderName = "Microsoft-Windows-DotNETRuntimeRundown";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xa669021c), unchecked((short)0xc450), unchecked((short)0x4609), 0xa0, 0x35, 0x5a, 0xf5, 0x9a, 0xf4, 0xdf, 0x18);
         public enum Keywords : long
         {
             Loader = 0x8,
@@ -9791,19 +9791,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     callback(template);
         }
 
-        private static Guid MethodTaskGuid = new Guid(unchecked((int)0x0bcd91db), unchecked((short)0xf943), unchecked((short)0x454a), 0xa6, 0x62, 0x6e, 0xdb, 0xcf, 0xbb, 0x76, 0xd2);
-        private static Guid LoaderTaskGuid = new Guid(unchecked((int)0x5a54f4df), unchecked((short)0xd302), unchecked((short)0x4fee), 0xa2, 0x11, 0x6c, 0x2c, 0x0c, 0x1d, 0xcb, 0x1a);
-        private static Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
-        private static Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
-        private static Guid CodeSymbolsRundownTaskGuid = new Guid(unchecked((int)0x86b6c496), unchecked((short)0x0d9e), unchecked((short)0x4ba6), 0x81, 0x93, 0xca, 0x58, 0xe6, 0xe8, 0xc5, 0x15);
+        private static readonly Guid MethodTaskGuid = new Guid(unchecked((int)0x0bcd91db), unchecked((short)0xf943), unchecked((short)0x454a), 0xa6, 0x62, 0x6e, 0xdb, 0xcf, 0xbb, 0x76, 0xd2);
+        private static readonly Guid LoaderTaskGuid = new Guid(unchecked((int)0x5a54f4df), unchecked((short)0xd302), unchecked((short)0x4fee), 0xa2, 0x11, 0x6c, 0x2c, 0x0c, 0x1d, 0xcb, 0x1a);
+        private static readonly Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
+        private static readonly Guid RuntimeTaskGuid = new Guid(unchecked((int)0xcd7d3e32), unchecked((short)0x65fe), unchecked((short)0x40cd), 0x92, 0x25, 0xa2, 0x57, 0x7d, 0x20, 0x3f, 0xc3);
+        private static readonly Guid CodeSymbolsRundownTaskGuid = new Guid(unchecked((int)0x86b6c496), unchecked((short)0x0d9e), unchecked((short)0x4ba6), 0x81, 0x93, 0xca, 0x58, 0xe6, 0xe8, 0xc5, 0x15);
         #endregion
     }
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class ClrStressTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "Microsoft-Windows-DotNETRuntimeStress";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0xcc2bcbba), unchecked((short)0x16b6), unchecked((short)0x4cf3), 0x89, 0x90, 0xd7, 0x4c, 0x2e, 0x8a, 0xf5, 0x00);
+        public static readonly string ProviderName = "Microsoft-Windows-DotNETRuntimeStress";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xcc2bcbba), unchecked((short)0x16b6), unchecked((short)0x4cf3), 0x89, 0x90, 0xd7, 0x4c, 0x2e, 0x8a, 0xf5, 0x00);
         public enum Keywords : long
         {
             Stack = 0x40000000,
@@ -9861,8 +9861,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     callback(template);
         }
 
-        private static Guid StressLogTaskGuid = new Guid(unchecked((int)0xea40c74d), unchecked((short)0x4f65), unchecked((short)0x4561), 0xbb, 0x26, 0x65, 0x62, 0x31, 0xc8, 0x96, 0x7f);
-        private static Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
+        private static readonly Guid StressLogTaskGuid = new Guid(unchecked((int)0xea40c74d), unchecked((short)0x4f65), unchecked((short)0x4561), 0xbb, 0x26, 0x65, 0x62, 0x31, 0xc8, 0x96, 0x7f);
+        private static readonly Guid ClrStackTaskGuid = new Guid(unchecked((int)0xd3363dc0), unchecked((short)0x243a), unchecked((short)0x4620), 0xa4, 0xd0, 0x8a, 0x07, 0xd7, 0x72, 0xf5, 0x33);
         #endregion
     }
 
