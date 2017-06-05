@@ -569,17 +569,17 @@ namespace Microsoft.Diagnostics.Tracing
 
         #region Security Entry Points
 
-        internal static uint STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-        internal static uint STANDARD_RIGHTS_READ = 0x00020000;
-        internal static uint TOKEN_ASSIGN_PRIMARY = 0x0001;
-        internal static uint TOKEN_DUPLICATE = 0x0002;
-        internal static uint TOKEN_IMPERSONATE = 0x0004;
-        internal static uint TOKEN_QUERY = 0x0008;
-        internal static uint TOKEN_QUERY_SOURCE = 0x0010;
-        internal static uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
-        internal static uint TOKEN_ADJUST_GROUPS = 0x0040;
-        internal static uint TOKEN_ADJUST_SESSIONID = 0x0100;
-        internal static uint TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
+        internal static readonly uint STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+        internal static readonly uint STANDARD_RIGHTS_READ = 0x00020000;
+        internal static readonly uint TOKEN_ASSIGN_PRIMARY = 0x0001;
+        internal static readonly uint TOKEN_DUPLICATE = 0x0002;
+        internal static readonly uint TOKEN_IMPERSONATE = 0x0004;
+        internal static readonly uint TOKEN_QUERY = 0x0008;
+        internal static readonly uint TOKEN_QUERY_SOURCE = 0x0010;
+        internal static readonly uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
+        internal static readonly uint TOKEN_ADJUST_GROUPS = 0x0040;
+        internal static readonly uint TOKEN_ADJUST_SESSIONID = 0x0100;
+        internal static readonly uint TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
 
 
         internal enum TOKEN_ELEVATION_TYPE

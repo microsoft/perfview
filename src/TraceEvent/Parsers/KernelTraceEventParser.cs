@@ -42,8 +42,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public static string KernelSessionName { get { return "NT Kernel Logger"; } }
 
-        public static string ProviderName = "Windows Kernel";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0x9e814aad), unchecked((short)0x3204), unchecked((short)0x11d2), 0x9a, 0x82, 0x00, 0x60, 0x08, 0xa8, 0x69, 0x39);
+        public static readonly string ProviderName = "Windows Kernel";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x9e814aad), unchecked((short)0x3204), unchecked((short)0x11d2), 0x9a, 0x82, 0x00, 0x60, 0x08, 0xa8, 0x69, 0x39);
         /// <summary>
         /// This is passed to TraceEventSession.EnableKernelProvider to enable particular sets of
         /// events.  See http://msdn.microsoft.com/en-us/library/aa363784(VS.85).aspx for more information on them 
@@ -3092,29 +3092,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return ret;
             }
         }
-        internal static Guid EventTraceTaskGuid = new Guid(unchecked((int)0x68fdd900), unchecked((short)0x4a3e), unchecked((short)0x11d1), 0x84, 0xf4, 0x00, 0x00, 0xf8, 0x04, 0x64, 0xe3);
-        internal static Guid ProcessTaskGuid = new Guid(unchecked((int)0x3d6fa8d0), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid ThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid DiskIOTaskGuid = new Guid(unchecked((int)0x3d6fa8d4), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid RegistryTaskGuid = new Guid(unchecked((int)0xae53722e), unchecked((short)0xc863), unchecked((short)0x11d2), 0x86, 0x59, 0x00, 0xc0, 0x4f, 0xa3, 0x21, 0xa1);
-        internal static Guid SplitIoTaskGuid = new Guid(unchecked((int)0xd837ca92), unchecked((short)0x12b9), unchecked((short)0x44a5), 0xad, 0x6a, 0x3a, 0x65, 0xb3, 0x57, 0x8a, 0xa8);
-        internal static Guid FileIOTaskGuid = new Guid(unchecked((int)0x90cbdc39), unchecked((short)0x4a3e), unchecked((short)0x11d1), 0x84, 0xf4, 0x00, 0x00, 0xf8, 0x04, 0x64, 0xe3);
-        internal static Guid TcpIpTaskGuid = new Guid(unchecked((int)0x9a280ac0), unchecked((short)0xc8e0), unchecked((short)0x11d1), 0x84, 0xe2, 0x00, 0xc0, 0x4f, 0xb9, 0x98, 0xa2);
-        internal static Guid UdpIpTaskGuid = new Guid(unchecked((int)0xbf3a50c5), unchecked((short)0xa9c9), unchecked((short)0x4988), 0xa0, 0x05, 0x2d, 0xf0, 0xb7, 0xc8, 0x0f, 0x80);
-        internal static Guid ImageTaskGuid = new Guid(unchecked((int)0x2cb15d1d), unchecked((short)0x5fc1), unchecked((short)0x11d2), 0xab, 0xe1, 0x00, 0xa0, 0xc9, 0x11, 0xf5, 0x18);
-        internal static Guid MemoryTaskGuid = new Guid(unchecked((int)0x3d6fa8d3), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid MemoryProviderGuid = new Guid(unchecked((int)0x3d1d93ef7), unchecked((short)0xe1f2), unchecked((short)0x4f45), 0x99, 0x43, 0x03, 0xd2, 0x45, 0xfe, 0x6c, 0x00);
-        internal static Guid PerfInfoTaskGuid = new Guid(unchecked((int)0xce1dbfb4), unchecked((short)0x137e), unchecked((short)0x4da6), 0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc);
-        internal static Guid StackWalkTaskGuid = new Guid(unchecked((int)0xdef2fe46), unchecked((short)0x7bd6), unchecked((short)0x4b80), 0xbd, 0x94, 0xf5, 0x7f, 0xe2, 0x0d, 0x0c, 0xe3);
+        internal static readonly Guid EventTraceTaskGuid = new Guid(unchecked((int)0x68fdd900), unchecked((short)0x4a3e), unchecked((short)0x11d1), 0x84, 0xf4, 0x00, 0x00, 0xf8, 0x04, 0x64, 0xe3);
+        internal static readonly Guid ProcessTaskGuid = new Guid(unchecked((int)0x3d6fa8d0), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid ThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid DiskIOTaskGuid = new Guid(unchecked((int)0x3d6fa8d4), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid RegistryTaskGuid = new Guid(unchecked((int)0xae53722e), unchecked((short)0xc863), unchecked((short)0x11d2), 0x86, 0x59, 0x00, 0xc0, 0x4f, 0xa3, 0x21, 0xa1);
+        internal static readonly Guid SplitIoTaskGuid = new Guid(unchecked((int)0xd837ca92), unchecked((short)0x12b9), unchecked((short)0x44a5), 0xad, 0x6a, 0x3a, 0x65, 0xb3, 0x57, 0x8a, 0xa8);
+        internal static readonly Guid FileIOTaskGuid = new Guid(unchecked((int)0x90cbdc39), unchecked((short)0x4a3e), unchecked((short)0x11d1), 0x84, 0xf4, 0x00, 0x00, 0xf8, 0x04, 0x64, 0xe3);
+        internal static readonly Guid TcpIpTaskGuid = new Guid(unchecked((int)0x9a280ac0), unchecked((short)0xc8e0), unchecked((short)0x11d1), 0x84, 0xe2, 0x00, 0xc0, 0x4f, 0xb9, 0x98, 0xa2);
+        internal static readonly Guid UdpIpTaskGuid = new Guid(unchecked((int)0xbf3a50c5), unchecked((short)0xa9c9), unchecked((short)0x4988), 0xa0, 0x05, 0x2d, 0xf0, 0xb7, 0xc8, 0x0f, 0x80);
+        internal static readonly Guid ImageTaskGuid = new Guid(unchecked((int)0x2cb15d1d), unchecked((short)0x5fc1), unchecked((short)0x11d2), 0xab, 0xe1, 0x00, 0xa0, 0xc9, 0x11, 0xf5, 0x18);
+        internal static readonly Guid MemoryTaskGuid = new Guid(unchecked((int)0x3d6fa8d3), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid MemoryProviderGuid = new Guid(unchecked((int)0x3d1d93ef7), unchecked((short)0xe1f2), unchecked((short)0x4f45), 0x99, 0x43, 0x03, 0xd2, 0x45, 0xfe, 0x6c, 0x00);
+        internal static readonly Guid PerfInfoTaskGuid = new Guid(unchecked((int)0xce1dbfb4), unchecked((short)0x137e), unchecked((short)0x4da6), 0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc);
+        internal static readonly Guid StackWalkTaskGuid = new Guid(unchecked((int)0xdef2fe46), unchecked((short)0x7bd6), unchecked((short)0x4b80), 0xbd, 0x94, 0xf5, 0x7f, 0xe2, 0x0d, 0x0c, 0xe3);
         // Used for new style user mode stacks.  
-        internal static Guid EventTracingProviderGuid = new Guid(unchecked((int)0xb675ec37), unchecked((short)0xbdb6), unchecked((short)0x4648), 0xbc, 0x92, 0xf3, 0xfd, 0xc7, 0x4d, 0x3c, 0xa2);
-        internal static Guid ALPCTaskGuid = new Guid(unchecked((int)0x45d8cccd), unchecked((short)0x539f), unchecked((short)0x4b72), 0xa8, 0xb7, 0x5c, 0x68, 0x31, 0x42, 0x60, 0x9a);
-        internal static Guid LostEventTaskGuid = new Guid(unchecked((int)0x6a399ae0), unchecked((short)0x4bc6), unchecked((short)0x4de9), 0x87, 0x0b, 0x36, 0x57, 0xf8, 0x94, 0x7e, 0x7e);
-        internal static Guid SystemConfigTaskGuid = new Guid(unchecked((int)0x01853a65), unchecked((short)0x418f), unchecked((short)0x4f36), 0xae, 0xfc, 0xdc, 0x0f, 0x1d, 0x2f, 0xd2, 0x35);
-        internal static Guid VirtualAllocTaskGuid = new Guid(unchecked((int)0x3d6fa8d3), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid ReadyThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
-        internal static Guid SysConfigTaskGuid = new Guid(unchecked((int)0x9b79ee91), unchecked((short)0xb5fd), 0x41c0, 0xa2, 0x43, 0x42, 0x48, 0xe2, 0x66, 0xe9, 0xD0);
-        internal static Guid ObjectTaskGuid = new Guid(unchecked((int)0x89497f50), unchecked((short)0xeffe), 0x4440, 0x8c, 0xf2, 0xce, 0x6b, 0x1c, 0xdc, 0xac, 0xa7);
+        internal static readonly Guid EventTracingProviderGuid = new Guid(unchecked((int)0xb675ec37), unchecked((short)0xbdb6), unchecked((short)0x4648), 0xbc, 0x92, 0xf3, 0xfd, 0xc7, 0x4d, 0x3c, 0xa2);
+        internal static readonly Guid ALPCTaskGuid = new Guid(unchecked((int)0x45d8cccd), unchecked((short)0x539f), unchecked((short)0x4b72), 0xa8, 0xb7, 0x5c, 0x68, 0x31, 0x42, 0x60, 0x9a);
+        internal static readonly Guid LostEventTaskGuid = new Guid(unchecked((int)0x6a399ae0), unchecked((short)0x4bc6), unchecked((short)0x4de9), 0x87, 0x0b, 0x36, 0x57, 0xf8, 0x94, 0x7e, 0x7e);
+        internal static readonly Guid SystemConfigTaskGuid = new Guid(unchecked((int)0x01853a65), unchecked((short)0x418f), unchecked((short)0x4f36), 0xae, 0xfc, 0xdc, 0x0f, 0x1d, 0x2f, 0xd2, 0x35);
+        internal static readonly Guid VirtualAllocTaskGuid = new Guid(unchecked((int)0x3d6fa8d3), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid ReadyThreadTaskGuid = new Guid(unchecked((int)0x3d6fa8d1), unchecked((short)0xfe05), unchecked((short)0x11d0), 0x9d, 0xda, 0x00, 0xc0, 0x4f, 0xd7, 0xba, 0x7c);
+        internal static readonly Guid SysConfigTaskGuid = new Guid(unchecked((int)0x9b79ee91), unchecked((short)0xb5fd), 0x41c0, 0xa2, 0x43, 0x42, 0x48, 0xe2, 0x66, 0xe9, 0xD0);
+        internal static readonly Guid ObjectTaskGuid = new Guid(unchecked((int)0x89497f50), unchecked((short)0xeffe), 0x4440, 0x8c, 0xf2, 0xce, 0x6b, 0x1c, 0xdc, 0xac, 0xa7);
         #endregion
     }
     #region private types
@@ -11504,8 +11504,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class ThreadPoolTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "ThreadPool";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0xc861d0e2), unchecked((short)0xa2c1), unchecked((short)0x4d36), 0x9f, 0x9c, 0x97, 0x0b, 0xab, 0x94, 0x3a, 0x12);
+        public static readonly string ProviderName = "ThreadPool";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0xc861d0e2), unchecked((short)0xa2c1), unchecked((short)0x4d36), 0x9f, 0x9c, 0x97, 0x0b, 0xab, 0x94, 0x3a, 0x12);
         public ThreadPoolTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<TPCBEnqueueTraceData> ThreadPoolTraceCBEnqueue
@@ -11654,7 +11654,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return ret;
             }
         }
-        private static Guid ThreadPoolTraceTaskGuid = new Guid(unchecked((int)0xc861d0e2), unchecked((short)0xa2c1), unchecked((short)0x4d36), 0x9f, 0x9c, 0x97, 0x0b, 0xab, 0x94, 0x3a, 0x12);
+        private static readonly Guid ThreadPoolTraceTaskGuid = new Guid(unchecked((int)0xc861d0e2), unchecked((short)0xa2c1), unchecked((short)0x4d36), 0x9f, 0x9c, 0x97, 0x0b, 0xab, 0x94, 0x3a, 0x12);
         #endregion
     }
     #region private types
@@ -11979,11 +11979,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class HeapTraceProviderTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "HeapTraceProvider";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0x222962ab), unchecked((short)0x6180), unchecked((short)0x4b88), 0xa8, 0x25, 0x34, 0x6b, 0x75, 0xf2, 0xa2, 0x4a);
+        public static readonly string ProviderName = "HeapTraceProvider";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x222962ab), unchecked((short)0x6180), unchecked((short)0x4b88), 0xa8, 0x25, 0x34, 0x6b, 0x75, 0xf2, 0xa2, 0x4a);
 
         /* This only turns on the heap ranges (much lighter) d781ca11-61c0-4387-b83d-af52d3d2dd6a */
-        public static Guid HeapRangeProviderGuid = new Guid(unchecked((int)0xd781ca11), unchecked((short)0x61c0), unchecked((short)0x4387), 0xb8, 0x3d, 0xaf, 0x52, 0xd3, 0xd2, 0xdd, 0x6a);
+        public static readonly Guid HeapRangeProviderGuid = new Guid(unchecked((int)0xd781ca11), unchecked((short)0x61c0), unchecked((short)0x4387), 0xb8, 0x3d, 0xaf, 0x52, 0xd3, 0xd2, 0xdd, 0x6a);
 
         public HeapTraceProviderTraceEventParser(TraceEventSource source) : base(source) { }
 
@@ -12172,7 +12172,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return ret;
             }
         }
-        private static Guid HeapTraceTaskGuid = new Guid(unchecked((int)0x222962ab), unchecked((short)0x6180), unchecked((short)0x4b88), 0xa8, 0x25, 0x34, 0x6b, 0x75, 0xf2, 0xa2, 0x4a);
+        private static readonly Guid HeapTraceTaskGuid = new Guid(unchecked((int)0x222962ab), unchecked((short)0x6180), unchecked((short)0x4b88), 0xa8, 0x25, 0x34, 0x6b, 0x75, 0xf2, 0xa2, 0x4a);
         #endregion
     }
     #region private types
@@ -12757,8 +12757,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "1.0")]
     public sealed class CritSecTraceProviderTraceEventParser : TraceEventParser
     {
-        public static string ProviderName = "CritSecTraceProvider";
-        public static Guid ProviderGuid = new Guid(unchecked((int)0x3ac66736), unchecked((short)0xcc59), unchecked((short)0x4cff), 0x81, 0x15, 0x8d, 0xf5, 0x0e, 0x39, 0x81, 0x6b);
+        public static readonly string ProviderName = "CritSecTraceProvider";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x3ac66736), unchecked((short)0xcc59), unchecked((short)0x4cff), 0x81, 0x15, 0x8d, 0xf5, 0x0e, 0x39, 0x81, 0x6b);
         public CritSecTraceProviderTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<CritSecCollisionTraceData> CritSecTraceCollision
@@ -12816,7 +12816,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 return ret;
             }
         }
-        private static Guid CritSecTraceTaskGuid = new Guid(unchecked((int)0x3ac66736), unchecked((short)0xcc59), unchecked((short)0x4cff), 0x81, 0x15, 0x8d, 0xf5, 0x0e, 0x39, 0x81, 0x6b);
+        private static readonly Guid CritSecTraceTaskGuid = new Guid(unchecked((int)0x3ac66736), unchecked((short)0xcc59), unchecked((short)0x4cff), 0x81, 0x15, 0x8d, 0xf5, 0x0e, 0x39, 0x81, 0x6b);
         #endregion
     }
     #region private types

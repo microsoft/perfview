@@ -16,8 +16,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
     public sealed class TplEtwProviderTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "System.Threading.Tasks.TplEventSource";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x2e5dba47), unchecked((short) 0xa3d2), unchecked((short) 0x4d16), 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5);
+        public static readonly string ProviderName = "System.Threading.Tasks.TplEventSource";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x2e5dba47), unchecked((short) 0xa3d2), unchecked((short) 0x4d16), 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5);
         public enum Keywords : long
         {
             Tasktransfer = 0x1,

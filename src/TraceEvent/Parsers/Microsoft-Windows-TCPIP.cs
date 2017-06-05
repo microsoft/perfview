@@ -16,8 +16,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
     public sealed class MicrosoftWindowsTCPIPTraceEventParser : TraceEventParser 
     {
-        public static string ProviderName = "Microsoft-Windows-TCPIP";
-        public static Guid ProviderGuid = new Guid(unchecked((int) 0x2f07e2ee), unchecked((short) 0x15db), unchecked((short) 0x40f1), 0x90, 0xef, 0x9d, 0x7b, 0xa2, 0x82, 0x18, 0x8a);
+        public static readonly string ProviderName = "Microsoft-Windows-TCPIP";
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x2f07e2ee), unchecked((short) 0x15db), unchecked((short) 0x40f1), 0x90, 0xef, 0x9d, 0x7b, 0xa2, 0x82, 0x18, 0x8a);
         public enum Keywords : long
         {
             Uttcpipendpoint = 0x1,

@@ -15,14 +15,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// </summary>
     class CtfMetadataLegacyParser : CtfMetadataParser, IDisposable
     {
-        static Regex s_align = new Regex(@"align\( *(\d+) *\)");
-        static Regex s_integer = new Regex(@"integer (\{[^}]*\}) (\w+)");
-        static Regex s_variable = new Regex(@"((\w+ +)+) *(\w+)");
-        static Regex s_variant = new Regex(@"variant +< *(\w+) *>");
-        static Regex s_enum = new Regex(@"enum +: +((\w+ +)+) *");
-        static Regex s_range = new Regex(@"(\w+) += *(\d+)( *... (\d+))?");
-        static Regex s_struct = new Regex(@"^\s*struct\s(\{|\w+)");
-        static Regex s_float = new Regex(@"floating_point +\{");
+        private static readonly Regex s_align = new Regex(@"align\( *(\d+) *\)");
+        private static readonly Regex s_integer = new Regex(@"integer (\{[^}]*\}) (\w+)");
+        private static readonly Regex s_variable = new Regex(@"((\w+ +)+) *(\w+)");
+        private static readonly Regex s_variant = new Regex(@"variant +< *(\w+) *>");
+        private static readonly Regex s_enum = new Regex(@"enum +: +((\w+ +)+) *");
+        private static readonly Regex s_range = new Regex(@"(\w+) += *(\d+)( *... (\d+))?");
+        private static readonly Regex s_struct = new Regex(@"^\s*struct\s(\{|\w+)");
+        private static readonly Regex s_float = new Regex(@"floating_point +\{");
 
         private Stream _stream;
 
