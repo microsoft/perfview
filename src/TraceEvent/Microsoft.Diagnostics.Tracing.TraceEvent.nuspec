@@ -42,7 +42,7 @@
     <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
     <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net45" />
     <file src="$OutDir$Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net45" />
-    <file exclude="obj\**\*.cs" src="**\*.cs" target="src" />
+    <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
     <file src="obj\$Configuration$\**\*.cs" target="src\obj\$Configuration$" />
   </files>
 
