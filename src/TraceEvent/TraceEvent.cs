@@ -9,6 +9,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -309,14 +310,64 @@ namespace Microsoft.Diagnostics.Tracing
         /// store them in UserData under the key 'parsers\(ParserName)' 
         /// </para>
         /// </summary>
-        public IDictionary<string, object> UserData { get { return userData; } }
+        public Dictionary<KnownUserData, object> UserData { get { return userData; } }
 
         #region protected
 
         internal /*protected*/ TraceEventSource()
+            : this(new Dictionary<KnownUserData, object>())
         {
-            userData = new Dictionary<string, object>();
+        }
+
+        internal TraceEventSource(Dictionary<KnownUserData, object> userData)
+        {
+            this.userData = userData;
             _QPCFreq = 1;   // Anything non-zero so we don't get divide by zero failures in degenerate cases.  
+        }
+
+        static TraceEventSource()
+        {
+            knownUserData = new ConcurrentDictionary<string, KnownUserData>();
+            userDataKeys = new ConcurrentDictionary<KnownUserData, string>();
+            foreach (KnownUserData item in Enum.GetValues(typeof(KnownUserData)))
+            {
+                string key = item.ToString().Replace('_', '/');
+                knownUserData[key] = item;
+                userDataKeys[item] = key;
+            }
+
+            Debug.Assert(knownUserData.Count == userDataKeys.Count);
+        }
+
+        internal static KnownUserData GetOrCreateKnownUserData(string key)
+        {
+            KnownUserData data;
+            if (knownUserData.TryGetValue(key, out data))
+                return data;
+
+            return GetOrCreateKnownUserDataSlow(key);
+        }
+
+        private static KnownUserData GetOrCreateKnownUserDataSlow(string key)
+        {
+            lock (knownUserData)
+            {
+                KnownUserData data = (KnownUserData)knownUserData.Count;
+                if (knownUserData.TryAdd(key, data))
+                {
+                    userDataKeys.TryAdd(data, key);
+                    return data;
+                }
+                else
+                {
+                    return knownUserData[key];
+                }
+            }
+        }
+
+        internal static string GetUserDataKey(KnownUserData userData)
+        {
+            return userDataKeys[userData];
         }
 
         // [SecuritySafeCritical]
@@ -375,7 +426,10 @@ namespace Microsoft.Diagnostics.Tracing
         }
         #endregion
 
-        internal /*protected*/ IDictionary<string, object> userData;
+        private static readonly ConcurrentDictionary<string, KnownUserData> knownUserData;
+        private static readonly ConcurrentDictionary<KnownUserData, string> userDataKeys;
+
+        private Dictionary<KnownUserData, object> userData;
 
         internal /*protected*/ int pointerSize;
         internal /*protected*/ int numberOfProcessors;
@@ -490,6 +544,14 @@ namespace Microsoft.Diagnostics.Tracing
             return Guid.Empty;
         }
         #endregion
+    }
+
+    // Dev note: These cannot have explicit (numeric) values assigned!
+    public enum KnownUserData
+    {
+        Computers_LoadedDotNetRuntimes,
+        Computers_Processes,
+        Computers_Processes_SampleIntervalMSec,
     }
 
     /// <summary>
@@ -2363,7 +2425,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             Debug.Assert(source != null);
             this.source = source;
-            this.stateKey = @"parsers\" + this.GetType().FullName;
+            this.stateKey = TraceEventSource.GetOrCreateKnownUserData(@"parsers\" + this.GetType().FullName);
 
             if (!dontRegister)
                 this.source.RegisterParser(this);
@@ -2657,7 +2719,7 @@ namespace Microsoft.Diagnostics.Tracing
         internal protected ITraceParserServices source;
         GrowableArray<SubscriptionRequest> m_subscriptionRequests;
 
-        private string stateKey;
+        private KnownUserData stateKey;
         #endregion
     }
 
@@ -2901,6 +2963,16 @@ namespace Microsoft.Diagnostics.Tracing
             unhandledEventTemplate.source = this;
             ReHash();       // Allocates the hash table
         }
+
+        internal TraceEventDispatcher(Dictionary<KnownUserData, object> userData)
+            : base(userData)
+        {
+            // Initialize our data structures. 
+            unhandledEventTemplate = new UnhandledTraceEvent();
+            unhandledEventTemplate.source = this;
+            ReHash();       // Allocates the hash table
+        }
+
         internal override void RegisterUnhandledEventImpl(Func<TraceEvent, bool> callback)
         {
             if (lastChanceHandlers == null)

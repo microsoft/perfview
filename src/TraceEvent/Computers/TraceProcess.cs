@@ -36,16 +36,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                 // establish listeners
                 if(m_currentSource != source) SetupCallbacks(source);
 
-                source.UserData["Computers/Processes"] = processes;
+                source.UserData[KnownUserData.Computers_Processes] = processes;
             }
 
             m_currentSource = source;
         }
         public static TraceProcesses Processes(this TraceEventSource source)
         {
-            if (source.UserData.ContainsKey("Computers/Processes")) return source.UserData["Computers/Processes"] as TraceProcesses;
-            else return null;
+            object result;
+            source.UserData.TryGetValue(KnownUserData.Computers_Processes, out result);
+            return result as TraceProcesses;
         }
+
         public static TraceProcess Process(this TraceEvent _event)
         {
             return _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
@@ -60,16 +62,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (!process.Source.UserData.ContainsKey(KnownUserData.Computers_Processes_SampleIntervalMSec)) process.Source.UserData.Add(KnownUserData.Computers_Processes_SampleIntervalMSec, new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData[KnownUserData.Computers_Processes_SampleIntervalMSec];
             if (!map.ContainsKey(process.ProcessIndex)) map[process.ProcessIndex] = sampleIntervalMSec;
         }
 
         public static float SampleIntervalMSec(this TraceProcess process)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
-            if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex];
+            if (!process.Source.UserData.ContainsKey(KnownUserData.Computers_Processes_SampleIntervalMSec)) process.Source.UserData.Add(KnownUserData.Computers_Processes_SampleIntervalMSec, new Dictionary<ProcessIndex, float>());
+            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData[KnownUserData.Computers_Processes_SampleIntervalMSec];
+            float interval;
+            if (map.TryGetValue(process.ProcessIndex, out interval)) return interval;
             else return 1; // defualt 1 ms
         }
 
