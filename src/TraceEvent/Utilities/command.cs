@@ -498,11 +498,10 @@ namespace Utilities
                 outputStream.WriteLine("RUN CMD: " + commandLine);
             }
 #endif
-#if false
             // Make sure we kill this task when Ctrl C or appdomain unloads
             if (!options.noWait)
                 AddCommandToCleanupList(this);
-#endif
+
             try
             {
                 process.Start();
@@ -756,16 +755,15 @@ namespace Utilities
         private CommandOptions options;
         private TextWriter outputStream;
 
-#if false 
         // Control C support.  Kill any commands if control C is hit or process exits.  
-        private static List<WeakReference> s_commandsToCleanup = SetupControlC();
+        private static readonly List<WeakReference<Command>> s_commandsToCleanup = SetupControlC();
         private static bool s_controlCProcessed;
 
-        private static List<WeakReference> SetupControlC()
+        private static List<WeakReference<Command>> SetupControlC()
         {
             Console.CancelKeyPress += OnControlC;
             AppDomain.CurrentDomain.DomainUnload += OnControlC;
-            return new List<WeakReference>(); 
+            return new List<WeakReference<Command>>(); 
         }
         private static void OnControlC(object sender, EventArgs e)
         {
@@ -774,10 +772,13 @@ namespace Utilities
                 if (!s_controlCProcessed)
                 {
                     Console.WriteLine("Command Cleanup");
-                    foreach (WeakReference commandToCleanupRef in s_commandsToCleanup)
+                    foreach (WeakReference<Command> commandToCleanupRef in s_commandsToCleanup)
                     {
-                        var commandToCleanup = commandToCleanupRef.Target as Command;
-                        if (commandToCleanup != null && !commandToCleanup.HasExited)
+                        Command commandToCleanup;
+                        if (!commandToCleanupRef.TryGetTarget(out commandToCleanup))
+                            continue;
+
+                        if (!commandToCleanup.HasExited)
                         {
                             Console.WriteLine("Killing {0}", commandToCleanup.commandLine);
                             commandToCleanup.Kill();
@@ -793,19 +794,19 @@ namespace Utilities
         {
             lock (s_commandsToCleanup)
             {
-                foreach (WeakReference cmdElemRef in s_commandsToCleanup)
+                foreach (WeakReference<Command> cmdElemRef in s_commandsToCleanup)
                 {
-                    var cmdElem = cmdElemRef.Target as Command;
-                    if (cmdElem == null || cmdElem.HasExited)
+                    Command cmdElem;
+                    if (!cmdElemRef.TryGetTarget(out cmdElem) || cmdElem.HasExited)
                     {
-                        cmdElemRef.Target = cmd;
+                        cmdElemRef.SetTarget(cmd);
                         return;
                     }
                 }
-                s_commandsToCleanup.Add(new WeakReference(cmd));
+
+                s_commandsToCleanup.Add(new WeakReference<Command>(cmd));
             }
         }
-#endif
         #endregion
     }
 }
