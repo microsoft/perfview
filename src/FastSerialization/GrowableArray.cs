@@ -224,11 +224,7 @@ namespace System.Collections.Generic
             sb.Append("  ])");
             return sb.ToString();
         }
-        /// <summary>
-        /// Should return -1 if x is less than elem.  
-        /// TODO FIX NOW use Func instead.  
-        /// </summary>
-        public delegate int Comparison<Key>(Key x, T elem);
+
         /// <summary>
         /// Sets 'index' to the the smallest index such that all elements with index > 'idx' are > key.  If
         /// index does not match any elements a new element should always be placed AFTER index.  Note that this
@@ -238,7 +234,7 @@ namespace System.Collections.Generic
         /// 
         /// TODO FIX NOW harmonize with List.BinarySearch
         /// </summary>
-        public bool BinarySearch<Key>(Key key, out int index, Comparison<Key> comparison)
+        public bool BinarySearch<Key>(Key key, out int index, Func<Key, T, int> comparison)
         {
             // binary search 
             int low = 0;
@@ -288,7 +284,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Sort the range starting at 'index' of length 'count' using 'comparision' in assending order
         /// </summary>
-        public void Sort(int index, int count, System.Comparison<T> comparison)
+        public void Sort(int index, int count, Comparison<T> comparison)
         {
             Debug.Assert(index + count <= arrayLength);
             if (count > 0)
@@ -297,7 +293,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Sort the whole array using 'comparison' in ascending order
         /// </summary>
-        public void Sort(System.Comparison<T> comparison)
+        public void Sort(Comparison<T> comparison)
         {
             if (array != null)
                 Array.Sort<T>(array, 0, arrayLength, new FunctorComparer<T>(comparison));
@@ -322,7 +318,7 @@ namespace System.Collections.Generic
         /// It is legal that 'startIndex' is greater than the charCount, in which case, the search returns false
         /// immediately.   This allows a nice loop to find all items matching a pattern. 
         /// </summary>
-        public bool Search<Key>(Key key, int startIndex, Comparison<Key> compare, ref int index)
+        public bool Search<Key>(Key key, int startIndex, Func<Key, T, int> compare, ref int index)
         {
             for (int i = startIndex; i < arrayLength; i++)
             {
