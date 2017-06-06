@@ -19,14 +19,22 @@ namespace TraceEventTests
         {
         }
 
-        public static IEnumerable<object[]> TestEtlFiles
+        public static IEnumerable<string> TestEtlFileNames
         {
             get
             {
                 // The test data is contained in files of the same name, but with a .zip extension.
                 // Only the names are returned since the extracted files will be in a different directory.
                 return from file in Directory.EnumerateFiles(TestDataDir, "*.etl.zip")
-                       select new[] { Path.GetFileNameWithoutExtension(file) };
+                       select Path.GetFileNameWithoutExtension(file);
+            }
+        }
+
+        public static IEnumerable<object[]> TestEtlFiles
+        {
+            get
+            {
+                return TestEtlFileNames.Select(name => new[] { name });
             }
         }
 
