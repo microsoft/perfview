@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
-//
-#define TOSTRING_FTNS
 
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -185,7 +183,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public virtual void GetReferences(StackSourceSampleIndex nodeIndex, RefDirection direction, Action<StackSourceSampleIndex> callback) { }
 
-#if TOSTRING_FTNS
         /// <summary>
         /// Dump the stack source to a file as XML.   Used for debugging.  
         /// </summary>
@@ -209,7 +206,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             writer.WriteLine(" </Samples>");
             writer.WriteLine("</StackSource>");
         }
-#endif
     }
 
     /// <summary>
@@ -292,7 +288,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return ret;
         }
 
-#if TOSTRING_FTNS
         /// <summary>
         /// Returns an XML string representation of a 'sample'.  For debugging. 
         /// </summary>
@@ -340,7 +335,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             sb.Append("/>");
             return sb.ToString();
         }
-#endif
     }
 
     /// <summary>
@@ -386,7 +380,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public int Scenario { get; set; }
 
-#if TOSTRING_FTNS
         /// <summary>
         /// Returns an XML string representing the sample
         /// </summary>
@@ -402,7 +395,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             return source.ToString(this);
         }
-#endif
 
         /// <summary>
         /// Create a StackSourceSample which is associated with 'source'.  
