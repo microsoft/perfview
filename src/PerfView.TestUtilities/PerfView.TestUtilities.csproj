@@ -68,6 +68,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UseCultureAttribute.cs" />
+    <Compile Include="WorkItemAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
