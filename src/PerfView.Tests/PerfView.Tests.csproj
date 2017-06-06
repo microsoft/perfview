@@ -71,9 +71,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StackViewer\StackWindowTests.cs" />
     <Compile Include="Utilities\PerfViewTestBase.cs" />
-    <Compile Include="Utilities\UseCultureAttribute.cs" />
     <Compile Include="Utilities\VoidResult.cs" />
-    <Compile Include="Utilities\WorkItemAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PerfView\PerfView.csproj">
