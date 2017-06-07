@@ -3,8 +3,8 @@ REM
 REM *** This is mostly a template for doing the copy.      ****  
 REM *** Most likey you want this to be the current version ****
 REM 
-xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.2\*.dll PerfView.SupportFiles
-xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.2\*.exe PerfView.SupportFiles
+xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.3\*.dll PerfView.SupportFiles
+xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.3\*.exe PerfView.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\x86\DiagnosticsHub.Packaging.dll
