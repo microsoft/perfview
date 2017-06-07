@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props')" />
   <Import Project="..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props" Condition="Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" />
-  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -76,20 +76,20 @@
     </StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DiagnosticsHub.Packaging.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
-      <Private>True</Private>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    <Reference Include="DiagnosticsHub.Packaging.Interop, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
+      <Private>True</Private>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.2\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
     </Reference>
     <Reference Include="OSExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
@@ -472,6 +472,8 @@
     <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
     <Copy SourceFiles="$(TraceEventSupportFilesBase)native\x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
     <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
+    <Copy SourceFiles="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll" DestinationFolder="$(OutDir)x86" />
+    <Copy SourceFiles="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll" DestinationFolder="$(OutDir)x64" />
   </Target>
   <ItemGroup>
     <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
@@ -547,11 +549,17 @@
       <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
       <Link>x86\DiagnosticsHub.Packaging.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.Interop.dll">
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
-      <Link>x86\DiagnosticsHub.Packaging.Interop.dll</Link>
+      <LogicalName>.\amd64\DiagnosticsHub.Packaging.dll</LogicalName>
+      <Link>x64\DiagnosticsHub.Packaging.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\DiagnosticsHub.Packaging.Interop.dll">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\DiagnosticsHub.Packaging.Interop.dll</LogicalName>
+      <Link>DiagnosticsHub.Packaging.Interop.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.Diagnostics.Tracing.EventSource.dll">
       <Type>Non-Resx</Type>
@@ -754,8 +762,8 @@ REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.2\build\PerfView.SupportFiles.props'))" />
     <Error Condition="!Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props'))" />
+    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
