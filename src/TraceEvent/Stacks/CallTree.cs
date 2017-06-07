@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;                        // For TextWriter.  
 using System.Threading.Tasks;
+using BitArray = System.Collections.BitArray;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -1120,10 +1121,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // TODO FIX NOW.  This is a hack, we know every type of CallTreeNode.     
             var asAgg = this as AggregateCallTreeNode;
             var dir = IsCalleeTree ? RefDirection.From : RefDirection.To;
-            var sampleSet = new HashSet<StackSourceSampleIndex>();
+
+            BitArray sampleSet = new BitArray(128);
             this.GetSamples(true, delegate (StackSourceSampleIndex sampleIndex)
             {
-                sampleSet.Add(sampleIndex);
+                while (sampleSet.Count <= (int)sampleIndex)
+                    sampleSet.Length *= 2;
+
+                sampleSet.Set((int)sampleIndex, true);
                 return true;
             });
 
@@ -1149,7 +1154,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 source.GetReferences(sampleIndex, dir, delegate (StackSourceSampleIndex childIndex)
                 {
                     // Ignore samples to myself.  
-                    if (sampleSet.Contains(childIndex))
+                    if (childIndex < 0 || ((int)childIndex < sampleSet.Count && sampleSet[(int)childIndex]))
                         return;
 
                     var childNode = samplesToNodes[(int)childIndex];
