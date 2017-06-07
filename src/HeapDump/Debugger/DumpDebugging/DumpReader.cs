@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using Microsoft.Win32.SafeHandles;
+using FastSerialization;
 using System.Runtime.InteropServices;
 using System.IO;
 using Microsoft.Samples.Debugging.Native;
@@ -52,9 +53,11 @@ namespace Microsoft.Samples.Debugging.Native
     using NativeMethodsBase = Microsoft.Samples.Debugging.Native.NativeMethods;
     using System.Diagnostics;
     using System.Runtime.Serialization;
+    using System.Runtime;
+    using System.IO.MemoryMappedFiles;
 
     #region Exceptions
-    
+
     /// <summary>
     /// Base class for DumpReader exceptions
     /// </summary>
@@ -133,15 +136,15 @@ namespace Microsoft.Samples.Debugging.Native
     public struct DumpPointer
     {
         // This is dangerous because its lets you create a new arbitary dump pointer.
-        static public DumpPointer DangerousMakeDumpPointer(IntPtr rawPointer, uint size)
+        static public DumpPointer DangerousMakeDumpPointer(MemoryMappedFileStreamReader reader, long offset)
         {
-            return new DumpPointer(rawPointer, size);
+            return new DumpPointer(reader, offset);
         }
         // Private ctor used to create new pointers from existing ones.
-        DumpPointer(IntPtr rawPointer, uint size)
+        DumpPointer(MemoryMappedFileStreamReader reader, long offset)
         {
-            m_pointer = rawPointer;
-            m_size = size;
+            m_reader = reader;
+            m_offset = offset;
         }
 
         #region Transforms
@@ -155,25 +158,24 @@ namespace Microsoft.Samples.Debugging.Native
             // Can't use this to grow.
             EnsureSizeRemaining(size);
 
-            return new DumpPointer(m_pointer, m_size - size);
+            return this;
         }
 
         public DumpPointer Adjust(uint delta)
         {
             EnsureSizeRemaining(delta);
-            IntPtr pointer = new IntPtr(m_pointer.ToInt64() + delta);
+            long offset = m_offset + delta;
             
-            return new DumpPointer(pointer, m_size - delta);
+            return new DumpPointer(m_reader, offset);
         }
 
         public DumpPointer Adjust(ulong delta64)
         {
             uint delta = (uint)delta64;
             EnsureSizeRemaining(delta);
-            ulong ptr = unchecked((ulong)m_pointer.ToInt64()) + delta;
-            IntPtr pointer = new IntPtr(unchecked((long)ptr));
+            long offset = m_offset + delta;
             
-            return new DumpPointer(pointer, m_size - delta);
+            return new DumpPointer(m_reader, offset);
         }
         #endregion // Transforms
 
@@ -184,9 +186,12 @@ namespace Microsoft.Samples.Debugging.Native
         // Provide a friendly wrapper over a raw pinvoke to RtlMoveMemory.
         // Note that we actually want a copy, but RtlCopyMemory is a macro and compiler intrinisic 
         // that we can't pinvoke to.
-        static void RawCopy(IntPtr src, IntPtr dest, uint numBytes)
+        static void RawCopy(MemoryMappedFileStreamReader reader, long offset, IntPtr dest, uint numBytes)
         {
-            NativeMethodsBase.RtlMoveMemory(dest, src, new IntPtr(numBytes));
+            byte[] buffer = new byte[numBytes];
+            reader.Seek(offset);
+            reader.Read(buffer, 0, (int)numBytes);
+            Marshal.Copy(buffer, 0, dest, (int)numBytes);
         }
 
         /// <summary>
@@ -207,7 +212,7 @@ namespace Microsoft.Samples.Debugging.Native
 
             IntPtr dest = new IntPtr(destinationBuffer.ToInt64() + indexDestination);
 
-            RawCopy(m_pointer, dest, numberBytesToCopy);
+            RawCopy(m_reader, m_offset, dest, numberBytesToCopy);
         }
 
         /// <summary>
@@ -219,61 +224,57 @@ namespace Microsoft.Samples.Debugging.Native
         public void Copy(IntPtr destinationBuffer, uint numberBytesToCopy)
         {
             EnsureSizeRemaining(numberBytesToCopy);
-            RawCopy(m_pointer, destinationBuffer, numberBytesToCopy);
+            RawCopy(m_reader, m_offset, destinationBuffer, numberBytesToCopy);
         }
 
 
         public int ReadInt32()
         {
             EnsureSizeRemaining(4);
-            return Marshal.ReadInt32(m_pointer);
+            m_reader.Seek(m_offset);
+            return m_reader.ReadInt32();
         }
 
         public long ReadInt64()
         {
             EnsureSizeRemaining(8);
-            return Marshal.ReadInt64(m_pointer);
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct StructUInt32
-        {
-            public UInt32 Value;
+            m_reader.Seek(m_offset);
+            return m_reader.ReadInt64();
         }
 
         public UInt32 ReadUInt32()
         {
-            EnsureSizeRemaining(4);
-            return ((StructUInt32)Marshal.PtrToStructure(m_pointer, typeof(StructUInt32))).Value;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct StructUInt64
-        {
-            public UInt64 Value;
+            return (uint)ReadInt32();
         }
 
         public UInt64 ReadUInt64()
         {
-            EnsureSizeRemaining(8);
-            return ((StructUInt64)Marshal.PtrToStructure(m_pointer, typeof(StructUInt64))).Value;
+            return (ulong)ReadInt64();
         }
 
-        public string ReadAsUnicodeString(int lengthChars)
+        public unsafe string ReadAsUnicodeString(int lengthChars)
         {
-            int lengthBytes = lengthChars * 2;
+            int lengthBytes = lengthChars * sizeof(char);
 
             EnsureSizeRemaining((uint) lengthBytes);
-            string s = Marshal.PtrToStringUni(m_pointer, lengthChars);
-            return s;
+
+            byte[] result = new byte[lengthBytes];
+            m_reader.Seek(m_offset);
+            int read = m_reader.Read(result, 0, result.Length);
+            fixed (byte* rawData = result)
+            {
+                return new string((char*)rawData, 0, read / sizeof(char));
+            }
         }
 
         public T PtrToStructure<T>(uint offset)
+            where T : struct
         {
             return this.Adjust(offset).PtrToStructure<T>();
         }
 
         public T PtrToStructureAdjustOffset<T>(ref uint offset)
+            where T : struct
         {
             T ret = this.Adjust(offset).PtrToStructure<T>();
             offset += (uint)Marshal.SizeOf(ret);
@@ -286,13 +287,15 @@ namespace Microsoft.Samples.Debugging.Native
         /// <typeparam name="T">Type of managed structure to marshal as</typeparam>
         /// <returns>a managed copy of the structure</returns>
         public T PtrToStructure<T>()
+            where T : struct
         {
             // Runtime check to ensure we have enough space in the minidump. This should
             // always be safe for well formed dumps.
             uint size = (uint)Marshal.SizeOf(typeof(T));
             EnsureSizeRemaining(size);
 
-            T element = (T)Marshal.PtrToStructure(m_pointer, typeof(T));
+            m_reader.Seek(m_offset);
+            T element = m_reader.Read<T>();
             return element;
         }
 
@@ -300,7 +303,7 @@ namespace Microsoft.Samples.Debugging.Native
 
         void EnsureSizeRemaining(uint requestedSize)
         {
-            if (requestedSize > m_size)
+            if (m_reader.Length - m_offset < requestedSize)
             {
                 throw new DumpFormatException();
             }
@@ -314,7 +317,7 @@ namespace Microsoft.Samples.Debugging.Native
         // 1) From the mapped file. Pointer, Size provided by File-system APIs. This describes the
         //    largest possible region.
         // 2) From a Minidump stream. Pointer,Size are provided by MiniDumpReadDumpStream.
-        
+
         // 3) From shrinking operations on existing dump-pointers. These operations return a
         //   DumpPointer that refers to a subset of the original. Since the original DumpPointer
         //   is in ranage, any subset must be in range too.
@@ -326,7 +329,7 @@ namespace Microsoft.Samples.Debugging.Native
         // All read operatiosn are still dangerous because there is no way that we can enforce that the data is 
         // what we expect it to be. However, since all operations are bounded, we should at worst
         // return corrupted data, but never read outside the dump-file.
-        IntPtr m_pointer;
+        MemoryMappedFileStreamReader m_reader;
 
         // This is a 4-byte integer, which limits the dump operations to 4 gb. If we want to
         // handle dumps larger than that, we need to make this a 8-byte integer, (ulong), but that
@@ -336,7 +339,7 @@ namespace Microsoft.Samples.Debugging.Native
         // both worlds.
         // We explictly keep the size private because clients should not need to access it. Size
         // expectations are already described by the minidump format.
-        uint m_size;
+        long m_offset;
     }
 
     /// <summary>
@@ -605,7 +608,7 @@ namespace Microsoft.Samples.Debugging.Native
             /// This is returned by the MINIDUMP_STREAM_TYPE.SystemInfoStream stream.
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public class MINIDUMP_SYSTEM_INFO
+            public struct MINIDUMP_SYSTEM_INFO
             {
                 // There are existing managed types that represent some of these fields.
                 // Provide both the raw imports, and the managed wrappers to make these easier to
@@ -680,7 +683,7 @@ namespace Microsoft.Samples.Debugging.Native
             // Default Pack of 8 makes this struct 4 bytes too long
             // and so retrieving the last one will fail.
             [StructLayout(LayoutKind.Sequential, Pack=4)]
-            public sealed class MINIDUMP_MODULE
+            public struct MINIDUMP_MODULE
             {
                 /// <summary>
                 /// Address that module is loaded within target.
@@ -760,11 +763,29 @@ namespace Microsoft.Samples.Debugging.Native
             #endregion // Module
 
             #region Threads
+            public interface IMinidumpThread
+            {
+                MINIDUMP_THREAD Thread
+                {
+                    get;
+                }
+
+                bool HasBackingStore
+                {
+                    get;
+                }
+
+                MINIDUMP_MEMORY_DESCRIPTOR BackingStore
+                {
+                    get;
+                }
+            }
+
             /// <summary>
             /// Raw MINIDUMP_THREAD structure imported from DbgHelp.h
             /// </summary>
             [StructLayout(LayoutKind.Sequential)]
-            public class MINIDUMP_THREAD
+            public struct MINIDUMP_THREAD : IMinidumpThread
             {
                 public uint ThreadId;
 
@@ -789,18 +810,13 @@ namespace Microsoft.Samples.Debugging.Native
 
                 public MINIDUMP_LOCATION_DESCRIPTOR ThreadContext;
 
-                public virtual bool HasBackingStore()
-                {
-                    return false;
-                }
+                public MINIDUMP_THREAD Thread => this;
 
-                public virtual MINIDUMP_MEMORY_DESCRIPTOR BackingStore
+                public bool HasBackingStore => false;
+
+                public MINIDUMP_MEMORY_DESCRIPTOR BackingStore
                 {
                     get
-                    {
-                        throw new MissingMemberException("MINIDUMP_THREAD has no backing store!");
-                    }
-                    set
                     {
                         throw new MissingMemberException("MINIDUMP_THREAD has no backing store!");
                     }
@@ -808,18 +824,16 @@ namespace Microsoft.Samples.Debugging.Native
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public sealed class MINIDUMP_THREAD_EX : MINIDUMP_THREAD
+            public struct MINIDUMP_THREAD_EX : IMinidumpThread
             {
-                override public bool HasBackingStore()
-                {
-                    return true;
-                }
+                MINIDUMP_THREAD Thread;
+                MINIDUMP_MEMORY_DESCRIPTOR BackingStore;
 
-                public override MINIDUMP_MEMORY_DESCRIPTOR BackingStore
-                {
-                    get;
-                    set;
-                }
+                MINIDUMP_THREAD IMinidumpThread.Thread => Thread;
+
+                bool IMinidumpThread.HasBackingStore => true;
+
+                MINIDUMP_MEMORY_DESCRIPTOR IMinidumpThread.BackingStore => BackingStore;
             }
 
             // Minidumps have a common variable length list structure for modules and threads implemented
@@ -833,6 +847,7 @@ namespace Microsoft.Samples.Debugging.Native
             //   ULONG32 NumberOfNodesInList;
             //   T ListNodes[];
             public class MinidumpArray<T>
+                where T : struct
             {
 
                 protected MinidumpArray(DumpPointer streamPointer, NativeMethods.MINIDUMP_STREAM_TYPE streamType)
@@ -890,7 +905,7 @@ namespace Microsoft.Samples.Debugging.Native
             /// List of Threads in the minidump.
             /// </summary>
             public class MINIDUMP_THREAD_LIST<T> : MinidumpArray<T>, IMinidumpThreadList
-                where T : MINIDUMP_THREAD
+                where T : struct, IMinidumpThread
             {
                 internal MINIDUMP_THREAD_LIST(DumpPointer streamPointer, NativeMethods.MINIDUMP_STREAM_TYPE streamType)
                     : base(streamPointer, streamType)
@@ -901,18 +916,15 @@ namespace Microsoft.Samples.Debugging.Native
                         throw new ArgumentException("Only ThreadListStream and ThreadExListStream are supported.");
                 }
 
-                // IMinidumpThreadList
-                new public MINIDUMP_THREAD GetElement(uint idx)
+                uint IMinidumpThreadList.Count()
                 {
-                    T t = base.GetElement(idx);
-                    return (MINIDUMP_THREAD)t;
+                    return Count;
                 }
 
-                new public uint Count()
+                MINIDUMP_THREAD IMinidumpThreadList.GetElement(uint idx)
                 {
-                    return base.Count;
+                    return GetElement(idx).Thread;
                 }
-
             }
 
             #endregion // Threads
@@ -1366,6 +1378,15 @@ namespace Microsoft.Samples.Debugging.Native
         /// <returns>Number of contiguous bytes successfully copied into the destination buffer.</returns>
         public virtual uint ReadPartialMemory(ulong targetRequestStart, IntPtr destinationBuffer, uint destinationBufferSizeInBytes)
         {
+            //if (true && IntPtr.Size > 0)
+            //{
+            //    byte[] data = new byte[destinationBufferSizeInBytes];
+            //    m_mappedFileReader.Seek((long)targetRequestStart);
+            //    int bytesRead1 = m_mappedFileReader.Read(data, 0, data.Length);
+            //    Marshal.Copy(data, 0, destinationBuffer, bytesRead1);
+            //    return (uint)bytesRead1;
+            //}
+
             uint bytesRead = ReadPartialMemoryInternal(targetRequestStart,
                                                         destinationBuffer,
                                                         destinationBufferSizeInBytes,
@@ -1542,27 +1563,36 @@ namespace Microsoft.Samples.Debugging.Native
         /// <param name="path">filename to open dump file</param>
         public DumpReader(string path)
         {
-            m_file = File.OpenRead(path);
+            m_file = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             long length = m_file.Length;
 
             // The dump file may be many megabytes large, so we don't want to
             // read it all at once. Instead, doing a mapping.
-            m_fileMapping = NativeMethodsBase.CreateFileMapping(m_file.SafeFileHandle, IntPtr.Zero, NativeMethodsBase.PageProtection.Readonly, 0, 0, null);
-            if (m_fileMapping.IsInvalid)
-            {
-                int error = Marshal.GetHRForLastWin32Error();
-                Marshal.ThrowExceptionForHR(error);
-            }
+            m_fileMapping = MemoryMappedFile.CreateFromFile(m_file, null, 0, MemoryMappedFileAccess.Read, null, HandleInheritability.None, leaveOpen: true);
+            m_mappedFileReader = new MemoryMappedFileStreamReader(m_fileMapping, length, leaveOpen: true);
 
             const uint FILE_MAP_READ = 4;
-            m_View = NativeMethodsBase.MapViewOfFile(m_fileMapping, FILE_MAP_READ, 0, 0, IntPtr.Zero);
+            m_View = NativeMethodsBase.MapViewOfFile(m_fileMapping.SafeMemoryMappedFileHandle, FILE_MAP_READ, 0, 0, IntPtr.Zero);
+            if (!m_View.IsInvalid)
+            {
+                m_base = DumpPointer.DangerousMakeDumpPointer(m_mappedFileReader, 0);
+            }
+            else
+            {
+                // Try to map a smaller portion of the view
+                IntPtr bytesToMap = (IntPtr)(100 * 1024 * 1024);
+                m_View = NativeMethodsBase.MapViewOfFile(m_fileMapping.SafeMemoryMappedFileHandle, FILE_MAP_READ, 0, 0, bytesToMap);
+                if (!m_View.IsInvalid)
+                {
+                    m_base = DumpPointer.DangerousMakeDumpPointer(m_mappedFileReader, 0);
+                }
+            }
+
             if (m_View.IsInvalid)
             {
                 int error = Marshal.GetHRForLastWin32Error();
                 Marshal.ThrowExceptionForHR(error);
             }
-
-            m_base = DumpPointer.DangerousMakeDumpPointer(m_View.BaseAddress, (uint)length);
 
             //
             // Cache stuff
@@ -1597,17 +1627,14 @@ namespace Microsoft.Samples.Debugging.Native
         public void Dispose()
         {
             // Clear any cached objects.
-            m_info = null;
+            m_info = default(NativeMethods.MINIDUMP_SYSTEM_INFO);
             m_memoryChunks = null;
             m_mappedFileMemory = null;
 
             // All resources are backed by safe-handles, so we don't need a finalizer.
-            if (m_View != null)
-                m_View.Close();
-
-            if (m_fileMapping != null)
-                m_fileMapping.Close();
-
+            m_View?.Close();
+            m_fileMapping?.Dispose();
+            m_mappedFileReader?.Dispose();
             if (m_file != null)
                 m_file.Dispose();
         }
@@ -1623,7 +1650,8 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
         FileStream m_file;
-        SafeWin32Handle m_fileMapping;
+        MemoryMappedFile m_fileMapping;
+        MemoryMappedFileStreamReader m_mappedFileReader;
         NativeMethodsBase.SafeMapViewHandle m_View;
 
         // DumpPointer (raw pointer that's aware of remaining buffer size) for start of minidump. 
@@ -1656,7 +1684,7 @@ namespace Microsoft.Samples.Debugging.Native
                 throw new DumpMissingDataException("Dump does not contain a " + type + " stream.");
             }
 
-            return DumpPointer.DangerousMakeDumpPointer(pStream, cbStreamSize);
+            return DumpPointer.DangerousMakeDumpPointer(m_mappedFileReader, (long)pStream - (long)m_View.BaseAddress);
         }
 
 
@@ -1949,7 +1977,7 @@ namespace Microsoft.Samples.Debugging.Native
         {
             DumpModule other = obj as DumpModule;
             if (other == null) return false;
-            return (other.m_owner == this.m_owner) && (other.m_raw == this.m_raw);
+            return (other.m_owner == this.m_owner) && (other.m_raw.BaseOfImage == this.m_raw.BaseOfImage);
         }
         
         // Override of GetHashCode
@@ -2050,7 +2078,7 @@ namespace Microsoft.Samples.Debugging.Native
         {
             DumpThread other = obj as DumpThread;
             if (other == null) return false;
-            return (other.m_owner == this.m_owner) && (other.m_raw == this.m_raw);            
+            return (other.m_owner == this.m_owner) && (other.m_raw.ThreadId == this.m_raw.ThreadId);            
         }
 
         // Returns a hash code.

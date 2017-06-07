@@ -1288,7 +1288,7 @@ namespace Microsoft.Samples.Debugging.Native
 
         // Call BOOL UnmapViewOfFile(void*) to clean up. 
         [DllImport(Kernel32LibraryName, SetLastError = true)]
-        public static extern SafeMapViewHandle MapViewOfFile(SafeWin32Handle hFileMappingObject, uint
+        public static extern SafeMapViewHandle MapViewOfFile(SafeMemoryMappedFileHandle hFileMappingObject, uint
            dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow,
            IntPtr dwNumberOfBytesToMap);
 

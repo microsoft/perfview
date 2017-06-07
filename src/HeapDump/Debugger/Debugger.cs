@@ -73,7 +73,7 @@ namespace Profiler
                             {
                                 if (((errorCode != -2146231228) && (errorCode != -2146231226)) && (errorCode != -2146231225))
                                 {
-                                        Marshal.ThrowExceptionForHR(errorCode);
+                                    Marshal.ThrowExceptionForHR(errorCode);
                                 }
                             }
                             else

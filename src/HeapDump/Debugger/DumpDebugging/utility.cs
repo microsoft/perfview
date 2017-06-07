@@ -7,8 +7,10 @@ using System;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections;
+using System.IO.MemoryMappedFiles;
 using System.Security.Permissions;
 
+using FastSerialization;
 using Microsoft.Samples.Debugging.CorDebug;
 using Microsoft.Samples.Debugging.CorDebug.NativeApi;
 using Microsoft.Samples.Debugging.CorMetadata;
@@ -19,7 +21,6 @@ using Microsoft.Samples.Debugging.Native;
 using Microsoft.Win32.SafeHandles;
 using Microsoft.Samples.Debugging.MetaDataLocator;
 
-
 namespace Microsoft.Samples.Debugging.CorDebug.Utility
 {
     #region Dump Data Target
@@ -28,8 +29,8 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
     /// </summary>
     public sealed class DumpDataTarget : ICorDebugDataTarget, ICorDebugMetaDataLocator, IDisposable
     {
-        Microsoft.Samples.Debugging.Native.DumpReader m_reader;
-        Microsoft.Samples.Debugging.MetaDataLocator.CorDebugMetaDataLocator m_metaDataLocator;
+        DumpReader m_reader;
+        CorDebugMetaDataLocator m_metaDataLocator;
 
         /// <summary>
         /// Constructor a Dump Target around an existing DumpReader.
@@ -108,12 +109,10 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         // Implementation of ICorDebugDataTarget.ReadVirtual
         public uint ReadVirtual(ulong address, IntPtr buffer, uint bytesRequested)
         {
-            uint bytesRead = m_reader.ReadPartialMemory(address, buffer, bytesRequested);
-
-            if(bytesRead == 0)
-                throw new System.Runtime.InteropServices.COMException("Could not read memory requested at address " + address + ".");
-
-            return bytesRead;
+            uint result = m_reader.ReadPartialMemory(address, buffer, bytesRequested);
+            byte[] data = new byte[bytesRequested];
+            Marshal.Copy(buffer, data, 0, (int)bytesRequested);
+            return result;
         }
 
         // Implementation of ICorDebugDataTarget.GetThreadContext

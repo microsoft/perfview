@@ -10,6 +10,10 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections.Generic;
 using DeferedStreamLabel = FastSerialization.StreamLabel;
+using System.IO.MemoryMappedFiles;
+using System.Threading;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace FastSerialization
 {
@@ -77,9 +81,9 @@ namespace FastSerialization
         /// </summary>
         public long ReadInt64()
         {
-            uint low = (uint)ReadInt32();
-            uint high = (uint)ReadInt32();
-            return (long)((((ulong)high) << 32) + low);        // TODO find the most efficient way of doing this. 
+            uint low = unchecked((uint)ReadInt32());
+            uint high = unchecked((uint)ReadInt32());
+            return unchecked(((long)high << 32) + low);        // TODO find the most efficient way of doing this. 
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -245,41 +249,47 @@ namespace FastSerialization
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(short value)
+        public unsafe void Write(short value)
         {
             if (endPosition + sizeof(short) > bytes.Length)
                 MakeSpace();
-            int intValue = value;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
-            bytes[endPosition++] = (byte)intValue; intValue = intValue >> 8;
+
+            fixed (byte* data = bytes)
+            {
+                *(short*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(short);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(int value)
+        public unsafe void Write(int value)
         {
             if (endPosition + sizeof(int) > bytes.Length)
                 MakeSpace();
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+
+            fixed (byte* data = bytes)
+            {
+                *(int*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(int);
         }
         /// <summary>
         /// Implementation of IStreamWriter
         /// </summary>
-        public void Write(long value)
+        public unsafe void Write(long value)
         {
             if (endPosition + sizeof(long) > bytes.Length)
                 MakeSpace();
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
-            bytes[endPosition++] = (byte)value; value = value >> 8;
+
+            fixed (byte* data = bytes)
+            {
+                *(long*)(data + endPosition) = value;
+            }
+
+            endPosition += sizeof(long);
         }
         /// <summary>
         /// Implementation of IStreamWriter
@@ -534,6 +544,524 @@ namespace FastSerialization
     #endregion
     }
 #endif
+
+    public class MemoryMappedFileStreamReader : IStreamReader
+    {
+        private MemoryMappedFile _file;
+        private long _fileLength;
+        private bool _leaveOpen;
+
+        private MemoryMappedViewAccessor _view;
+        private long _viewOffset;
+        private long _capacity;
+        private long _offset;
+
+        public MemoryMappedFileStreamReader(string mapName, long length)
+            : this(MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read), length, leaveOpen: false)
+        {
+        }
+
+        public MemoryMappedFileStreamReader(MemoryMappedFile file, long length, bool leaveOpen)
+        {
+            _file = file;
+            _fileLength = length;
+            _leaveOpen = leaveOpen;
+
+            if (IntPtr.Size == 4)
+                _capacity = Math.Min(_fileLength, MemoryMappedFileStreamWriter.BlockCopyCapacity);
+            else
+                _capacity = _fileLength;
+
+            _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Read);
+        }
+
+        public static MemoryMappedFileStreamReader CreateFromFile(string path)
+        {
+            long capacity = new FileInfo(path).Length;
+            MemoryMappedFile file = MemoryMappedFile.CreateFromFile(path, FileMode.Open, Guid.NewGuid().ToString("N"), capacity, MemoryMappedFileAccess.Read);
+            return new MemoryMappedFileStreamReader(file, capacity, leaveOpen: false);
+        }
+
+        public DeferedStreamLabel Current
+        {
+            get
+            {
+                return checked((DeferedStreamLabel)(_viewOffset + _offset));
+            }
+        }
+
+        public long Length => _fileLength;
+
+        protected MemoryMappedFile File
+        {
+            get
+            {
+                var result = _file;
+                if (result == null)
+                    throw new ObjectDisposedException(nameof(MemoryMappedFileStreamReader));
+
+                return result;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        public void Seek(long offset)
+        {
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+
+            // see if we can just change the offset
+            if (offset >= _viewOffset && offset < _viewOffset + _capacity)
+            {
+                _offset = offset - _viewOffset;
+                return;
+            }
+
+            // Have to move the view
+            _view.Dispose();
+            long availableInFile = _fileLength - offset;
+            long viewOffset = offset & ~0xFFFF;
+            long offsetInView = offset - viewOffset;
+            long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offsetInView);
+            _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewOffset = viewOffset;
+            _capacity = viewLength;
+            _offset = offsetInView;
+        }
+
+        public void Goto(DeferedStreamLabel label)
+        {
+            if (label < 0)
+                throw new ArgumentOutOfRangeException(nameof(label));
+
+            // see if we can just change the offset
+            int absoluteOffset = (int)label;
+            if (absoluteOffset >= _viewOffset && absoluteOffset < _viewOffset + _capacity)
+            {
+                _offset = (int)(absoluteOffset - _viewOffset);
+                return;
+            }
+
+            // Have to move the view
+            _view.Dispose();
+            long availableInFile = _fileLength - absoluteOffset;
+            long viewOffset = absoluteOffset & ~0xFFFF;
+            long offset = absoluteOffset - viewOffset;
+            long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset);
+            _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewOffset = viewOffset;
+            _capacity = viewLength;
+            _offset = offset;
+        }
+
+        public void GotoSuffixLabel()
+        {
+            Goto((DeferedStreamLabel)(Length - sizeof(DeferedStreamLabel)));
+            Goto(ReadLabel());
+        }
+
+        public int Read(byte[] data, int offset, int length)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (length > data.Length - offset)
+                throw new ArgumentNullException(nameof(length));
+
+            if (_offset + length > _capacity)
+                Resize(length);
+
+            byte next = _view.ReadByte(_offset);
+            int result = _view.ReadArray(_offset, data, offset, length);
+            _offset += result;
+            return result;
+        }
+
+        public T Read<T>()
+            where T : struct
+        {
+            int size = Marshal.SizeOf(typeof(T));
+            if (_offset + size > _capacity)
+                Resize(size);
+
+            T result;
+            _view.Read(_offset, out result);
+            _offset += size;
+            return result;
+        }
+
+        public byte ReadByte()
+        {
+            if (_offset + sizeof(byte) > _capacity)
+                Resize(sizeof(byte));
+
+            var result = _view.ReadByte(_offset);
+            _offset += sizeof(byte);
+            return result;
+        }
+
+        public short ReadInt16()
+        {
+            if (_offset + sizeof(short) > _capacity)
+                Resize(sizeof(short));
+
+            var result = _view.ReadInt16(_offset);
+            _offset += sizeof(short);
+            return result;
+        }
+
+        public int ReadInt32()
+        {
+            if (_offset + sizeof(int) > _capacity)
+                Resize(sizeof(int));
+
+            var result = _view.ReadInt32(_offset);
+            _offset += sizeof(int);
+            return result;
+        }
+
+        public long ReadInt64()
+        {
+            if (_offset + sizeof(long) > _capacity)
+                Resize(sizeof(long));
+
+            var result = _view.ReadInt64(_offset);
+            _offset += sizeof(long);
+            return result;
+        }
+
+        public DeferedStreamLabel ReadLabel()
+        {
+            return (DeferedStreamLabel)ReadInt32();
+        }
+
+        public unsafe string ReadString()
+        {
+            int charCount = ReadInt32();
+            if (charCount == -1)
+            {
+                return null;
+            }
+
+            string result = new string('\0', charCount);
+            fixed (char* chars = result)
+            {
+                byte* pointer = null;
+
+                RuntimeHelpers.PrepareConstrainedRegions();
+                try
+                {
+                    _view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+                    Decoder decoder = Encoding.UTF8.GetDecoder();
+
+                    int bytesUsed;
+                    int charsUsed;
+                    bool completed;
+                    decoder.Convert(pointer, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars, charCount, false, out bytesUsed, out charsUsed, out completed);
+                    _offset += bytesUsed;
+
+                    if (!completed)
+                    {
+                        long availableInFile = _fileLength - _viewOffset - _offset;
+                        Resize(checked((int)Math.Min(availableInFile, Encoding.UTF8.GetMaxByteCount(charCount - charsUsed))));
+
+                        int finalBytesUsed;
+                        int finalCharsUsed;
+                        decoder.Convert(pointer + bytesUsed, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars + charsUsed, charCount - charsUsed, true, out finalBytesUsed, out finalCharsUsed, out completed);
+                    }
+                }
+                finally
+                {
+                    if (pointer != null)
+                        _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                }
+            }
+
+            return result;
+        }
+
+        protected void Resize(int capacity)
+        {
+            // See if we can do nothing
+            long available = _capacity - _offset;
+            if (available >= capacity)
+                return;
+
+            // We can no longer use the current view, so go ahead and dispose of it
+            _view.Dispose();
+
+            // See if the underlying file is large enough
+            long availableInFile = _fileLength - _viewOffset - _offset;
+            if (availableInFile < capacity)
+            {
+                throw new InvalidOperationException("Cannot create a view outside the bounds of the file.");
+            }
+
+            long viewOffset = (_viewOffset + _offset) & ~0xFFFF;
+            long offset = (_viewOffset + _offset) - viewOffset;
+            long viewLength = Math.Max(Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset), capacity + offset);
+            _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewOffset = viewOffset;
+            _capacity = viewLength;
+            _offset = offset;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                var view = _view;
+                _view = null;
+                view?.Dispose();
+
+                var file = _file;
+                _file = null;
+                if (!_leaveOpen)
+                    file?.Dispose();
+            }
+        }
+    }
+
+    public class MemoryMappedFileStreamWriter : IStreamWriter
+    {
+        internal const long PageSize = 64 * 1024;
+        internal const long InitialCapacity = 64 * 1024;
+        internal const int BlockCopyCapacity = 10 * 1024 * 1024;
+
+        private MemoryMappedFile _file;
+        private string _mapName;
+        private long _fileCapacity;
+
+        private MemoryMappedViewAccessor _view;
+        private long _viewOffset;
+        private int _capacity;
+        private int _offset;
+
+        public MemoryMappedFileStreamWriter(long initialCapacity = InitialCapacity)
+        {
+            long subPageSize = initialCapacity % PageSize;
+            if (subPageSize != 0)
+                initialCapacity += PageSize - subPageSize;
+
+            _mapName = Guid.NewGuid().ToString("N");
+            _file = MemoryMappedFile.CreateNew(_mapName, InitialCapacity);
+            _fileCapacity = InitialCapacity;
+
+            _capacity = (int)Math.Min(_fileCapacity, BlockCopyCapacity);
+            _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
+
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected MemoryMappedFile File
+        {
+            get
+            {
+                var result = _file;
+                if (result == null)
+                    throw new ObjectDisposedException(nameof(MemoryMappedFileStreamWriter));
+
+                return result;
+            }
+        }
+
+        public MemoryMappedFileStreamReader GetReader()
+        {
+            return new MemoryMappedFileStreamReader(_mapName, Length);
+        }
+
+        public void Clear()
+        {
+            if (_viewOffset == 0 && _offset == 0)
+                return;
+
+            _view.Dispose();
+
+            _capacity = (int)Math.Min(_fileCapacity, BlockCopyCapacity);
+            _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Write);
+            _viewOffset = 0;
+            _offset = 0;
+        }
+
+        public long Length
+            => _viewOffset + _offset;
+
+        public DeferedStreamLabel GetLabel()
+        {
+            return checked((DeferedStreamLabel)Length);
+        }
+
+        public void Write(byte value)
+        {
+            if (_offset + sizeof(byte) > _capacity)
+                Resize(sizeof(byte));
+
+            _view.Write(_offset, value);
+            _offset += sizeof(byte);
+        }
+
+        public void Write(short value)
+        {
+            if (_offset + sizeof(short) > _capacity)
+                Resize(sizeof(short));
+
+            _view.Write(_offset, value);
+            _offset += sizeof(short);
+        }
+
+        public void Write(int value)
+        {
+            if (_offset + sizeof(int) > _capacity)
+                Resize(sizeof(int));
+
+            _view.Write(_offset, value);
+            _offset += sizeof(int);
+        }
+
+        public void Write(long value)
+        {
+            if (_offset + sizeof(long) > _capacity)
+                Resize(sizeof(long));
+
+            _view.Write(_offset, value);
+            _offset += sizeof(long);
+        }
+
+        public void Write(DeferedStreamLabel value)
+        {
+            Write((int)value);
+        }
+
+        public unsafe void Write(string value)
+        {
+            if (value == null)
+            {
+                Write(-1);
+            }
+            else
+            {
+                Write(value.Length);
+
+                fixed (char* chars = value)
+                {
+                    byte* pointer = null;
+
+                    RuntimeHelpers.PrepareConstrainedRegions();
+                    try
+                    {
+                        _view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
+                        Encoder encoder = Encoding.UTF8.GetEncoder();
+
+                        int charsUsed;
+                        int bytesUsed;
+                        bool completed;
+                        encoder.Convert(chars, value.Length, pointer, _capacity - _offset, false, out charsUsed, out bytesUsed, out completed);
+                        _offset += bytesUsed;
+
+                        if (!completed)
+                        {
+                            Resize(Encoding.UTF8.GetMaxByteCount(value.Length - charsUsed));
+
+                            int finalCharsUsed;
+                            int finalBytesUsed;
+                            encoder.Convert(chars + charsUsed, value.Length - charsUsed, pointer + bytesUsed, _capacity - _offset, true, out finalCharsUsed, out finalBytesUsed, out completed);
+                        }
+                    }
+                    finally
+                    {
+                        if (pointer != null)
+                            _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                    }
+                }
+            }
+        }
+
+        public void WriteSuffixLabel(DeferedStreamLabel value)
+        {
+            // This is guaranteed to be uncompressed, but since we are not compressing anything, we can
+            // simply write the value.  
+            Write(value);
+        }
+
+        protected void Resize(int capacity)
+        {
+            // See if we can do nothing
+            int available = _capacity - _offset;
+            if (available >= capacity)
+                return;
+
+            // We can no longer use the current view, so go ahead and dispose of it
+            _view.Dispose();
+
+            // See if we need to resize the underlying file
+            long availableInFile = _fileCapacity - _viewOffset - _offset;
+            if (availableInFile < capacity)
+            {
+                long minimumFileSize = _fileCapacity - availableInFile + capacity;
+                long newFileSize = _fileCapacity;
+                while (newFileSize < minimumFileSize)
+                    newFileSize = (newFileSize / 2) * 3;
+
+                var newMapName = Guid.NewGuid().ToString("N");
+                var newFile = MemoryMappedFile.CreateNew(newMapName, newFileSize);
+                long currentCopyOffset = 0;
+                long remainingSizeToCopy = _fileCapacity - availableInFile;
+                while (remainingSizeToCopy > 0)
+                {
+                    int chunkSize = (int)Math.Min(BlockCopyCapacity, remainingSizeToCopy);
+                    using (var readStream = _file.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Read))
+                    using (var writeStream = newFile.CreateViewStream(currentCopyOffset, chunkSize, MemoryMappedFileAccess.Write))
+                    {
+                        readStream.CopyTo(writeStream, chunkSize);
+                    }
+
+                    currentCopyOffset += chunkSize;
+                    remainingSizeToCopy -= chunkSize;
+                }
+
+                _file.Dispose();
+                _file = newFile;
+                _mapName = newMapName;
+                availableInFile += newFileSize - _fileCapacity;
+                _fileCapacity = newFileSize;
+            }
+
+            long viewOffset = (_viewOffset + _offset) & ~0xFFFF;
+            long offset = (_viewOffset + _offset) - viewOffset;
+            long viewLength = Math.Max(Math.Min(BlockCopyCapacity, availableInFile + offset), capacity + offset);
+            _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Write);
+            _viewOffset = viewOffset;
+            _capacity = (int)viewLength;
+            _offset = (int)offset;
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                var view = _view;
+                _view = null;
+                view?.Dispose();
+
+                var file = _file;
+                _file = null;
+                file?.Dispose();
+            }
+        }
+    }
 
     /// <summary>
     /// A IOStreamStreamReader hooks a MemoryStreamReader up to an input System.IO.Stream.  

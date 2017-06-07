@@ -518,7 +518,7 @@ public class DotNetHeapDumpGraphReader
                     // Create a CCW node that represents the COM object that has one child that points at the managed object.  
                     var ccwNode = m_graph.GetNodeIndex(ccwInfo.IUnknown);
 
-                    var ccwTypeIndex = GetTypeIndex(ccwInfo.TypeID, 200);
+                    var ccwTypeIndex = GetTypeIndex(ccwInfo.TypeID, 0);
                     var ccwType = m_graph.GetType(ccwTypeIndex, m_typeStorage);
 
                     var typeName = "[CCW 0x" + ccwInfo.IUnknown.ToString("x") + " for type " + ccwType.Name + "]";
@@ -526,7 +526,7 @@ public class DotNetHeapDumpGraphReader
 
                     ccwChildren.Clear();
                     ccwChildren.Add(m_graph.GetNodeIndex(ccwInfo.ObjectID));
-                    m_graph.SetNode(ccwNode, ccwTypeIndex, 200, ccwChildren);
+                    m_graph.SetNode(ccwNode, ccwTypeIndex, 0, ccwChildren);
                     ccwRoot.AddChild(ccwNode);
                 }
             }

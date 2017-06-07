@@ -249,6 +249,7 @@ public class GCHeapDumper
     {
         m_sw = Stopwatch.StartNew();
         m_gcHeapDump = new GCHeapDump((MemoryGraph)null);
+
         DataTarget target;
         ClrRuntime runtime;
         InitializeClrRuntime(processDumpFile, out target, out runtime);
