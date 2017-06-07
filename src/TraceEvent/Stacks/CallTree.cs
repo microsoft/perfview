@@ -1120,10 +1120,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // TODO FIX NOW.  This is a hack, we know every type of CallTreeNode.     
             var asAgg = this as AggregateCallTreeNode;
             var dir = IsCalleeTree ? RefDirection.From : RefDirection.To;
-            var sampleSet = new Dictionary<StackSourceSampleIndex, int>();
+            var sampleSet = new HashSet<StackSourceSampleIndex>();
             this.GetSamples(true, delegate (StackSourceSampleIndex sampleIndex)
             {
-                sampleSet[sampleIndex] = 0; // Value is currently irrelevant.   This just adds it to the set.  
+                sampleSet.Add(sampleIndex);
                 return true;
             });
 
@@ -1149,7 +1149,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 source.GetReferences(sampleIndex, dir, delegate (StackSourceSampleIndex childIndex)
                 {
                     // Ignore samples to myself.  
-                    if (sampleSet.ContainsKey(childIndex))
+                    if (sampleSet.Contains(childIndex))
                         return;
 
                     var childNode = samplesToNodes[(int)childIndex];
