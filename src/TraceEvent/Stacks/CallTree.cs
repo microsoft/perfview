@@ -1107,7 +1107,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(source.IsGraphSource);
             Debug.Assert(samplesToNodes != null);
 
-            var childrenSet = new Dictionary<string, CallTreeNode>();
+            var childrenSet = new SortedDictionary<string, CallTreeNode>(StringComparer.Ordinal);
             // Exclude myself
             childrenSet[Name] = null;
             // Exclude the primary children
