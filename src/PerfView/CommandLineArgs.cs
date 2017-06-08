@@ -351,7 +351,9 @@ namespace PerfView
                 bool hasTpl = false;
                 foreach (var provider in onlyProviders)
                 {
-                    if (0 <= provider.IndexOf(":stack", StringComparison.OrdinalIgnoreCase))
+                    if (0 <= provider.IndexOf("@StacksEnabled=true", StringComparison.OrdinalIgnoreCase))
+                        hasStacks = true;
+                    if (0 <= provider.IndexOf("@EventIDStacksToEnable", StringComparison.OrdinalIgnoreCase))
                         hasStacks = true;
                     if (provider.StartsWith(".NETTasks", StringComparison.OrdinalIgnoreCase))
                         hasTpl = true;

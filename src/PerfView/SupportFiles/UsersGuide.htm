@@ -6754,7 +6754,8 @@
         Linux has a kernel level event logging system called <a href="https://en.wikipedia.org/wiki/Perf_%28Linux%29">Perf Events</a> which is
         not unlike ETW, and in particular knows how to capture CPU stacks at a periodic interval (e.g. 1msec)  PerfView knows how to read this data,
         so it is possible to collect data using the Perf Events tool on Linux copy the data over to a Windows machine and view it with PerfView's
-        stack viewer.
+        stack viewer.   Much of the rest of this section is a clone of the <a href="https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/linux-performance-tracing.md">linux-performance-tracing.md</a>
+        document.   You may wish to check there as well to see if there for the latest version of these instructions. 
     </p>
     <h3>Setup</h3>
     <h4>Getting perfcollect script</h4>
