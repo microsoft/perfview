@@ -160,6 +160,11 @@ namespace PerfView
             if ((args.KernelEvents & KernelTraceEventParser.Keywords.Handle) != 0)
                 HandleCheckBox.IsChecked = true;
 
+            // Initialize history of additional providers
+            var additionalProvidersHistory = App.ConfigData["AdditionalProvidersHistory"];
+            if (additionalProvidersHistory != null)
+                AdditionalProvidersTextBox.SetHistory(additionalProvidersHistory.Split(';'));
+
             if (args.Providers != null)
             {
                 var str = "";
@@ -469,6 +474,24 @@ namespace PerfView
                 string cpuCounters = CpuCountersTextBox.Text;
                 if (cpuCounters.Length != 0)
                     m_args.CpuCounters = cpuCounters.Split(' ');
+
+                if (AdditionalProvidersTextBox.Text.Length > 0)
+                {
+                    if (AdditionalProvidersTextBox.AddToHistory(AdditionalProvidersTextBox.Text))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        foreach (string item in AdditionalProvidersTextBox.Items)
+                        {
+                            if ((item != "") && !item.Contains(";"))
+                            {
+                                if (sb.Length != 0)
+                                    sb.Append(';');
+                                sb.Append(item);
+                            }
+                        }
+                        App.ConfigData["AdditionalProvidersHistory"] = sb.ToString();
+                    }
+                }
 
                 var providers = AdditionalProvidersTextBox.Text;
                 if ((IISCheckBox.IsChecked ?? false) && providers.IndexOf("Microsoft-Windows-IIS", StringComparison.OrdinalIgnoreCase) < 0)
