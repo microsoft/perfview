@@ -76,6 +76,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public CallTreeNode Root { get { return m_root; } }
 
+        public Interner Interner => m_interner;
+
         /// <summary>
         /// An upper bound for the node indexes in the call tree.  (All indexes
         /// are strictly less than this number)   Thus ASSSUMING YOU DON'T ADD
@@ -259,6 +261,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         // This keeps track of stacks that I have used in the past
         const int StackInfoCacheSize = 128;          // Must be a power of 2
         TreeCacheEntry[] m_TreeForStack;
+
+        private readonly Interner m_interner = new Interner();
 
         // Maps frame IDs to their canonical one (we group all frame IDs)
         internal StackSourceFrameIndex[] m_canonicalID;        // Maps frame IDs to their canonical one
@@ -505,7 +509,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The Frame name that this tree node represents.   
         /// </summary>
-        public string Name { get { return m_name; } }
+        public string Name { get { return m_name.ToString(); } }
+
+        public int NameId => m_name.Index;
+
         /// <summary>
         /// Currently the same as Name, but could contain additional info.  
         /// Suitable for display but not for programmatic comparison.  
@@ -759,7 +766,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             m_samples.Clear();
             m_nextSameId = null;
-            m_name = null;
+            m_name = default(Interner.Key);
             m_callTree = null;
             m_inclusiveMetricByTime = null;
             m_inclusiveMetricByScenario = null;
@@ -773,7 +780,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             var idx = name.IndexOf('{');
             if (0 < idx)
                 name = name.Substring(0, idx);
-            this.m_name = name;
+            this.m_name = container.Interner.Intern(name);
             this.m_callTree = container;
             this.m_id = id;
             this.m_firstTimeRelativeMSec = Double.PositiveInfinity;
@@ -874,7 +881,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         internal StackSourceFrameIndex m_id;
-        internal string m_name;
+        internal Interner.Key m_name;
         internal CallTree m_callTree;                                   // The call tree this node belongs to. 
         internal float m_inclusiveMetric;
         internal float m_inclusiveCount;
@@ -1107,14 +1114,14 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(source.IsGraphSource);
             Debug.Assert(samplesToNodes != null);
 
-            var childrenSet = new SortedDictionary<string, CallTreeNode>(StringComparer.Ordinal);
+            var childrenSet = default(GrowableArray<CallTreeNode>);
             // Exclude myself
-            childrenSet[Name] = null;
+            childrenSet.Set(NameId, this);
             // Exclude the primary children
             if (Callees != null)
             {
                 foreach (var callee in Callees)
-                    childrenSet[callee.Name] = null;
+                    childrenSet.Set(callee.NameId, this);
             }
 
             // TODO FIX NOW.  This is a hack, we know every type of CallTreeNode.     
@@ -1155,17 +1162,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     var childNode = samplesToNodes[(int)childIndex];
                     if (childNode != null)       // TODO FIX NOW: I would not think this check would be needed.  
                     {
-                        CallTreeNode graphChild;
-                        if (!childrenSet.TryGetValue(childNode.Name, out graphChild))
+                        CallTreeNode graphChild = childrenSet.Get(childNode.NameId);
+                        if (graphChild == null)
                         {
-                            childrenSet[childNode.Name] = graphChild = new CallTreeNode(childNode.Name, childNode.ID, this, CallTree);
+                            graphChild = new CallTreeNode(childNode.Name, childNode.ID, this, CallTree);
+                            childrenSet.Set(childNode.NameId, graphChild);
                             graphChild.IsCalleeTree = IsCalleeTree;
                             graphChild.m_isGraphNode = true;
                             graphChild.m_minDepth = int.MaxValue;
                         }
 
                         // Add the sample 
-                        if (graphChild != null)
+                        if (graphChild != this)
                         {
                             graphChild.m_minDepth = Math.Min(childNode.Depth(), graphChild.m_minDepth);
                             graphChild.m_samples.Add(childIndex);
@@ -1180,9 +1188,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             // Sort by min depth then name.  
             var ret = new List<CallTreeNode>();
-            foreach (var val in childrenSet.Values)
+            foreach (var val in childrenSet)
             {
-                if (val != null)
+                if (val != null && val != this)
                     ret.Add(val);
             }
             ret.Sort(delegate (CallTreeNode x, CallTreeNode y)
@@ -1870,7 +1878,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 childWithID = new AggregateCallTreeNode(treeNode, this, callerOffset + 1);
                 // TODO breaking abstraction.
                 childWithID.m_id = treeForCaller.ID;
-                childWithID.m_name = treeForCaller.Name;
+                if (childWithID.CallTree == treeForCaller.CallTree)
+                    childWithID.m_name = treeForCaller.m_name;
+                else
+                    childWithID.m_name = childWithID.CallTree.Interner.Intern(treeForCaller.m_name.ToString());
+
                 callerList.Add(childWithID);
             }
 
