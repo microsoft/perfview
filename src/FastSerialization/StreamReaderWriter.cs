@@ -360,6 +360,10 @@ namespace FastSerialization
         protected virtual void Dispose(bool disposing) { }
         #endregion 
         #region private
+
+        /// <summary>
+        /// Makespace makes at least sizeof(long) bytes available (or throws OutOfMemory)
+        /// </summary>
         internal /* protected */ virtual void MakeSpace()
         {
             const int maxLength = 0x7FFFFFC7; // Max array length for byte[]
@@ -368,11 +372,12 @@ namespace FastSerialization
             // Make sure we don't exceed max possible size
             if (bytes.Length < (maxLength / 3) * 2)
                 newLength = (bytes.Length / 2) * 3;
-            else if (bytes.Length < maxLength)
-                newLength = maxLength;
+            else if (bytes.Length < maxLength - sizeof(long))      // Write(long) expects Makespace to make at 8 bytes of space.   
+                newLength = maxLength;                             // If we can do this, use up the last available length 
             else
-                throw new OutOfMemoryException(); // Can't make space anymore
+                throw new OutOfMemoryException();                  // Can't make space anymore
 
+            Debug.Assert(bytes.Length + sizeof(long) <= newLength);
             byte[] newBytes = new byte[newLength];
             Array.Copy(bytes, newBytes, bytes.Length);
             bytes = newBytes;
