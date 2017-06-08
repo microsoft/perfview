@@ -2257,6 +2257,8 @@ namespace PerfView
                 cmdLineArgs += " /MaxCollectSec:" + parsedArgs.MaxCollectSec;
             if (parsedArgs.RundownTimeout != 120)
                 cmdLineArgs += " /RundownTimeout:" + parsedArgs.RundownTimeout;
+            if (parsedArgs.CpuCounters != null)
+                cmdLineArgs += " /CpuCounters:" + Command.Quote(string.Join(",", parsedArgs.CpuCounters));
 
             if (parsedArgs.SafeMode)
                 cmdLineArgs += " /SafeMode";
