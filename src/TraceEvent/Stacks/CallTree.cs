@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;                        // For TextWriter.  
 using System.Threading.Tasks;
-using BitArray = System.Collections.BitArray;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -1122,13 +1121,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             var asAgg = this as AggregateCallTreeNode;
             var dir = IsCalleeTree ? RefDirection.From : RefDirection.To;
 
-            BitArray sampleSet = new BitArray(128);
+            bool[] sampleSet = new bool[128];
             this.GetSamples(true, delegate (StackSourceSampleIndex sampleIndex)
             {
-                while (sampleSet.Count <= (int)sampleIndex)
-                    sampleSet.Length *= 2;
+                while (sampleSet.Length <= (int)sampleIndex)
+                    Array.Resize(ref sampleSet, sampleSet.Length * 2);
 
-                sampleSet.Set((int)sampleIndex, true);
+                sampleSet[(int)sampleIndex] = true;
                 return true;
             });
 
@@ -1154,7 +1153,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 source.GetReferences(sampleIndex, dir, delegate (StackSourceSampleIndex childIndex)
                 {
                     // Ignore samples to myself.  
-                    if (childIndex < 0 || ((int)childIndex < sampleSet.Count && sampleSet[(int)childIndex]))
+                    if (childIndex < 0 || ((int)childIndex < sampleSet.Length && sampleSet[(int)childIndex]))
                         return;
 
                     var childNode = samplesToNodes[(int)childIndex];
