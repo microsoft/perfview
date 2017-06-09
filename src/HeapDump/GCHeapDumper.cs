@@ -257,17 +257,6 @@ public class GCHeapDumper
 
         m_log.WriteLine("Creating a GC Dump from the dump file {0}", processDumpFile);
         ICorDebugProcess proc = null;
-        try
-        {
-            m_log.WriteLine("Trying to get a ICorDebugProcess object.");
-            proc = Profiler.Debugger.GetDebuggerHandleFromProcessDump(processDumpFile, 0L);
-        }
-        catch (Exception e)
-        {
-            m_log.WriteLine("Warning: Failed to get a V4.0 debugger Message: {0}", e.Message);
-            m_log.WriteLine("Continuing with less accurate GC root information.");
-        }
-
         DumpDotNetHeapData(runtime.GetHeap(), ref proc, true);
         WriteData(logLiveStats: false);
 
@@ -1215,7 +1204,6 @@ public class GCHeapDumper
         try
         {
             m_log.WriteLine("{0,5:f1}s: Scanning Named GC roots", m_sw.Elapsed.TotalSeconds);
-            // AddStaticAndLocalRoots(rootNode, debugProcess);
 
             // From here we don't use proc unless we are frozen, so we can detach aggressively
             if (debugProcess != null && !Freeze && !isDump)
@@ -2179,68 +2167,6 @@ public class GCHeapDumper
             return ret;
         }
         return null;
-    }
-#endif
-
-#if false   // TODO FIX NOW REMOVE
-    /// <summary>
-    /// If we can, using the debugger interface to get the roots     that are static variables and local variables.  
-    /// If we can't this routine does nothing.  
-    /// </summary>
-    private void AddStaticAndLocalRoots(MemoryNodeBuilder rootNode, ICorDebugProcess proc)
-    {
-        if (proc == null)
-            return;
-        try
-        {
-            var sw = Stopwatch.StartNew();
-            m_log.WriteLine("Enumerating call stack roots.");
-            var contextForThreadStaticVars = GCRootNames.EnumerateThreadRoots(proc,
-                delegate(ulong objRef, string localName, string methodName, string typeName, string modulePath, int threadID, string appDomainName)
-                {
-                    var appDomainNode = rootNode.FindOrCreateChild("[appdomain " + appDomainName + "]", null);
-                    var localVarsNode = appDomainNode.FindOrCreateChild("[local vars]", null);
-                    var localVarsForMod = localVarsNode.FindOrCreateChild("[local vars " + Path.GetFileNameWithoutExtension(modulePath) + "]", null);
-                    var localVarsForType = localVarsForMod.FindOrCreateChild("[local vars " + typeName + "]", null);
-                    var localVarsForMethod = localVarsForType.FindOrCreateChild(typeName + "+" + methodName + " " + localName + " [local var]", modulePath);
-                    DebugWriteLine("Local Root {0}+{1} {2} {3:x}", typeName, methodName, localName, objRef);
-                    if (objRef != 0 && !m_gcHeapDump.MemoryGraph.IsInGraph(objRef))
-                        AddRoot(objRef);
-                    else
-                        DebugWriteLine("Skipped");
-                    localVarsForMethod.AddChild(m_gcHeapDump.MemoryGraph.GetNodeIndex(objRef));
-                });
-            m_log.WriteLine("Enumerating call stack roots took {0:n1} msec.", sw.Elapsed.TotalMilliseconds);
-            sw.Stop();
-
-            sw.Reset(); sw.Start();
-            m_log.WriteLine("Enumerating static variable roots.");
-            GCRootNames.EnumerateStaticRoots(proc, contextForThreadStaticVars,
-                delegate(Address objRef, string fieldName, string typeName, string modulePath, int threadID, string appDomainName)
-                {
-                    string str = (threadID == 0) ? "static" : "threadStatic";
-                    var appDomainNode = rootNode.FindOrCreateChild("[appdomain " + appDomainName + "]");
-                    var staticVarsNode = appDomainNode.FindOrCreateChild("[" + str + " vars]");
-                    var staticVarsForMod = staticVarsNode.FindOrCreateChild(
-                        "[" + str + " vars " + Path.GetFileNameWithoutExtension(modulePath) + "]");
-                    var staticVarsForType = staticVarsForMod.FindOrCreateChild("[" + str + " vars " + typeName + "]");
-                    var fieldForType = staticVarsForType.FindOrCreateChild(
-                        typeName + "+" + fieldName + " [" + str + " var]", modulePath);
-                    DebugWriteLine("Static Root {0}+{1} {2:x}", typeName, fieldName, objRef);
-                    if (objRef != 0 && !m_gcHeapDump.MemoryGraph.IsInGraph(objRef))
-                        AddRoot(objRef);
-                    else
-                        DebugWriteLine("Skipped");
-                    fieldForType.AddChild(m_gcHeapDump.MemoryGraph.GetNodeIndex(objRef));
-                }, null);
-            m_log.WriteLine("Enumerating static variable roots took {0:n1} msec.", sw.Elapsed.TotalMilliseconds);
-            m_log.WriteLine("Done enumerating named roots.");
-        }
-        catch (Exception e)
-        {
-            m_log.WriteLine("Error enumerating local and static variables: {0}", e.Message);
-            m_log.WriteLine("Continuing heap dump with less accurate root information.");
-        }
     }
 #endif
 
