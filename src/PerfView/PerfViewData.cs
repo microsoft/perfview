@@ -7150,57 +7150,15 @@ table {
                    graph.SizeOfGraphDescription() / 1000000.0);
         }
 
-        /// <summary>
-        /// These hold stacks which we know they either have an '[not reachable from roots]' or not
-        /// </summary>
-        private struct UnreachableCacheEntry
-        {
-            public StackSourceCallStackIndex stack;
-            public bool unreachable;
-            public bool valid;
-        };
-
-        /// <summary>
-        /// Returns true if 'stackIdx' is reachable from the roots (that is, it does not have '[not reachable from roots]' as one
-        /// of its parent nodes.    'cache' is simply an array used to speed up this process because it remembers the answers for
-        /// nodes up the stack that are likely to be used for the next index.   
-        /// </summary>
-        private static bool IsUnreachable(StackSource memoryStackSource, StackSourceCallStackIndex stackIdx, UnreachableCacheEntry[] cache, int depth)
-        {
-            if (stackIdx == StackSourceCallStackIndex.Invalid)
-                return false;
-
-            int entryIdx = ((int)stackIdx) % cache.Length;
-            UnreachableCacheEntry entry = cache[entryIdx];
-            if (stackIdx != entry.stack || !entry.valid)
-            {
-                var callerIdx = memoryStackSource.GetCallerIndex(stackIdx);
-                if (callerIdx == StackSourceCallStackIndex.Invalid)
-                {
-                    var frameIdx = memoryStackSource.GetFrameIndex(stackIdx);
-                    var name = memoryStackSource.GetFrameName(frameIdx, false);
-                    entry.unreachable = string.Compare(name, "[not reachable from roots]", StringComparison.OrdinalIgnoreCase) == 0;
-                }
-                else
-                    entry.unreachable = IsUnreachable(memoryStackSource, callerIdx, cache, depth + 1);
-
-                entry.stack = stackIdx;
-                entry.valid = true;
-                cache[entryIdx] = entry;
-            }
-            return entry.unreachable;
-        }
-
-        private static void ComputeUnreachableMemory(StackSource memoryStackSource, out double unreachableMemoryRet, out double totalMemoryRet)
+        private static void ComputeUnreachableMemory(MemoryGraphStackSource memoryStackSource, out double unreachableMemoryRet, out double totalMemoryRet)
         {
             double unreachableMemory = 0;
             double totalMemory = 0;
 
-            var cache = new UnreachableCacheEntry[10000];
-            memoryStackSource.ForEach(delegate (StackSourceSample sample)
+            memoryStackSource.ForEachUnordered(delegate (StackSourceSample sample, bool reachable)
             {
                 totalMemory += sample.Metric;
-                if (IsUnreachable(memoryStackSource, sample.StackIndex, cache, 0))
+                if (!reachable)
                     unreachableMemory += sample.Metric;
             });
 

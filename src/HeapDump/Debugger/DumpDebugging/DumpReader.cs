@@ -260,10 +260,10 @@ namespace Microsoft.Samples.Debugging.Native
 
             byte[] result = new byte[lengthBytes];
             m_reader.Seek(m_offset);
-            int read = m_reader.Read(result, 0, result.Length);
+            m_reader.Read(result, 0, result.Length);
             fixed (byte* rawData = result)
             {
-                return new string((char*)rawData, 0, read / sizeof(char));
+                return new string((char*)rawData, 0, lengthChars);
             }
         }
 

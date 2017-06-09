@@ -45,6 +45,14 @@ namespace FastSerialization
         public virtual long Length { get { return endPosition; } }
 
         #region implemenation of IStreamReader
+        public void Read(byte[] data, int offset, int length)
+        {
+            if (length > endPosition - position)
+                Fill(length);
+
+            Buffer.BlockCopy(bytes, position, data, offset, length);
+            position += length;
+        }
         /// <summary>
         /// Implementation of IStreamReader
         /// </summary>
@@ -552,6 +560,7 @@ namespace FastSerialization
         private bool _leaveOpen;
 
         private MemoryMappedViewAccessor _view;
+        private IntPtr _viewAddress;
         private long _viewOffset;
         private long _capacity;
         private long _offset;
@@ -573,6 +582,7 @@ namespace FastSerialization
                 _capacity = _fileLength;
 
             _view = File.CreateViewAccessor(0, _capacity, MemoryMappedFileAccess.Read);
+            _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
         }
 
         public static MemoryMappedFileStreamReader CreateFromFile(string path)
@@ -629,6 +639,7 @@ namespace FastSerialization
             long offsetInView = offset - viewOffset;
             long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offsetInView);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;
             _capacity = viewLength;
             _offset = offsetInView;
@@ -654,6 +665,7 @@ namespace FastSerialization
             long offset = absoluteOffset - viewOffset;
             long viewLength = Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;
             _capacity = viewLength;
             _offset = offset;
@@ -665,7 +677,7 @@ namespace FastSerialization
             Goto(ReadLabel());
         }
 
-        public int Read(byte[] data, int offset, int length)
+        public unsafe void Read(byte[] data, int offset, int length)
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -679,10 +691,8 @@ namespace FastSerialization
             if (_offset + length > _capacity)
                 Resize(length);
 
-            byte next = _view.ReadByte(_offset);
-            int result = _view.ReadArray(_offset, data, offset, length);
-            _offset += result;
-            return result;
+            Marshal.Copy((IntPtr)((byte*)_viewAddress + _offset), data, 0, length);
+            _offset += length;
         }
 
         public T Read<T>()
@@ -698,42 +708,42 @@ namespace FastSerialization
             return result;
         }
 
-        public byte ReadByte()
+        public unsafe byte ReadByte()
         {
             if (_offset + sizeof(byte) > _capacity)
                 Resize(sizeof(byte));
 
-            var result = _view.ReadByte(_offset);
+            var result = *((byte*)_viewAddress + _offset);
             _offset += sizeof(byte);
             return result;
         }
 
-        public short ReadInt16()
+        public unsafe short ReadInt16()
         {
             if (_offset + sizeof(short) > _capacity)
                 Resize(sizeof(short));
 
-            var result = _view.ReadInt16(_offset);
+            var result = *(short*)((byte*)_viewAddress + _offset);
             _offset += sizeof(short);
             return result;
         }
 
-        public int ReadInt32()
+        public unsafe int ReadInt32()
         {
             if (_offset + sizeof(int) > _capacity)
                 Resize(sizeof(int));
 
-            var result = _view.ReadInt32(_offset);
+            var result = *(int*)((byte*)_viewAddress + _offset);
             _offset += sizeof(int);
             return result;
         }
 
-        public long ReadInt64()
+        public unsafe long ReadInt64()
         {
             if (_offset + sizeof(long) > _capacity)
                 Resize(sizeof(long));
 
-            var result = _view.ReadInt64(_offset);
+            var result = *(long*)((byte*)_viewAddress + _offset);
             _offset += sizeof(long);
             return result;
         }
@@ -754,34 +764,22 @@ namespace FastSerialization
             string result = new string('\0', charCount);
             fixed (char* chars = result)
             {
-                byte* pointer = null;
+                Decoder decoder = Encoding.UTF8.GetDecoder();
 
-                RuntimeHelpers.PrepareConstrainedRegions();
-                try
+                int bytesUsed;
+                int charsUsed;
+                bool completed;
+                decoder.Convert((byte*)_viewAddress, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars, charCount, false, out bytesUsed, out charsUsed, out completed);
+                _offset += bytesUsed;
+
+                if (!completed)
                 {
-                    _view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
-                    Decoder decoder = Encoding.UTF8.GetDecoder();
+                    long availableInFile = _fileLength - _viewOffset - _offset;
+                    Resize(checked((int)Math.Min(availableInFile, Encoding.UTF8.GetMaxByteCount(charCount - charsUsed))));
 
-                    int bytesUsed;
-                    int charsUsed;
-                    bool completed;
-                    decoder.Convert(pointer, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars, charCount, false, out bytesUsed, out charsUsed, out completed);
-                    _offset += bytesUsed;
-
-                    if (!completed)
-                    {
-                        long availableInFile = _fileLength - _viewOffset - _offset;
-                        Resize(checked((int)Math.Min(availableInFile, Encoding.UTF8.GetMaxByteCount(charCount - charsUsed))));
-
-                        int finalBytesUsed;
-                        int finalCharsUsed;
-                        decoder.Convert(pointer + bytesUsed, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars + charsUsed, charCount - charsUsed, true, out finalBytesUsed, out finalCharsUsed, out completed);
-                    }
-                }
-                finally
-                {
-                    if (pointer != null)
-                        _view.SafeMemoryMappedViewHandle.ReleasePointer();
+                    int finalBytesUsed;
+                    int finalCharsUsed;
+                    decoder.Convert((byte*)_viewAddress + bytesUsed, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars + charsUsed, charCount - charsUsed, true, out finalBytesUsed, out finalCharsUsed, out completed);
                 }
             }
 
@@ -809,6 +807,7 @@ namespace FastSerialization
             long offset = (_viewOffset + _offset) - viewOffset;
             long viewLength = Math.Max(Math.Min(MemoryMappedFileStreamWriter.BlockCopyCapacity, availableInFile + offset), capacity + offset);
             _view = _file.CreateViewAccessor(viewOffset, viewLength, MemoryMappedFileAccess.Read);
+            _viewAddress = _view.SafeMemoryMappedViewHandle.DangerousGetHandle();
             _viewOffset = viewOffset;
             _capacity = viewLength;
             _offset = offset;
@@ -818,6 +817,8 @@ namespace FastSerialization
         {
             if (disposing)
             {
+                _viewAddress = IntPtr.Zero;
+
                 var view = _view;
                 _view = null;
                 view?.Dispose();
@@ -902,6 +903,24 @@ namespace FastSerialization
         public DeferedStreamLabel GetLabel()
         {
             return checked((DeferedStreamLabel)Length);
+        }
+
+        public void Write(byte[] data, int offset, int length)
+        {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+            if (offset < 0)
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            if (length < 0)
+                throw new ArgumentOutOfRangeException(nameof(length));
+            if (length > data.Length - offset)
+                throw new ArgumentNullException(nameof(length));
+
+            if (_offset + length > _capacity)
+                Resize(length);
+
+            _view.WriteArray(_offset, data, offset, length);
+            _offset += length;
         }
 
         public void Write(byte value)

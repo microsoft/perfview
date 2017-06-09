@@ -540,9 +540,17 @@ namespace Graphs
             // Read in the Blob stream.  
             // TODO be lazy about reading in the blobs.  
             int blobCount = deserializer.ReadInt();
+            const int BlockCopyCapacity = 0x4000;
+            byte[] data = new byte[BlockCopyCapacity];
+
             MemoryMappedFileStreamWriter writer = new MemoryMappedFileStreamWriter(blobCount);
-            for (int i = 0; i < blobCount; i++)
-                writer.Write(deserializer.ReadByte());
+            for (int i = 0; i < blobCount; i += BlockCopyCapacity)
+            {
+                int chunkSize = Math.Min(blobCount - i, BlockCopyCapacity);
+                deserializer.Read(data, 0, chunkSize);
+                writer.Write(data, 0, chunkSize);
+            }
+
             m_reader = writer.GetReader();
 
             // Stuff added in version 1.   See Version below 
@@ -772,21 +780,34 @@ namespace Graphs
             int ret = 0;
             byte b = reader.ReadByte();
             ret = b << 25 >> 25;
-#if DEBUG
-            for (int i = 0; ; i++)
-            {
-                Debug.Assert(i < 5);
-#else
-            for (; ; )
-            {
-#endif
-                if ((b & 0x80) == 0)
-                    return ret;
-                ret <<= 7;
-                b = reader.ReadByte();
-                ret += (b & 0x7f);
-            }
+            if ((b & 0x80) == 0)
+                return ret;
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+                return ret;
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+                return ret;
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            ret += (b & 0x7f);
+            if ((b & 0x80) == 0)
+                return ret;
+
+            ret <<= 7;
+            b = reader.ReadByte();
+            Debug.Assert((b & 0x80) == 0);
+            ret += b;
+            return ret;
         }
+
         internal static void WriteCompressedInt(MemoryMappedFileStreamWriter writer, int value)
         {
             if (value << 25 >> 25 == value)

@@ -154,6 +154,7 @@ namespace FastSerialization
 #endif
     interface IStreamReader : IDisposable
     {
+        void Read(byte[] data, int offset, int length);
         /// <summary>
         /// Read a byte from the stream
         /// </summary>
@@ -1082,6 +1083,17 @@ namespace FastSerialization
         }
 
         // For FromStream method bodies.  
+        public void Read(byte[] buffer, int offset, int length)
+        {
+#if DEBUG
+            StreamLabel label = reader.Current;
+#endif
+            reader.Read(buffer, offset, length);
+#if DEBUG
+            Log("<ReadByte Value=\"" + "[...]" + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
+#endif
+        }
+
         /// <summary>
         /// Read a bool from the stream
         /// </summary>

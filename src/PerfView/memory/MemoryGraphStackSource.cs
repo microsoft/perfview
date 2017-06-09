@@ -185,6 +185,72 @@ namespace Graphs
             return m_refCounts[(int)nodeIndex];
         }
 
+        public void ForEachUnordered(Action<StackSourceSample, bool> callback)
+        {
+            // Initialize the breadth-first work queue.
+            var nodesToVisit = new Queue<NodeIndex>(1024);
+            nodesToVisit.Enqueue(m_graph.RootIndex);
+
+            // reset the visited information.
+            for (int i = 0; i < m_parent.Length; i++)
+                m_parent[i] = NodeIndex.Invalid;
+
+            MemoryGraph asMemoryGraph = m_graph as MemoryGraph;
+
+            bool scanedForOrphans = false;
+            for (int i = 0; ; i++)
+            {
+                if ((i & 0x1FFF) == 0)  // Every 8K
+                    System.Threading.Thread.Sleep(0);       // Allow interruption.  
+
+                NodeIndex nodeIndex;
+                if (nodesToVisit.Count == 0)
+                {
+                    if (!scanedForOrphans)
+                    {
+                        scanedForOrphans = true;
+                        AddOrphansToQueue(nodesToVisit);
+                    }
+                    if (nodesToVisit.Count == 0)
+                        return;
+                }
+
+                nodeIndex = nodesToVisit.Dequeue();
+
+                // Insert any children that have not already been visited (had a parent assigned) into the work queue). 
+                Node node = m_graph.GetNode(nodeIndex, m_nodeStorage);
+                for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
+                {
+                    if (m_parent[(int)childIndex] == NodeIndex.Invalid && childIndex != m_graph.RootIndex) 
+                    {
+                        m_parent[(int)childIndex] = nodeIndex;
+                        nodesToVisit.Enqueue(childIndex);
+                    }
+                }
+
+                // Return the node.  
+                m_sampleStorage.Metric = node.Size;
+                // We use the address as the timestamp.  This allows you to pick particular instances
+                // and see where particular instances are in memory by looking at the 'time'.  
+                if (asMemoryGraph != null)
+                    m_sampleStorage.TimeRelativeMSec = asMemoryGraph.GetAddress(node.Index);
+
+                m_sampleStorage.SampleIndex = (StackSourceSampleIndex)node.Index;
+                m_sampleStorage.StackIndex = (StackSourceCallStackIndex)node.Index;
+                if (m_countMultipliers != null)
+                {
+                    m_sampleStorage.Count = m_countMultipliers[(int)node.TypeIndex];
+                    m_sampleStorage.Metric = m_sampleStorage.Metric * m_sampleStorage.Count;
+                }
+
+                Debug.Assert(m_sampleStorage.Metric >= 0);
+                Debug.Assert(m_sampleStorage.Count >= 0);
+                Debug.Assert(0 < m_sampleStorage.Count && m_sampleStorage.Count <= float.MaxValue);
+                Debug.Assert(0 <= m_sampleStorage.Metric && m_sampleStorage.Metric <= float.MaxValue);
+                callback(m_sampleStorage, !scanedForOrphans);
+            }
+        }
+
         public override void ForEach(Action<StackSourceSample> callback)
         {
             // Initialize the priority 
@@ -288,6 +354,7 @@ namespace Graphs
             NodeTypeIndex typeIndex = m_graph.GetNode(nodeIndex, m_nodeStorage).TypeIndex;
             return (StackSourceFrameIndex)typeIndex;
         }
+
         public override string GetFrameName(StackSourceFrameIndex frameIndex, bool verboseName)
         {
             NodeTypeIndex typeIndex = (NodeTypeIndex)frameIndex;
@@ -296,32 +363,46 @@ namespace Graphs
             if (typeIndex == m_graph.NodeTypeIndexLimit)
                 return "[not reachable from roots]";
 
-            var type = m_graph.GetType(typeIndex, m_typeStorage);
-            var moduleName = type.ModuleName;
-
-            var ret = type.Name;
-            if (moduleName != null)
+            string[] typeNames = verboseName ? m_verboseTypeNames : m_typeNames;
+            if (typeNames == null)
             {
-                if (verboseName)
-                {
-                    int length = moduleName.Length - 4;
-                    if ((length >= 0) && (moduleName[length] == '.'))
-                        moduleName = moduleName.Substring(0, length);
-                }
-                else
-                    moduleName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
-
-                if (moduleName.Length == 0)
-                    moduleName = "?";
-
-                ret = moduleName + "!" + ShortenNameSpaces(type);
+                m_typeNames = new string[(int)m_graph.NodeTypeIndexLimit];
+                m_verboseTypeNames = new string[(int)m_graph.NodeTypeIndexLimit];
+                typeNames = verboseName ? m_verboseTypeNames : m_typeNames;
             }
-            // TODO FIX NOW remove priority
-            // ret +=  " " + m_typePriorities[(int)type.Index].ToString("f1");
-            // TODO FIX NOW hack for CLRProfiler comparison 
-            // ret = Regex.Replace(ret, @" *\[\]", "[]");
-            // ret = Regex.Replace(ret, @"`\d+", "");
-            return ret;
+
+            if (typeNames[(int)typeIndex] == null)
+            {
+                var type = m_graph.GetType(typeIndex, m_typeStorage);
+                var moduleName = type.ModuleName;
+
+                var ret = type.Name;
+                if (moduleName != null)
+                {
+                    if (verboseName)
+                    {
+                        int length = moduleName.Length - 4;
+                        if ((length >= 0) && (moduleName[length] == '.'))
+                            moduleName = moduleName.Substring(0, length);
+                    }
+                    else
+                        moduleName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
+
+                    if (moduleName.Length == 0)
+                        moduleName = "?";
+
+                    ret = moduleName + "!" + ShortenNameSpaces(type);
+                }
+
+                // TODO FIX NOW remove priority
+                // ret +=  " " + m_typePriorities[(int)type.Index].ToString("f1");
+                // TODO FIX NOW hack for CLRProfiler comparison 
+                // ret = Regex.Replace(ret, @" *\[\]", "[]");
+                // ret = Regex.Replace(ret, @"`\d+", "");
+                typeNames[(int)typeIndex] = ret;
+            }
+
+            return typeNames[(int)typeIndex];
         }
 
         public override StackSourceSample GetSampleByIndex(StackSourceSampleIndex sampleIndex)
@@ -420,6 +501,44 @@ namespace Graphs
                             var node = m_graph.GetNode(nodeIndex, m_nodeStorage);
                             var priority = m_typePriorities[(int)node.TypeIndex];
                             nodesToVisit.Enqueue(nodeIndex, priority);
+                            m_parent[(int)nodeIndex] = m_graph.NodeIndexLimit;               // This is the 'not reachable' parent. 
+                        }
+                    }
+                    else
+                        m_parent[(int)nodeIndex] = NodeIndex.Invalid;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Add any unreachable nodes to the 'nodesToVisit'.   Note that we do this in a 'smart' way
+        /// where we only add orphans that are not reachable from other orphans.   That way we get a 
+        /// minimal set of orphan 'roots'.  
+        /// </summary>
+        /// <param name="nodesToVisit"></param>
+        private void AddOrphansToQueue(Queue<NodeIndex> nodesToVisit)
+        {
+            for (int i = 0; i < (int)m_graph.NodeIndexLimit; i++)
+            {
+                if (m_parent[i] == NodeIndex.Invalid)
+                    MarkDecendentsIgnoringCycles((NodeIndex)i);
+            }
+
+            // Collect up all the nodes that are not reachable from other nodes as the roots of the
+            // orphans.  Also reset orphanVisitedMarker back to NodeIndex.Invalid.
+            for (int i = 0; i < (int)m_graph.NodeIndexLimit; i++)
+            {
+                var nodeIndex = (NodeIndex)i;
+                var parent = m_parent[(int)nodeIndex];
+                if (parent <= NodeIndex.Invalid)
+                {
+                    if (parent == NodeIndex.Invalid)
+                    {
+                        // The root index has no parent but is reachable from the root. 
+                        if (nodeIndex != m_graph.RootIndex)
+                        {
+                            var node = m_graph.GetNode(nodeIndex, m_nodeStorage);
+                            nodesToVisit.Enqueue(nodeIndex);
                             m_parent[(int)nodeIndex] = m_graph.NodeIndexLimit;               // This is the 'not reachable' parent. 
                         }
                     }
@@ -594,6 +713,8 @@ namespace Graphs
 
         MemoryGraph m_asMemoryGraph;
         Graph m_graph;
+        string[] m_typeNames;
+        string[] m_verboseTypeNames;
         NodeIndex[] m_parent;               // We keep track of the parents of each node in our breadth-first scan. 
         byte[] m_refCounts;                 // Used to implemented the 'RefCounts' property. 
 
