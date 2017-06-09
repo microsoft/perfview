@@ -1465,29 +1465,6 @@ namespace Microsoft.Samples.Debugging.Native
 
         #endregion // Stop-Go
 
-        [DllImport("kernel32.dll")]
-        public static extern void GetSystemInfo([MarshalAs(UnmanagedType.Struct)] out SYSTEM_INFO lpSystemInfo);
-
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct SYSTEM_INFO
-        {
-            // Don't marshal dwOemId since that's obsolete and lets
-            // us avoid marshalling a union.
-            internal ProcessorArchitecture wProcessorArchitecture;
-            internal ushort wReserved;
-
-            public uint dwPageSize;
-            public IntPtr lpMinimumApplicationAddress;
-            public IntPtr lpMaximumApplicationAddress;
-            public IntPtr dwActiveProcessorMask;
-            public uint dwNumberOfProcessors;
-            public uint dwProcessorType; // obsolete
-            public uint dwAllocationGranularity;
-            public ushort dwProcessorLevel;
-            public ushort dwProcessorRevision;
-        }
-        
     } // NativeMethods
 
 }

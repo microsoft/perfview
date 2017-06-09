@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using Microsoft.Samples.Debugging.CorDebug.NativeApi;
-using Microsoft.Samples.Debugging.CorDebug.Utility;
 using Microsoft.Samples.Debugging.Native;
 using System.Security.Permissions;
 
@@ -43,48 +42,6 @@ namespace Profiler
                 callBacks = new DebuggerCallBacks();
             rawDebuggingAPI.SetManagedHandler(callBacks);
             return rawDebuggingAPI;
-        }
-
-        public static ICorDebugProcess GetDebuggerHandleFromProcessDump(string processDumpFile, long clrInstanceId = 0)
-        {
-            LibraryProvider libraryProvider = new LibraryProvider();
-            using (DumpReader reader = new DumpReader(processDumpFile))
-            {
-                if ((IntPtr.Size == 8) && (reader.ProcessorArchitecture == ProcessorArchitecture.PROCESSOR_ARCHITECTURE_INTEL))
-                {
-                    throw new InvalidOperationException("Opening a 32 bit dump in a 64 bit process.");
-                }
-                if ((IntPtr.Size == 4) && (reader.ProcessorArchitecture == ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64))
-                {
-                    throw new InvalidOperationException("Opening a 64 bit dump in a 32 bit process.");
-                }
-                using (DumpDataTarget target = new DumpDataTarget(reader))
-                {
-                    foreach (DumpModule module in reader.EnumerateModules())
-                    {
-                        if ((clrInstanceId == 0) || (clrInstanceId == (long) module.BaseAddress))
-                        {
-                            Version version;
-                            ClrDebuggingProcessFlags flags;
-                            ICorDebugProcess process;
-                            int errorCode = new CLRDebugging().TryOpenVirtualProcess(
-                                module.BaseAddress, target, libraryProvider, new Version(4, 0, 0x7fff, 0x7fff), out version, out flags, out process);
-                            if (errorCode < 0)
-                            {
-                                if (((errorCode != -2146231228) && (errorCode != -2146231226)) && (errorCode != -2146231225))
-                                {
-                                        Marshal.ThrowExceptionForHR(errorCode);
-                                }
-                            }
-                            else
-                            {
-                                return process;
-                            }   
-                        }
-                    }
-                }
-            }
-            throw new InvalidOperationException("No V4.0 .NET Runtime found in dump file.");
         }
     }
 
