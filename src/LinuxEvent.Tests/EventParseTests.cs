@@ -50,7 +50,7 @@ namespace LinuxTracing.Tests
 
 			Constants.WaitUntilFileIsReady(source);
 
-			using (Stream stream = File.Open(source, FileMode.Open))
+			using (Stream stream = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.Read))
 			{
 				LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
 				List<LinuxEvent> samples = parser.ParseSkippingPreamble(stream).ToList();
