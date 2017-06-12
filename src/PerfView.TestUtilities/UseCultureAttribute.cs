@@ -9,7 +9,7 @@ using Xunit.Sdk;
  * https://github.com/xunit/samples.xunit/blob/master/UseCulture/UseCultureAttribute.cs
  */
 
-namespace PerfViewTests.Utilities
+namespace PerfView.TestUtilities
 {
     /// <summary>
     /// Apply this attribute to your test method to replace the

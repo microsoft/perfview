@@ -8,6 +8,7 @@ using System.Windows;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
+using PerfView.TestUtilities;
 using PerfViewTests.Utilities;
 using Xunit;
 using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;

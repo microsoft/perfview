@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PerfViewTests.Utilities
+namespace PerfView.TestUtilities
 {
     /// <summary>
     /// Used to tag test methods or types which are created for a given WorkItem
