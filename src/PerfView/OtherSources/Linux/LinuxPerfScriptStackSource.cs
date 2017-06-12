@@ -411,7 +411,7 @@ namespace Diagnostics.Tracing.StackSources
                 return foundEntry?.Open();
             }
             else
-                return new FileStream(path, FileMode.Open);
+                return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         }
 
         private double? SampleEndTime;
