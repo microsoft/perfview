@@ -257,24 +257,22 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public static bool ComputerNameExists(string computerName, int timeoutMSec = 700)
         {
-            if (computerName == s_lastComputerNameLookupFailure)
-                return false;
             try
             {
                 System.Net.IPHostEntry ipEntry = null;
                 var result = System.Net.Dns.BeginGetHostEntry(computerName, null, null);
                 if (result.AsyncWaitHandle.WaitOne(timeoutMSec))
                     ipEntry = System.Net.Dns.EndGetHostEntry(result);
+
                 if (ipEntry != null)
                     return true;
             }
             catch (Exception) { }
-            s_lastComputerNameLookupFailure = computerName;
             return false;
         }
+
         #region private
         private List<SymbolPathElement> m_elements;
-        private static string s_lastComputerNameLookupFailure = "";
 
         /// <summary>
         /// This is the backing field for the lazily-computed <see cref="MicrosoftSymbolServerPath"/> property.
