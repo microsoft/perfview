@@ -68,10 +68,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ThrowingTraceListener.cs" />
     <Compile Include="UseCultureAttribute.cs" />
     <Compile Include="WorkItemAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="DebugAssertionTests.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

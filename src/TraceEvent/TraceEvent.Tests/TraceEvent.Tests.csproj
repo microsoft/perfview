@@ -65,6 +65,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\PerfView.TestUtilities\DebugAssertionTests.cs">
+      <Link>DebugAssertionTests.cs</Link>
+    </Compile>
     <Compile Include="DispatchTests.cs" />
     <Compile Include="EtlTestBase.cs" />
     <Compile Include="GeneralParsing.cs" />
@@ -87,6 +90,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
