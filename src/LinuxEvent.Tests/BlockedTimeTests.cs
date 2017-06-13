@@ -21,8 +21,6 @@ namespace LinuxTracing.Tests
 		public static int? StartLook = null;
 		private void TotalBlockedTimeTest(string source, double expectedTotalBlockedPeriod, bool concurrentTest = false)
 		{
-			Constants.WaitUntilFileIsReady(source);
-
 			if (concurrentTest)
 			{
 				StartLook = 10;
