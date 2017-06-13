@@ -2681,16 +2681,16 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
             // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
             m_hashType = sourceFile.checksumType;
-            if (m_hashType != 2 && m_hashType != 1 && m_hashType != 0)
-            {
-                Debug.Assert(false, "Unknown hash type");
-                m_hashType = 0;
-            }
             if (m_hashType != 0)
             {
+                uint hashSizeInBytes;
+                fixed (byte* bufferPtr = m_hash)
+                    sourceFile.get_checksum(0, out hashSizeInBytes, out *bufferPtr);
+
                 // MD5 is 16 bytes
                 // SHA1 is 20 bytes  
-                m_hash = m_hashType == 1 ? new byte[16] : new byte[20];
+                // SHA-256 is 32 bytes
+                m_hash = new byte[hashSizeInBytes];
 
                 uint bytesFetched;
                 fixed (byte* bufferPtr = m_hash)
@@ -2699,9 +2699,28 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             }
         }
 
-        private static byte[] ComputeHash(string filePath)
+        private byte[] ComputeHash(string filePath)
         {
-            System.Security.Cryptography.MD5CryptoServiceProvider crypto = new System.Security.Cryptography.MD5CryptoServiceProvider();
+            System.Security.Cryptography.HashAlgorithm crypto = null;
+            switch (m_hashType)
+            {
+                case 1:
+                    crypto = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                    break;
+
+                case 2:
+                    crypto = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    break;
+
+                case 3: 
+                    crypto = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    break;
+
+                default:
+                    Debug.Assert(false);
+                    break;
+            }
+
             using (var fileStream = File.OpenRead(filePath))
                 return crypto.ComputeHash(fileStream);
         }
