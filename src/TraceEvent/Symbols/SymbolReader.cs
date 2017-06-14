@@ -1640,7 +1640,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (lineNum == 0xFEEFEE)
                 lineNum = 0;
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {0} file {1} ", lineNum, sourceFile.BuildTimeFilePath);
+            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
