@@ -2162,7 +2162,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// true if the PDB has a checksum for the data in the source file. 
         /// </summary>
-        public bool HasChecksum { get { return m_hash != null; } }
+        public bool HasChecksum { get { return m_hashAlgorithm != null; } }
 
         /// <summary>
         /// This may fetch things from the source server, and thus can be very slow, which is why it is not a property. 
@@ -2680,8 +2680,11 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             // 0 No checksum present.
             // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
             // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
+            // 3 checksum generated with the SHA256 hashing algorithm.
             m_hashType = sourceFile.checksumType;
-            if (m_hashType != 0)
+            SetCryptoProvider();
+
+            if (HasChecksum)
             {
                 uint hashSizeInBytes;
                 fixed (byte* bufferPtr = m_hash)
@@ -2699,35 +2702,45 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             }
         }
 
-        private byte[] ComputeHash(string filePath)
+        private void SetCryptoProvider()
         {
-            System.Security.Cryptography.HashAlgorithm crypto = null;
             switch (m_hashType)
             {
                 case 1:
-                    crypto = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                    m_hashAlgorithm = new System.Security.Cryptography.MD5CryptoServiceProvider();
                     break;
 
                 case 2:
-                    crypto = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    m_hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
                     break;
 
                 case 3: 
-                    crypto = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    m_hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
                     break;
 
                 default:
-                    Debug.Assert(false);
+                    m_hashAlgorithm = null; // unknown hash type
                     break;
             }
+        }
+
+        private System.Security.Cryptography.HashAlgorithm GetCryptoProvider()
+        {
+            return m_hashAlgorithm;
+        }
+
+        private byte[] ComputeHash(string filePath)
+        {
+            Debug.Assert(m_hashAlgorithm != null);
 
             using (var fileStream = File.OpenRead(filePath))
-                return crypto.ComputeHash(fileStream);
+                return m_hashAlgorithm.ComputeHash(fileStream);
         }
 
         SymbolModule m_symbolModule;
         uint m_hashType;
         byte[] m_hash;
+        System.Security.Cryptography.HashAlgorithm m_hashAlgorithm;
         bool m_getSourceCalled;
         bool m_checksumMatches;
 #endregion
