@@ -59,11 +59,11 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     /// <summary>
     /// If we have sampled, sampleCount * ThisMultiplier = originalCount.   If sampling not done then == 1
     /// </summary>
-    public float AverageCountMultiplier { get; internal set; }
+    public double AverageCountMultiplier { get; internal set; }
     /// <summary>
     /// If we have sampled sampledSize * thisMultiplier = originalSize.  If sampling not done then == 1
     /// </summary>
-    public float AverageSizeMultiplier { get; internal set; }
+    public double AverageSizeMultiplier { get; internal set; }
     /// <summary>
     /// This can be null.  If non-null it indicates that only a sample of the GC graph was persisted in 
     /// the MemoryGraph filed.  To get an approximation of the original heap, each type's count should be 
@@ -72,7 +72,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
     /// We can't use a uniform number for all types because we want to see all large objects, and we 
     /// want to include paths to root for all objects, which means we can only approximate a uniform scaling.  
     /// </summary>
-    public float[] CountMultipliersByType { get; internal set; }
+    public double[] CountMultipliersByType { get; internal set; }
 
     public DotNetHeapInfo DotNetHeapInfo { get; internal set; }
     public JSHeapInfo JSHeapInfo { get; internal set; }
@@ -241,8 +241,8 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         serializer.Write(m_graph);
         serializer.Write(m_graph.Is64Bit);  // This is redundant but graph did not used to hold this value 
         // we write the bit here to preserve compatibility. 
-        serializer.Write(AverageCountMultiplier);
-        serializer.Write(AverageSizeMultiplier);
+        serializer.Write((float)AverageCountMultiplier);
+        serializer.Write((float)AverageSizeMultiplier);
 
         serializer.Write(JSHeapInfo);
         serializer.Write(DotNetHeapInfo);
@@ -261,7 +261,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         {
             serializer.Write(CountMultipliersByType.Length);
             for (int i = 0; i < CountMultipliersByType.Length; i++)
-                serializer.Write(CountMultipliersByType[i]);
+                serializer.Write((float)CountMultipliersByType[i]);
         }
 
         // All fields after version 8 should go here and should be in
@@ -303,7 +303,7 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
         deserializer.Read(out count);
         if (count != 0)
         {
-            var a = new float[count];
+            var a = new double[count];
             for (int i = 0; i < a.Length; i++)
                 a[i] = deserializer.ReadFloat();
             CountMultipliersByType = a;
@@ -723,7 +723,7 @@ class XmlGcHeapDump
                         ret.ProcessID = reader.ReadElementContentAsInt();
                         break;
                     case "CountMultipliersByType":
-                        var multipliers = new List<float>();
+                        var multipliers = new List<double>();
                         ReadCountMultipliersByTypeFromXml(reader, multipliers);
                         ret.CountMultipliersByType = multipliers.ToArray();
                         break;
@@ -834,7 +834,7 @@ class XmlGcHeapDump
     }
 
 #region private
-    private static void ReadCountMultipliersByTypeFromXml(XmlReader reader, List<float> countMultipliers)
+    private static void ReadCountMultipliersByTypeFromXml(XmlReader reader, List<double> countMultipliers)
     {
         Debug.Assert(reader.NodeType == XmlNodeType.Element);
         var inputDepth = reader.Depth;
@@ -846,7 +846,7 @@ class XmlGcHeapDump
                 switch (reader.Name)
                 {
                     case "CountMultiplier":
-                        countMultipliers.Add(FetchFloat(reader, "Value", 1));
+                        countMultipliers.Add(FetchDouble(reader, "Value", 1));
                         reader.Skip();
                         break;
                     default:
@@ -975,12 +975,12 @@ class XmlGcHeapDump
         return ret;
     }
 
-    private static float FetchFloat(XmlReader reader, string attributeName, float defaultValue = 0)
+    private static double FetchDouble(XmlReader reader, string attributeName, double defaultValue = 0)
     {
-        float ret = defaultValue;
+        double ret = defaultValue;
         var attrValue = reader.GetAttribute(attributeName);
         if (attrValue != null)
-            float.TryParse(attrValue, out ret);
+            double.TryParse(attrValue, out ret);
         return ret;
     }
 

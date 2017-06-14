@@ -176,7 +176,7 @@ namespace ClrProfiler
                 sample.StackIndex = (StackSourceCallStackIndex)(stackId - 1);
                 var method = m_clrProfiler.Method(stackId);
                 var stats = (MethodStats)method.UserData;
-                sample.Metric = (float)(((double)method.size) / stats.count);
+                sample.Metric = (double)method.size / stats.count;
                 callback(sample);
             }
         }
@@ -216,7 +216,7 @@ namespace ClrProfiler
             m_sample.StackIndex = (StackSourceCallStackIndex)(stackId - 1);
             var method = m_clrProfiler.Method(stackId);
             var stats = (MethodStats)method.UserData;
-            m_sample.Metric = (float)(((double)method.size) / stats.count);
+            m_sample.Metric = (double)method.size / stats.count;
             return m_sample;
         }
         public override int SampleIndexLimit { get { return m_calls.Count; } }

@@ -1438,8 +1438,8 @@ public class GCHeapDumper
             m_log.WriteLine("{0,5:f1}s:   Done Sampling.", m_sw.Elapsed.TotalSeconds);
 
             m_gcHeapDump.CountMultipliersByType = graphSampler.CountScalingByType;
-            m_gcHeapDump.AverageCountMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.NodeCount / sampledGraph.NodeCount);
-            m_gcHeapDump.AverageSizeMultiplier = (float)((double)m_gcHeapDump.MemoryGraph.TotalSize / sampledGraph.TotalSize);
+            m_gcHeapDump.AverageCountMultiplier = (double)m_gcHeapDump.MemoryGraph.NodeCount / sampledGraph.NodeCount;
+            m_gcHeapDump.AverageSizeMultiplier = (double)m_gcHeapDump.MemoryGraph.TotalSize / sampledGraph.TotalSize;
             m_log.WriteLine("Average Count Multiplier: {0,6:f2}", m_gcHeapDump.AverageCountMultiplier);
             m_log.WriteLine("Average Size Multiplier:  {0,6:f2}", m_gcHeapDump.AverageSizeMultiplier);
 

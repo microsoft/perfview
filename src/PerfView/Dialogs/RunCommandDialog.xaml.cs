@@ -339,7 +339,7 @@ namespace PerfView
                     return;
                 }
 
-                if (!float.TryParse(SampleIntervalTextBox.Text, out m_args.CpuSampleMSec))
+                if (!double.TryParse(SampleIntervalTextBox.Text, out m_args.CpuSampleMSec))
                 {
                     m_mainWindow.StatusBar.LogError("Could not parse sample interval timeout value: " + SampleIntervalTextBox.Text);
                     return;

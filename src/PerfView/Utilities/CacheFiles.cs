@@ -12,7 +12,7 @@ namespace Utilities
     /// </summary>
     static class CacheFiles
     {
-        public static float KeepTimeInDays { get; set; }
+        public static double KeepTimeInDays { get; set; }
         public static string CacheDir
         {
             get
@@ -29,8 +29,8 @@ namespace Utilities
 
                     string keepTimeEnvVarName = exeName + "_Cache_KeepTimeInDays";
                     string keepTimeEnvVarValueStr = Environment.GetEnvironmentVariable(keepTimeEnvVarName);
-                    float keepTimeEnvVarValue;
-                    if (keepTimeEnvVarName != null && float.TryParse(keepTimeEnvVarValueStr, out keepTimeEnvVarValue))
+                    double keepTimeEnvVarValue;
+                    if (keepTimeEnvVarName != null && double.TryParse(keepTimeEnvVarValueStr, out keepTimeEnvVarValue))
                     {
                         // Insure that keep time is at least 10 mins.   This avoids files disappearing while in use. 
                         if (keepTimeEnvVarValue < .007f)
@@ -94,7 +94,7 @@ namespace Utilities
             CleanupDirectory(CacheDir, KeepTimeInDays);
         }
 
-        static public void CleanupDirectory(string directory, float keepTimeInDays)
+        static public void CleanupDirectory(string directory, double keepTimeInDays)
         {
             var nowUTC = DateTime.UtcNow;
             foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))

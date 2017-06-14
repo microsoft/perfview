@@ -69,7 +69,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// When calculating percentages, the PercentageBasis do we use as 100%.  By default we use the
         /// Inclusive time for the root, but that can be changed here.  
         /// </summary>
-        public float PercentageBasis { get; set; }
+        public double PercentageBasis { get; set; }
 
         /// <summary>
         /// Returns the root node of the call tree.  
@@ -128,7 +128,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// node will have less than minInclusiveMetric.  
         /// 
         /// </summary>
-        public int FoldNodesUnder(float minInclusiveMetric, bool useWholeTraceMetric)
+        public int FoldNodesUnder(double minInclusiveMetric, bool useWholeTraceMetric)
         {
             m_root.CheckClassInvarients();
 
@@ -533,45 +533,45 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The sum of the metric of all samples that are in this node or any child of this node (recursively)
         /// </summary>
-        public float InclusiveMetric { get { return m_inclusiveMetric; } }
+        public double InclusiveMetric { get { return m_inclusiveMetric; } }
         /// <summary>
         /// The average metric of all samples that are in this node or any child of this node (recursively).
         /// This is simply InclusiveMetric / InclusiveCount.
         /// </summary>
-        public float AverageInclusiveMetric { get { return m_inclusiveMetric / m_inclusiveCount; } }
+        public double AverageInclusiveMetric { get { return m_inclusiveMetric / m_inclusiveCount; } }
         /// <summary>
         /// The sum of the metric of all samples that are in this node 
         /// </summary>
-        public float ExclusiveMetric { get { return m_exclusiveMetric; } }
+        public double ExclusiveMetric { get { return m_exclusiveMetric; } }
         /// <summary>
         /// The sum of the metric of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveMetric.  
         /// </summary>
-        public float ExclusiveFoldedMetric { get { return m_exclusiveFoldedMetric; } }
+        public double ExclusiveFoldedMetric { get { return m_exclusiveFoldedMetric; } }
         /// <summary>
         /// The sum of the count of all samples that are in this node or any child of this node (recursively)
         /// </summary>
-        public float InclusiveCount { get { return m_inclusiveCount; } }
+        public double InclusiveCount { get { return m_inclusiveCount; } }
         /// <summary>
         /// The sum of the count of all samples that are in this node 
         /// </summary>
-        public float ExclusiveCount { get { return m_exclusiveCount; } }
+        public double ExclusiveCount { get { return m_exclusiveCount; } }
         /// <summary>
         /// The sum of the count of all samples in this node that are there because they were folded (inlined).   It is alwasy less than or equal to ExclusiveCount.  
         /// </summary>
-        public float ExclusiveFoldedCount { get { return m_exclusiveFoldedCount; } }
+        public double ExclusiveFoldedCount { get { return m_exclusiveFoldedCount; } }
 
         /// <summary>
         /// The inclusive metric, normalized to the total metric for the entire tree.  
         /// </summary>
-        public float InclusiveMetricPercent { get { return m_inclusiveMetric * 100 / m_callTree.PercentageBasis; } }
+        public double InclusiveMetricPercent { get { return m_inclusiveMetric * 100 / m_callTree.PercentageBasis; } }
         /// <summary>
         /// The exclusive metric, normalized to the total metric for the entire tree.  
         /// </summary>
-        public float ExclusiveMetricPercent { get { return m_exclusiveMetric * 100 / m_callTree.PercentageBasis; } }
+        public double ExclusiveMetricPercent { get { return m_exclusiveMetric * 100 / m_callTree.PercentageBasis; } }
         /// <summary>
         /// The exclusive folded metric, normalized to the total metric for the entire tree.  
         /// </summary>
-        public float ExclusiveFoldedMetricPercent { get { return m_exclusiveFoldedMetric * 100 / m_callTree.PercentageBasis; } }
+        public double ExclusiveFoldedMetricPercent { get { return m_exclusiveFoldedMetric * 100 / m_callTree.PercentageBasis; } }
 
         /// <summary>
         /// The time of the first sample for this node or any of its children (recursively)
@@ -798,8 +798,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             if (addInclusive)
             {
-                m_inclusiveMetric += (float)(other.m_inclusiveMetric * weight);
-                m_inclusiveCount += (float)(other.m_inclusiveCount * weight);
+                m_inclusiveMetric += other.m_inclusiveMetric * weight;
+                m_inclusiveCount += other.m_inclusiveCount * weight;
                 if (m_inclusiveMetricByTime != null && other.m_inclusiveMetricByTime != null)
                     m_inclusiveMetricByTime.AddScaled(other.m_inclusiveMetricByTime, weight);
                 if (m_inclusiveMetricByScenario != null && other.m_inclusiveMetricByScenario != null)
@@ -808,10 +808,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             if (addExclusive)
             {
-                m_exclusiveMetric += (float)(other.m_exclusiveMetric * weight);
-                m_exclusiveCount += (float)(other.m_exclusiveCount * weight);
-                m_exclusiveFoldedMetric += (float)(other.m_exclusiveFoldedMetric * weight);
-                m_exclusiveFoldedCount += (float)(other.m_exclusiveFoldedCount * weight);
+                m_exclusiveMetric += other.m_exclusiveMetric * weight;
+                m_exclusiveCount += other.m_exclusiveCount * weight;
+                m_exclusiveFoldedMetric += other.m_exclusiveFoldedMetric * weight;
+                m_exclusiveFoldedCount += other.m_exclusiveFoldedCount * weight;
             }
 
             if (other.m_firstTimeRelativeMSec < m_firstTimeRelativeMSec)
@@ -876,12 +876,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         internal StackSourceFrameIndex m_id;
         internal string m_name;
         internal CallTree m_callTree;                                   // The call tree this node belongs to. 
-        internal float m_inclusiveMetric;
-        internal float m_inclusiveCount;
-        internal float m_exclusiveMetric;
-        internal float m_exclusiveCount;
-        internal float m_exclusiveFoldedMetric;
-        internal float m_exclusiveFoldedCount;
+        internal double m_inclusiveMetric;
+        internal double m_inclusiveCount;
+        internal double m_exclusiveMetric;
+        internal double m_exclusiveCount;
+        internal double m_exclusiveFoldedMetric;
+        internal double m_exclusiveFoldedCount;
         internal double m_firstTimeRelativeMSec;
         internal double m_lastTimeRelativeMSec;
 
@@ -1014,7 +1014,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// 
         /// This is a utility function.  
         /// </summary>
-        public float GetBrokenStackCount()
+        public double GetBrokenStackCount()
         {
             return GetBrokenStackCount(4);
         }
@@ -1214,7 +1214,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Fold away any nodes having less than 'minInclusiveMetric'.  If 'sumByID' is non-null then the 
         /// only nodes that have a less then the minInclusiveMetric for the whole trace are folded. 
         /// </summary>
-        internal int FoldNodesUnder(float minInclusiveMetric, Dictionary<int, CallTreeNodeBase> sumByID)
+        internal int FoldNodesUnder(double minInclusiveMetric, Dictionary<int, CallTreeNodeBase> sumByID)
         {
             int nodesFolded = 0;
             if (Callees != null)
@@ -1259,7 +1259,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         // TODO FIX NOW: decide what to do here, we originally did a recursive IsFolable but that causes very little folding. 
-        private bool IsFoldable(float minInclusiveMetric, Dictionary<int, CallTreeNodeBase> sumByID)
+        private bool IsFoldable(double minInclusiveMetric, Dictionary<int, CallTreeNodeBase> sumByID)
         {
             return Math.Abs(sumByID[(int)m_id].InclusiveMetric) < minInclusiveMetric;
         }
@@ -1371,7 +1371,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return ret;
         }
 
-        private float GetBrokenStackCount(int depth = 4)
+        private double GetBrokenStackCount(int depth = 4)
         {
             if (depth <= 0)
                 return 0;
@@ -1379,7 +1379,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (this.Name == "BROKEN")          // TODO use ID instead
                 return this.InclusiveCount;
 
-            float ret = 0;
+            double ret = 0;
             if (this.Callees != null)
                 foreach (var child in this.Callees)
                     ret += child.GetBrokenStackCount(depth - 1);
@@ -1390,8 +1390,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         [Conditional("DEBUG")]
         internal void CheckClassInvarients()
         {
-            float sum = m_exclusiveMetric;
-            float count = m_exclusiveCount;
+            double sum = m_exclusiveMetric;
+            double count = m_exclusiveCount;
             if (m_callees != null)
             {
                 for (int i = 0; i < Callees.Count; i++)
@@ -1450,11 +1450,11 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_callersByName = null;
             m_callers.Sort((x, y) => Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric)));
 #if DEBUG
-            float callerSum = 0;
+            double callerSum = 0;
             foreach (var caller in m_callers)
                 callerSum += caller.m_inclusiveMetric;
 
-            float calleeSum = 0;
+            double calleeSum = 0;
             foreach (var callee in m_callees)
                 calleeSum += callee.m_inclusiveMetric;
 
@@ -1647,8 +1647,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
                             // Subtract out the unweighted value and add in the weighted one
                             double scale = calleeWeightedSummaryScale / weightedSummaryScaleRet;
-                            weightedSummaryRet.m_inclusiveMetric += (float)(calleeWeightedSummary.m_inclusiveMetric * scale - treeNodeCallee.m_inclusiveMetric);
-                            weightedSummaryRet.m_inclusiveCount += (float)(calleeWeightedSummary.m_inclusiveCount * scale - treeNodeCallee.m_inclusiveCount);
+                            weightedSummaryRet.m_inclusiveMetric += calleeWeightedSummary.m_inclusiveMetric * scale - treeNodeCallee.m_inclusiveMetric;
+                            weightedSummaryRet.m_inclusiveCount += calleeWeightedSummary.m_inclusiveCount * scale - treeNodeCallee.m_inclusiveCount;
                             if (weightedSummaryRet.m_inclusiveMetricByTime != null)
                             {
                                 weightedSummaryRet.m_inclusiveMetricByTime.AddScaled(calleeWeightedSummary.m_inclusiveMetricByTime, scale);
@@ -1821,8 +1821,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             ret.Sort((x, y) => Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric)));
 #if DEBUG
             // Check that the exc time + children inc time = inc time 
-            var incCountChildren = 0.0F;
-            var incMetricChildren = 0.0F;
+            var incCountChildren = 0.0;
+            var incMetricChildren = 0.0;
 
             foreach (var callee in ret)
             {
