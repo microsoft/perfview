@@ -1247,7 +1247,7 @@ public class GCHeapDumper
                 string name = root.Name;
                 if (name == "RefCount handle")
                     name = "COM/WinRT Objects";
-                else if (name == "local var" || name.EndsWith("handle", StringComparison.OrdinalIgnoreCase))
+                else if (name == "local var" || name.EndsWith(" handle", StringComparison.OrdinalIgnoreCase))
                     name += "s";
                 MemoryNodeBuilder nodeToAddRootTo = dotNetRoot;
 
