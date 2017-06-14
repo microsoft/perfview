@@ -178,7 +178,12 @@ namespace ClrMemory
             // TODO FIX NOW we can have collisions (it happens with generics right now). 
             var types = new Dictionary<string, ICorDebugGCHeapType>();
             foreach (var type in m_types)
-                types[type.Name] = type;
+            {
+                if (type.Name == "<UNKNOWN>")
+                    types[type.Name] = type;
+                else
+                    types[type.Name] = type;
+            }
 
             var roots = new List<ICorDebugGCHeapRoot>();
             ICorDebugGCReferenceEnum refEnum;

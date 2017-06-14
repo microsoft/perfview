@@ -385,8 +385,10 @@ namespace Graphs
                         if ((length >= 0) && (moduleName[length] == '.'))
                             moduleName = moduleName.Substring(0, length);
                     }
-                    else
-                        moduleName = System.IO.Path.GetFileNameWithoutExtension(moduleName);
+                    else if (moduleName.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
+                    {
+                        moduleName = Path.GetFileNameWithoutExtension(moduleName);
+                    }
 
                     if (moduleName.Length == 0)
                         moduleName = "?";

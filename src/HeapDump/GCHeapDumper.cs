@@ -1748,7 +1748,12 @@ public class GCHeapDumper
                     m_children.Add(m_gcHeapDump.MemoryGraph.GetNodeIndex(rcwData.IUnknown));
 
                     var fullTypeName = type.Name;
-                    if (type.Module.FileName != null)
+                    if (fullTypeName == "<UNKNOWN>" && rcwData.Interfaces.Count > 0)
+                        fullTypeName = rcwData.Interfaces[0].Type.Name;
+
+                    if (type.Module.AssemblyName != null && type.Module.AssemblyName.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) < 0)
+                        fullTypeName = type.Module.AssemblyName + "!" + fullTypeName;
+                    else if (type.Module.FileName != null)
                         fullTypeName = Path.GetFileNameWithoutExtension(type.Module.FileName) + "!" + fullTypeName;
 
                     // TODO do we want the RefCnt Info?
@@ -2267,10 +2272,10 @@ public class GCHeapDumper
 
         // We give more complex names to arrays and strings that are large
         NodeTypeIndex ret;
-        var name = type.Name;
+        var name = GetTypeName(type);
         if (type.IsString || type.IsArray || name == "Free")
         {
-            var typeName = type.Name;
+            var typeName = name;
             var sizeStr = "";
             if (objSize > 1000)
             {
@@ -2311,6 +2316,19 @@ public class GCHeapDumper
             m_typeIdxToGraphIdx[idx] = (int)ret + 1;
         }
         return ret;
+    }
+
+    private string GetTypeName(ClrType type)
+    {
+        if (type.IsArray && type.ComponentType != null)
+            return GetTypeName(type.ComponentType) + "[]";
+
+        string result = type.Name;
+        if (result != "<UNKNOWN>")
+            return result;
+
+        result = GetTypeName(type.BaseType);
+        return result + "^" + type.MetadataToken;
     }
 
     private NodeTypeIndex GetTypeIndexForName(string typeName, string moduleName, int defaultSize)
