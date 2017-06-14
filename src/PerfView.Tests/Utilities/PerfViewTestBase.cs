@@ -70,6 +70,8 @@ namespace PerfViewTests.Utilities
             if (disposing)
             {
                 GuiApp.MainWindow?.Close();
+
+                JoinableTaskFactory?.Context.Dispose();
             }
         }
     }
