@@ -6666,7 +6666,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (moduleFile.ImageBase != 0 && moduleFile.ImageBase <= address && address < moduleFile.ImageEnd)
             {
                 var methodRva = (uint)(address - moduleFile.ImageBase);
-                reader.m_log.WriteLine("GetSourceLine: address within module: native case, RVA = {0:x}", methodRva);
+                reader.m_log.WriteLine("GetSourceLine: address within module: native case, VA = {0:x}, ImageBase = {1:x}, RVA = {2:x}", address, moduleFile.ImageBase, methodRva);
                 symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
                 if (symbolReaderModule != null)
                 {
