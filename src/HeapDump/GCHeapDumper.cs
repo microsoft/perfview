@@ -1271,7 +1271,7 @@ public class GCHeapDumper
                             }
 
                             // Create a CCW node that represents the COM object that has one child that points at the managed object.  
-                            var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(comPtr);
+                            var ccwNode = m_gcHeapDump.MemoryGraph.GetNodeIndex(ccwInfo.Handle);
                             var typeName = "[CCW";
                             var targetType = m_dotNetHeap.GetObjectType(root.Object);
                             if (targetType != null)
