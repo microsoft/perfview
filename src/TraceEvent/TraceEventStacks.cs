@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Stacks;
@@ -239,8 +240,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     nextIndex += (int)threadIndex;
 
                     // Mark it as a broken stack, which come after all the indexes for normal threads and processes. 
-                    if (!ReasonableTopFrame(callStackIndex, threadIndex))
+                    // TODO Fix NOW Clr thread sample only has managed call stack. Do we have a better solution to differentiate it from normal call stack?
+                    if (!string.Equals(m_log.origin, EventPipeEventSource.EventPipe, StringComparison.OrdinalIgnoreCase)
+                        && !ReasonableTopFrame(callStackIndex, threadIndex))
+                    { 
                         nextIndex += m_log.Threads.Count + m_log.Processes.Count;
+                    }
                 }
                 else
                     nextIndex += (int)nextCallStackIndex;
@@ -555,10 +560,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         private bool ReasonableTopFrame(StackSourceCallStackIndex callStackIndex, ThreadIndex threadIndex)
         {
-
             uint index = (uint)callStackIndex - (uint)StackSourceCallStackIndex.Start;
 
-            var stack = m_log.CallStacks[(CallStackIndex)callStackIndex];
             if (index < (uint)m_log.CallStacks.Count)
             {
                 CodeAddressIndex codeAddressIndex = m_log.CallStacks.CodeAddressIndex((CallStackIndex)index);
@@ -758,14 +761,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 callerIdx = top;
 
-                var frameName = GetFrameName(frameIdx, false);
-                var bangIdx = frameName.IndexOf('!');
-                if (0 < bangIdx)
+                // TODO Fix NOW Clr thread sample only has managed call stack. Do we have a better solution to differentiate it from normal call stack?
+                if (!string.Equals(m_log.origin, EventPipeEventSource.EventPipe, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!(5 <= bangIdx && string.Compare(frameName, bangIdx - 5, "ntdll", 0, 5, StringComparison.OrdinalIgnoreCase) == 0))
+                    var frameName = GetFrameName(frameIdx, false);
+                    var bangIdx = frameName.IndexOf('!');
+                    if (0 < bangIdx)
                     {
-                        var brokenFrame = m_Interner.FrameIntern("BROKEN", m_emptyModuleIdx);
-                        callerIdx = m_Interner.CallStackIntern(brokenFrame, callerIdx);
+                        if (!(5 <= bangIdx && string.Compare(frameName, bangIdx - 5, "ntdll", 0, 5, StringComparison.OrdinalIgnoreCase) == 0))
+                        {
+                            var brokenFrame = m_Interner.FrameIntern("BROKEN", m_emptyModuleIdx);
+                            callerIdx = m_Interner.CallStackIntern(brokenFrame, callerIdx);
+                        }
                     }
                 }
             }

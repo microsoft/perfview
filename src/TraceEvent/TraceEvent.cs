@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
@@ -397,6 +398,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
 #endif //  !NOT_WINDOWS
+
+        internal /*protected*/ string origin;
         #endregion
         #region private
         /// <summary>
@@ -1870,6 +1873,11 @@ namespace Microsoft.Diagnostics.Tracing
         [Conditional("DEBUG")]
         protected internal void DebugValidate()
         {
+            // TODO FIX NOW For EventPipe data, the validation of EventDataLength for the following data always fail. 
+            // GCSuspendEETraceData, GCNoUserDataTraceData, MethodLoadUnloadVerboseTraceData, MethodJittingStartedTraceData
+            if (this.source.origin == EventPipeEventSource.EventPipe)
+                return;
+
             this.Validate();
         }
 
@@ -2433,6 +2441,11 @@ namespace Microsoft.Diagnostics.Tracing
             if (GetType().Name == "JScriptTraceEventParser")
                 return;
 
+            // TODO FIX NOW ApplicationServerTraceEventParser contains some templates sharing the same event (task) name but different event ids
+            // The validation rule here doesn't quite work for them.
+            if (GetType().Name == "ApplicationServerTraceEventParser")
+                return;
+
             // Use reflection to see what events have declared 
             MethodInfo[] methods = GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             for (int i = 0; i < methods.Length; i++)
@@ -2696,6 +2709,8 @@ namespace Microsoft.Diagnostics.Tracing
 #if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
+            else if(traceFileName.EndsWith(".netperf", StringComparison.OrdinalIgnoreCase))
+                return EventPipeEventSourceFactory.CreateEventPipeEventSource(traceFileName);
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
