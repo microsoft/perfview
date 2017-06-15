@@ -55,6 +55,9 @@ namespace PerfViewTests.Utilities
 
         private void CreateMainWindow()
         {
+            GuiApp.MainWindow?.Close();
+            JoinableTaskFactory?.Context.Dispose();
+
             GuiApp.MainWindow = new MainWindow();
             JoinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
         }
@@ -70,6 +73,9 @@ namespace PerfViewTests.Utilities
             if (disposing)
             {
                 GuiApp.MainWindow?.Close();
+                GuiApp.MainWindow = null;
+
+                JoinableTaskFactory?.Context.Dispose();
             }
         }
     }
