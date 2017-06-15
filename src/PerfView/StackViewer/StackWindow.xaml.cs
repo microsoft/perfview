@@ -3005,42 +3005,27 @@ namespace PerfView
             ret = Regex.Replace(ret, @"^[ |+]*", "");               // Remove spaces or | (for tree view) at the start).  
             return ret;
         }
-        private static IList<DataGridCellInfo> SelectedCells()
+        private IList<DataGridCellInfo> SelectedCells()
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
                 return null;
             return dataGrid.SelectedCells;
         }
-        internal static DataGrid GetDataGrid()
+        internal DataGrid GetDataGrid()
         {
-            var focus = Keyboard.FocusedElement;
-            var asDO = focus as DependencyObject;
-            if (asDO != null)
-            {
-                var dataGrid = Helpers.AncestorOfType<DataGrid>(asDO);
-                if (dataGrid != null)
-                    return dataGrid;
-
-                // TODO FIX NOW this is a hack,
-                // Symptom is that the find box is selected after a Find, not the grid element.  
-                // Debug.Assert(false, "(Ignorable) Did not find gridView as expected");
-                var stackWindow = Helpers.AncestorOfType<StackWindow>(asDO);
-                if (stackWindow != null)
-                {
-                    if (stackWindow.ByNameTab.IsSelected)
-                        return stackWindow.ByNameDataGrid.Grid;
-                    else if (stackWindow.CallerCalleeTab.IsSelected)
-                        return stackWindow.CallTreeDataGrid.Grid;
-                    else if (stackWindow.CalleesTab.IsSelected)
-                        return stackWindow.CallerCalleeView.CalleesGrid.Grid;
-                    else if (stackWindow.CallersTab.IsSelected)
-                        return stackWindow.CallerCalleeView.CallersGrid.Grid;
-                }
-            }
-            return null;
+            if (ByNameTab.IsSelected)
+                return ByNameDataGrid.Grid;
+            else if (CallerCalleeTab.IsSelected)
+                return CallTreeDataGrid.Grid;
+            else if (CalleesTab.IsSelected)
+                return CallerCalleeView.CalleesGrid.Grid;
+            else if (CallersTab.IsSelected)
+                return CallerCalleeView.CallersGrid.Grid;
+            else
+                return null;
         }
-        private static IEnumerable<string> SelectedCellsStringValue()
+        private IEnumerable<string> SelectedCellsStringValue()
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
@@ -3076,7 +3061,7 @@ namespace PerfView
         /// <summary>
         /// Returns the string value for a single selected cell.  Will return null on error 
         /// </summary>
-        private static string SelectedCellStringValue()
+        private string SelectedCellStringValue()
         {
             var dataGrid = GetDataGrid();
             if (dataGrid == null)
