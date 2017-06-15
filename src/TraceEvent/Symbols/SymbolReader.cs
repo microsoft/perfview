@@ -1640,7 +1640,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (lineNum == 0xFEEFEE)
                 lineNum = 0;
             var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {0} file {1} ", lineNum, sourceFile.BuildTimeFilePath);
+            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
             return sourceLocation;
         }
 
@@ -2162,7 +2162,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// true if the PDB has a checksum for the data in the source file. 
         /// </summary>
-        public bool HasChecksum { get { return m_hash != null; } }
+        public bool HasChecksum { get { return m_hashAlgorithm != null; } }
 
         /// <summary>
         /// This may fetch things from the source server, and thus can be very slow, which is why it is not a property. 
@@ -2680,17 +2680,20 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             // 0 No checksum present.
             // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
             // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
+            // 3 checksum generated with the SHA256 hashing algorithm.
             m_hashType = sourceFile.checksumType;
-            if (m_hashType != 2 && m_hashType != 1 && m_hashType != 0)
+            SetCryptoProvider();
+
+            if (HasChecksum)
             {
-                Debug.Assert(false, "Unknown hash type");
-                m_hashType = 0;
-            }
-            if (m_hashType != 0)
-            {
+                uint hashSizeInBytes;
+                fixed (byte* bufferPtr = m_hash)
+                    sourceFile.get_checksum(0, out hashSizeInBytes, out *bufferPtr);
+
                 // MD5 is 16 bytes
                 // SHA1 is 20 bytes  
-                m_hash = m_hashType == 1 ? new byte[16] : new byte[20];
+                // SHA-256 is 32 bytes
+                m_hash = new byte[hashSizeInBytes];
 
                 uint bytesFetched;
                 fixed (byte* bufferPtr = m_hash)
@@ -2699,16 +2702,45 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             }
         }
 
-        private static byte[] ComputeHash(string filePath)
+        private void SetCryptoProvider()
         {
-            System.Security.Cryptography.MD5CryptoServiceProvider crypto = new System.Security.Cryptography.MD5CryptoServiceProvider();
+            switch (m_hashType)
+            {
+                case 1:
+                    m_hashAlgorithm = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                    break;
+
+                case 2:
+                    m_hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    break;
+
+                case 3: 
+                    m_hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    break;
+
+                default:
+                    m_hashAlgorithm = null; // unknown hash type
+                    break;
+            }
+        }
+
+        private System.Security.Cryptography.HashAlgorithm GetCryptoProvider()
+        {
+            return m_hashAlgorithm;
+        }
+
+        private byte[] ComputeHash(string filePath)
+        {
+            Debug.Assert(m_hashAlgorithm != null);
+
             using (var fileStream = File.OpenRead(filePath))
-                return crypto.ComputeHash(fileStream);
+                return m_hashAlgorithm.ComputeHash(fileStream);
         }
 
         SymbolModule m_symbolModule;
         uint m_hashType;
         byte[] m_hash;
+        System.Security.Cryptography.HashAlgorithm m_hashAlgorithm;
         bool m_getSourceCalled;
         bool m_checksumMatches;
 #endregion
