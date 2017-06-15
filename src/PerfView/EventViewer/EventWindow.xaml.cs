@@ -17,6 +17,7 @@ using Microsoft.Diagnostics.Utilities;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
 using System.Windows.Data;
+using Microsoft.Diagnostics.Tracing.Etlx;
 
 namespace PerfView
 {
@@ -659,11 +660,7 @@ namespace PerfView
             if (DataSource == null)
                 return;
 
-            var etlFile = DataSource.DataFile as ETLPerfViewData;
-            if (etlFile == null)
-                return;
-
-            var traceLog = etlFile.TryGetTraceLog();
+            var traceLog = TryGetTraceLog(DataSource.DataFile);
             if (traceLog == null)
                 return;
 
@@ -680,6 +677,23 @@ namespace PerfView
                 StatusBar.Status = "Event Dumped to log.";
             }
         }
+
+        private TraceLog TryGetTraceLog(PerfViewFile dataFile)
+        {
+            if (dataFile is ETLPerfViewData)
+            {
+                return ((ETLPerfViewData)dataFile).TryGetTraceLog();
+            }
+            else if (dataFile is EventPipePerfViewData)
+            {
+                return ((EventPipePerfViewData)dataFile).TryGetTraceLog();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         private void DoHighlightInHistogram(object sender, ExecutedRoutedEventArgs e)
         {
             var cells = Grid.SelectedCells;

@@ -74,8 +74,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             Dictionary<long, int> mapConnectionToTargetProcess = new Dictionary<long, int>();
 #endif 
-            var dynamicParser = source.Dynamic;
-            dynamicParser.All += delegate (TraceEvent data)
+            //var dynamicParser = source.Dynamic;
+            source.AllEvents += delegate (TraceEvent data)
             {
                 // Special case IIS.  It does not use start and stop opcodes (Ugg), but otherwise 
                 // follows normal start-stop activity ID conventions.   We also want it to work even
@@ -733,7 +733,6 @@ namespace Microsoft.Diagnostics.Tracing
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
         private static readonly Guid MicrosoftWindowsHttpService = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
         private static readonly Guid MicrosoftDiagnosticsDiagnosticSourceProvider = new Guid("ADB401E1-5296-51F8-C125-5FDA75826144");
-
 
         // The main start and stop logic.  
         unsafe private StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null, bool useCurrentActivityForCreatorAsFallback = true)
