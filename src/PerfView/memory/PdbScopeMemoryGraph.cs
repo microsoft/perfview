@@ -226,7 +226,9 @@ public class PdbScopeMemoryGraph : MemoryGraph
                 }
                 DebugWriteLine("Found pdb file " + pdbFilePath);
                 var module = symReader.OpenSymbolFile(pdbFilePath);
+#pragma warning disable CS0618 // Type or member is obsolete
                 m_moduleMap = module.GetMergedAssembliesMap();
+#pragma warning restore CS0618 // Type or member is obsolete
             }
         }
         catch (Exception e)

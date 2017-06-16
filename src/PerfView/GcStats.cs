@@ -28,7 +28,9 @@ namespace Stats
         {
             writer.WriteLine("<H3><A Name=\"Stats_{0}\"><font color=\"blue\">GC Stats for Process {1,5}: {2}</font><A></H3>", stats.ProcessID, stats.ProcessID, stats.Name);
             writer.WriteLine("<UL>");
+#pragma warning disable CS0618 // Type or member is obsolete
             if (runtime.GC.Stats().GCVersionInfoMismatch)
+#pragma warning restore CS0618 // Type or member is obsolete
                 writer.WriteLine("<LI><Font size=3 color=\"red\">Warning: Did not recognize the V4.0 GC Information events.  Falling back to V2.0 behavior.</font></LI>");
             if (!string.IsNullOrEmpty(stats.CommandLine))
                 writer.WriteLine("<LI>CommandLine: {0}</LI>", stats.CommandLine);
@@ -183,7 +185,9 @@ namespace Stats
 
             if (PerfView.AppLog.InternalUser)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 RenderServerGcConcurrencyGraphs(writer, stats, runtime, doServerGCReport);
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             if (runtime.GC.Stats().FinalizedObjects.Count > 0)
@@ -265,7 +269,9 @@ namespace Stats
                     if (!(_event.IsComplete))
                         continue;
 
+#pragma warning disable CS0618 // Type or member is obsolete
                     var allocGen0MB = _event.GenSizeBeforeMB[(int)Gens.Gen0];
+#pragma warning restore CS0618 // Type or member is obsolete
                     writer.WriteLine("{0}{26}{1:f3}{26}{2}{26}{3}{26}{4:f3}{26}{5:f1}{26}{6:f3}{26}{7:f2}{26}{8:f3}{26}{9:f3}{26}{10:2}{26}{11:f3}{26}{12:f3}{26}{13:f0}{26}{14:f2}{26}{15:f3}{26}{16:f0}{26}{17:f2}{26}{18:f3}{26}{19:f0}{26}{20:f2}{26}{21:f3}{26}{22:f0}{26}{23:f2}{26}{24:f2}{26}{25:f0}{26}{27:f1}{26}{28:f3}",
                                    _event.Number,
                                    _event.PauseStartRelativeMSec,
@@ -275,6 +281,7 @@ namespace Stats
                                    _event.PercentTimeInGC,
                                    allocGen0MB,
                                    (allocGen0MB * 1000.0) / _event.DurationSinceLastRestartMSec,
+#pragma warning disable CS0618 // Type or member is obsolete
                                    _event.HeapSizePeakMB,
                                    _event.HeapSizeAfterMB,
                                    _event.HeapSizePeakMB / _event.HeapSizeAfterMB,
@@ -291,10 +298,13 @@ namespace Stats
                                    _event.GenSizeAfterMB(Gens.GenLargeObj),
                                    _event.SurvivalPercent(Gens.GenLargeObj),
                                    _event.GenFragmentationPercent(Gens.GenLargeObj),
+#pragma warning restore CS0618 // Type or member is obsolete
                                    _event.HeapStats.FinalizationPromotedSize / 1000000.0,
                                    _event.HeapStats.PinnedObjectCount,
                                    listSeparator,
+#pragma warning disable CS0618 // Type or member is obsolete
                                    _event.PauseTimePercentageSinceLastGC,
+#pragma warning restore CS0618 // Type or member is obsolete
                                    _event.SuspendDurationMSec);
                 }
             }
@@ -350,6 +360,7 @@ namespace Stats
                         _event.DurationMSec + _event.StartRelativeMSec,
                         (_event.AllocedSinceLastGCBasedOnAllocTickMB[0] + _event.AllocedSinceLastGCBasedOnAllocTickMB[1]),
 
+#pragma warning disable CS0618 // Type or member is obsolete
                         _event.GenSizeBeforeMB[(int)Gens.Gen0], _event.GenSizeBeforeMB[(int)Gens.Gen1],
                         _event.GenSizeBeforeMB[(int)Gens.Gen2], _event.GenSizeBeforeMB[(int)Gens.GenLargeObj],
 
@@ -370,6 +381,7 @@ namespace Stats
 
                         _event.GenBudgetMB(Gens.Gen0), _event.GenBudgetMB(Gens.Gen1),
                         _event.GenBudgetMB(Gens.Gen2), _event.GenBudgetMB(Gens.GenLargeObj),
+#pragma warning restore CS0618 // Type or member is obsolete
                         listSeparator
                         );
                 }
@@ -404,16 +416,20 @@ namespace Stats
             writer.Write(" PercentTimeInGC={0}", StringUtilities.QuotePadLeft(gc.PercentTimeInGC.ToString("n2").ToString(), 10));
             writer.Write(" PauseStartRelativeMSec={0}", StringUtilities.QuotePadLeft(gc.PauseStartRelativeMSec.ToString("n3").ToString(), 10));
             writer.Write(" PauseDurationMSec={0}", StringUtilities.QuotePadLeft(gc.PauseDurationMSec.ToString("n3").ToString(), 10));
+#pragma warning disable CS0618 // Type or member is obsolete
             writer.Write(" PercentPauseTime={0}", StringUtilities.QuotePadLeft(gc.PauseTimePercentageSinceLastGC.ToString("n2").ToString(), 10));
             writer.Write(" SizePeakMB={0}", StringUtilities.QuotePadLeft(gc.HeapSizePeakMB.ToString("n3"), 10));
             writer.Write(" SizeAfterMB={0}", StringUtilities.QuotePadLeft(gc.HeapSizeAfterMB.ToString("n3"), 10));
             writer.Write(" RatioPeakAfter={0}", StringUtilities.QuotePadLeft(gc.RatioPeakAfter.ToString("n3"), 5));
             writer.Write(" AllocRateMBSec={0}", StringUtilities.QuotePadLeft(gc.AllocRateMBSec.ToString("n3"), 5));
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.Write(" GCDurationMSec={0}", StringUtilities.QuotePadLeft(gc.DurationMSec.ToString("n3").ToString(), 10));
             writer.Write(" SuspendDurationMSec={0}", StringUtilities.QuotePadLeft(gc.SuspendDurationMSec.ToString("n3").ToString(), 10));
             writer.Write(" GCStartRelativeMSec={0}", StringUtilities.QuotePadLeft(gc.StartRelativeMSec.ToString("n3"), 10));
             writer.Write(" DurationSinceLastRestartMSec={0}", StringUtilities.QuotePadLeft(gc.DurationSinceLastRestartMSec.ToString("n3"), 5));
+#pragma warning disable CS0618 // Type or member is obsolete
             writer.Write(" AllocedSinceLastGC={0}", StringUtilities.QuotePadLeft(gc.AllocedSinceLastGCMB.ToString("n3"), 5));
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.Write(" Type={0}", StringUtilities.QuotePadLeft(gc.Type.ToString(), 18));
             writer.Write(" Reason={0}", StringUtilities.QuotePadLeft(gc.Reason.ToString(), 27));
             writer.WriteLine(">");
@@ -528,6 +544,7 @@ namespace Stats
             return false;
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private static bool HasServerGcThreadingInfo(TraceGC gc)
         {
             foreach (var heap in gc.ServerGcHeapHistories)
@@ -538,6 +555,7 @@ namespace Stats
             return false;
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private static bool RenderServerGcConcurrencyGraphs(TextWriter writer, TraceProcess stats, TraceLoadedDotNetRuntime runtime, bool doServerGCReport)
         {
             if (runtime.GC.Stats().HeapCount <= 1 || runtime.GC.Stats().IsServerGCUsed != 1)
@@ -664,7 +682,9 @@ namespace Stats
                         continue;
                     }
 
+#pragma warning disable CS0618 // Type or member is obsolete
                     var allocGen0MB = _event.UserAllocated[(int)Gens.Gen0];
+#pragma warning restore CS0618 // Type or member is obsolete
 
                     writer.WriteLine("<TR>" +
                                     "<TD Align=\"right\">{0}</TD>" +      // GC index
@@ -710,10 +730,13 @@ namespace Stats
                        _event.GCGenerationName,
                        _event.SuspendDurationMSec,
                        _event.PauseDurationMSec,
+#pragma warning disable CS0618 // Type or member is obsolete
                        _event.PauseTimePercentageSinceLastGC,
+#pragma warning restore CS0618 // Type or member is obsolete
                        _event.PercentTimeInGC,
                        allocGen0MB,
                        (allocGen0MB * 1000.0) / _event.DurationSinceLastRestartMSec,
+#pragma warning disable CS0618 // Type or member is obsolete
                        _event.HeapSizePeakMB,
                        _event.HeapSizeAfterMB,
                        _event.HeapSizePeakMB / _event.HeapSizeAfterMB,
@@ -730,12 +753,15 @@ namespace Stats
                        _event.GenSizeAfterMB(Gens.GenLargeObj),
                        _event.SurvivalPercent(Gens.GenLargeObj),
                        _event.GenFragmentationPercent(Gens.GenLargeObj),
+#pragma warning restore CS0618 // Type or member is obsolete
                        _event.HeapStats.FinalizationPromotedSize / 1000000.0,
                        _event.HeapStats.PinnedObjectCount,
+#pragma warning disable CS0618 // Type or member is obsolete
                        ((_event.GetPinnedObjectSizes() != 0) ? _event.GetPinnedObjectSizes() : double.NaN),
                        ((_event.GetPinnedObjectPercentage() != -1) ? _event.GetPinnedObjectPercentage() : double.NaN),
                        ((_event.GetPinnedObjectPercentage() != -1) ? _event.TotalPinnedPlugSize : double.NaN),
                        ((_event.GetPinnedObjectPercentage() != -1) ? (_event.TotalPinnedPlugSize - _event.TotalUserPinnedPlugSize) : double.NaN)
+#pragma warning restore CS0618 // Type or member is obsolete
                        );
                 }
             }
@@ -793,12 +819,14 @@ namespace Stats
                 writer.WriteLine("<TH>Heap<BR/>Index</TH>");
             }
 
+#pragma warning disable CS0618 // Type or member is obsolete
             for (int i = 0; i < CondemnedReasonsHtmlHeader.Length; i++)
             {
                 writer.WriteLine("<TH Title=\"{0}\">{1}</TH>",
                                  CondemnedReasonsHtmlHeader[i][1],
                                  CondemnedReasonsHtmlHeader[i][0]);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.WriteLine("</TR>");
 
             for (int i = start; i < runtime.GC.GCs.Count; i++)
@@ -811,9 +839,11 @@ namespace Stats
                         continue;
                     }
 
+#pragma warning disable CS0618 // Type or member is obsolete
                     writer.WriteLine("<TR><TD Align=\"center\">{0}</TD>{1}",
                                      _event.Number,
                                      PrintCondemnedReasonsToHtml(_event));
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
 
@@ -827,7 +857,9 @@ namespace Stats
             int index;
             for (index = 0; index < runtime.GC.GCs.Count; index++)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 if ((runtime.GC.GCs[index].LOHWaitThreads != null) && (runtime.GC.GCs[index].LOHWaitThreads.Count != 0))
+#pragma warning restore CS0618 // Type or member is obsolete
                 {
                     break;
                 }
@@ -851,6 +883,7 @@ namespace Stats
             while (index < runtime.GC.GCs.Count)
             {
                 TraceGC _event = runtime.GC.GCs[index];
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (_event.LOHWaitThreads != null)
                 {
                     int longPauseCount = 0;
@@ -896,6 +929,7 @@ namespace Stats
                         }
                     }
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 index++;
             }
@@ -904,6 +938,7 @@ namespace Stats
             writer.WriteLine("</Center>");
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private static string PrintCondemnedReasonsToHtml(TraceGC gc)
         {
             if (gc.PerHeapCondemnedReasons == null)
@@ -970,6 +1005,7 @@ namespace Stats
         }
 
         // This is what we use for the html header and the help text.
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private static string[][] CondemnedReasonsHtmlHeader = new string[(int)CondemnedReasonGroup.Max][]
         {
             new string[] {"Initial<BR/>Requested<BR/>Generation", "This is the generation when this GC was triggered"},
@@ -1017,6 +1053,7 @@ namespace Stats
 
             writer.WriteLine("Gen" + gc.Generation + " Pause:" + (int)gc.PauseDurationMSec + "ms");
             writer.WriteLine("1ms = " + scale + "px");
+#pragma warning disable CS0618 // Type or member is obsolete
             foreach (var heap in gc.ServerGcHeapHistories)
             {
                 if (heap.SwitchSpans.Count > 0 || heap.SampleSpans.Count > 0)
@@ -1031,6 +1068,7 @@ namespace Stats
                     hasData = true;
                 }
             }
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.WriteLine("</div>");
             return hasData;
         }
@@ -1074,6 +1112,7 @@ namespace Stats
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private Dictionary<WorkSpanType, string> Type2Color = new Dictionary<WorkSpanType, string>()
                 {
                     {WorkSpanType.GcThread, "rgb(0,200,0)"},
@@ -1090,6 +1129,7 @@ namespace Stats
                 "GC thread is waiting to restart - non GC threads running on this CPU means GC runs slower",
         };
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         internal void RenderGraph(TextWriter writer, TextWriter serverGCActivityStatsFile, TraceGC parent, ServerGcHistory heap, int scale)
         {
             double puaseTime = parent.PauseDurationMSec;
@@ -1162,6 +1202,7 @@ namespace Stats
             writer.WriteLine("</svg>");
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private void UpdateActivityThreadTime(TextWriter serverGCActivityStatsFile, ServerGcHistory heap, GcWorkSpan span, ServerGCThreadStateInfo info, double threadTime, ServerGCThreadState currentThreadState)
         {
             LogServerGCAnalysis(serverGCActivityStatsFile, "TIME: {0, 20} - {1}: {2:n3}ms (span: {3:n3} ms -> {4:n3} ms({5:n3}))",
@@ -1208,6 +1249,7 @@ namespace Stats
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private ServerGCThreadState UpdateCurrentThreadState(TextWriter serverGCActivityStatsFile, ServerGcHistory heap, GcJoin join, ServerGCThreadState oldState)
         {
             ServerGCThreadState newThreadState = oldState;
@@ -1238,6 +1280,7 @@ namespace Stats
         }
 
         // This is for verbose logging within a span (CSwitch or CPU sample).
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private void LogJoinInSpan(TextWriter serverGCActivityStatsFile, ServerGcHistory heap, int currentJoinEventIndex, ServerGCThreadState state)
         {
             if ((heap.GcJoins.Count > 0) && (currentJoinEventIndex < heap.GcJoins.Count))
@@ -1252,6 +1295,7 @@ namespace Stats
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private void RenderSwitches(TextWriter writer, TraceGC parent, ServerGcHistory heap, int scale)
         {
             double lastTimestamp = 0;
@@ -1286,6 +1330,7 @@ namespace Stats
             }
         }
 
+        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         private void RenderSamples(TextWriter writer, TextWriter serverGCActivityStatsFile, TraceGC parent, ServerGcHistory heap, int scale)
         {
             if (heap.GcJoins.Count > 0)
