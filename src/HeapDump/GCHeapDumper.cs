@@ -1231,6 +1231,12 @@ public class GCHeapDumper
             int numRoots = 0;
             foreach (ClrRoot root in m_dotNetHeap.EnumerateRoots(true))
             {
+                if (root.Object == 0)
+                {
+                    // A rooted reference to null
+                    continue;
+                }
+
                 // If there is a named root already then we assume that that root is the interesting one and we drop this one.  
                 if (m_gcHeapDump.MemoryGraph.IsInGraph(root.Object))
                     continue;
