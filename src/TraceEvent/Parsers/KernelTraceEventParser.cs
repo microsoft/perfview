@@ -9298,8 +9298,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class ISRTraceData : TraceEvent
     {
-        long InitialTime100ns { get { return GetInt64At(0); } }
-        public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
+        private long InitialTimeQPC { get { return GetInt64At(0); } }
+
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
         public Address Routine { get { return GetAddressAt(8); } }
         public int ReturnValue { get { return GetByteAt(HostOffset(12, 1)); } }
         public int Vector { get { return GetByteAt(HostOffset(13, 1)); } }
@@ -9326,7 +9327,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "InitialTime", InitialTime);
+            XmlAttrib(sb, "ElapsedTimeMSec", ElapsedTimeMSec);
             XmlAttribHex(sb, "Routine", Routine);
             XmlAttrib(sb, "ReturnValue", ReturnValue);
             XmlAttrib(sb, "Vector", Vector);
@@ -9339,7 +9340,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InitialTime", "Routine", "ReturnValue", "Vector", "ProcessorNumber" };
+                    payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ReturnValue", "Vector", "ProcessorNumber" };
                 return payloadNames;
             }
         }
@@ -9349,7 +9350,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             switch (index)
             {
                 case 0:
-                    return InitialTime;
+                    return ElapsedTimeMSec;
                 case 1:
                     return Routine;
                 case 2:
@@ -9371,8 +9372,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
     }
     public sealed class DPCTraceData : TraceEvent
     {
-        long InitialTime100ns { get { return GetInt64At(0); } }
-        public DateTime InitialTime { get { return DateTime.FromFileTime(InitialTime100ns); } }
+        private long InitialTimeQPC { get { return GetInt64At(0); } }
+
+        public double ElapsedTimeMSec { get { return TimeStampRelativeMSec - source.QPCTimeToRelMSec(InitialTimeQPC); } }
+
         public Address Routine { get { return GetAddressAt(8); } }
 
         #region Private
@@ -9396,7 +9399,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
-            XmlAttrib(sb, "InitialTime", InitialTime);
+            XmlAttrib(sb, "ElapsedTimeMSec", ElapsedTimeMSec);
             XmlAttribHex(sb, "Routine", Routine);
             sb.Append("/>");
             return sb;
@@ -9407,7 +9410,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "InitialTime", "Routine", "ProcessorNumber" };
+                    payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ProcessorNumber" };
                 return payloadNames;
             }
         }
@@ -9417,7 +9420,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             switch (index)
             {
                 case 0:
-                    return InitialTime;
+                    return ElapsedTimeMSec;
                 case 1:
                     return Routine;
                 case 2:
