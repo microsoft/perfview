@@ -102,7 +102,7 @@ namespace Microsoft.Diagnostics.Symbols
                                     ret = GenerateNGenSymbolsForModule(Path.GetFullPath(dllFilePath));
                                 }
                             }
-                            m_log.WriteLine("FindSymbolFilePathForModule returns {0}", ret ?? "NULL");
+                            m_log.WriteLine("FindSymbolFilePathForModule returns {0} for {1} {2} {3} {4}", ret ?? "NULL", pdbName, pdbGuid, pdbAge, fileVersionString ?? "NULL");
                             return ret;
                         }
                         else
@@ -155,7 +155,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (pdbPath == null && dllFilePath != null)        // Check next to the file. 
             {
                 m_log.WriteLine("FindSymbolFilePath: Checking relative to DLL path {0}", dllFilePath);
-                string pdbPathCandidate = Path.ChangeExtension(dllFilePath, ".pdb");
+                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName)); 
                 if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                     pdbPath = pdbPathCandidate;
 
@@ -164,7 +164,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     pdbPathCandidate = Path.Combine(
                         Path.GetDirectoryName(dllFilePath), @"symbols.pri\retail\dll\" +
-                        Path.GetFileNameWithoutExtension(dllFilePath) + ".pdb");
+                        Path.GetFileName(pdbFileName));
                     if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                         pdbPath = pdbPathCandidate;
                 }
@@ -173,7 +173,7 @@ namespace Microsoft.Diagnostics.Symbols
                 {
                     pdbPathCandidate = Path.Combine(
                         Path.GetDirectoryName(dllFilePath), @"symbols\retail\dll\" +
-                        Path.GetFileNameWithoutExtension(dllFilePath) + ".pdb");
+                        Path.GetFileName(pdbFileName));
                     if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                         pdbPath = pdbPathCandidate;
                 }
