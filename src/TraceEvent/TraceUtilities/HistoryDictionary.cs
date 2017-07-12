@@ -40,11 +40,20 @@ namespace Microsoft.Diagnostics.Tracing.Utilities
 
                 // See if we can jump ahead.  Currently we only do this of the first entry, 
                 // But you could imagine using some of the other nodes's skipAhead entries.   
-                if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime < startTime)
+                if (firstEntry.skipAhead != null && firstEntry.skipAhead.startTime <= startTime)
                     entry = firstEntry.skipAhead;
 
                 for (; ; )
                 {
+                    // We found exact match
+                    if (startTime == entry.StartTime)
+                    {
+                        // Just update the value and exit immediately as there is no need to
+                        // update skipAhead or increment count
+                        entry.value = value;
+                        return;
+                    }
+
                     if (entry.next == null)
                     {
                         entry.next = new HistoryValue(startTime, id, value);
