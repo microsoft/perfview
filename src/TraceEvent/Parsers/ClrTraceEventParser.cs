@@ -7933,6 +7933,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string MethodName { get { return GetUnicodeStringAt(SkipUnicodeString(36)); } }
         public string MethodSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(36))); } }
         public int ClrInstanceID { get { if (Version >= 1) return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36)))); return 0; } }
+        public long ReJITID { get { if (Version >= 2) return GetInt64At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36))) + 2); return 0; } }
 
         #region Private
         internal MethodLoadUnloadVerboseTraceData(Action<MethodLoadUnloadVerboseTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -7953,7 +7954,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         {
             Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36)))));
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36))) + 2));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36))) + 2));
+            Debug.Assert(!(Version == 2 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36))) + 10));
+            Debug.Assert(!(Version > 2 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(36))) + 10));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7968,6 +7970,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             XmlAttrib(sb, "MethodName", MethodName);
             XmlAttrib(sb, "MethodSignature", MethodSignature);
             XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            XmlAttribHex(sb, "ReJITID", ReJITID);
             sb.Append("/>");
             return sb;
         }
@@ -7977,7 +7980,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "MethodID", "ModuleID", "MethodStartAddress", "MethodSize", "MethodToken", "MethodFlags", "MethodNamespace", "MethodName", "MethodSignature", "ClrInstanceID" };
+                    payloadNames = new string[] { "MethodID", "ModuleID", "MethodStartAddress", "MethodSize", "MethodToken", "MethodFlags", "MethodNamespace", "MethodName", "MethodSignature", "ClrInstanceID", "ReJITID" };
                 return payloadNames;
             }
         }
@@ -8006,6 +8009,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
                     return MethodSignature;
                 case 9:
                     return ClrInstanceID;
+                case 10:
+                    return ReJITID;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
