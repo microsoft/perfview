@@ -73,8 +73,9 @@ will lead you through the basics of doing this.   All it assumes is that you hav
 PerfView is developed in Visual Studio 2017 using features through C# 6.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
-  the Windows Explorer) and selecting Build -> Build Solution,
-  will build it.   It follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
+  the Windows Explorer) and selecting Build -> Build Solution, will build it.    You can also build the 
+  non-debug version from the command line using msbuild or the build.cmd file at the base of the repository.  
+  The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
   src/PerfView/bin/*BuildType*/PerfView.exe.   You need only deploy this one EXE to use it.  
 
   * The solution consists of 11 projects, representing support DLLs and the main EXE.   To run PerfView in the 
