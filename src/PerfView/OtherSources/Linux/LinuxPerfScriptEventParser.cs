@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -328,7 +329,7 @@ namespace Diagnostics.Tracing.StackSources
                 source.SkipWhiteSpace();
                 source.ReadAsciiStringUpTo(':', sb);
 
-                double time = double.Parse(sb.ToString()) * 1000; // To convert to MSec
+                double time = double.Parse(sb.ToString(), CultureInfo.InvariantCulture) * 1000; // To convert to MSec
                 sb.Clear();
                 source.MoveNext(); // Move past ":"
 
