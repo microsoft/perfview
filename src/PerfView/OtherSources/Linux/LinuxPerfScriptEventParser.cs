@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
 
 namespace Diagnostics.Tracing.StackSources
@@ -328,7 +327,7 @@ namespace Diagnostics.Tracing.StackSources
                 source.SkipWhiteSpace();
                 source.ReadAsciiStringUpTo(':', sb);
 
-                double time = double.Parse(sb.ToString()) * 1000; // To convert to MSec
+                double time = double.Parse(sb.ToString(), CultureInfo.InvariantCulture) * 1000; // To convert to MSec
                 sb.Clear();
                 source.MoveNext(); // Move past ":"
 
