@@ -5,8 +5,7 @@ using System.Diagnostics.Contracts;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using PerfView.Utilities;
@@ -48,29 +47,45 @@ namespace Diagnostics.Tracing.StackSources
                     threadBlockedTimeAnalyzers[i] = new List<BlockedTimeAnalyzer>();
                 }
 
+                var currentCulture = Thread.CurrentThread.CurrentCulture;
+                var currentUICulture = Thread.CurrentThread.CurrentUICulture;
                 tasks[i] = new Task((object givenArrayIndex) =>
                 {
-                    FastStream bufferPart;
-                    while ((bufferPart = this.GetNextSubStream(masterSource)) != null)
+
+                    var oldCultures = Tuple.Create(Thread.CurrentThread.CurrentCulture, Thread.CurrentThread.CurrentUICulture);
+
+                    try
                     {
-                        BlockedTimeAnalyzer blockedTimeAnalyzer = null;
-                        if (threadBlockedTimeAnalyzers != null)
+                        Thread.CurrentThread.CurrentCulture = currentCulture;
+                        Thread.CurrentThread.CurrentUICulture = currentUICulture;
+
+                        FastStream bufferPart;
+                        while ((bufferPart = this.GetNextSubStream(masterSource)) != null)
                         {
-                            blockedTimeAnalyzer = new BlockedTimeAnalyzer();
-                            threadBlockedTimeAnalyzers[(int)givenArrayIndex].Add(blockedTimeAnalyzer);
+                            BlockedTimeAnalyzer blockedTimeAnalyzer = null;
+                            if (threadBlockedTimeAnalyzers != null)
+                            {
+                                blockedTimeAnalyzer = new BlockedTimeAnalyzer();
+                                threadBlockedTimeAnalyzers[(int) givenArrayIndex].Add(blockedTimeAnalyzer);
+                            }
+
+                            foreach (LinuxEvent linuxEvent in this.parser.Parse(bufferPart))
+                            {
+                                // If doThreadTime is true this is running on a single thread.
+                                blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
+
+                                StackSourceSample sample = this.CreateSampleFor(linuxEvent, blockedTimeAnalyzer);
+                                threadSamples[(int) givenArrayIndex].Add(sample);
+
+                                blockedTimeAnalyzer?.LinuxEventSampleAssociation(linuxEvent, sample);
+                            }
+                            bufferPart.Dispose();
                         }
-
-                        foreach (LinuxEvent linuxEvent in this.parser.Parse(bufferPart))
-                        {
-                            // If doThreadTime is true this is running on a single thread.
-                            blockedTimeAnalyzer?.UpdateThreadState(linuxEvent);
-
-                            StackSourceSample sample = this.CreateSampleFor(linuxEvent, blockedTimeAnalyzer);
-                            threadSamples[(int)givenArrayIndex].Add(sample);
-
-                            blockedTimeAnalyzer?.LinuxEventSampleAssociation(linuxEvent, sample);
-                        }
-                        bufferPart.Dispose();
+                    }
+                    finally
+                    {
+                        Thread.CurrentThread.CurrentCulture = oldCultures.Item1;
+                        Thread.CurrentThread.CurrentUICulture = oldCultures.Item2;
                     }
                 }, i);
 
