@@ -1248,6 +1248,12 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public object EventTypeUserData;
 
+        /// <summary>
+        /// Returns the raw IntPtr pointer to the data blob associated with the event.  This is the way the
+        /// subclasses of TraceEvent get at the data to display it in a efficient (but unsafe) manner.  
+        /// </summary>
+        public IntPtr DataStart { get { return userData; } }
+
         #region Protected
         /// <summary>
         /// Create a template with the given event meta-data.  Used by TraceParserGen.  
@@ -1270,12 +1276,6 @@ namespace Microsoft.Diagnostics.Tracing
                 lookupAsClassic = true;
 
         }
-
-        /// <summary>
-        /// Returns the raw IntPtr pointer to the data blob associated with the event.  This is the way the
-        /// subclasses of TraceEvent get at the data to display it in a efficient (but unsafe) manner.  
-        /// </summary>
-        protected IntPtr DataStart { get { return userData; } }
 
         /// <summary>
         /// Skip UTF8 string starting at 'offset' bytes into the payload blob.
