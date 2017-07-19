@@ -8,6 +8,7 @@
     <PackageId>Microsoft.Diagnostics.Tracing.TraceEvent</PackageId>
     <WarningLevel>3</WarningLevel>
     <NoWarn>0649,0618</NoWarn>
+    <TraceEventSupportFilesBase>..\..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\</TraceEventSupportFilesBase>
   </PropertyGroup>
 
   <ItemGroup>
@@ -55,9 +56,35 @@
       <HintPath>..\..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
     </Reference>
 
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
+      <Link>amd64\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
+      <Link>amd64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
+      <Link>x86\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.Win61.dll">
+      <Link>x86\KernelTraceControl.Win61.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(TraceEventSupportFilesBase)native\x86\msdia140.dll">
+      <Link>x86\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
 
 
-<!--
+<!--TODO Temp stuff to use or delete
+
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.2" />
 
     <Compile Include="../ETWReloggerTraceEventSource.cs" />
