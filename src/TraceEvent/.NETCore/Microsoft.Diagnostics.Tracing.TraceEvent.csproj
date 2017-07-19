@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);DOTNET_CORE;DOTNET_CORE_HACK</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>Microsoft.Diagnostics.Tracing.TraceEvent</AssemblyName>
+    <PackageId>Microsoft.Diagnostics.Tracing.TraceEvent</PackageId>
+    <WarningLevel>3</WarningLevel>
+    <NoWarn>0649,0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\FastSerialization\*.cs" />
+    <Compile Include="..\..\Utilities\*.cs" />
+    <Compile Include="..\Ctf\*.cs" />
+    <Compile Include="..\TraceUtilities\HistoryDictionary.cs" />
+    <Compile Include="..\TraceEvent.cs" />
+    <Compile Include="..\TraceLoggingEventId.cs" />
+    <Compile Include="..\ETWTraceEventSource.cs" />
+    <Compile Include="..\TraceEventNativeMethods.cs" />
+    <Compile Include="..\ManifestEnvelope.cs" />
+    <Compile Include="..\Parsers\KernelTraceEventParser.cs" />
+    <Compile Include="..\Parsers\ClrPrivateTraceEventParser.cs" />
+    <Compile Include="..\Parsers\ClrTraceEventParser.cs" />
+    <Compile Include="..\Parsers\TplTraceEventParser.cs" />
+    <Compile Include="..\Parsers\AspNetTraceEventParser.cs" />
+    <Compile Include="..\Parsers\JScriptTraceEventParser.cs" />
+    <Compile Include="..\Parsers\FrameworkTraceEventParser.cs" />
+    <Compile Include="..\Parsers\SymbolTraceEventParser.cs" />
+    <Compile Include="..\TraceUtilities\PEFile.cs"/>
+    <Compile Include="..\Utilities\command.cs" />
+
+<!-- Windows Specific -->
+    <Compile Include="..\WppTraceEventParser.cs" />
+    <Compile Include="..\Parsers\JSDumpHeapTraceEventParser.cs" />
+    <Compile Include="..\Parsers\Microsoft-Windows-Kernel-File.cs" />
+    <Compile Include="..\ZippedETL.cs" />
+    <Compile Include="../TraceLog.cs" />
+    <Compile Include="../TraceEventSession.cs" />
+    <Compile Include="../Symbols/SymbolPath.cs" />
+    <Compile Include="../Symbols/SymbolReader.cs" />
+    <Compile Include="../DynamicTraceEventParser.cs" />
+    <Compile Include="../RegisteredTraceEventParser.cs" />
+    <Compile Include="..\Utilities\Cache.cs" />
+    <Compile Include="..\Utilities\StringBuilderCache.cs" />
+    <Compile Include="..\NativeDlls.cs" />
+
+    <Reference Include="Interop.Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="OSExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
+    </Reference>
+
+
+
+<!--
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.2" />
+
+    <Compile Include="../ETWReloggerTraceEventSource.cs" />
+  -->
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Threading.Thread" Version="4.0.0" />
+    <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.0.1" />
+    <PackageReference Include="System.Diagnostics.Process" Version="4.1.0" />
+    <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="4.0.1" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.0.0" />
+  </ItemGroup>
+
+</Project>
