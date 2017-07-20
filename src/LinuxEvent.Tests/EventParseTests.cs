@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using PerfView.TestUtilities;
 using Xunit;
 
 namespace LinuxTracing.Tests
@@ -94,6 +92,16 @@ namespace LinuxTracing.Tests
 				new List<string>{ "module!symbol", "Thread (0)", "comm", null }
 			});
 		}
+
+        [Fact]
+        [UseCulture("fr-FR")]
+        public void OneStackButWithAnotherCulture()
+        {
+            string path = Constants.GetTestingPerfDumpPath("onegeneric");
+            this.DoStackTraceTest(path, doBlockedTime: false, callerStacks: new List<List<string>> {
+                new List<string>{ "module!symbol", "Thread (0)", "comm", null }
+            });
+        }
 
         [Fact(Skip = "FIX NOW")]
         public void ResolvingSymbols()
