@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 
@@ -7,6 +9,11 @@ namespace PerfViewTests.Utilities
 {
     public abstract class PerfViewTestBase : IDisposable
     {
+        private static readonly Action EmptyAction =
+            () =>
+            {
+            };
+
         protected PerfViewTestBase()
         {
             AppLog.s_IsUnderTest = true;
@@ -18,6 +25,11 @@ namespace PerfViewTests.Utilities
         {
             get;
             private set;
+        }
+
+        protected static async Task WaitForUIAsync(Dispatcher dispatcher, CancellationToken cancellationToken)
+        {
+            await dispatcher.InvokeAsync(EmptyAction, DispatcherPriority.ContextIdle, cancellationToken);
         }
 
         protected async Task RunUITestAsync<T>(
