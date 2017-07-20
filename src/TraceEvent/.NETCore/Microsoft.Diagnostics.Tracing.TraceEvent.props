@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\runtimes\win-x64\native\KernelTraceControl.dll')" Include="$(MSBuildThisFileDirectory)..\runtimes\win-x64\native\KernelTraceControl.dll">
+      <Link>amd64\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\runtimes\win-x64\native\msdia140.dll')" Include="$(MSBuildThisFileDirectory)..\runtimes\win-x64\native\msdia140.dll">
+      <Link>amd64\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\KernelTraceControl.dll')" Include="$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\KernelTraceControl.dll">
+      <Link>x86\KernelTraceControl.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\KernelTraceControl.Win61.dll')" Include="$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\KernelTraceControl.Win61.dll">
+      <Link>x86\KernelTraceControl.Win61.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\msdia140.dll')" Include="$(MSBuildThisFileDirectory)..\runtimes\win-x86\native\msdia140.dll">
+      <Link>x86\msdia140.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+  </ItemGroup>
+</Project>
