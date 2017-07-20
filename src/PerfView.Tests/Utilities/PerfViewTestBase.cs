@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PerfViewTests.Utilities
 {
@@ -15,11 +17,23 @@ namespace PerfViewTests.Utilities
             {
             };
 
-        protected PerfViewTestBase()
+        private readonly ITestOutputHelper _testOutputHelper;
+        private readonly EventHandler<FirstChanceExceptionEventArgs> _exceptionHandler;
+
+        protected PerfViewTestBase(ITestOutputHelper testOutputHelper)
         {
+            _testOutputHelper = testOutputHelper;
+
             AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
             App.CommandProcessor = new CommandProcessor();
+
+            _exceptionHandler =
+                (sender, e) =>
+                {
+                    _testOutputHelper.WriteLine(e.Exception.ToString());
+                };
+            AppDomain.CurrentDomain.FirstChanceException += _exceptionHandler;
         }
 
         protected JoinableTaskFactory JoinableTaskFactory
@@ -86,6 +100,8 @@ namespace PerfViewTests.Utilities
         {
             if (disposing)
             {
+                AppDomain.CurrentDomain.FirstChanceException -= _exceptionHandler;
+
                 GuiApp.MainWindow?.Close();
                 GuiApp.MainWindow = null;
 

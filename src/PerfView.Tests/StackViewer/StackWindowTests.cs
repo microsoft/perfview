@@ -18,12 +18,18 @@ using PerfView.TestUtilities;
 using PerfViewTests.Utilities;
 using Utilities;
 using Xunit;
+using Xunit.Abstractions;
 using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;
 
 namespace PerfViewTests.StackViewer
 {
     public class StackWindowTests : PerfViewTestBase
     {
+        public StackWindowTests(ITestOutputHelper testOutputHelper)
+            : base(testOutputHelper)
+        {
+        }
+
         [WpfFact]
         [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
         public Task TestIncludeItemOnByNameTabAsync()
