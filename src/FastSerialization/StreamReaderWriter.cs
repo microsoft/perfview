@@ -71,7 +71,7 @@ namespace FastSerialization
                 Fill(sizeof(short));
             int ret = bytes[position] + (bytes[position + 1] << 8);
             position += sizeof(short);
-            return (short)ret;
+            return unchecked((short)ret);
         }
         /// <summary>
         /// Implementation of IStreamReader
@@ -1133,7 +1133,7 @@ namespace FastSerialization
         /// </summary>
         public override void Goto(StreamLabel label)
         {
-            uint offset = (uint)label - positionInStream;
+            uint offset = unchecked((uint)label - positionInStream);
             if (offset > (uint)endPosition)
             {
                 positionInStream = (uint)label;

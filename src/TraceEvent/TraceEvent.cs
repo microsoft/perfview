@@ -1526,7 +1526,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal protected Address GetAddressAt(int offset)
         {
-            return (Address)GetIntPtrAt(offset);
+            return unchecked((Address)GetIntPtrAt(offset));
         }
 
         /// <summary>

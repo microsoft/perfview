@@ -1394,8 +1394,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             public void FromStream(Deserializer deserializer)
             {
-                Offset = (ushort)deserializer.ReadInt16();
-                Size = (ushort)deserializer.ReadInt16();
+                Offset = deserializer.ReadUInt16();
+                Size = deserializer.ReadUInt16();
                 var typeName = deserializer.ReadString();
                 if (typeName != null)
                     Type = Type.GetType(typeName);

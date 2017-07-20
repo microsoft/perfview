@@ -1334,6 +1334,12 @@ namespace FastSerialization
 #endif
             return ret;
         }
+
+        public ushort ReadUInt16()
+        {
+            return unchecked((ushort)ReadInt16());
+        }
+
         /// <summary>
         /// Read an int from the stream and return it
         /// </summary>

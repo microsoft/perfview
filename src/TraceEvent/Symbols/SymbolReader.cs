@@ -1361,7 +1361,7 @@ namespace Microsoft.Diagnostics.Symbols
         // Used as the key to the m_pdbPathCache.  
         struct PdbSignature : IEquatable<PdbSignature>
         {
-            public override int GetHashCode() { return Name.GetHashCode() + ID.GetHashCode(); }
+            public override int GetHashCode() { return unchecked(Name.GetHashCode() + ID.GetHashCode()); }
             public bool Equals(PdbSignature other) { return ID == other.ID && Name == other.Name && Age == other.Age; }
             public string Name;
             public Guid ID;

@@ -6195,7 +6195,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out managedModule);
             deserializer.Read(out process);
             deserializer.Read(out moduleFile);
-            deserializer.Read(out address); key = (ulong)address;
+            deserializer.Read(out address); key = unchecked((ulong)address);
             deserializer.Read(out overlaps);
         }
 
@@ -9337,7 +9337,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             long longAddress;
             deserializer.Read(out longAddress);
-            address = (Address)longAddress;
+            address = unchecked((Address)longAddress);
         }
     }
 
