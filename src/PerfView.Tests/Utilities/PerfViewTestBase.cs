@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
+using Xunit;
 
 namespace PerfViewTests.Utilities
 {
@@ -69,6 +70,7 @@ namespace PerfViewTests.Utilities
         {
             GuiApp.MainWindow?.Close();
             JoinableTaskFactory?.Context.Dispose();
+            Assert.Equal(0, StackWindow.StackWindows.Count);
 
             GuiApp.MainWindow = new MainWindow();
             JoinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
