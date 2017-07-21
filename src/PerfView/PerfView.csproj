@@ -204,19 +204,19 @@
       <LogicalName>.\PerfView.xml</LogicalName>
       <SubType>Designer</SubType>
     </EmbeddedResource>-->
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)..\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\FastSerialization\$(OutDir)..\Microsoft.Diagnostics.FastSerialization.dll">
+    <EmbeddedResource Include="..\FastSerialization\$(OutDir)Microsoft.Diagnostics.FastSerialization.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)..\Microsoft.Diagnostics.Tracing.TraceEvent.xml">
+    <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
@@ -290,7 +290,7 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\EULA.rtf</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\CsvReader\$(OutDir)..\CsvReader.dll">
+    <EmbeddedResource Include="..\CsvReader\$(OutDir)CsvReader.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\CsvReader.dll</LogicalName>

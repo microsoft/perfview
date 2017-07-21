@@ -2,9 +2,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26403.7
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent", "src\TraceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent", "src\TraceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSVReader", "src\CSVReader\CSVReader.csproj", "{F7D0F851-9B0D-4224-91AB-7FC12477F206}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSVReader", "src\CSVReader\CSVReader.csproj", "{F7D0F851-9B0D-4224-91AB-7FC12477F206}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView", "src\PerfView\PerfView.csproj", "{6BAC7496-6953-41B8-9042-AAE45405A095}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -40,7 +40,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Global", "src\PerfViewExten
 		{6BAC7496-6953-41B8-9042-AAE45405A095} = {6BAC7496-6953-41B8-9042-AAE45405A095}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastSerialization", "src\FastSerialization\FastSerialization.csproj", "{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization", "src\FastSerialization\FastSerialization.csproj", "{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "src\EtwClrProfiler\ETWClrProfilerX86.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}"
 EndProject
