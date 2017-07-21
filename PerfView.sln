@@ -59,7 +59,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView64", "src\PerfView6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView.Tests", "src\PerfView.Tests\PerfView.Tests.csproj", "{A0248EF2-8C39-478A-951E-324DDF4FF3EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfView.TestUtilities", "src\PerfView.TestUtilities\PerfView.TestUtilities.csproj", "{FE5CC86D-E87E-4560-8004-8852F3DE6794}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView.TestUtilities", "src\PerfView.TestUtilities\PerfView.TestUtilities.csproj", "{FE5CC86D-E87E-4560-8004-8852F3DE6794}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
