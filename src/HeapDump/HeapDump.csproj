@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net451 is actually just another net45 build build with the platform set to x64 -->
+    <TargetFrameworks>net45;net451</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>true</Prefer32Bit>
+
+    <RootNamespace>HeapDump</RootNamespace>
+    <AssemblyName>HeapDump</AssemblyName>
+    <Description>HeapDump</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2011</Copyright>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'net45'">
+      <!-- This is the x86 build, and it actually is net45 so most properties will just work. -->
+      <PropertyGroup>
+        <Prefer32Bit>true</Prefer32Bit>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)' == 'net451'">
+      <!-- This is the x64 build. -->
+      <PropertyGroup>
+        <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+        <TargetFrameworkProfile />
+
+        <Platform>x64</Platform>
+        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);STANDALONE_EXE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="0.8.31-beta" />
+    <PackageReference Include="PerfView.SupportFiles" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\MemoryGraph\graph.cs">
+      <Link>MemoryGraph\graph.cs</Link>
+    </Compile>
+    <Compile Include="..\MemoryGraph\MemoryGraph.cs">
+      <Link>MemoryGraph\MemoryGraph.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\EnvironmentUtilities.cs">
+      <Link>Utilities\EnvironmentUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\Utilities\StringUtilities.cs">
+      <Link>Utilities\StringUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
+    <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
+    <Compile Include="..\PerfView\PerfViewEventSource.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\Utilities\TeeTextWriter.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
+    <Compile Include="..\ETWHeapDump\DotNetHeapDumpGraphReader.cs" />
+    <Compile Include="..\Utilities\FileUtilities.cs" />
+    <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\Utilities\XmlUtilities.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+
+</Project>

@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFrameworks>net45</TargetFrameworks>
     <Prefer32Bit>False</Prefer32Bit>
 
