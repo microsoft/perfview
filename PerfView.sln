@@ -49,9 +49,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "src\Et
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX64", "src\EtwClrProfiler\ETWClrProfilerX64.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxTracing.Tests", "src\LinuxEvent.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinuxTracing.Tests", "src\LinuxEvent.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CtfTracing.Tests", "src\TraceEvent\Ctf\CtfTracing.Tests\CtfTracing.Tests.csproj", "{B9384E1B-54B5-4A41-85BD-EBAD0577BDCD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CtfTracing.Tests", "src\TraceEvent\Ctf\CtfTracing.Tests\CtfTracing.Tests.csproj", "{B9384E1B-54B5-4A41-85BD-EBAD0577BDCD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent.Tests", "src\TraceEvent\TraceEvent.Tests\TraceEvent.Tests.csproj", "{19281902-FBC4-48C0-962B-9FDADAF5C783}"
 EndProject
