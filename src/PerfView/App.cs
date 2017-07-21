@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,6 +12,7 @@ using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
 using PerfView.Dialogs;
+using PerfView.Properties;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
 using Microsoft.Diagnostics.Tracing.Session;
@@ -1101,11 +1103,8 @@ namespace PerfView
         {
             get
             {
-                var buildDateFile = Path.Combine(SupportFiles.SupportFileDir, "BuildDate.txt");
-                var buildDate = "Unknown";
-                if (File.Exists(buildDateFile))
-                    buildDate = File.ReadAllText(buildDateFile).Trim();
-                return buildDate;
+                var buildDateAttribute = typeof(AppLog).Assembly.GetCustomAttributes<BuildDateAttribute>().FirstOrDefault();
+                return buildDateAttribute?.BuildDate ?? "Unknown";
             }
         }
 
