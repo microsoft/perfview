@@ -167,19 +167,19 @@
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\..\x64\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net451\win7-x64\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
       <Link>amd64\HeapDump.exe</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\..\x64\HeapDump.exe.config">
+    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net451\win7-x64\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
       <Link>amd64\HeapDump.exe.config</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\..\AnyCPU\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
@@ -222,7 +222,7 @@
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)Microsoft.Diagnostics.Runtime\0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>

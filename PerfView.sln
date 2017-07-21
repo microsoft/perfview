@@ -8,7 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSVReader", "src\CSVReader\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView", "src\PerfView\PerfView.csproj", "{6BAC7496-6953-41B8-9042-AAE45405A095}"
 	ProjectSection(ProjectDependencies) = postProject
-		{31850F14-F02B-4A7D-9779-CF583FD8F739} = {31850F14-F02B-4A7D-9779-CF583FD8F739}
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8} = {E9980619-4016-4A4A-B7CC-F8B0E483BDB8}
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9} = {E9980619-4016-4A4A-B7CC-F8B0E483BDB9}
 		{80345889-A13D-4F2D-A096-98B95C55BF45} = {80345889-A13D-4F2D-A096-98B95C55BF45}
@@ -34,9 +33,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpInterface", "src\HeapDumpInterface\HeapDumpInterface.csproj", "{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpX64", "src\HeapDump\HeapDumpX64.csproj", "{31850F14-F02B-4A7D-9779-CF583FD8F739}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpX86", "src\HeapDump\HeapDumpX86.csproj", "{80345889-A13D-4F2D-A096-98B95C55BF45}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeapDump", "src\HeapDump\HeapDump.csproj", "{80345889-A13D-4F2D-A096-98B95C55BF45}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Global", "src\PerfViewExtensions\GlobalSrc\Global.csproj", "{91DFAE19-098F-4E19-B81D-6CB36A9020D6}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -83,10 +80,6 @@ Global
 		{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{31850F14-F02B-4A7D-9779-CF583FD8F739}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
-		{31850F14-F02B-4A7D-9779-CF583FD8F739}.Debug|Mixed Platforms.Build.0 = Debug|x64
-		{31850F14-F02B-4A7D-9779-CF583FD8F739}.Release|Mixed Platforms.ActiveCfg = Release|x64
-		{31850F14-F02B-4A7D-9779-CF583FD8F739}.Release|Mixed Platforms.Build.0 = Release|x64
 		{80345889-A13D-4F2D-A096-98B95C55BF45}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
 		{80345889-A13D-4F2D-A096-98B95C55BF45}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
 		{80345889-A13D-4F2D-A096-98B95C55BF45}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
