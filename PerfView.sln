@@ -38,7 +38,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpX64", "src\HeapDump
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeapDumpX86", "src\HeapDump\HeapDumpX86.csproj", "{80345889-A13D-4F2D-A096-98B95C55BF45}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Global", "src\PerfViewExtensions\GlobalSrc\Global.csproj", "{91DFAE19-098F-4E19-B81D-6CB36A9020D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Global", "src\PerfViewExtensions\GlobalSrc\Global.csproj", "{91DFAE19-098F-4E19-B81D-6CB36A9020D6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6BAC7496-6953-41B8-9042-AAE45405A095} = {6BAC7496-6953-41B8-9042-AAE45405A095}
 	EndProjectSection
