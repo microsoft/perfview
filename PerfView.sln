@@ -53,7 +53,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxTracing.Tests", "src\L
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CtfTracing.Tests", "src\TraceEvent\Ctf\CtfTracing.Tests\CtfTracing.Tests.csproj", "{B9384E1B-54B5-4A41-85BD-EBAD0577BDCD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEvent.Tests", "src\TraceEvent\TraceEvent.Tests\TraceEvent.Tests.csproj", "{19281902-FBC4-48C0-962B-9FDADAF5C783}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent.Tests", "src\TraceEvent\TraceEvent.Tests\TraceEvent.Tests.csproj", "{19281902-FBC4-48C0-962B-9FDADAF5C783}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView64", "src\PerfView64\PerfView64.csproj", "{F7419073-A62B-42E0-9B8C-4C2C4CE243A3}"
 EndProject
