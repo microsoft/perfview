@@ -1470,6 +1470,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             serializer.Write(MessageFormat);
             serializer.Write(lookupAsClassic);
             serializer.Write(lookupAsWPP);
+            serializer.Write(containsSelfDescribingMetadata);
 
             serializer.Write(payloadNames.Length);
             foreach (var payloadName in payloadNames)
@@ -1492,6 +1493,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             deserializer.Read(out MessageFormat);
             deserializer.Read(out lookupAsClassic);
             deserializer.Read(out lookupAsWPP);
+            deserializer.Read(out containsSelfDescribingMetadata);
             int count;
             deserializer.Read(out count);
             payloadNames = new string[count];
