@@ -48,7 +48,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         }
         public static TraceProcess Process(this TraceEvent _event)
         {
-            return _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
+            var process = _event.source.Processes().GetOrCreateProcess(_event.ProcessID, _event.TimeStampQPC);
+            if (process.StartTimeRelativeMsec == -1 || process.StartTimeRelativeMsec > _event.TimeStampRelativeMSec) process.StartTimeRelativeMsec = _event.TimeStampRelativeMSec;
+            if (process.EndTimeRelativeMsec == -1 || process.EndTimeRelativeMsec < _event.TimeStampRelativeMSec) process.EndTimeRelativeMsec = _event.TimeStampRelativeMSec;
+            return process;
         }
 
         public static void AddCallbackOnProcessStart(this TraceEventDispatcher source, Action<TraceProcess> OnProcessStart)
@@ -467,7 +470,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// The time when the process started.  Returns the time the trace started if the process existed when the trace started.  
         /// Returned as the number of MSec from the beginning of the trace. 
         /// </summary>
-        public double StartTimeRelativeMsec { get; private set; }
+        public double StartTimeRelativeMsec { get; internal set; }
         /// <summary>
         /// The time when the process ended.  Returns the time the trace ended if the process existed when the trace ended.  
         /// Returned as a DateTime
@@ -477,7 +480,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// The time when the process ended.  Returns the time the trace ended if the process existed when the trace ended. 
         /// Returned as the number of MSec from the beginning of the trace. 
         /// </summary>
-        public double EndTimeRelativeMsec { get; private set; }
+        public double EndTimeRelativeMsec { get; internal set; }
         /// <summary>
         /// The process ID of the parent process 
         /// </summary>

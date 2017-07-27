@@ -3,20 +3,255 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
 using PerfView.TestUtilities;
 using PerfViewTests.Utilities;
+using Utilities;
 using Xunit;
+using Xunit.Abstractions;
 using DataGridCellInfo = System.Windows.Controls.DataGridCellInfo;
 
 namespace PerfViewTests.StackViewer
 {
     public class StackWindowTests : PerfViewTestBase
     {
+        public StackWindowTests(ITestOutputHelper testOutputHelper)
+            : base(testOutputHelper)
+        {
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnByNameTabAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.ByName);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCallerCalleeTabCallerAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallers);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCallerCalleeTabFocusAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeFocus);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCallerCalleeTabCalleesAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.CallerCalleeCallees);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCallTreeTabAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.CallTree);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCallersTabAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.Callers);
+        }
+
+        [WpfFact]
+        [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
+        public Task TestIncludeItemOnCalleesTabAsync()
+        {
+            return TestIncludeItemAsync(KnownDataGrid.Callees);
+        }
+
+        private Task TestIncludeItemAsync(KnownDataGrid grid)
+        {
+            Func<Task<StackWindow>> setupAsync = async () =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                var file = new TimeRangeFile();
+                await OpenAsync(JoinableTaskFactory, file, GuiApp.MainWindow, GuiApp.MainWindow.StatusBar).ConfigureAwait(true);
+                var stackSource = file.GetStackSource();
+                return stackSource.Viewer;
+            };
+
+            Func<StackWindow, Task> cleanupAsync = async stackWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                stackWindow.Close();
+            };
+
+            Func<StackWindow, Task> testDriverAsync = async stackWindow =>
+            {
+                await JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                PerfDataGrid dataGrid = await SelectTabAsync(stackWindow, grid, CancellationToken.None).ConfigureAwait(true);
+
+                object selectedItem = dataGrid.Grid.Items[0];
+                var callTreeNodeBase = selectedItem as CallTreeNodeBase;
+                if (callTreeNodeBase == null)
+                {
+                    callTreeNodeBase = (selectedItem as CallTreeViewNode)?.Data;
+                }
+
+                Assert.NotNull(callTreeNodeBase);
+
+                // Keep a copy of the DisplayName since setting focus can clear this information from nodes
+                string selectedItemName = callTreeNodeBase.DisplayName;
+
+                var dataGridCell = (DataGridCell)dataGrid.DisplayNameColumn.GetCellContent(selectedItem).Parent;
+                dataGridCell.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonDownEvent });
+                dataGridCell.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonUpEvent });
+
+                await WaitForUIAsync(stackWindow.Dispatcher, CancellationToken.None);
+
+                StackWindow.IncludeItemCommand.Execute(null, dataGridCell);
+
+                // Wait for any background processing to complete
+                await stackWindow.StatusBar.WaitForWorkCompleteAsync().ConfigureAwait(true);
+
+                Assert.Equal("^" + Regex.Escape(selectedItemName), stackWindow.IncludeRegExTextBox.Text);
+            };
+
+            return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
+        }
+
+        private static async Task<PerfDataGrid> SelectTabAsync(StackWindow stackWindow, KnownDataGrid grid, CancellationToken cancellationToken)
+        {
+            Assert.Same(stackWindow.Dispatcher.Thread, Thread.CurrentThread);
+
+            var tabControl = (TabControl)stackWindow.ByNameTab.Parent;
+            PerfDataGrid dataGrid;
+            switch (grid)
+            {
+            case KnownDataGrid.ByName:
+                tabControl.SelectedItem = stackWindow.ByNameTab;
+                dataGrid = stackWindow.ByNameDataGrid;
+                break;
+
+            case KnownDataGrid.CallerCalleeCallers:
+            case KnownDataGrid.CallerCalleeFocus:
+            case KnownDataGrid.CallerCalleeCallees:
+                tabControl.SelectedItem = stackWindow.CallerCalleeTab;
+                if (grid == KnownDataGrid.CallerCalleeCallers)
+                    dataGrid = stackWindow.CallerCalleeView.CallersGrid;
+                else if (grid == KnownDataGrid.CallerCalleeFocus)
+                    dataGrid = stackWindow.CallerCalleeView.FocusGrid;
+                else
+                    dataGrid = stackWindow.CallerCalleeView.CalleesGrid;
+
+                break;
+
+            case KnownDataGrid.CallTree:
+                tabControl.SelectedItem = stackWindow.CallTreeTab;
+                dataGrid = stackWindow.CallTreeDataGrid;
+                break;
+
+            case KnownDataGrid.Callers:
+                tabControl.SelectedItem = stackWindow.CallersTab;
+                dataGrid = stackWindow.CallersDataGrid;
+                break;
+
+            case KnownDataGrid.Callees:
+                tabControl.SelectedItem = stackWindow.CalleesTab;
+                dataGrid = stackWindow.CalleesDataGrid;
+                break;
+
+            default:
+                throw new ArgumentException("Unsupported data grid.", nameof(grid));
+            }
+
+            await WaitForUIAsync(stackWindow.Dispatcher, cancellationToken);
+
+            if (!dataGrid.Grid.HasItems)
+            {
+                PerfDataGrid gridToDoubleClick = null;
+                if (grid == KnownDataGrid.CallerCalleeCallers)
+                {
+                    gridToDoubleClick = stackWindow.CallerCalleeView.CalleesGrid;
+                }
+                else if (grid == KnownDataGrid.CallerCalleeCallees)
+                {
+                    gridToDoubleClick = stackWindow.CallerCalleeView.CallersGrid;
+                }
+
+                if (gridToDoubleClick?.Grid.HasItems ?? false)
+                {
+                    var itemToDoubleClick = gridToDoubleClick.Grid.Items[0];
+                    var cellToDoubleClick = (DataGridCell)gridToDoubleClick.DisplayNameColumn.GetCellContent(itemToDoubleClick).Parent;
+
+                    var border = (Border)VisualTreeHelper.GetChild(cellToDoubleClick, 0);
+                    var textBlock = (TextBlock)VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(border, 0), 0), 0);
+                    Point controlCenter = new Point(textBlock.ActualWidth / 2, textBlock.ActualHeight / 2);
+                    Point controlCenterOnView = textBlock.TranslatePoint(controlCenter, (UIElement)Helpers.RootVisual(textBlock));
+                    RaiseMouseInputReportEvent(textBlock, Environment.TickCount, (int)controlCenterOnView.X, (int)controlCenterOnView.Y, 0);
+
+                    gridToDoubleClick.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Control.MouseDoubleClickEvent, Source = textBlock });
+
+                    await WaitForUIAsync(stackWindow.Dispatcher, cancellationToken);
+                }
+            }
+
+            return dataGrid;
+        }
+
+        // Since the implementation relies on hit testing and not just events coming from the proper sources, we must
+        // move the mouse prior to clicking.
+        private static void RaiseMouseInputReportEvent(Visual eventSource, int timestamp, int pointX, int pointY, int wheel)
+        {
+            Assembly targetAssembly = Assembly.GetAssembly(typeof(InputEventArgs));
+            Type mouseInputReportType = targetAssembly.GetType("System.Windows.Input.RawMouseInputReport");
+
+            const int AbsoluteMove = 8;
+            const int Activate = 2;
+            Type rawMouseActionsType = targetAssembly.GetType("System.Windows.Input.RawMouseActions");
+
+            object mouseInputReport = mouseInputReportType.GetConstructors()[0].Invoke(
+                new[]
+                {
+                    InputMode.Foreground,
+                    timestamp,
+                    PresentationSource.FromVisual(eventSource),
+                    Enum.ToObject(rawMouseActionsType, AbsoluteMove | Activate),
+                    pointX,
+                    pointY,
+                    wheel,
+                    IntPtr.Zero
+                });
+
+            mouseInputReportType
+                .GetField("_isSynchronize", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(mouseInputReport, true);
+
+            InputEventArgs inputReportEventArgs = (InputEventArgs)targetAssembly
+                .GetType("System.Windows.Input.InputReportEventArgs")
+                .GetConstructors()[0]
+                .Invoke(new[] { Mouse.PrimaryDevice, mouseInputReport });
+
+            inputReportEventArgs.RoutedEvent = (RoutedEvent)typeof(InputManager)
+                .GetField("PreviewInputReportEvent", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                .GetValue(null);
+
+            InputManager.Current.ProcessInput(inputReportEventArgs);
+        }
+
         [WpfFact]
         [WorkItem(235, "https://github.com/Microsoft/perfview/issues/235")]
         [UseCulture("en-US")]

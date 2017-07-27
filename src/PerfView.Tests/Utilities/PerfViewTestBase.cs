@@ -1,23 +1,50 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Threading;
 using PerfView;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace PerfViewTests.Utilities
 {
     public abstract class PerfViewTestBase : IDisposable
     {
-        protected PerfViewTestBase()
+        private static readonly Action EmptyAction =
+            () =>
+            {
+            };
+
+        private readonly ITestOutputHelper _testOutputHelper;
+        private readonly EventHandler<FirstChanceExceptionEventArgs> _exceptionHandler;
+
+        protected PerfViewTestBase(ITestOutputHelper testOutputHelper)
         {
+            _testOutputHelper = testOutputHelper;
+
             AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
             App.CommandProcessor = new CommandProcessor();
+
+            _exceptionHandler =
+                (sender, e) =>
+                {
+                    _testOutputHelper.WriteLine(e.Exception.ToString());
+                };
+            AppDomain.CurrentDomain.FirstChanceException += _exceptionHandler;
         }
 
         protected JoinableTaskFactory JoinableTaskFactory
         {
             get;
             private set;
+        }
+
+        protected static async Task WaitForUIAsync(Dispatcher dispatcher, CancellationToken cancellationToken)
+        {
+            await dispatcher.InvokeAsync(EmptyAction, DispatcherPriority.ContextIdle, cancellationToken);
         }
 
         protected async Task RunUITestAsync<T>(
@@ -57,6 +84,7 @@ namespace PerfViewTests.Utilities
         {
             GuiApp.MainWindow?.Close();
             JoinableTaskFactory?.Context.Dispose();
+            Assert.Equal(0, StackWindow.StackWindows.Count);
 
             GuiApp.MainWindow = new MainWindow();
             JoinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());
@@ -72,6 +100,8 @@ namespace PerfViewTests.Utilities
         {
             if (disposing)
             {
+                AppDomain.CurrentDomain.FirstChanceException -= _exceptionHandler;
+
                 GuiApp.MainWindow?.Close();
                 GuiApp.MainWindow = null;
 

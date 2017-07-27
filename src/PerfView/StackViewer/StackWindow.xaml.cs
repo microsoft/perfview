@@ -3015,15 +3015,41 @@ namespace PerfView
         internal DataGrid GetDataGrid()
         {
             if (ByNameTab.IsSelected)
+            {
                 return ByNameDataGrid.Grid;
+            }
             else if (CallerCalleeTab.IsSelected)
-                return CallTreeDataGrid.Grid;
-            else if (CalleesTab.IsSelected)
-                return CallerCalleeView.CalleesGrid.Grid;
-            else if (CallersTab.IsSelected)
-                return CallerCalleeView.CallersGrid.Grid;
-            else
+            {
+                // Find the focus
+                var dependencyObject = FocusManager.GetFocusedElement(this) as DependencyObject;
+                if (dependencyObject != null)
+                {
+                    if (CallerCalleeView.CallersGrid.Grid.IsAncestorOf(dependencyObject))
+                        return CallerCalleeView.CallersGrid.Grid;
+                    else if (CallerCalleeView.CalleesGrid.Grid.IsAncestorOf(dependencyObject))
+                        return CallerCalleeView.CalleesGrid.Grid;
+                    if (CallerCalleeView.FocusGrid.Grid.IsAncestorOf(dependencyObject))
+                        return CallerCalleeView.FocusGrid.Grid;
+                }
+
                 return null;
+            }
+            else if (CallTreeTab.IsSelected)
+            {
+                return CallTreeDataGrid.Grid;
+            }
+            else if (CallersTab.IsSelected)
+            {
+                return CallersDataGrid.Grid;
+            }
+            else if (CalleesTab.IsSelected)
+            {
+                return CalleesDataGrid.Grid;
+            }
+            else
+            {
+                return null;
+            }
         }
         private IEnumerable<string> SelectedCellsStringValue()
         {
