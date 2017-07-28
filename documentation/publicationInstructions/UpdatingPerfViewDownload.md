@@ -14,7 +14,7 @@
     3. Right click on English - United States -> Publish Download Detail.  
        I tend to do this step after I have published the file.
 
-##Updating the file 
+## Updating the file 
 
     1. Click on "en-us", in the right hand pane there is a general tab and a files tab.
     2. In the general tab: make sure there are three signers, where two of the signers 
