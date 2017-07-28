@@ -25,6 +25,22 @@ The PerfView User's Guide is part of the application itself. In addition, you ca
 to see the [GitHub HTML Source File](src/PerfView/SupportFiles/UsersGuide.htm) rendered in your browser.  You can also simply
 download PerfView using the instructions above and select the Help -> User's Guide menu item. 
 
+### Asking Questions / Reporting Bugs 
+
+When you have question about PerfView, your first reaction should be to search the Users Guide (Help -> User's Guide) and 
+see if you can find the answer already.   If that does not work you can ask a question by creating a [new PerfView Issue](https://github.com/Microsoft/perfview/issues/new).
+State your question succinctly in the title, and if necessary give details in the body of the issue.   If the question is on 
+a particular *.ETL.ZIP file you can drag that file onto the issue and it will be downloaded.  This allows those watching for
+issues to reproduce your environment and give much more detailed and useful answer.
+
+Note that once you have your question answered, if the issue is likley to be common, you should strongly consider updating the
+documentation to include the information.  The documentation is pretty much just one file https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm.
+You will need to clone the repository and create a pull request (see [OpenSourceGitWorkflow](https://github.com/Microsoft/perfview/blob/master/documentation/OpenSourceGitWorkflow.md)
+for instructions for setting up and creating a pull request.  
+
+Reporting bugs works pretty much the same way as asking a question.  It is very likely that you will want to include the *.ETL.ZIP
+file needed to reproduce the problem as well as any steps and the resulting undesirable behavior.
+
 ### Developer information
 
 This repository uses [AppVeyor](https://www.appveyor.com/) to automatically build and test pull requests, which allows
@@ -47,7 +63,6 @@ Just use the one from the download center or the GitHub release site.
 However if you want new features or just want to contribute to PerfView to make it better
 (see [issues](https://github.com/Microsoft/perfview/issues) for things people want)
 you can do that by following the rest of these instructions.
-
 
 ### Tools Needed to Build PerfView
 
@@ -153,11 +168,10 @@ The code is broken into several main sections:
   * Zip - a clone of System.IO.Compression.dll so that PerfView can run on pre V4.5 runtimes (probably will delete)
   * [HtmlJs](src/HtmlJs/Readme.md) - contains a version of the GUI based on HTML and JavaScript (for Linux support). (experimental)
 
-
 ### Other Documenation
 
 These docs are for specialized scenarios 
 
   * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
 does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
-nuget package when these files need to be updated.  
+nuget package when these files need to be updated.  Very few people should care about these instructions.  
