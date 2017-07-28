@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="inputs\**\*.*">
+    <None Include="inputs\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="xunit.runner.json">

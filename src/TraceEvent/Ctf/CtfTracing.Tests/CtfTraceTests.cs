@@ -7,124 +7,65 @@ namespace Tests
 {
     public class CtfTraceTests
     {
-        static string TestDataDirectory = @"..\..\inputs";
+        private const string TestDataDirectory = @"inputs";
 
-        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
+        [Fact]
         public void LTTng_GCAllocationTick()
         {
             int allocTicks = 0, allocTicksFromAll = 0;
 
-            string[] files = new string[] { "auto-20160204-132425.trace.zip", "auto-20151103-132930.trace.zip", "auto-20160204-162218.tracego.zip" };
-            foreach (string file in files)
+            var path = Path.Combine(TestDataDirectory, "auto-20170728-130015.trace.zip");
+            using (var ctfSource = new CtfTraceEventSource(path))
             {
-                string path = Path.Combine(TestDataDirectory, file);
-                using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+                ctfSource.AllEvents += delegate (TraceEvent obj)
                 {
-                    ctfSource.AllEvents += delegate (TraceEvent obj)
-                    {
-                        string s = obj.ToString();
-                        var d = obj.TimeStamp;
-                        if (obj is GCAllocationTickTraceData)
-                            allocTicksFromAll++;
-                    };
+                    if (obj is GCAllocationTickTraceData)
+                        allocTicksFromAll++;
+                };
 
-                    ctfSource.Clr.GCCreateSegment += delegate (GCCreateSegmentTraceData d)
-                    {
-                    };
+                ctfSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData o) { allocTicks++; };
 
-                    ctfSource.Clr.RuntimeStart += delegate (RuntimeInformationTraceData d)
-                    {
-
-                    };
-
-
-                    ctfSource.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData d)
-                    {
-
-                    };
-
-                    ctfSource.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData d)
-                    {
-
-                    };
-
-
-
-                    ctfSource.Clr.MethodTailCallSucceeded += delegate (MethodJitTailCallSucceededTraceData d)
-                    {
-
-                    };
-
-
-                    ctfSource.Clr.GCHeapStats += delegate (GCHeapStatsTraceData d)
-                    {
-                    };
-
-                    ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
-                    {
-                    };
-
-
-                    ctfSource.Clr.GCStop += delegate (GCEndTraceData d)
-                    {
-                    };
-
-                    ctfSource.Clr.GCPerHeapHistory += delegate (GCPerHeapHistoryTraceData d)
-                    {
-                    };
-
-                    ctfSource.Clr.GCStart += delegate (GCStartTraceData d)
-                    {
-
-                    };
-
-                    ctfSource.Clr.MethodILToNativeMap += delegate (MethodILToNativeMapTraceData d)
-                    {
-
-                    };
-
-                    ctfSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData o) { allocTicks++; };
-
-                    ctfSource.Process();
-                }
+                ctfSource.Process();
             }
-
             Assert.True(allocTicks > 0);
             Assert.Equal(allocTicks, allocTicksFromAll);
         }
 
-        [Fact(Skip = "https://github.com/Microsoft/perfview/issues/102")]
+        [Fact]
         public void LTTng_GCStartStopEvents()
         {
-            string path = Path.Combine(TestDataDirectory, "auto-20151103-132930.lttng.zip");
+            var path = Path.Combine(TestDataDirectory, "auto-20170728-131434.trace.zip");
+            int startEvents = 0, startEventsFromAll = 0;
+            int stopEvents = 0, stopEventsFromAll = 0;
 
-            using (CtfTraceEventSource ctfSource = new CtfTraceEventSource(path))
+            using (var ctfSource = new CtfTraceEventSource(path))
             {
-                ctfSource.AllEvents += delegate(TraceEvent obj)
+                ctfSource.AllEvents += delegate (TraceEvent obj)
                 {
+                    if (obj is GCStartTraceData)
+                        startEventsFromAll++;
+                    if (obj is GCEndTraceData)
+                        stopEventsFromAll++;
                 };
 
-                ctfSource.Clr.GCRestartEEStart += delegate(GCNoUserDataTraceData obj)
+                ctfSource.Clr.GCStart += delegate (GCStartTraceData obj)
                 {
+                    startEvents++;
                 };
 
-                ctfSource.Clr.GCRestartEEStop += delegate(GCNoUserDataTraceData obj)
+                ctfSource.Clr.GCStop += delegate (GCEndTraceData obj)
                 {
+                    stopEvents++;
                 };
-
-
-                ctfSource.Clr.GCSuspendEEStart += delegate(GCSuspendEETraceData obj)
-                {
-                };
-
-
-                ctfSource.Clr.GCSuspendEEStop += delegate(GCNoUserDataTraceData obj)
-                {
-                };
-                
 
                 ctfSource.Process();
             }
+
+            Assert.True(startEvents > 0);
+            Assert.Equal(startEvents, startEventsFromAll);
+
+            Assert.True(stopEvents > 0);
+            Assert.Equal(stopEvents, stopEventsFromAll);
         }
     }
 }
