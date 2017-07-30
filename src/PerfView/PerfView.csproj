@@ -167,13 +167,13 @@
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net451\win7-x64\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
       <Link>amd64\HeapDump.exe</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\bin\$(Configuration)\net451\win7-x64\HeapDump.exe.config">
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>

@@ -2,8 +2,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- net451 is actually just another net45 build build with the platform set to x64 -->
-    <TargetFrameworks>net45;net451</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <Platforms>AnyCPU;x64</Platforms>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>true</Prefer32Bit>
@@ -15,25 +15,15 @@
     <Copyright>Copyright © Microsoft 2011</Copyright>
   </PropertyGroup>
 
-  <Choose>
-    <When Condition="'$(TargetFramework)' == 'net45'">
-      <!-- This is the x86 build, and it actually is net45 so most properties will just work. -->
-      <PropertyGroup>
-        <Prefer32Bit>true</Prefer32Bit>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)' == 'net451'">
-      <!-- This is the x64 build. -->
-      <PropertyGroup>
-        <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-        <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-        <TargetFrameworkProfile />
+  <PropertyGroup>
+    <!-- NuGet won't know to restore the x64 build unless we add it explicitly -->
+    <RuntimeIdentifiers>win7-x64</RuntimeIdentifiers>
+  </PropertyGroup>
 
-        <Platform>x64</Platform>
-        <RuntimeIdentifier>win7-x64</RuntimeIdentifier>
-      </PropertyGroup>
-    </When>
-  </Choose>
+  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <!-- AnyCPU is our 32-bit build because it automatically makes the executable large address aware -->
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);STANDALONE_EXE</DefineConstants>
