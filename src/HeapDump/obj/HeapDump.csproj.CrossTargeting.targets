@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <!--
+    The location of this file is a workaround for https://github.com/Microsoft/msbuild/issues/1721
+  -->
+  <Target Name="DispatchToInnerBuilds" Returns="@(InnerOutput)">
+    <ItemGroup>
+      <_TargetPlatform Include="$(Platforms)" />
+      <_TargetFramework Include="$(TargetFrameworks)" Platform="%(_TargetPlatform.Identity)" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Condition="'$(TargetFrameworks)' != ''"
+             Targets="$(InnerTargets)"
+             Properties="TargetFramework=%(_TargetFramework.Identity);Platform=%(Platform)">
+      <Output ItemName="InnerOutput" TaskParameter="TargetOutputs" />
+    </MSBuild>
+  </Target>
+
+</Project>
