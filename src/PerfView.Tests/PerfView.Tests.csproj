@@ -7,6 +7,10 @@
     <AssemblyName>PerfViewTests</AssemblyName>
     <Description>Unit tests for PerfView.</Description>
     <Copyright>Copyright © Microsoft 2016</Copyright>
+
+    <!-- Test projects can automatically generate the necessary binding redirects -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
 
   <ItemGroup>
