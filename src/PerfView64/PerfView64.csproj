@@ -6,6 +6,8 @@
     <TargetFrameworks>net45</TargetFrameworks>
     <Prefer32Bit>False</Prefer32Bit>
 
+    <OutputPath>..\PerfView\bin\$(Configuration)\</OutputPath>
+
     <Company>Microsoft</Company>
     <Product>PerfView</Product>
     <Description>A 64-bit launcher for PerfView.</Description>
@@ -17,8 +19,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PerfView\PerfView.csproj" />
+    <ProjectReference Include="..\PerfView\PerfView.csproj">
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
+
+  <!--
+    Since we're copying this to the PerfView output directory, we don't want to copy anything already copied by the
+    PerfView build.
+  -->
+  <Target Name="RemoveTransitiveProjectReferences" AfterTargets="IncludeTransitiveProjectReferences">
+    <ItemGroup>
+      <ProjectReference Remove="@(_TransitiveProjectReferences)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <None Include="App.config" />
