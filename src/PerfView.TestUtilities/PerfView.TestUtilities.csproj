@@ -5,6 +5,10 @@
     <TargetFramework>net46</TargetFramework>
     <Description>Unit test utility library.</Description>
     <Copyright>Copyright © Microsoft 2017</Copyright>
+
+    <!-- Test projects can automatically generate the necessary binding redirects -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
 
   <ItemGroup>
