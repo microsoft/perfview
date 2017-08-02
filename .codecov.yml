@@ -8,12 +8,41 @@ coverage:
     patch:
       default: false
 
+comment:
+  layout: "diff, flags, files, footer"
+
 flags:
   production:
     paths:
-      - StyleCop.Analyzers/StyleCop.Analyzers/
-      - StyleCop.Analyzers/StyleCop.Analyzers.CodeFixes/
+      - src/CSVReader/
+      - src/EtwClrProfiler/
+      - src/EtwHeapDump/
+      - src/FastSerialization/
+      - src/HeapDump/
+      - src/HeapDumpCommon/
+      - src/HeapDumpInterface/
+      - src/HtmlJs/
+      - src/MemoryGraph/
+      - src/PerfView/
+      - src/PerfView64/
+      - src/PerfViewExtensions/
+      - src/related/TraceEventAPIServer/
+      - src/TraceEvent/
+      - src/Utilities/
+      - src/VS/
   test:
     paths:
-      - StyleCop.Analyzers/StyleCop.Analyzers.Test/
-      - StyleCop.Analyzers/StyleCopTester/
+      - src/LinuxEvent.Tests/
+      - src/PerfView.Tests/
+      - src/PerfView.TestUtilities/
+      - src/TraceEvent/Ctf/CtfTracing.Tests/
+      - src/TraceEvent/TraceEvent.Tests/
+  # Filter results to only show debug reports until the accuracy problems with
+  # the report merge process are fixed.
+  Release:
+    paths:
+      - nonexistent/
+  # Filter out 2015 reports for performance
+  '2015':
+    paths:
+      - nonexistent/

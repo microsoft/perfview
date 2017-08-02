@@ -1,4 +1,4 @@
-#Setting Up *Without* a Fork with Visual Studio 2015
+# Setting Up *Without* a Fork with Visual Studio 2015
 
  * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material. 
  * See also [Open Source GitHub Setup and Workflow](OpenSourceGitWorkflow.md) for the setup needed for pull requests.  
@@ -32,13 +32,13 @@ At the bottom you will see a list of .SLN files.  There are all the Visual Studi
 of the repository.   This makes it convenient to open VS to do a build.  In the case of PerfView, you want the PerfView.sln file.   
 After opening the solution file you can start building (Build -> Build Solution or Ctrl-Shift-B).
 
-##Making changes
+## Making changes
 
 GIT is a bit unusual in that there is no 'checkout' command.   You can modify anything in the local copy of the files 
 at will.   You can think of it as modifying a file will cause an automatic checkout, but this works no matter how the file
 was changed (thus it is more like every git command starts by looking at files to see what the checked out set is in the repo).
 
-##Committing Trivial Changes to Master Branch
+## Committing Trivial Changes to Master Branch
 
 As mentioned GIT has the concept of the 'active branch' which is the branch the 'commit' operation uses to stamp the 
 commit (snapshot) with the predecessor commit (snapshot).  Thus the active branch is what determines the 'history' of 
@@ -62,7 +62,7 @@ you are commiting to.
 
 After you have filled out the description, you can simply hit the 'Commit All' button to commit your changes.  
 
-##Don't use Master Branch for Non-trivial Features.  
+## Don't use Master Branch for Non-trivial Features.  
 
 Committing directly to the master branch is fine for small, independent edits, however it is 
 a *bad idea for any feature that **might** involve multiple commits*.   This includes any pull 
@@ -87,7 +87,7 @@ you for a new branch name and hit the 'Create Branch' button.   This new branch 
 active branch so you can go back to the 'Changes' pane (left click on the 'Branches' Header) and
 complete the commit.  
 
-##Switching Branches 
+## Switching Branches 
 
 Once you have more than one branch, you will want to be able to switch the active branch from 
 one branch to another.   You do this in the 'Branches' pane (View -> Team Explorer -> Branches).   
@@ -101,7 +101,7 @@ Typically you only switch branches if you have no modified files (in which case 
 If you hit this error (and you will), the solution is to commit your changes (if necessary to a 
 new temporary branch for that purpose) at which point you can switch branches.  
 
-##Synchronizing the GitHub repository and the Local Repository.  
+## Synchronizing the GitHub repository and the Local Repository.  
 
 After you have made edits, or when you want to pull down any GitHub changes to your local repository
 you need to sync.   Technically syncing is actually a combination of two operations a
@@ -128,17 +128,17 @@ the active branch.
 
 If there are merge conflicts Visual Studio will stop and give you an opportunity 
 
-##Discarding Changes
+## Discarding Changes
 
 If you decide you want to abandon changes, simply go to the View -> Team Explorer -> Changes view, select all
 the files, right click and select Undo Changes.  
 
-##Viewing history
+## Viewing history
 
 From the View -> Team Explorer -> Branches view you can right click on any branch (it does not need to
 be the active one) and select 'View History'.   
 
-##Review
+## Review
 
 At this point we have described the critical workflows 
   1. Synchronization with what is in GitHub

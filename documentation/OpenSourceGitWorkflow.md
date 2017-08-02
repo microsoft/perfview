@@ -1,4 +1,4 @@
-#Setting Up *With* a Fork with Visual Studio 2015
+# Setting Up *With* a Fork with Visual Studio 2015
 
  * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material.  
  * See also [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for a simpler setup without a fork, 
@@ -71,7 +71,7 @@ all these changes to bring your fork up to date.   We do this in three steps
   2. Merge the changes from the upstream/master branch into the LOCAL repository's master branch.
   3. Push the changes from the LOCAL repository's master branch into the master branch of the GitHub fork (called origin). 
 
-####Step 1: Fetching All Commits for the Upstream Repository.  
+#### Step 1: Fetching All Commits for the Upstream Repository.  
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
@@ -83,7 +83,7 @@ all these changes to bring your fork up to date.   We do this in three steps
 	 and put them in the LOCAL GitHub repository.  So far we have made or local repository bigger (more commits) but we have 
 	 not changed any existing branch (the transitive closure of any branch is the same as it was before). 
 
-####Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
+#### Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the top bolded header (may say 'Home' or 'Changes', ...) and right click on 'Branches' item which show you
