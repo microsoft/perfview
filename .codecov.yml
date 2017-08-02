@@ -34,3 +34,8 @@ flags:
       - src/PerfView.TestUtilities/
       - src/TraceEvent/Ctf/CtfTracing.Tests/
       - src/TraceEvent/TraceEvent.Tests/
+  # Filter results to only show debug reports until the accuracy problems with
+  # the report merge process are fixed.
+  Release:
+    paths:
+      - nonexistent/
