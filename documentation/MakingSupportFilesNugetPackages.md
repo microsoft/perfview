@@ -1,4 +1,4 @@
-#Making the *.SupportFiles.nupkg NuGet Packages.
+# Making the *.SupportFiles.nupkg NuGet Packages.
 
 The build of PerfView depends on two packages of support files.  
 
