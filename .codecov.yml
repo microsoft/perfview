@@ -43,6 +43,6 @@ flags:
     paths:
       - nonexistent/
   # Filter out 2015 reports for performance
-  2015:
+  '2015':
     paths:
       - nonexistent/
