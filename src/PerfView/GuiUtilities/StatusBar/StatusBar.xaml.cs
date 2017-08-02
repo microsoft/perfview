@@ -206,8 +206,13 @@ namespace PerfView
             // back (this.BeginInvoke), to finish it off.
             var currentCulture = CultureInfo.CurrentCulture;
             var currentUICulture = CultureInfo.CurrentUICulture;
+            var workSemaphore = new SemaphoreSlim(1);
+            workSemaphore.Wait();
             m_work = Task.Run(() =>
             {
+                // Wait for the m_work variable to actually get assigned
+                workSemaphore.Wait();
+
                 var oldCulture = Tuple.Create(CultureInfo.CurrentCulture, CultureInfo.CurrentUICulture);
                 try
                 {
@@ -266,6 +271,9 @@ namespace PerfView
                     Thread.CurrentThread.CurrentUICulture = oldCulture.Item2;
                 }
             });
+
+            // Now that m_work is assigned, allow the operation to proceed
+            workSemaphore.Release();
 
             SignalPropertyChange(nameof(IsWorking));
             SignalPropertyChange(nameof(IsNotWorking));
