@@ -21,9 +21,6 @@ namespace PerfView
         /// </summary>
         public static void DumpGCHeap(int processID, string outputFile, TextWriter log = null, string qualifiers = "")
         {
-            if (!App.IsElevated)
-                throw new ApplicationException("Must be Administrator (elevated).");
-
             var arch = GetArchForProcess(processID);
             if (log != null)
                 log.WriteLine("Starting Heap dump on Process {0} running architecture {1}.", processID, arch);
