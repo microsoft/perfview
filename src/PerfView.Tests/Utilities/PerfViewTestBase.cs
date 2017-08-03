@@ -17,12 +17,11 @@ namespace PerfViewTests.Utilities
             {
             };
 
-        private readonly ITestOutputHelper _testOutputHelper;
         private readonly EventHandler<FirstChanceExceptionEventArgs> _exceptionHandler;
 
         protected PerfViewTestBase(ITestOutputHelper testOutputHelper)
         {
-            _testOutputHelper = testOutputHelper;
+            TestOutputHelper = testOutputHelper;
 
             AppLog.s_IsUnderTest = true;
             App.CommandLineArgs = new CommandLineArgs();
@@ -31,9 +30,14 @@ namespace PerfViewTests.Utilities
             _exceptionHandler =
                 (sender, e) =>
                 {
-                    _testOutputHelper.WriteLine(e.Exception.ToString());
+                    TestOutputHelper.WriteLine(e.Exception.ToString());
                 };
             AppDomain.CurrentDomain.FirstChanceException += _exceptionHandler;
+        }
+
+        protected ITestOutputHelper TestOutputHelper
+        {
+            get;
         }
 
         protected JoinableTaskFactory JoinableTaskFactory
