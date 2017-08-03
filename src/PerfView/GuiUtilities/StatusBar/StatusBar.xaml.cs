@@ -78,13 +78,6 @@ namespace PerfView
             LoggedError = true;
         }
         /// <summary>
-        /// Play a beep sound. 
-        /// </summary>
-        public void Beep()
-        {
-            SystemSounds.Beep.Play();
-        }
-        /// <summary>
         /// Have we just logged an error (last message in status bar is an error message)
         /// </summary>
         public bool LoggedError { get; private set; }
