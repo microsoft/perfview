@@ -455,9 +455,9 @@ namespace Microsoft.Diagnostics.Tracing
                 sessionEndTimeQPC = this.UTCDateTimeToQPC(maxSessionEndTimeUTC);
             }
             Debug.Assert(_QPCFreq != 0);
-            if (pointerSize == 0)       // Real time does not set this (grrr). 
+            if (pointerSize == 0 || IsRealTime)  // We get on x64 OS 4 as pointer size which is wrong for realtime sessions. Fix it up. 
             {
-                pointerSize = sizeof(IntPtr);
+                pointerSize = Environment.Is64BitOperatingSystem ? 8 : 4;
                 Debug.Assert((logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0);
             }
             Debug.Assert(pointerSize == 4 || pointerSize == 8);
