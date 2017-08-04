@@ -407,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // first event (real time case).   This is really a problem, as we need that information, but we will go ahead and
                         // try to initialize as best we can. 
 
-                        m_source.pointerSize = sizeof(IntPtr);
+                        m_source.pointerSize = Environment.Is64BitOperatingSystem ? 8 : 4;
                         m_source.numberOfProcessors = Environment.ProcessorCount;
                         m_source._QPCFreq = Stopwatch.Frequency;
                         m_source._syncTimeUTC = DateTime.UtcNow;
@@ -515,6 +515,6 @@ namespace Microsoft.Diagnostics.Tracing
         TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent. 
         TraceLoggingEventId m_traceLoggingEventId;                               // Used to give TraceLogging events Event IDs. 
 
-#endregion
+        #endregion
     }
 }

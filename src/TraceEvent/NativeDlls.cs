@@ -15,7 +15,9 @@ class NativeDlls
     /// <param name="simpleName"></param>
     public static void LoadNative(string simpleName)
     {
-        var thisDllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+        // When TraceEvent is loaded as embedded assembly the executing assembly is mscorlib which points to the wrong path.
+        // We use therefore the executable as entry point
+        var thisDllDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName);
         var dllName = Path.Combine(Path.Combine(thisDllDir, ProcessArchitectureDirectory), simpleName);
         var ret = LoadLibrary(dllName);
         if (ret == IntPtr.Zero)
