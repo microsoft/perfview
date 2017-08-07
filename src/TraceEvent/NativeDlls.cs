@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -9,15 +10,27 @@ using System.Runtime.InteropServices;
 class NativeDlls
 {
     /// <summary>
-    /// Loads a native DLL with a filename-extention of 'simpleName' by adding the path of the currently executing assembly
+    /// ManifestModule.FullyQualifiedName returns this as file path if the assembly is loaded as byte array
+    /// </summary>
+    const string UnknownLocation = "<Unknown>";
+
+    /// <summary>
+    /// Loads a native DLL with a filename-extension of 'simpleName' by adding the path of the currently executing assembly
     /// 
     /// </summary>
     /// <param name="simpleName"></param>
     public static void LoadNative(string simpleName)
     {
-        // When TraceEvent is loaded as embedded assembly the executing assembly is mscorlib which points to the wrong path.
-        // We use therefore the executable as entry point
-        var thisDllDir = Path.GetDirectoryName(Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName);
+        // When TraceEvent is loaded as embedded assembly the manifest path is <Unkown>
+        // We use as fallback in that case the process executable location to enable scenarios where TraceEvent and related dlls
+        // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries. 
+        string assemblyLocation = Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName;
+        if( assemblyLocation == UnknownLocation)
+        {
+            assemblyLocation = Process.GetCurrentProcess().MainModule.FileName;
+        }
+
+        var thisDllDir = Path.GetDirectoryName(assemblyLocation);
         var dllName = Path.Combine(Path.Combine(thisDllDir, ProcessArchitectureDirectory), simpleName);
         var ret = LoadLibrary(dllName);
         if (ret == IntPtr.Zero)
