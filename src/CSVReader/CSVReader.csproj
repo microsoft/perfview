@@ -1,89 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{F7D0F851-9B0D-4224-91AB-7FC12477F206}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CSVReader</RootNamespace>
-    <AssemblyName>CSVReader</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <LangVersion>6</LangVersion>
-    <Features>strict</Features>
+    <TargetFramework>net45</TargetFramework>
+
+    <Description>CSVReader</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ETLStackBrowse\ByteWindow.cs" />
-    <Compile Include="CsvReader.cs" />
-    <Compile Include="ETLStackBrowse\CSwitch.cs" />
-    <Compile Include="ETLStackBrowse\HashBytes.cs" />
-    <Compile Include="ETLStackBrowse\Memory.cs" />
-    <Compile Include="ETLStackBrowse\Stack.cs" />
-    <Compile Include="EventSource.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ETLStackBrowse\Trace.cs" />
-    <Compile Include="ETLStackBrowse\TraceInterface.cs" />
-    <Compile Include="ETLStackBrowse\ZL\BlockType.cs" />
-    <Compile Include="ETLStackBrowse\ZL\compressionmode.cs" />
-    <Compile Include="ETLStackBrowse\ZL\CompressionTracing.cs" />
-    <Compile Include="ETLStackBrowse\ZL\CopyEncoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\DeflateInput.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Deflater.cs" />
-    <Compile Include="ETLStackBrowse\ZL\deflatestream.cs" />
-    <Compile Include="ETLStackBrowse\ZL\DeflateStreamAsyncResult.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoderStatics.cs" />
-    <Compile Include="ETLStackBrowse\ZL\FastEncoderWindow.cs" />
-    <Compile Include="ETLStackBrowse\ZL\fileformats.cs" />
-    <Compile Include="ETLStackBrowse\ZL\gzipdecoder.cs" />
-    <Compile Include="ETLStackBrowse\ZL\gzipstream.cs" />
-    <Compile Include="ETLStackBrowse\ZL\GZipUtils.cs" />
-    <Compile Include="ETLStackBrowse\ZL\HuffmanTree.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Inflater.cs" />
-    <Compile Include="ETLStackBrowse\ZL\InflaterState.cs" />
-    <Compile Include="ETLStackBrowse\ZL\inputbuffer.cs" />
-    <Compile Include="ETLStackBrowse\ZL\InvalidDataException.cs" />
-    <Compile Include="ETLStackBrowse\ZL\Match.cs" />
-    <Compile Include="ETLStackBrowse\ZL\MatchState.cs" />
-    <Compile Include="ETLStackBrowse\ZL\OutputBuffer.cs" />
-    <Compile Include="ETLStackBrowse\ZL\OutputWindow.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj">
-      <Project>{B68F4968-A7CF-41CC-AD6E-373DB5E67944}</Project>
-      <Name>TraceEvent</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

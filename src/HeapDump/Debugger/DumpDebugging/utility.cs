@@ -82,7 +82,7 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         /// <summary>
         /// Implementation of ICorDebugDataTarget.GetPlatform
         /// </summary>
-        /// <param name="type">platform that the process in this dump was executing on</param>
+        /// <returns>platform that the process in this dump was executing on</returns>
         public CorDebugPlatform GetPlatform()
         {
             // Infer platform based off CPU architecture
@@ -199,7 +199,7 @@ namespace Microsoft.Samples.Debugging.CorDebug.Utility
         /// Constructor to load a dll and be responible for freeing it.
         /// </summary>
         /// <param name="fileName">full path name of dll to load</param>
-        /// <exception cref="System.IO.FileNotFound">if fileName can't be found</exception>
+        /// <exception cref="System.IO.FileNotFoundException">if fileName can't be found</exception>
         /// <remarks>Throws exceptions on failure. Most common failure would be file-not-found, or
         /// that the file is not a  loadable image.</remarks>
         public UnmanagedLibraryLeak(string fileName)

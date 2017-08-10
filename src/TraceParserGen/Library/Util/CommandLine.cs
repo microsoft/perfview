@@ -108,42 +108,42 @@ using System.IO;
 /// The following example shows the steps for defining the parameters and qualifers for the example. Note
 /// that the order is important. Qualifers that apply to all commands must be specified first, then each
 /// parameter set then finally the default parameter set. Most steps are optional.
-#if EXAMPLE1
-        class CommandLineParserExample1
-        {
-            enum Command { checkout, checkin, list };
-            static void Main()
-            {
-                string dataBaseName = "myDefaultDataBase";
-                string comment = "";
-                Command command = checkout;
-                string[] fileNames = null;
-
-                // Step 1 define the parser. 
-                CommandLineParser commandLineParser = new CommandLineParser();      // by default uses Environment.CommandLine
-
-                // Step 2 (optional) define qualifiers that apply to all parameter sets. 
-                commandLineParser.DefineOptionalParameter("dataBaseName", ref dataBaseName, "Help for database.");
-
-                // Step 3A define the checkin command this includes all parameters and qualifers specific to this command
-                commandLineParser.DefineParameterSet("checkin", ref command, Command.checkin, "Help for checkin.");
-                commandLineParser.DefineOptionalQualifers("comment", ref comment, "Help for -comment.");
-
-                // Step 3B define the list command this includes all parameters and qualifers specific to this command
-                commandLineParser.DefineParameterSet("list", ref command, Command.list, "Help for list.");
-
-                // Step 4 (optional) define the default parameter set (in this case checkout). 
-                commandLineParser.DefineDefaultParameterSet("checkout", ref command, Command.checkout, "Help for checkout.");
-                commandLineParser.DefineParamter("fileNames", ref fileNames, "Help for fileNames.");
-
-                // Step 5, do final validation (look for undefined qualifiers, extra parameters ...
-                commandLineParser.CompleteValidation();
-
-                // Step 6 use the parsed values
-                Console.WriteLine("Got {0} {1} {2} {3} {4}", dataBaseName, command, comment, string.Join(',', fileNames));
-            }
-        }
-#endif
+///
+///     class CommandLineParserExample1
+///     {
+///         enum Command { checkout, checkin, list };
+///         static void Main()
+///         {
+///             string dataBaseName = "myDefaultDataBase";
+///             string comment = "";
+///             Command command = checkout;
+///             string[] fileNames = null;
+///
+///             // Step 1 define the parser. 
+///             CommandLineParser commandLineParser = new CommandLineParser();      // by default uses Environment.CommandLine
+///
+///             // Step 2 (optional) define qualifiers that apply to all parameter sets. 
+///             commandLineParser.DefineOptionalParameter("dataBaseName", ref dataBaseName, "Help for database.");
+///
+///             // Step 3A define the checkin command this includes all parameters and qualifers specific to this command
+///             commandLineParser.DefineParameterSet("checkin", ref command, Command.checkin, "Help for checkin.");
+///             commandLineParser.DefineOptionalQualifers("comment", ref comment, "Help for -comment.");
+///
+///             // Step 3B define the list command this includes all parameters and qualifers specific to this command
+///             commandLineParser.DefineParameterSet("list", ref command, Command.list, "Help for list.");
+///
+///             // Step 4 (optional) define the default parameter set (in this case checkout). 
+///             commandLineParser.DefineDefaultParameterSet("checkout", ref command, Command.checkout, "Help for checkout.");
+///             commandLineParser.DefineParamter("fileNames", ref fileNames, "Help for fileNames.");
+///
+///             // Step 5, do final validation (look for undefined qualifiers, extra parameters ...
+///             commandLineParser.CompleteValidation();
+///
+///             // Step 6 use the parsed values
+///             Console.WriteLine("Got {0} {1} {2} {3} {4}", dataBaseName, command, comment, string.Join(',', fileNames));
+///         }
+///     }
+///
 /// #RequiredAndOptional
 /// 
 /// Parameters and qualifiers can be specified as required (the default), or optional. Makeing the default
@@ -226,65 +226,65 @@ using System.IO;
 /// of command line parsing. Here is an example which defines a 'Ping' command. If you will notice there are
 /// very few lines of code that are not expressing something very specific to this applications. This is how
 /// it should be!
-#if EXAMPLE2
-        class CommandLineParserExample2
-        {
-            static void Main()
-            {
-                CommandLineParser.ParseForConsoleApplication(delegate(CommandLineParser commandLineParser)
-                {
-                    // Step 1: Initialize to the defaults
-                    string Host = null;       
-                    int Timeout = 1000;
-                    bool Forever = false;
-
-                    // Step 2: Define the paramters, in this case there is only the default parameter set. 
-                    CommandLineParser.ParseForConsoleApplication(args, delegate(CommandLineParser parser)
-                    {
-                        parser.DefineOptionalQualifier("Timeout", ref Timeout, "Timeout in milliseconds to wait for each reply.");
-                        parser.DefineOptionalQualifier("Forever", ref Forever, "Ping forever.");
-                        parser.DefineDefaultParameterSet("Ping sends a network request to a host to reply to the message (to check for liveness).");
-                        parser.DefineParameter("Host", ref Host, "The Host to send a ping message to.");
-                    });
-
-                    // Step 3, use the parameters
-                    Console.WriteLine("Got {0} {1} {2} {3}", Host, Timeout, Forever);
-                });
-            }
-        }
-#endif
+///
+///     class CommandLineParserExample2
+///     {
+///         static void Main()
+///         {
+///             CommandLineParser.ParseForConsoleApplication(delegate(CommandLineParser commandLineParser)
+///             {
+///                 // Step 1: Initialize to the defaults
+///                 string Host = null;       
+///                 int Timeout = 1000;
+///                 bool Forever = false;
+///
+///                 // Step 2: Define the paramters, in this case there is only the default parameter set. 
+///                 CommandLineParser.ParseForConsoleApplication(args, delegate(CommandLineParser parser)
+///                 {
+///                     parser.DefineOptionalQualifier("Timeout", ref Timeout, "Timeout in milliseconds to wait for each reply.");
+///                     parser.DefineOptionalQualifier("Forever", ref Forever, "Ping forever.");
+///                     parser.DefineDefaultParameterSet("Ping sends a network request to a host to reply to the message (to check for liveness).");
+///                     parser.DefineParameter("Host", ref Host, "The Host to send a ping message to.");
+///                 });
+///
+///                 // Step 3, use the parameters
+///                 Console.WriteLine("Got {0} {1} {2} {3}", Host, Timeout, Forever);
+///             });
+///         }
+///     }
+///
 /// Using local variables for the parsed arguments if fine when the program is not complex and the values
 /// don't need to be passed around to many routines.  In general, however it is often a better idea to
 /// create a class whose sole purpose is to act as a repository for the parsed arguments.   This also nicely
 /// separates all command line processing into a single class.   This is how the ping example would look  in
 /// that style. Notice that the main program no longer holds any command line processing logic.  and that
 /// 'commandLine' can be passed to other routines in bulk easily.  
-#if EXAMPLE3
-class CommandLineParserExample3
-{
-    static void Main()
-    {
-        CommandLine commandLine = new CommandLine();
-        Console.WriteLine("Got {0} {1} {2} {3}", commandLine.Host, commandLine.Timeout, commandLine.Forever);
-    }
-}
-class CommandLine
-{
-    public CommandLine()
-    {
-        CommandLineParser.ParseForConsoleApplication(args, delegate(CommandLineParser parser)
-        {
-            parser.DefineOptionalQualifier("Timeout", ref Timeout, "Timeout in milliseconds to wait for each reply.");
-            parser.DefineOptionalQualifier("Forever", ref Forever, "Ping forever.");
-            parser.DefineDefaultParameterSet("Ping sends a network request to a host to reply to the message (to check for liveness).");
-            parser.DefineParameter("Host", ref Host, "The Host to send a ping message to.");
-        });
-    }
-    public string Host = null;
-    public int Timeout = 1000;
-    public bool Forever = false;
-};
-#endif
+///
+///     class CommandLineParserExample3
+///     {
+///         static void Main()
+///         {
+///             CommandLine commandLine = new CommandLine();
+///             Console.WriteLine("Got {0} {1} {2} {3}", commandLine.Host, commandLine.Timeout, commandLine.Forever);
+///         }
+///     }
+///     class CommandLine
+///     {
+///         public CommandLine()
+///         {
+///             CommandLineParser.ParseForConsoleApplication(args, delegate(CommandLineParser parser)
+///             {
+///                 parser.DefineOptionalQualifier("Timeout", ref Timeout, "Timeout in milliseconds to wait for each reply.");
+///                 parser.DefineOptionalQualifier("Forever", ref Forever, "Ping forever.");
+///                 parser.DefineDefaultParameterSet("Ping sends a network request to a host to reply to the message (to check for liveness).");
+///                 parser.DefineParameter("Host", ref Host, "The Host to send a ping message to.");
+///             });
+///         }
+///         public string Host = null;
+///         public int Timeout = 1000;
+///         public bool Forever = false;
+///     };
+///
 /// see code:#Overview for more 
 /// </summary>
 public class CommandLineParser

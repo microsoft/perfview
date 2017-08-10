@@ -190,12 +190,12 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
         /// <summary>
-        /// Copy numberBytesToCopy from the DumpPointer into &destinationBuffer[indexDestination].
+        /// Copy numberBytesToCopy from the DumpPointer into &amp;destinationBuffer[indexDestination].
         /// </summary>
         /// <param name="destinationBuffer"></param>
         /// <param name="destinationBufferSizeInBytes"></param>
         /// <param name="indexDestination"></param>
-        /// <param name="cbBytesToCopy"></param>
+        /// <param name="numberBytesToCopy"></param>
         public void Copy(IntPtr destinationBuffer, uint destinationBufferSizeInBytes, uint indexDestination, uint numberBytesToCopy)
         {
             // Esnure that both source and destination are large enough.
@@ -214,7 +214,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// Copy raw bytes to buffer
         /// </summary>
         /// <param name="destinationBuffer">buffer to copy to.</param>
-        /// <param name="sizeBytes">number of bytes to copy. Caller ensures the destinationBuffer
+        /// <param name="numberBytesToCopy">number of bytes to copy. Caller ensures the destinationBuffer
         /// is large enough</param>
         public void Copy(IntPtr destinationBuffer, uint numberBytesToCopy)
         {
@@ -345,7 +345,6 @@ namespace Microsoft.Samples.Debugging.Native
     /// OS debugging code sign extends 32 bit wide addresses into 64 bit wide addresses.
     /// The CLR does not sign extend, thus you cannot round-trip target addresses exposed by this class.
     /// Currently we read these addresses once and don't hand them back, so it's not an issue.
-
     /// </summary>
     public class DumpReader : IDisposable
     {
@@ -1275,7 +1274,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <summary>
         /// Gets a MINIDUMP_STRING at the given DumpPointer as an System.String.
         /// </summary>
-        /// <param name="rva">DumpPointer to a MINIDUMP_STRING</param>
+        /// <param name="ptr">DumpPointer to a MINIDUMP_STRING</param>
         /// <returns>System.String representing contents of MINIDUMP_STRING at the given location
         /// in the dump</returns>
         protected internal String GetString(DumpPointer ptr)
@@ -1882,7 +1881,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// <returns>Null if no match. Else a DumpModule such that the target address is in between the range specified
         /// by the DumpModule's .BaseAddress and .Size property </returns>
         /// <remarks>This can be useful for symbol lookups or for using module images to
-        /// supplement memory read requests for minidumps.</remarks
+        /// supplement memory read requests for minidumps.</remarks>
         public DumpModule TryLookupModuleByAddress(ulong targetAddress)
         {
             // This is an optimized lookup path, which avoids using IEnumerable or creating
@@ -2100,7 +2099,7 @@ namespace Microsoft.Samples.Debugging.Native
         /// Get the raw thread context as a buffer or bytes. This is dangerous.
         /// </summary>
         /// <param name="buffer">pointer to buffer to get the context</param>
-        /// <param name="sizeBytes">size of the buffer in bytes. Must be large enough to hold the
+        /// <param name="sizeBufferBytes">size of the buffer in bytes. Must be large enough to hold the
         /// context. For variable-size contexts, caller may need to check context flags afterwards
         /// to determine how large the context really is.</param>
         /// <remarks>Context may not be available in the dump. </remarks>
@@ -2184,7 +2183,7 @@ namespace Microsoft.Samples.Debugging.Native
         }
 
         /// <summary>
-        /// Marshal a structure from the given buffer. Effectively returns ((T*) &buffer[offset]).
+        /// Marshal a structure from the given buffer. Effectively returns ((T*) &amp;buffer[offset]).
         /// </summary>
         /// <typeparam name="T">type of structure to marshal</typeparam>
         /// <param name="buffer">array of bytes representing binary buffer to marshal</param>

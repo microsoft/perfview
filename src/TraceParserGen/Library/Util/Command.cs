@@ -58,6 +58,7 @@ public sealed class CommandOptions
 
     /// <summary>
     /// Updates the NoThrow propery and returns the updated commandOptions.
+    /// </summary>
     /// <returns>Updated command options</returns>
     public CommandOptions AddNoThrow()
     {

@@ -345,12 +345,12 @@ namespace Profiler
             IEnumUnknown enumRuntimes;
 
             using (ProcessSafeHandle hProcess = NativeMethods.OpenProcess(
-                /**
+                /*
                 (int)(NativeMethods.ProcessAccessOptions.ProcessVMRead |
                                                                         NativeMethods.ProcessAccessOptions.ProcessQueryInformation |
                                                                         NativeMethods.ProcessAccessOptions.ProcessDupHandle |
                                                                         NativeMethods.ProcessAccessOptions.Synchronize),
-                 **/ 
+                 */ 
                 // TODO FIX NOW for debugging. 
                 0x1FFFFF, // PROCESS_ALL_ACCESS
                                                                         false, // inherit handle
@@ -788,7 +788,7 @@ namespace Profiler
         /// in the PE header</param>
         /// <param name="sizeOfImage">The SizeOfImage of the library being requested as specified
         /// in the PE header</param>
-        /// <param name="moduleHandle">An OS handle to the requested library</param>
+        /// <param name="hModule">An OS handle to the requested library</param>
         /// <returns>HResults.S_OK if the library was located, otherwise any appropriate
         /// error hresult</returns>
         [PreserveSig]
