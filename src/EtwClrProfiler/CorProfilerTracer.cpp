@@ -168,7 +168,7 @@ void __declspec(naked) __stdcall TailcallMethodNaked(FunctionID funcID)
 
 //==========================================================================
 // The constructor does almost nothing because we need the ability to call
-// back to the runtime.   Thus the 'real' inintialization happens in
+// back to the runtime.   Thus the 'real' initialization happens in
 // this routine.   In particular we register ProfilerControlCallback with
 // ETW.
 // We make Initialize call this routine with pvClientData = NULL, cbClientData = -1;
