@@ -194,7 +194,6 @@ UpgradeLog*.htm
 FakesAssemblies/
 
 # PerfView
-BuildDate.txt
 Global.dll
 PerfView.exe
 src/TraceEvent/EventCounterHandler.cs

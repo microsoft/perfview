@@ -1,130 +1,58 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props" Condition="Exists('..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props')" />
-  <Import Project="..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props" Condition="Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6BAC7496-6953-41B8-9042-AAE45405A095}</ProjectGuid>
+    <TargetFramework>net45</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PerfView</RootNamespace>
-    <AssemblyName>PerfView</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <WarningLevel>4</WarningLevel>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <LangVersion>6</LangVersion>
-    <Features>strict</Features>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Prefer32Bit>True</Prefer32Bit>
+    <StartupObject>PerfView.App</StartupObject>
+
+    <Description>PerfView</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <FileVersion>1.9.58.0</FileVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;PERFVIEW;STANDALONE_EXE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Debug\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436,0618</NoWarn>
-    <Prefer32Bit>true</Prefer32Bit>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="PerfView.Properties.BuildDateAttribute">
+      <_Parameter1>$([System.DateTime]::Now.ToString(`r`))</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <NoWarn>$(NoWarn),0436,0618</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;PERFVIEW;STANDALONE_EXE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>bin\Release\PerfView.XML</DocumentationFile>
-    <NoWarn>1591,0436,0618</NoWarn>
-    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
-    <Prefer32Bit>true</Prefer32Bit>
-  </PropertyGroup>
+
   <PropertyGroup>
     <ApplicationIcon>performance.ico</ApplicationIcon>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject>
-    </StartupObject>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="DiagnosticsHub.Packaging.Interop, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\DiagnosticsHub.Packaging.Interop.dll</HintPath>
-      <Private>True</Private>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource, Version=0.0.0.0, Culture=neutral, PublicKeyToken=13e5ffd4e05db186, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.DiagnosticsHub.Packaging.InteropEx, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\PerfView.SupportFiles.1.0.3\lib\net40\Microsoft.DiagnosticsHub.Packaging.InteropEx.dll</HintPath>
-    </Reference>
-    <Reference Include="OSExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
-    </Reference>
-    <Reference Include="ReachFramework" />
-    <Reference Include="System" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Printing" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xaml" />
-    <Reference Include="System.Xml" />
-    <Reference Include="TraceReloggerLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\TraceReloggerLib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
-    <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="ReachFramework" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Printing" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="ClrStats.cs" />
-    <Compile Include="GcStats.cs" />
-    <Compile Include="JitStats.cs" />
-    <Compile Include="OtherSources\Linux\LinuxPerfScriptEventParser.cs" />
-    <Compile Include="OtherSources\Linux\LinuxPerfScriptStackSource.cs" />
-    <Compile Include="OtherSources\XmlTreeStackSource.cs" />
-    <Compile Include="sigparser.cs" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.2" PrivateAssets="all" />
+    <PackageReference Include="PerfView.SupportFiles" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
+    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
+    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
+    <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\heapDump\GCHeapDump.cs">
       <Link>memory\GCHeapDump.cs</Link>
     </Compile>
@@ -152,44 +80,6 @@
     <Compile Include="..\TraceEvent\ZippedETL.cs">
       <Link>ZippedETL.cs</Link>
     </Compile>
-    <Compile Include="CommandLineArgs.cs" />
-    <Compile Include="CommandProcessor.cs" />
-    <Compile Include="ConfigData.cs" />
-    <Compile Include="Dialogs\FileInputAndOutput.xaml.cs">
-      <DependentUpon>FileInputAndOutput.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\EmptySymbolPathDialog.xaml.cs">
-      <DependentUpon>EmptySymbolPathDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\EULADialog.xaml.cs">
-      <DependentUpon>EULADialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\FeedbackDialog.xaml.cs">
-      <DependentUpon>FeedbackDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\MemoryDataDialog.xaml.cs">
-      <DependentUpon>MemoryDataDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\ProviderBrowser.xaml.cs">
-      <DependentUpon>ProviderBrowser.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\SourceNameLookup.xaml.cs">
-      <DependentUpon>SourceNameLookup.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\SymbolPathDialog.xaml.cs">
-      <DependentUpon>SymbolPathDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\UserCommandDialog.xaml.cs">
-      <DependentUpon>UserCommandDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="EtwEventSource.cs" />
-    <Compile Include="EventViewer\EventWindow.xaml.cs">
-      <DependentUpon>EventWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\UnhandledExceptionDialog.xaml.cs">
-      <DependentUpon>UnhandledExceptionDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Extensibility.cs" />
     <Compile Include="..\EtwHeapDump\DotNetHeapDumper.cs">
       <Link>memory\DotNetHeapDumper.cs</Link>
     </Compile>
@@ -197,228 +87,39 @@
       <Link>memory\DotNetHeapDumpGraphReader.cs</Link>
     </Compile>
     <Compile Include="..\HeapDumpCommon\DotNetHeapInfo.cs" />
-    <Compile Include="memory\ETWClrProfilerTraceEventParser.cs" />
-    <Compile Include="memory\GCHeapSimulator.cs" />
-    <Compile Include="memory\GCPinnedObjectAnalyzer.cs" />
-    <Compile Include="GuiUtilities\GuiUtilities.cs" />
-    <Compile Include="GuiUtilities\HistoryComboBox\HistoryCombBox.cs" />
-    <Compile Include="GuiUtilities\StatusBar\StatusBar.xaml.cs">
-      <DependentUpon>StatusBar.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="GuiUtilities\TextEditor\TextEditorControl.xaml.cs">
-      <DependentUpon>TextEditorControl.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="GuiUtilities\TextEditor\TextEditorWindow.xaml.cs">
-      <DependentUpon>TextEditorWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="GuiUtilities\WebBrowser\WebBrowser.xaml.cs">
-      <DependentUpon>WebBrowser.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="HeapView\GcInfoView.cs" />
-    <Compile Include="HeapView\HeapAllocView.cs" />
-    <Compile Include="HeapView\HeapAnalyzer.cs" />
-    <Compile Include="HeapView\HeapDiagram.cs" />
-    <Compile Include="HeapView\HeapView.cs" />
-    <Compile Include="HeapView\IssueView.cs" />
-    <Compile Include="HeapView\ThreadView.cs" />
-    <Compile Include="HeapView\Toolbox.cs" />
-    <Compile Include="InteropReport.cs" />
-    <Compile Include="IProcess.cs" />
-    <Compile Include="memory\ClrProfilerMemoryGraph.cs" />
-    <Compile Include="memory\ClrProfilerParser.cs" />
-    <Compile Include="Dialogs\RunCommandDialog.xaml.cs">
-      <DependentUpon>RunCommandDialog.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Dialogs\SelectProcess.xaml.cs">
-      <DependentUpon>SelectProcess.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="memory\ClrProfilerSources.cs" />
-    <Compile Include="memory\GenerationAwareMemoryGraph.cs" />
-    <Compile Include="memory\HeapSnapshot.cs" />
-    <Compile Include="memory\ImageFileMemoryGraph.cs" />
-    <Compile Include="memory\MemoryGraphStackSource.cs" />
-    <Compile Include="memory\MemoryStats.cs" />
-    <Compile Include="memory\JavaScriptDumpGraph.cs" />
-    <Compile Include="memory\JavaScriptHeapDumper.cs" />
-    <Compile Include="memory\PdbScopeMemoryGraph.cs" />
-    <Compile Include="Microsoft-Windows-NDIS-PacketCapture.cs" />
-    <Compile Include="ObjectViewer\ObjectViewer.xaml.cs">
-      <DependentUpon>ObjectViewer.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="ObjectViewer\TreeViewGrid.xaml.cs" />
-    <Compile Include="OtherSources\DebuggerStackSource.cs" />
-    <Compile Include="OtherSources\FileSizeStackSource.cs" />
-    <Compile Include="OtherSources\OffProfStackSource.cs" />
-    <Compile Include="OtherSources\TextStackSource.cs" />
-    <Compile Include="OtherSources\WTStackSource.cs" />
-    <Compile Include="OtherSources\XMLStackSource.cs" />
-    <Compile Include="OverweightReport.cs" />
-    <Compile Include="PerfViewData.cs" />
-    <Compile Include="PerfViewEventSource.cs" />
-    <Compile Include="PerfViewTraceEventParser.cs" />
-    <Compile Include="PinningGCHeapSimulatorObject.cs" />
-    <Compile Include="StateMachineFramework\ServerRequestComputer.cs" />
-    <Compile Include="StackViewer\CallerCalleeView.xaml.cs">
-      <DependentUpon>CallerCalleeView.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="StackViewer\CallTreeView.cs" />
-    <Compile Include="StackViewer\PerfDataGrid.xaml.cs">
-      <DependentUpon>PerfDataGrid.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="StackViewer\StackWindow.xaml.cs">
-      <DependentUpon>StackWindow.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="StateMachineFramework\ComputingResourceStateMachine.cs" />
-    <Compile Include="Triggers.cs" />
-    <Compile Include="Utilities\CacheFiles.cs" />
-    <Compile Include="Utilities\commandLine.cs" />
-    <Compile Include="Utilities\CommandLineUtilities.cs" />
-    <Compile Include="Utilities\ExceptionMessage.cs" />
-    <Compile Include="Utilities\FastStream.cs" />
-    <Compile Include="Utilities\ProcessTree.cs" />
-    <Compile Include="Utilities\SupportFiles.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
-    <Compile Include="Utilities\UsersGuide.cs" />
-    <Compile Include="Utilities\_README.cs" />
-    <Page Include="Dialogs\FileInputAndOutput.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\EmptySymbolPathDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\EULADialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\FeedbackDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\MemoryDataDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\ProviderBrowser.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\SourceNameLookup.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\SymbolPathDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\UserCommandDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="EventViewer\EventWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="Dialogs\UnhandledExceptionDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="GuiUtilities\StatusBar\StatusBar.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="GuiUtilities\TextEditor\TextEditorControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="GuiUtilities\TextEditor\TextEditorWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="GuiUtilities\WebBrowser\WebBrowser.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <!-- To allow for control (not loading WPF on ARM machines, we take over
-         the App.Xaml and do it directly in App.cs -->
-    <Compile Include="App.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="GuiApp.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Page Include="Dialogs\RunCommandDialog.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="Dialogs\SelectProcess.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ObjectViewer\ObjectViewer.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="ObjectViewer\TreeViewGrid.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="StackViewer\CallerCalleeView.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="StackViewer\PerfDataGrid.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="StackViewer\StackWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Utilities\ResourceUtilities.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Utilities\StreamUtilities.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
+    <!-- The tutorial only gets included as an embedded resource -->
+    <Compile Remove="SupportFiles\tutorial.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="**\*.xaml" SubType="Designer" Generator="MSBuild:Compile" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
+    <Compile Update="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="packages.config" />
+    <None Include="app.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <AppDesigner Include="Properties\" />
     <None Include="SupportFiles\Eula.rtf" />
   </ItemGroup>
   <ItemGroup>
@@ -466,29 +167,19 @@
       <LogicalName>.\amd64\msdia140.dll</LogicalName>
       <Link>amd64\msdia140.dll</Link>
     </EmbeddedResource>
-  </ItemGroup>
-  <Target Name="CopyTraceEventNativeBinariesToOutDir" BeforeTargets="Build">
-    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll" DestinationFolder="$(OutDir)x86" />
-    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll" DestinationFolder="$(OutDir)amd64" />
-    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\x86\msdia140.dll" DestinationFolder="$(OutDir)x86" />
-    <Copy SourceFiles="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll" DestinationFolder="$(OutDir)amd64" />
-    <Copy SourceFiles="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll" DestinationFolder="$(OutDir)x86" />
-    <Copy SourceFiles="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll" DestinationFolder="$(OutDir)x64" />
-  </Target>
-  <ItemGroup>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe</LogicalName>
       <Link>amd64\HeapDump.exe</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\x64\HeapDump.exe.config">
+    <EmbeddedResource Include="..\HeapDump\bin\x64\$(Configuration)\net45\HeapDump.exe.config">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\HeapDump.exe.config</LogicalName>
       <Link>amd64\HeapDump.exe.config</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\HeapDump\$(OutDir)\AnyCPU\HeapDump.exe">
+    <EmbeddedResource Include="..\HeapDump\$(OutDir)\HeapDump.exe">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\HeapDump.exe</LogicalName>
@@ -507,12 +198,12 @@
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
       <Link>amd64\EtwClrProfiler.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(OutDir)\PerfView.xml">
+    <!--<EmbeddedResource Include="$(OutDir)\PerfView.xml">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\PerfView.xml</LogicalName>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
+    </EmbeddedResource>-->
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
@@ -531,7 +222,7 @@
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.xml</LogicalName>
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\..\packages\Microsoft.Diagnostics.Runtime.0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)Microsoft.Diagnostics.Runtime\0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>
@@ -588,11 +279,6 @@
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\tutorial.pdb</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="SupportFiles\buildDate.txt">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\buildDate.txt</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\tutorial.cs">
       <Type>Non-Resx</Type>
@@ -695,81 +381,40 @@
       <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\CSVReader\CSVReader.csproj">
-      <Project>{F7D0F851-9B0D-4224-91AB-7FC12477F206}</Project>
-      <Name>CSVReader</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
-      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
-      <Name>FastSerialization</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj">
-      <Project>{CE854091-F55D-4AD1-AA57-49CB9B60CAC0}</Project>
-      <Name>HeapDumpInterface</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\traceEvent\TraceEvent.csproj">
-      <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
-      <Name>TraceEvent</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
+    <Resource Include="images\**\*.*" />
+    <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
     <Resource Include="performance.ico" />
   </ItemGroup>
+
   <ItemGroup>
     <SplashScreen Include="SplashScreen.png" />
   </ItemGroup>
+
+  <!-- CPS doesn't show these items by default, but we want to show them. -->
   <ItemGroup>
-    <Resource Include="images\VSFolder_open.png" />
-    <Resource Include="images\VSProject_genericfile.png" />
-    <Resource Include="images\VSProject_cab.png" />
-    <Resource Include="images\VSProject_form.png" />
-    <Resource Include="images\VSProject_schema.png" />
-    <Resource Include="images\VSProject_html.png" />
-    <Resource Include="images\Chart.png" />
+    <!-- XAML pages and resources -->
+    <None Include="@(Page)" />
+    <None Include="@(Resource)" />
+
+    <!-- Fix nesting of generated source files in the project tree -->
+    <Compile Update="**\*.xaml.cs" SubType="Designer" DependentUpon="%(Filename)" />
   </ItemGroup>
-  <ItemGroup>
-    <Resource Include="GuiUtilities\TextEditor\Images\FindNext_VS.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.4.5">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 4.5</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <!-- Work around CoreCompile doesn't exist error -->
   <PropertyGroup>
-    <PostBuildEvent>mkdir "$(ProjectDir)..\VS"
-echo COPYING xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
-xcopy /y "$(TargetPath)" "$(ProjectDir)..\VS"
-REM  deleting Dlls so we pick them up from the deployment dir.</PostBuildEvent>
+    <LanguageTargets>$(MSBuildExtensionsPath)\$(VisualStudioVersion)\Bin\Microsoft.CSharp.targets</LanguageTargets>
   </PropertyGroup>
-  <PropertyGroup>
-    <PreBuildEvent>echo %25DATE%25 %25TIME%25&gt; "$(ProjectDir)\SupportFiles\BuildDate.txt"</PreBuildEvent>
-  </PropertyGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props'))" />
-    <Error Condition="!Exists('..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\PerfView.SupportFiles.1.0.3\build\PerfView.SupportFiles.props'))" />
-  </Target>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
+
+  <!--
+     Work around to fix Intellisense file generation for XAML projects
+     https://github.com/dotnet/project-system/issues/2488
   -->
+  <Target Name="WorkaroundForXAMLIntellisenseBuildIssue" AfterTargets="_CheckCompileDesignTimePrerequisite">
+    <PropertyGroup>
+      <BuildingProject>false</BuildingProject>
+    </PropertyGroup>
+  </Target>
+
 </Project>

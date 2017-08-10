@@ -38,10 +38,10 @@ public static class ArrayUtil
     /// <summary>
     /// Return a new array where a range as been removed and replace with a range from another array.
     /// </summary>
-    /// <param name="soucreArray">The source array to be manipulated.  It is NOT modified.</param>
+    /// <param name="sourceArray">The source array to be manipulated.  It is NOT modified.</param>
     /// <param name="removalIndex">The first element of sourceArray to remove.</param>
     /// <param name="removalCount">The number of elements to remove.  Elements after this exist in the
-    //         return array</param>
+    /// return array</param>
     /// <param name="insertArray">The array that will provide the elements to splice into soruceArray.</param>
     /// <param name="insertIndex">The first element in insertArray to splice in.</param>
     /// <param name="insertCount">The number of elements from insertArray to splice in.</param>

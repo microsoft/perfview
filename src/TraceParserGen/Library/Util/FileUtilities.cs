@@ -110,7 +110,8 @@ static public class FileUtilities
 
     /// <summary>
     /// Try to delete 'fileName' catching any exception.  Returns true
-    /// if successful.   It will delete read-only files.  
+    /// if successful.   It will delete read-only files.
+    /// </summary>
     public static bool TryDelete(string fileName)
     {
         bool ret = false;
