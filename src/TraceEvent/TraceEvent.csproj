@@ -35,10 +35,23 @@
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
-    <PackageReference Include="System.IO.Compression" Version="4.3.0" />
-  </ItemGroup>
+  <!--
+    Unconditional use of PackageReference would work if we targeted net46, but the reference APIs do not include
+    support for net45 targets. Work around the issue by using conditional references.
+  -->
+  <Choose>
+    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
+        <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+      </ItemGroup>
+    </When>
+    <When Condition="'$(TargetFramework)' == 'net45'">
+      <ItemGroup>
+        <Reference Include="System.IO.Compression" />
+      </ItemGroup>
+    </When>
+  </Choose>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.2" PrivateAssets="all" />
