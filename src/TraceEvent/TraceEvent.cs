@@ -410,13 +410,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
-            // Anything that is out of bounds is limited. 
-            // This is important becasuse we use 0 and MaxValue to repsesent unknown
-            // but in analysis we don't expect all times to be limited to the trace.   
+            // Insure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
             if (QPCTime < sessionStartTimeQPC)
                 QPCTime = sessionStartTimeQPC;
-            if (QPCTime > sessionEndTimeQPC)
-                QPCTime = sessionEndTimeQPC;
+
+            // We used to have a sanity check to insure that the time was always inside sessionEndTimeQPC
+            // ETLX files enforce this, but sometimes ETWTraceEventParser (ETL) traces have bad session times.
+            // After some thought, the best answer seems to be not to try to enforce this consistantancy.
+            // (it will be true for ETLX but maybe not for ETWTraceEventParser scenarios).  
 
             Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
