@@ -2520,6 +2520,16 @@
                     drill into more detail by using the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks view</a>.
                 </li>
                 <li>
+                    <strong><a id="PerfViewIisStats">IIS Stats</a></strong> - Show when IIS ETW
+                    events were collected (these are collected when the <b>IIS</b> checkbox or the <b>IIS:WWW Server</b>
+                    provider is specified as a &#39;Additional Providers&#39;).&nbsp;&nbsp; This view
+                    give you an &#39;overall view of request processing at an IIS level by analyzing IIS ETW events,
+                    provides you details on the Top 100 slowest requests in the trace, gives you details of the failed requests in the trace
+                    and allows you to drill down further on the modules causing slowness or failures. You can click on the individual requests
+                    to see all events fired in the IIS pipeline for that very request. This view helps you diagnose slow performance issues in
+                    various stages of request processing in the IIS pipeline.
+                </li>
+                <li>
                     <strong><a id="ETLEventSource">Events View</a></strong> - The Events view is the
                     &#39;raw&#39; view of the ETW events.&nbsp;&nbsp; Basically and ETL file is simply
                     a sequence of event payloads where each event consists of an event type, a timestamp,
