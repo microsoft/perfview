@@ -2864,7 +2864,7 @@ namespace Dia2Lib
     /// From there you can do anything you need.  
     /// 
     /// In order to get IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
-    /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Interop.Dia2Lib.dll
+    /// vctools\langapi\idl\dia2_internal.idl file from devdiv to produce Dia2Lib.dll
     /// 
     /// roughly what you need to do is 
     ///     copy vctools\langapi\idl\dia2_internal.idl .
@@ -2873,7 +2873,7 @@ namespace Dia2Lib
     ///     Change dia2.idl to include interface IDiaDataSource3 inside library Dia2Lib->importlib->coclass DiaSource
     ///     midl dia2_internal.idl /D CC_DP_CXX
     ///     tlbimp dia2_internal.tlb
-    ///     xcopy Dia2Lib.dll Interop.Dia2Lib.dll
+    ///     REM result is Dia2Lib.dll 
     /// </summary>
     internal static class DiaLoader
     {
