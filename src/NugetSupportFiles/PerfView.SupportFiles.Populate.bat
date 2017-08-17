@@ -2,9 +2,10 @@ REM copies from an existing build to a nuget package creation area (so that *.Ma
 REM
 REM *** This is mostly a template for doing the copy.      ****  
 REM *** Most likey you want this to be the current version ****
+REM *** PLEASE MODIFY THE VERSION NUMBER TO BE CURRENT!    ****
 REM 
-xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.3\*.dll PerfView.SupportFiles
-xcopy /s /y ..\..\packages\PerfView.SupportFiles.1.0.3\*.exe PerfView.SupportFiles
+xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.3\*.dll PerfView.SupportFiles
+xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\PerfView.SupportFiles\1.0.3\*.exe PerfView.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\x86\DiagnosticsHub.Packaging.dll

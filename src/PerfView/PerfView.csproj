@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.3" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
@@ -264,11 +264,11 @@
       <LogicalName>.\OSExtensions.dll</LogicalName>
       <Link>OSExtensions.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\Interop.Dia2Lib.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)net40\Dia2Lib.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
-      <LogicalName>.\Interop.Dia2Lib.dll</LogicalName>
-      <Link>Interop.Dia2Lib.dll</Link>
+      <LogicalName>.\Dia2Lib.dll</LogicalName>
+      <Link>Dia2Lib.dll</Link>
     </EmbeddedResource>
     <EmbeddedResource Include="SupportFiles\tutorial.exe">
       <Type>Non-Resx</Type>
