@@ -1871,7 +1871,7 @@ namespace Microsoft.Diagnostics.Tracing
         [Conditional("DEBUG")]
         protected internal void DebugValidate()
         {
-            //this.Validate();
+            this.Validate();
         }
 
         // Note that you can't use the ExtendedData, UserData or UserContext fields, they are not set
