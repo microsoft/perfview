@@ -239,10 +239,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     var threadIndex = m_log.CallStacks.ThreadIndex((CallStackIndex)curIndex);
                     nextIndex += (int)threadIndex;
 
-                    // Mark it as a broken stack, which come after all the indexes for normal threads and processes. 
-                    // TODO Fix NOW Clr thread sample only has managed call stack. Do we have a better solution to differentiate it from normal call stack?
-                    if (!string.Equals(m_log.origin, EventPipeEventSource.EventPipe, StringComparison.OrdinalIgnoreCase)
-                        && !ReasonableTopFrame(callStackIndex, threadIndex))
+                    if (!OnlyManagedCodeStacks && !ReasonableTopFrame(callStackIndex, threadIndex))
                     { 
                         nextIndex += m_log.Threads.Count + m_log.Processes.Count;
                     }
@@ -761,8 +758,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 callerIdx = top;
 
-                // TODO Fix NOW Clr thread sample only has managed call stack. Do we have a better solution to differentiate it from normal call stack?
-                if (!string.Equals(m_log.origin, EventPipeEventSource.EventPipe, StringComparison.OrdinalIgnoreCase))
+                if (!OnlyManagedCodeStacks)
                 {
                     var frameName = GetFrameName(frameIdx, false);
                     var bangIdx = frameName.IndexOf('!');

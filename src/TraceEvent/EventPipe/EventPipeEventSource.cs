@@ -1,13 +1,5 @@
 ﻿using FastSerialization;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -21,9 +13,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
 
             _deserializer = deserializer;
-            
-            // Add a watermark to indicate it's from EventPipe
-            origin = EventPipe;
         }
 
         ~EventPipeEventSource()

@@ -1,8 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 
 
@@ -12,17 +9,19 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
     public sealed class EventPipeTraceEventParser : ExternalTraceEventParser
     {
-        public EventPipeTraceEventParser(TraceEventSource source)
-            : base(source)
+        public EventPipeTraceEventParser(TraceEventSource source, bool dontRegister = false)
+            : base(source, dontRegister)
         {
         }
 
-        public void AddTempalte(EventMetadata eventMetadata)
+        public void AddTemplate(EventMetadata eventMetadata)
         {
             var key = Tuple.Create(eventMetadata.ProviderId, (TraceEventID)eventMetadata.EventId);
             if (!_templates.ContainsKey(key))
             {
-                _templates.Add(key, NewTemplate(eventMetadata.ProviderId, eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions));
+                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
+                _templates.Add(key, template);
+                OnNewEventDefintion(template, mayHaveExistedBefore: false);
             }
         }
 
@@ -194,7 +193,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
             if (eventName != null)
             {
-
                 if (eventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
                 {
                     opcode = (int)TraceEventOpcode.Start;

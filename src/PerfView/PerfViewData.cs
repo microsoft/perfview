@@ -6303,6 +6303,8 @@ table {
                         var eventLog = GetTraceLog(log);
 
                         var stackSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        stackSource.OnlyManagedCodeStacks = true;
 
                         stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
 
@@ -6340,6 +6342,8 @@ table {
                         var eventLog = GetTraceLog(log);
 
                         var startStopSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        startStopSource.OnlyManagedCodeStacks = true;
 
                         var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
                         computer.GenerateThreadTimeStacks(startStopSource);
