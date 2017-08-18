@@ -273,6 +273,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// all StackSourceFrameIndex are guaranteed to be less than this.  Allocate an array of this size to associate side information
         /// </summary>
         public abstract int CallFrameIndexLimit { get; }
+        /// <summary>
+        /// True if it only has managed code stacks. Otherwise false.
+        /// </summary>
+        public virtual bool OnlyManagedCodeStacks { get; set; } = false;
 
         /// <summary>
         /// Computes the depth (number of callers), associated with callStackIndex.  This routine is O(n) and mostly useful for debugging.  

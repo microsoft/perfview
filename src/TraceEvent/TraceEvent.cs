@@ -398,8 +398,6 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ DynamicTraceEventParser _Dynamic;
         internal /*protected*/ RegisteredTraceEventParser _Registered;
 #endif //  !NOT_WINDOWS
-
-        internal /*protected*/ string origin;
         #endregion
         #region private
         /// <summary>
@@ -1873,12 +1871,7 @@ namespace Microsoft.Diagnostics.Tracing
         [Conditional("DEBUG")]
         protected internal void DebugValidate()
         {
-            // TODO FIX NOW For EventPipe data, the validation of EventDataLength for the following data always fail. 
-            // GCSuspendEETraceData, GCNoUserDataTraceData, MethodLoadUnloadVerboseTraceData, MethodJittingStartedTraceData
-            if (this.source.origin == EventPipeEventSource.EventPipe)
-                return;
-
-            this.Validate();
+            //this.Validate();
         }
 
         // Note that you can't use the ExtendedData, UserData or UserContext fields, they are not set
@@ -2439,11 +2432,6 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO FIX NOW currently we have a hack where we know we are not correct 
             // for JScriptTraceEventParser.  
             if (GetType().Name == "JScriptTraceEventParser")
-                return;
-
-            // TODO FIX NOW ApplicationServerTraceEventParser contains some templates sharing the same event (task) name but different event ids
-            // The validation rule here doesn't quite work for them.
-            if (GetType().Name == "ApplicationServerTraceEventParser")
                 return;
 
             // Use reflection to see what events have declared 

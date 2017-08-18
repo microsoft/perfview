@@ -22,7 +22,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new ClrThreadSampleTraceData(value, 0, 0, "Thread", Guid.Empty, 1, "Sample", ProviderGuid, ProviderName));
+                RegisterTemplate(new ClrThreadSampleTraceData(value, 0, 0, "Thread", Guid.Empty, 10, "Sample", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -35,7 +35,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new ClrThreadStackWalkTraceData(value, 1, 0, "Thread", Guid.Empty, 2, "StackWalk", ProviderGuid, ProviderName));
+                RegisterTemplate(new ClrThreadStackWalkTraceData(value, 1, 0, "Thread", Guid.Empty, 11, "StackWalk", ProviderGuid, ProviderName));
             }
             remove
             {

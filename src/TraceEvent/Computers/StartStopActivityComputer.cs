@@ -74,8 +74,8 @@ namespace Microsoft.Diagnostics.Tracing
 
             Dictionary<long, int> mapConnectionToTargetProcess = new Dictionary<long, int>();
 #endif 
-            //var dynamicParser = source.Dynamic;
-            source.AllEvents += delegate (TraceEvent data)
+            var dynamicParser = source.Dynamic;
+            dynamicParser.All += delegate (TraceEvent data)
             {
                 // Special case IIS.  It does not use start and stop opcodes (Ugg), but otherwise 
                 // follows normal start-stop activity ID conventions.   We also want it to work even

@@ -5,10 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -108,7 +105,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // 0 is the label for metadata.
             if (metadataLabel == 0)
             {
-                ReadAndUpdateEventMetadataDirectory(eventStart);
+                ReadAndUpdateEventMetadataDictionary(eventStart);
             }
             else
             {
@@ -127,7 +124,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             }
         }
 
-        private void ReadAndUpdateEventMetadataDirectory(StreamLabel eventStart)
+        private void ReadAndUpdateEventMetadataDictionary(StreamLabel eventStart)
         {
             var eventMetadata = new EventMetadata();
 
@@ -136,7 +133,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                 + sizeof(Int64) // Timestamp
                 + sizeof(Guid)  // ActivityId
                 + sizeof(Guid); // RelatedActivityId
-            _deserializer.Goto(_deserializer.Current +  (uint)commonFieldSize);
+            _deserializer.Goto(_deserializer.Current + (uint)commonFieldSize);
 
             // Read the event payload size.
             var payloadSize = _deserializer.ReadInt();
@@ -177,8 +174,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
                     }
                 }
 
-                // add a new tempalte to event parser
-                _eventParser.AddTempalte(eventMetadata);
+                // add a new template to event parser
+                _eventParser.AddTemplate(eventMetadata);
             }
 
             // Add the new event meta data into dictionary

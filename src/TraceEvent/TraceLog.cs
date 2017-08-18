@@ -468,7 +468,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.machineName = "";
             this.osName = "";
             this.osBuild = "";
-            this.origin = "";
             this.sampleProfileInterval100ns = 10000;    // default is 1 msec
             this.fnAddAddressToCodeAddressMap = AddAddressToCodeAddressMap;
         }
@@ -847,11 +846,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new MicrosoftWindowsKernelFileTraceEventParser(this);
 
             new SampleProfilerTraceEventParser(this);
-
-            // TODO: Do we really need to register it as standard parser?
-            // It seems we need it for the events from EventPipe.
-            new FrameworkEventSourceTraceEventParser(this);
-
 #if false 
             new WpfTraceEventParser(newLog);
             new AppHostTraceEventParser(newLog);
@@ -931,7 +925,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.numberOfProcessors = rawEvents.NumberOfProcessors;
             this.eventsLost = rawEvents.EventsLost;
             this.osVersion = rawEvents.OSVersion;
-            this.origin = rawEvents.origin;
 
             // These parsers create state and we want to collect that so we put it on our 'parsers' list that we serialize.  
             var kernelParser = rawEvents.Kernel;
@@ -3041,7 +3034,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             serializer.Log("</WriteCollection>\r\n");
 
             serializer.Write(truncated);
-            serializer.Write(origin);
         }
         void IFastSerializable.FromStream(Deserializer deserializer)
         {
@@ -3183,7 +3175,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 relatedActivityIDs.Add(guid);
             }
             deserializer.Read(out truncated);
-            deserializer.Read(out origin);
         }
         int IFastSerializableVersion.Version
         {
