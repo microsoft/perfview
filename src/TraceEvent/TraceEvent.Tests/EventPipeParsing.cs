@@ -12,6 +12,29 @@ namespace TraceEventTests
 {
     public class EventPipeParsing : EventPipeTestBase
     {
+        private class DebugListenerBlock : IDisposable
+        {
+            public DebugListenerBlock()
+            {
+                if (System.Diagnostics.Debug.Listeners != null && System.Diagnostics.Debug.Listeners.Count > 0)
+                {
+                    _blockedListeners = new System.Diagnostics.TraceListener[System.Diagnostics.Debug.Listeners.Count];
+                    System.Diagnostics.Debug.Listeners.CopyTo(_blockedListeners, 0);
+                    System.Diagnostics.Debug.Listeners.Clear();
+                }
+            }
+
+            public void Dispose()
+            {
+                if (_blockedListeners != null)
+                {
+                    System.Diagnostics.Debug.Listeners.AddRange(_blockedListeners);
+                }
+            }
+
+            private System.Diagnostics.TraceListener[] _blockedListeners;
+        }
+
         private class EventRecord
         {
             public int TotalCount;
@@ -55,7 +78,10 @@ namespace TraceEventTests
             };
 
             // Process
-            traceSource.Process();
+            using (new DebugListenerBlock())
+            {
+                traceSource.Process();
+            }
 
             // Validate
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
