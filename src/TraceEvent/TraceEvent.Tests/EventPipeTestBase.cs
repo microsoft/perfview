@@ -13,7 +13,6 @@ namespace TraceEventTests
         protected EventPipeTestBase(ITestOutputHelper output)
             : base(output)
         {
-            System.Diagnostics.Debug.Listeners.Clear();
         }
 
         private static IEnumerable<string> TestEventPipeZipFiles
