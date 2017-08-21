@@ -287,6 +287,11 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             //
             // GC
             //
+            // Blocking GCs are marked as complete (IsComplete set to true) during RestartEEStop, except for the gen1 GCs that
+            // happen right before the NGC2 (full blocking GC) in provisional mode. For the exceptional case we set the gen1 as
+            // complete during the NGC2's GCStart at which point we know that's an NGC2 triggered due to provisional mode.
+            // Background GCs are marked as complete during GCHeapStats as it does not call RestartEE at the end of a GC.
+            //
             if (processGCEvents)
             {
                 // log at both startup and rundown
@@ -592,9 +597,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         }
 
                         Debug.Assert(stats.GC.m_stats.suspendTimeRelativeMSec != -1);
-                        if (isEphemeralGCAtBGCStart)
+                        if (isEphemeralGCAtBGCStart || _gc.Reason == GCReason.PMFullGC)
                         {
                             _gc.PauseStartRelativeMSec = data.TimeStampRelativeMSec;
+                            if (_gc.Reason == GCReason.PMFullGC)
+                            {
+                                TraceGC lastGC = TraceGarbageCollector.GetCurrentGC(stats);
+                                if (lastGC != null)
+                                {
+                                    lastGC.OnEnd(stats.GC);
+                                }
+                            }
                         }
                         else
                         {
@@ -2409,11 +2422,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 // If the prevous GC has that heap get its size.  
                 var perHeapGenData = GCs[gc.Index - 1].PerHeapHistories;
                 if (HeapIndex < perHeapGenData.Count)
+                {
                     prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSizeAfter;
+                    // Note that for gen3 we need to do something extra as its after data may not be updated if the last
+                    // GC was a gen0 GC (A GC will update its size after data up to (Generation + 1) because that's all 
+                    // it would change).
+                    if ((gen == Gens.GenLargeObj) && (prevObjSize == 0) && (GCs[gc.Index - 1].Generation < (int)Gens.Gen1))
+                    {
+                        prevObjSize = perHeapGenData[HeapIndex].GenData[(int)gen].ObjSpaceBefore;
+                    }
+                }
             }
             GCPerHeapHistoryGenData currentGenData = gc.PerHeapHistories[HeapIndex].GenData[(int)gen];
-            long survRate = currentGenData.SurvRate;
-            long currentObjSize = currentGenData.ObjSizeAfter;
             double Allocated;
 
             if (currentGenData.HasObjSpaceBefore)
@@ -2422,12 +2442,16 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
             else
             {
+                long survRate = currentGenData.SurvRate;
+
                 if (survRate == 0)
                     Allocated = EstimateAllocSurv0(GCs, gc, HeapIndex, gen);
                 else
+                {
+                    long currentObjSize = currentGenData.ObjSizeAfter;
                     Allocated = (currentGenData.Out + currentObjSize) * 100 / survRate - prevObjSize;
+                }
             }
-
 
             return Allocated;
         }

@@ -9269,6 +9269,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         InducedNotForced = 0x7,
         Internal = 0x8,
         InducedLowMemory = 0x9,
+        InducedCompacting = 0xa,
+        LowMemoryHost = 0xb,
+        PMFullGC = 0xc,
     }
     public enum GCSuspendEEReason
     {
