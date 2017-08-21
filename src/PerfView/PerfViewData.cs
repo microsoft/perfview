@@ -5606,10 +5606,7 @@ table {
 
             m_Children.Add(new PerfViewTraceInfo(this));
             m_Children.Add(new PerfViewProcesses(this));
-            if (hasIis)
-            {
-                m_Children.Add(new PerfViewIisStats(this));
-            }
+           
             m_Children.Add(new PerfViewStackSource(this, "Processes / Files / Registry") { SkipSelectProcess = true });
 
             if (hasCPUStacks)
@@ -5728,6 +5725,11 @@ table {
                         name += " (CPU ONLY)";
                     obsolete.Children.Add(new PerfViewStackSource(this, name));
                 }
+            }
+
+            if (hasIis)
+            {
+                advanced.Children.Add(new PerfViewIisStats(this));
             }
 
             if (hasProjectNExecutionTracingEvents && AppLog.InternalUser)
