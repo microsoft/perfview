@@ -7,12 +7,14 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text.RegularExpressions;
 using FastSerialization;
-using System.Diagnostics.Eventing;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Extensions;
 using System.IO;
 using System.Threading;
 
+#if !NETSTANDARD2_0
+using System.Diagnostics.Eventing;
+#endif
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -1075,6 +1077,88 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int Flags;
             public EVENT_PROPERTY_INFO EventPropertyInfoArray;  // Actually an array, this is the first element.  
         }
+
+#if NETSTANDARD2_0
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
+        internal struct EventDescriptor
+        {
+            [FieldOffset(0)]
+            private int m_traceloggingId;
+
+            [FieldOffset(0)]
+            private ushort m_id;
+
+            [FieldOffset(2)]
+            private byte m_version;
+
+            [FieldOffset(3)]
+            private byte m_channel;
+
+            [FieldOffset(4)]
+            private byte m_level;
+
+            [FieldOffset(5)]
+            private byte m_opcode;
+
+            [FieldOffset(6)]
+            private ushort m_task;
+
+            [FieldOffset(8)]
+            private long m_keywords;
+
+            public int EventId => m_id;
+
+            public byte Version => m_version;
+
+            public byte Channel => m_channel;
+
+            public byte Level => m_level;
+
+            public byte Opcode => m_opcode;
+
+            public int Task => m_task;
+
+            public long Keywords => m_keywords;
+
+            public override bool Equals(object obj)
+            {
+                return obj is EventDescriptor
+                    && Equals((EventDescriptor)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return m_id
+                    ^ m_version
+                    ^ m_channel
+                    ^ m_level
+                    ^ m_opcode
+                    ^ m_task
+                    ^ (int)m_keywords;
+            }
+
+            public bool Equals(EventDescriptor other)
+            {
+                return m_id == other.m_id
+                    && m_version == other.m_version
+                    && m_channel == other.m_channel
+                    && m_level == other.m_level
+                    && m_opcode == other.m_opcode
+                    && m_task == other.m_task
+                    && m_keywords == other.m_keywords;
+            }
+
+            public static bool operator ==(EventDescriptor event1, EventDescriptor event2)
+            {
+                return event1.Equals(event2);
+            }
+
+            public static bool operator !=(EventDescriptor event1, EventDescriptor event2)
+            {
+                return !event1.Equals(event2);
+            }
+        }
+#endif
 
         internal struct EVENT_PROPERTY_INFO
         {
