@@ -160,6 +160,7 @@ namespace LinuxTracing.Tests
 				});
 		}
 
+        [Fact]
 		public void NonSchedHeader()
 		{
 			string path = Constants.GetTestingPerfDumpPath("onegeneric");

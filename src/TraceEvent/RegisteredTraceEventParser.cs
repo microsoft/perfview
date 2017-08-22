@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text.RegularExpressions;
 using FastSerialization;
-using System.Diagnostics.Eventing;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Extensions;
 using System.IO;
@@ -166,9 +165,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
                         // Insure uniqueness of the event name
                         int eventNumForName;
-                        if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.EventId)
-                            eventName = eventName + eventInfo->EventDescriptor.EventId.ToString();
-                        eventNames[eventName] = eventInfo->EventDescriptor.EventId;
+                        if (eventNames.TryGetValue(eventName, out eventNumForName) && eventNumForName != eventInfo->EventDescriptor.Id)
+                            eventName = eventName + eventInfo->EventDescriptor.Id.ToString();
+                        eventNames[eventName] = eventInfo->EventDescriptor.Id;
 
                         // Get task information
                         TaskInfo taskInfo;
@@ -180,11 +179,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             symbolName += "_V" + eventInfo->EventDescriptor.Version;
 
                         StringWriter eventWriter;
-                        if (!events.TryGetValue(eventInfo->EventDescriptor.EventId, out eventWriter))
-                            events[eventInfo->EventDescriptor.EventId] = eventWriter = new StringWriter();
+                        if (!events.TryGetValue(eventInfo->EventDescriptor.Id, out eventWriter))
+                            events[eventInfo->EventDescriptor.Id] = eventWriter = new StringWriter();
 
                         eventWriter.Write("     <event value=\"{0}\" symbol=\"{1}\" version=\"{2}\" task=\"{3}\"",
-                            eventInfo->EventDescriptor.EventId,
+                            eventInfo->EventDescriptor.Id,
                             symbolName,
                             eventInfo->EventDescriptor.Version,
                             taskName);
@@ -212,9 +211,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                             eventWriter.Write(" level=\"{0}\"", levelName);
                         }
 
-                        var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keywords);
+                        var keywordStr = GetKeywordStr(keywords, (ulong)eventInfo->EventDescriptor.Keyword);
                         if (keywordStr.Length > 0)
-                            eventWriter.Write(" keywords=\"" + keywordStr + "\"", eventInfo->EventDescriptor.Keywords);
+                            eventWriter.Write(" keywords=\"" + keywordStr + "\"", eventInfo->EventDescriptor.Keyword);
 
                         if (eventInfo->TopLevelPropertyCount != 0)
                         {
@@ -771,7 +770,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (eventInfo->ProviderNameOffset != 0)
                     providerName = new string((char*)(&eventBuffer[eventInfo->ProviderNameOffset]));
 
-                var eventID = eventInfo->EventDescriptor.EventId;
+                var eventID = eventInfo->EventDescriptor.Id;
                 // Mark it as a classic event if necessary. 
                 if (eventInfo->DecodingSource == 1) // means it is from MOF (Classic)
                     eventID = (int)TraceEventID.Illegal;
@@ -1056,7 +1055,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             public Guid ProviderGuid;
             public Guid EventGuid;
-            public EventDescriptor EventDescriptor;
+            public EVENT_DESCRIPTOR EventDescriptor;
             public int DecodingSource;
             public int ProviderNameOffset;
             public int LevelNameOffset;
@@ -1074,6 +1073,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             public int TopLevelPropertyCount;
             public int Flags;
             public EVENT_PROPERTY_INFO EventPropertyInfoArray;  // Actually an array, this is the first element.  
+        }
+
+        public struct EVENT_DESCRIPTOR
+        {
+            public ushort Id;
+            public byte Version;
+            public byte Channel;
+            public byte Level;
+            public byte Opcode;
+            public ushort Task;
+            public ulong Keyword;
         }
 
         internal struct EVENT_PROPERTY_INFO
