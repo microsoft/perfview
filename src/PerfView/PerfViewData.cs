@@ -4,6 +4,7 @@ using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
 using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
@@ -767,6 +768,7 @@ namespace PerfView
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
             new XmlTreeFile(),
+            new EventPipePerfViewData()
         };
 
         #region private
@@ -932,6 +934,14 @@ namespace PerfView
                     if (linuxDataFile != null)
                     {
                         trace = linuxDataFile.GetTraceLog(worker.LogWriter);
+                    }
+                    else
+                    {
+                        var eventPipeDataFile = DataFile as EventPipePerfViewData;
+                        if (eventPipeDataFile != null)
+                        {
+                            trace = eventPipeDataFile.GetTraceLog(worker.LogWriter);
+                        }
                     }
                 }
 
@@ -4181,7 +4191,7 @@ table {
                                 if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
                                 {
                                     // Create a node that indicates where in the file (in buckets) the access was from 
-                                    double normalizeDistance = (address - module.ImageBase) / ((double) module.ModuleFile.ImageSize);
+                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
                                     if (0 <= normalizeDistance && normalizeDistance < 1)
                                     {
                                         const int numBuckets = 20;
@@ -4270,7 +4280,7 @@ table {
                 {
                     diskStartStack[data.Irp] = stackSource.GetCallStack(data.CallStackIndex(), data);
                 });
-
+                   
                 eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
                 {
                     StackSourceCallStackIndex stackIdx;
@@ -6874,6 +6884,228 @@ table {
             }
             return m_traceLog;
         }
+
+        #region Private
+        TraceLog m_traceLog;
+        bool m_noTraceLogInfo;
+        #endregion
+    }
+
+    public partial class EventPipePerfViewData : PerfViewFile
+    {
+        public override string FormatName => EventPipeEventSource.EventPipe;
+
+        public override string[] FileExtensions => new string[] { ".netperf" };
+
+        protected internal override EventSource OpenEventSourceImpl(TextWriter log)
+        {
+            var traceLog = GetTraceLog(log);
+            return new ETWEventSource(traceLog);
+        }
+
+        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
+        {
+            // Open the file.
+            m_traceLog = GetTraceLog(worker.LogWriter);
+
+            bool hasGC = false;
+            bool hasJIT = false;
+            bool hasAnyStacks = false;
+            if (m_traceLog != null)
+            {
+                foreach (TraceEventCounts eventStats in m_traceLog.Stats)
+                {
+                    if (eventStats.StackCount > 0)
+                        hasAnyStacks = true;
+
+                    if (eventStats.EventName.StartsWith("GC/Start"))
+                        hasGC = true;
+                    else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
+                        hasJIT = true;
+                }
+            }
+
+            m_Children = new List<PerfViewTreeItem>();
+            var advanced = new PerfViewTreeGroup("Advanced Group");
+            var memory = new PerfViewTreeGroup("Memory Group");
+
+            if (m_traceLog != null)
+            {
+                m_Children.Add(new PerfViewEventSource(this));
+                m_Children.Add(new PerfViewEventStats(this));
+
+                if (hasAnyStacks)
+                {
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
+                    m_Children.Add(new PerfViewStackSource(this, "Any"));
+                }
+
+                if (hasGC)
+                    memory.AddChild(new PerfViewGCStats(this));
+
+                if (hasJIT)
+                    advanced.AddChild(new PerfViewJitStats(this));
+            }
+
+            if (memory.Children.Count > 0)
+                m_Children.Add(memory);
+
+            if (advanced.Children.Count > 0)
+                m_Children.Add(advanced);
+
+            return null;
+        }
+
+        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
+        {
+            switch (streamName)
+            {
+                case "Any":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var stackSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        stackSource.OnlyManagedCodeStacks = true;
+
+                        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
+
+                        TraceEvents events = eventLog.Events;
+
+                        if (startRelativeMSec != 0 || endRelativeMSec != double.PositiveInfinity)
+                            events = events.FilterByTime(startRelativeMSec, endRelativeMSec);
+
+                        var eventSource = events.GetSource();
+                        var sample = new StackSourceSample(stackSource);
+
+                        eventSource.AllEvents += (data) =>
+                        {
+                            var callStackIdx = data.CallStackIndex();
+                            if (callStackIdx != CallStackIndex.Invalid)
+                            {
+                                StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                                // Tack on event name
+                                var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
+                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
+                                // Add sample
+                                sample.StackIndex = stackIndex;
+                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                sample.Metric = 1;
+                                stackSource.AddSample(sample);
+                            }
+                        };
+                        eventSource.Process();
+
+                        stackSource.DoneAddingSamples();
+                        return stackSource;
+                    }
+                case "Thread Time (with StartStop Activities)":
+                    {
+                        var eventLog = GetTraceLog(log);
+
+                        var startStopSource = new MutableTraceEventStackSource(eventLog);
+                        // EventPipe currently only has managed code stacks.
+                        startStopSource.OnlyManagedCodeStacks = true;
+
+                        var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
+                        computer.GenerateThreadTimeStacks(startStopSource);
+
+                        return startStopSource;
+                    }
+                default:
+                    return null;
+            }
+        }
+
+        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
+        {
+            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
+            {
+                var taskFoldPat = "^STARTING TASK";
+                stackWindow.FoldRegExTextBox.Items.Add(taskFoldPat);
+                stackWindow.FoldRegExTextBox.Text = taskFoldPat;
+
+                var excludePat = "LAST_BLOCK";
+                stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
+                stackWindow.ExcludeRegExTextBox.Text = excludePat;
+            }
+        }
+
+        public override void Close()
+        {
+            if (m_traceLog != null)
+            {
+                m_traceLog.Dispose();
+                m_traceLog = null;
+            }
+            base.Close();
+        }
+
+        public TraceLog GetTraceLog(TextWriter log)
+        {
+            if (m_traceLog != null)
+            {
+                if (IsUpToDate)
+                    return m_traceLog;
+                m_traceLog.Dispose();
+                m_traceLog = null;
+            }
+            else if (m_noTraceLogInfo)
+                return null;
+
+            var dataFileName = FilePath;
+            var options = new TraceLogOptions();
+            options.ConversionLog = log;
+            if (App.CommandLineArgs.KeepAllEvents)
+                options.KeepAllEvents = true;
+            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.SkipMSec = App.CommandLineArgs.SkipMSec;
+            //options.OnLostEvents = onLostEvents;
+            options.LocalSymbolsOnly = false;
+            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+
+            // Generate the etlx file path / name.
+            string etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
+            if (!File.Exists(etlxFile) || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
+            {
+                FileUtilities.ForceDelete(etlxFile);
+                log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
+                try
+                {
+                    TraceLog.CreateFromEventPipeDataFile(dataFileName, etlxFile, options);
+                }
+                catch (Exception e)
+                {
+                    log.WriteLine("Error: Exception EventPipe conversion: {0}", e.ToString());
+                    log.WriteLine("[Error: exception while opening EventPipe data.]");
+
+                    Debug.Assert(m_traceLog == null);
+                    m_noTraceLogInfo = true;
+                    return m_traceLog;
+                }
+            }
+
+            var dataFileSize = "Unknown";
+            if (File.Exists(dataFileName))
+                dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
+            log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
+
+            // Open the ETLX file.  
+            m_traceLog = new TraceLog(etlxFile);
+            m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
+            if (App.CommandLineArgs.UnsafePDBMatch)
+                m_traceLog.CodeAddresses.UnsafePDBMatching = true;
+            if (m_traceLog.Truncated)   // Warn about truncation.  
+            {
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                {
+                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
+                });
+            }
+            return m_traceLog;
+        }
+
+        public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
         TraceLog m_traceLog;
