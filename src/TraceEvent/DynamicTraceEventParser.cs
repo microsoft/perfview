@@ -1,5 +1,6 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 using FastSerialization;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
 using System;
@@ -48,6 +49,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             registeredParser = new RegisteredTraceEventParser(source, true);
             // But cause any of its new definitions to work on my subscriptions.  
             registeredParser.NewEventDefinition = OnNewEventDefintion;
+            // make an eventPipeTraceEventParser to resolve EventPipe events
+            eventPipeTraceEventParser = new EventPipeTraceEventParser(source, dontRegister: true);
         }
 
         /// <summary>
@@ -264,6 +267,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
             // also enumerate any events from the registeredParser.  
             registeredParser.EnumerateTemplates(eventsToObserve, callback);
+
+            // also enumerate any events from the eventPipeTraceEventParser
+            eventPipeTraceEventParser.EnumerateTemplates(eventsToObserve, callback);
         }
 
         private class PartialManifestInfo
@@ -361,6 +367,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         // be able to handle both (it can resolve anything a RegisteredTraceEventParser can).  This 
         // RegisteredTraceEventParser is how this gets accomplished.   
         RegisteredTraceEventParser registeredParser;
+
+        // It is enabling DynamicTraceEventParsers to handle the EventSource events from EventPipe.
+        EventPipeTraceEventParser eventPipeTraceEventParser;
 
         #endregion
     }
