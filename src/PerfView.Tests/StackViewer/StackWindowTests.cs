@@ -37,7 +37,7 @@ namespace PerfViewTests.StackViewer
             return TestIncludeItemAsync(KnownDataGrid.ByName);
         }
 
-        [WpfFact]
+        [WpfFact(Skip = "Failing with indexOutOfRange.  See issue https://github.com/Microsoft/perfview/issues/354")]
         [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
         public Task TestIncludeItemOnCallerCalleeTabCallerAsync()
         {
