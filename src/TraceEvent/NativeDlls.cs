@@ -21,23 +21,34 @@ class NativeDlls
     /// <param name="simpleName"></param>
     public static void LoadNative(string simpleName)
     {
-        // When TraceEvent is loaded as embedded assembly the manifest path is <Unkown>
+        // When TraceEvent is loaded as embedded assembly the manifest path is <Unknown>
         // We use as fallback in that case the process executable location to enable scenarios where TraceEvent and related dlls
         // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries. 
         string assemblyLocation = Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName;
-        if( assemblyLocation == UnknownLocation)
-        {
+        if (assemblyLocation == UnknownLocation)
             assemblyLocation = Process.GetCurrentProcess().MainModule.FileName;
-        }
 
         var thisDllDir = Path.GetDirectoryName(assemblyLocation);
-        var dllName = Path.Combine(Path.Combine(thisDllDir, ProcessArchitectureDirectory), simpleName);
+
+        // Try next to the current DLL
+        var dllName = Path.Combine(thisDllDir, simpleName);
         var ret = LoadLibrary(dllName);
-        if (ret == IntPtr.Zero)
-        {
-            var errorCode = Marshal.GetLastWin32Error();
-            throw new ApplicationException("Could not load native DLL " + dllName + " HRESULT=0x" + errorCode.ToString("x"));
-        }
+        if (ret != IntPtr.Zero)
+            return;
+
+        // Try in <arch> directory
+        dllName = Path.Combine(thisDllDir, ProcessArchitectureDirectory, simpleName);
+        ret = LoadLibrary(dllName);
+        if (ret != IntPtr.Zero)
+            return;
+
+        // Try in ../native/<arch>.  This is where it will be in a nuget package. 
+        dllName = Path.Combine(Path.GetDirectoryName(thisDllDir), "native", ProcessArchitectureDirectory, simpleName);
+        ret = LoadLibrary(dllName);
+        if (ret != IntPtr.Zero)
+            return;
+
+        throw new ApplicationException("Could not load native DLL " + dllName);
     }
 
     public static ProcessorArchitecture ProcessArch
