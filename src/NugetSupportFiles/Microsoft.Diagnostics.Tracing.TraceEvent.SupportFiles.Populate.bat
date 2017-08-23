@@ -3,7 +3,7 @@ REM
 REM *** This is mostly a template for doing the copy.      ****  
 REM *** Most likey you want this to be the current version ****
 REM *** PLEASE MODIFY THE VERSION NUMBER TO BE CURRENT!    ****
-xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.3\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
+xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.6\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\amd64\KernelTraceControl.dll
