@@ -34,23 +34,48 @@
     <!-- Native binaries -->
     <file src="$OutDir$net45\amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
     <file src="$OutDir$net45\amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
+
     <file src="$OutDir$net45\x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
     <file src="$OutDir$net45\x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
     <file src="$OutDir$net45\x86\msdia140.dll" target="lib\native\x86\msdia140.dll" />
 
-    <!-- Libraries and sources -->
+    <!-- NET45 Framework -->
+	
+    <!-- Built libraries -->
     <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
     <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net45" />
     <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net45" />
-    <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
-    <file src="obj\$Configuration$\**\*.cs" target="src\obj\$Configuration$" />
 
     <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net45" />
     <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net45" />
     <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net45" />
-    <file exclude="..\FastSerialization\obj\**\*.cs;..\FastSerialization\bin\**\*.cs;..\FastSerialization\_README.cs" src="..\FastSerialization\**\*.cs" target="src" />
 
+    <!-- Support Dlls -->
+    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\net45" />
+    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\net45" />
     <file src="$OutDir$net45\OSExtensions.dll" target="lib\net45" />
+
+    <!-- NetStandard 2.0 Framework -->
+	
+    <!-- Built libraries -->
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard2.0" />
+
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard2.0" />
+
+    <!-- Support Dlls -->
+    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard2.0" />
+
+
+    <!-- Source code (All Frameworks *) -->
+    <file exclude="obj\**\*.cs;bin\**\*.cs;TraceEvent.Tests\**\*.cs;Ctf\CtfTracing.Tests\**\*.cs" src="**\*.cs" target="src" />
+    <file exclude="..\FastSerialization\obj\**\*.cs;..\FastSerialization\bin\**\*.cs;..\FastSerialization\_README.cs" src="..\FastSerialization\**\*.cs" target="src" />
+    <file src="obj\$Configuration$\**\*.cs" target="src\obj\$Configuration$" />
   </files>
 
 </package>
