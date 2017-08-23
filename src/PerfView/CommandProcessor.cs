@@ -285,7 +285,7 @@ namespace PerfView
                         LogFile.WriteLine("         It is recommended that you disable paging in the kernel to decrease");
                         LogFile.WriteLine("         the number of broken stacks.   To do this run the command:");
                         LogFile.WriteLine("");
-                        LogFile.WriteLine("         PerfView /EnableKernelStacks ");
+                        LogFile.WriteLine("         PerfView EnableKernelStacks ");
                         LogFile.WriteLine("");
                         LogFile.WriteLine("         A reboot will be required for the change to have an effect.");
                         LogFile.WriteLine("");
@@ -2155,9 +2155,8 @@ namespace PerfView
 
         private static RegistryKey GetMemManagementKey(bool writable)
         {
-            // Open this computer's registry hive remotely even though we are in th WOW we 
-            // should have access to the 64 bit registry, which is what we want.
-            RegistryKey hklm = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, Environment.MachineName);
+            // Open this computer's 64 bit registry (even if this is a 32 bit process. 
+            RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             if (hklm == null)
             {
                 Debug.Assert(false, "Could not get HKLM key");

@@ -54,7 +54,7 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.6" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.7" />
   </ItemGroup>
 
   <ItemGroup>
