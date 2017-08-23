@@ -661,9 +661,11 @@ namespace FastSerialization
             lock (inputStream)
             {
                 inputStream.Seek(positionInStream + endPosition, SeekOrigin.Begin);
-                for (;;)
+                for (; ; )
                 {
+#if !NETSTANDARD1_3
                     System.Threading.Thread.Sleep(0);       // allow for Thread.Interrupt
+#endif
                     int count = inputStream.Read(bytes, endPosition, bytes.Length - endPosition);
                     if (count == 0)
                         break;
