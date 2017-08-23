@@ -11,7 +11,7 @@
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <FileVersion>1.9.60.0</FileVersion>
+    <FileVersion>1.9.61.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -380,6 +380,25 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <!-- Copy to output directory.  Needed for debugger to work.  in scenarios that use these DLLs -->
+  <ItemGroup>
+    <None Include="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll">
+      <Link>amd64\DiagnosticsHub.Packaging.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll">
+      <Link>x86\DiagnosticsHub.Packaging.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
+      <Link>x86\sd.exe</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
