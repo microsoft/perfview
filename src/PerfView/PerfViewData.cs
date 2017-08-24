@@ -1466,6 +1466,7 @@ table {
                     request.FailureDetails.HttpStatus = responseErrorStatusNotification.HttpStatus;
                     request.FailureDetails.HttpSubStatus = responseErrorStatusNotification.HttpSubStatus;
                     request.FailureDetails.ModuleName = responseErrorStatusNotification.ModuleName;
+                    request.FailureDetails.ErrorCode = responseErrorStatusNotification.ErrorCode;
                     request.FailureDetails.ConfigExceptionInfo = responseErrorStatusNotification.ConfigExceptionInfo;
                     request.FailureDetails.Notification = (RequestNotification)responseErrorStatusNotification.Notification;
                 }
