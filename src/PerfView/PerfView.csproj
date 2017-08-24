@@ -11,7 +11,7 @@
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <FileVersion>1.9.61.0</FileVersion>
+    <FileVersion>1.9.62.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.7" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.8" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
