@@ -139,14 +139,16 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             var payloadSize = _deserializer.ReadInt();
             Debug.Assert(payloadSize >= 0, "Payload size should not be negative.");
 
-            _deserializer.Read(out eventMetadata.ProviderId);
+            eventMetadata.ProviderName = _deserializer.ReadNullTerminatedUnicodeString();
             eventMetadata.EventId = (uint)_deserializer.ReadInt();
             eventMetadata.Version = (uint)_deserializer.ReadInt();
             var metadataPayloadLength = (uint)_deserializer.ReadInt();
 
             if (metadataPayloadLength > 0)
             {
-                var actualPayloadSize = sizeof(Guid) // ProviderId
+                var providerNameLength = (eventMetadata.ProviderName.Length + 1) * sizeof(Char); // +1 for null-terminator
+
+                var actualPayloadSize = providerNameLength
                     + sizeof(int) // EventId
                     + sizeof(int) // Version
                     + sizeof(int) // MetadataPayloadLength
@@ -249,14 +251,14 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         private bool IsBookKeepingEvent(EventMetadata eventMetadata)
         {
-            return (eventMetadata.ProviderId == ClrTraceEventParser.ProviderGuid
+            return (eventMetadata.ProviderName == ClrTraceEventParser.ProviderName
                     && (eventMetadata.EventId == 139 // MethodDCStartVerboseV2
                     || eventMetadata.EventId == 140 // MethodDCStopVerboseV2
                     || eventMetadata.EventId == 143 // MethodLoadVerbose
                     || eventMetadata.EventId == 144 // MethodUnloadVerbose
                     || eventMetadata.EventId == 190 // MethodILToNativeMap
                     ))
-                || (eventMetadata.ProviderId == ClrRundownTraceEventParser.ProviderGuid
+                || (eventMetadata.ProviderName == ClrRundownTraceEventParser.ProviderName
                     && (eventMetadata.EventId == 143 // MethodDCStartVerbose
                     || eventMetadata.EventId == 144 // MethodDCStopVerbose
                     || eventMetadata.EventId == 150 // MethodILToNativeMapDCStop
