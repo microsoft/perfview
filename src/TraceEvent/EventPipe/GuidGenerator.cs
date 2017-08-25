@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -192,25 +193,53 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         public static Guid GenerateGuidFromName(string name)
         {
-            byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
-            var hash = new Sha1ForNonSecretPurposes();
-            hash.Start();
-            hash.Append(namespaceBytes);
-            hash.Append(bytes);
-            Array.Resize(ref bytes, 16);
-            hash.Finish(bytes);
+            Guid result = Guid.Empty;
 
-            bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
-            return new Guid(bytes);
+            // Look in the dictionary of parsers written in this assembly for the Guid
+            parserGuids.TryGetValue(name, out result);
+
+            // If a Guid was not found, generate one using SHA1
+            if (result == Guid.Empty)
+            {
+                byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
+                var hash = new Sha1ForNonSecretPurposes();
+                hash.Start();
+                hash.Append(namespaceBytes);
+                hash.Append(bytes);
+                Array.Resize(ref bytes, 16);
+                hash.Finish(bytes);
+
+                bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
+                result = new Guid(bytes);
+            }
+
+            return result;
         }
 
-#region private
+        #region private
 
         // used for generating GUID from eventsource name
         private static readonly byte[] namespaceBytes = new byte[] {
             0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
             0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
         };
-#endregion
+
+        private static readonly string tracingNamespaceName = "Microsoft.Diagnostics.Tracing.Parsers";
+
+        // Create a dictionary of strings to GUIDs for all parsers at type-load by reflection
+        private static Dictionary<string, Guid> parserGuids = Assembly.GetExecutingAssembly().GetTypes()
+            .Where(
+                t => t.IsSubclassOf(typeof(TraceEventParser)) && t.Namespace.StartsWith(tracingNamespaceName)
+            ).ToDictionary(
+                t => {
+                    var f = t.GetField("ProviderName", BindingFlags.Public | BindingFlags.Static);
+                    return f == null ? t.Name : (string) f.GetValue(null);
+                },
+                t => {
+                    var f = t.GetField("ProviderGuid", BindingFlags.Public | BindingFlags.Static);
+                    return f == null ? Guid.Empty : (Guid)f.GetValue(null);
+                }
+            );
+        #endregion
     }
 }
