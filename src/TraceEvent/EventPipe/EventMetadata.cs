@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
+using Microsoft.Diagnostics.Tracing.Session;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
@@ -25,13 +28,49 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             {
                 if (_ProviderID == Guid.Empty)
                 {
-                    _ProviderID = GuidGenerator.GenerateGuidFromName(ProviderName);
+                    _ProviderID = GetEventPipeGuidFromName(ProviderName);
                 }
                 return _ProviderID;
             }
             set
             {
                 _ProviderID = value;
+            }
+        }
+
+        public static Guid GetEventPipeGuidFromName(string name)
+        {
+            if (String.IsNullOrEmpty(name))
+            {
+                return Guid.Empty;
+            }
+
+            // Legacy GUID lookups (events which existed before the current Guid generation conventions)
+            if (name == TplEtwProviderTraceEventParser.ProviderName)
+            {
+                return TplEtwProviderTraceEventParser.ProviderGuid;
+            }
+            else if (name == ClrTraceEventParser.ProviderName)
+            {
+                return ClrTraceEventParser.ProviderGuid;
+            }
+            else if (name == ClrPrivateTraceEventParser.ProviderName)
+            {
+                return ClrPrivateTraceEventParser.ProviderGuid;
+            }
+            else if (name == ClrRundownTraceEventParser.ProviderName)
+            {
+                return ClrRundownTraceEventParser.ProviderGuid;
+            }
+            else if (name == ClrStressTraceEventParser.ProviderName)
+            {
+                return ClrStressTraceEventParser.ProviderGuid;
+            }
+
+            // Hash the name according to current event source naming conventions
+            else
+            {
+                return TraceEventProviders.GetEventSourceGuidFromName(name);
             }
         }
 

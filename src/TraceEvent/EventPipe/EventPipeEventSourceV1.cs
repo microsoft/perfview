@@ -11,13 +11,14 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
     internal unsafe sealed class EventPipeEventSourceV1 : EventPipeEventSource
     {
-        public EventPipeEventSourceV1(Deserializer deserializer, string fileName)
+        public EventPipeEventSourceV1(Deserializer deserializer, string fileName, int version)
             : base(deserializer)
         {
             // V1 EventPipe doesn't have process info. 
             // Since it's from a single process, use the file name as the process name.
             _processName = Path.GetFileNameWithoutExtension(fileName);
             _processId = 0;
+            _version = version;
 
             // V1 EventPipe doesn't have osVersion, cpuSpeedMHz, pointerSize, numberOfProcessors
             osVersion = new Version("0.0.0.0");
@@ -139,16 +140,33 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             var payloadSize = _deserializer.ReadInt();
             Debug.Assert(payloadSize >= 0, "Payload size should not be negative.");
 
-            eventMetadata.ProviderName = _deserializer.ReadNullTerminatedUnicodeString();
+            if (_version == 1)
+            {
+                var providerId = Guid.Empty;
+                _deserializer.Read(out providerId);
+                eventMetadata.ProviderId = providerId;
+            }
+            else
+            {
+                eventMetadata.ProviderName = _deserializer.ReadNullTerminatedUnicodeString();
+            }
+
             eventMetadata.EventId = (uint)_deserializer.ReadInt();
             eventMetadata.Version = (uint)_deserializer.ReadInt();
             var metadataPayloadLength = (uint)_deserializer.ReadInt();
 
             if (metadataPayloadLength > 0)
             {
-                var providerNameLength = (eventMetadata.ProviderName.Length + 1) * sizeof(Char); // +1 for null-terminator
-
-                var actualPayloadSize = providerNameLength
+                var payloadIdentifierLength = 0;
+                if (_version == 1)
+                {
+                    payloadIdentifierLength = sizeof(Guid);
+                }
+                else
+                {
+                    payloadIdentifierLength = (eventMetadata.ProviderName.Length + 1) * sizeof(Char); // +1 for null-terminator
+                }
+                var actualPayloadSize = payloadIdentifierLength
                     + sizeof(int) // EventId
                     + sizeof(int) // Version
                     + sizeof(int) // MetadataPayloadLength
@@ -251,14 +269,14 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         private bool IsBookKeepingEvent(EventMetadata eventMetadata)
         {
-            return (eventMetadata.ProviderName == ClrTraceEventParser.ProviderName
+            return (eventMetadata.ProviderId == ClrTraceEventParser.ProviderGuid
                     && (eventMetadata.EventId == 139 // MethodDCStartVerboseV2
                     || eventMetadata.EventId == 140 // MethodDCStopVerboseV2
                     || eventMetadata.EventId == 143 // MethodLoadVerbose
                     || eventMetadata.EventId == 144 // MethodUnloadVerbose
                     || eventMetadata.EventId == 190 // MethodILToNativeMap
                     ))
-                || (eventMetadata.ProviderName == ClrRundownTraceEventParser.ProviderName
+                || (eventMetadata.ProviderId == ClrRundownTraceEventParser.ProviderGuid
                     && (eventMetadata.EventId == 143 // MethodDCStartVerbose
                     || eventMetadata.EventId == 144 // MethodDCStopVerbose
                     || eventMetadata.EventId == 150 // MethodILToNativeMapDCStop
@@ -362,6 +380,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         private long _lastTimestamp = 0;
         private string _processName;
         private int _processId;
+        private int _version;
 
         private const byte c_UnknownEventOpcode = 0;
 
