@@ -19,7 +19,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             var key = Tuple.Create(eventMetadata.ProviderId, (TraceEventID)eventMetadata.EventId);
             if (!_templates.ContainsKey(key))
             {
-                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
+                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.ProviderName, eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
                 _templates.Add(key, template);
                 OnNewEventDefintion(template, mayHaveExistedBefore: false);
             }
@@ -36,14 +36,14 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         #endregion 
 
         #region Private
-        private DynamicTraceEventData NewTemplate(Guid providerId, uint eventId, string eventName, Tuple<TypeCode, string>[] parameterDefinitions)
+        private DynamicTraceEventData NewTemplate(Guid providerId, string providerName, uint eventId, string eventName, Tuple<TypeCode, string>[] parameterDefinitions)
         {
             int opcode;
             string opcodeName;
 
             GetOpcodeFromEventName(eventName, out opcode, out opcodeName);
 
-            var template = new DynamicTraceEventData(null, (int)eventId, 0, null, Guid.Empty, opcode, opcodeName, providerId, null);
+            var template = new DynamicTraceEventData(null, (int)eventId, 0, eventName, Guid.Empty, opcode, opcodeName, providerId, providerName);
 
             if (parameterDefinitions != null && parameterDefinitions.Length > 0)
             {
