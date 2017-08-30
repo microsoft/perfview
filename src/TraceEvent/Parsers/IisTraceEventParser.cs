@@ -35,2850 +35,2623 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     {
         public static string ProviderName = "IIS_Trace";
         public static Guid ProviderGuid = new Guid(unchecked((int)0x3a2a4e84), unchecked((short)0x4c21), unchecked((short)0x4981), 0xae, 0x10, 0x3f, 0xda, 0x0d, 0x9b, 0x0f, 0x83);
-        public static Guid IISTransGuid = Guid.Parse("{d42cf7ef-de92-473e-8b6c-621ea663113a}");
-        public static Guid IISAuthenticationTransGuid = Guid.Parse("{c33bbe8f-985b-4080-81e6-005f1a06b9e2}");
-        public static Guid IISSecurityTransGuid = Guid.Parse("{29347ffb-ba48-41e6-bffd-469c5e543ca5}");
-        public static Guid IISFilterTransGuid = Guid.Parse("{00237f0d-73eb-4bcf-a232-126693595847}");
-        public static Guid IISStaticFileTransGuid = Guid.Parse("{79b02104-0db9-4cda-a552-058d97c2ecfd}");
-        public static Guid IsapiTransGuid = Guid.Parse("{2e94e6c7-eda0-4b73-9010-2529edce1c27}");
-        public static Guid IISCgiTransGuid = Guid.Parse("{e2e55403-0d2e-4609-a470-be0da04013c0}");
-        public static Guid IISFastCgiTransGuid = Guid.Parse("{e3642acc-3627-42b0-8372-867baa033b07}");
-        public static Guid IISWebSocketTransGuid = Guid.Parse("{2ce74327-08be-425c-bfc5-1534fe7fefa6}");
-        public static Guid IISCompressionTransGuid = Guid.Parse("{e60cee96-4472-448d-a13c-2170b18220ec}");
-        public static Guid IISCacheTransGuid = Guid.Parse("{ac1d69f1-bf33-4ca0-9313-bca13873e1dc}");
-        public static Guid IISRequestNotificationEventsGuid = Guid.Parse("{002e91e3-e7ae-44ab-8e07-99230ffa6ade}");
-        public static Guid IISModuleEventsGuid = Guid.Parse("{d79a948e-95f1-417b-a731-b7a79dec7ae5}");
+        public static Guid IISGeneralGuid = Guid.Parse("{d42cf7ef-de92-473e-8b6c-621ea663113a}");
+        public static Guid IISAuthenticationGuid = Guid.Parse("{c33bbe8f-985b-4080-81e6-005f1a06b9e2}");
+        public static Guid IISSecurityGuid = Guid.Parse("{29347ffb-ba48-41e6-bffd-469c5e543ca5}");
+        public static Guid IISFilterGuid = Guid.Parse("{00237f0d-73eb-4bcf-a232-126693595847}");
+        public static Guid IISStaticFileGuid = Guid.Parse("{79b02104-0db9-4cda-a552-058d97c2ecfd}");
+        public static Guid IISISAPIGuid = Guid.Parse("{2e94e6c7-eda0-4b73-9010-2529edce1c27}");
+        public static Guid IISCGIGuid = Guid.Parse("{e2e55403-0d2e-4609-a470-be0da04013c0}");
+        public static Guid IISFastCGIGuid = Guid.Parse("{e3642acc-3627-42b0-8372-867baa033b07}");
+        public static Guid IISWebSocketGuid = Guid.Parse("{2ce74327-08be-425c-bfc5-1534fe7fefa6}");
+        public static Guid IISCompressionGuid = Guid.Parse("{e60cee96-4472-448d-a13c-2170b18220ec}");
+        public static Guid IISCacheGuid = Guid.Parse("{ac1d69f1-bf33-4ca0-9313-bca13873e1dc}");
+        public static Guid IISRequestNotificationGuid = Guid.Parse("{002e91e3-e7ae-44ab-8e07-99230ffa6ade}");
+        public static Guid IISModuleGuid = Guid.Parse("{d79a948e-95f1-417b-a731-b7a79dec7ae5}");
         public enum Keywords : long
         {
         };
 
-
-
         public IisTraceEventParser(TraceEventSource source) : base(source) { }
 
-        public event Action<W3AuthStart> IIS_Authentication_TransOpcode10
+        public event Action<W3AuthAnonPasswdChangeNeeded> IISAuthenticationAuthAnonPasswdChangeNeeded
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode10Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthAnonPasswdChangeNeededTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10051, ProviderGuid);
             }
         }
-        public event Action<W3AuthSucceeded> IIS_Authentication_TransOpcode11
+        public event Action<W3AuthBadBasicHeader> IISAuthenticationAuthBadBasicHeader
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode11Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthBadBasicHeaderTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10042, ProviderGuid);
             }
         }
-        public event Action<W3AuthTypeNotSupported> IIS_Authentication_TransOpcode12
+        public event Action<W3AuthBasicLogonFailed> IISAuthenticationAuthBasicLogonFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode12Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthBasicLogonFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10043, ProviderGuid);
             }
         }
-        public event Action<W3AuthInvalidAnonAccount> IIS_Authentication_TransOpcode13
+        public event Action<W3AuthEnd> IISAuthenticationAuthEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode13Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10053, ProviderGuid);
             }
         }
-        public event Action<W3AuthPasswdChangeNeeded> IIS_Authentication_TransOpcode14
+        public event Action<W3AuthIISDigestLogonFailed> IISAuthenticationAuthIisdigestLogonFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode14Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthIisdigestLogonFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10045, ProviderGuid);
             }
         }
-        public event Action<W3AuthPasswdChangeDisabled> IIS_Authentication_TransOpcode15
+        public event Action<W3AuthInvalidAnonAccount> IISAuthenticationAuthInvalidAnonAccount
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode15Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthInvalidAnonAccountTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10039, ProviderGuid);
             }
         }
-        public event Action<W3AuthBadBasicHeader> IIS_Authentication_TransOpcode16
+        public event Action<W3AuthKerberosFailed> IISAuthenticationAuthKerberosFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode16Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthKerberosFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10050, ProviderGuid);
             }
         }
-        public event Action<W3AuthBasicLogonFailed> IIS_Authentication_TransOpcode17
+        public event Action<W3AuthNTLMNullSession> IISAuthenticationAuthNtlmNullSession
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode17Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthNtlmNullSessionTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10048, ProviderGuid);
             }
         }
-        public event Action<W3AuthWDigestLogonFailed> IIS_Authentication_TransOpcode18
+        public event Action<W3AuthPassportLogonFailed> IISAuthenticationAuthPassportLogonFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode18Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthPassportLogonFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10046, ProviderGuid);
             }
         }
-        public event Action<W3AuthIISDigestLogonFailed> IIS_Authentication_TransOpcode19
+        public event Action<W3AuthPasswdChangeDisabled> IISAuthenticationAuthPasswdChangeDisabled
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode19Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthPasswdChangeDisabledTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10041, ProviderGuid);
             }
         }
-        public event Action<W3AuthPassportLogonFailed> IIS_Authentication_TransOpcode20
+        public event Action<W3AuthPasswdChangeNeeded> IISAuthenticationAuthPasswdChangeNeeded
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode20Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthPasswdChangeNeededTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10040, ProviderGuid);
             }
         }
-        public event Action<W3AuthSSPILogonFailed> IIS_Authentication_TransOpcode21
+        public event Action<W3AuthRequestAuthType> IISAuthenticationAuthRequestAuthType
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode21Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthRequestAuthTypeTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10052, ProviderGuid);
             }
         }
-        public event Action<W3AuthNTLMNullSession> IIS_Authentication_TransOpcode22
+        public event Action<W3AuthSSPIContinueNeeded> IISAuthenticationAuthSspiContinueNeeded
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode22Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthSspiContinueNeededTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10049, ProviderGuid);
             }
         }
-        public event Action<W3AuthSSPIContinueNeeded> IIS_Authentication_TransOpcode23
+        public event Action<W3AuthSSPILogonFailed> IISAuthenticationAuthSspiLogonFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode23Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthSspiLogonFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10047, ProviderGuid);
             }
         }
-        public event Action<W3AuthAnonPasswdChangeNeeded> IIS_Authentication_TransOpcode24
+        public event Action<W3AuthStart> IISAuthenticationAuthStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode24Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10036, ProviderGuid);
             }
         }
-        public event Action<W3AuthRequestAuthType> IIS_Authentication_TransOpcode27
+        public event Action<W3AuthSucceeded> IISAuthenticationAuthSucceeded
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode27Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthSucceededTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10037, ProviderGuid);
             }
         }
-        public event Action<W3AuthEnd> IIS_Authentication_TransOpcode28
+        public event Action<W3AuthTypeNotSupported> IISAuthenticationAuthTypeNotSupported
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode28Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthTypeNotSupportedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10038, ProviderGuid);
             }
         }
-        public event Action<W3AuthKerberosFailed> IIS_Authentication_TransOpcode55
+        public event Action<W3AuthWDigestLogonFailed> IISAuthenticationAuthWdigestLogonFailed
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Authentication_TransOpcode55Template(value));
+                source.RegisterEventTemplate(IISAuthenticationAuthWdigestLogonFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10044, ProviderGuid);
             }
         }
-        public event Action<W3CacheFileCacheAccessStart> IIS_Cache_TransOpcode10
+        public event Action<W3CacheFileCacheAccessEnd> IISCacheFileCacheAccessEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode10Template(value));
+                source.RegisterEventTemplate(IISCacheFileCacheAccessEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10148, ProviderGuid);
             }
         }
-        public event Action<W3CacheFileCacheAccessEnd> IIS_Cache_TransOpcode11
+        public event Action<W3CacheFileCacheAccessStart> IISCacheFileCacheAccessStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode11Template(value));
+                source.RegisterEventTemplate(IISCacheFileCacheAccessStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10147, ProviderGuid);
             }
         }
-        public event Action<W3CacheURLCacheAccessStart> IIS_Cache_TransOpcode12
+        public event Action<W3CacheHttpsysCacheable> IISCacheHttpsysCacheable
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode12Template(value));
+                source.RegisterEventTemplate(IISCacheHttpsysCacheableTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10151, ProviderGuid);
             }
         }
-        public event Action<W3CacheURLCacheAccessEnd> IIS_Cache_TransOpcode13
+        public event Action<W3OutputCacheDisabled> IISCacheOutputCacheDisabled
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode13Template(value));
+                source.RegisterEventTemplate(IISCacheOutputCacheDisabledTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10156, ProviderGuid);
             }
         }
-        public event Action<W3CacheHttpsysCacheable> IIS_Cache_TransOpcode14
+        public event Action<W3OutputCacheLookupEnd> IISCacheOutputCacheLookupEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode14Template(value));
+                source.RegisterEventTemplate(IISCacheOutputCacheLookupEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10153, ProviderGuid);
             }
         }
-        public event Action<W3OutputCacheLookupStart> IIS_Cache_TransOpcode15
+        public event Action<W3OutputCacheLookupStart> IISCacheOutputCacheLookupStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode15Template(value));
+                source.RegisterEventTemplate(IISCacheOutputCacheLookupStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10152, ProviderGuid);
             }
         }
-        public event Action<W3OutputCacheLookupEnd> IIS_Cache_TransOpcode16
+        public event Action<W3OutputCacheUpdateEnd> IISCacheOutputCacheUpdateEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode16Template(value));
+                source.RegisterEventTemplate(IISCacheOutputCacheUpdateEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10155, ProviderGuid);
             }
         }
-        public event Action<W3OutputCacheUpdateStart> IIS_Cache_TransOpcode17
+        public event Action<W3OutputCacheUpdateStart> IISCacheOutputCacheUpdateStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode17Template(value));
+                source.RegisterEventTemplate(IISCacheOutputCacheUpdateStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10154, ProviderGuid);
             }
         }
-        public event Action<W3OutputCacheUpdateEnd> IIS_Cache_TransOpcode18
+        public event Action<W3CacheURLCacheAccessEnd> IISCacheUrlCacheAccessEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode18Template(value));
+                source.RegisterEventTemplate(IISCacheUrlCacheAccessEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10150, ProviderGuid);
             }
         }
-        public event Action<W3OutputCacheDisabled> IIS_Cache_TransOpcode19
+        public event Action<W3CacheURLCacheAccessStart> IISCacheUrlCacheAccessStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode19Template(value));
+                source.RegisterEventTemplate(IISCacheUrlCacheAccessStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10149, ProviderGuid);
             }
         }
-        public event Action<W3CacheFileCacheCreateFile> IIS_Cache_TransOpcode20
+        public event Action<W3CGIEnd> IISCGICgiEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cache_TransOpcode20Template(value));
+                source.RegisterEventTemplate(IISCGICgiEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10091, ProviderGuid);
             }
         }
-        public event Action<W3CGILaunch> IIS_Cgi_TransDC_Start
+        public event Action<W3CGIHeadersReceived> IISCGICgiHeadersReceived
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransDC_StartTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiHeadersReceivedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10096, ProviderGuid);
             }
         }
-        public event Action<W3CGITimeout> IIS_Cgi_TransDC_Stop
+        public event Action<W3CGILaunch> IISCGICgiLaunch
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransDC_StopTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiLaunchTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10092, ProviderGuid);
             }
         }
-        public event Action<W3CGIPrematureTermination> IIS_Cgi_TransExtension
+        public event Action<W3CGIPrematureTermination> IISCGICgiPrematureTermination
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransExtensionTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiPrematureTerminationTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10094, ProviderGuid);
             }
         }
-        public event Action<W3CGIRequestEntitySent> IIS_Cgi_TransReply
+        public event Action<W3CGIRequestEntitySent> IISCGICgiRequestEntitySent
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransReplyTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiRequestEntitySentTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10095, ProviderGuid);
             }
         }
-        public event Action<W3CGIHeadersReceived> IIS_Cgi_TransResume
+        public event Action<W3CGIStart> IISCGICgiStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransResumeTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10090, ProviderGuid);
             }
         }
-        public event Action<W3CGIStart> IIS_Cgi_TransStart
+        public event Action<W3CGITimeout> IISCGICgiTimeout
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransStartTemplate(value));
+                source.RegisterEventTemplate(IISCGICgiTimeoutTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10093, ProviderGuid);
             }
         }
-        public event Action<W3CGIEnd> IIS_Cgi_TransStop
+        public event Action<W3DynamicCompressionDo> IISCompressionDynamicCompressionDo
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Cgi_TransStopTemplate(value));
+                source.RegisterEventTemplate(IISCompressionDynamicCompressionDoTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10144, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionNotSuccess> IIS_Compression_TransDC_Start
+        public event Action<W3DynamicCompressionEnd> IISCompressionDynamicCompressionEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransDC_StartTemplate(value));
+                source.RegisterEventTemplate(IISCompressionDynamicCompressionEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10145, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionCreateStart> IIS_Compression_TransDC_Stop
+        public event Action<W3DynamicCompressionNotSuccess> IISCompressionDynamicCompressionNotSuccess
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransDC_StopTemplate(value));
+                source.RegisterEventTemplate(IISCompressionDynamicCompressionNotSuccessTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10143, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionCreateEnd> IIS_Compression_TransExtension
+        public event Action<W3DynamicCompressionStart> IISCompressionDynamicCompressionStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransExtensionTemplate(value));
+                source.RegisterEventTemplate(IISCompressionDynamicCompressionStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10141, ProviderGuid);
             }
         }
-        public event Action<W3DynamicCompressionEnd> IIS_Compression_TransOpcode10
+        public event Action<W3DynamicCompressionSuccess> IISCompressionDynamicCompressionSuccess
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransOpcode10Template(value));
+                source.RegisterEventTemplate(IISCompressionDynamicCompressionSuccessTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10142, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionEnd> IIS_Compression_TransOpcode11
+        public event Action<W3StaticCompressionCreateEnd> IISCompressionStaticCompressionCreateEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransOpcode11Template(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionCreateEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10140, ProviderGuid);
             }
         }
-        public event Action<W3DynamicCompressionStart> IIS_Compression_TransReply
+        public event Action<W3StaticCompressionCreateStart> IISCompressionStaticCompressionCreateStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransReplyTemplate(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionCreateStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10139, ProviderGuid);
             }
         }
-        public event Action<W3DynamicCompressionSuccess> IIS_Compression_TransResume
+        public event Action<W3StaticCompressionEnd> IISCompressionStaticCompressionEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransResumeTemplate(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10146, ProviderGuid);
             }
         }
-        public event Action<W3DynamicCompressionDo> IIS_Compression_TransSend
+        public event Action<W3StaticCompressionNotSuccess> IISCompressionStaticCompressionNotSuccess
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransSendTemplate(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionNotSuccessTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10138, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionStart> IIS_Compression_TransStart
+        public event Action<W3StaticCompressionStart> IISCompressionStaticCompressionStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransStartTemplate(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10136, ProviderGuid);
             }
         }
-        public event Action<W3StaticCompressionSuccess> IIS_Compression_TransStop
+        public event Action<W3StaticCompressionSuccess> IISCompressionStaticCompressionSuccess
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransStopTemplate(value));
+                source.RegisterEventTemplate(IISCompressionStaticCompressionSuccessTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10137, ProviderGuid);
             }
         }
-        public event Action<W3DynamicCompressionNotSuccess> IIS_Compression_TransSuspend
+        public event Action<W3CGIFActivityTimeout> IISFastCGIFastcgiActivityTimeout
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Compression_TransSuspendTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiActivityTimeoutTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10097, ProviderGuid);
             }
         }
-        public event Action<W3CGIFUnexpectedExit> IIS_FastCgi_TransDC_Start
+        public event Action<W3CGIFAddJobObjectFail> IISFastCGIFastcgiAddJobobjectFail
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransDC_StartTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiAddJobobjectFailTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10103, ProviderGuid);
             }
         }
-        public event Action<W3CGIFRapidFailureProtection> IIS_FastCgi_TransDC_Stop
+        public event Action<W3CGIFAppMgrShutdown> IISFastCGIFastcgiApplicationManagerShutdown
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransDC_StopTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiApplicationManagerShutdownTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10104, ProviderGuid);
             }
         }
-        public event Action<W3CGIFPathNotFound> IIS_FastCgi_TransExtension
+        public event Action<W3CGIFAssignProcess> IISFastCGIFastcgiAssignProcess
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransExtensionTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiAssignProcessTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10113, ProviderGuid);
             }
         }
-        public event Action<W3CGIFUnknownError> IIS_FastCgi_TransOpcode10
+        public event Action<W3CGIFEnd> IISFastCGIFastcgiEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode10Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10115, ProviderGuid);
             }
         }
-        public event Action<W3CGIFResponseWritten> IIS_FastCgi_TransOpcode11
+        public event Action<W3CGIFPathNotFound> IISFastCGIFastcgiPathNotFound
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode11Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiPathNotFoundTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10101, ProviderGuid);
             }
         }
-        public event Action<W3CGIFWaitingForResponse> IIS_FastCgi_TransOpcode12
+        public event Action<W3CGIFQueueFull> IISFastCGIFastcgiQueueFull
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode12Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiQueueFullTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10105, ProviderGuid);
             }
         }
-        public event Action<W3CGIFTraceError> IIS_FastCgi_TransOpcode13
+        public event Action<W3CGIFQueueRequest> IISFastCGIFastcgiQueueRequest
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode13Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiQueueRequestTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10112, ProviderGuid);
             }
         }
-        public event Action<W3CGIFTraceWarning> IIS_FastCgi_TransOpcode14
+        public event Action<W3CGIFRapidFailureProtection> IISFastCGIFastcgiRapidFailureProtection
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode14Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiRapidFailureProtectionTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10100, ProviderGuid);
             }
         }
-        public event Action<W3CGIFTraceInfo> IIS_FastCgi_TransOpcode15
+        public event Action<W3CGIFRequestTimeout> IISFastCGIFastcgiRequestTimeout
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode15Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiRequestTimeoutTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10098, ProviderGuid);
             }
         }
-        public event Action<W3CGIFQueueRequest> IIS_FastCgi_TransOpcode16
+        public event Action<W3CGIFResponseWritten> IISFastCGIFastcgiResponseWritten
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode16Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiResponseWrittenTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10107, ProviderGuid);
             }
         }
-        public event Action<W3CGIFAssignProcess> IIS_FastCgi_TransOpcode17
+        public event Action<W3CGIFScriptProcessorMissing> IISFastCGIFastcgiScriptProcessorMissing
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode17Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiScriptProcessorMissingTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10102, ProviderGuid);
             }
         }
-        public event Action<W3CGIFStart> IIS_FastCgi_TransOpcode18
+        public event Action<W3CGIFStart> IISFastCGIFastcgiStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode18Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10114, ProviderGuid);
             }
         }
-        public event Action<W3CGIFEnd> IIS_FastCgi_TransOpcode19
+        public event Action<W3CGIFTraceError> IISFastCGIFastcgiStderrTraceError
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransOpcode19Template(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiStderrTraceErrorTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10109, ProviderGuid);
             }
         }
-        public event Action<W3CGIFScriptProcessorMissing> IIS_FastCgi_TransReply
+        public event Action<W3CGIFTraceInfo> IISFastCGIFastcgiStderrTraceInfo
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransReplyTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiStderrTraceInfoTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10111, ProviderGuid);
             }
         }
-        public event Action<W3CGIFAddJobObjectFail> IIS_FastCgi_TransResume
+        public event Action<W3CGIFTraceWarning> IISFastCGIFastcgiStderrTraceWarning
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransResumeTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiStderrTraceWarningTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10110, ProviderGuid);
             }
         }
-        public event Action<W3CGIFQueueFull> IIS_FastCgi_TransSend
+        public event Action<W3CGIFUnexpectedExit> IISFastCGIFastcgiUnexpectedExit
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransSendTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiUnexpectedExitTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10099, ProviderGuid);
             }
         }
-        public event Action<W3CGIFActivityTimeout> IIS_FastCgi_TransStart
+        public event Action<W3CGIFUnknownError> IISFastCGIFastcgiUnknownError
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransStartTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiUnknownErrorTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10106, ProviderGuid);
             }
         }
-        public event Action<W3CGIFRequestTimeout> IIS_FastCgi_TransStop
+        public event Action<W3CGIFWaitingForResponse> IISFastCGIFastcgiWaitingForResponse
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransStopTemplate(value));
+                source.RegisterEventTemplate(IISFastCGIFastcgiWaitingForResponseTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10108, ProviderGuid);
             }
         }
-        public event Action<W3CGIFAppMgrShutdown> IIS_FastCgi_TransSuspend
+        public event Action<W3FilterAccessDeniedEnd> IISFilterFilterAccessDeniedEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_FastCgi_TransSuspendTemplate(value));
+                source.RegisterEventTemplate(IISFilterFilterAccessDeniedEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10083, ProviderGuid);
             }
         }
-        public event Action<W3FilterError> IIS_Filter_TransOpcode12
+        public event Action<W3FilterAccessDeniedStart> IISFilterFilterAccessDeniedStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode12Template(value));
+                source.RegisterEventTemplate(IISFilterFilterAccessDeniedStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10082, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAddReqHeader> IISFilterFilterAddReqHeader
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAddReqHeaderTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10085, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAddRespHeader> IISFilterFilterAddRespHeader
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAddRespHeaderTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10087, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAuthCompleteEnd> IISFilterFilterAuthCompleteEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAuthCompleteEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10073, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAuthCompleteStart> IISFilterFilterAuthCompleteStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAuthCompleteStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10072, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAuthenticationEnd> IISFilterFilterAuthenticationEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAuthenticationEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10071, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterAuthenticationStart> IISFilterFilterAuthenticationStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterAuthenticationStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10070, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterEnd> IISFilterFilterEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10064, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterEndOfRequestEnd> IISFilterFilterEndOfRequestEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterEndOfRequestEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10077, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterEndOfRequestStart> IISFilterFilterEndOfRequestStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterEndOfRequestStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10076, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterError> IISFilterFilterError
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterErrorTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10065, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterLogEnd> IISFilterFilterLogEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterLogEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10079, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterLogStart> IISFilterFilterLogStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterLogStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10078, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterPreprocEnd> IISFilterFilterPreprocHeadersEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterPreprocHeadersEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10067, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterPreprocStart> IISFilterFilterPreprocHeadersStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterPreprocHeadersStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10066, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSendRawDataEnd> IISFilterFilterSendRawDataEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSendRawDataEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10081, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSendRawDataStart> IISFilterFilterSendRawDataStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSendRawDataStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10080, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSendResponseEnd> IISFilterFilterSendResponseEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSendResponseEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10075, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSendResponseStart> IISFilterFilterSendResponseStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSendResponseStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10074, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSetReqHeader> IISFilterFilterSetReqHeader
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSetReqHeaderTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10084, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterSetRespHeader> IISFilterFilterSetRespHeader
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterSetRespHeaderTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10086, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterStart> IISFilterFilterStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10063, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterURLMapEnd> IISFilterFilterUrlMapEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterUrlMapEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10069, ProviderGuid);
+            }
+        }
+        public event Action<W3FilterURLMapStart> IISFilterFilterUrlMapStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISFilterFilterUrlMapStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10068, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralConfigChangeNotification> IISGeneralConfigChangeNotification
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralConfigChangeNotificationTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10020, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralFileChangeNotification> IISGeneralFileChangeNotification
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralFileChangeNotificationTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10019, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralCGIHandler> IISGeneralGeneralCgiHandler
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralCgiHandlerTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 10003, ProviderGuid);
             }
         }
-        public event Action<W3FilterPreprocStart> IIS_Filter_TransOpcode13
+        public event Action<W3GeneralChildRequestEnd> IISGeneralGeneralChildRequestEnd
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode13Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralChildRequestEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10012, ProviderGuid);
             }
         }
-        public event Action<W3FilterPreprocEnd> IIS_Filter_TransOpcode14
+        public event Action<W3GeneralChildRequestStart> IISGeneralGeneralChildRequestStart
         {
             add
             {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode14Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterURLMapStart> IIS_Filter_TransOpcode15
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode15Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterURLMapEnd> IIS_Filter_TransOpcode16
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode16Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAuthenticationStart> IIS_Filter_TransOpcode17
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode17Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAuthenticationEnd> IIS_Filter_TransOpcode18
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode18Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAuthCompleteStart> IIS_Filter_TransOpcode19
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode19Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAuthCompleteEnd> IIS_Filter_TransOpcode20
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode20Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSendResponseStart> IIS_Filter_TransOpcode21
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode21Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSendResponseEnd> IIS_Filter_TransOpcode22
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode22Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterEndOfRequestStart> IIS_Filter_TransOpcode23
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode23Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterEndOfRequestEnd> IIS_Filter_TransOpcode24
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode24Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterLogStart> IIS_Filter_TransOpcode25
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode25Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterLogEnd> IIS_Filter_TransOpcode26
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode26Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSendRawDataStart> IIS_Filter_TransOpcode27
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode27Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSendRawDataEnd> IIS_Filter_TransOpcode28
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode28Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAccessDeniedStart> IIS_Filter_TransOpcode29
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode29Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAccessDeniedEnd> IIS_Filter_TransOpcode30
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode30Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSetReqHeader> IIS_Filter_TransOpcode31
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode31Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAddReqHeader> IIS_Filter_TransOpcode32
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode32Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterSetRespHeader> IIS_Filter_TransOpcode33
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode33Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterAddRespHeader> IIS_Filter_TransOpcode34
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransOpcode34Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterStart> IIS_Filter_TransStart
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransStartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3FilterEnd> IIS_Filter_TransStop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Filter_TransStopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10003, ProviderGuid);
-            }
-        }
-        public event Action<W3SecIllegalShortFilename> IIS_Security_TransOpcode10
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode10Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecRejectedIP> IIS_Security_TransOpcode11
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode11Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecRejectedHostname> IIS_Security_TransOpcode12
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode12Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecRequireSSL128> IIS_Security_TransOpcode13
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode13Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecFileAccessDenied> IIS_Security_TransOpcode14
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode14Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecDeniedByMimemap> IIS_Security_TransOpcode15
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode15Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecDeniedByISAPIRestriction> IIS_Security_TransOpcode16
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode16Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecDeniedByCGIRestriction> IIS_Security_TransOpcode17
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode17Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3SecDeniedByAccessFlags> IIS_Security_TransOpcode18
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_Security_TransOpcode18Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralStaticFileHandler> IIS_TransOpcode10
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode10Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralCGIHandler> IIS_TransOpcode11
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode11Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralISAPIHandler> IIS_TransOpcode12
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode12Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralOopISAPIHandler> IIS_TransOpcode13
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode13Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralRedirectionHandler> IIS_TransOpcode14
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode14Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralDavHandler> IIS_TransOpcode15
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode15Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralOptionsHandler> IIS_TransOpcode16
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode16Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralTraceHandler> IIS_TransOpcode17
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode17Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode18
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode18Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode19
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode19Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode20
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode20Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode21
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode21Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode22
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode22Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode23
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode23Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3SendResponse> IIS_TransOpcode24
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode24Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralGetURLMetadata> IIS_TransOpcode30
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode30Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralChildRequestStart> IIS_TransOpcode31
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode31Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralChildRequestEnd> IIS_TransOpcode32
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode32Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralSendCustomError> IIS_TransOpcode33
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode33Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralMapHandler> IIS_TransOpcode34
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode34Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralFlushResponseStart> IIS_TransOpcode35
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode35Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralFlushResponseEnd> IIS_TransOpcode36
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode36Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralReadEntityStart> IIS_TransOpcode37
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode37Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralReadEntityEnd> IIS_TransOpcode38
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode38Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralFileChangeNotification> IIS_TransOpcode39
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode39Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralConfigChangeNotification> IIS_TransOpcode40
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode40Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralVirtualModuleUnresolved> IIS_TransOpcode41
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode41Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralUrlChanged> IIS_TransOpcode42
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode42Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralHandlerChanged> IIS_TransOpcode43
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode43Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralUserSet> IIS_TransOpcode44
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode44Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralModulePreconditionNotMatch> IIS_TransOpcode45
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode45Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<IISGeneralHandlerPreconditionNotMatch> IIS_TransOpcode46
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode46Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralResponseHeaders> IIS_TransOpcode47
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode47Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralResponseEntityFile> IIS_TransOpcode48
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode48Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralResponseEntityBuffer> IIS_TransOpcode49
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode49Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralRequestHeaders> IIS_TransOpcode50
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode50Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralRequestEntity> IIS_TransOpcode51
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode51Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralNotSendCustomError> IIS_TransOpcode52
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode52Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralSetRequestHeader> IIS_TransOpcode53
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode53Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralModuleFactoryFailed> IIS_TransOpcode54
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode54Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralEndpointInformation> IIS_TransOpcode55
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode55Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralSetResponseHeader> IIS_TransOpcode56
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransOpcode56Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralStartNewRequest> IIS_TransStart
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransStartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3GeneralEndNewRequest> IIS_TransStop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_TransStopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketEndSuccess> IIS_WebSocket_TransDC_Start
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransDC_StartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketEndFailure> IIS_WebSocket_TransDC_Stop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransDC_StopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketReadFragmentStart> IIS_WebSocket_TransExtension
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransExtensionTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketWriteFragmentEndPending> IIS_WebSocket_TransOpcode10
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode10Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketWriteFragmentEndSuccess> IIS_WebSocket_TransOpcode11
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode11Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketWriteFragmentEndFailure> IIS_WebSocket_TransOpcode12
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode12Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketApplicationCloseConnection> IIS_WebSocket_TransOpcode13
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode13Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketModuleCloseConnection> IIS_WebSocket_TransOpcode14
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode14Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketReadIoFailed> IIS_WebSocket_TransOpcode15
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode15Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketWriteIoFailed> IIS_WebSocket_TransOpcode16
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode16Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketCloseReceived> IIS_WebSocket_TransOpcode17
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode17Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketCloseSendStart> IIS_WebSocket_TransOpcode18
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode18Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketCloseSendSuccess> IIS_WebSocket_TransOpcode19
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode19Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketCloseSendFailure> IIS_WebSocket_TransOpcode20
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransOpcode20Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketReadFragmentEndPending> IIS_WebSocket_TransReply
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransReplyTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketReadFragmentEndSuccess> IIS_WebSocket_TransResume
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransResumeTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketWriteFragmentStart> IIS_WebSocket_TransSend
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransSendTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketInitializeNotSuccess> IIS_WebSocket_TransStart
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransStartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketStart> IIS_WebSocket_TransStop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransStopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<W3WebSocketReadFragmentEndFailure> IIS_WebSocket_TransSuspend
-        {
-            add
-            {
-                source.RegisterEventTemplate(IIS_WebSocket_TransSuspendTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
-            }
-        }
-        public event Action<IISModuleEventsModuleCriticalError> IISModuleEventsDC_Start
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISModuleEventsDC_StartTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralChildRequestStartTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 10011, ProviderGuid);
             }
         }
-        public event Action<IISModuleEventsModuleError> IISModuleEventsDC_Stop
+        public event Action<W3GeneralDavHandler> IISGeneralGeneralDavHandler
         {
             add
             {
-                source.RegisterEventTemplate(IISModuleEventsDC_StopTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralDavHandlerTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10007, ProviderGuid);
             }
         }
-        public event Action<IISModuleEventsModuleWarning> IISModuleEventsExtension
+        public event Action<W3GeneralEndpointInformation> IISGeneralGeneralEndpointInformation
         {
             add
             {
-                source.RegisterEventTemplate(IISModuleEventsExtensionTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralEndpointInformationTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10035, ProviderGuid);
             }
         }
-        public event Action<IISModuleEventsModuleInformation> IISModuleEventsReply
+        public event Action<W3GeneralFlushResponseEnd> IISGeneralGeneralFlushResponseEnd
         {
             add
             {
-                source.RegisterEventTemplate(IISModuleEventsReplyTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralFlushResponseEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10016, ProviderGuid);
             }
         }
-        public event Action<IISModuleEventsModuleVerbose> IISModuleEventsResume
+        public event Action<W3GeneralFlushResponseStart> IISGeneralGeneralFlushResponseStart
         {
             add
             {
-                source.RegisterEventTemplate(IISModuleEventsResumeTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralFlushResponseStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10015, ProviderGuid);
             }
         }
-        public event Action<IISModuleEventsModuleStart> IISModuleEventsStart
+        public event Action<W3GeneralGetURLMetadata> IISGeneralGeneralGetUrlMetadata
         {
             add
             {
-                source.RegisterEventTemplate(IISModuleEventsStartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
-            }
-        }
-        public event Action<IISModuleEventsModuleEnd> IISModuleEventsStop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISModuleEventsStopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10011, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsCompletion> IISRequestNotificationEventsDC_Start
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsDC_StartTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralGetUrlMetadataTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 10010, ProviderGuid);
             }
         }
-        public event Action<IISRequestNotificationPreBeginStart> IISRequestNotificationEventsDC_Stop
+        public event Action<W3GeneralISAPIHandler> IISGeneralGeneralIsapiHandler
         {
             add
             {
-                source.RegisterEventTemplate(IISRequestNotificationEventsDC_StopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationPreBeginEnd> IISRequestNotificationEventsExtension
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsExtensionTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsError> IISRequestNotificationEventsOpcode15
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsOpcode15Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsResponseErrorStatus> IISRequestNotificationEventsOpcode16
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsOpcode16Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsResponseSuccessStatus> IISRequestNotificationEventsOpcode17
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsOpcode17Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsResponseErrorDescription> IISRequestNotificationEventsOpcode18
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsOpcode18Template(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsStart> IISRequestNotificationEventsStart
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsStartTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IISRequestNotificationEventsEnd> IISRequestNotificationEventsStop
-        {
-            add
-            {
-                source.RegisterEventTemplate(IISRequestNotificationEventsStopTemplate(value));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 10010, ProviderGuid);
-            }
-        }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode10
-        {
-            add
-            {
-                source.RegisterEventTemplate(Isapi_TransOpcode10Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralIsapiHandlerTemplate(value));
             }
             remove
             {
                 source.UnregisterEventTemplate(value, 10004, ProviderGuid);
             }
         }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode11
+        public event Action<W3GeneralMapHandler> IISGeneralGeneralMapHandler
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransOpcode11Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralMapHandlerTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10014, ProviderGuid);
             }
         }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode12
+        public event Action<W3GeneralModuleFactoryFailed> IISGeneralGeneralModuleFactoryFailed
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransOpcode12Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralModuleFactoryFailedTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10034, ProviderGuid);
             }
         }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode13
+        public event Action<W3GeneralNotSendCustomError> IISGeneralGeneralNotSendCustomError
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransOpcode13Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralNotSendCustomErrorTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10032, ProviderGuid);
             }
         }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode14
+        public event Action<W3GeneralOopISAPIHandler> IISGeneralGeneralOopIsapiHandler
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransOpcode14Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralOopIsapiHandlerTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10005, ProviderGuid);
             }
         }
-        public event Action<IsapiDeleteContext> Isapi_TransOpcode15
+        public event Action<W3GeneralOptionsHandler> IISGeneralGeneralOptionsHandler
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransOpcode15Template(value));
+                source.RegisterEventTemplate(IISGeneralGeneralOptionsHandlerTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10008, ProviderGuid);
             }
         }
-        public event Action<W3ISAPIStart> Isapi_TransStart
+        public event Action<W3GeneralReadEntityEnd> IISGeneralGeneralReadEntityEnd
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransStartTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralReadEntityEndTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10018, ProviderGuid);
             }
         }
-        public event Action<W3ISAPIEnd> Isapi_TransStop
+        public event Action<W3GeneralReadEntityStart> IISGeneralGeneralReadEntityStart
         {
             add
             {
-                source.RegisterEventTemplate(Isapi_TransStopTemplate(value));
+                source.RegisterEventTemplate(IISGeneralGeneralReadEntityStartTemplate(value));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 10004, ProviderGuid);
+                source.UnregisterEventTemplate(value, 10017, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralRedirectionHandler> IISGeneralGeneralRedirectionHandler
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralRedirectionHandlerTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10006, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralEndNewRequest> IISGeneralGeneralRequestEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralRequestEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10001, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralRequestEntity> IISGeneralGeneralRequestEntity
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralRequestEntityTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10031, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralRequestHeaders> IISGeneralGeneralRequestHeaders
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralRequestHeadersTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10030, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralStartNewRequest> IISGeneralGeneralRequestStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralRequestStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10000, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralResponseEntityBuffer> IISGeneralGeneralResponseEntityBuffer
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralResponseEntityBufferTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10029, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralResponseEntityFile> IISGeneralGeneralResponseEntityFile
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralResponseEntityFileTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10028, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralResponseHeaders> IISGeneralGeneralResponseHeaders
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralResponseHeadersTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10027, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralSendCustomError> IISGeneralGeneralSendCustomError
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralSendCustomErrorTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10013, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralSetRequestHeader> IISGeneralGeneralSetRequestHeader
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralSetRequestHeaderTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10033, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralStaticFileHandler> IISGeneralGeneralStaticFileHandler
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralStaticFileHandlerTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10002, ProviderGuid);
+            }
+        }
+        public event Action<W3GeneralTraceHandler> IISGeneralGeneralTraceHandler
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralGeneralTraceHandlerTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10009, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralHandlerChanged> IISGeneralHandlerChanged
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralHandlerChangedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10023, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralHandlerPreconditionNotMatch> IISGeneralHandlerPreconditionNotMatch
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralHandlerPreconditionNotMatchTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10026, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralModulePreconditionNotMatch> IISGeneralModulePreconditionNotMatch
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralModulePreconditionNotMatchTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10025, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralUrlChanged> IISGeneralUrlChanged
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralUrlChangedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10022, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralUserSet> IISGeneralUserSet
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralUserSetTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10024, ProviderGuid);
+            }
+        }
+        public event Action<IISGeneralVirtualModuleUnresolved> IISGeneralVirtualModuleUnresolved
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISGeneralVirtualModuleUnresolvedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10021, ProviderGuid);
+            }
+        }
+        public event Action<W3ISAPIEnd> IISISAPIIsapiEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISISAPIIsapiEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10089, ProviderGuid);
+            }
+        }
+        public event Action<W3ISAPIStart> IISISAPIIsapiStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISISAPIIsapiStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10088, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleCriticalError> IISModuleModuleCriticalError
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleCriticalErrorTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10168, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleEnd> IISModuleModuleEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10167, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleError> IISModuleModuleError
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleErrorTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10169, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleInformation> IISModuleModuleInformation
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleInformationTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10171, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleStart> IISModuleModuleStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10166, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleVerbose> IISModuleModuleVerbose
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleVerboseTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10172, ProviderGuid);
+            }
+        }
+        public event Action<IISModuleEventsModuleWarning> IISModuleModuleWarning
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISModuleModuleWarningTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10170, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsResponseErrorStatus> IISRequestNotificationModuleSetResponseErrorStatus
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationModuleSetResponseErrorStatusTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10163, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsResponseSuccessStatus> IISRequestNotificationModuleSetResponseSuccessStatus
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationModuleSetResponseSuccessStatusTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10164, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsCompletion> IISRequestNotificationNotifyModuleCompletion
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationNotifyModuleCompletionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10159, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsEnd> IISRequestNotificationNotifyModuleEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationNotifyModuleEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10158, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsStart> IISRequestNotificationNotifyModuleStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationNotifyModuleStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10157, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationPreBeginEnd> IISRequestNotificationPreBeginRequestEnd
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationPreBeginRequestEndTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10161, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationPreBeginStart> IISRequestNotificationPreBeginRequestStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationPreBeginRequestStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10160, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsError> IISRequestNotificationRequestProcessingError
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationRequestProcessingErrorTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10162, ProviderGuid);
+            }
+        }
+        public event Action<IISRequestNotificationEventsResponseErrorDescription> IISRequestNotificationSetResponseErrorDescription
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISRequestNotificationSetResponseErrorDescriptionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10165, ProviderGuid);
+            }
+        }
+        public event Action<W3SecDeniedByAccessFlags> IISSecuritySecurityDeniedByAccessFlags
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityDeniedByAccessFlagsTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10062, ProviderGuid);
+            }
+        }
+        public event Action<W3SecDeniedByCGIRestriction> IISSecuritySecurityDeniedByCgiRestriction
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityDeniedByCgiRestrictionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10061, ProviderGuid);
+            }
+        }
+        public event Action<W3SecDeniedByISAPIRestriction> IISSecuritySecurityDeniedByIsapiRestriction
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityDeniedByIsapiRestrictionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10060, ProviderGuid);
+            }
+        }
+        public event Action<W3SecDeniedByMimemap> IISSecuritySecurityDeniedByMimemap
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityDeniedByMimemapTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10059, ProviderGuid);
+            }
+        }
+        public event Action<W3SecFileAccessDenied> IISSecuritySecurityFileAccessDenied
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityFileAccessDeniedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10058, ProviderGuid);
+            }
+        }
+        public event Action<W3SecIllegalShortFilename> IISSecuritySecurityIllegalShortFilename
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityIllegalShortFilenameTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10054, ProviderGuid);
+            }
+        }
+        public event Action<W3SecRejectedHostname> IISSecuritySecurityRejectedHostname
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityRejectedHostnameTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10056, ProviderGuid);
+            }
+        }
+        public event Action<W3SecRejectedIP> IISSecuritySecurityRejectedIp
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityRejectedIpTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10055, ProviderGuid);
+            }
+        }
+        public event Action<W3SecRequireSSL128> IISSecuritySecurityRejectedRequireSsl128
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISSecuritySecurityRejectedRequireSsl128Template(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10057, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketApplicationCloseConnection> IISWebSocketWebsocketApplicationCloseConnection
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketApplicationCloseConnectionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10128, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketEndFailure> IISWebSocketWebsocketHandshakeNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketHandshakeNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10119, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketStart> IISWebSocketWebsocketHandshakeStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketHandshakeStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10117, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketEndSuccess> IISWebSocketWebsocketHandshakeSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketHandshakeSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10118, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketInitializeNotSuccess> IISWebSocketWebsocketInitializeFailed
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketInitializeFailedTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10116, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketModuleCloseConnection> IISWebSocketWebsocketModuleCloseConnection
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketModuleCloseConnectionTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10129, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketReadFragmentEndFailure> IISWebSocketWebsocketReadFragmentEndNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReadFragmentEndNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10123, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketReadFragmentEndPending> IISWebSocketWebsocketReadFragmentEndPending
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReadFragmentEndPendingTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10121, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketReadFragmentEndSuccess> IISWebSocketWebsocketReadFragmentEndSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReadFragmentEndSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10122, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketReadFragmentStart> IISWebSocketWebsocketReadFragmentStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReadFragmentStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10120, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketReadIoFailed> IISWebSocketWebsocketReadIoNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReadIoNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10130, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketCloseReceived> IISWebSocketWebsocketReceivedClose
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketReceivedCloseTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10132, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketCloseSendFailure> IISWebSocketWebsocketSendCloseEndNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketSendCloseEndNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10135, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketCloseSendSuccess> IISWebSocketWebsocketSendCloseEndSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketSendCloseEndSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10134, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketCloseSendStart> IISWebSocketWebsocketSendCloseStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketSendCloseStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10133, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketWriteFragmentEndFailure> IISWebSocketWebsocketWriteFragmentEndNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketWriteFragmentEndNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10127, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketWriteFragmentEndPending> IISWebSocketWebsocketWriteFragmentEndPending
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketWriteFragmentEndPendingTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10125, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketWriteFragmentEndSuccess> IISWebSocketWebsocketWriteFragmentEndSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketWriteFragmentEndSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10126, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketWriteFragmentStart> IISWebSocketWebsocketWriteFragmentStart
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketWriteFragmentStartTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10124, ProviderGuid);
+            }
+        }
+        public event Action<W3WebSocketWriteIoFailed> IISWebSocketWebsocketWriteIoNotSuccess
+        {
+            add
+            {
+                source.RegisterEventTemplate(IISWebSocketWebsocketWriteIoNotSuccessTemplate(value));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 10131, ProviderGuid);
             }
         }
 
         #region private
         protected override string GetProviderName() { return ProviderName; }
 
-        static private W3AuthStart IIS_Authentication_TransOpcode10Template(Action<W3AuthStart> action)
+        static private W3AuthAnonPasswdChangeNeeded IISAuthenticationAuthAnonPasswdChangeNeededTemplate(Action<W3AuthAnonPasswdChangeNeeded> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthStart(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3AuthAnonPasswdChangeNeeded(action, 10051, 1, "IISAuthentication", IISAuthenticationGuid, 24, "AUTH_ANON_PASSWD_CHANGE_NEEDED", ProviderGuid, ProviderName);
         }
-        static private W3AuthSucceeded IIS_Authentication_TransOpcode11Template(Action<W3AuthSucceeded> action)
+        static private W3AuthBadBasicHeader IISAuthenticationAuthBadBasicHeaderTemplate(Action<W3AuthBadBasicHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthSucceeded(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3AuthBadBasicHeader(action, 10042, 1, "IISAuthentication", IISAuthenticationGuid, 16, "AUTH_BAD_BASIC_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3AuthTypeNotSupported IIS_Authentication_TransOpcode12Template(Action<W3AuthTypeNotSupported> action)
+        static private W3AuthBasicLogonFailed IISAuthenticationAuthBasicLogonFailedTemplate(Action<W3AuthBasicLogonFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthTypeNotSupported(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3AuthBasicLogonFailed(action, 10043, 1, "IISAuthentication", IISAuthenticationGuid, 17, "AUTH_BASIC_LOGON_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3AuthInvalidAnonAccount IIS_Authentication_TransOpcode13Template(Action<W3AuthInvalidAnonAccount> action)
+        static private W3AuthEnd IISAuthenticationAuthEndTemplate(Action<W3AuthEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthInvalidAnonAccount(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3AuthEnd(action, 10053, 1, "IISAuthentication", IISAuthenticationGuid, 28, "AUTH_END", ProviderGuid, ProviderName);
         }
-        static private W3AuthPasswdChangeNeeded IIS_Authentication_TransOpcode14Template(Action<W3AuthPasswdChangeNeeded> action)
+        static private W3AuthIISDigestLogonFailed IISAuthenticationAuthIisdigestLogonFailedTemplate(Action<W3AuthIISDigestLogonFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthPasswdChangeNeeded(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3AuthIISDigestLogonFailed(action, 10045, 1, "IISAuthentication", IISAuthenticationGuid, 19, "AUTH_IISDIGEST_LOGON_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3AuthPasswdChangeDisabled IIS_Authentication_TransOpcode15Template(Action<W3AuthPasswdChangeDisabled> action)
+        static private W3AuthInvalidAnonAccount IISAuthenticationAuthInvalidAnonAccountTemplate(Action<W3AuthInvalidAnonAccount> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthPasswdChangeDisabled(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3AuthInvalidAnonAccount(action, 10039, 1, "IISAuthentication", IISAuthenticationGuid, 13, "AUTH_INVALID_ANON_ACCOUNT", ProviderGuid, ProviderName);
         }
-        static private W3AuthBadBasicHeader IIS_Authentication_TransOpcode16Template(Action<W3AuthBadBasicHeader> action)
+        static private W3AuthKerberosFailed IISAuthenticationAuthKerberosFailedTemplate(Action<W3AuthKerberosFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthBadBasicHeader(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3AuthKerberosFailed(action, 10050, 1, "IISAuthentication", IISAuthenticationGuid, 55, "AUTH_KERBEROS_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3AuthBasicLogonFailed IIS_Authentication_TransOpcode17Template(Action<W3AuthBasicLogonFailed> action)
+        static private W3AuthNTLMNullSession IISAuthenticationAuthNtlmNullSessionTemplate(Action<W3AuthNTLMNullSession> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthBasicLogonFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3AuthNTLMNullSession(action, 10048, 1, "IISAuthentication", IISAuthenticationGuid, 22, "AUTH_NTLM_NULL_SESSION", ProviderGuid, ProviderName);
         }
-        static private W3AuthWDigestLogonFailed IIS_Authentication_TransOpcode18Template(Action<W3AuthWDigestLogonFailed> action)
+        static private W3AuthPassportLogonFailed IISAuthenticationAuthPassportLogonFailedTemplate(Action<W3AuthPassportLogonFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthWDigestLogonFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3AuthPassportLogonFailed(action, 10046, 1, "IISAuthentication", IISAuthenticationGuid, 20, "AUTH_PASSPORT_LOGON_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3AuthIISDigestLogonFailed IIS_Authentication_TransOpcode19Template(Action<W3AuthIISDigestLogonFailed> action)
+        static private W3AuthPasswdChangeDisabled IISAuthenticationAuthPasswdChangeDisabledTemplate(Action<W3AuthPasswdChangeDisabled> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthIISDigestLogonFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3AuthPasswdChangeDisabled(action, 10041, 1, "IISAuthentication", IISAuthenticationGuid, 15, "AUTH_PASSWD_CHANGE_DISABLED", ProviderGuid, ProviderName);
         }
-        static private W3AuthPassportLogonFailed IIS_Authentication_TransOpcode20Template(Action<W3AuthPassportLogonFailed> action)
+        static private W3AuthPasswdChangeNeeded IISAuthenticationAuthPasswdChangeNeededTemplate(Action<W3AuthPasswdChangeNeeded> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthPassportLogonFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 20, "Opcode20", ProviderGuid, ProviderName);
+            return new W3AuthPasswdChangeNeeded(action, 10040, 1, "IISAuthentication", IISAuthenticationGuid, 14, "AUTH_PASSWD_CHANGE_NEEDED", ProviderGuid, ProviderName);
         }
-        static private W3AuthSSPILogonFailed IIS_Authentication_TransOpcode21Template(Action<W3AuthSSPILogonFailed> action)
+        static private W3AuthRequestAuthType IISAuthenticationAuthRequestAuthTypeTemplate(Action<W3AuthRequestAuthType> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthSSPILogonFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 21, "Opcode21", ProviderGuid, ProviderName);
+            return new W3AuthRequestAuthType(action, 10052, 1, "IISAuthentication", IISAuthenticationGuid, 27, "AUTH_REQUEST_AUTH_TYPE", ProviderGuid, ProviderName);
         }
-        static private W3AuthNTLMNullSession IIS_Authentication_TransOpcode22Template(Action<W3AuthNTLMNullSession> action)
+        static private W3AuthSSPIContinueNeeded IISAuthenticationAuthSspiContinueNeededTemplate(Action<W3AuthSSPIContinueNeeded> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthNTLMNullSession(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 22, "Opcode22", ProviderGuid, ProviderName);
+            return new W3AuthSSPIContinueNeeded(action, 10049, 1, "IISAuthentication", IISAuthenticationGuid, 23, "AUTH_SSPI_CONTINUE_NEEDED", ProviderGuid, ProviderName);
         }
-        static private W3AuthSSPIContinueNeeded IIS_Authentication_TransOpcode23Template(Action<W3AuthSSPIContinueNeeded> action)
+        static private W3AuthSSPILogonFailed IISAuthenticationAuthSspiLogonFailedTemplate(Action<W3AuthSSPILogonFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthSSPIContinueNeeded(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 23, "Opcode23", ProviderGuid, ProviderName);
+            return new W3AuthSSPILogonFailed(action, 10047, 1, "IISAuthentication", IISAuthenticationGuid, 21, "AUTH_SSPI_LOGON_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3AuthAnonPasswdChangeNeeded IIS_Authentication_TransOpcode24Template(Action<W3AuthAnonPasswdChangeNeeded> action)
+        static private W3AuthStart IISAuthenticationAuthStartTemplate(Action<W3AuthStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthAnonPasswdChangeNeeded(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 24, "Opcode24", ProviderGuid, ProviderName);
+            return new W3AuthStart(action, 10036, 1, "IISAuthentication", IISAuthenticationGuid, 10, "AUTH_START", ProviderGuid, ProviderName);
         }
-        static private W3AuthRequestAuthType IIS_Authentication_TransOpcode27Template(Action<W3AuthRequestAuthType> action)
+        static private W3AuthSucceeded IISAuthenticationAuthSucceededTemplate(Action<W3AuthSucceeded> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthRequestAuthType(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 27, "Opcode27", ProviderGuid, ProviderName);
+            return new W3AuthSucceeded(action, 10037, 1, "IISAuthentication", IISAuthenticationGuid, 11, "AUTH_SUCCEEDED", ProviderGuid, ProviderName);
         }
-        static private W3AuthEnd IIS_Authentication_TransOpcode28Template(Action<W3AuthEnd> action)
+        static private W3AuthTypeNotSupported IISAuthenticationAuthTypeNotSupportedTemplate(Action<W3AuthTypeNotSupported> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthEnd(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 28, "Opcode28", ProviderGuid, ProviderName);
+            return new W3AuthTypeNotSupported(action, 10038, 1, "IISAuthentication", IISAuthenticationGuid, 12, "AUTH_TYPE_NOT_SUPPORTED", ProviderGuid, ProviderName);
         }
-        static private W3AuthKerberosFailed IIS_Authentication_TransOpcode55Template(Action<W3AuthKerberosFailed> action)
+        static private W3AuthWDigestLogonFailed IISAuthenticationAuthWdigestLogonFailedTemplate(Action<W3AuthWDigestLogonFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3AuthKerberosFailed(action, 10001, 1, "IIS_Authentication_Trans", IISAuthenticationTransGuid, 55, "Opcode55", ProviderGuid, ProviderName);
+            return new W3AuthWDigestLogonFailed(action, 10044, 1, "IISAuthentication", IISAuthenticationGuid, 18, "AUTH_WDIGEST_LOGON_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3CacheFileCacheAccessStart IIS_Cache_TransOpcode10Template(Action<W3CacheFileCacheAccessStart> action)
+        static private W3CacheFileCacheAccessEnd IISCacheFileCacheAccessEndTemplate(Action<W3CacheFileCacheAccessEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheFileCacheAccessStart(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3CacheFileCacheAccessEnd(action, 10148, 10, "IISCache", IISCacheGuid, 11, "FILE_CACHE_ACCESS_END", ProviderGuid, ProviderName);
         }
-        static private W3CacheFileCacheAccessEnd IIS_Cache_TransOpcode11Template(Action<W3CacheFileCacheAccessEnd> action)
+        static private W3CacheFileCacheAccessStart IISCacheFileCacheAccessStartTemplate(Action<W3CacheFileCacheAccessStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheFileCacheAccessEnd(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3CacheFileCacheAccessStart(action, 10147, 10, "IISCache", IISCacheGuid, 10, "FILE_CACHE_ACCESS_START", ProviderGuid, ProviderName);
         }
-        static private W3CacheURLCacheAccessStart IIS_Cache_TransOpcode12Template(Action<W3CacheURLCacheAccessStart> action)
+        static private W3CacheHttpsysCacheable IISCacheHttpsysCacheableTemplate(Action<W3CacheHttpsysCacheable> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheURLCacheAccessStart(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3CacheHttpsysCacheable(action, 10151, 10, "IISCache", IISCacheGuid, 14, "HTTPSYS_CACHEABLE", ProviderGuid, ProviderName);
         }
-        static private W3CacheURLCacheAccessEnd IIS_Cache_TransOpcode13Template(Action<W3CacheURLCacheAccessEnd> action)
+        static private W3OutputCacheDisabled IISCacheOutputCacheDisabledTemplate(Action<W3OutputCacheDisabled> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheURLCacheAccessEnd(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3OutputCacheDisabled(action, 10156, 10, "IISCache", IISCacheGuid, 19, "OUTPUT_CACHE_DISABLED", ProviderGuid, ProviderName);
         }
-        static private W3CacheHttpsysCacheable IIS_Cache_TransOpcode14Template(Action<W3CacheHttpsysCacheable> action)
+        static private W3OutputCacheLookupEnd IISCacheOutputCacheLookupEndTemplate(Action<W3OutputCacheLookupEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheHttpsysCacheable(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3OutputCacheLookupEnd(action, 10153, 10, "IISCache", IISCacheGuid, 16, "OUTPUT_CACHE_LOOKUP_END", ProviderGuid, ProviderName);
         }
-        static private W3OutputCacheLookupStart IIS_Cache_TransOpcode15Template(Action<W3OutputCacheLookupStart> action)
+        static private W3OutputCacheLookupStart IISCacheOutputCacheLookupStartTemplate(Action<W3OutputCacheLookupStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3OutputCacheLookupStart(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3OutputCacheLookupStart(action, 10152, 10, "IISCache", IISCacheGuid, 15, "OUTPUT_CACHE_LOOKUP_START", ProviderGuid, ProviderName);
         }
-        static private W3OutputCacheLookupEnd IIS_Cache_TransOpcode16Template(Action<W3OutputCacheLookupEnd> action)
+        static private W3OutputCacheUpdateEnd IISCacheOutputCacheUpdateEndTemplate(Action<W3OutputCacheUpdateEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3OutputCacheLookupEnd(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3OutputCacheUpdateEnd(action, 10155, 10, "IISCache", IISCacheGuid, 18, "OUTPUT_CACHE_UPDATE_END", ProviderGuid, ProviderName);
         }
-        static private W3OutputCacheUpdateStart IIS_Cache_TransOpcode17Template(Action<W3OutputCacheUpdateStart> action)
+        static private W3OutputCacheUpdateStart IISCacheOutputCacheUpdateStartTemplate(Action<W3OutputCacheUpdateStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3OutputCacheUpdateStart(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3OutputCacheUpdateStart(action, 10154, 10, "IISCache", IISCacheGuid, 17, "OUTPUT_CACHE_UPDATE_START", ProviderGuid, ProviderName);
         }
-        static private W3OutputCacheUpdateEnd IIS_Cache_TransOpcode18Template(Action<W3OutputCacheUpdateEnd> action)
+        static private W3CacheURLCacheAccessEnd IISCacheUrlCacheAccessEndTemplate(Action<W3CacheURLCacheAccessEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3OutputCacheUpdateEnd(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3CacheURLCacheAccessEnd(action, 10150, 10, "IISCache", IISCacheGuid, 13, "URL_CACHE_ACCESS_END", ProviderGuid, ProviderName);
         }
-        static private W3OutputCacheDisabled IIS_Cache_TransOpcode19Template(Action<W3OutputCacheDisabled> action)
+        static private W3CacheURLCacheAccessStart IISCacheUrlCacheAccessStartTemplate(Action<W3CacheURLCacheAccessStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3OutputCacheDisabled(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3CacheURLCacheAccessStart(action, 10149, 10, "IISCache", IISCacheGuid, 12, "URL_CACHE_ACCESS_START", ProviderGuid, ProviderName);
         }
-        static private W3CacheFileCacheCreateFile IIS_Cache_TransOpcode20Template(Action<W3CacheFileCacheCreateFile> action)
+        static private W3CGIEnd IISCGICgiEndTemplate(Action<W3CGIEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CacheFileCacheCreateFile(action, 10009, 10, "IIS_Cache_Trans", IISCacheTransGuid, 20, "Opcode20", ProviderGuid, ProviderName);
+            return new W3CGIEnd(action, 10091, 6, "IISCGI", IISCGIGuid, 2, "CGI_END", ProviderGuid, ProviderName);
         }
-        static private W3CGILaunch IIS_Cgi_TransDC_StartTemplate(Action<W3CGILaunch> action)
+        static private W3CGIHeadersReceived IISCGICgiHeadersReceivedTemplate(Action<W3CGIHeadersReceived> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGILaunch(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3CGIHeadersReceived(action, 10096, 6, "IISCGI", IISCGIGuid, 7, "CGI_HEADERS_RECEIVED", ProviderGuid, ProviderName);
         }
-        static private W3CGITimeout IIS_Cgi_TransDC_StopTemplate(Action<W3CGITimeout> action)
+        static private W3CGILaunch IISCGICgiLaunchTemplate(Action<W3CGILaunch> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGITimeout(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
+            return new W3CGILaunch(action, 10092, 6, "IISCGI", IISCGIGuid, 3, "CGI_LAUNCH", ProviderGuid, ProviderName);
         }
-        static private W3CGIPrematureTermination IIS_Cgi_TransExtensionTemplate(Action<W3CGIPrematureTermination> action)
+        static private W3CGIPrematureTermination IISCGICgiPrematureTerminationTemplate(Action<W3CGIPrematureTermination> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIPrematureTermination(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 5, "Extension", ProviderGuid, ProviderName);
+            return new W3CGIPrematureTermination(action, 10094, 6, "IISCGI", IISCGIGuid, 5, "CGI_PREMATURE_TERMINATION", ProviderGuid, ProviderName);
         }
-        static private W3CGIRequestEntitySent IIS_Cgi_TransReplyTemplate(Action<W3CGIRequestEntitySent> action)
+        static private W3CGIRequestEntitySent IISCGICgiRequestEntitySentTemplate(Action<W3CGIRequestEntitySent> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIRequestEntitySent(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 6, "Reply", ProviderGuid, ProviderName);
+            return new W3CGIRequestEntitySent(action, 10095, 6, "IISCGI", IISCGIGuid, 6, "CGI_REQUEST_ENTITY_SENT", ProviderGuid, ProviderName);
         }
-        static private W3CGIHeadersReceived IIS_Cgi_TransResumeTemplate(Action<W3CGIHeadersReceived> action)
+        static private W3CGIStart IISCGICgiStartTemplate(Action<W3CGIStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIHeadersReceived(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 7, "Resume", ProviderGuid, ProviderName);
+            return new W3CGIStart(action, 10090, 6, "IISCGI", IISCGIGuid, 1, "CGI_START", ProviderGuid, ProviderName);
         }
-        static private W3CGIStart IIS_Cgi_TransStartTemplate(Action<W3CGIStart> action)
+        static private W3CGITimeout IISCGICgiTimeoutTemplate(Action<W3CGITimeout> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIStart(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3CGITimeout(action, 10093, 6, "IISCGI", IISCGIGuid, 4, "CGI_TIMEOUT", ProviderGuid, ProviderName);
         }
-        static private W3CGIEnd IIS_Cgi_TransStopTemplate(Action<W3CGIEnd> action)
+        static private W3DynamicCompressionDo IISCompressionDynamicCompressionDoTemplate(Action<W3DynamicCompressionDo> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIEnd(action, 10005, 6, "IIS_Cgi_Trans", IISCgiTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3DynamicCompressionDo(action, 10144, 9, "IISCompression", IISCompressionGuid, 9, "DYNAMIC_COMPRESSION_DO", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionNotSuccess IIS_Compression_TransDC_StartTemplate(Action<W3StaticCompressionNotSuccess> action)
+        static private W3DynamicCompressionEnd IISCompressionDynamicCompressionEndTemplate(Action<W3DynamicCompressionEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionNotSuccess(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3DynamicCompressionEnd(action, 10145, 9, "IISCompression", IISCompressionGuid, 10, "DYNAMIC_COMPRESSION_END", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionCreateStart IIS_Compression_TransDC_StopTemplate(Action<W3StaticCompressionCreateStart> action)
+        static private W3DynamicCompressionNotSuccess IISCompressionDynamicCompressionNotSuccessTemplate(Action<W3DynamicCompressionNotSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionCreateStart(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
+            return new W3DynamicCompressionNotSuccess(action, 10143, 9, "IISCompression", IISCompressionGuid, 8, "DYNAMIC_COMPRESSION_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionCreateEnd IIS_Compression_TransExtensionTemplate(Action<W3StaticCompressionCreateEnd> action)
+        static private W3DynamicCompressionStart IISCompressionDynamicCompressionStartTemplate(Action<W3DynamicCompressionStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionCreateEnd(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 5, "Extension", ProviderGuid, ProviderName);
+            return new W3DynamicCompressionStart(action, 10141, 9, "IISCompression", IISCompressionGuid, 6, "DYNAMIC_COMPRESSION_START", ProviderGuid, ProviderName);
         }
-        static private W3DynamicCompressionEnd IIS_Compression_TransOpcode10Template(Action<W3DynamicCompressionEnd> action)
+        static private W3DynamicCompressionSuccess IISCompressionDynamicCompressionSuccessTemplate(Action<W3DynamicCompressionSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3DynamicCompressionEnd(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3DynamicCompressionSuccess(action, 10142, 9, "IISCompression", IISCompressionGuid, 7, "DYNAMIC_COMPRESSION_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionEnd IIS_Compression_TransOpcode11Template(Action<W3StaticCompressionEnd> action)
+        static private W3StaticCompressionCreateEnd IISCompressionStaticCompressionCreateEndTemplate(Action<W3StaticCompressionCreateEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionEnd(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3StaticCompressionCreateEnd(action, 10140, 9, "IISCompression", IISCompressionGuid, 5, "STATIC_COMPRESSION_CREATE_END", ProviderGuid, ProviderName);
         }
-        static private W3DynamicCompressionStart IIS_Compression_TransReplyTemplate(Action<W3DynamicCompressionStart> action)
+        static private W3StaticCompressionCreateStart IISCompressionStaticCompressionCreateStartTemplate(Action<W3StaticCompressionCreateStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3DynamicCompressionStart(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 6, "Reply", ProviderGuid, ProviderName);
+            return new W3StaticCompressionCreateStart(action, 10139, 9, "IISCompression", IISCompressionGuid, 4, "STATIC_COMPRESSION_CREATE_START", ProviderGuid, ProviderName);
         }
-        static private W3DynamicCompressionSuccess IIS_Compression_TransResumeTemplate(Action<W3DynamicCompressionSuccess> action)
+        static private W3StaticCompressionEnd IISCompressionStaticCompressionEndTemplate(Action<W3StaticCompressionEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3DynamicCompressionSuccess(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 7, "Resume", ProviderGuid, ProviderName);
+            return new W3StaticCompressionEnd(action, 10146, 9, "IISCompression", IISCompressionGuid, 11, "STATIC_COMPRESSION_END", ProviderGuid, ProviderName);
         }
-        static private W3DynamicCompressionDo IIS_Compression_TransSendTemplate(Action<W3DynamicCompressionDo> action)
+        static private W3StaticCompressionNotSuccess IISCompressionStaticCompressionNotSuccessTemplate(Action<W3StaticCompressionNotSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3DynamicCompressionDo(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 9, "Send", ProviderGuid, ProviderName);
+            return new W3StaticCompressionNotSuccess(action, 10138, 9, "IISCompression", IISCompressionGuid, 3, "STATIC_COMPRESSION_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionStart IIS_Compression_TransStartTemplate(Action<W3StaticCompressionStart> action)
+        static private W3StaticCompressionStart IISCompressionStaticCompressionStartTemplate(Action<W3StaticCompressionStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionStart(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3StaticCompressionStart(action, 10136, 9, "IISCompression", IISCompressionGuid, 1, "STATIC_COMPRESSION_START", ProviderGuid, ProviderName);
         }
-        static private W3StaticCompressionSuccess IIS_Compression_TransStopTemplate(Action<W3StaticCompressionSuccess> action)
+        static private W3StaticCompressionSuccess IISCompressionStaticCompressionSuccessTemplate(Action<W3StaticCompressionSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3StaticCompressionSuccess(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3StaticCompressionSuccess(action, 10137, 9, "IISCompression", IISCompressionGuid, 2, "STATIC_COMPRESSION_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3DynamicCompressionNotSuccess IIS_Compression_TransSuspendTemplate(Action<W3DynamicCompressionNotSuccess> action)
+        static private W3CGIFActivityTimeout IISFastCGIFastcgiActivityTimeoutTemplate(Action<W3CGIFActivityTimeout> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3DynamicCompressionNotSuccess(action, 10008, 9, "IIS_Compression_Trans", IISCompressionTransGuid, 8, "Suspend", ProviderGuid, ProviderName);
+            return new W3CGIFActivityTimeout(action, 10097, 7, "IISFastCGI", IISFastCGIGuid, 1, "FASTCGI_ACTIVITY_TIMEOUT", ProviderGuid, ProviderName);
         }
-        static private W3CGIFUnexpectedExit IIS_FastCgi_TransDC_StartTemplate(Action<W3CGIFUnexpectedExit> action)
+        static private W3CGIFAddJobObjectFail IISFastCGIFastcgiAddJobobjectFailTemplate(Action<W3CGIFAddJobObjectFail> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFUnexpectedExit(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3CGIFAddJobObjectFail(action, 10103, 7, "IISFastCGI", IISFastCGIGuid, 7, "FASTCGI_ADD_JOBOBJECT_FAIL", ProviderGuid, ProviderName);
         }
-        static private W3CGIFRapidFailureProtection IIS_FastCgi_TransDC_StopTemplate(Action<W3CGIFRapidFailureProtection> action)
+        static private W3CGIFAppMgrShutdown IISFastCGIFastcgiApplicationManagerShutdownTemplate(Action<W3CGIFAppMgrShutdown> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFRapidFailureProtection(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
+            return new W3CGIFAppMgrShutdown(action, 10104, 7, "IISFastCGI", IISFastCGIGuid, 8, "FASTCGI_APPLICATION_MANAGER_SHUTDOWN", ProviderGuid, ProviderName);
         }
-        static private W3CGIFPathNotFound IIS_FastCgi_TransExtensionTemplate(Action<W3CGIFPathNotFound> action)
+        static private W3CGIFAssignProcess IISFastCGIFastcgiAssignProcessTemplate(Action<W3CGIFAssignProcess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFPathNotFound(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 5, "Extension", ProviderGuid, ProviderName);
+            return new W3CGIFAssignProcess(action, 10113, 7, "IISFastCGI", IISFastCGIGuid, 17, "FASTCGI_ASSIGN_PROCESS", ProviderGuid, ProviderName);
         }
-        static private W3CGIFUnknownError IIS_FastCgi_TransOpcode10Template(Action<W3CGIFUnknownError> action)
+        static private W3CGIFEnd IISFastCGIFastcgiEndTemplate(Action<W3CGIFEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFUnknownError(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3CGIFEnd(action, 10115, 7, "IISFastCGI", IISFastCGIGuid, 19, "FASTCGI_END", ProviderGuid, ProviderName);
         }
-        static private W3CGIFResponseWritten IIS_FastCgi_TransOpcode11Template(Action<W3CGIFResponseWritten> action)
+        static private W3CGIFPathNotFound IISFastCGIFastcgiPathNotFoundTemplate(Action<W3CGIFPathNotFound> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFResponseWritten(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3CGIFPathNotFound(action, 10101, 7, "IISFastCGI", IISFastCGIGuid, 5, "FASTCGI_PATH_NOT_FOUND", ProviderGuid, ProviderName);
         }
-        static private W3CGIFWaitingForResponse IIS_FastCgi_TransOpcode12Template(Action<W3CGIFWaitingForResponse> action)
+        static private W3CGIFQueueFull IISFastCGIFastcgiQueueFullTemplate(Action<W3CGIFQueueFull> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFWaitingForResponse(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3CGIFQueueFull(action, 10105, 7, "IISFastCGI", IISFastCGIGuid, 9, "FASTCGI_QUEUE_FULL", ProviderGuid, ProviderName);
         }
-        static private W3CGIFTraceError IIS_FastCgi_TransOpcode13Template(Action<W3CGIFTraceError> action)
+        static private W3CGIFQueueRequest IISFastCGIFastcgiQueueRequestTemplate(Action<W3CGIFQueueRequest> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFTraceError(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3CGIFQueueRequest(action, 10112, 7, "IISFastCGI", IISFastCGIGuid, 16, "FASTCGI_QUEUE_REQUEST", ProviderGuid, ProviderName);
         }
-        static private W3CGIFTraceWarning IIS_FastCgi_TransOpcode14Template(Action<W3CGIFTraceWarning> action)
+        static private W3CGIFRapidFailureProtection IISFastCGIFastcgiRapidFailureProtectionTemplate(Action<W3CGIFRapidFailureProtection> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFTraceWarning(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3CGIFRapidFailureProtection(action, 10100, 7, "IISFastCGI", IISFastCGIGuid, 4, "FASTCGI_RAPID_FAILURE_PROTECTION", ProviderGuid, ProviderName);
         }
-        static private W3CGIFTraceInfo IIS_FastCgi_TransOpcode15Template(Action<W3CGIFTraceInfo> action)
+        static private W3CGIFRequestTimeout IISFastCGIFastcgiRequestTimeoutTemplate(Action<W3CGIFRequestTimeout> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFTraceInfo(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3CGIFRequestTimeout(action, 10098, 7, "IISFastCGI", IISFastCGIGuid, 2, "FASTCGI_REQUEST_TIMEOUT", ProviderGuid, ProviderName);
         }
-        static private W3CGIFQueueRequest IIS_FastCgi_TransOpcode16Template(Action<W3CGIFQueueRequest> action)
+        static private W3CGIFResponseWritten IISFastCGIFastcgiResponseWrittenTemplate(Action<W3CGIFResponseWritten> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFQueueRequest(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3CGIFResponseWritten(action, 10107, 7, "IISFastCGI", IISFastCGIGuid, 11, "FASTCGI_RESPONSE_WRITTEN", ProviderGuid, ProviderName);
         }
-        static private W3CGIFAssignProcess IIS_FastCgi_TransOpcode17Template(Action<W3CGIFAssignProcess> action)
+        static private W3CGIFScriptProcessorMissing IISFastCGIFastcgiScriptProcessorMissingTemplate(Action<W3CGIFScriptProcessorMissing> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFAssignProcess(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3CGIFScriptProcessorMissing(action, 10102, 7, "IISFastCGI", IISFastCGIGuid, 6, "FASTCGI_SCRIPT_PROCESSOR_MISSING", ProviderGuid, ProviderName);
         }
-        static private W3CGIFStart IIS_FastCgi_TransOpcode18Template(Action<W3CGIFStart> action)
+        static private W3CGIFStart IISFastCGIFastcgiStartTemplate(Action<W3CGIFStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFStart(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3CGIFStart(action, 10114, 7, "IISFastCGI", IISFastCGIGuid, 18, "FASTCGI_START", ProviderGuid, ProviderName);
         }
-        static private W3CGIFEnd IIS_FastCgi_TransOpcode19Template(Action<W3CGIFEnd> action)
+        static private W3CGIFTraceError IISFastCGIFastcgiStderrTraceErrorTemplate(Action<W3CGIFTraceError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFEnd(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3CGIFTraceError(action, 10109, 7, "IISFastCGI", IISFastCGIGuid, 13, "FASTCGI_STDERR_TRACE_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3CGIFScriptProcessorMissing IIS_FastCgi_TransReplyTemplate(Action<W3CGIFScriptProcessorMissing> action)
+        static private W3CGIFTraceInfo IISFastCGIFastcgiStderrTraceInfoTemplate(Action<W3CGIFTraceInfo> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFScriptProcessorMissing(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 6, "Reply", ProviderGuid, ProviderName);
+            return new W3CGIFTraceInfo(action, 10111, 7, "IISFastCGI", IISFastCGIGuid, 15, "FASTCGI_STDERR_TRACE_INFO", ProviderGuid, ProviderName);
         }
-        static private W3CGIFAddJobObjectFail IIS_FastCgi_TransResumeTemplate(Action<W3CGIFAddJobObjectFail> action)
+        static private W3CGIFTraceWarning IISFastCGIFastcgiStderrTraceWarningTemplate(Action<W3CGIFTraceWarning> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFAddJobObjectFail(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 7, "Resume", ProviderGuid, ProviderName);
+            return new W3CGIFTraceWarning(action, 10110, 7, "IISFastCGI", IISFastCGIGuid, 14, "FASTCGI_STDERR_TRACE_WARNING", ProviderGuid, ProviderName);
         }
-        static private W3CGIFQueueFull IIS_FastCgi_TransSendTemplate(Action<W3CGIFQueueFull> action)
+        static private W3CGIFUnexpectedExit IISFastCGIFastcgiUnexpectedExitTemplate(Action<W3CGIFUnexpectedExit> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFQueueFull(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 9, "Send", ProviderGuid, ProviderName);
+            return new W3CGIFUnexpectedExit(action, 10099, 7, "IISFastCGI", IISFastCGIGuid, 3, "FASTCGI_UNEXPECTED_EXIT", ProviderGuid, ProviderName);
         }
-        static private W3CGIFActivityTimeout IIS_FastCgi_TransStartTemplate(Action<W3CGIFActivityTimeout> action)
+        static private W3CGIFUnknownError IISFastCGIFastcgiUnknownErrorTemplate(Action<W3CGIFUnknownError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFActivityTimeout(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3CGIFUnknownError(action, 10106, 7, "IISFastCGI", IISFastCGIGuid, 10, "FASTCGI_UNKNOWN_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3CGIFRequestTimeout IIS_FastCgi_TransStopTemplate(Action<W3CGIFRequestTimeout> action)
+        static private W3CGIFWaitingForResponse IISFastCGIFastcgiWaitingForResponseTemplate(Action<W3CGIFWaitingForResponse> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFRequestTimeout(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3CGIFWaitingForResponse(action, 10108, 7, "IISFastCGI", IISFastCGIGuid, 12, "FASTCGI_WAITING_FOR_RESPONSE", ProviderGuid, ProviderName);
         }
-        static private W3CGIFAppMgrShutdown IIS_FastCgi_TransSuspendTemplate(Action<W3CGIFAppMgrShutdown> action)
+        static private W3FilterAccessDeniedEnd IISFilterFilterAccessDeniedEndTemplate(Action<W3FilterAccessDeniedEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3CGIFAppMgrShutdown(action, 10006, 7, "IIS_FastCgi_Trans", IISFastCgiTransGuid, 8, "Suspend", ProviderGuid, ProviderName);
+            return new W3FilterAccessDeniedEnd(action, 10083, 3, "IISFilter", IISFilterGuid, 30, "FILTER_ACCESS_DENIED_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterError IIS_Filter_TransOpcode12Template(Action<W3FilterError> action)
+        static private W3FilterAccessDeniedStart IISFilterFilterAccessDeniedStartTemplate(Action<W3FilterAccessDeniedStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterError(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3FilterAccessDeniedStart(action, 10082, 3, "IISFilter", IISFilterGuid, 29, "FILTER_ACCESS_DENIED_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterPreprocStart IIS_Filter_TransOpcode13Template(Action<W3FilterPreprocStart> action)
+        static private W3FilterAddReqHeader IISFilterFilterAddReqHeaderTemplate(Action<W3FilterAddReqHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterPreprocStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3FilterAddReqHeader(action, 10085, 3, "IISFilter", IISFilterGuid, 32, "FILTER_ADD_REQ_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3FilterPreprocEnd IIS_Filter_TransOpcode14Template(Action<W3FilterPreprocEnd> action)
+        static private W3FilterAddRespHeader IISFilterFilterAddRespHeaderTemplate(Action<W3FilterAddRespHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterPreprocEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3FilterAddRespHeader(action, 10087, 3, "IISFilter", IISFilterGuid, 34, "FILTER_ADD_RESP_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3FilterURLMapStart IIS_Filter_TransOpcode15Template(Action<W3FilterURLMapStart> action)
+        static private W3FilterAuthCompleteEnd IISFilterFilterAuthCompleteEndTemplate(Action<W3FilterAuthCompleteEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterURLMapStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3FilterAuthCompleteEnd(action, 10073, 3, "IISFilter", IISFilterGuid, 20, "FILTER_AUTH_COMPLETE_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterURLMapEnd IIS_Filter_TransOpcode16Template(Action<W3FilterURLMapEnd> action)
+        static private W3FilterAuthCompleteStart IISFilterFilterAuthCompleteStartTemplate(Action<W3FilterAuthCompleteStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterURLMapEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3FilterAuthCompleteStart(action, 10072, 3, "IISFilter", IISFilterGuid, 19, "FILTER_AUTH_COMPLETE_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterAuthenticationStart IIS_Filter_TransOpcode17Template(Action<W3FilterAuthenticationStart> action)
+        static private W3FilterAuthenticationEnd IISFilterFilterAuthenticationEndTemplate(Action<W3FilterAuthenticationEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAuthenticationStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3FilterAuthenticationEnd(action, 10071, 3, "IISFilter", IISFilterGuid, 18, "FILTER_AUTHENTICATION_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterAuthenticationEnd IIS_Filter_TransOpcode18Template(Action<W3FilterAuthenticationEnd> action)
+        static private W3FilterAuthenticationStart IISFilterFilterAuthenticationStartTemplate(Action<W3FilterAuthenticationStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAuthenticationEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3FilterAuthenticationStart(action, 10070, 3, "IISFilter", IISFilterGuid, 17, "FILTER_AUTHENTICATION_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterAuthCompleteStart IIS_Filter_TransOpcode19Template(Action<W3FilterAuthCompleteStart> action)
+        static private W3FilterEnd IISFilterFilterEndTemplate(Action<W3FilterEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAuthCompleteStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3FilterEnd(action, 10064, 3, "IISFilter", IISFilterGuid, 2, "FILTER_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterAuthCompleteEnd IIS_Filter_TransOpcode20Template(Action<W3FilterAuthCompleteEnd> action)
+        static private W3FilterEndOfRequestEnd IISFilterFilterEndOfRequestEndTemplate(Action<W3FilterEndOfRequestEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAuthCompleteEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 20, "Opcode20", ProviderGuid, ProviderName);
+            return new W3FilterEndOfRequestEnd(action, 10077, 3, "IISFilter", IISFilterGuid, 24, "FILTER_END_OF_REQUEST_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterSendResponseStart IIS_Filter_TransOpcode21Template(Action<W3FilterSendResponseStart> action)
+        static private W3FilterEndOfRequestStart IISFilterFilterEndOfRequestStartTemplate(Action<W3FilterEndOfRequestStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSendResponseStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 21, "Opcode21", ProviderGuid, ProviderName);
+            return new W3FilterEndOfRequestStart(action, 10076, 3, "IISFilter", IISFilterGuid, 23, "FILTER_END_OF_REQUEST_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterSendResponseEnd IIS_Filter_TransOpcode22Template(Action<W3FilterSendResponseEnd> action)
+        static private W3FilterError IISFilterFilterErrorTemplate(Action<W3FilterError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSendResponseEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 22, "Opcode22", ProviderGuid, ProviderName);
+            return new W3FilterError(action, 10065, 3, "IISFilter", IISFilterGuid, 12, "FILTER_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3FilterEndOfRequestStart IIS_Filter_TransOpcode23Template(Action<W3FilterEndOfRequestStart> action)
+        static private W3FilterLogEnd IISFilterFilterLogEndTemplate(Action<W3FilterLogEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterEndOfRequestStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 23, "Opcode23", ProviderGuid, ProviderName);
+            return new W3FilterLogEnd(action, 10079, 3, "IISFilter", IISFilterGuid, 26, "FILTER_LOG_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterEndOfRequestEnd IIS_Filter_TransOpcode24Template(Action<W3FilterEndOfRequestEnd> action)
+        static private W3FilterLogStart IISFilterFilterLogStartTemplate(Action<W3FilterLogStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterEndOfRequestEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 24, "Opcode24", ProviderGuid, ProviderName);
+            return new W3FilterLogStart(action, 10078, 3, "IISFilter", IISFilterGuid, 25, "FILTER_LOG_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterLogStart IIS_Filter_TransOpcode25Template(Action<W3FilterLogStart> action)
+        static private W3FilterPreprocEnd IISFilterFilterPreprocHeadersEndTemplate(Action<W3FilterPreprocEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterLogStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 25, "Opcode25", ProviderGuid, ProviderName);
+            return new W3FilterPreprocEnd(action, 10067, 3, "IISFilter", IISFilterGuid, 14, "FILTER_PREPROC_HEADERS_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterLogEnd IIS_Filter_TransOpcode26Template(Action<W3FilterLogEnd> action)
+        static private W3FilterPreprocStart IISFilterFilterPreprocHeadersStartTemplate(Action<W3FilterPreprocStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterLogEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 26, "Opcode26", ProviderGuid, ProviderName);
+            return new W3FilterPreprocStart(action, 10066, 3, "IISFilter", IISFilterGuid, 13, "FILTER_PREPROC_HEADERS_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterSendRawDataStart IIS_Filter_TransOpcode27Template(Action<W3FilterSendRawDataStart> action)
+        static private W3FilterSendRawDataEnd IISFilterFilterSendRawDataEndTemplate(Action<W3FilterSendRawDataEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSendRawDataStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 27, "Opcode27", ProviderGuid, ProviderName);
+            return new W3FilterSendRawDataEnd(action, 10081, 3, "IISFilter", IISFilterGuid, 28, "FILTER_SEND_RAW_DATA_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterSendRawDataEnd IIS_Filter_TransOpcode28Template(Action<W3FilterSendRawDataEnd> action)
+        static private W3FilterSendRawDataStart IISFilterFilterSendRawDataStartTemplate(Action<W3FilterSendRawDataStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSendRawDataEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 28, "Opcode28", ProviderGuid, ProviderName);
+            return new W3FilterSendRawDataStart(action, 10080, 3, "IISFilter", IISFilterGuid, 27, "FILTER_SEND_RAW_DATA_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterAccessDeniedStart IIS_Filter_TransOpcode29Template(Action<W3FilterAccessDeniedStart> action)
+        static private W3FilterSendResponseEnd IISFilterFilterSendResponseEndTemplate(Action<W3FilterSendResponseEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAccessDeniedStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 29, "Opcode29", ProviderGuid, ProviderName);
+            return new W3FilterSendResponseEnd(action, 10075, 3, "IISFilter", IISFilterGuid, 22, "FILTER_SEND_RESPONSE_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterAccessDeniedEnd IIS_Filter_TransOpcode30Template(Action<W3FilterAccessDeniedEnd> action)
+        static private W3FilterSendResponseStart IISFilterFilterSendResponseStartTemplate(Action<W3FilterSendResponseStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAccessDeniedEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 30, "Opcode30", ProviderGuid, ProviderName);
+            return new W3FilterSendResponseStart(action, 10074, 3, "IISFilter", IISFilterGuid, 21, "FILTER_SEND_RESPONSE_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterSetReqHeader IIS_Filter_TransOpcode31Template(Action<W3FilterSetReqHeader> action)
+        static private W3FilterSetReqHeader IISFilterFilterSetReqHeaderTemplate(Action<W3FilterSetReqHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSetReqHeader(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 31, "Opcode31", ProviderGuid, ProviderName);
+            return new W3FilterSetReqHeader(action, 10084, 3, "IISFilter", IISFilterGuid, 31, "FILTER_SET_REQ_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3FilterAddReqHeader IIS_Filter_TransOpcode32Template(Action<W3FilterAddReqHeader> action)
+        static private W3FilterSetRespHeader IISFilterFilterSetRespHeaderTemplate(Action<W3FilterSetRespHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAddReqHeader(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 32, "Opcode32", ProviderGuid, ProviderName);
+            return new W3FilterSetRespHeader(action, 10086, 3, "IISFilter", IISFilterGuid, 33, "FILTER_SET_RESP_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3FilterSetRespHeader IIS_Filter_TransOpcode33Template(Action<W3FilterSetRespHeader> action)
+        static private W3FilterStart IISFilterFilterStartTemplate(Action<W3FilterStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterSetRespHeader(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 33, "Opcode33", ProviderGuid, ProviderName);
+            return new W3FilterStart(action, 10063, 3, "IISFilter", IISFilterGuid, 1, "FILTER_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterAddRespHeader IIS_Filter_TransOpcode34Template(Action<W3FilterAddRespHeader> action)
+        static private W3FilterURLMapEnd IISFilterFilterUrlMapEndTemplate(Action<W3FilterURLMapEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterAddRespHeader(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 34, "Opcode34", ProviderGuid, ProviderName);
+            return new W3FilterURLMapEnd(action, 10069, 3, "IISFilter", IISFilterGuid, 16, "FILTER_URL_MAP_END", ProviderGuid, ProviderName);
         }
-        static private W3FilterStart IIS_Filter_TransStartTemplate(Action<W3FilterStart> action)
+        static private W3FilterURLMapStart IISFilterFilterUrlMapStartTemplate(Action<W3FilterURLMapStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterStart(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3FilterURLMapStart(action, 10068, 3, "IISFilter", IISFilterGuid, 15, "FILTER_URL_MAP_START", ProviderGuid, ProviderName);
         }
-        static private W3FilterEnd IIS_Filter_TransStopTemplate(Action<W3FilterEnd> action)
+        static private IISGeneralConfigChangeNotification IISGeneralConfigChangeNotificationTemplate(Action<IISGeneralConfigChangeNotification> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3FilterEnd(action, 10003, 3, "IIS_Filter_Trans", IISFilterTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new IISGeneralConfigChangeNotification(action, 10020, 0, "IISGeneral", IISGeneralGuid, 40, "CONFIG_CHANGE_NOTIFICATION", ProviderGuid, ProviderName);
         }
-        static private W3SecIllegalShortFilename IIS_Security_TransOpcode10Template(Action<W3SecIllegalShortFilename> action)
+        static private IISGeneralFileChangeNotification IISGeneralFileChangeNotificationTemplate(Action<IISGeneralFileChangeNotification> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecIllegalShortFilename(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new IISGeneralFileChangeNotification(action, 10019, 0, "IISGeneral", IISGeneralGuid, 39, "FILE_CHANGE_NOTIFICATION", ProviderGuid, ProviderName);
         }
-        static private W3SecRejectedIP IIS_Security_TransOpcode11Template(Action<W3SecRejectedIP> action)
+        static private W3GeneralCGIHandler IISGeneralGeneralCgiHandlerTemplate(Action<W3GeneralCGIHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecRejectedIP(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3GeneralCGIHandler(action, 10003, 0, "IISGeneral", IISGeneralGuid, 11, "GENERAL_CGI_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3SecRejectedHostname IIS_Security_TransOpcode12Template(Action<W3SecRejectedHostname> action)
+        static private W3GeneralChildRequestEnd IISGeneralGeneralChildRequestEndTemplate(Action<W3GeneralChildRequestEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecRejectedHostname(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3GeneralChildRequestEnd(action, 10012, 0, "IISGeneral", IISGeneralGuid, 32, "GENERAL_CHILD_REQUEST_END", ProviderGuid, ProviderName);
         }
-        static private W3SecRequireSSL128 IIS_Security_TransOpcode13Template(Action<W3SecRequireSSL128> action)
+        static private W3GeneralChildRequestStart IISGeneralGeneralChildRequestStartTemplate(Action<W3GeneralChildRequestStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecRequireSSL128(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3GeneralChildRequestStart(action, 10011, 0, "IISGeneral", IISGeneralGuid, 31, "GENERAL_CHILD_REQUEST_START", ProviderGuid, ProviderName);
         }
-        static private W3SecFileAccessDenied IIS_Security_TransOpcode14Template(Action<W3SecFileAccessDenied> action)
+        static private W3GeneralDavHandler IISGeneralGeneralDavHandlerTemplate(Action<W3GeneralDavHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecFileAccessDenied(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3GeneralDavHandler(action, 10007, 0, "IISGeneral", IISGeneralGuid, 15, "GENERAL_DAV_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3SecDeniedByMimemap IIS_Security_TransOpcode15Template(Action<W3SecDeniedByMimemap> action)
+        static private W3GeneralEndpointInformation IISGeneralGeneralEndpointInformationTemplate(Action<W3GeneralEndpointInformation> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecDeniedByMimemap(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3GeneralEndpointInformation(action, 10035, 0, "IISGeneral", IISGeneralGuid, 55, "GENERAL_ENDPOINT_INFORMATION", ProviderGuid, ProviderName);
         }
-        static private W3SecDeniedByISAPIRestriction IIS_Security_TransOpcode16Template(Action<W3SecDeniedByISAPIRestriction> action)
+        static private W3GeneralFlushResponseEnd IISGeneralGeneralFlushResponseEndTemplate(Action<W3GeneralFlushResponseEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecDeniedByISAPIRestriction(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3GeneralFlushResponseEnd(action, 10016, 0, "IISGeneral", IISGeneralGuid, 36, "GENERAL_FLUSH_RESPONSE_END", ProviderGuid, ProviderName);
         }
-        static private W3SecDeniedByCGIRestriction IIS_Security_TransOpcode17Template(Action<W3SecDeniedByCGIRestriction> action)
+        static private W3GeneralFlushResponseStart IISGeneralGeneralFlushResponseStartTemplate(Action<W3GeneralFlushResponseStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecDeniedByCGIRestriction(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3GeneralFlushResponseStart(action, 10015, 0, "IISGeneral", IISGeneralGuid, 35, "GENERAL_FLUSH_RESPONSE_START", ProviderGuid, ProviderName);
         }
-        static private W3SecDeniedByAccessFlags IIS_Security_TransOpcode18Template(Action<W3SecDeniedByAccessFlags> action)
+        static private W3GeneralGetURLMetadata IISGeneralGeneralGetUrlMetadataTemplate(Action<W3GeneralGetURLMetadata> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SecDeniedByAccessFlags(action, 10002, 2, "IIS_Security_Trans", IISSecurityTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3GeneralGetURLMetadata(action, 10010, 0, "IISGeneral", IISGeneralGuid, 30, "GENERAL_GET_URL_METADATA", ProviderGuid, ProviderName);
         }
-        static private W3GeneralStaticFileHandler IIS_TransOpcode10Template(Action<W3GeneralStaticFileHandler> action)
+        static private W3GeneralISAPIHandler IISGeneralGeneralIsapiHandlerTemplate(Action<W3GeneralISAPIHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralStaticFileHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3GeneralISAPIHandler(action, 10004, 0, "IISGeneral", IISGeneralGuid, 12, "GENERAL_ISAPI_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralCGIHandler IIS_TransOpcode11Template(Action<W3GeneralCGIHandler> action)
+        static private W3GeneralMapHandler IISGeneralGeneralMapHandlerTemplate(Action<W3GeneralMapHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralCGIHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3GeneralMapHandler(action, 10014, 0, "IISGeneral", IISGeneralGuid, 34, "GENERAL_MAP_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralISAPIHandler IIS_TransOpcode12Template(Action<W3GeneralISAPIHandler> action)
+        static private W3GeneralModuleFactoryFailed IISGeneralGeneralModuleFactoryFailedTemplate(Action<W3GeneralModuleFactoryFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralISAPIHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3GeneralModuleFactoryFailed(action, 10034, 0, "IISGeneral", IISGeneralGuid, 54, "GENERAL_MODULE_FACTORY_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3GeneralOopISAPIHandler IIS_TransOpcode13Template(Action<W3GeneralOopISAPIHandler> action)
+        static private W3GeneralNotSendCustomError IISGeneralGeneralNotSendCustomErrorTemplate(Action<W3GeneralNotSendCustomError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralOopISAPIHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3GeneralNotSendCustomError(action, 10032, 0, "IISGeneral", IISGeneralGuid, 52, "GENERAL_NOT_SEND_CUSTOM_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3GeneralRedirectionHandler IIS_TransOpcode14Template(Action<W3GeneralRedirectionHandler> action)
+        static private W3GeneralOopISAPIHandler IISGeneralGeneralOopIsapiHandlerTemplate(Action<W3GeneralOopISAPIHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralRedirectionHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3GeneralOopISAPIHandler(action, 10005, 0, "IISGeneral", IISGeneralGuid, 13, "GENERAL_OOP_ISAPI_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralDavHandler IIS_TransOpcode15Template(Action<W3GeneralDavHandler> action)
+        static private W3GeneralOptionsHandler IISGeneralGeneralOptionsHandlerTemplate(Action<W3GeneralOptionsHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralDavHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3GeneralOptionsHandler(action, 10008, 0, "IISGeneral", IISGeneralGuid, 16, "GENERAL_OPTIONS_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralOptionsHandler IIS_TransOpcode16Template(Action<W3GeneralOptionsHandler> action)
+        static private W3GeneralReadEntityEnd IISGeneralGeneralReadEntityEndTemplate(Action<W3GeneralReadEntityEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralOptionsHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3GeneralReadEntityEnd(action, 10018, 0, "IISGeneral", IISGeneralGuid, 38, "GENERAL_READ_ENTITY_END", ProviderGuid, ProviderName);
         }
-        static private W3GeneralTraceHandler IIS_TransOpcode17Template(Action<W3GeneralTraceHandler> action)
+        static private W3GeneralReadEntityStart IISGeneralGeneralReadEntityStartTemplate(Action<W3GeneralReadEntityStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralTraceHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3GeneralReadEntityStart(action, 10017, 0, "IISGeneral", IISGeneralGuid, 37, "GENERAL_READ_ENTITY_START", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode18Template(Action<W3SendResponse> action)
+        static private W3GeneralRedirectionHandler IISGeneralGeneralRedirectionHandlerTemplate(Action<W3GeneralRedirectionHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3GeneralRedirectionHandler(action, 10006, 0, "IISGeneral", IISGeneralGuid, 14, "GENERAL_REDIRECTION_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode19Template(Action<W3SendResponse> action)
+        static private W3GeneralEndNewRequest IISGeneralGeneralRequestEndTemplate(Action<W3GeneralEndNewRequest> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3GeneralEndNewRequest(action, 10001, 0, "IISGeneral", IISGeneralGuid, 2, "GENERAL_REQUEST_END", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode20Template(Action<W3SendResponse> action)
+        static private W3GeneralRequestEntity IISGeneralGeneralRequestEntityTemplate(Action<W3GeneralRequestEntity> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 20, "Opcode20", ProviderGuid, ProviderName);
+            return new W3GeneralRequestEntity(action, 10031, 0, "IISGeneral", IISGeneralGuid, 51, "GENERAL_REQUEST_ENTITY", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode21Template(Action<W3SendResponse> action)
+        static private W3GeneralRequestHeaders IISGeneralGeneralRequestHeadersTemplate(Action<W3GeneralRequestHeaders> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 21, "Opcode21", ProviderGuid, ProviderName);
+            return new W3GeneralRequestHeaders(action, 10030, 0, "IISGeneral", IISGeneralGuid, 50, "GENERAL_REQUEST_HEADERS", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode22Template(Action<W3SendResponse> action)
+        static private W3GeneralStartNewRequest IISGeneralGeneralRequestStartTemplate(Action<W3GeneralStartNewRequest> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 22, "Opcode22", ProviderGuid, ProviderName);
+            return new W3GeneralStartNewRequest(action, 10000, 0, "IISGeneral", IISGeneralGuid, 1, "GENERAL_REQUEST_START", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode23Template(Action<W3SendResponse> action)
+        static private W3GeneralResponseEntityBuffer IISGeneralGeneralResponseEntityBufferTemplate(Action<W3GeneralResponseEntityBuffer> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 23, "Opcode23", ProviderGuid, ProviderName);
+            return new W3GeneralResponseEntityBuffer(action, 10029, 0, "IISGeneral", IISGeneralGuid, 49, "GENERAL_RESPONSE_ENTITY_BUFFER", ProviderGuid, ProviderName);
         }
-        static private W3SendResponse IIS_TransOpcode24Template(Action<W3SendResponse> action)
+        static private W3GeneralResponseEntityFile IISGeneralGeneralResponseEntityFileTemplate(Action<W3GeneralResponseEntityFile> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3SendResponse(action, 10000, 0, "IIS_Trans", IISTransGuid, 24, "Opcode24", ProviderGuid, ProviderName);
+            return new W3GeneralResponseEntityFile(action, 10028, 0, "IISGeneral", IISGeneralGuid, 48, "GENERAL_RESPONSE_ENTITY_FILE", ProviderGuid, ProviderName);
         }
-        static private W3GeneralGetURLMetadata IIS_TransOpcode30Template(Action<W3GeneralGetURLMetadata> action)
+        static private W3GeneralResponseHeaders IISGeneralGeneralResponseHeadersTemplate(Action<W3GeneralResponseHeaders> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralGetURLMetadata(action, 10000, 0, "IIS_Trans", IISTransGuid, 30, "Opcode30", ProviderGuid, ProviderName);
+            return new W3GeneralResponseHeaders(action, 10027, 0, "IISGeneral", IISGeneralGuid, 47, "GENERAL_RESPONSE_HEADERS", ProviderGuid, ProviderName);
         }
-        static private W3GeneralChildRequestStart IIS_TransOpcode31Template(Action<W3GeneralChildRequestStart> action)
+        static private W3GeneralSendCustomError IISGeneralGeneralSendCustomErrorTemplate(Action<W3GeneralSendCustomError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralChildRequestStart(action, 10000, 0, "IIS_Trans", IISTransGuid, 31, "Opcode31", ProviderGuid, ProviderName);
+            return new W3GeneralSendCustomError(action, 10013, 0, "IISGeneral", IISGeneralGuid, 33, "GENERAL_SEND_CUSTOM_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3GeneralChildRequestEnd IIS_TransOpcode32Template(Action<W3GeneralChildRequestEnd> action)
+        static private W3GeneralSetRequestHeader IISGeneralGeneralSetRequestHeaderTemplate(Action<W3GeneralSetRequestHeader> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralChildRequestEnd(action, 10000, 0, "IIS_Trans", IISTransGuid, 32, "Opcode32", ProviderGuid, ProviderName);
+            return new W3GeneralSetRequestHeader(action, 10033, 0, "IISGeneral", IISGeneralGuid, 53, "GENERAL_SET_REQUEST_HEADER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralSendCustomError IIS_TransOpcode33Template(Action<W3GeneralSendCustomError> action)
+        static private W3GeneralStaticFileHandler IISGeneralGeneralStaticFileHandlerTemplate(Action<W3GeneralStaticFileHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralSendCustomError(action, 10000, 0, "IIS_Trans", IISTransGuid, 33, "Opcode33", ProviderGuid, ProviderName);
+            return new W3GeneralStaticFileHandler(action, 10002, 0, "IISGeneral", IISGeneralGuid, 10, "GENERAL_STATIC_FILE_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralMapHandler IIS_TransOpcode34Template(Action<W3GeneralMapHandler> action)
+        static private W3GeneralTraceHandler IISGeneralGeneralTraceHandlerTemplate(Action<W3GeneralTraceHandler> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralMapHandler(action, 10000, 0, "IIS_Trans", IISTransGuid, 34, "Opcode34", ProviderGuid, ProviderName);
+            return new W3GeneralTraceHandler(action, 10009, 0, "IISGeneral", IISGeneralGuid, 17, "GENERAL_TRACE_HANDLER", ProviderGuid, ProviderName);
         }
-        static private W3GeneralFlushResponseStart IIS_TransOpcode35Template(Action<W3GeneralFlushResponseStart> action)
+        static private IISGeneralHandlerChanged IISGeneralHandlerChangedTemplate(Action<IISGeneralHandlerChanged> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralFlushResponseStart(action, 10000, 0, "IIS_Trans", IISTransGuid, 35, "Opcode35", ProviderGuid, ProviderName);
+            return new IISGeneralHandlerChanged(action, 10023, 0, "IISGeneral", IISGeneralGuid, 43, "HANDLER_CHANGED", ProviderGuid, ProviderName);
         }
-        static private W3GeneralFlushResponseEnd IIS_TransOpcode36Template(Action<W3GeneralFlushResponseEnd> action)
+        static private IISGeneralHandlerPreconditionNotMatch IISGeneralHandlerPreconditionNotMatchTemplate(Action<IISGeneralHandlerPreconditionNotMatch> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralFlushResponseEnd(action, 10000, 0, "IIS_Trans", IISTransGuid, 36, "Opcode36", ProviderGuid, ProviderName);
+            return new IISGeneralHandlerPreconditionNotMatch(action, 10026, 0, "IISGeneral", IISGeneralGuid, 46, "HANDLER_PRECONDITION_NOT_MATCH", ProviderGuid, ProviderName);
         }
-        static private W3GeneralReadEntityStart IIS_TransOpcode37Template(Action<W3GeneralReadEntityStart> action)
+        static private IISGeneralModulePreconditionNotMatch IISGeneralModulePreconditionNotMatchTemplate(Action<IISGeneralModulePreconditionNotMatch> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralReadEntityStart(action, 10000, 0, "IIS_Trans", IISTransGuid, 37, "Opcode37", ProviderGuid, ProviderName);
+            return new IISGeneralModulePreconditionNotMatch(action, 10025, 0, "IISGeneral", IISGeneralGuid, 45, "MODULE_PRECONDITION_NOT_MATCH", ProviderGuid, ProviderName);
         }
-        static private W3GeneralReadEntityEnd IIS_TransOpcode38Template(Action<W3GeneralReadEntityEnd> action)
+        static private IISGeneralUrlChanged IISGeneralUrlChangedTemplate(Action<IISGeneralUrlChanged> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralReadEntityEnd(action, 10000, 0, "IIS_Trans", IISTransGuid, 38, "Opcode38", ProviderGuid, ProviderName);
+            return new IISGeneralUrlChanged(action, 10022, 0, "IISGeneral", IISGeneralGuid, 42, "URL_CHANGED", ProviderGuid, ProviderName);
         }
-        static private IISGeneralFileChangeNotification IIS_TransOpcode39Template(Action<IISGeneralFileChangeNotification> action)
+        static private IISGeneralUserSet IISGeneralUserSetTemplate(Action<IISGeneralUserSet> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralFileChangeNotification(action, 10000, 0, "IIS_Trans", IISTransGuid, 39, "Opcode39", ProviderGuid, ProviderName);
+            return new IISGeneralUserSet(action, 10024, 0, "IISGeneral", IISGeneralGuid, 44, "USER_SET", ProviderGuid, ProviderName);
         }
-        static private IISGeneralConfigChangeNotification IIS_TransOpcode40Template(Action<IISGeneralConfigChangeNotification> action)
+        static private IISGeneralVirtualModuleUnresolved IISGeneralVirtualModuleUnresolvedTemplate(Action<IISGeneralVirtualModuleUnresolved> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralConfigChangeNotification(action, 10000, 0, "IIS_Trans", IISTransGuid, 40, "Opcode40", ProviderGuid, ProviderName);
+            return new IISGeneralVirtualModuleUnresolved(action, 10021, 0, "IISGeneral", IISGeneralGuid, 41, "VIRTUAL_MODULE_UNRESOLVED", ProviderGuid, ProviderName);
         }
-        static private IISGeneralVirtualModuleUnresolved IIS_TransOpcode41Template(Action<IISGeneralVirtualModuleUnresolved> action)
+        static private W3ISAPIEnd IISISAPIIsapiEndTemplate(Action<W3ISAPIEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralVirtualModuleUnresolved(action, 10000, 0, "IIS_Trans", IISTransGuid, 41, "Opcode41", ProviderGuid, ProviderName);
+            return new W3ISAPIEnd(action, 10089, 5, "IISISAPI", IISISAPIGuid, 2, "ISAPI_END", ProviderGuid, ProviderName);
         }
-        static private IISGeneralUrlChanged IIS_TransOpcode42Template(Action<IISGeneralUrlChanged> action)
+        static private W3ISAPIStart IISISAPIIsapiStartTemplate(Action<W3ISAPIStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralUrlChanged(action, 10000, 0, "IIS_Trans", IISTransGuid, 42, "Opcode42", ProviderGuid, ProviderName);
+            return new W3ISAPIStart(action, 10088, 5, "IISISAPI", IISISAPIGuid, 1, "ISAPI_START", ProviderGuid, ProviderName);
         }
-        static private IISGeneralHandlerChanged IIS_TransOpcode43Template(Action<IISGeneralHandlerChanged> action)
+        static private IISModuleEventsModuleCriticalError IISModuleModuleCriticalErrorTemplate(Action<IISModuleEventsModuleCriticalError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralHandlerChanged(action, 10000, 0, "IIS_Trans", IISTransGuid, 43, "Opcode43", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleCriticalError(action, 10168, 12, "IISModule", IISModuleGuid, 3, "MODULE_CRITICAL_ERROR", ProviderGuid, ProviderName);
         }
-        static private IISGeneralUserSet IIS_TransOpcode44Template(Action<IISGeneralUserSet> action)
+        static private IISModuleEventsModuleEnd IISModuleModuleEndTemplate(Action<IISModuleEventsModuleEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralUserSet(action, 10000, 0, "IIS_Trans", IISTransGuid, 44, "Opcode44", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleEnd(action, 10167, 12, "IISModule", IISModuleGuid, 2, "MODULE_END", ProviderGuid, ProviderName);
         }
-        static private IISGeneralModulePreconditionNotMatch IIS_TransOpcode45Template(Action<IISGeneralModulePreconditionNotMatch> action)
+        static private IISModuleEventsModuleError IISModuleModuleErrorTemplate(Action<IISModuleEventsModuleError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralModulePreconditionNotMatch(action, 10000, 0, "IIS_Trans", IISTransGuid, 45, "Opcode45", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleError(action, 10169, 12, "IISModule", IISModuleGuid, 4, "MODULE_ERROR", ProviderGuid, ProviderName);
         }
-        static private IISGeneralHandlerPreconditionNotMatch IIS_TransOpcode46Template(Action<IISGeneralHandlerPreconditionNotMatch> action)
+        static private IISModuleEventsModuleInformation IISModuleModuleInformationTemplate(Action<IISModuleEventsModuleInformation> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISGeneralHandlerPreconditionNotMatch(action, 10000, 0, "IIS_Trans", IISTransGuid, 46, "Opcode46", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleInformation(action, 10171, 12, "IISModule", IISModuleGuid, 6, "MODULE_INFORMATION", ProviderGuid, ProviderName);
         }
-        static private W3GeneralResponseHeaders IIS_TransOpcode47Template(Action<W3GeneralResponseHeaders> action)
+        static private IISModuleEventsModuleStart IISModuleModuleStartTemplate(Action<IISModuleEventsModuleStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralResponseHeaders(action, 10000, 0, "IIS_Trans", IISTransGuid, 47, "Opcode47", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleStart(action, 10166, 12, "IISModule", IISModuleGuid, 1, "MODULE_START", ProviderGuid, ProviderName);
         }
-        static private W3GeneralResponseEntityFile IIS_TransOpcode48Template(Action<W3GeneralResponseEntityFile> action)
+        static private IISModuleEventsModuleVerbose IISModuleModuleVerboseTemplate(Action<IISModuleEventsModuleVerbose> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralResponseEntityFile(action, 10000, 0, "IIS_Trans", IISTransGuid, 48, "Opcode48", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleVerbose(action, 10172, 12, "IISModule", IISModuleGuid, 7, "MODULE_VERBOSE", ProviderGuid, ProviderName);
         }
-        static private W3GeneralResponseEntityBuffer IIS_TransOpcode49Template(Action<W3GeneralResponseEntityBuffer> action)
+        static private IISModuleEventsModuleWarning IISModuleModuleWarningTemplate(Action<IISModuleEventsModuleWarning> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralResponseEntityBuffer(action, 10000, 0, "IIS_Trans", IISTransGuid, 49, "Opcode49", ProviderGuid, ProviderName);
+            return new IISModuleEventsModuleWarning(action, 10170, 12, "IISModule", IISModuleGuid, 5, "MODULE_WARNING", ProviderGuid, ProviderName);
         }
-        static private W3GeneralRequestHeaders IIS_TransOpcode50Template(Action<W3GeneralRequestHeaders> action)
+        static private IISRequestNotificationEventsResponseErrorStatus IISRequestNotificationModuleSetResponseErrorStatusTemplate(Action<IISRequestNotificationEventsResponseErrorStatus> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralRequestHeaders(action, 10000, 0, "IIS_Trans", IISTransGuid, 50, "Opcode50", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsResponseErrorStatus(action, 10163, 11, "IISRequestNotification", IISRequestNotificationGuid, 16, "MODULE_SET_RESPONSE_ERROR_STATUS", ProviderGuid, ProviderName);
         }
-        static private W3GeneralRequestEntity IIS_TransOpcode51Template(Action<W3GeneralRequestEntity> action)
+        static private IISRequestNotificationEventsResponseSuccessStatus IISRequestNotificationModuleSetResponseSuccessStatusTemplate(Action<IISRequestNotificationEventsResponseSuccessStatus> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralRequestEntity(action, 10000, 0, "IIS_Trans", IISTransGuid, 51, "Opcode51", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsResponseSuccessStatus(action, 10164, 11, "IISRequestNotification", IISRequestNotificationGuid, 17, "MODULE_SET_RESPONSE_SUCCESS_STATUS", ProviderGuid, ProviderName);
         }
-        static private W3GeneralNotSendCustomError IIS_TransOpcode52Template(Action<W3GeneralNotSendCustomError> action)
+        static private IISRequestNotificationEventsCompletion IISRequestNotificationNotifyModuleCompletionTemplate(Action<IISRequestNotificationEventsCompletion> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralNotSendCustomError(action, 10000, 0, "IIS_Trans", IISTransGuid, 52, "Opcode52", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsCompletion(action, 10159, 11, "IISRequestNotification", IISRequestNotificationGuid, 3, "NOTIFY_MODULE_COMPLETION", ProviderGuid, ProviderName);
         }
-        static private W3GeneralSetRequestHeader IIS_TransOpcode53Template(Action<W3GeneralSetRequestHeader> action)
+        static private IISRequestNotificationEventsEnd IISRequestNotificationNotifyModuleEndTemplate(Action<IISRequestNotificationEventsEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralSetRequestHeader(action, 10000, 0, "IIS_Trans", IISTransGuid, 53, "Opcode53", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsEnd(action, 10158, 11, "IISRequestNotification", IISRequestNotificationGuid, 2, "NOTIFY_MODULE_END", ProviderGuid, ProviderName);
         }
-        static private W3GeneralModuleFactoryFailed IIS_TransOpcode54Template(Action<W3GeneralModuleFactoryFailed> action)
+        static private IISRequestNotificationEventsStart IISRequestNotificationNotifyModuleStartTemplate(Action<IISRequestNotificationEventsStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralModuleFactoryFailed(action, 10000, 0, "IIS_Trans", IISTransGuid, 54, "Opcode54", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsStart(action, 10157, 11, "IISRequestNotification", IISRequestNotificationGuid, 1, "NOTIFY_MODULE_START", ProviderGuid, ProviderName);
         }
-        static private W3GeneralEndpointInformation IIS_TransOpcode55Template(Action<W3GeneralEndpointInformation> action)
+        static private IISRequestNotificationPreBeginEnd IISRequestNotificationPreBeginRequestEndTemplate(Action<IISRequestNotificationPreBeginEnd> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralEndpointInformation(action, 10000, 0, "IIS_Trans", IISTransGuid, 55, "Opcode55", ProviderGuid, ProviderName);
+            return new IISRequestNotificationPreBeginEnd(action, 10161, 11, "IISRequestNotification", IISRequestNotificationGuid, 5, "PRE_BEGIN_REQUEST_END", ProviderGuid, ProviderName);
         }
-        static private W3GeneralSetResponseHeader IIS_TransOpcode56Template(Action<W3GeneralSetResponseHeader> action)
+        static private IISRequestNotificationPreBeginStart IISRequestNotificationPreBeginRequestStartTemplate(Action<IISRequestNotificationPreBeginStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralSetResponseHeader(action, 10000, 0, "IIS_Trans", IISTransGuid, 56, "Opcode56", ProviderGuid, ProviderName);
+            return new IISRequestNotificationPreBeginStart(action, 10160, 11, "IISRequestNotification", IISRequestNotificationGuid, 4, "PRE_BEGIN_REQUEST_START", ProviderGuid, ProviderName);
         }
-        static private W3GeneralStartNewRequest IIS_TransStartTemplate(Action<W3GeneralStartNewRequest> action)
+        static private IISRequestNotificationEventsError IISRequestNotificationRequestProcessingErrorTemplate(Action<IISRequestNotificationEventsError> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralStartNewRequest(action, 10000, 0, "IIS_Trans", IISTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsError(action, 10162, 11, "IISRequestNotification", IISRequestNotificationGuid, 15, "REQUEST_PROCESSING_ERROR", ProviderGuid, ProviderName);
         }
-        static private W3GeneralEndNewRequest IIS_TransStopTemplate(Action<W3GeneralEndNewRequest> action)
+        static private IISRequestNotificationEventsResponseErrorDescription IISRequestNotificationSetResponseErrorDescriptionTemplate(Action<IISRequestNotificationEventsResponseErrorDescription> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3GeneralEndNewRequest(action, 10000, 0, "IIS_Trans", IISTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new IISRequestNotificationEventsResponseErrorDescription(action, 10165, 11, "IISRequestNotification", IISRequestNotificationGuid, 18, "SET_RESPONSE_ERROR_DESCRIPTION", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketEndSuccess IIS_WebSocket_TransDC_StartTemplate(Action<W3WebSocketEndSuccess> action)
+        static private W3SecDeniedByAccessFlags IISSecuritySecurityDeniedByAccessFlagsTemplate(Action<W3SecDeniedByAccessFlags> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketEndSuccess(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3SecDeniedByAccessFlags(action, 10062, 2, "IISSecurity", IISSecurityGuid, 18, "SECURITY_DENIED_BY_ACCESS_FLAGS", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketEndFailure IIS_WebSocket_TransDC_StopTemplate(Action<W3WebSocketEndFailure> action)
+        static private W3SecDeniedByCGIRestriction IISSecuritySecurityDeniedByCgiRestrictionTemplate(Action<W3SecDeniedByCGIRestriction> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketEndFailure(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
+            return new W3SecDeniedByCGIRestriction(action, 10061, 2, "IISSecurity", IISSecurityGuid, 17, "SECURITY_DENIED_BY_CGI_RESTRICTION", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketReadFragmentStart IIS_WebSocket_TransExtensionTemplate(Action<W3WebSocketReadFragmentStart> action)
+        static private W3SecDeniedByISAPIRestriction IISSecuritySecurityDeniedByIsapiRestrictionTemplate(Action<W3SecDeniedByISAPIRestriction> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketReadFragmentStart(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 5, "Extension", ProviderGuid, ProviderName);
+            return new W3SecDeniedByISAPIRestriction(action, 10060, 2, "IISSecurity", IISSecurityGuid, 16, "SECURITY_DENIED_BY_ISAPI_RESTRICTION", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketWriteFragmentEndPending IIS_WebSocket_TransOpcode10Template(Action<W3WebSocketWriteFragmentEndPending> action)
+        static private W3SecDeniedByMimemap IISSecuritySecurityDeniedByMimemapTemplate(Action<W3SecDeniedByMimemap> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketWriteFragmentEndPending(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
+            return new W3SecDeniedByMimemap(action, 10059, 2, "IISSecurity", IISSecurityGuid, 15, "SECURITY_DENIED_BY_MIMEMAP", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketWriteFragmentEndSuccess IIS_WebSocket_TransOpcode11Template(Action<W3WebSocketWriteFragmentEndSuccess> action)
+        static private W3SecFileAccessDenied IISSecuritySecurityFileAccessDeniedTemplate(Action<W3SecFileAccessDenied> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketWriteFragmentEndSuccess(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
+            return new W3SecFileAccessDenied(action, 10058, 2, "IISSecurity", IISSecurityGuid, 14, "SECURITY_FILE_ACCESS_DENIED", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketWriteFragmentEndFailure IIS_WebSocket_TransOpcode12Template(Action<W3WebSocketWriteFragmentEndFailure> action)
+        static private W3SecIllegalShortFilename IISSecuritySecurityIllegalShortFilenameTemplate(Action<W3SecIllegalShortFilename> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketWriteFragmentEndFailure(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
+            return new W3SecIllegalShortFilename(action, 10054, 2, "IISSecurity", IISSecurityGuid, 10, "SECURITY_ILLEGAL_SHORT_FILENAME", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketApplicationCloseConnection IIS_WebSocket_TransOpcode13Template(Action<W3WebSocketApplicationCloseConnection> action)
+        static private W3SecRejectedHostname IISSecuritySecurityRejectedHostnameTemplate(Action<W3SecRejectedHostname> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketApplicationCloseConnection(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
+            return new W3SecRejectedHostname(action, 10056, 2, "IISSecurity", IISSecurityGuid, 12, "SECURITY_REJECTED_HOSTNAME", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketModuleCloseConnection IIS_WebSocket_TransOpcode14Template(Action<W3WebSocketModuleCloseConnection> action)
+        static private W3SecRejectedIP IISSecuritySecurityRejectedIpTemplate(Action<W3SecRejectedIP> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketModuleCloseConnection(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
+            return new W3SecRejectedIP(action, 10055, 2, "IISSecurity", IISSecurityGuid, 11, "SECURITY_REJECTED_IP", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketReadIoFailed IIS_WebSocket_TransOpcode15Template(Action<W3WebSocketReadIoFailed> action)
+        static private W3SecRequireSSL128 IISSecuritySecurityRejectedRequireSsl128Template(Action<W3SecRequireSSL128> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketReadIoFailed(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
+            return new W3SecRequireSSL128(action, 10057, 2, "IISSecurity", IISSecurityGuid, 13, "SECURITY_REJECTED_REQUIRE_SSL_128", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketWriteIoFailed IIS_WebSocket_TransOpcode16Template(Action<W3WebSocketWriteIoFailed> action)
+        static private W3WebSocketApplicationCloseConnection IISWebSocketWebsocketApplicationCloseConnectionTemplate(Action<W3WebSocketApplicationCloseConnection> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketWriteIoFailed(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 16, "Opcode16", ProviderGuid, ProviderName);
+            return new W3WebSocketApplicationCloseConnection(action, 10128, 8, "IISWebSocket", IISWebSocketGuid, 13, "WEBSOCKET_APPLICATION_CLOSE_CONNECTION", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketCloseReceived IIS_WebSocket_TransOpcode17Template(Action<W3WebSocketCloseReceived> action)
+        static private W3WebSocketEndFailure IISWebSocketWebsocketHandshakeNotSuccessTemplate(Action<W3WebSocketEndFailure> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketCloseReceived(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 17, "Opcode17", ProviderGuid, ProviderName);
+            return new W3WebSocketEndFailure(action, 10119, 8, "IISWebSocket", IISWebSocketGuid, 4, "WEBSOCKET_HANDSHAKE_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketCloseSendStart IIS_WebSocket_TransOpcode18Template(Action<W3WebSocketCloseSendStart> action)
+        static private W3WebSocketStart IISWebSocketWebsocketHandshakeStartTemplate(Action<W3WebSocketStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketCloseSendStart(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 18, "Opcode18", ProviderGuid, ProviderName);
+            return new W3WebSocketStart(action, 10117, 8, "IISWebSocket", IISWebSocketGuid, 2, "WEBSOCKET_HANDSHAKE_START", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketCloseSendSuccess IIS_WebSocket_TransOpcode19Template(Action<W3WebSocketCloseSendSuccess> action)
+        static private W3WebSocketEndSuccess IISWebSocketWebsocketHandshakeSuccessTemplate(Action<W3WebSocketEndSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketCloseSendSuccess(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 19, "Opcode19", ProviderGuid, ProviderName);
+            return new W3WebSocketEndSuccess(action, 10118, 8, "IISWebSocket", IISWebSocketGuid, 3, "WEBSOCKET_HANDSHAKE_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketCloseSendFailure IIS_WebSocket_TransOpcode20Template(Action<W3WebSocketCloseSendFailure> action)
+        static private W3WebSocketInitializeNotSuccess IISWebSocketWebsocketInitializeFailedTemplate(Action<W3WebSocketInitializeNotSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketCloseSendFailure(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 20, "Opcode20", ProviderGuid, ProviderName);
+            return new W3WebSocketInitializeNotSuccess(action, 10116, 8, "IISWebSocket", IISWebSocketGuid, 1, "WEBSOCKET_INITIALIZE_FAILED", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketReadFragmentEndPending IIS_WebSocket_TransReplyTemplate(Action<W3WebSocketReadFragmentEndPending> action)
+        static private W3WebSocketModuleCloseConnection IISWebSocketWebsocketModuleCloseConnectionTemplate(Action<W3WebSocketModuleCloseConnection> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketReadFragmentEndPending(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 6, "Reply", ProviderGuid, ProviderName);
+            return new W3WebSocketModuleCloseConnection(action, 10129, 8, "IISWebSocket", IISWebSocketGuid, 14, "WEBSOCKET_MODULE_CLOSE_CONNECTION", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketReadFragmentEndSuccess IIS_WebSocket_TransResumeTemplate(Action<W3WebSocketReadFragmentEndSuccess> action)
+        static private W3WebSocketReadFragmentEndFailure IISWebSocketWebsocketReadFragmentEndNotSuccessTemplate(Action<W3WebSocketReadFragmentEndFailure> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketReadFragmentEndSuccess(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 7, "Resume", ProviderGuid, ProviderName);
+            return new W3WebSocketReadFragmentEndFailure(action, 10123, 8, "IISWebSocket", IISWebSocketGuid, 8, "WEBSOCKET_READ_FRAGMENT_END_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketWriteFragmentStart IIS_WebSocket_TransSendTemplate(Action<W3WebSocketWriteFragmentStart> action)
+        static private W3WebSocketReadFragmentEndPending IISWebSocketWebsocketReadFragmentEndPendingTemplate(Action<W3WebSocketReadFragmentEndPending> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketWriteFragmentStart(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 9, "Send", ProviderGuid, ProviderName);
+            return new W3WebSocketReadFragmentEndPending(action, 10121, 8, "IISWebSocket", IISWebSocketGuid, 6, "WEBSOCKET_READ_FRAGMENT_END_PENDING", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketInitializeNotSuccess IIS_WebSocket_TransStartTemplate(Action<W3WebSocketInitializeNotSuccess> action)
+        static private W3WebSocketReadFragmentEndSuccess IISWebSocketWebsocketReadFragmentEndSuccessTemplate(Action<W3WebSocketReadFragmentEndSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketInitializeNotSuccess(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3WebSocketReadFragmentEndSuccess(action, 10122, 8, "IISWebSocket", IISWebSocketGuid, 7, "WEBSOCKET_READ_FRAGMENT_END_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketStart IIS_WebSocket_TransStopTemplate(Action<W3WebSocketStart> action)
+        static private W3WebSocketReadFragmentStart IISWebSocketWebsocketReadFragmentStartTemplate(Action<W3WebSocketReadFragmentStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketStart(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3WebSocketReadFragmentStart(action, 10120, 8, "IISWebSocket", IISWebSocketGuid, 5, "WEBSOCKET_READ_FRAGMENT_START", ProviderGuid, ProviderName);
         }
-        static private W3WebSocketReadFragmentEndFailure IIS_WebSocket_TransSuspendTemplate(Action<W3WebSocketReadFragmentEndFailure> action)
+        static private W3WebSocketReadIoFailed IISWebSocketWebsocketReadIoNotSuccessTemplate(Action<W3WebSocketReadIoFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3WebSocketReadFragmentEndFailure(action, 10007, 8, "IIS_WebSocket_Trans", IISWebSocketTransGuid, 8, "Suspend", ProviderGuid, ProviderName);
+            return new W3WebSocketReadIoFailed(action, 10130, 8, "IISWebSocket", IISWebSocketGuid, 15, "WEBSOCKET_READ_IO_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleCriticalError IISModuleEventsDC_StartTemplate(Action<IISModuleEventsModuleCriticalError> action)
+        static private W3WebSocketCloseReceived IISWebSocketWebsocketReceivedCloseTemplate(Action<W3WebSocketCloseReceived> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleCriticalError(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3WebSocketCloseReceived(action, 10132, 8, "IISWebSocket", IISWebSocketGuid, 17, "WEBSOCKET_RECEIVED_CLOSE", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleError IISModuleEventsDC_StopTemplate(Action<IISModuleEventsModuleError> action)
+        static private W3WebSocketCloseSendFailure IISWebSocketWebsocketSendCloseEndNotSuccessTemplate(Action<W3WebSocketCloseSendFailure> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleError(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
+            return new W3WebSocketCloseSendFailure(action, 10135, 8, "IISWebSocket", IISWebSocketGuid, 20, "WEBSOCKET_SEND_CLOSE_END_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleWarning IISModuleEventsExtensionTemplate(Action<IISModuleEventsModuleWarning> action)
+        static private W3WebSocketCloseSendSuccess IISWebSocketWebsocketSendCloseEndSuccessTemplate(Action<W3WebSocketCloseSendSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleWarning(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 5, "Extension", ProviderGuid, ProviderName);
+            return new W3WebSocketCloseSendSuccess(action, 10134, 8, "IISWebSocket", IISWebSocketGuid, 19, "WEBSOCKET_SEND_CLOSE_END_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleInformation IISModuleEventsReplyTemplate(Action<IISModuleEventsModuleInformation> action)
+        static private W3WebSocketCloseSendStart IISWebSocketWebsocketSendCloseStartTemplate(Action<W3WebSocketCloseSendStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleInformation(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 6, "Reply", ProviderGuid, ProviderName);
+            return new W3WebSocketCloseSendStart(action, 10133, 8, "IISWebSocket", IISWebSocketGuid, 18, "WEBSOCKET_SEND_CLOSE_START", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleVerbose IISModuleEventsResumeTemplate(Action<IISModuleEventsModuleVerbose> action)
+        static private W3WebSocketWriteFragmentEndFailure IISWebSocketWebsocketWriteFragmentEndNotSuccessTemplate(Action<W3WebSocketWriteFragmentEndFailure> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleVerbose(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 7, "Resume", ProviderGuid, ProviderName);
+            return new W3WebSocketWriteFragmentEndFailure(action, 10127, 8, "IISWebSocket", IISWebSocketGuid, 12, "WEBSOCKET_WRITE_FRAGMENT_END_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleStart IISModuleEventsStartTemplate(Action<IISModuleEventsModuleStart> action)
+        static private W3WebSocketWriteFragmentEndPending IISWebSocketWebsocketWriteFragmentEndPendingTemplate(Action<W3WebSocketWriteFragmentEndPending> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleStart(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 1, "Start", ProviderGuid, ProviderName);
+            return new W3WebSocketWriteFragmentEndPending(action, 10125, 8, "IISWebSocket", IISWebSocketGuid, 10, "WEBSOCKET_WRITE_FRAGMENT_END_PENDING", ProviderGuid, ProviderName);
         }
-        static private IISModuleEventsModuleEnd IISModuleEventsStopTemplate(Action<IISModuleEventsModuleEnd> action)
+        static private W3WebSocketWriteFragmentEndSuccess IISWebSocketWebsocketWriteFragmentEndSuccessTemplate(Action<W3WebSocketWriteFragmentEndSuccess> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISModuleEventsModuleEnd(action, 10011, 12, "IISModuleEvents", IISModuleEventsGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3WebSocketWriteFragmentEndSuccess(action, 10126, 8, "IISWebSocket", IISWebSocketGuid, 11, "WEBSOCKET_WRITE_FRAGMENT_END_SUCCESS", ProviderGuid, ProviderName);
         }
-        static private IISRequestNotificationEventsCompletion IISRequestNotificationEventsDC_StartTemplate(Action<IISRequestNotificationEventsCompletion> action)
+        static private W3WebSocketWriteFragmentStart IISWebSocketWebsocketWriteFragmentStartTemplate(Action<W3WebSocketWriteFragmentStart> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsCompletion(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 3, "DC_Start", ProviderGuid, ProviderName);
+            return new W3WebSocketWriteFragmentStart(action, 10124, 8, "IISWebSocket", IISWebSocketGuid, 9, "WEBSOCKET_WRITE_FRAGMENT_START", ProviderGuid, ProviderName);
         }
-        static private IISRequestNotificationPreBeginStart IISRequestNotificationEventsDC_StopTemplate(Action<IISRequestNotificationPreBeginStart> action)
+        static private W3WebSocketWriteIoFailed IISWebSocketWebsocketWriteIoNotSuccessTemplate(Action<W3WebSocketWriteIoFailed> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationPreBeginStart(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 4, "DC_Stop", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationPreBeginEnd IISRequestNotificationEventsExtensionTemplate(Action<IISRequestNotificationPreBeginEnd> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationPreBeginEnd(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 5, "Extension", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsError IISRequestNotificationEventsOpcode15Template(Action<IISRequestNotificationEventsError> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsError(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 15, "Opcode15", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsResponseErrorStatus IISRequestNotificationEventsOpcode16Template(Action<IISRequestNotificationEventsResponseErrorStatus> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsResponseErrorStatus(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 16, "Opcode16", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsResponseSuccessStatus IISRequestNotificationEventsOpcode17Template(Action<IISRequestNotificationEventsResponseSuccessStatus> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsResponseSuccessStatus(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 17, "Opcode17", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsResponseErrorDescription IISRequestNotificationEventsOpcode18Template(Action<IISRequestNotificationEventsResponseErrorDescription> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsResponseErrorDescription(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 18, "Opcode18", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsStart IISRequestNotificationEventsStartTemplate(Action<IISRequestNotificationEventsStart> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsStart(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 1, "Start", ProviderGuid, ProviderName);
-        }
-        static private IISRequestNotificationEventsEnd IISRequestNotificationEventsStopTemplate(Action<IISRequestNotificationEventsEnd> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IISRequestNotificationEventsEnd(action, 10010, 11, "IISRequestNotificationEvents", IISRequestNotificationEventsGuid, 2, "Stop", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode10Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 10, "Opcode10", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode11Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 11, "Opcode11", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode12Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 12, "Opcode12", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode13Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 13, "Opcode13", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode14Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 14, "Opcode14", ProviderGuid, ProviderName);
-        }
-        static private IsapiDeleteContext Isapi_TransOpcode15Template(Action<IsapiDeleteContext> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new IsapiDeleteContext(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 15, "Opcode15", ProviderGuid, ProviderName);
-        }
-        static private W3ISAPIStart Isapi_TransStartTemplate(Action<W3ISAPIStart> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3ISAPIStart(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 1, "Start", ProviderGuid, ProviderName);
-        }
-        static private W3ISAPIEnd Isapi_TransStopTemplate(Action<W3ISAPIEnd> action)
-        {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new W3ISAPIEnd(action, 10004, 5, "Isapi_Trans", IsapiTransGuid, 2, "Stop", ProviderGuid, ProviderName);
+            return new W3WebSocketWriteIoFailed(action, 10131, 8, "IISWebSocket", IISWebSocketGuid, 16, "WEBSOCKET_WRITE_IO_NOT_SUCCESS", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -2886,209 +2659,180 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[202];
-                templates[0] = IIS_TransStartTemplate(null);
-                templates[1] = IIS_TransStopTemplate(null);
-                templates[2] = IIS_TransOpcode10Template(null);
-                templates[3] = IIS_TransOpcode11Template(null);
-                templates[4] = IIS_TransOpcode12Template(null);
-                templates[5] = IIS_TransOpcode13Template(null);
-                templates[6] = IIS_TransOpcode14Template(null);
-                templates[7] = IIS_TransOpcode15Template(null);
-                templates[8] = IIS_TransOpcode16Template(null);
-                templates[9] = IIS_TransOpcode17Template(null);
-                templates[10] = IIS_TransOpcode30Template(null);
-                templates[11] = IIS_TransOpcode31Template(null);
-                templates[12] = IIS_TransOpcode32Template(null);
-                templates[13] = IIS_TransOpcode33Template(null);
-                templates[14] = IIS_TransOpcode34Template(null);
-                templates[15] = IIS_TransOpcode35Template(null);
-                templates[16] = IIS_TransOpcode36Template(null);
-                templates[17] = IIS_TransOpcode37Template(null);
-                templates[18] = IIS_TransOpcode38Template(null);
-                templates[19] = IIS_TransOpcode39Template(null);
-                templates[20] = IIS_TransOpcode40Template(null);
-                templates[21] = IIS_TransOpcode41Template(null);
-                templates[22] = IIS_TransOpcode42Template(null);
-                templates[23] = IIS_TransOpcode43Template(null);
-                templates[24] = IIS_TransOpcode44Template(null);
-                templates[25] = IIS_TransOpcode45Template(null);
-                templates[26] = IIS_TransOpcode46Template(null);
-                templates[27] = IIS_TransOpcode47Template(null);
-                templates[28] = IIS_TransOpcode48Template(null);
-                templates[29] = IIS_TransOpcode49Template(null);
-                templates[30] = IIS_TransOpcode50Template(null);
-                templates[31] = IIS_TransOpcode51Template(null);
-                templates[32] = IIS_TransOpcode52Template(null);
-                templates[33] = IIS_TransOpcode53Template(null);
-                templates[34] = IIS_TransOpcode54Template(null);
-                templates[35] = IIS_TransOpcode55Template(null);
-                templates[36] = IIS_TransOpcode56Template(null);
-                templates[37] = IIS_Authentication_TransOpcode10Template(null);
-                templates[38] = IIS_Authentication_TransOpcode11Template(null);
-                templates[39] = IIS_Authentication_TransOpcode12Template(null);
-                templates[40] = IIS_Authentication_TransOpcode13Template(null);
-                templates[41] = IIS_Authentication_TransOpcode14Template(null);
-                templates[42] = IIS_Authentication_TransOpcode15Template(null);
-                templates[43] = IIS_Authentication_TransOpcode16Template(null);
-                templates[44] = IIS_Authentication_TransOpcode17Template(null);
-                templates[45] = IIS_Authentication_TransOpcode18Template(null);
-                templates[46] = IIS_Authentication_TransOpcode19Template(null);
-                templates[47] = IIS_Authentication_TransOpcode20Template(null);
-                templates[48] = IIS_Authentication_TransOpcode21Template(null);
-                templates[49] = IIS_Authentication_TransOpcode22Template(null);
-                templates[50] = IIS_Authentication_TransOpcode23Template(null);
-                templates[51] = IIS_Authentication_TransOpcode55Template(null);
-                templates[52] = IIS_Authentication_TransOpcode24Template(null);
-                templates[53] = IIS_Authentication_TransOpcode27Template(null);
-                templates[54] = IIS_Authentication_TransOpcode28Template(null);
-                templates[55] = IIS_Security_TransOpcode10Template(null);
-                templates[56] = IIS_Security_TransOpcode11Template(null);
-                templates[57] = IIS_Security_TransOpcode12Template(null);
-                templates[58] = IIS_Security_TransOpcode13Template(null);
-                templates[59] = IIS_Security_TransOpcode14Template(null);
-                templates[60] = IIS_Security_TransOpcode15Template(null);
-                templates[61] = IIS_Security_TransOpcode16Template(null);
-                templates[62] = IIS_Security_TransOpcode17Template(null);
-                templates[63] = IIS_Security_TransOpcode18Template(null);
-                templates[64] = IIS_Filter_TransStartTemplate(null);
-                templates[65] = IIS_Filter_TransStopTemplate(null);
-                templates[66] = IIS_Filter_TransOpcode12Template(null);
-                templates[67] = IIS_Filter_TransOpcode13Template(null);
-                templates[68] = IIS_Filter_TransOpcode14Template(null);
-                templates[69] = IIS_Filter_TransOpcode15Template(null);
-                templates[70] = IIS_Filter_TransOpcode16Template(null);
-                templates[71] = IIS_Filter_TransOpcode17Template(null);
-                templates[72] = IIS_Filter_TransOpcode18Template(null);
-                templates[73] = IIS_Filter_TransOpcode19Template(null);
-                templates[74] = IIS_Filter_TransOpcode20Template(null);
-                templates[75] = IIS_Filter_TransOpcode21Template(null);
-                templates[76] = IIS_Filter_TransOpcode22Template(null);
-                templates[77] = IIS_Filter_TransOpcode23Template(null);
-                templates[78] = IIS_Filter_TransOpcode24Template(null);
-                templates[79] = IIS_Filter_TransOpcode25Template(null);
-                templates[80] = IIS_Filter_TransOpcode26Template(null);
-                templates[81] = IIS_Filter_TransOpcode27Template(null);
-                templates[82] = IIS_Filter_TransOpcode28Template(null);
-                templates[83] = IIS_Filter_TransOpcode29Template(null);
-                templates[84] = IIS_Filter_TransOpcode30Template(null);
-                templates[85] = IIS_Filter_TransOpcode31Template(null);
-                templates[86] = IIS_Filter_TransOpcode32Template(null);
-                templates[87] = IIS_Filter_TransOpcode33Template(null);
-                templates[88] = IIS_Filter_TransOpcode34Template(null);
-                templates[89] = Isapi_TransStartTemplate(null);
-                templates[90] = Isapi_TransStopTemplate(null);
-                templates[91] = IIS_Cgi_TransStartTemplate(null);
-                templates[92] = IIS_Cgi_TransStopTemplate(null);
-                templates[93] = IIS_Cgi_TransDC_StartTemplate(null);
-                templates[94] = IIS_Cgi_TransDC_StopTemplate(null);
-                templates[95] = IIS_Cgi_TransExtensionTemplate(null);
-                templates[96] = IIS_Cgi_TransReplyTemplate(null);
-                templates[97] = IIS_Cgi_TransResumeTemplate(null);
-                templates[98] = IIS_FastCgi_TransStartTemplate(null);
-                templates[99] = IIS_FastCgi_TransStopTemplate(null);
-                templates[100] = IIS_FastCgi_TransDC_StartTemplate(null);
-                templates[101] = IIS_FastCgi_TransDC_StopTemplate(null);
-                templates[102] = IIS_FastCgi_TransExtensionTemplate(null);
-                templates[103] = IIS_FastCgi_TransReplyTemplate(null);
-                templates[104] = IIS_FastCgi_TransResumeTemplate(null);
-                templates[105] = IIS_FastCgi_TransSuspendTemplate(null);
-                templates[106] = IIS_FastCgi_TransSendTemplate(null);
-                templates[107] = IIS_FastCgi_TransOpcode10Template(null);
-                templates[108] = IIS_FastCgi_TransOpcode11Template(null);
-                templates[109] = IIS_FastCgi_TransOpcode12Template(null);
-                templates[110] = IIS_FastCgi_TransOpcode13Template(null);
-                templates[111] = IIS_FastCgi_TransOpcode14Template(null);
-                templates[112] = IIS_FastCgi_TransOpcode15Template(null);
-                templates[113] = IIS_FastCgi_TransOpcode16Template(null);
-                templates[114] = IIS_FastCgi_TransOpcode17Template(null);
-                templates[115] = IIS_FastCgi_TransOpcode18Template(null);
-                templates[116] = IIS_FastCgi_TransOpcode19Template(null);
-                templates[117] = IIS_WebSocket_TransStartTemplate(null);
-                templates[118] = IIS_WebSocket_TransStopTemplate(null);
-                templates[119] = IIS_WebSocket_TransDC_StartTemplate(null);
-                templates[120] = IIS_WebSocket_TransDC_StopTemplate(null);
-                templates[121] = IIS_WebSocket_TransExtensionTemplate(null);
-                templates[122] = IIS_WebSocket_TransReplyTemplate(null);
-                templates[123] = IIS_WebSocket_TransResumeTemplate(null);
-                templates[124] = IIS_WebSocket_TransSuspendTemplate(null);
-                templates[125] = IIS_WebSocket_TransSendTemplate(null);
-                templates[126] = IIS_WebSocket_TransOpcode10Template(null);
-                templates[127] = IIS_WebSocket_TransOpcode11Template(null);
-                templates[128] = IIS_WebSocket_TransOpcode12Template(null);
-                templates[129] = IIS_WebSocket_TransOpcode13Template(null);
-                templates[130] = IIS_WebSocket_TransOpcode14Template(null);
-                templates[131] = IIS_WebSocket_TransOpcode15Template(null);
-                templates[132] = IIS_WebSocket_TransOpcode16Template(null);
-                templates[133] = IIS_WebSocket_TransOpcode17Template(null);
-                templates[134] = IIS_WebSocket_TransOpcode18Template(null);
-                templates[135] = IIS_WebSocket_TransOpcode19Template(null);
-                templates[136] = IIS_WebSocket_TransOpcode20Template(null);
-                templates[137] = IIS_Compression_TransStartTemplate(null);
-                templates[138] = IIS_Compression_TransStopTemplate(null);
-                templates[139] = IIS_Compression_TransDC_StartTemplate(null);
-                templates[140] = IIS_Compression_TransDC_StopTemplate(null);
-                templates[141] = IIS_Compression_TransExtensionTemplate(null);
-                templates[142] = IIS_Compression_TransReplyTemplate(null);
-                templates[143] = IIS_Compression_TransResumeTemplate(null);
-                templates[144] = IIS_Compression_TransSuspendTemplate(null);
-                templates[145] = IIS_Compression_TransSendTemplate(null);
-                templates[146] = IIS_Compression_TransOpcode10Template(null);
-                templates[147] = IIS_Compression_TransOpcode11Template(null);
-                templates[148] = IIS_Cache_TransOpcode10Template(null);
-                templates[149] = IIS_Cache_TransOpcode11Template(null);
-                templates[150] = IIS_Cache_TransOpcode12Template(null);
-                templates[151] = IIS_Cache_TransOpcode13Template(null);
-                templates[152] = IIS_Cache_TransOpcode14Template(null);
-                templates[153] = IIS_Cache_TransOpcode15Template(null);
-                templates[154] = IIS_Cache_TransOpcode16Template(null);
-                templates[155] = IIS_Cache_TransOpcode17Template(null);
-                templates[156] = IIS_Cache_TransOpcode18Template(null);
-                templates[157] = IIS_Cache_TransOpcode19Template(null);
-                templates[158] = IIS_Cache_TransOpcode20Template(null);
-                templates[159] = IISRequestNotificationEventsStartTemplate(null);
-                templates[160] = IISRequestNotificationEventsStopTemplate(null);
-                templates[161] = IISRequestNotificationEventsDC_StartTemplate(null);
-                templates[162] = IISRequestNotificationEventsDC_StopTemplate(null);
-                templates[163] = IISRequestNotificationEventsExtensionTemplate(null);
-                templates[164] = IISRequestNotificationEventsOpcode15Template(null);
-                templates[165] = IISRequestNotificationEventsOpcode16Template(null);
-                templates[166] = IISRequestNotificationEventsOpcode17Template(null);
-                templates[167] = IISRequestNotificationEventsOpcode18Template(null);
-                templates[168] = IISModuleEventsStartTemplate(null);
-                templates[169] = IISModuleEventsStopTemplate(null);
-                templates[170] = IISModuleEventsDC_StartTemplate(null);
-                templates[171] = IISModuleEventsDC_StopTemplate(null);
-                templates[172] = IISModuleEventsExtensionTemplate(null);
-                templates[173] = IISModuleEventsReplyTemplate(null);
-                templates[174] = IISModuleEventsResumeTemplate(null);
-                templates[175] = IIS_TransStartTemplate(null);
-                templates[176] = IIS_TransStopTemplate(null);
-                templates[177] = IIS_TransOpcode16Template(null);
-                templates[178] = IIS_TransOpcode17Template(null);
-                templates[179] = IIS_TransOpcode18Template(null);
-                templates[180] = IIS_TransOpcode19Template(null);
-                templates[181] = IIS_TransOpcode20Template(null);
-                templates[182] = IIS_TransOpcode21Template(null);
-                templates[183] = IIS_TransOpcode22Template(null);
-                templates[184] = IIS_TransOpcode23Template(null);
-                templates[185] = IIS_TransOpcode24Template(null);
-                templates[186] = IIS_TransOpcode10Template(null);
-                templates[187] = IIS_TransOpcode11Template(null);
-                templates[188] = IIS_TransOpcode12Template(null);
-                templates[189] = IIS_TransOpcode13Template(null);
-                templates[190] = IIS_Filter_TransStartTemplate(null);
-                templates[191] = IIS_Filter_TransStopTemplate(null);
-                templates[192] = IIS_Cgi_TransStartTemplate(null);
-                templates[193] = IIS_Cgi_TransStopTemplate(null);
-                templates[194] = Isapi_TransStartTemplate(null);
-                templates[195] = Isapi_TransStopTemplate(null);
-                templates[196] = Isapi_TransOpcode10Template(null);
-                templates[197] = Isapi_TransOpcode11Template(null);
-                templates[198] = Isapi_TransOpcode12Template(null);
-                templates[199] = Isapi_TransOpcode13Template(null);
-                templates[200] = Isapi_TransOpcode14Template(null);
-                templates[201] = Isapi_TransOpcode15Template(null);
+                var templates = new TraceEvent[173];
+                templates[0] = IISGeneralGeneralRequestStartTemplate(null);
+                templates[1] = IISGeneralGeneralRequestEndTemplate(null);
+                templates[2] = IISGeneralGeneralStaticFileHandlerTemplate(null);
+                templates[3] = IISGeneralGeneralCgiHandlerTemplate(null);
+                templates[4] = IISGeneralGeneralIsapiHandlerTemplate(null);
+                templates[5] = IISGeneralGeneralOopIsapiHandlerTemplate(null);
+                templates[6] = IISGeneralGeneralRedirectionHandlerTemplate(null);
+                templates[7] = IISGeneralGeneralDavHandlerTemplate(null);
+                templates[8] = IISGeneralGeneralOptionsHandlerTemplate(null);
+                templates[9] = IISGeneralGeneralTraceHandlerTemplate(null);
+                templates[10] = IISGeneralGeneralGetUrlMetadataTemplate(null);
+                templates[11] = IISGeneralGeneralChildRequestStartTemplate(null);
+                templates[12] = IISGeneralGeneralChildRequestEndTemplate(null);
+                templates[13] = IISGeneralGeneralSendCustomErrorTemplate(null);
+                templates[14] = IISGeneralGeneralMapHandlerTemplate(null);
+                templates[15] = IISGeneralGeneralFlushResponseStartTemplate(null);
+                templates[16] = IISGeneralGeneralFlushResponseEndTemplate(null);
+                templates[17] = IISGeneralGeneralReadEntityStartTemplate(null);
+                templates[18] = IISGeneralGeneralReadEntityEndTemplate(null);
+                templates[19] = IISGeneralFileChangeNotificationTemplate(null);
+                templates[20] = IISGeneralConfigChangeNotificationTemplate(null);
+                templates[21] = IISGeneralVirtualModuleUnresolvedTemplate(null);
+                templates[22] = IISGeneralUrlChangedTemplate(null);
+                templates[23] = IISGeneralHandlerChangedTemplate(null);
+                templates[24] = IISGeneralUserSetTemplate(null);
+                templates[25] = IISGeneralModulePreconditionNotMatchTemplate(null);
+                templates[26] = IISGeneralHandlerPreconditionNotMatchTemplate(null);
+                templates[27] = IISGeneralGeneralResponseHeadersTemplate(null);
+                templates[28] = IISGeneralGeneralResponseEntityFileTemplate(null);
+                templates[29] = IISGeneralGeneralResponseEntityBufferTemplate(null);
+                templates[30] = IISGeneralGeneralRequestHeadersTemplate(null);
+                templates[31] = IISGeneralGeneralRequestEntityTemplate(null);
+                templates[32] = IISGeneralGeneralNotSendCustomErrorTemplate(null);
+                templates[33] = IISGeneralGeneralSetRequestHeaderTemplate(null);
+                templates[34] = IISGeneralGeneralModuleFactoryFailedTemplate(null);
+                templates[35] = IISGeneralGeneralEndpointInformationTemplate(null);
+                templates[36] = IISAuthenticationAuthStartTemplate(null);
+                templates[37] = IISAuthenticationAuthSucceededTemplate(null);
+                templates[38] = IISAuthenticationAuthTypeNotSupportedTemplate(null);
+                templates[39] = IISAuthenticationAuthInvalidAnonAccountTemplate(null);
+                templates[40] = IISAuthenticationAuthPasswdChangeNeededTemplate(null);
+                templates[41] = IISAuthenticationAuthPasswdChangeDisabledTemplate(null);
+                templates[42] = IISAuthenticationAuthBadBasicHeaderTemplate(null);
+                templates[43] = IISAuthenticationAuthBasicLogonFailedTemplate(null);
+                templates[44] = IISAuthenticationAuthWdigestLogonFailedTemplate(null);
+                templates[45] = IISAuthenticationAuthIisdigestLogonFailedTemplate(null);
+                templates[46] = IISAuthenticationAuthPassportLogonFailedTemplate(null);
+                templates[47] = IISAuthenticationAuthSspiLogonFailedTemplate(null);
+                templates[48] = IISAuthenticationAuthNtlmNullSessionTemplate(null);
+                templates[49] = IISAuthenticationAuthSspiContinueNeededTemplate(null);
+                templates[50] = IISAuthenticationAuthKerberosFailedTemplate(null);
+                templates[51] = IISAuthenticationAuthAnonPasswdChangeNeededTemplate(null);
+                templates[52] = IISAuthenticationAuthRequestAuthTypeTemplate(null);
+                templates[53] = IISAuthenticationAuthEndTemplate(null);
+                templates[54] = IISSecuritySecurityIllegalShortFilenameTemplate(null);
+                templates[55] = IISSecuritySecurityRejectedIpTemplate(null);
+                templates[56] = IISSecuritySecurityRejectedHostnameTemplate(null);
+                templates[57] = IISSecuritySecurityRejectedRequireSsl128Template(null);
+                templates[58] = IISSecuritySecurityFileAccessDeniedTemplate(null);
+                templates[59] = IISSecuritySecurityDeniedByMimemapTemplate(null);
+                templates[60] = IISSecuritySecurityDeniedByIsapiRestrictionTemplate(null);
+                templates[61] = IISSecuritySecurityDeniedByCgiRestrictionTemplate(null);
+                templates[62] = IISSecuritySecurityDeniedByAccessFlagsTemplate(null);
+                templates[63] = IISFilterFilterStartTemplate(null);
+                templates[64] = IISFilterFilterEndTemplate(null);
+                templates[65] = IISFilterFilterErrorTemplate(null);
+                templates[66] = IISFilterFilterPreprocHeadersStartTemplate(null);
+                templates[67] = IISFilterFilterPreprocHeadersEndTemplate(null);
+                templates[68] = IISFilterFilterUrlMapStartTemplate(null);
+                templates[69] = IISFilterFilterUrlMapEndTemplate(null);
+                templates[70] = IISFilterFilterAuthenticationStartTemplate(null);
+                templates[71] = IISFilterFilterAuthenticationEndTemplate(null);
+                templates[72] = IISFilterFilterAuthCompleteStartTemplate(null);
+                templates[73] = IISFilterFilterAuthCompleteEndTemplate(null);
+                templates[74] = IISFilterFilterSendResponseStartTemplate(null);
+                templates[75] = IISFilterFilterSendResponseEndTemplate(null);
+                templates[76] = IISFilterFilterEndOfRequestStartTemplate(null);
+                templates[77] = IISFilterFilterEndOfRequestEndTemplate(null);
+                templates[78] = IISFilterFilterLogStartTemplate(null);
+                templates[79] = IISFilterFilterLogEndTemplate(null);
+                templates[80] = IISFilterFilterSendRawDataStartTemplate(null);
+                templates[81] = IISFilterFilterSendRawDataEndTemplate(null);
+                templates[82] = IISFilterFilterAccessDeniedStartTemplate(null);
+                templates[83] = IISFilterFilterAccessDeniedEndTemplate(null);
+                templates[84] = IISFilterFilterSetReqHeaderTemplate(null);
+                templates[85] = IISFilterFilterAddReqHeaderTemplate(null);
+                templates[86] = IISFilterFilterSetRespHeaderTemplate(null);
+                templates[87] = IISFilterFilterAddRespHeaderTemplate(null);
+                templates[88] = IISISAPIIsapiStartTemplate(null);
+                templates[89] = IISISAPIIsapiEndTemplate(null);
+                templates[90] = IISCGICgiStartTemplate(null);
+                templates[91] = IISCGICgiEndTemplate(null);
+                templates[92] = IISCGICgiLaunchTemplate(null);
+                templates[93] = IISCGICgiTimeoutTemplate(null);
+                templates[94] = IISCGICgiPrematureTerminationTemplate(null);
+                templates[95] = IISCGICgiRequestEntitySentTemplate(null);
+                templates[96] = IISCGICgiHeadersReceivedTemplate(null);
+                templates[97] = IISFastCGIFastcgiActivityTimeoutTemplate(null);
+                templates[98] = IISFastCGIFastcgiRequestTimeoutTemplate(null);
+                templates[99] = IISFastCGIFastcgiUnexpectedExitTemplate(null);
+                templates[100] = IISFastCGIFastcgiRapidFailureProtectionTemplate(null);
+                templates[101] = IISFastCGIFastcgiPathNotFoundTemplate(null);
+                templates[102] = IISFastCGIFastcgiScriptProcessorMissingTemplate(null);
+                templates[103] = IISFastCGIFastcgiAddJobobjectFailTemplate(null);
+                templates[104] = IISFastCGIFastcgiApplicationManagerShutdownTemplate(null);
+                templates[105] = IISFastCGIFastcgiQueueFullTemplate(null);
+                templates[106] = IISFastCGIFastcgiUnknownErrorTemplate(null);
+                templates[107] = IISFastCGIFastcgiResponseWrittenTemplate(null);
+                templates[108] = IISFastCGIFastcgiWaitingForResponseTemplate(null);
+                templates[109] = IISFastCGIFastcgiStderrTraceErrorTemplate(null);
+                templates[110] = IISFastCGIFastcgiStderrTraceWarningTemplate(null);
+                templates[111] = IISFastCGIFastcgiStderrTraceInfoTemplate(null);
+                templates[112] = IISFastCGIFastcgiQueueRequestTemplate(null);
+                templates[113] = IISFastCGIFastcgiAssignProcessTemplate(null);
+                templates[114] = IISFastCGIFastcgiStartTemplate(null);
+                templates[115] = IISFastCGIFastcgiEndTemplate(null);
+                templates[116] = IISWebSocketWebsocketInitializeFailedTemplate(null);
+                templates[117] = IISWebSocketWebsocketHandshakeStartTemplate(null);
+                templates[118] = IISWebSocketWebsocketHandshakeSuccessTemplate(null);
+                templates[119] = IISWebSocketWebsocketHandshakeNotSuccessTemplate(null);
+                templates[120] = IISWebSocketWebsocketReadFragmentStartTemplate(null);
+                templates[121] = IISWebSocketWebsocketReadFragmentEndPendingTemplate(null);
+                templates[122] = IISWebSocketWebsocketReadFragmentEndSuccessTemplate(null);
+                templates[123] = IISWebSocketWebsocketReadFragmentEndNotSuccessTemplate(null);
+                templates[124] = IISWebSocketWebsocketWriteFragmentStartTemplate(null);
+                templates[125] = IISWebSocketWebsocketWriteFragmentEndPendingTemplate(null);
+                templates[126] = IISWebSocketWebsocketWriteFragmentEndSuccessTemplate(null);
+                templates[127] = IISWebSocketWebsocketWriteFragmentEndNotSuccessTemplate(null);
+                templates[128] = IISWebSocketWebsocketApplicationCloseConnectionTemplate(null);
+                templates[129] = IISWebSocketWebsocketModuleCloseConnectionTemplate(null);
+                templates[130] = IISWebSocketWebsocketReadIoNotSuccessTemplate(null);
+                templates[131] = IISWebSocketWebsocketWriteIoNotSuccessTemplate(null);
+                templates[132] = IISWebSocketWebsocketReceivedCloseTemplate(null);
+                templates[133] = IISWebSocketWebsocketSendCloseStartTemplate(null);
+                templates[134] = IISWebSocketWebsocketSendCloseEndSuccessTemplate(null);
+                templates[135] = IISWebSocketWebsocketSendCloseEndNotSuccessTemplate(null);
+                templates[136] = IISCompressionStaticCompressionStartTemplate(null);
+                templates[137] = IISCompressionStaticCompressionSuccessTemplate(null);
+                templates[138] = IISCompressionStaticCompressionNotSuccessTemplate(null);
+                templates[139] = IISCompressionStaticCompressionCreateStartTemplate(null);
+                templates[140] = IISCompressionStaticCompressionCreateEndTemplate(null);
+                templates[141] = IISCompressionDynamicCompressionStartTemplate(null);
+                templates[142] = IISCompressionDynamicCompressionSuccessTemplate(null);
+                templates[143] = IISCompressionDynamicCompressionNotSuccessTemplate(null);
+                templates[144] = IISCompressionDynamicCompressionDoTemplate(null);
+                templates[145] = IISCompressionDynamicCompressionEndTemplate(null);
+                templates[146] = IISCompressionStaticCompressionEndTemplate(null);
+                templates[147] = IISCacheFileCacheAccessStartTemplate(null);
+                templates[148] = IISCacheFileCacheAccessEndTemplate(null);
+                templates[149] = IISCacheUrlCacheAccessStartTemplate(null);
+                templates[150] = IISCacheUrlCacheAccessEndTemplate(null);
+                templates[151] = IISCacheHttpsysCacheableTemplate(null);
+                templates[152] = IISCacheOutputCacheLookupStartTemplate(null);
+                templates[153] = IISCacheOutputCacheLookupEndTemplate(null);
+                templates[154] = IISCacheOutputCacheUpdateStartTemplate(null);
+                templates[155] = IISCacheOutputCacheUpdateEndTemplate(null);
+                templates[156] = IISCacheOutputCacheDisabledTemplate(null);
+                templates[157] = IISRequestNotificationNotifyModuleStartTemplate(null);
+                templates[158] = IISRequestNotificationNotifyModuleEndTemplate(null);
+                templates[159] = IISRequestNotificationNotifyModuleCompletionTemplate(null);
+                templates[160] = IISRequestNotificationPreBeginRequestStartTemplate(null);
+                templates[161] = IISRequestNotificationPreBeginRequestEndTemplate(null);
+                templates[162] = IISRequestNotificationRequestProcessingErrorTemplate(null);
+                templates[163] = IISRequestNotificationModuleSetResponseErrorStatusTemplate(null);
+                templates[164] = IISRequestNotificationModuleSetResponseSuccessStatusTemplate(null);
+                templates[165] = IISRequestNotificationSetResponseErrorDescriptionTemplate(null);
+                templates[166] = IISModuleModuleStartTemplate(null);
+                templates[167] = IISModuleModuleEndTemplate(null);
+                templates[168] = IISModuleModuleCriticalErrorTemplate(null);
+                templates[169] = IISModuleModuleErrorTemplate(null);
+                templates[170] = IISModuleModuleWarningTemplate(null);
+                templates[171] = IISModuleModuleInformationTemplate(null);
+                templates[172] = IISModuleModuleVerboseTemplate(null);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -3102,6 +2846,852 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
 namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
 {
+    public sealed class W3AuthAnonPasswdChangeNeeded : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthAnonPasswdChangeNeeded(Action<W3AuthAnonPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthAnonPasswdChangeNeeded>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthAnonPasswdChangeNeeded> m_target;
+        #endregion
+    }
+    public sealed class W3AuthBadBasicHeader : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthBadBasicHeader(Action<W3AuthBadBasicHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthBadBasicHeader>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthBadBasicHeader> m_target;
+        #endregion
+    }
+    public sealed class W3AuthBasicLogonFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthBasicLogonFailed(Action<W3AuthBasicLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthBasicLogonFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthBasicLogonFailed> m_target;
+        #endregion
+    }
+    public sealed class W3AuthEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthEnd(Action<W3AuthEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthEnd> m_target;
+        #endregion
+    }
+    public sealed class W3AuthIISDigestLogonFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthIISDigestLogonFailed(Action<W3AuthIISDigestLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthIISDigestLogonFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthIISDigestLogonFailed> m_target;
+        #endregion
+    }
+    public sealed class W3AuthInvalidAnonAccount : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthInvalidAnonAccount(Action<W3AuthInvalidAnonAccount> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthInvalidAnonAccount>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthInvalidAnonAccount> m_target;
+        #endregion
+    }
+    public sealed class W3AuthKerberosFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public bool KMUsed { get { return GetInt32At(16) != 0; } }
+        public string APUserName { get { return GetUnicodeStringAt(20); } }
+        public string SPNName { get { return GetUnicodeStringAt(SkipUnicodeString(20)); } }
+        public bool ADConfigIsOK { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(20))) != 0; } }
+        public string KerberosInfo { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(20)) + 4); } }
+
+        #region Private
+        internal W3AuthKerberosFailed(Action<W3AuthKerberosFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthKerberosFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "KMUsed", KMUsed);
+            XmlAttrib(sb, "APUserName", APUserName);
+            XmlAttrib(sb, "SPNName", SPNName);
+            XmlAttrib(sb, "ADConfigIsOK", ADConfigIsOK);
+            XmlAttrib(sb, "KerberosInfo", KerberosInfo);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "KMUsed", "APUserName", "SPNName", "ADConfigIsOK", "KerberosInfo" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return KMUsed;
+                case 2:
+                    return APUserName;
+                case 3:
+                    return SPNName;
+                case 4:
+                    return ADConfigIsOK;
+                case 5:
+                    return KerberosInfo;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthKerberosFailed> m_target;
+        #endregion
+    }
+    public sealed class W3AuthNTLMNullSession : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthNTLMNullSession(Action<W3AuthNTLMNullSession> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthNTLMNullSession>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthNTLMNullSession> m_target;
+        #endregion
+    }
+    public sealed class W3AuthPassportLogonFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthPassportLogonFailed(Action<W3AuthPassportLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthPassportLogonFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthPassportLogonFailed> m_target;
+        #endregion
+    }
+    public sealed class W3AuthPasswdChangeDisabled : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthPasswdChangeDisabled(Action<W3AuthPasswdChangeDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthPasswdChangeDisabled>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthPasswdChangeDisabled> m_target;
+        #endregion
+    }
+    public sealed class W3AuthPasswdChangeNeeded : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3AuthPasswdChangeNeeded(Action<W3AuthPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthPasswdChangeNeeded>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthPasswdChangeNeeded> m_target;
+        #endregion
+    }
+    public sealed class W3AuthRequestAuthType : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int RequestAuthType { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthRequestAuthType(Action<W3AuthRequestAuthType> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthRequestAuthType>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "RequestAuthType", RequestAuthType);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "RequestAuthType" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return RequestAuthType;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthRequestAuthType> m_target;
+        #endregion
+    }
+    public sealed class W3AuthSSPIContinueNeeded : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string PackageName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3AuthSSPIContinueNeeded(Action<W3AuthSSPIContinueNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthSSPIContinueNeeded>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "PackageName", PackageName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "PackageName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return PackageName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthSSPIContinueNeeded> m_target;
+        #endregion
+    }
+    public sealed class W3AuthSSPILogonFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3AuthSSPILogonFailed(Action<W3AuthSSPILogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3AuthSSPILogonFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3AuthSSPILogonFailed> m_target;
+        #endregion
+    }
     public sealed class W3AuthStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -3297,299 +3887,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3AuthTypeNotSupported> m_target;
         #endregion
     }
-    public sealed class W3AuthInvalidAnonAccount : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthInvalidAnonAccount(Action<W3AuthInvalidAnonAccount> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthInvalidAnonAccount>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthInvalidAnonAccount> m_target;
-        #endregion
-    }
-    public sealed class W3AuthPasswdChangeNeeded : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthPasswdChangeNeeded(Action<W3AuthPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthPasswdChangeNeeded>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthPasswdChangeNeeded> m_target;
-        #endregion
-    }
-    public sealed class W3AuthPasswdChangeDisabled : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthPasswdChangeDisabled(Action<W3AuthPasswdChangeDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthPasswdChangeDisabled>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthPasswdChangeDisabled> m_target;
-        #endregion
-    }
-    public sealed class W3AuthBadBasicHeader : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthBadBasicHeader(Action<W3AuthBadBasicHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthBadBasicHeader>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthBadBasicHeader> m_target;
-        #endregion
-    }
-    public sealed class W3AuthBasicLogonFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthBasicLogonFailed(Action<W3AuthBasicLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthBasicLogonFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthBasicLogonFailed> m_target;
-        #endregion
-    }
     public sealed class W3AuthWDigestLogonFailed : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -3649,628 +3946,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
 
         private event Action<W3AuthWDigestLogonFailed> m_target;
-        #endregion
-    }
-    public sealed class W3AuthIISDigestLogonFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthIISDigestLogonFailed(Action<W3AuthIISDigestLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthIISDigestLogonFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthIISDigestLogonFailed> m_target;
-        #endregion
-    }
-    public sealed class W3AuthPassportLogonFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthPassportLogonFailed(Action<W3AuthPassportLogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthPassportLogonFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthPassportLogonFailed> m_target;
-        #endregion
-    }
-    public sealed class W3AuthSSPILogonFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthSSPILogonFailed(Action<W3AuthSSPILogonFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthSSPILogonFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthSSPILogonFailed> m_target;
-        #endregion
-    }
-    public sealed class W3AuthNTLMNullSession : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthNTLMNullSession(Action<W3AuthNTLMNullSession> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthNTLMNullSession>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthNTLMNullSession> m_target;
-        #endregion
-    }
-    public sealed class W3AuthSSPIContinueNeeded : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string PackageName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3AuthSSPIContinueNeeded(Action<W3AuthSSPIContinueNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthSSPIContinueNeeded>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "PackageName", PackageName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "PackageName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return PackageName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthSSPIContinueNeeded> m_target;
-        #endregion
-    }
-    public sealed class W3AuthAnonPasswdChangeNeeded : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthAnonPasswdChangeNeeded(Action<W3AuthAnonPasswdChangeNeeded> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthAnonPasswdChangeNeeded>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthAnonPasswdChangeNeeded> m_target;
-        #endregion
-    }
-    public sealed class W3AuthRequestAuthType : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int RequestAuthType { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3AuthRequestAuthType(Action<W3AuthRequestAuthType> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthRequestAuthType>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestAuthType", RequestAuthType);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestAuthType" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestAuthType;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthRequestAuthType> m_target;
-        #endregion
-    }
-    public sealed class W3AuthEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3AuthEnd(Action<W3AuthEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthEnd> m_target;
-        #endregion
-    }
-    public sealed class W3AuthKerberosFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public bool KMUsed { get { return GetInt32At(16) != 0; } }
-        public string APUserName { get { return GetUnicodeStringAt(20); } }
-        public string SPNName { get { return GetUnicodeStringAt(SkipUnicodeString(20)); } }
-        public bool ADConfigIsOK { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(20))) != 0; } }
-        public string KerberosInfo { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(20)) + 4); } }
-
-        #region Private
-        internal W3AuthKerberosFailed(Action<W3AuthKerberosFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(20)) + 4)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3AuthKerberosFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "KMUsed", KMUsed);
-            XmlAttrib(sb, "APUserName", APUserName);
-            XmlAttrib(sb, "SPNName", SPNName);
-            XmlAttrib(sb, "ADConfigIsOK", ADConfigIsOK);
-            XmlAttrib(sb, "KerberosInfo", KerberosInfo);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "KMUsed", "APUserName", "SPNName", "ADConfigIsOK", "KerberosInfo" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return KMUsed;
-                case 2:
-                    return APUserName;
-                case 3:
-                    return SPNName;
-                case 4:
-                    return ADConfigIsOK;
-                case 5:
-                    return KerberosInfo;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3AuthKerberosFailed> m_target;
-        #endregion
-    }
-    public sealed class W3CacheFileCacheAccessStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-        public string UserName { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-        public string DomainName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
-
-        #region Private
-        internal W3CacheFileCacheAccessStart(Action<W3CacheFileCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CacheFileCacheAccessStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            XmlAttrib(sb, "UserName", UserName);
-            XmlAttrib(sb, "DomainName", DomainName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName", "UserName", "DomainName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                case 2:
-                    return UserName;
-                case 3:
-                    return DomainName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CacheFileCacheAccessStart> m_target;
         #endregion
     }
     public sealed class W3CacheFileCacheAccessEnd : TraceEvent
@@ -4358,13 +4033,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CacheFileCacheAccessEnd> m_target;
         #endregion
     }
-    public sealed class W3CacheURLCacheAccessStart : TraceEvent
+    public sealed class W3CacheFileCacheAccessStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string RequestURL { get { return GetUnicodeStringAt(16); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
+        public string UserName { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+        public string DomainName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
 
         #region Private
-        internal W3CacheURLCacheAccessStart(Action<W3CacheURLCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CacheFileCacheAccessStart(Action<W3CacheFileCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -4375,19 +4052,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CacheURLCacheAccessStart>)value; }
+            set { m_target = (Action<W3CacheFileCacheAccessStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestURL", RequestURL);
+            XmlAttrib(sb, "FileName", FileName);
+            XmlAttrib(sb, "UserName", UserName);
+            XmlAttrib(sb, "DomainName", DomainName);
             sb.Append("/>");
             return sb;
         }
@@ -4397,7 +4076,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestURL" };
+                    payloadNames = new string[] { "ContextId", "FileName", "UserName", "DomainName" };
                 return payloadNames;
             }
         }
@@ -4409,87 +4088,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return RequestURL;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CacheURLCacheAccessStart> m_target;
-        #endregion
-    }
-    public sealed class W3CacheURLCacheAccessEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string PhysicalPath { get { return GetUnicodeStringAt(16); } }
-        public bool URLInfoFromCache { get { return GetInt32At(SkipUnicodeString(16)) != 0; } }
-        public bool URLInfoAddedToCache { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 8); } }
-
-        #region Private
-        internal W3CacheURLCacheAccessEnd(Action<W3CacheURLCacheAccessEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 12));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CacheURLCacheAccessEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
-            XmlAttrib(sb, "URLInfoFromCache", URLInfoFromCache);
-            XmlAttrib(sb, "URLInfoAddedToCache", URLInfoAddedToCache);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "PhysicalPath", "URLInfoFromCache", "URLInfoAddedToCache", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return PhysicalPath;
+                    return FileName;
                 case 2:
-                    return URLInfoFromCache;
+                    return UserName;
                 case 3:
-                    return URLInfoAddedToCache;
-                case 4:
-                    return ErrorCode;
+                    return DomainName;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3CacheURLCacheAccessEnd> m_target;
+        private event Action<W3CacheFileCacheAccessStart> m_target;
         #endregion
     }
     public sealed class W3CacheHttpsysCacheable : TraceEvent
@@ -4565,12 +4175,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CacheHttpsysCacheable> m_target;
         #endregion
     }
-    public sealed class W3OutputCacheLookupStart : TraceEvent
+    public sealed class W3OutputCacheDisabled : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3OutputCacheLookupStart(Action<W3OutputCacheLookupStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3OutputCacheDisabled(Action<W3OutputCacheDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -4587,7 +4197,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3OutputCacheLookupStart>)value; }
+            set { m_target = (Action<W3OutputCacheDisabled>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -4619,7 +4229,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3OutputCacheLookupStart> m_target;
+        private event Action<W3OutputCacheDisabled> m_target;
         #endregion
     }
     public sealed class W3OutputCacheLookupEnd : TraceEvent
@@ -4681,6 +4291,124 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
 
         private event Action<W3OutputCacheLookupEnd> m_target;
+        #endregion
+    }
+    public sealed class W3OutputCacheLookupStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3OutputCacheLookupStart(Action<W3OutputCacheLookupStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3OutputCacheLookupStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3OutputCacheLookupStart> m_target;
+        #endregion
+    }
+    public sealed class W3OutputCacheUpdateEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Result { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3OutputCacheUpdateEnd(Action<W3OutputCacheUpdateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3OutputCacheUpdateEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Result", Result);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Result" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Result;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3OutputCacheUpdateEnd> m_target;
         #endregion
     }
     public sealed class W3OutputCacheUpdateStart : TraceEvent
@@ -4748,13 +4476,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3OutputCacheUpdateStart> m_target;
         #endregion
     }
-    public sealed class W3OutputCacheUpdateEnd : TraceEvent
+    public sealed class W3CacheURLCacheAccessEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Result { get { return GetInt32At(16); } }
+        public string PhysicalPath { get { return GetUnicodeStringAt(16); } }
+        public bool URLInfoFromCache { get { return GetInt32At(SkipUnicodeString(16)) != 0; } }
+        public bool URLInfoAddedToCache { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 8); } }
 
         #region Private
-        internal W3OutputCacheUpdateEnd(Action<W3OutputCacheUpdateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CacheURLCacheAccessEnd(Action<W3CacheURLCacheAccessEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -4765,19 +4496,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 12));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 12));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3OutputCacheUpdateEnd>)value; }
+            set { m_target = (Action<W3CacheURLCacheAccessEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Result", Result);
+            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
+            XmlAttrib(sb, "URLInfoFromCache", URLInfoFromCache);
+            XmlAttrib(sb, "URLInfoAddedToCache", URLInfoAddedToCache);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
             sb.Append("/>");
             return sb;
         }
@@ -4787,7 +4521,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Result" };
+                    payloadNames = new string[] { "ContextId", "PhysicalPath", "URLInfoFromCache", "URLInfoAddedToCache", "ErrorCode" };
                 return payloadNames;
             }
         }
@@ -4799,22 +4533,89 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return Result;
+                    return PhysicalPath;
+                case 2:
+                    return URLInfoFromCache;
+                case 3:
+                    return URLInfoAddedToCache;
+                case 4:
+                    return ErrorCode;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3OutputCacheUpdateEnd> m_target;
+        private event Action<W3CacheURLCacheAccessEnd> m_target;
         #endregion
     }
-    public sealed class W3OutputCacheDisabled : TraceEvent
+    public sealed class W3CacheURLCacheAccessStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string RequestURL { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3CacheURLCacheAccessStart(Action<W3CacheURLCacheAccessStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CacheURLCacheAccessStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "RequestURL", RequestURL);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "RequestURL" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return RequestURL;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CacheURLCacheAccessStart> m_target;
+        #endregion
+    }
+    public sealed class W3CGIEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3OutputCacheDisabled(Action<W3OutputCacheDisabled> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIEnd(Action<W3CGIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -4831,7 +4632,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3OutputCacheDisabled>)value; }
+            set { m_target = (Action<W3CGIEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -4863,18 +4664,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3OutputCacheDisabled> m_target;
+        private event Action<W3CGIEnd> m_target;
         #endregion
     }
-    public sealed class W3CacheFileCacheCreateFile : TraceEvent
+    public sealed class W3CGIHeadersReceived : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-        public string UserName { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-        public string DomainName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
 
         #region Private
-        internal W3CacheFileCacheCreateFile(Action<W3CacheFileCacheCreateFile> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIHeadersReceived(Action<W3CGIHeadersReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -4885,21 +4683,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CacheFileCacheCreateFile>)value; }
+            set { m_target = (Action<W3CGIHeadersReceived>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            XmlAttrib(sb, "UserName", UserName);
-            XmlAttrib(sb, "DomainName", DomainName);
             sb.Append("/>");
             return sb;
         }
@@ -4909,7 +4704,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName", "UserName", "DomainName" };
+                    payloadNames = new string[] { "ContextId" };
                 return payloadNames;
             }
         }
@@ -4920,19 +4715,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             {
                 case 0:
                     return ContextId;
-                case 1:
-                    return FileName;
-                case 2:
-                    return UserName;
-                case 3:
-                    return DomainName;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3CacheFileCacheCreateFile> m_target;
+        private event Action<W3CGIHeadersReceived> m_target;
         #endregion
     }
     public sealed class W3CGILaunch : TraceEvent
@@ -5002,67 +4791,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
 
         private event Action<W3CGILaunch> m_target;
-        #endregion
-    }
-    public sealed class W3CGITimeout : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Headers { get { return GetUTF8StringAt(16); } }
-
-        #region Private
-        internal W3CGITimeout(Action<W3CGITimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGITimeout>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Headers", Headers);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Headers" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Headers;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGITimeout> m_target;
         #endregion
     }
     public sealed class W3CGIPrematureTermination : TraceEvent
@@ -5183,12 +4911,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CGIRequestEntitySent> m_target;
         #endregion
     }
-    public sealed class W3CGIHeadersReceived : TraceEvent
+    public sealed class W3CGIStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIHeadersReceived(Action<W3CGIHeadersReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIStart(Action<W3CGIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -5205,7 +4933,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIHeadersReceived>)value; }
+            set { m_target = (Action<W3CGIStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -5237,78 +4965,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIHeadersReceived> m_target;
-        #endregion
-    }
-    public sealed class W3CGIStart : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-
-        #region Private
-        internal W3CGIStart(Action<W3CGIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 8));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
         private event Action<W3CGIStart> m_target;
         #endregion
     }
-    public sealed class W3CGIEnd : TraceEvent
+    public sealed class W3CGITimeout : TraceEvent
     {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Headers { get { return GetUTF8StringAt(16); } }
 
         #region Private
-        internal W3CGIEnd(Action<W3CGIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGITimeout(Action<W3CGITimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -5319,20 +4985,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 8));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIEnd>)value; }
+            set { m_target = (Action<W3CGITimeout>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
+            XmlAttrib(sb, "Headers", Headers);
             sb.Append("/>");
             return sb;
         }
@@ -5342,7 +5007,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId" };
+                    payloadNames = new string[] { "ContextId", "Headers" };
                 return payloadNames;
             }
         }
@@ -5354,23 +5019,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return RequestId;
+                    return Headers;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3CGIEnd> m_target;
+        private event Action<W3CGITimeout> m_target;
         #endregion
     }
-    public sealed class W3StaticCompressionNotSuccess : TraceEvent
+    public sealed class W3DynamicCompressionDo : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Reason { get { return GetInt32At(16); } }
+        public int OriginalSize { get { return GetInt32At(16); } }
+        public int CompressedSize { get { return GetInt32At(20); } }
 
         #region Private
-        internal W3StaticCompressionNotSuccess(Action<W3StaticCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3DynamicCompressionDo(Action<W3DynamicCompressionDo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -5381,19 +5047,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3StaticCompressionNotSuccess>)value; }
+            set { m_target = (Action<W3DynamicCompressionDo>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Reason", Reason);
+            XmlAttrib(sb, "OriginalSize", OriginalSize);
+            XmlAttrib(sb, "CompressedSize", CompressedSize);
             sb.Append("/>");
             return sb;
         }
@@ -5403,7 +5070,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Reason" };
+                    payloadNames = new string[] { "ContextId", "OriginalSize", "CompressedSize" };
                 return payloadNames;
             }
         }
@@ -5415,152 +5082,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3StaticCompressionNotSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3StaticCompressionCreateStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string OriginalFileName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3StaticCompressionCreateStart(Action<W3StaticCompressionCreateStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3StaticCompressionCreateStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OriginalFileName", OriginalFileName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OriginalFileName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return OriginalFileName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3StaticCompressionCreateStart> m_target;
-        #endregion
-    }
-    public sealed class W3StaticCompressionCreateEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-        public string OriginalFileName { get { return GetUnicodeStringAt(20); } }
-        public int OriginalFileSize { get { return GetInt32At(SkipUnicodeString(20)); } }
-        public string CompressedFileName { get { return GetUnicodeStringAt(SkipUnicodeString(20) + 4); } }
-        public int CompressedFileSize { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(20) + 4)); } }
-
-        #region Private
-        internal W3StaticCompressionCreateEnd(Action<W3StaticCompressionCreateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3StaticCompressionCreateEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            XmlAttrib(sb, "OriginalFileName", OriginalFileName);
-            XmlAttrib(sb, "OriginalFileSize", OriginalFileSize);
-            XmlAttrib(sb, "CompressedFileName", CompressedFileName);
-            XmlAttrib(sb, "CompressedFileSize", CompressedFileSize);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode", "OriginalFileName", "OriginalFileSize", "CompressedFileName", "CompressedFileSize" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
+                    return OriginalSize;
                 case 2:
-                    return OriginalFileName;
-                case 3:
-                    return OriginalFileSize;
-                case 4:
-                    return CompressedFileName;
-                case 5:
-                    return CompressedFileSize;
+                    return CompressedSize;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3StaticCompressionCreateEnd> m_target;
+        private event Action<W3DynamicCompressionDo> m_target;
         #endregion
     }
     public sealed class W3DynamicCompressionEnd : TraceEvent
@@ -5620,12 +5151,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3DynamicCompressionEnd> m_target;
         #endregion
     }
-    public sealed class W3StaticCompressionEnd : TraceEvent
+    public sealed class W3DynamicCompressionNotSuccess : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Reason { get { return GetInt32At(16); } }
 
         #region Private
-        internal W3StaticCompressionEnd(Action<W3StaticCompressionEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3DynamicCompressionNotSuccess(Action<W3DynamicCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -5636,18 +5168,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3StaticCompressionEnd>)value; }
+            set { m_target = (Action<W3DynamicCompressionNotSuccess>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Reason", Reason);
             sb.Append("/>");
             return sb;
         }
@@ -5657,7 +5190,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
+                    payloadNames = new string[] { "ContextId", "Reason" };
                 return payloadNames;
             }
         }
@@ -5668,13 +5201,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             {
                 case 0:
                     return ContextId;
+                case 1:
+                    return Reason;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3StaticCompressionEnd> m_target;
+        private event Action<W3DynamicCompressionNotSuccess> m_target;
         #endregion
     }
     public sealed class W3DynamicCompressionStart : TraceEvent
@@ -5791,14 +5326,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3DynamicCompressionSuccess> m_target;
         #endregion
     }
-    public sealed class W3DynamicCompressionDo : TraceEvent
+    public sealed class W3StaticCompressionCreateEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public int OriginalSize { get { return GetInt32At(16); } }
-        public int CompressedSize { get { return GetInt32At(20); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+        public string OriginalFileName { get { return GetUnicodeStringAt(20); } }
+        public int OriginalFileSize { get { return GetInt32At(SkipUnicodeString(20)); } }
+        public string CompressedFileName { get { return GetUnicodeStringAt(SkipUnicodeString(20) + 4); } }
+        public int CompressedFileSize { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(20) + 4)); } }
 
         #region Private
-        internal W3DynamicCompressionDo(Action<W3DynamicCompressionDo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3StaticCompressionCreateEnd(Action<W3StaticCompressionCreateEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -5809,20 +5347,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(20) + 4) + 4));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3DynamicCompressionDo>)value; }
+            set { m_target = (Action<W3StaticCompressionCreateEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OriginalSize", OriginalSize);
-            XmlAttrib(sb, "CompressedSize", CompressedSize);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            XmlAttrib(sb, "OriginalFileName", OriginalFileName);
+            XmlAttrib(sb, "OriginalFileSize", OriginalFileSize);
+            XmlAttrib(sb, "CompressedFileName", CompressedFileName);
+            XmlAttrib(sb, "CompressedFileSize", CompressedFileSize);
             sb.Append("/>");
             return sb;
         }
@@ -5832,7 +5373,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OriginalSize", "CompressedSize" };
+                    payloadNames = new string[] { "ContextId", "ErrorCode", "OriginalFileName", "OriginalFileSize", "CompressedFileName", "CompressedFileSize" };
                 return payloadNames;
             }
         }
@@ -5844,16 +5385,201 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return OriginalSize;
+                    return ErrorCode;
                 case 2:
-                    return CompressedSize;
+                    return OriginalFileName;
+                case 3:
+                    return OriginalFileSize;
+                case 4:
+                    return CompressedFileName;
+                case 5:
+                    return CompressedFileSize;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3DynamicCompressionDo> m_target;
+        private event Action<W3StaticCompressionCreateEnd> m_target;
+        #endregion
+    }
+    public sealed class W3StaticCompressionCreateStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string OriginalFileName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3StaticCompressionCreateStart(Action<W3StaticCompressionCreateStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3StaticCompressionCreateStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "OriginalFileName", OriginalFileName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "OriginalFileName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return OriginalFileName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3StaticCompressionCreateStart> m_target;
+        #endregion
+    }
+    public sealed class W3StaticCompressionEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3StaticCompressionEnd(Action<W3StaticCompressionEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3StaticCompressionEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3StaticCompressionEnd> m_target;
+        #endregion
+    }
+    public sealed class W3StaticCompressionNotSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Reason { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3StaticCompressionNotSuccess(Action<W3StaticCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3StaticCompressionNotSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Reason", Reason);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Reason" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Reason;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3StaticCompressionNotSuccess> m_target;
         #endregion
     }
     public sealed class W3StaticCompressionStart : TraceEvent
@@ -5970,73 +5696,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3StaticCompressionSuccess> m_target;
         #endregion
     }
-    public sealed class W3DynamicCompressionNotSuccess : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Reason { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3DynamicCompressionNotSuccess(Action<W3DynamicCompressionNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3DynamicCompressionNotSuccess>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Reason", Reason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Reason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3DynamicCompressionNotSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFUnexpectedExit : TraceEvent
+    public sealed class W3CGIFActivityTimeout : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFUnexpectedExit(Action<W3CGIFUnexpectedExit> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFActivityTimeout(Action<W3CGIFActivityTimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -6053,7 +5718,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFUnexpectedExit>)value; }
+            set { m_target = (Action<W3CGIFActivityTimeout>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6085,15 +5750,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFUnexpectedExit> m_target;
+        private event Action<W3CGIFActivityTimeout> m_target;
         #endregion
     }
-    public sealed class W3CGIFRapidFailureProtection : TraceEvent
+    public sealed class W3CGIFAddJobObjectFail : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFRapidFailureProtection(Action<W3CGIFRapidFailureProtection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFAddJobObjectFail(Action<W3CGIFAddJobObjectFail> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -6110,7 +5775,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFRapidFailureProtection>)value; }
+            set { m_target = (Action<W3CGIFAddJobObjectFail>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6142,15 +5807,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFRapidFailureProtection> m_target;
+        private event Action<W3CGIFAddJobObjectFail> m_target;
         #endregion
     }
-    public sealed class W3CGIFPathNotFound : TraceEvent
+    public sealed class W3CGIFAppMgrShutdown : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFPathNotFound(Action<W3CGIFPathNotFound> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFAppMgrShutdown(Action<W3CGIFAppMgrShutdown> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -6167,7 +5832,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFPathNotFound>)value; }
+            set { m_target = (Action<W3CGIFAppMgrShutdown>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6199,430 +5864,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFPathNotFound> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFUnknownError : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3CGIFUnknownError(Action<W3CGIFUnknownError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFUnknownError>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFUnknownError> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFResponseWritten : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3CGIFResponseWritten(Action<W3CGIFResponseWritten> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFResponseWritten>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFResponseWritten> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFWaitingForResponse : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3CGIFWaitingForResponse(Action<W3CGIFWaitingForResponse> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFWaitingForResponse>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFWaitingForResponse> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFTraceError : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Message { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3CGIFTraceError(Action<W3CGIFTraceError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFTraceError>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Message", Message);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Message" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Message;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFTraceError> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFTraceWarning : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Message { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3CGIFTraceWarning(Action<W3CGIFTraceWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFTraceWarning>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Message", Message);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Message" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Message;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFTraceWarning> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFTraceInfo : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Message { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3CGIFTraceInfo(Action<W3CGIFTraceInfo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFTraceInfo>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Message", Message);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Message" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Message;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFTraceInfo> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFQueueRequest : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int PositionInQueue { get { return GetInt32At(16); } }
-        public int MaxInstances { get { return GetInt32At(20); } }
-
-        #region Private
-        internal W3CGIFQueueRequest(Action<W3CGIFQueueRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFQueueRequest>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "PositionInQueue", PositionInQueue);
-            XmlAttrib(sb, "MaxInstances", MaxInstances);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "PositionInQueue", "MaxInstances" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return PositionInQueue;
-                case 2:
-                    return MaxInstances;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFQueueRequest> m_target;
+        private event Action<W3CGIFAppMgrShutdown> m_target;
         #endregion
     }
     public sealed class W3CGIFAssignProcess : TraceEvent
@@ -6698,63 +5940,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CGIFAssignProcess> m_target;
         #endregion
     }
-    public sealed class W3CGIFStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3CGIFStart(Action<W3CGIFStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFStart> m_target;
-        #endregion
-    }
     public sealed class W3CGIFEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -6812,12 +5997,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CGIFEnd> m_target;
         #endregion
     }
-    public sealed class W3CGIFScriptProcessorMissing : TraceEvent
+    public sealed class W3CGIFPathNotFound : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFScriptProcessorMissing(Action<W3CGIFScriptProcessorMissing> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFPathNotFound(Action<W3CGIFPathNotFound> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -6834,7 +6019,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFScriptProcessorMissing>)value; }
+            set { m_target = (Action<W3CGIFPathNotFound>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -6866,64 +6051,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFScriptProcessorMissing> m_target;
-        #endregion
-    }
-    public sealed class W3CGIFAddJobObjectFail : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3CGIFAddJobObjectFail(Action<W3CGIFAddJobObjectFail> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3CGIFAddJobObjectFail>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3CGIFAddJobObjectFail> m_target;
+        private event Action<W3CGIFPathNotFound> m_target;
         #endregion
     }
     public sealed class W3CGIFQueueFull : TraceEvent
@@ -6983,12 +6111,77 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CGIFQueueFull> m_target;
         #endregion
     }
-    public sealed class W3CGIFActivityTimeout : TraceEvent
+    public sealed class W3CGIFQueueRequest : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int PositionInQueue { get { return GetInt32At(16); } }
+        public int MaxInstances { get { return GetInt32At(20); } }
+
+        #region Private
+        internal W3CGIFQueueRequest(Action<W3CGIFQueueRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFQueueRequest>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "PositionInQueue", PositionInQueue);
+            XmlAttrib(sb, "MaxInstances", MaxInstances);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "PositionInQueue", "MaxInstances" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return PositionInQueue;
+                case 2:
+                    return MaxInstances;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFQueueRequest> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFRapidFailureProtection : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFActivityTimeout(Action<W3CGIFActivityTimeout> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFRapidFailureProtection(Action<W3CGIFRapidFailureProtection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7005,7 +6198,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFActivityTimeout>)value; }
+            set { m_target = (Action<W3CGIFRapidFailureProtection>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7037,7 +6230,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFActivityTimeout> m_target;
+        private event Action<W3CGIFRapidFailureProtection> m_target;
         #endregion
     }
     public sealed class W3CGIFRequestTimeout : TraceEvent
@@ -7097,12 +6290,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3CGIFRequestTimeout> m_target;
         #endregion
     }
-    public sealed class W3CGIFAppMgrShutdown : TraceEvent
+    public sealed class W3CGIFResponseWritten : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3CGIFAppMgrShutdown(Action<W3CGIFAppMgrShutdown> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFResponseWritten(Action<W3CGIFResponseWritten> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7119,7 +6312,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3CGIFAppMgrShutdown>)value; }
+            set { m_target = (Action<W3CGIFResponseWritten>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7151,16 +6344,370 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3CGIFAppMgrShutdown> m_target;
+        private event Action<W3CGIFResponseWritten> m_target;
         #endregion
     }
-    public sealed class W3FilterError : TraceEvent
+    public sealed class W3CGIFScriptProcessorMissing : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3CGIFScriptProcessorMissing(Action<W3CGIFScriptProcessorMissing> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFScriptProcessorMissing>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFScriptProcessorMissing> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3CGIFStart(Action<W3CGIFStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFStart> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFTraceError : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Message { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3CGIFTraceError(Action<W3CGIFTraceError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFTraceError>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Message", Message);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Message" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Message;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFTraceError> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFTraceInfo : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Message { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3CGIFTraceInfo(Action<W3CGIFTraceInfo> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFTraceInfo>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Message", Message);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Message" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Message;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFTraceInfo> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFTraceWarning : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Message { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3CGIFTraceWarning(Action<W3CGIFTraceWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFTraceWarning>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Message", Message);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Message" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Message;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFTraceWarning> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFUnexpectedExit : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3CGIFUnexpectedExit(Action<W3CGIFUnexpectedExit> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3CGIFUnexpectedExit>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3CGIFUnexpectedExit> m_target;
+        #endregion
+    }
+    public sealed class W3CGIFUnknownError : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
         public int ErrorCode { get { return GetInt32At(16); } }
 
         #region Private
-        internal W3FilterError(Action<W3FilterError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFUnknownError(Action<W3CGIFUnknownError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7177,7 +6724,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterError>)value; }
+            set { m_target = (Action<W3CGIFUnknownError>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7212,15 +6759,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3FilterError> m_target;
+        private event Action<W3CGIFUnknownError> m_target;
         #endregion
     }
-    public sealed class W3FilterPreprocStart : TraceEvent
+    public sealed class W3CGIFWaitingForResponse : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3FilterPreprocStart(Action<W3FilterPreprocStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3CGIFWaitingForResponse(Action<W3CGIFWaitingForResponse> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7237,7 +6784,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterPreprocStart>)value; }
+            set { m_target = (Action<W3CGIFWaitingForResponse>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7269,15 +6816,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3FilterPreprocStart> m_target;
+        private event Action<W3CGIFWaitingForResponse> m_target;
         #endregion
     }
-    public sealed class W3FilterPreprocEnd : TraceEvent
+    public sealed class W3FilterAccessDeniedEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3FilterPreprocEnd(Action<W3FilterPreprocEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterAccessDeniedEnd(Action<W3FilterAccessDeniedEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7294,7 +6841,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterPreprocEnd>)value; }
+            set { m_target = (Action<W3FilterAccessDeniedEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -7326,21 +6873,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3FilterPreprocEnd> m_target;
+        private event Action<W3FilterAccessDeniedEnd> m_target;
         #endregion
     }
-    public sealed class W3FilterURLMapStart : TraceEvent
+    public sealed class W3FilterAccessDeniedStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string OrigURL { get { return GetUTF8StringAt(16); } }
-        public string OrigPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public int AccessPerms { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
-        public int MatchingPath { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 4); } }
-        public int MatchingURL { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 8); } }
-        public string ScriptMapEntry { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16)) + 12); } }
+        public string RequestedURL { get { return GetUTF8StringAt(16); } }
+        public string PhysicalPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public int DenialReason { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
 
         #region Private
-        internal W3FilterURLMapStart(Action<W3FilterURLMapStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterAccessDeniedStart(Action<W3FilterAccessDeniedStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7351,24 +6895,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterURLMapStart>)value; }
+            set { m_target = (Action<W3FilterAccessDeniedStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OrigURL", OrigURL);
-            XmlAttrib(sb, "OrigPath", OrigPath);
-            XmlAttrib(sb, "AccessPerms", AccessPerms);
-            XmlAttrib(sb, "MatchingPath", MatchingPath);
-            XmlAttrib(sb, "MatchingURL", MatchingURL);
-            XmlAttrib(sb, "ScriptMapEntry", ScriptMapEntry);
+            XmlAttrib(sb, "RequestedURL", RequestedURL);
+            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
+            XmlAttrib(sb, "DenialReason", DenialReason);
             sb.Append("/>");
             return sb;
         }
@@ -7378,7 +6919,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OrigURL", "OrigPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
+                    payloadNames = new string[] { "ContextId", "RequestedURL", "PhysicalPath", "DenialReason" };
                 return payloadNames;
             }
         }
@@ -7390,38 +6931,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return OrigURL;
+                    return RequestedURL;
                 case 2:
-                    return OrigPath;
+                    return PhysicalPath;
                 case 3:
-                    return AccessPerms;
-                case 4:
-                    return MatchingPath;
-                case 5:
-                    return MatchingURL;
-                case 6:
-                    return ScriptMapEntry;
+                    return DenialReason;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterURLMapStart> m_target;
+        private event Action<W3FilterAccessDeniedStart> m_target;
         #endregion
     }
-    public sealed class W3FilterURLMapEnd : TraceEvent
+    public sealed class W3FilterAddReqHeader : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FinalURL { get { return GetUTF8StringAt(16); } }
-        public string FinalPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public int AccessPerms { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
-        public int MatchingPath { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 4); } }
-        public int MatchingURL { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 8); } }
-        public string ScriptMapEntry { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16)) + 12); } }
+        public string HeaderName { get { return GetUTF8StringAt(16); } }
+        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
 
         #region Private
-        internal W3FilterURLMapEnd(Action<W3FilterURLMapEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterAddReqHeader(Action<W3FilterAddReqHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7432,24 +6963,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterURLMapEnd>)value; }
+            set { m_target = (Action<W3FilterAddReqHeader>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FinalURL", FinalURL);
-            XmlAttrib(sb, "FinalPath", FinalPath);
-            XmlAttrib(sb, "AccessPerms", AccessPerms);
-            XmlAttrib(sb, "MatchingPath", MatchingPath);
-            XmlAttrib(sb, "MatchingURL", MatchingURL);
-            XmlAttrib(sb, "ScriptMapEntry", ScriptMapEntry);
+            XmlAttrib(sb, "HeaderName", HeaderName);
+            XmlAttrib(sb, "HeaderValue", HeaderValue);
             sb.Append("/>");
             return sb;
         }
@@ -7459,7 +6986,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FinalURL", "FinalPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
+                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
                 return payloadNames;
             }
         }
@@ -7471,33 +6998,26 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return FinalURL;
+                    return HeaderName;
                 case 2:
-                    return FinalPath;
-                case 3:
-                    return AccessPerms;
-                case 4:
-                    return MatchingPath;
-                case 5:
-                    return MatchingURL;
-                case 6:
-                    return ScriptMapEntry;
+                    return HeaderValue;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterURLMapEnd> m_target;
+        private event Action<W3FilterAddReqHeader> m_target;
         #endregion
     }
-    public sealed class W3FilterAuthenticationStart : TraceEvent
+    public sealed class W3FilterAddRespHeader : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string OrigUserName { get { return GetUTF8StringAt(16); } }
+        public string HeaderName { get { return GetUTF8StringAt(16); } }
+        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
 
         #region Private
-        internal W3FilterAuthenticationStart(Action<W3FilterAuthenticationStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterAddRespHeader(Action<W3FilterAddRespHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7508,19 +7028,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterAuthenticationStart>)value; }
+            set { m_target = (Action<W3FilterAddRespHeader>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OrigUserName", OrigUserName);
+            XmlAttrib(sb, "HeaderName", HeaderName);
+            XmlAttrib(sb, "HeaderValue", HeaderValue);
             sb.Append("/>");
             return sb;
         }
@@ -7530,7 +7051,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OrigUserName" };
+                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
                 return payloadNames;
             }
         }
@@ -7542,14 +7063,130 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return OrigUserName;
+                    return HeaderName;
+                case 2:
+                    return HeaderValue;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterAuthenticationStart> m_target;
+        private event Action<W3FilterAddRespHeader> m_target;
+        #endregion
+    }
+    public sealed class W3FilterAuthCompleteEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3FilterAuthCompleteEnd(Action<W3FilterAuthCompleteEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterAuthCompleteEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterAuthCompleteEnd> m_target;
+        #endregion
+    }
+    public sealed class W3FilterAuthCompleteStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3FilterAuthCompleteStart(Action<W3FilterAuthCompleteStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterAuthCompleteStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterAuthCompleteStart> m_target;
         #endregion
     }
     public sealed class W3FilterAuthenticationEnd : TraceEvent
@@ -7617,12 +7254,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterAuthenticationEnd> m_target;
         #endregion
     }
-    public sealed class W3FilterAuthCompleteStart : TraceEvent
+    public sealed class W3FilterAuthenticationStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
+        public string OrigUserName { get { return GetUTF8StringAt(16); } }
 
         #region Private
-        internal W3FilterAuthCompleteStart(Action<W3FilterAuthCompleteStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterAuthenticationStart(Action<W3FilterAuthenticationStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7633,18 +7271,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterAuthCompleteStart>)value; }
+            set { m_target = (Action<W3FilterAuthenticationStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "OrigUserName", OrigUserName);
             sb.Append("/>");
             return sb;
         }
@@ -7654,7 +7293,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
+                    payloadNames = new string[] { "ContextId", "OrigUserName" };
                 return payloadNames;
             }
         }
@@ -7665,79 +7304,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             {
                 case 0:
                     return ContextId;
+                case 1:
+                    return OrigUserName;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterAuthCompleteStart> m_target;
+        private event Action<W3FilterAuthenticationStart> m_target;
         #endregion
     }
-    public sealed class W3FilterAuthCompleteEnd : TraceEvent
+    public sealed class W3FilterEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
+        public int NotificationStatus { get { return GetInt32At(16); } }
 
         #region Private
-        internal W3FilterAuthCompleteEnd(Action<W3FilterAuthCompleteEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterAuthCompleteEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterAuthCompleteEnd> m_target;
-        #endregion
-    }
-    public sealed class W3FilterSendResponseStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int HttpStatus { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3FilterSendResponseStart(Action<W3FilterSendResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterEnd(Action<W3FilterEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7754,13 +7338,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterSendResponseStart>)value; }
+            set { m_target = (Action<W3FilterEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HttpStatus", HttpStatus);
+            XmlAttrib(sb, "NotificationStatus", NotificationStatus);
             sb.Append("/>");
             return sb;
         }
@@ -7770,7 +7354,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HttpStatus" };
+                    payloadNames = new string[] { "ContextId", "NotificationStatus" };
                 return payloadNames;
             }
         }
@@ -7782,128 +7366,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return HttpStatus;
+                    return NotificationStatus;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterSendResponseStart> m_target;
-        #endregion
-    }
-    public sealed class W3FilterSendResponseEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3FilterSendResponseEnd(Action<W3FilterSendResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterSendResponseEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterSendResponseEnd> m_target;
-        #endregion
-    }
-    public sealed class W3FilterEndOfRequestStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3FilterEndOfRequestStart(Action<W3FilterEndOfRequestStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterEndOfRequestStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterEndOfRequestStart> m_target;
+        private event Action<W3FilterEnd> m_target;
         #endregion
     }
     public sealed class W3FilterEndOfRequestEnd : TraceEvent
@@ -7963,20 +7433,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterEndOfRequestEnd> m_target;
         #endregion
     }
-    public sealed class W3FilterLogStart : TraceEvent
+    public sealed class W3FilterEndOfRequestStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string OrigClientHostName { get { return GetUTF8StringAt(16); } }
-        public string OrigClientUserName { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public string OrigServerName { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16))); } }
-        public string OrigOperation { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))); } }
-        public string OrigTarget { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))); } }
-        public string OrigParameters { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))); } }
-        public int OrigHttpStatus { get { return GetInt32At(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))))); } }
-        public int OrigWin32Status { get { return GetInt32At(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 4); } }
 
         #region Private
-        internal W3FilterLogStart(Action<W3FilterLogStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterEndOfRequestStart(Action<W3FilterEndOfRequestStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -7987,26 +7449,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterLogStart>)value; }
+            set { m_target = (Action<W3FilterEndOfRequestStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OrigClientHostName", OrigClientHostName);
-            XmlAttrib(sb, "OrigClientUserName", OrigClientUserName);
-            XmlAttrib(sb, "OrigServerName", OrigServerName);
-            XmlAttrib(sb, "OrigOperation", OrigOperation);
-            XmlAttrib(sb, "OrigTarget", OrigTarget);
-            XmlAttrib(sb, "OrigParameters", OrigParameters);
-            XmlAttrib(sb, "OrigHttpStatus", OrigHttpStatus);
-            XmlAttrib(sb, "OrigWin32Status", OrigWin32Status);
             sb.Append("/>");
             return sb;
         }
@@ -8016,7 +7470,66 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OrigClientHostName", "OrigClientUserName", "OrigServerName", "OrigOperation", "OrigTarget", "OrigParameters", "OrigHttpStatus", "OrigWin32Status" };
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterEndOfRequestStart> m_target;
+        #endregion
+    }
+    public sealed class W3FilterError : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3FilterError(Action<W3FilterError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterError>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
                 return payloadNames;
             }
         }
@@ -8028,28 +7541,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return OrigClientHostName;
-                case 2:
-                    return OrigClientUserName;
-                case 3:
-                    return OrigServerName;
-                case 4:
-                    return OrigOperation;
-                case 5:
-                    return OrigTarget;
-                case 6:
-                    return OrigParameters;
-                case 7:
-                    return OrigHttpStatus;
-                case 8:
-                    return OrigWin32Status;
+                    return ErrorCode;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterLogStart> m_target;
+        private event Action<W3FilterError> m_target;
         #endregion
     }
     public sealed class W3FilterLogEnd : TraceEvent
@@ -8141,12 +7640,101 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterLogEnd> m_target;
         #endregion
     }
-    public sealed class W3FilterSendRawDataStart : TraceEvent
+    public sealed class W3FilterLogStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string OrigClientHostName { get { return GetUTF8StringAt(16); } }
+        public string OrigClientUserName { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public string OrigServerName { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16))); } }
+        public string OrigOperation { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))); } }
+        public string OrigTarget { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))); } }
+        public string OrigParameters { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))); } }
+        public int OrigHttpStatus { get { return GetInt32At(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))))); } }
+        public int OrigWin32Status { get { return GetInt32At(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 4); } }
+
+        #region Private
+        internal W3FilterLogStart(Action<W3FilterLogStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))))) + 8));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterLogStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "OrigClientHostName", OrigClientHostName);
+            XmlAttrib(sb, "OrigClientUserName", OrigClientUserName);
+            XmlAttrib(sb, "OrigServerName", OrigServerName);
+            XmlAttrib(sb, "OrigOperation", OrigOperation);
+            XmlAttrib(sb, "OrigTarget", OrigTarget);
+            XmlAttrib(sb, "OrigParameters", OrigParameters);
+            XmlAttrib(sb, "OrigHttpStatus", OrigHttpStatus);
+            XmlAttrib(sb, "OrigWin32Status", OrigWin32Status);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "OrigClientHostName", "OrigClientUserName", "OrigServerName", "OrigOperation", "OrigTarget", "OrigParameters", "OrigHttpStatus", "OrigWin32Status" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return OrigClientHostName;
+                case 2:
+                    return OrigClientUserName;
+                case 3:
+                    return OrigServerName;
+                case 4:
+                    return OrigOperation;
+                case 5:
+                    return OrigTarget;
+                case 6:
+                    return OrigParameters;
+                case 7:
+                    return OrigHttpStatus;
+                case 8:
+                    return OrigWin32Status;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterLogStart> m_target;
+        #endregion
+    }
+    public sealed class W3FilterPreprocEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3FilterSendRawDataStart(Action<W3FilterSendRawDataStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterPreprocEnd(Action<W3FilterPreprocEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8163,7 +7751,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterSendRawDataStart>)value; }
+            set { m_target = (Action<W3FilterPreprocEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8195,7 +7783,64 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3FilterSendRawDataStart> m_target;
+        private event Action<W3FilterPreprocEnd> m_target;
+        #endregion
+    }
+    public sealed class W3FilterPreprocStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3FilterPreprocStart(Action<W3FilterPreprocStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterPreprocStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterPreprocStart> m_target;
         #endregion
     }
     public sealed class W3FilterSendRawDataEnd : TraceEvent
@@ -8255,81 +7900,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterSendRawDataEnd> m_target;
         #endregion
     }
-    public sealed class W3FilterAccessDeniedStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string RequestedURL { get { return GetUTF8StringAt(16); } }
-        public string PhysicalPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public int DenialReason { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
-
-        #region Private
-        internal W3FilterAccessDeniedStart(Action<W3FilterAccessDeniedStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterAccessDeniedStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestedURL", RequestedURL);
-            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
-            XmlAttrib(sb, "DenialReason", DenialReason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestedURL", "PhysicalPath", "DenialReason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestedURL;
-                case 2:
-                    return PhysicalPath;
-                case 3:
-                    return DenialReason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterAccessDeniedStart> m_target;
-        #endregion
-    }
-    public sealed class W3FilterAccessDeniedEnd : TraceEvent
+    public sealed class W3FilterSendRawDataStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3FilterAccessDeniedEnd(Action<W3FilterAccessDeniedEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterSendRawDataStart(Action<W3FilterSendRawDataStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8346,7 +7922,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterAccessDeniedEnd>)value; }
+            set { m_target = (Action<W3FilterSendRawDataStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -8378,7 +7954,125 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3FilterAccessDeniedEnd> m_target;
+        private event Action<W3FilterSendRawDataStart> m_target;
+        #endregion
+    }
+    public sealed class W3FilterSendResponseEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3FilterSendResponseEnd(Action<W3FilterSendResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterSendResponseEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterSendResponseEnd> m_target;
+        #endregion
+    }
+    public sealed class W3FilterSendResponseStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int HttpStatus { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3FilterSendResponseStart(Action<W3FilterSendResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterSendResponseStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "HttpStatus", HttpStatus);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "HttpStatus" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return HttpStatus;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterSendResponseStart> m_target;
         #endregion
     }
     public sealed class W3FilterSetReqHeader : TraceEvent
@@ -8446,71 +8140,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterSetReqHeader> m_target;
         #endregion
     }
-    public sealed class W3FilterAddReqHeader : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string HeaderName { get { return GetUTF8StringAt(16); } }
-        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-
-        #region Private
-        internal W3FilterAddReqHeader(Action<W3FilterAddReqHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterAddReqHeader>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HeaderName", HeaderName);
-            XmlAttrib(sb, "HeaderValue", HeaderValue);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return HeaderName;
-                case 2:
-                    return HeaderValue;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterAddReqHeader> m_target;
-        #endregion
-    }
     public sealed class W3FilterSetRespHeader : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -8576,76 +8205,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterSetRespHeader> m_target;
         #endregion
     }
-    public sealed class W3FilterAddRespHeader : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string HeaderName { get { return GetUTF8StringAt(16); } }
-        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-
-        #region Private
-        internal W3FilterAddRespHeader(Action<W3FilterAddRespHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3FilterAddRespHeader>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HeaderName", HeaderName);
-            XmlAttrib(sb, "HeaderValue", HeaderValue);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return HeaderName;
-                case 2:
-                    return HeaderValue;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3FilterAddRespHeader> m_target;
-        #endregion
-    }
     public sealed class W3FilterStart : TraceEvent
     {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public string FilterName { get { if (Version >= 0) return GetUnicodeStringAt(8); return GetUnicodeStringAt(16); } }
-        public long RequestId { get { return GetInt64At(0); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FilterName { get { return GetUnicodeStringAt(16); } }
 
         #region Private
         internal W3FilterStart(Action<W3FilterStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8660,8 +8223,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override void Validate()
         {
             Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
         internal protected override Delegate Target
         {
@@ -8673,7 +8235,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
             XmlAttrib(sb, "FilterName", FilterName);
-            XmlAttrib(sb, "RequestId", RequestId);
             sb.Append("/>");
             return sb;
         }
@@ -8683,7 +8244,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FilterName", "RequestId" };
+                    payloadNames = new string[] { "ContextId", "FilterName" };
                 return payloadNames;
             }
         }
@@ -8696,8 +8257,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                     return ContextId;
                 case 1:
                     return FilterName;
-                case 2:
-                    return RequestId;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -8707,14 +8266,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3FilterStart> m_target;
         #endregion
     }
-    public sealed class W3FilterEnd : TraceEvent
+    public sealed class W3FilterURLMapEnd : TraceEvent
     {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public int NotificationStatus { get { if (Version >= 1) return GetInt32At(16); return 0; } }
-        public long RequestId { get { return GetInt64At(0); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FinalURL { get { return GetUTF8StringAt(16); } }
+        public string FinalPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public int AccessPerms { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
+        public int MatchingPath { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 4); } }
+        public int MatchingURL { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 8); } }
+        public string ScriptMapEntry { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16)) + 12); } }
 
         #region Private
-        internal W3FilterEnd(Action<W3FilterEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterURLMapEnd(Action<W3FilterURLMapEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8725,21 +8288,24 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version == 0 && EventDataLength != 8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 8));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3FilterEnd>)value; }
+            set { m_target = (Action<W3FilterURLMapEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "NotificationStatus", NotificationStatus);
-            XmlAttrib(sb, "RequestId", RequestId);
+            XmlAttrib(sb, "FinalURL", FinalURL);
+            XmlAttrib(sb, "FinalPath", FinalPath);
+            XmlAttrib(sb, "AccessPerms", AccessPerms);
+            XmlAttrib(sb, "MatchingPath", MatchingPath);
+            XmlAttrib(sb, "MatchingURL", MatchingURL);
+            XmlAttrib(sb, "ScriptMapEntry", ScriptMapEntry);
             sb.Append("/>");
             return sb;
         }
@@ -8749,7 +8315,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "NotificationStatus", "RequestId" };
+                    payloadNames = new string[] { "ContextId", "FinalURL", "FinalPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
                 return payloadNames;
             }
         }
@@ -8761,25 +8327,114 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return NotificationStatus;
+                    return FinalURL;
                 case 2:
-                    return RequestId;
+                    return FinalPath;
+                case 3:
+                    return AccessPerms;
+                case 4:
+                    return MatchingPath;
+                case 5:
+                    return MatchingURL;
+                case 6:
+                    return ScriptMapEntry;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3FilterEnd> m_target;
+        private event Action<W3FilterURLMapEnd> m_target;
         #endregion
     }
-    public sealed class W3SecIllegalShortFilename : TraceEvent
+    public sealed class W3FilterURLMapStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
+        public string OrigURL { get { return GetUTF8StringAt(16); } }
+        public string OrigPath { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public int AccessPerms { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))); } }
+        public int MatchingPath { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 4); } }
+        public int MatchingURL { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16)) + 8); } }
+        public string ScriptMapEntry { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16)) + 12); } }
 
         #region Private
-        internal W3SecIllegalShortFilename(Action<W3SecIllegalShortFilename> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3FilterURLMapStart(Action<W3FilterURLMapStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(16)) + 12)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3FilterURLMapStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "OrigURL", OrigURL);
+            XmlAttrib(sb, "OrigPath", OrigPath);
+            XmlAttrib(sb, "AccessPerms", AccessPerms);
+            XmlAttrib(sb, "MatchingPath", MatchingPath);
+            XmlAttrib(sb, "MatchingURL", MatchingURL);
+            XmlAttrib(sb, "ScriptMapEntry", ScriptMapEntry);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "OrigURL", "OrigPath", "AccessPerms", "MatchingPath", "MatchingURL", "ScriptMapEntry" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return OrigURL;
+                case 2:
+                    return OrigPath;
+                case 3:
+                    return AccessPerms;
+                case 4:
+                    return MatchingPath;
+                case 5:
+                    return MatchingURL;
+                case 6:
+                    return ScriptMapEntry;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3FilterURLMapStart> m_target;
+        #endregion
+    }
+    public sealed class IISGeneralConfigChangeNotification : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ConfigPath { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal IISGeneralConfigChangeNotification(Action<IISGeneralConfigChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8796,13 +8451,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3SecIllegalShortFilename>)value; }
+            set { m_target = (Action<IISGeneralConfigChangeNotification>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
+            XmlAttrib(sb, "ConfigPath", ConfigPath);
             sb.Append("/>");
             return sb;
         }
@@ -8812,7 +8467,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName" };
+                    payloadNames = new string[] { "ContextId", "ConfigPath" };
                 return payloadNames;
             }
         }
@@ -8824,23 +8479,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return FileName;
+                    return ConfigPath;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3SecIllegalShortFilename> m_target;
+        private event Action<IISGeneralConfigChangeNotification> m_target;
         #endregion
     }
-    public sealed class W3SecRejectedIP : TraceEvent
+    public sealed class IISGeneralFileChangeNotification : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string IPAddress { get { return GetUnicodeStringAt(16); } }
+        public string FilePath { get { return GetUnicodeStringAt(16); } }
 
         #region Private
-        internal W3SecRejectedIP(Action<W3SecRejectedIP> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISGeneralFileChangeNotification(Action<IISGeneralFileChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8857,13 +8512,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3SecRejectedIP>)value; }
+            set { m_target = (Action<IISGeneralFileChangeNotification>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "IPAddress", IPAddress);
+            XmlAttrib(sb, "FilePath", FilePath);
             sb.Append("/>");
             return sb;
         }
@@ -8873,7 +8528,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "IPAddress" };
+                    payloadNames = new string[] { "ContextId", "FilePath" };
                 return payloadNames;
             }
         }
@@ -8885,83 +8540,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return IPAddress;
+                    return FilePath;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3SecRejectedIP> m_target;
+        private event Action<IISGeneralFileChangeNotification> m_target;
         #endregion
     }
-    public sealed class W3SecRejectedHostname : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string HostName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3SecRejectedHostname(Action<W3SecRejectedHostname> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecRejectedHostname>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HostName", HostName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HostName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return HostName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecRejectedHostname> m_target;
-        #endregion
-    }
-    public sealed class W3SecRequireSSL128 : TraceEvent
+    public sealed class W3GeneralCGIHandler : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3SecRequireSSL128(Action<W3SecRequireSSL128> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralCGIHandler(Action<W3GeneralCGIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -8978,7 +8572,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3SecRequireSSL128>)value; }
+            set { m_target = (Action<W3GeneralCGIHandler>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -9010,461 +8604,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3SecRequireSSL128> m_target;
-        #endregion
-    }
-    public sealed class W3SecFileAccessDenied : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-        public string AccountName { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-        public string DomainName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
-
-        #region Private
-        internal W3SecFileAccessDenied(Action<W3SecFileAccessDenied> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecFileAccessDenied>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            XmlAttrib(sb, "AccountName", AccountName);
-            XmlAttrib(sb, "DomainName", DomainName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName", "AccountName", "DomainName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                case 2:
-                    return AccountName;
-                case 3:
-                    return DomainName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecFileAccessDenied> m_target;
-        #endregion
-    }
-    public sealed class W3SecDeniedByMimemap : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3SecDeniedByMimemap(Action<W3SecDeniedByMimemap> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecDeniedByMimemap>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecDeniedByMimemap> m_target;
-        #endregion
-    }
-    public sealed class W3SecDeniedByISAPIRestriction : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ImageName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3SecDeniedByISAPIRestriction(Action<W3SecDeniedByISAPIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecDeniedByISAPIRestriction>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ImageName", ImageName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ImageName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ImageName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecDeniedByISAPIRestriction> m_target;
-        #endregion
-    }
-    public sealed class W3SecDeniedByCGIRestriction : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ImageName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3SecDeniedByCGIRestriction(Action<W3SecDeniedByCGIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecDeniedByCGIRestriction>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ImageName", ImageName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ImageName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ImageName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecDeniedByCGIRestriction> m_target;
-        #endregion
-    }
-    public sealed class W3SecDeniedByAccessFlags : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int CurrentFlags { get { return GetInt32At(16); } }
-        public int NeededFlags { get { return GetInt32At(20); } }
-
-        #region Private
-        internal W3SecDeniedByAccessFlags(Action<W3SecDeniedByAccessFlags> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SecDeniedByAccessFlags>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "CurrentFlags", CurrentFlags);
-            XmlAttrib(sb, "NeededFlags", NeededFlags);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "CurrentFlags", "NeededFlags" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return CurrentFlags;
-                case 2:
-                    return NeededFlags;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SecDeniedByAccessFlags> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralStaticFileHandler : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public string FileName { get { if (Version >= 0) return GetUnicodeStringAt(8); return GetUnicodeStringAt(16); } }
-        public long RequestId { get { return GetInt64At(0); } }
-
-        #region Private
-        internal W3GeneralStaticFileHandler(Action<W3GeneralStaticFileHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(8)));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(8)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralStaticFileHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            XmlAttrib(sb, "RequestId", RequestId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName", "RequestId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                case 2:
-                    return RequestId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralStaticFileHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralCGIHandler : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-
-        #region Private
-        internal W3GeneralCGIHandler(Action<W3GeneralCGIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 8));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralCGIHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
         private event Action<W3GeneralCGIHandler> m_target;
         #endregion
     }
-    public sealed class W3GeneralISAPIHandler : TraceEvent
+    public sealed class W3GeneralChildRequestEnd : TraceEvent
     {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesSent { get { return GetInt32At(16); } }
+        public int HttpStatus { get { return GetInt32At(20); } }
+        public int HttpSubStatus { get { return GetInt16At(24); } }
 
         #region Private
-        internal W3GeneralISAPIHandler(Action<W3GeneralISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralChildRequestEnd(Action<W3GeneralChildRequestEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -9475,20 +8626,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 8));
-            Debug.Assert(!(Version > 0 && EventDataLength < 8));
+            Debug.Assert(!(Version == 1 && EventDataLength != 26));
+            Debug.Assert(!(Version > 1 && EventDataLength < 26));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3GeneralISAPIHandler>)value; }
+            set { m_target = (Action<W3GeneralChildRequestEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
+            XmlAttrib(sb, "BytesSent", BytesSent);
+            XmlAttrib(sb, "HttpStatus", HttpStatus);
+            XmlAttrib(sb, "HttpSubStatus", HttpSubStatus);
             sb.Append("/>");
             return sb;
         }
@@ -9498,7 +8650,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId" };
+                    payloadNames = new string[] { "ContextId", "BytesSent", "HttpStatus", "HttpSubStatus" };
                 return payloadNames;
             }
         }
@@ -9510,468 +8662,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return RequestId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralISAPIHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralOopISAPIHandler : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public int ProcessId { get { if (Version >= 0) return GetInt32At(8); return GetInt32At(16); } }
-        public int TotalReqs { get { if (Version >= 0) return GetInt32At(12); return GetInt32At(20); } }
-        public int CurrentReqs { get { if (Version >= 0) return GetInt32At(16); return GetInt32At(24); } }
-        public long RequestId { get { return GetInt64At(0); } }
-
-        #region Private
-        internal W3GeneralOopISAPIHandler(Action<W3GeneralOopISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 28));
-            Debug.Assert(!(Version == 0 && EventDataLength != 20));
-            Debug.Assert(!(Version > 0 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralOopISAPIHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ProcessId", ProcessId);
-            XmlAttrib(sb, "TotalReqs", TotalReqs);
-            XmlAttrib(sb, "CurrentReqs", CurrentReqs);
-            XmlAttrib(sb, "RequestId", RequestId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ProcessId", "TotalReqs", "CurrentReqs", "RequestId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ProcessId;
+                    return BytesSent;
                 case 2:
-                    return TotalReqs;
+                    return HttpStatus;
                 case 3:
-                    return CurrentReqs;
-                case 4:
-                    return RequestId;
+                    return HttpSubStatus;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3GeneralOopISAPIHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralRedirectionHandler : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string RedirectedURL { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3GeneralRedirectionHandler(Action<W3GeneralRedirectionHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralRedirectionHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RedirectedURL", RedirectedURL);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RedirectedURL" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RedirectedURL;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralRedirectionHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralDavHandler : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal W3GeneralDavHandler(Action<W3GeneralDavHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralDavHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralDavHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralOptionsHandler : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-        public int BytesSent { get { return GetInt32At(8); } }
-
-        #region Private
-        internal W3GeneralOptionsHandler(Action<W3GeneralOptionsHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralOptionsHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId", "BytesSent" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestId;
-                case 2:
-                    return BytesSent;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralOptionsHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralTraceHandler : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-        public int BytesSent { get { return GetInt32At(8); } }
-
-        #region Private
-        internal W3GeneralTraceHandler(Action<W3GeneralTraceHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralTraceHandler>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId", "BytesSent" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RequestId;
-                case 2:
-                    return BytesSent;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralTraceHandler> m_target;
-        #endregion
-    }
-    public sealed class W3SendResponse : TraceEvent
-    {
-        public long RequestId { get { return GetInt64At(0); } }
-        public int BytesSent { get { return GetInt32At(8); } }
-
-        #region Private
-        internal W3SendResponse(Action<W3SendResponse> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3SendResponse>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "RequestId", "BytesSent" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return RequestId;
-                case 1:
-                    return BytesSent;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3SendResponse> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralGetURLMetadata : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string PhysicalPath { get { return GetUnicodeStringAt(16); } }
-        public int AccessPerms { get { return GetInt32At(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal W3GeneralGetURLMetadata(Action<W3GeneralGetURLMetadata> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralGetURLMetadata>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
-            XmlAttrib(sb, "AccessPerms", AccessPerms);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "PhysicalPath", "AccessPerms" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return PhysicalPath;
-                case 2:
-                    return AccessPerms;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralGetURLMetadata> m_target;
+        private event Action<W3GeneralChildRequestEnd> m_target;
         #endregion
     }
     public sealed class W3GeneralChildRequestStart : TraceEvent
@@ -10047,15 +8749,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3GeneralChildRequestStart> m_target;
         #endregion
     }
-    public sealed class W3GeneralChildRequestEnd : TraceEvent
+    public sealed class W3GeneralDavHandler : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BytesSent { get { return GetInt32At(16); } }
-        public int HttpStatus { get { return GetInt32At(20); } }
-        public int HttpSubStatus { get { return GetInt16At(24); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
 
         #region Private
-        internal W3GeneralChildRequestEnd(Action<W3GeneralChildRequestEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralDavHandler(Action<W3GeneralDavHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -10066,21 +8766,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 26));
-            Debug.Assert(!(Version > 1 && EventDataLength < 26));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3GeneralChildRequestEnd>)value; }
+            set { m_target = (Action<W3GeneralDavHandler>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            XmlAttrib(sb, "HttpStatus", HttpStatus);
-            XmlAttrib(sb, "HttpSubStatus", HttpSubStatus);
+            XmlAttrib(sb, "FileName", FileName);
             sb.Append("/>");
             return sb;
         }
@@ -10090,7 +8788,143 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesSent", "HttpStatus", "HttpSubStatus" };
+                    payloadNames = new string[] { "ContextId", "FileName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return FileName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralDavHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralEndpointInformation : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string RemoteAddress { get { return GetUTF8StringAt(16); } }
+        public string RemotePort { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public string LocalAddress { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16))); } }
+        public string LocalPort { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))); } }
+
+        #region Private
+        internal W3GeneralEndpointInformation(Action<W3GeneralEndpointInformation> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralEndpointInformation>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "RemoteAddress", RemoteAddress);
+            XmlAttrib(sb, "RemotePort", RemotePort);
+            XmlAttrib(sb, "LocalAddress", LocalAddress);
+            XmlAttrib(sb, "LocalPort", LocalPort);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "RemoteAddress", "RemotePort", "LocalAddress", "LocalPort" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return RemoteAddress;
+                case 2:
+                    return RemotePort;
+                case 3:
+                    return LocalAddress;
+                case 4:
+                    return LocalPort;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralEndpointInformation> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralFlushResponseEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesSent { get { return GetInt32At(16); } }
+        public int ErrorCode { get { return GetInt32At(20); } }
+
+        #region Private
+        internal W3GeneralFlushResponseEnd(Action<W3GeneralFlushResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralFlushResponseEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BytesSent", BytesSent);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BytesSent", "ErrorCode" };
                 return payloadNames;
             }
         }
@@ -10104,8 +8938,750 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 1:
                     return BytesSent;
                 case 2:
-                    return HttpStatus;
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralFlushResponseEnd> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralFlushResponseStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3GeneralFlushResponseStart(Action<W3GeneralFlushResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralFlushResponseStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralFlushResponseStart> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralGetURLMetadata : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string PhysicalPath { get { return GetUnicodeStringAt(16); } }
+        public int AccessPerms { get { return GetInt32At(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal W3GeneralGetURLMetadata(Action<W3GeneralGetURLMetadata> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralGetURLMetadata>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "PhysicalPath", PhysicalPath);
+            XmlAttrib(sb, "AccessPerms", AccessPerms);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "PhysicalPath", "AccessPerms" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return PhysicalPath;
+                case 2:
+                    return AccessPerms;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralGetURLMetadata> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralISAPIHandler : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3GeneralISAPIHandler(Action<W3GeneralISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralISAPIHandler>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralISAPIHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralMapHandler : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3GeneralMapHandler(Action<W3GeneralMapHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralMapHandler>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralMapHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralModuleFactoryFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal W3GeneralModuleFactoryFailed(Action<W3GeneralModuleFactoryFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralModuleFactoryFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ModuleName", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ModuleName;
+                case 2:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralModuleFactoryFailed> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralNotSendCustomError : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Reason { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3GeneralNotSendCustomError(Action<W3GeneralNotSendCustomError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralNotSendCustomError>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Reason", Reason);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Reason" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Reason;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralNotSendCustomError> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralOopISAPIHandler : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ProcessId { get { return GetInt32At(16); } }
+        public int TotalReqs { get { return GetInt32At(20); } }
+        public int CurrentReqs { get { return GetInt32At(24); } }
+
+        #region Private
+        internal W3GeneralOopISAPIHandler(Action<W3GeneralOopISAPIHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 28));
+            Debug.Assert(!(Version > 1 && EventDataLength < 28));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralOopISAPIHandler>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ProcessId", ProcessId);
+            XmlAttrib(sb, "TotalReqs", TotalReqs);
+            XmlAttrib(sb, "CurrentReqs", CurrentReqs);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ProcessId", "TotalReqs", "CurrentReqs" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ProcessId;
+                case 2:
+                    return TotalReqs;
                 case 3:
+                    return CurrentReqs;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralOopISAPIHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralOptionsHandler : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3GeneralOptionsHandler(Action<W3GeneralOptionsHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralOptionsHandler>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralOptionsHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralReadEntityEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesReceived { get { return GetInt32At(16); } }
+        public int ErrorCode { get { return GetInt32At(20); } }
+
+        #region Private
+        internal W3GeneralReadEntityEnd(Action<W3GeneralReadEntityEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralReadEntityEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BytesReceived", BytesReceived);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BytesReceived", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return BytesReceived;
+                case 2:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralReadEntityEnd> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralReadEntityStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3GeneralReadEntityStart(Action<W3GeneralReadEntityStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralReadEntityStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralReadEntityStart> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralRedirectionHandler : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string RedirectedURL { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3GeneralRedirectionHandler(Action<W3GeneralRedirectionHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralRedirectionHandler>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "RedirectedURL", RedirectedURL);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "RedirectedURL" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return RedirectedURL;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralRedirectionHandler> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralEndNewRequest : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesSent { get { return GetInt32At(16); } }
+        public int BytesReceived { get { return GetInt32At(20); } }
+        public int HttpStatus { get { return GetInt32At(24); } }
+        public int HttpSubStatus { get { return GetInt16At(28); } }
+
+        #region Private
+        internal W3GeneralEndNewRequest(Action<W3GeneralEndNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 30));
+            Debug.Assert(!(Version > 1 && EventDataLength < 30));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralEndNewRequest>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BytesSent", BytesSent);
+            XmlAttrib(sb, "BytesReceived", BytesReceived);
+            XmlAttrib(sb, "HttpStatus", HttpStatus);
+            XmlAttrib(sb, "HttpSubStatus", HttpSubStatus);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BytesSent", "BytesReceived", "HttpStatus", "HttpSubStatus" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return BytesSent;
+                case 2:
+                    return BytesReceived;
+                case 3:
+                    return HttpStatus;
+                case 4:
                     return HttpSubStatus;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -10113,7 +9689,401 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3GeneralChildRequestEnd> m_target;
+        private event Action<W3GeneralEndNewRequest> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralRequestEntity : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Buffer { get { return GetUTF8StringAt(16); } }
+
+        #region Private
+        internal W3GeneralRequestEntity(Action<W3GeneralRequestEntity> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralRequestEntity>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Buffer", Buffer);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Buffer" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Buffer;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralRequestEntity> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralRequestHeaders : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Headers { get { return GetUTF8StringAt(16); } }
+
+        #region Private
+        internal W3GeneralRequestHeaders(Action<W3GeneralRequestHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralRequestHeaders>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Headers", Headers);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Headers" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Headers;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralRequestHeaders> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralStartNewRequest : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int SiteId { get { return GetInt32At(16); } }
+        public string AppPoolId { get { return GetUnicodeStringAt(20); } }
+        public long ConnId { get { return GetInt64At(SkipUnicodeString(20)); } }
+        public long RawConnId { get { return GetInt64At(SkipUnicodeString(20) + 8); } }
+        public string RequestURL { get { return GetUnicodeStringAt(SkipUnicodeString(20) + 16); } }
+        public string RequestVerb { get { return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(20) + 16)); } }
+
+        #region Private
+        internal W3GeneralStartNewRequest(Action<W3GeneralStartNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(20) + 16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(20) + 16))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralStartNewRequest>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "SiteId", SiteId);
+            XmlAttrib(sb, "AppPoolId", AppPoolId);
+            XmlAttrib(sb, "ConnId", ConnId);
+            XmlAttrib(sb, "RawConnId", RawConnId);
+            XmlAttrib(sb, "RequestURL", RequestURL);
+            XmlAttrib(sb, "RequestVerb", RequestVerb);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "SiteId", "AppPoolId", "ConnId", "RawConnId", "RequestURL", "RequestVerb" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return SiteId;
+                case 2:
+                    return AppPoolId;
+                case 3:
+                    return ConnId;
+                case 4:
+                    return RawConnId;
+                case 5:
+                    return RequestURL;
+                case 6:
+                    return RequestVerb;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralStartNewRequest> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralResponseEntityBuffer : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Buffer { get { return GetUTF8StringAt(16); } }
+
+        #region Private
+        internal W3GeneralResponseEntityBuffer(Action<W3GeneralResponseEntityBuffer> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralResponseEntityBuffer>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Buffer", Buffer);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Buffer" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Buffer;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralResponseEntityBuffer> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralResponseEntityFile : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
+        public long Offset { get { return GetInt64At(SkipUnicodeString(16)); } }
+        public long Size { get { return GetInt64At(SkipUnicodeString(16) + 8); } }
+
+        #region Private
+        internal W3GeneralResponseEntityFile(Action<W3GeneralResponseEntityFile> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralResponseEntityFile>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "FileName", FileName);
+            XmlAttrib(sb, "Offset", Offset);
+            XmlAttrib(sb, "Size", Size);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "FileName", "Offset", "Size" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return FileName;
+                case 2:
+                    return Offset;
+                case 3:
+                    return Size;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralResponseEntityFile> m_target;
+        #endregion
+    }
+    public sealed class W3GeneralResponseHeaders : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Headers { get { return GetUTF8StringAt(16); } }
+
+        #region Private
+        internal W3GeneralResponseHeaders(Action<W3GeneralResponseHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3GeneralResponseHeaders>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Headers", Headers);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Headers" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Headers;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3GeneralResponseHeaders> m_target;
         #endregion
     }
     public sealed class W3GeneralSendCustomError : TraceEvent
@@ -10185,12 +10155,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<W3GeneralSendCustomError> m_target;
         #endregion
     }
-    public sealed class W3GeneralMapHandler : TraceEvent
+    public sealed class W3GeneralSetRequestHeader : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
+        public string HeaderName { get { return GetUTF8StringAt(16); } }
+        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
+        public bool Replace { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))) != 0; } }
 
         #region Private
-        internal W3GeneralMapHandler(Action<W3GeneralMapHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralSetRequestHeader(Action<W3GeneralSetRequestHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -10201,18 +10174,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3GeneralMapHandler>)value; }
+            set { m_target = (Action<W3GeneralSetRequestHeader>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "HeaderName", HeaderName);
+            XmlAttrib(sb, "HeaderValue", HeaderValue);
+            XmlAttrib(sb, "Replace", Replace);
             sb.Append("/>");
             return sb;
         }
@@ -10222,125 +10198,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralMapHandler> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralFlushResponseStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3GeneralFlushResponseStart(Action<W3GeneralFlushResponseStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralFlushResponseStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralFlushResponseStart> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralFlushResponseEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BytesSent { get { return GetInt32At(16); } }
-        public int ErrorCode { get { return GetInt32At(20); } }
-
-        #region Private
-        internal W3GeneralFlushResponseEnd(Action<W3GeneralFlushResponseEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralFlushResponseEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesSent", "ErrorCode" };
+                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue", "Replace" };
                 return payloadNames;
             }
         }
@@ -10352,147 +10210,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return BytesSent;
+                    return HeaderName;
                 case 2:
-                    return ErrorCode;
+                    return HeaderValue;
+                case 3:
+                    return Replace;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3GeneralFlushResponseEnd> m_target;
+        private event Action<W3GeneralSetRequestHeader> m_target;
         #endregion
     }
-    public sealed class W3GeneralReadEntityStart : TraceEvent
+    public sealed class W3GeneralStaticFileHandler : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
 
         #region Private
-        internal W3GeneralReadEntityStart(Action<W3GeneralReadEntityStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralReadEntityStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralReadEntityStart> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralReadEntityEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BytesReceived { get { return GetInt32At(16); } }
-        public int ErrorCode { get { return GetInt32At(20); } }
-
-        #region Private
-        internal W3GeneralReadEntityEnd(Action<W3GeneralReadEntityEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralReadEntityEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesReceived", BytesReceived);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesReceived", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return BytesReceived;
-                case 2:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralReadEntityEnd> m_target;
-        #endregion
-    }
-    public sealed class IISGeneralFileChangeNotification : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FilePath { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal IISGeneralFileChangeNotification(Action<IISGeneralFileChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralStaticFileHandler(Action<W3GeneralStaticFileHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -10509,13 +10247,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISGeneralFileChangeNotification>)value; }
+            set { m_target = (Action<W3GeneralStaticFileHandler>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FilePath", FilePath);
+            XmlAttrib(sb, "FileName", FileName);
             sb.Append("/>");
             return sb;
         }
@@ -10525,7 +10263,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FilePath" };
+                    payloadNames = new string[] { "ContextId", "FileName" };
                 return payloadNames;
             }
         }
@@ -10537,23 +10275,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return FilePath;
+                    return FileName;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<IISGeneralFileChangeNotification> m_target;
+        private event Action<W3GeneralStaticFileHandler> m_target;
         #endregion
     }
-    public sealed class IISGeneralConfigChangeNotification : TraceEvent
+    public sealed class W3GeneralTraceHandler : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ConfigPath { get { return GetUnicodeStringAt(16); } }
 
         #region Private
-        internal IISGeneralConfigChangeNotification(Action<IISGeneralConfigChangeNotification> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3GeneralTraceHandler(Action<W3GeneralTraceHandler> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -10564,19 +10301,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISGeneralConfigChangeNotification>)value; }
+            set { m_target = (Action<W3GeneralTraceHandler>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ConfigPath", ConfigPath);
             sb.Append("/>");
             return sb;
         }
@@ -10586,7 +10322,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ConfigPath" };
+                    payloadNames = new string[] { "ContextId" };
                 return payloadNames;
             }
         }
@@ -10597,145 +10333,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             {
                 case 0:
                     return ContextId;
-                case 1:
-                    return ConfigPath;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<IISGeneralConfigChangeNotification> m_target;
-        #endregion
-    }
-    public sealed class IISGeneralVirtualModuleUnresolved : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Name { get { return GetUnicodeStringAt(16); } }
-        public string Type { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal IISGeneralVirtualModuleUnresolved(Action<IISGeneralVirtualModuleUnresolved> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISGeneralVirtualModuleUnresolved>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Name", Name);
-            XmlAttrib(sb, "Type", Type);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Name", "Type" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Name;
-                case 2:
-                    return Type;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISGeneralVirtualModuleUnresolved> m_target;
-        #endregion
-    }
-    public sealed class IISGeneralUrlChanged : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string OldUrl { get { return GetUnicodeStringAt(16); } }
-        public string NewUrl { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal IISGeneralUrlChanged(Action<IISGeneralUrlChanged> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISGeneralUrlChanged>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "OldUrl", OldUrl);
-            XmlAttrib(sb, "NewUrl", NewUrl);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "OldUrl", "NewUrl" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return OldUrl;
-                case 2:
-                    return NewUrl;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISGeneralUrlChanged> m_target;
+        private event Action<W3GeneralTraceHandler> m_target;
         #endregion
     }
     public sealed class IISGeneralHandlerChanged : TraceEvent
@@ -10815,6 +10419,201 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISGeneralHandlerChanged> m_target;
         #endregion
     }
+    public sealed class IISGeneralHandlerPreconditionNotMatch : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Name { get { return GetUnicodeStringAt(16); } }
+        public string Precondition { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal IISGeneralHandlerPreconditionNotMatch(Action<IISGeneralHandlerPreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISGeneralHandlerPreconditionNotMatch>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "Precondition", Precondition);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Name", "Precondition" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Name;
+                case 2:
+                    return Precondition;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISGeneralHandlerPreconditionNotMatch> m_target;
+        #endregion
+    }
+    public sealed class IISGeneralModulePreconditionNotMatch : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string Name { get { return GetUnicodeStringAt(16); } }
+        public string Precondition { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal IISGeneralModulePreconditionNotMatch(Action<IISGeneralModulePreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISGeneralModulePreconditionNotMatch>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "Precondition", Precondition);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Name", "Precondition" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Name;
+                case 2:
+                    return Precondition;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISGeneralModulePreconditionNotMatch> m_target;
+        #endregion
+    }
+    public sealed class IISGeneralUrlChanged : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string OldUrl { get { return GetUnicodeStringAt(16); } }
+        public string NewUrl { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+
+        #region Private
+        internal IISGeneralUrlChanged(Action<IISGeneralUrlChanged> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISGeneralUrlChanged>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "OldUrl", OldUrl);
+            XmlAttrib(sb, "NewUrl", NewUrl);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "OldUrl", "NewUrl" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return OldUrl;
+                case 2:
+                    return NewUrl;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISGeneralUrlChanged> m_target;
+        #endregion
+    }
     public sealed class IISGeneralUserSet : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -10884,14 +10683,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISGeneralUserSet> m_target;
         #endregion
     }
-    public sealed class IISGeneralModulePreconditionNotMatch : TraceEvent
+    public sealed class IISGeneralVirtualModuleUnresolved : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
         public string Name { get { return GetUnicodeStringAt(16); } }
-        public string Precondition { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+        public string Type { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
 
         #region Private
-        internal IISGeneralModulePreconditionNotMatch(Action<IISGeneralModulePreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISGeneralVirtualModuleUnresolved(Action<IISGeneralVirtualModuleUnresolved> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -10908,14 +10707,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISGeneralModulePreconditionNotMatch>)value; }
+            set { m_target = (Action<IISGeneralVirtualModuleUnresolved>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
             XmlAttrib(sb, "Name", Name);
-            XmlAttrib(sb, "Precondition", Precondition);
+            XmlAttrib(sb, "Type", Type);
             sb.Append("/>");
             return sb;
         }
@@ -10925,7 +10724,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Name", "Precondition" };
+                    payloadNames = new string[] { "ContextId", "Name", "Type" };
                 return payloadNames;
             }
         }
@@ -10939,906 +10738,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 1:
                     return Name;
                 case 2:
-                    return Precondition;
+                    return Type;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<IISGeneralModulePreconditionNotMatch> m_target;
+        private event Action<IISGeneralVirtualModuleUnresolved> m_target;
         #endregion
     }
-    public sealed class IISGeneralHandlerPreconditionNotMatch : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Name { get { return GetUnicodeStringAt(16); } }
-        public string Precondition { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal IISGeneralHandlerPreconditionNotMatch(Action<IISGeneralHandlerPreconditionNotMatch> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(16))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(16))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISGeneralHandlerPreconditionNotMatch>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Name", Name);
-            XmlAttrib(sb, "Precondition", Precondition);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Name", "Precondition" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Name;
-                case 2:
-                    return Precondition;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISGeneralHandlerPreconditionNotMatch> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralResponseHeaders : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Headers { get { return GetUTF8StringAt(16); } }
-
-        #region Private
-        internal W3GeneralResponseHeaders(Action<W3GeneralResponseHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralResponseHeaders>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Headers", Headers);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Headers" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Headers;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralResponseHeaders> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralResponseEntityFile : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string FileName { get { return GetUnicodeStringAt(16); } }
-        public long Offset { get { return GetInt64At(SkipUnicodeString(16)); } }
-        public long Size { get { return GetInt64At(SkipUnicodeString(16) + 8); } }
-
-        #region Private
-        internal W3GeneralResponseEntityFile(Action<W3GeneralResponseEntityFile> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralResponseEntityFile>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "FileName", FileName);
-            XmlAttrib(sb, "Offset", Offset);
-            XmlAttrib(sb, "Size", Size);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "FileName", "Offset", "Size" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return FileName;
-                case 2:
-                    return Offset;
-                case 3:
-                    return Size;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralResponseEntityFile> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralResponseEntityBuffer : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Buffer { get { return GetUTF8StringAt(16); } }
-
-        #region Private
-        internal W3GeneralResponseEntityBuffer(Action<W3GeneralResponseEntityBuffer> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralResponseEntityBuffer>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Buffer", Buffer);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Buffer" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Buffer;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralResponseEntityBuffer> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralRequestHeaders : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Headers { get { return GetUTF8StringAt(16); } }
-
-        #region Private
-        internal W3GeneralRequestHeaders(Action<W3GeneralRequestHeaders> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralRequestHeaders>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Headers", Headers);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Headers" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Headers;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralRequestHeaders> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralRequestEntity : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string Buffer { get { return GetUTF8StringAt(16); } }
-
-        #region Private
-        internal W3GeneralRequestEntity(Action<W3GeneralRequestEntity> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralRequestEntity>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Buffer", Buffer);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Buffer" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Buffer;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralRequestEntity> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralNotSendCustomError : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Reason { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3GeneralNotSendCustomError(Action<W3GeneralNotSendCustomError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralNotSendCustomError>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Reason", Reason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Reason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralNotSendCustomError> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralSetRequestHeader : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string HeaderName { get { return GetUTF8StringAt(16); } }
-        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public bool Replace { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))) != 0; } }
-
-        #region Private
-        internal W3GeneralSetRequestHeader(Action<W3GeneralSetRequestHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralSetRequestHeader>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HeaderName", HeaderName);
-            XmlAttrib(sb, "HeaderValue", HeaderValue);
-            XmlAttrib(sb, "Replace", Replace);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue", "Replace" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return HeaderName;
-                case 2:
-                    return HeaderValue;
-                case 3:
-                    return Replace;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralSetRequestHeader> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralModuleFactoryFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal W3GeneralModuleFactoryFailed(Action<W3GeneralModuleFactoryFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralModuleFactoryFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                case 2:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralModuleFactoryFailed> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralEndpointInformation : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string RemoteAddress { get { return GetUTF8StringAt(16); } }
-        public string RemotePort { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public string LocalAddress { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(16))); } }
-        public string LocalPort { get { return GetUTF8StringAt(SkipUTF8String(SkipUTF8String(SkipUTF8String(16)))); } }
-
-        #region Private
-        internal W3GeneralEndpointInformation(Action<W3GeneralEndpointInformation> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(SkipUTF8String(SkipUTF8String(16))))));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralEndpointInformation>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RemoteAddress", RemoteAddress);
-            XmlAttrib(sb, "RemotePort", RemotePort);
-            XmlAttrib(sb, "LocalAddress", LocalAddress);
-            XmlAttrib(sb, "LocalPort", LocalPort);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RemoteAddress", "RemotePort", "LocalAddress", "LocalPort" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return RemoteAddress;
-                case 2:
-                    return RemotePort;
-                case 3:
-                    return LocalAddress;
-                case 4:
-                    return LocalPort;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralEndpointInformation> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralSetResponseHeader : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string HeaderName { get { return GetUTF8StringAt(16); } }
-        public string HeaderValue { get { return GetUTF8StringAt(SkipUTF8String(16)); } }
-        public bool Replace { get { return GetInt32At(SkipUTF8String(SkipUTF8String(16))) != 0; } }
-
-        #region Private
-        internal W3GeneralSetResponseHeader(Action<W3GeneralSetResponseHeader> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUTF8String(16)) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(SkipUTF8String(16)) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralSetResponseHeader>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "HeaderName", HeaderName);
-            XmlAttrib(sb, "HeaderValue", HeaderValue);
-            XmlAttrib(sb, "Replace", Replace);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "HeaderName", "HeaderValue", "Replace" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return HeaderName;
-                case 2:
-                    return HeaderValue;
-                case 3:
-                    return Replace;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralSetResponseHeader> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralStartNewRequest : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public int SiteId { get { if (Version >= 1) return GetInt32At(16); return 0; } }
-        public string AppPoolId { get { if (Version >= 1) return GetUnicodeStringAt(20); return ""; } }
-        public long ConnId { get { if (Version >= 1) return GetInt64At(SkipUnicodeString(20)); return 0; } }
-        public long RawConnId { get { if (Version >= 1) return GetInt64At(SkipUnicodeString(20) + 8); return 0; } }
-        public string RequestURL { get { if (Version >= 1) return GetUnicodeStringAt(SkipUnicodeString(20) + 16); return ""; } }
-        public string RequestVerb { get { if (Version >= 1) return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(20) + 16)); return ""; } }
-        public long RequestId { get { return GetInt64At(0); } }
-        public int BytesReceived { get { return GetInt32At(8); } }
-
-        #region Private
-        internal W3GeneralStartNewRequest(Action<W3GeneralStartNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(20) + 16))));
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralStartNewRequest>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "SiteId", SiteId);
-            XmlAttrib(sb, "AppPoolId", AppPoolId);
-            XmlAttrib(sb, "ConnId", ConnId);
-            XmlAttrib(sb, "RawConnId", RawConnId);
-            XmlAttrib(sb, "RequestURL", RequestURL);
-            XmlAttrib(sb, "RequestVerb", RequestVerb);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttrib(sb, "BytesReceived", BytesReceived);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "SiteId", "AppPoolId", "ConnId", "RawConnId", "RequestURL", "RequestVerb", "RequestId", "BytesReceived" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return SiteId;
-                case 2:
-                    return AppPoolId;
-                case 3:
-                    return ConnId;
-                case 4:
-                    return RawConnId;
-                case 5:
-                    return RequestURL;
-                case 6:
-                    return RequestVerb;
-                case 7:
-                    return RequestId;
-                case 8:
-                    return BytesReceived;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralStartNewRequest> m_target;
-        #endregion
-    }
-    public sealed class W3GeneralEndNewRequest : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        //public int BytesSent { get { if (Version >= 0) return GetInt32At(8); return GetInt32At(16); } }
-        public int BytesSent { get { if (Version >= 1) return GetInt32At(16); return 0; } }
-        public int BytesReceived { get { if (Version >= 1) return GetInt32At(20); return 0; } }
-        public int HttpStatus { get { if (Version >= 1) return GetInt32At(24); return 0; } }
-        public int HttpSubStatus { get { if (Version >= 1) return GetInt16At(28); return 0; } }
-        public long RequestId { get { return GetInt64At(0); } }
-
-        #region Private
-        internal W3GeneralEndNewRequest(Action<W3GeneralEndNewRequest> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 30));
-            Debug.Assert(!(Version == 0 && EventDataLength != 12));
-            Debug.Assert(!(Version > 0 && EventDataLength < 12));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3GeneralEndNewRequest>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            XmlAttrib(sb, "BytesReceived", BytesReceived);
-            XmlAttrib(sb, "HttpStatus", HttpStatus);
-            XmlAttrib(sb, "HttpSubStatus", HttpSubStatus);
-            XmlAttrib(sb, "RequestId", RequestId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesSent", "BytesReceived", "HttpStatus", "HttpSubStatus", "RequestId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return BytesSent;
-                case 2:
-                    return BytesReceived;
-                case 3:
-                    return HttpStatus;
-                case 4:
-                    return HttpSubStatus;
-                case 5:
-                    return RequestId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3GeneralEndNewRequest> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketEndSuccess : TraceEvent
+    public sealed class W3ISAPIEnd : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3WebSocketEndSuccess(Action<W3WebSocketEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3ISAPIEnd(Action<W3ISAPIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -11855,7 +10770,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3WebSocketEndSuccess>)value; }
+            set { m_target = (Action<W3ISAPIEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -11887,137 +10802,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3WebSocketEndSuccess> m_target;
+        private event Action<W3ISAPIEnd> m_target;
         #endregion
     }
-    public sealed class W3WebSocketEndFailure : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketEndFailure(Action<W3WebSocketEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketEndFailure>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketEndFailure> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketReadFragmentStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BufferSize { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketReadFragmentStart(Action<W3WebSocketReadFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketReadFragmentStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BufferSize", BufferSize);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BufferSize" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return BufferSize;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketReadFragmentStart> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketWriteFragmentEndPending : TraceEvent
+    public sealed class W3ISAPIStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
 
         #region Private
-        internal W3WebSocketWriteFragmentEndPending(Action<W3WebSocketWriteFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal W3ISAPIStart(Action<W3ISAPIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -12034,7 +10827,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3WebSocketWriteFragmentEndPending>)value; }
+            set { m_target = (Action<W3ISAPIStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -12066,979 +10859,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<W3WebSocketWriteFragmentEndPending> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketWriteFragmentEndSuccess : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BytesSent { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketWriteFragmentEndSuccess(Action<W3WebSocketWriteFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketWriteFragmentEndSuccess>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesSent", BytesSent);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesSent" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return BytesSent;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketWriteFragmentEndSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketWriteFragmentEndFailure : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketWriteFragmentEndFailure(Action<W3WebSocketWriteFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketWriteFragmentEndFailure>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketWriteFragmentEndFailure> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketApplicationCloseConnection : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3WebSocketApplicationCloseConnection(Action<W3WebSocketApplicationCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketApplicationCloseConnection>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketApplicationCloseConnection> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketModuleCloseConnection : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Reason { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketModuleCloseConnection(Action<W3WebSocketModuleCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketModuleCloseConnection>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Reason", Reason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Reason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketModuleCloseConnection> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketReadIoFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketReadIoFailed(Action<W3WebSocketReadIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketReadIoFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketReadIoFailed> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketWriteIoFailed : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketWriteIoFailed(Action<W3WebSocketWriteIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketWriteIoFailed>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketWriteIoFailed> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketCloseReceived : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Status { get { return GetInt32At(16); } }
-        public string Reason { get { return GetUnicodeStringAt(20); } }
-
-        #region Private
-        internal W3WebSocketCloseReceived(Action<W3WebSocketCloseReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketCloseReceived>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Status", Status);
-            XmlAttrib(sb, "Reason", Reason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Status", "Reason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Status;
-                case 2:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketCloseReceived> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketCloseSendStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int Status { get { return GetInt32At(16); } }
-        public string Reason { get { return GetUnicodeStringAt(20); } }
-
-        #region Private
-        internal W3WebSocketCloseSendStart(Action<W3WebSocketCloseSendStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketCloseSendStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "Status", Status);
-            XmlAttrib(sb, "Reason", Reason);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "Status", "Reason" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return Status;
-                case 2:
-                    return Reason;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketCloseSendStart> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketCloseSendSuccess : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3WebSocketCloseSendSuccess(Action<W3WebSocketCloseSendSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketCloseSendSuccess>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketCloseSendSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketCloseSendFailure : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketCloseSendFailure(Action<W3WebSocketCloseSendFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketCloseSendFailure>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketCloseSendFailure> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketReadFragmentEndPending : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3WebSocketReadFragmentEndPending(Action<W3WebSocketReadFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketReadFragmentEndPending>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketReadFragmentEndPending> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketReadFragmentEndSuccess : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int BytesReceived { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketReadFragmentEndSuccess(Action<W3WebSocketReadFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketReadFragmentEndSuccess>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "BytesReceived", BytesReceived);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "BytesReceived" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return BytesReceived;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketReadFragmentEndSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketWriteFragmentStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int DataType { get { return GetInt32At(16); } }
-        public int DataSize { get { return GetInt32At(20); } }
-
-        #region Private
-        internal W3WebSocketWriteFragmentStart(Action<W3WebSocketWriteFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 24));
-            Debug.Assert(!(Version > 1 && EventDataLength < 24));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketWriteFragmentStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "DataType", DataType);
-            XmlAttrib(sb, "DataSize", DataSize);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "DataType", "DataSize" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return DataType;
-                case 2:
-                    return DataSize;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketWriteFragmentStart> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketInitializeNotSuccess : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketInitializeNotSuccess(Action<W3WebSocketInitializeNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketInitializeNotSuccess>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketInitializeNotSuccess> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-
-        #region Private
-        internal W3WebSocketStart(Action<W3WebSocketStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < 16));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketStart> m_target;
-        #endregion
-    }
-    public sealed class W3WebSocketReadFragmentEndFailure : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public int ErrorCode { get { return GetInt32At(16); } }
-
-        #region Private
-        internal W3WebSocketReadFragmentEndFailure(Action<W3WebSocketReadFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 20));
-            Debug.Assert(!(Version > 1 && EventDataLength < 20));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3WebSocketReadFragmentEndFailure>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<W3WebSocketReadFragmentEndFailure> m_target;
+        private event Action<W3ISAPIStart> m_target;
         #endregion
     }
     public sealed class IISModuleEventsModuleCriticalError : TraceEvent
@@ -13114,6 +10935,79 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISModuleEventsModuleCriticalError> m_target;
         #endregion
     }
+    public sealed class IISModuleEventsModuleEnd : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+        public string Data1 { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+        public string Data2 { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))); } }
+
+        #region Private
+        internal IISModuleEventsModuleEnd(Action<IISModuleEventsModuleEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISModuleEventsModuleEnd>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            XmlAttrib(sb, "Data1", Data1);
+            XmlAttrib(sb, "Data2", Data2);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ModuleName;
+                case 2:
+                    return Data1;
+                case 3:
+                    return Data2;
+                case 4:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISModuleEventsModuleEnd> m_target;
+        #endregion
+    }
     public sealed class IISModuleEventsModuleError : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -13185,79 +11079,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
 
         private event Action<IISModuleEventsModuleError> m_target;
-        #endregion
-    }
-    public sealed class IISModuleEventsModuleWarning : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public string Data1 { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-        public string Data2 { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))); } }
-
-        #region Private
-        internal IISModuleEventsModuleWarning(Action<IISModuleEventsModuleWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISModuleEventsModuleWarning>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "Data1", Data1);
-            XmlAttrib(sb, "Data2", Data2);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                case 2:
-                    return Data1;
-                case 3:
-                    return Data2;
-                case 4:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISModuleEventsModuleWarning> m_target;
         #endregion
     }
     public sealed class IISModuleEventsModuleInformation : TraceEvent
@@ -13333,79 +11154,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISModuleEventsModuleInformation> m_target;
         #endregion
     }
-    public sealed class IISModuleEventsModuleVerbose : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public string Data1 { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
-        public string Data2 { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))); } }
-
-        #region Private
-        internal IISModuleEventsModuleVerbose(Action<IISModuleEventsModuleVerbose> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISModuleEventsModuleVerbose>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "Data1", Data1);
-            XmlAttrib(sb, "Data2", Data2);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                case 2:
-                    return Data1;
-                case 3:
-                    return Data2;
-                case 4:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISModuleEventsModuleVerbose> m_target;
-        #endregion
-    }
     public sealed class IISModuleEventsModuleStart : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
@@ -13479,7 +11227,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISModuleEventsModuleStart> m_target;
         #endregion
     }
-    public sealed class IISModuleEventsModuleEnd : TraceEvent
+    public sealed class IISModuleEventsModuleVerbose : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
         public string ModuleName { get { return GetUnicodeStringAt(16); } }
@@ -13488,7 +11236,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         public int ErrorCode { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))); } }
 
         #region Private
-        internal IISModuleEventsModuleEnd(Action<IISModuleEventsModuleEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISModuleEventsModuleVerbose(Action<IISModuleEventsModuleVerbose> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -13505,7 +11253,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISModuleEventsModuleEnd>)value; }
+            set { m_target = (Action<IISModuleEventsModuleVerbose>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -13549,20 +11297,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<IISModuleEventsModuleEnd> m_target;
+        private event Action<IISModuleEventsModuleVerbose> m_target;
         #endregion
     }
-    public sealed class IISRequestNotificationEventsCompletion : TraceEvent
+    public sealed class IISModuleEventsModuleWarning : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
         public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public int Notification { get { return GetInt32At(SkipUnicodeString(16)); } }
-        public bool fIsPostNotificationEvent { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
-        public int CompletionBytes { get { return GetInt32At(SkipUnicodeString(16) + 8); } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 12); } }
+        public string Data1 { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+        public string Data2 { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))); } }
 
         #region Private
-        internal IISRequestNotificationEventsCompletion(Action<IISRequestNotificationEventsCompletion> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISModuleEventsModuleWarning(Action<IISModuleEventsModuleWarning> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -13573,22 +11320,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16))) + 4));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationEventsCompletion>)value; }
+            set { m_target = (Action<IISModuleEventsModuleWarning>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
             XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "Notification", Notification);
-            XmlAttrib(sb, "fIsPostNotificationEvent", fIsPostNotificationEvent);
-            XmlAttrib(sb, "CompletionBytes", CompletionBytes);
+            XmlAttrib(sb, "Data1", Data1);
+            XmlAttrib(sb, "Data2", Data2);
             XmlAttrib(sb, "ErrorCode", ErrorCode);
             sb.Append("/>");
             return sb;
@@ -13599,7 +11345,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotificationEvent", "CompletionBytes", "ErrorCode" };
+                    payloadNames = new string[] { "ContextId", "ModuleName", "Data1", "Data2", "ErrorCode" };
                 return payloadNames;
             }
         }
@@ -13613,12 +11359,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 1:
                     return ModuleName;
                 case 2:
-                    return Notification;
+                    return Data1;
                 case 3:
-                    return fIsPostNotificationEvent;
+                    return Data2;
                 case 4:
-                    return CompletionBytes;
-                case 5:
                     return ErrorCode;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -13626,202 +11370,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             }
         }
 
-        private event Action<IISRequestNotificationEventsCompletion> m_target;
-        #endregion
-    }
-    public sealed class IISRequestNotificationPreBeginStart : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal IISRequestNotificationPreBeginStart(Action<IISRequestNotificationPreBeginStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationPreBeginStart>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISRequestNotificationPreBeginStart> m_target;
-        #endregion
-    }
-    public sealed class IISRequestNotificationPreBeginEnd : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public int NotificationStatus { get { return GetInt32At(SkipUnicodeString(16)); } }
-
-        #region Private
-        internal IISRequestNotificationPreBeginEnd(Action<IISRequestNotificationPreBeginEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationPreBeginEnd>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "NotificationStatus", NotificationStatus);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "NotificationStatus" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                case 2:
-                    return NotificationStatus;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISRequestNotificationPreBeginEnd> m_target;
-        #endregion
-    }
-    public sealed class IISRequestNotificationEventsError : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ModuleName { get { return GetUnicodeStringAt(16); } }
-        public int Notification { get { return GetInt32At(SkipUnicodeString(16)); } }
-        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 4); } }
-
-        #region Private
-        internal IISRequestNotificationEventsError(Action<IISRequestNotificationEventsError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationEventsError>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ModuleName", ModuleName);
-            XmlAttrib(sb, "Notification", Notification);
-            XmlAttrib(sb, "ErrorCode", ErrorCode);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "ErrorCode" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ModuleName;
-                case 2:
-                    return Notification;
-                case 3:
-                    return ErrorCode;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISRequestNotificationEventsError> m_target;
+        private event Action<IISModuleEventsModuleWarning> m_target;
         #endregion
     }
     public sealed class IISRequestNotificationEventsResponseErrorStatus : TraceEvent
@@ -13982,76 +11531,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISRequestNotificationEventsResponseSuccessStatus> m_target;
         #endregion
     }
-    public sealed class IISRequestNotificationEventsResponseErrorDescription : TraceEvent
-    {
-        public Guid ContextId { get { return GetGuidAt(0); } }
-        public string ErrorDescription { get { return GetUnicodeStringAt(16); } }
-
-        #region Private
-        internal IISRequestNotificationEventsResponseErrorDescription(Action<IISRequestNotificationEventsResponseErrorDescription> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationEventsResponseErrorDescription>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "ErrorDescription", ErrorDescription);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ErrorDescription" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return ContextId;
-                case 1:
-                    return ErrorDescription;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IISRequestNotificationEventsResponseErrorDescription> m_target;
-        #endregion
-    }
-    public sealed class IISRequestNotificationEventsStart : TraceEvent
+    public sealed class IISRequestNotificationEventsCompletion : TraceEvent
     {
         public Guid ContextId { get { return GetGuidAt(0); } }
         public string ModuleName { get { return GetUnicodeStringAt(16); } }
         public int Notification { get { return GetInt32At(SkipUnicodeString(16)); } }
-        public bool fIsPostNotification { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
+        public bool fIsPostNotificationEvent { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
+        public int CompletionBytes { get { return GetInt32At(SkipUnicodeString(16) + 8); } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 12); } }
 
         #region Private
-        internal IISRequestNotificationEventsStart(Action<IISRequestNotificationEventsStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISRequestNotificationEventsCompletion(Action<IISRequestNotificationEventsCompletion> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -14062,13 +11552,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 16));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IISRequestNotificationEventsStart>)value; }
+            set { m_target = (Action<IISRequestNotificationEventsCompletion>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
@@ -14076,7 +11566,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             XmlAttrib(sb, "ContextId", ContextId);
             XmlAttrib(sb, "ModuleName", ModuleName);
             XmlAttrib(sb, "Notification", Notification);
-            XmlAttrib(sb, "fIsPostNotification", fIsPostNotification);
+            XmlAttrib(sb, "fIsPostNotificationEvent", fIsPostNotificationEvent);
+            XmlAttrib(sb, "CompletionBytes", CompletionBytes);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
             sb.Append("/>");
             return sb;
         }
@@ -14086,7 +11578,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotification" };
+                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotificationEvent", "CompletionBytes", "ErrorCode" };
                 return payloadNames;
             }
         }
@@ -14102,14 +11594,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 2:
                     return Notification;
                 case 3:
-                    return fIsPostNotification;
+                    return fIsPostNotificationEvent;
+                case 4:
+                    return CompletionBytes;
+                case 5:
+                    return ErrorCode;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<IISRequestNotificationEventsStart> m_target;
+        private event Action<IISRequestNotificationEventsCompletion> m_target;
         #endregion
     }
     public sealed class IISRequestNotificationEventsEnd : TraceEvent
@@ -14185,13 +11681,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         private event Action<IISRequestNotificationEventsEnd> m_target;
         #endregion
     }
-    public sealed class IsapiDeleteContext : TraceEvent
+    public sealed class IISRequestNotificationEventsStart : TraceEvent
     {
-        public long RequestId { get { return GetInt64At(0); } }
-        public Address connID { get { return GetAddressAt(8); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+        public int Notification { get { return GetInt32At(SkipUnicodeString(16)); } }
+        public bool fIsPostNotification { get { return GetInt32At(SkipUnicodeString(16) + 4) != 0; } }
 
         #region Private
-        internal IsapiDeleteContext(Action<IsapiDeleteContext> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISRequestNotificationEventsStart(Action<IISRequestNotificationEventsStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -14202,85 +11700,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(12, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(12, 1)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<IsapiDeleteContext>)value; }
-        }
-        public override StringBuilder ToXml(StringBuilder sb)
-        {
-            Prefix(sb);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttribHex(sb, "connID", connID);
-            sb.Append("/>");
-            return sb;
-        }
-
-        public override string[] PayloadNames
-        {
-            get
-            {
-                if (payloadNames == null)
-                    payloadNames = new string[] { "RequestId", "connID" };
-                return payloadNames;
-            }
-        }
-
-        public override object PayloadValue(int index)
-        {
-            switch (index)
-            {
-                case 0:
-                    return RequestId;
-                case 1:
-                    return connID;
-                default:
-                    Debug.Assert(false, "Bad field index");
-                    return null;
-            }
-        }
-
-        private event Action<IsapiDeleteContext> m_target;
-        #endregion
-    }
-    public sealed class W3ISAPIStart : TraceEvent
-    {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-        public Address connID { get { return GetAddressAt(8); } }
-        public int fOop { get { return GetInt32At(HostOffset(12, 1)); } }
-
-        #region Private
-        internal W3ISAPIStart(Action<W3ISAPIStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
-            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
-        {
-            this.m_target = target;
-        }
-        internal protected override void Dispatch()
-        {
-            m_target(this);
-        }
-        internal protected override void Validate()
-        {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(16, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(16, 1)));
-        }
-        internal protected override Delegate Target
-        {
-            get { return m_target; }
-            set { m_target = (Action<W3ISAPIStart>)value; }
+            set { m_target = (Action<IISRequestNotificationEventsStart>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttribHex(sb, "connID", connID);
-            XmlAttrib(sb, "fOop", fOop);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            XmlAttrib(sb, "Notification", Notification);
+            XmlAttrib(sb, "fIsPostNotification", fIsPostNotification);
             sb.Append("/>");
             return sb;
         }
@@ -14290,7 +11724,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId", "connID", "fOop" };
+                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "fIsPostNotification" };
                 return payloadNames;
             }
         }
@@ -14302,28 +11736,28 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return RequestId;
+                    return ModuleName;
                 case 2:
-                    return connID;
+                    return Notification;
                 case 3:
-                    return fOop;
+                    return fIsPostNotification;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3ISAPIStart> m_target;
+        private event Action<IISRequestNotificationEventsStart> m_target;
         #endregion
     }
-    public sealed class W3ISAPIEnd : TraceEvent
+    public sealed class IISRequestNotificationPreBeginEnd : TraceEvent
     {
-        public Guid ContextId { get { if (Version >= 1) return GetGuidAt(0); return Guid.Empty; } }
-        public long RequestId { get { return GetInt64At(0); } }
-        public Address connID { get { return GetAddressAt(8); } }
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+        public int NotificationStatus { get { return GetInt32At(SkipUnicodeString(16)); } }
 
         #region Private
-        internal W3ISAPIEnd(Action<W3ISAPIEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+        internal IISRequestNotificationPreBeginEnd(Action<IISRequestNotificationPreBeginEnd> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
             this.m_target = target;
@@ -14334,21 +11768,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
         }
         internal protected override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != 16));
-            Debug.Assert(!(Version == 0 && EventDataLength != HostOffset(12, 1)));
-            Debug.Assert(!(Version > 0 && EventDataLength < HostOffset(12, 1)));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 4));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 4));
         }
         internal protected override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<W3ISAPIEnd>)value; }
+            set { m_target = (Action<IISRequestNotificationPreBeginEnd>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "ContextId", ContextId);
-            XmlAttrib(sb, "RequestId", RequestId);
-            XmlAttribHex(sb, "connID", connID);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            XmlAttrib(sb, "NotificationStatus", NotificationStatus);
             sb.Append("/>");
             return sb;
         }
@@ -14358,7 +11791,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ContextId", "RequestId", "connID" };
+                    payloadNames = new string[] { "ContextId", "ModuleName", "NotificationStatus" };
                 return payloadNames;
             }
         }
@@ -14370,16 +11803,1972 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace
                 case 0:
                     return ContextId;
                 case 1:
-                    return RequestId;
+                    return ModuleName;
                 case 2:
-                    return connID;
+                    return NotificationStatus;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
             }
         }
 
-        private event Action<W3ISAPIEnd> m_target;
+        private event Action<IISRequestNotificationPreBeginEnd> m_target;
+        #endregion
+    }
+    public sealed class IISRequestNotificationPreBeginStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal IISRequestNotificationPreBeginStart(Action<IISRequestNotificationPreBeginStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISRequestNotificationPreBeginStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ModuleName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ModuleName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISRequestNotificationPreBeginStart> m_target;
+        #endregion
+    }
+    public sealed class IISRequestNotificationEventsError : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ModuleName { get { return GetUnicodeStringAt(16); } }
+        public int Notification { get { return GetInt32At(SkipUnicodeString(16)); } }
+        public int ErrorCode { get { return GetInt32At(SkipUnicodeString(16) + 4); } }
+
+        #region Private
+        internal IISRequestNotificationEventsError(Action<IISRequestNotificationEventsError> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16) + 8));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16) + 8));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISRequestNotificationEventsError>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ModuleName", ModuleName);
+            XmlAttrib(sb, "Notification", Notification);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ModuleName", "Notification", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ModuleName;
+                case 2:
+                    return Notification;
+                case 3:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISRequestNotificationEventsError> m_target;
+        #endregion
+    }
+    public sealed class IISRequestNotificationEventsResponseErrorDescription : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ErrorDescription { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal IISRequestNotificationEventsResponseErrorDescription(Action<IISRequestNotificationEventsResponseErrorDescription> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<IISRequestNotificationEventsResponseErrorDescription>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorDescription", ErrorDescription);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorDescription" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorDescription;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<IISRequestNotificationEventsResponseErrorDescription> m_target;
+        #endregion
+    }
+    public sealed class W3SecDeniedByAccessFlags : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int CurrentFlags { get { return GetInt32At(16); } }
+        public int NeededFlags { get { return GetInt32At(20); } }
+
+        #region Private
+        internal W3SecDeniedByAccessFlags(Action<W3SecDeniedByAccessFlags> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecDeniedByAccessFlags>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "CurrentFlags", CurrentFlags);
+            XmlAttrib(sb, "NeededFlags", NeededFlags);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "CurrentFlags", "NeededFlags" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return CurrentFlags;
+                case 2:
+                    return NeededFlags;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecDeniedByAccessFlags> m_target;
+        #endregion
+    }
+    public sealed class W3SecDeniedByCGIRestriction : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ImageName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3SecDeniedByCGIRestriction(Action<W3SecDeniedByCGIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecDeniedByCGIRestriction>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ImageName", ImageName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ImageName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ImageName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecDeniedByCGIRestriction> m_target;
+        #endregion
+    }
+    public sealed class W3SecDeniedByISAPIRestriction : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string ImageName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3SecDeniedByISAPIRestriction(Action<W3SecDeniedByISAPIRestriction> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecDeniedByISAPIRestriction>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ImageName", ImageName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ImageName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ImageName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecDeniedByISAPIRestriction> m_target;
+        #endregion
+    }
+    public sealed class W3SecDeniedByMimemap : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3SecDeniedByMimemap(Action<W3SecDeniedByMimemap> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecDeniedByMimemap>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "FileName", FileName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "FileName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return FileName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecDeniedByMimemap> m_target;
+        #endregion
+    }
+    public sealed class W3SecFileAccessDenied : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
+        public string AccountName { get { return GetUnicodeStringAt(SkipUnicodeString(16)); } }
+        public string DomainName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(16))); } }
+
+        #region Private
+        internal W3SecFileAccessDenied(Action<W3SecFileAccessDenied> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(16)))));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecFileAccessDenied>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "FileName", FileName);
+            XmlAttrib(sb, "AccountName", AccountName);
+            XmlAttrib(sb, "DomainName", DomainName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "FileName", "AccountName", "DomainName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return FileName;
+                case 2:
+                    return AccountName;
+                case 3:
+                    return DomainName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecFileAccessDenied> m_target;
+        #endregion
+    }
+    public sealed class W3SecIllegalShortFilename : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string FileName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3SecIllegalShortFilename(Action<W3SecIllegalShortFilename> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecIllegalShortFilename>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "FileName", FileName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "FileName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return FileName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecIllegalShortFilename> m_target;
+        #endregion
+    }
+    public sealed class W3SecRejectedHostname : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string HostName { get { return GetUnicodeStringAt(16); } }
+
+        #region Private
+        internal W3SecRejectedHostname(Action<W3SecRejectedHostname> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecRejectedHostname>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "HostName", HostName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "HostName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return HostName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecRejectedHostname> m_target;
+        #endregion
+    }
+    public sealed class W3SecRejectedIP : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public string IPAddress { get { return GetUTF8StringAt(16); } }
+
+        #region Private
+        internal W3SecRejectedIP(Action<W3SecRejectedIP> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUTF8String(16)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUTF8String(16)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecRejectedIP>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "IPAddress", IPAddress);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "IPAddress" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return IPAddress;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecRejectedIP> m_target;
+        #endregion
+    }
+    public sealed class W3SecRequireSSL128 : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3SecRequireSSL128(Action<W3SecRequireSSL128> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3SecRequireSSL128>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3SecRequireSSL128> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketApplicationCloseConnection : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketApplicationCloseConnection(Action<W3WebSocketApplicationCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketApplicationCloseConnection>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketApplicationCloseConnection> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketEndFailure : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketEndFailure(Action<W3WebSocketEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketEndFailure>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketEndFailure> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketStart(Action<W3WebSocketStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketStart> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketEndSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketEndSuccess(Action<W3WebSocketEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketEndSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketEndSuccess> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketInitializeNotSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketInitializeNotSuccess(Action<W3WebSocketInitializeNotSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketInitializeNotSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketInitializeNotSuccess> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketModuleCloseConnection : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Reason { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketModuleCloseConnection(Action<W3WebSocketModuleCloseConnection> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketModuleCloseConnection>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Reason", Reason);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Reason" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Reason;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketModuleCloseConnection> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketReadFragmentEndFailure : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketReadFragmentEndFailure(Action<W3WebSocketReadFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketReadFragmentEndFailure>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketReadFragmentEndFailure> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketReadFragmentEndPending : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketReadFragmentEndPending(Action<W3WebSocketReadFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketReadFragmentEndPending>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketReadFragmentEndPending> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketReadFragmentEndSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesReceived { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketReadFragmentEndSuccess(Action<W3WebSocketReadFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketReadFragmentEndSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BytesReceived", BytesReceived);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BytesReceived" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return BytesReceived;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketReadFragmentEndSuccess> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketReadFragmentStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BufferSize { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketReadFragmentStart(Action<W3WebSocketReadFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketReadFragmentStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BufferSize", BufferSize);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BufferSize" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return BufferSize;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketReadFragmentStart> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketReadIoFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketReadIoFailed(Action<W3WebSocketReadIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketReadIoFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketReadIoFailed> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketCloseReceived : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Status { get { return GetInt32At(16); } }
+        public string Reason { get { return GetUnicodeStringAt(20); } }
+
+        #region Private
+        internal W3WebSocketCloseReceived(Action<W3WebSocketCloseReceived> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketCloseReceived>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "Reason", Reason);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Status", "Reason" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Status;
+                case 2:
+                    return Reason;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketCloseReceived> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketCloseSendFailure : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketCloseSendFailure(Action<W3WebSocketCloseSendFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketCloseSendFailure>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketCloseSendFailure> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketCloseSendSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketCloseSendSuccess(Action<W3WebSocketCloseSendSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketCloseSendSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketCloseSendSuccess> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketCloseSendStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int Status { get { return GetInt32At(16); } }
+        public string Reason { get { return GetUnicodeStringAt(20); } }
+
+        #region Private
+        internal W3WebSocketCloseSendStart(Action<W3WebSocketCloseSendStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(20)));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(20)));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketCloseSendStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "Status", Status);
+            XmlAttrib(sb, "Reason", Reason);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "Status", "Reason" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return Status;
+                case 2:
+                    return Reason;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketCloseSendStart> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketWriteFragmentEndFailure : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketWriteFragmentEndFailure(Action<W3WebSocketWriteFragmentEndFailure> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketWriteFragmentEndFailure>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketWriteFragmentEndFailure> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketWriteFragmentEndPending : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+
+        #region Private
+        internal W3WebSocketWriteFragmentEndPending(Action<W3WebSocketWriteFragmentEndPending> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 16));
+            Debug.Assert(!(Version > 1 && EventDataLength < 16));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketWriteFragmentEndPending>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketWriteFragmentEndPending> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketWriteFragmentEndSuccess : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int BytesSent { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketWriteFragmentEndSuccess(Action<W3WebSocketWriteFragmentEndSuccess> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketWriteFragmentEndSuccess>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "BytesSent", BytesSent);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "BytesSent" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return BytesSent;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketWriteFragmentEndSuccess> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketWriteFragmentStart : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int DataType { get { return GetInt32At(16); } }
+        public int DataSize { get { return GetInt32At(20); } }
+
+        #region Private
+        internal W3WebSocketWriteFragmentStart(Action<W3WebSocketWriteFragmentStart> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 24));
+            Debug.Assert(!(Version > 1 && EventDataLength < 24));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketWriteFragmentStart>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "DataType", DataType);
+            XmlAttrib(sb, "DataSize", DataSize);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "DataType", "DataSize" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return DataType;
+                case 2:
+                    return DataSize;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketWriteFragmentStart> m_target;
+        #endregion
+    }
+    public sealed class W3WebSocketWriteIoFailed : TraceEvent
+    {
+        public Guid ContextId { get { return GetGuidAt(0); } }
+        public int ErrorCode { get { return GetInt32At(16); } }
+
+        #region Private
+        internal W3WebSocketWriteIoFailed(Action<W3WebSocketWriteIoFailed> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        internal protected override void Dispatch()
+        {
+            m_target(this);
+        }
+        internal protected override void Validate()
+        {
+            Debug.Assert(!(Version == 1 && EventDataLength != 20));
+            Debug.Assert(!(Version > 1 && EventDataLength < 20));
+        }
+        internal protected override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<W3WebSocketWriteIoFailed>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ContextId", ContextId);
+            XmlAttrib(sb, "ErrorCode", ErrorCode);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ContextId", "ErrorCode" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ContextId;
+                case 1:
+                    return ErrorCode;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<W3WebSocketWriteIoFailed> m_target;
         #endregion
     }
 }
