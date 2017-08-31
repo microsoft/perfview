@@ -1,0 +1,6217 @@
+#pragma classflags("forceupdate")  
+#pragma namespace ("\\\\.\\Root\\WMI")  
+#pragma autorecover  
+[Dynamic,  
+  Description("IIS: WWW Server"),  
+  Guid("{3a2a4e84-4c21-4981-ae10-3fda0d9b0f83}"),  
+  locale("MS\\0x409")]  
+class IIS_Trace:EventTrace  
+{  
+    [Description ("Enable Flags") : amended,  
+        ValueDescriptions{  
+            "Allow tracing only selected requests",  
+            "IIS authentication events",  
+            "IIS security events",  
+            "IIS filter events",  
+            "IIS static file events",  
+            "IIS CGI events",  
+            "IIS compression events",  
+            "IIS cache events",  
+            "IIS request notifications events",  
+            "IIS module events",  
+            "IIS FastCGI events",  
+            "IIS ISAPI events",  
+            "IIS WebSocket events",  
+            "IIS general events",  
+            "IIS all events" } : amended,  
+         DefineValues{  
+            "ETW_IIS_PER_URL",  
+            "ETW_IIS_AUTHENTICATION",      
+            "ETW_IIS_SECURITY",            
+            "ETW_IIS_FILTER",              
+            "ETW_IIS_STATIC_FILE",         
+            "ETW_IIS_CGI",                 
+            "ETW_IIS_COMPRESSION",  
+            "ETW_IIS_CACHE",  
+            "ETW_IIS_REQUEST_NOTIFICATION",  
+            "ETW_IIS_MODULE",  
+            "ETW_IIS_FASTCGI",  
+            "ETW_IIS_ISAPI",  
+            "ETW_IIS_WEBSOCKET",  
+            "ETW_IIS_GENERAL",  
+            "ETW_IIS_ALL" },  
+        Values{  
+            "UseUrlFilter",  
+            "IISAuthentication",  
+            "IISSecurity",  
+            "IISFilter",  
+            "IISStaticFile",  
+            "IISCGI",  
+            "IISCompression",  
+            "IISCache",  
+            "IISRequestNotification",  
+            "IISModule",  
+            "IISFastCGI",  
+            "IISISAPI",  
+            "IISWebSocket",  
+            "IISGeneral",  
+            "IISAll"},  
+        ValueMap{  
+            "0x0001",  
+            "0x0002",  
+            "0x0004",  
+            "0x0008",  
+            "0x0010",  
+            "0x0020",  
+            "0x0040",  
+            "0x0080",  
+            "0x0100",  
+            "0x0200",  
+            "0x1000", 
+            "0x2000",  
+            "0x4000",  
+            "0x0000",  
+            "0x4FFE"}  
+    ]  
+    uint32 Flags;  
+  
+    [Description ("Levels") : amended,  
+        ValueDescriptions{  
+            "Abnormal exit or termination",  
+            "Severe errors",  
+            "Warnings",  
+            "Information",  
+            "Detailed information" } : amended,  
+         DefineValues{  
+            "TRACE_LEVEL_FATAL",  
+            "TRACE_LEVEL_ERROR",   
+            "TRACE_LEVEL_WARNING",  
+            "TRACE_LEVEL_INFORMATION",             
+            "TRACE_LEVEL_VERBOSE" },                     
+        Values{  
+            "Fatal",  
+            "Error",  
+            "Warning",  
+            "Information",  
+            "Verbose" },  
+        ValueMap{  
+            "0x1",  
+            "0x2",  
+            "0x3",  
+            "0x4",  
+            "0x5" },  
+        ValueType("index")  
+    ]  
+    uint32 Level;  
+};  
+
+[Dynamic,  
+ Description("IIS general events") : amended,  
+ Guid("{d42cf7ef-de92-473e-8b6c-621ea663113a}"),  
+ EventVersion(1),  
+ DisplayName("IISGeneral"),  
+ EventHttpRequest,  
+ locale("MS\\0x409")  
+]  
+class IIS_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS starts processing a new request") : amended,  
+ EventType(1),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_REQUEST_START") : amended  
+]  
+class W3GeneralStartNewRequest:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Site ID") : amended,  
+     read]  
+     uint32  SiteId;  
+    [WmiDataId(3),  
+     Description("Application Pool ID") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  AppPoolId;  
+    [WmiDataId(4),  
+     Description("Connection ID") : amended,  
+     read]  
+     uint64  ConnId;  
+    [WmiDataId(5),  
+     Description("HttpFilter - Raw Connection ID") : amended,  
+     read]  
+     uint64  RawConnId;  
+    [WmiDataId(6),  
+     Description("Request URL") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  RequestURL;  
+    [WmiDataId(7),  
+     Description("Request Verb") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  RequestVerb;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends processing a request") : amended,  
+ EventType(2),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_REQUEST_END") : amended  
+]  
+class W3GeneralEndNewRequest:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Bytes Sent") : amended,  
+     read]  
+     uint32 BytesSent;  
+    [WmiDataId(3),  
+     Description("Bytes received") : amended,  
+     read]  
+     uint32 BytesReceived;  
+    [WmiDataId(4),  
+     Description("Response status code") : amended,  
+     read]  
+     uint32 HttpStatus;  
+    [WmiDataId(5),  
+     Description("Response substatus code") : amended,  
+     read]  
+     uint16 HttpSubStatus;  
+};  
+  
+[Dynamic,  
+ Description("IIS processes a static file request") : amended,  
+ EventType(10),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_STATIC_FILE_HANDLER") : amended  
+]  
+class W3GeneralStaticFileHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Static file name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FileName;  
+};  
+  
+[Dynamic,  
+ Description("IIS processes a CGI request") : amended,  
+ EventType(11),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_CGI_HANDLER") : amended  
+]  
+class W3GeneralCGIHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS processes an in-proc ISAPI request") : amended,  
+ EventType(12),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_ISAPI_HANDLER") : amended  
+]  
+class W3GeneralISAPIHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS processes an out-of-proc ISAPI request") : amended,  
+ EventType(13),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_OOP_ISAPI_HANDLER") : amended  
+]  
+class W3GeneralOopISAPIHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Process ID") : amended,  
+     read]  
+     uint32 ProcessId;  
+    [WmiDataId(3),  
+     Description("Total Requests") : amended,  
+     read]  
+     uint32 TotalReqs;  
+    [WmiDataId(4),  
+     Description("Current Requests") : amended,  
+     read]  
+     uint32 CurrentReqs;  
+  
+};  
+  
+[Dynamic,  
+ Description("IIS redirects a request") : amended,  
+ EventType(14),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_REDIRECTION_HANDLER") : amended  
+]  
+class W3GeneralRedirectionHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Redirected URL") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string RedirectedURL;  
+};  
+  
+[Dynamic,  
+ Description("IIS processes a DAV request") : amended,  
+ EventType(15),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_DAV_HANDLER") : amended  
+]  
+class W3GeneralDavHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FileName;  
+};  
+  
+[Dynamic,  
+ Description("IIS processes an OPTIONS request") : amended,  
+ EventType(16),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_OPTIONS_HANDLER") : amended  
+]  
+class W3GeneralOptionsHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS processes a TRACE request") : amended,  
+ EventType(17),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_TRACE_HANDLER") : amended  
+]  
+class W3GeneralTraceHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS gets URL metadata") : amended,  
+ EventType(30),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_GET_URL_METADATA") : amended  
+]  
+class W3GeneralGetURLMetadata:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Request Physical Path") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  PhysicalPath;  
+    [WmiDataId(3),  
+     Description("Request Access Permissions") : amended,  
+     ValueDescriptions{  
+           "Allow for Read",  
+           "Allow for Write",  
+           "Allow for Execute",  
+           "Apply access mask to source",  
+           "Allow for Script execution",  
+           "Local host access only",  
+           "Local host access only",  
+           "Local host access only",  
+           "Local host access only",  
+           "VR maps to no physical path",  
+           "Require SSL",  
+           "Allow Client Certificates",  
+           "Require Client Certificates",  
+           "Map SSL cert to NT account",  
+           "Require 128 bit SSL"} : amended,  
+     DefineValues{  
+           "MD_ACCESS_READ",  
+           "MD_ACCESS_WRITE",  
+           "MD_ACCESS_EXECUTE",  
+           "MD_ACCESS_SOURCE",  
+           "MD_ACCESS_SCRIPT",  
+           "MD_ACCESS_NO_REMOTE_WRITE",  
+           "MD_ACCESS_NO_REMOTE_READ",  
+           "MD_ACCESS_NO_REMOTE_EXECUTE",  
+           "MD_ACCESS_NO_REMOTE_SCRIPT",  
+           "MD_ACCESS_NO_PHYSICAL_DIR",  
+           "MD_ACCESS_SSL",  
+           "MD_ACCESS_NEGO_CERT",  
+           "MD_ACCESS_REQUIRE_CERT",  
+           "MD_ACCESS_MAP_CERT",  
+           "MD_ACCESS_SSL128"},  
+     Values{  
+            "Read",  
+            "Write",  
+            "Exec",  
+            "Source",  
+            "Script",  
+            "NoRemoteWrite",  
+            "NoRemoteRead",  
+            "NoRemoteExec",  
+            "NoRemoteScript",  
+            "NoPhysicalDir",  
+            "SSL",  
+            "CliCert",  
+            "ReqCliCert",  
+            "MapCliCert",  
+            "SSL128"},  
+     ValueMap{  
+            "0x00001",  
+            "0x00002",  
+            "0x00004",  
+            "0x00010",  
+            "0x00200",  
+            "0x00400",  
+            "0x01000",  
+            "0x02000",  
+            "0x04000",  
+            "0x08000",  
+            "0x00008",  
+            "0x00020",  
+            "0x00040",  
+            "0x00080",  
+            "0x00100" },  
+     format("x"),  
+     read]  
+     uint32  AccessPerms;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts processing a child request") : amended,  
+ EventType(31),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_CHILD_REQUEST_START") : amended  
+]  
+class W3GeneralChildRequestStart:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Site ID") : amended,  
+     read]  
+     uint32  SiteId;  
+    [WmiDataId(3),  
+     Description("Request URL") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  RequestURL;  
+    [WmiDataId(4),  
+     Description("Request Verb") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  RequestVerb;  
+    [WmiDataId(5),  
+     Description("Current recursive level") : amended,  
+     read]  
+     uint32  RecursiveLevel;       
+};  
+  
+[Dynamic,  
+ Description("IIS ends processing a child request") : amended,  
+ EventType(32),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_CHILD_REQUEST_END") : amended  
+]  
+class W3GeneralChildRequestEnd:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Bytes Sent") : amended,  
+     read]  
+     uint32 BytesSent;  
+    [WmiDataId(3),  
+     Description("Response status code") : amended,  
+     read]  
+     uint32 HttpStatus;  
+    [WmiDataId(4),  
+     Description("Response substatus code") : amended,  
+     read]  
+     uint16 HttpSubStatus;  
+};  
+  
+[Dynamic,  
+ Description("IIS sends back a custom error") : amended,  
+ EventType(33),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_SEND_CUSTOM_ERROR") : amended  
+]  
+class W3GeneralSendCustomError:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Response status code") : amended,  
+     read]  
+     uint32 HttpStatus;  
+    [WmiDataId(3),  
+     Description("Response substatus code") : amended,  
+     read]  
+     uint16 HttpSubStatus;  
+    [WmiDataId(4),  
+     Description("Custom error file name or URL") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileNameOrURL;  
+};  
+  
+[Dynamic,  
+ Description("IIS processes a MAP request") : amended,  
+ EventType(34),  
+ EventLevel(0),  
+ EventTypeName("GENERAL_MAP_HANDLER") : amended  
+]  
+class W3GeneralMapHandler:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+  
+[Dynamic,  
+ Description("IIS begins flushing response data to client") : amended,  
+ EventType(35),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_FLUSH_RESPONSE_START") : amended  
+]  
+class W3GeneralFlushResponseStart:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS finishes flushing response data to client") : amended,  
+ EventType(36),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_FLUSH_RESPONSE_END") : amended  
+]  
+class W3GeneralFlushResponseEnd:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Bytes sent") : amended,  
+     read]  
+     uint32  BytesSent;  
+    [WmiDataId(3),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts reading request data from client") : amended,  
+ EventType(37),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_READ_ENTITY_START") : amended  
+]  
+class W3GeneralReadEntityStart:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS finishes reading request data from client") : amended,  
+ EventType(38),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_READ_ENTITY_END") : amended  
+]  
+class W3GeneralReadEntityEnd:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Bytes received") : amended,  
+     read]  
+     uint32  BytesReceived;  
+    [WmiDataId(3),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("File change notification fired") : amended,  
+ EventType(39),  
+ EventLevel(4),  
+ EventTypeName("FILE_CHANGE_NOTIFICATION") : amended  
+]  
+class IISGeneralFileChangeNotification:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("File path") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FilePath;  
+};  
+  
+[Dynamic,  
+ Description("Config change notification fired") : amended,  
+ EventType(40),  
+ EventLevel(4),  
+ EventTypeName("CONFIG_CHANGE_NOTIFICATION") : amended  
+]  
+class IISGeneralConfigChangeNotification:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Config path") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ConfigPath;  
+};  
+  
+[Dynamic,  
+ Description("Virtual module unresolved") : amended,  
+ EventType(41),  
+ EventLevel(4),  
+ EventTypeName("VIRTUAL_MODULE_UNRESOLVED") : amended  
+]  
+class IISGeneralVirtualModuleUnresolved:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Module name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Name;  
+    [WmiDataId(3),  
+     Description("Module type") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Type;  
+};  
+  
+[Dynamic,  
+ Description("Url changed") : amended,  
+ EventType(42),  
+ EventLevel(4),  
+ EventTypeName("URL_CHANGED") : amended  
+]  
+class IISGeneralUrlChanged:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Old url") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  OldUrl;  
+    [WmiDataId(3),  
+     Description("New url") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  NewUrl;  
+};  
+  
+[Dynamic,  
+ Description("Handler changed") : amended,  
+ EventType(43),  
+ EventLevel(4),  
+ EventTypeName("HANDLER_CHANGED") : amended  
+]  
+class IISGeneralHandlerChanged:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Old handler name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  OldHandlerName;  
+    [WmiDataId(3),  
+     Description("New handler name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  NewHandlerName;  
+    [WmiDataId(4),  
+     Description("New handler modules") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  NewHandlerModules;  
+    [WmiDataId(5),  
+     Description("New handler scriptProcessor") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  NewHandlerScriptProcessor;  
+    [WmiDataId(6),  
+     Description("New handler type") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  NewHandlerType;  
+};  
+  
+[Dynamic,  
+ Description("User set") : amended,  
+ EventType(44),  
+ EventLevel(4),  
+ EventTypeName("USER_SET") : amended  
+]  
+class IISGeneralUserSet:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Auth type") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  AuthType;  
+    [WmiDataId(3),  
+     Description("User name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  UserName;  
+    [WmiDataId(4),  
+     Description("Supports IsInRole") : amended,  
+     read]  
+     boolean SupportsIsInRole;  
+};  
+  
+[Dynamic,  
+ Description("Module not run due to non matching precondition") : amended,  
+ EventType(45),  
+ EventLevel(4),  
+ EventTypeName("MODULE_PRECONDITION_NOT_MATCH") : amended  
+]  
+class IISGeneralModulePreconditionNotMatch:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Module name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Name;  
+    [WmiDataId(3),  
+     Description("Precondition") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Precondition;  
+};  
+  
+[Dynamic,  
+ Description("Handler not run due to non matching precondition") : amended,  
+ EventType(46),  
+ EventLevel(4),  
+ EventTypeName("HANDLER_PRECONDITION_NOT_MATCH") : amended  
+]  
+class IISGeneralHandlerPreconditionNotMatch:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Handler name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Name;  
+    [WmiDataId(3),  
+     Description("Precondition") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Precondition;  
+};  
+  
+[Dynamic,  
+ Description("Response headers") : amended,  
+ EventType(47),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_RESPONSE_HEADERS") : amended  
+]  
+class W3GeneralResponseHeaders:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Response headers") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  Headers;  
+};  
+  
+[Dynamic,  
+ Description("Response entity from file") : amended,  
+ EventType(48),  
+ EventLevel(5),  
+ EventTypeName("GENERAL_RESPONSE_ENTITY_FILE") : amended  
+]  
+class W3GeneralResponseEntityFile:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileName;  
+    [WmiDataId(3),  
+     Description("Offset") : amended,  
+     read]  
+     uint64  Offset;  
+    [WmiDataId(4),  
+     Description("Size") : amended,  
+     read]  
+     uint64  Size;  
+};  
+  
+[Dynamic,  
+ Description("Response entity from buffer") : amended,  
+ EventType(49),  
+ EventLevel(5),  
+ EventTypeName("GENERAL_RESPONSE_ENTITY_BUFFER") : amended  
+]  
+class W3GeneralResponseEntityBuffer:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Buffer") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  Buffer;  
+};  
+  
+[Dynamic,  
+ Description("Request headers") : amended,  
+ EventType(50),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_REQUEST_HEADERS") : amended  
+]  
+class W3GeneralRequestHeaders:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Request headers") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  Headers;  
+};  
+  
+[Dynamic,  
+ Description("Request entity") : amended,  
+ EventType(51),  
+ EventLevel(5),  
+ EventTypeName("GENERAL_REQUEST_ENTITY") : amended  
+]  
+class W3GeneralRequestEntity:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Buffer") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  Buffer;  
+};  
+  
+[Dynamic,  
+ Description("Custom errors will not be sent") : amended,  
+ EventType(52),  
+ EventLevel(5),  
+ EventTypeName("GENERAL_NOT_SEND_CUSTOM_ERROR") : amended  
+]  
+class W3GeneralNotSendCustomError:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Reason for custom errors not running") : amended,  
+     ValueDescriptions{  
+        "Unknown",  
+        "Successful request",  
+        "Module called SetStatus with fTrySkipCustomErrors",  
+        "Existing response passthrough",  
+        "Existing response auto" } : amended,  
+     DefineValues{  
+        "UNKNOWN",  
+        "SETSTATUS_SUCCESS",  
+        "SETSTATUS_TRYSKIP",  
+        "EXISTINGRESPONSE_PASSTHROUGH",  
+        "EXISTINGRESPONSE_AUTO" },  
+     Values{  
+        "UNKNOWN",  
+        "SETSTATUS_SUCCESS",  
+        "SETSTATUS_TRYSKIP",  
+        "EXISTINGRESPONSE_PASSTHROUGH",  
+        "EXISTINGRESPONSE_AUTO" },  
+     ValueMap{  
+        "0",  
+        "1",  
+        "2",  
+        "3",  
+        "4"},  
+     ValueType("index")]  
+     uint32  Reason;  
+};  
+  
+[Dynamic,  
+ Description("Module called IHttpRequest SetHeader or DeleteHeader") : amended,  
+ EventType(53),  
+ EventLevel(5),  
+ EventTypeName("GENERAL_SET_REQUEST_HEADER") : amended  
+]  
+class W3GeneralSetRequestHeader:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Header name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderName;  
+    [WmiDataId(3),  
+     Description("Header value") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderValue;  
+    [WmiDataId(4),  
+     Description("Replace header") : amended,  
+     read]  
+     boolean Replace;  
+};  
+  
+[Dynamic,  
+ Description("IHttpModuleFactory GetHttpModule Failed") : amended,  
+ EventType(54),  
+ EventLevel(2),  
+ EventTypeName("GENERAL_MODULE_FACTORY_FAILED") : amended  
+]  
+class W3GeneralModuleFactoryFailed:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Endpoint information") : amended,  
+ EventType(55),  
+ EventLevel(4),  
+ EventTypeName("GENERAL_ENDPOINT_INFORMATION") : amended  
+]  
+class W3GeneralEndpointInformation:IIS_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Remote address") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  RemoteAddress;  
+    [WmiDataId(3),  
+     Description("Remote port") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  RemotePort;  
+    [WmiDataId(4),  
+     Description("Local address") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  LocalAddress;  
+    [WmiDataId(5),  
+     Description("Local port") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  LocalPort;  
+};  
+  
+
+[Dynamic,  
+ Description("IIS authentication events") : amended,  
+ Guid("{c33bbe8f-985b-4080-81e6-005f1a06b9e2}"),  
+ EventVersion(1),  
+ DisplayName("IISAuthentication"),  
+ EventHttpRequest,  
+  
+ locale("MS\\0x409")  
+]  
+class IIS_Authentication_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS authentication starts") : amended,  
+ EventType(10),  
+ EventLevel(4),  
+ EventTypeName("AUTH_START") : amended  
+]  
+class W3AuthStart:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Auth type supported on the URL") : amended,  
+     ValueDescriptions{  
+        "Anonymous authentication",  
+        "Basic authentication",  
+        "Windows integrated authentication",  
+        "Digest authentication",  
+        "Passport authentication",  
+        "SSL Certificate mapping authentication"} : amended,  
+     DefineValues{  
+        "MD_AUTH_ANONYMOUS",  
+        "MD_AUTH_BASIC",   
+        "MD_AUTH_NT",  
+        "MD_AUTH_MD5",             
+        "MD_AUTH_PASSPORT",  
+        "MD_ACCESS_MAP_CERT"},                     
+     Values{  
+        "Anonymous",  
+        "Basic",  
+        "NT",  
+        "Digest",  
+        "Passport",  
+        "MapCliCert"},  
+     ValueMap{  
+        "0x1",  
+        "0x2",  
+        "0x4",  
+        "0x10",  
+        "0x40",  
+        "0x80"},  
+     format("x"),  
+     read]  
+     uint32  AuthTypeSupported;  
+};  
+  
+[Dynamic,  
+ Description("IIS authentication succeeds") : amended,  
+ EventType(11),  
+ EventLevel(4),  
+ EventTypeName("AUTH_SUCCEEDED") : amended  
+]  
+class W3AuthSucceeded:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Auth type actually used to authenticate the request") : amended,  
+     ValueDescriptions{  
+        "Anonymous authentication",  
+        "Basic authentication",  
+        "Windows integrated authentication",  
+        "Digest authenticaion",  
+        "Passport authentication",  
+        "SSL Certificate mapping authentication"} : amended,  
+     DefineValues{  
+        "MD_AUTH_ANONYMOUS",  
+        "MD_AUTH_BASIC",   
+        "MD_AUTH_NT",  
+        "MD_AUTH_MD5",             
+        "MD_AUTH_PASSPORT",  
+        "MD_ACCESS_MAP_CERT"},                     
+     Values{  
+        "Anonymous",  
+        "Basic",  
+        "NT",  
+        "Digest",  
+        "Passport",  
+        "CertMap"},  
+     ValueMap{  
+        "0x1",  
+        "0x2",  
+        "0x4",  
+        "0x10",  
+        "0x40",  
+        "0x80"},  
+     format("x"),  
+     read]  
+     uint32  AuthType;  
+    [WmiDataId(3),  
+     Description("NTLM is used during SSPI authentication") : amended,  
+     read]  
+     boolean NTLMUsed;  
+    [WmiDataId(4),  
+     Description("Remote user name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  RemoteUserName;  
+    [WmiDataId(5),  
+     Description("Authenticated user name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  AuthUserName;  
+    [WmiDataId(6),  
+     Description("The token impersonation level") : amended,  
+     ValueDescriptions{  
+        "Anonymous impersonation level",  
+        "Identify impersonation level",  
+        "Impersonate impersonation level",  
+        "Delegate impersonation level",  
+        "Unable to determine impersonation level"} : amended,  
+     DefineValues{  
+        "IMPERSONATION_LEVEL_ANONYMOUS",  
+        "IMPERSONATION_LEVEL_IDENTIFY",   
+        "IMPERSONATION_LEVEL_IMPERSONATE",  
+        "IMPERSONATION_LEVEL_DELEGATE",  
+        "IMPERSONATION_LEVEL_UNKNOWN"},                     
+     Values{  
+        "ImpersonationAnonymous",  
+        "ImpersonationIdentify",  
+        "ImpersonationImpersonate",  
+        "ImpersonationDelegate",  
+        "ImpersonationUnknown"} : amended,  
+     ValueMap{  
+        "0x0",  
+        "0x1",  
+        "0x2",  
+        "0x3",  
+        "0x4"},  
+     ValueType("index"),  
+     format("x"),  
+     read]  
+     uint32  TokenImpersonationLevel;  
+};  
+  
+[Dynamic,  
+ Description("The authentication type is not supported by configuration") : amended,  
+ EventType(12),  
+ EventLevel(3),  
+ EventTypeName("AUTH_TYPE_NOT_SUPPORTED") : amended  
+]  
+class W3AuthTypeNotSupported:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Invalid anonymous account on the request URL") : amended,  
+ EventType(13),  
+ EventLevel(2),  
+ EventTypeName("AUTH_INVALID_ANON_ACCOUNT") : amended  
+]  
+class W3AuthInvalidAnonAccount:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("User password needs to be changed") : amended,  
+ EventType(14),  
+ EventLevel(3),  
+ EventTypeName("AUTH_PASSWD_CHANGE_NEEDED") : amended  
+]  
+class W3AuthPasswdChangeNeeded:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Password change disabled on the request URL") : amended,  
+ EventType(15),  
+ EventLevel(3),  
+ EventTypeName("AUTH_PASSWD_CHANGE_DISABLED") : amended  
+]  
+class W3AuthPasswdChangeDisabled:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Bad Basic header in the request") : amended,  
+ EventType(16),  
+ EventLevel(3),  
+ EventTypeName("AUTH_BAD_BASIC_HEADER") : amended  
+]  
+class W3AuthBadBasicHeader:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Basic logon failed") : amended,  
+ EventType(17),  
+ EventLevel(3),  
+ EventTypeName("AUTH_BASIC_LOGON_FAILED") : amended  
+]  
+class W3AuthBasicLogonFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Advanced digest logon failed") : amended,  
+ EventType(18),  
+ EventLevel(3),  
+ EventTypeName("AUTH_WDIGEST_LOGON_FAILED") : amended  
+]  
+class W3AuthWDigestLogonFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Legacy digest logon failed") : amended,  
+ EventType(19),  
+ EventLevel(3),  
+ EventTypeName("AUTH_IISDIGEST_LOGON_FAILED") : amended  
+]  
+class W3AuthIISDigestLogonFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Passport logon failed") : amended,  
+ EventType(20),  
+ EventLevel(3),  
+ EventTypeName("AUTH_PASSPORT_LOGON_FAILED") : amended  
+]  
+class W3AuthPassportLogonFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Integrated windows logon failed") : amended,  
+ EventType(21),  
+ EventLevel(3),  
+ EventTypeName("AUTH_SSPI_LOGON_FAILED") : amended  
+]  
+class W3AuthSSPILogonFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Logon error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("NTLM null session detected") : amended,  
+ EventType(22),  
+ EventLevel(3),  
+ EventTypeName("AUTH_NTLM_NULL_SESSION") : amended  
+]  
+class W3AuthNTLMNullSession:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Integrated windows logon continue needed") : amended,  
+ EventType(23),  
+ EventLevel(4),  
+ EventTypeName("AUTH_SSPI_CONTINUE_NEEDED") : amended  
+]  
+class W3AuthSSPIContinueNeeded:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Package name used during SSPI authentication") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string PackageName;  
+};  
+  
+[Dynamic,  
+ Description("Unable to negotiate Kerberos authentication") : amended,  
+ EventType(55),  
+ EventLevel(3),  
+ EventTypeName("AUTH_KERBEROS_FAILED") : amended  
+]  
+class W3AuthKerberosFailed:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Kernel mode is used during SSPI authentication") : amended,  
+     read]  
+     boolean KMUsed;  
+    [WmiDataId(3),  
+     Description("App pool user name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  APUserName;  
+    [WmiDataId(4),  
+     Description("Service principal name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  SPNName;  
+    [WmiDataId(5),  
+     Description("Active directory configured properly") : amended,  
+     read]  
+     boolean ADConfigIsOK;  
+    [WmiDataId(6),  
+     Description("Kerberos configuration details") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  KerberosInfo;  
+};  
+  
+[Dynamic,  
+ Description("Anonymous account password needs to be changed") : amended,  
+ EventType(24),  
+ EventLevel(2),  
+ EventTypeName("AUTH_ANON_PASSWD_CHANGE_NEEDED") : amended  
+]  
+class W3AuthAnonPasswdChangeNeeded:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Authentication type in the request") : amended,  
+ EventType(27),  
+ EventLevel(4),  
+ EventTypeName("AUTH_REQUEST_AUTH_TYPE") : amended  
+]  
+class W3AuthRequestAuthType:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Auth type of the request") : amended,  
+     ValueDescriptions{  
+        "Anonymous authentication",  
+        "Basic authentication",  
+        "Windows integrated authentication",  
+        "Digest authenticaion",  
+        "Passport authentication",  
+        "SSL Certificate mapping authentication"} : amended,  
+     DefineValues{  
+        "MD_AUTH_ANONYMOUS",  
+        "MD_AUTH_BASIC",   
+        "MD_AUTH_NT",  
+        "MD_AUTH_MD5",             
+        "MD_AUTH_PASSPORT",  
+        "MD_ACCESS_MAP_CERT"},                     
+     Values{  
+        "Anonymous",  
+        "Basic",  
+        "NT",  
+        "Digest",  
+        "Passport",  
+        "CertMap"},  
+     ValueMap{  
+        "0x1",  
+        "0x2",  
+        "0x4",  
+        "0x10",  
+        "0x40",  
+        "0x80"},  
+      format("x"),  
+     read]  
+     uint32  RequestAuthType;  
+};  
+  
+[Dynamic,  
+ Description("IIS authentication ends") : amended,  
+ EventType(28),  
+ EventLevel(4),  
+ EventTypeName("AUTH_END") : amended  
+]  
+class W3AuthEnd:IIS_Authentication_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS security events") : amended,  
+ Guid("{29347ffb-ba48-41e6-bffd-469c5e543ca5}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISSecurity"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Security_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("Illegal short file name") : amended,  
+ EventType(10),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_ILLEGAL_SHORT_FILENAME") : amended  
+]  
+class W3SecIllegalShortFilename:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Illegal short file name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileName;  
+};  
+  
+[Dynamic,  
+ Description("Remote IP rejected") : amended,  
+ EventType(11),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_REJECTED_IP") : amended  
+]  
+class W3SecRejectedIP:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Rejected IP address") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  IPAddress;  
+};  
+  
+[Dynamic,  
+ Description("Hostname rejected") : amended,  
+ EventType(12),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_REJECTED_HOSTNAME") : amended  
+]  
+class W3SecRejectedHostname:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Rejected host name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  HostName;  
+};  
+  
+[Dynamic,  
+ Description("IIS requires 128bit SSL Encryption") : amended,  
+ EventType(13),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_REJECTED_REQUIRE_SSL_128") : amended  
+]  
+class W3SecRequireSSL128:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("File access is denied") : amended,  
+ EventType(14),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_FILE_ACCESS_DENIED") : amended  
+]  
+class W3SecFileAccessDenied:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The name of the file being accessed") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileName;  
+    [WmiDataId(3),  
+     Description("The account name used to access the file") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  AccountName;  
+    [WmiDataId(4),  
+     Description("The domain name of the account used to access the file") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  DomainName;  
+};  
+  
+[Dynamic,  
+ Description("File access is denied by mime map policy") : amended,  
+ EventType(15),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_DENIED_BY_MIMEMAP") : amended  
+]  
+class W3SecDeniedByMimemap:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The name of the file being denied by mime map") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileName;  
+};  
+  
+[Dynamic,  
+ Description("Access is denied by ISAPI restriction") : amended,  
+ EventType(16),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_DENIED_BY_ISAPI_RESTRICTION") : amended  
+]  
+class W3SecDeniedByISAPIRestriction:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The gateway image name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ImageName;  
+};  
+  
+[Dynamic,  
+ Description("Access is denied by CGI restriction") : amended,  
+ EventType(17),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_DENIED_BY_CGI_RESTRICTION") : amended  
+]  
+class W3SecDeniedByCGIRestriction:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The gateway image name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ImageName;  
+};  
+  
+[Dynamic,  
+ Description("Access is denied by access flags") : amended,  
+ EventType(18),  
+ EventLevel(3),  
+ EventTypeName("SECURITY_DENIED_BY_ACCESS_FLAGS") : amended  
+]  
+class W3SecDeniedByAccessFlags:IIS_Security_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Flags from configuration") : amended,  
+     format("x"),  
+     read]  
+     uint32  CurrentFlags;  
+    [WmiDataId(3),  
+     Description("Flags needed to continue") : amended,  
+     format("x"),  
+     read]  
+     uint32  NeededFlags;  
+};  
+  
+[Dynamic,  
+ Description("IIS filter events") : amended,  
+ Guid("{00237f0d-73eb-4bcf-a232-126693595847}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISFilter"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Filter_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 filter starts") : amended,  
+ EventType(1),  
+ EventLevel(0),  
+ EventTypeName("FILTER_START") : amended  
+]  
+class W3FilterStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+};  
+  
+[Dynamic,  
+ Description("W3 filter ends") : amended,  
+ EventType(2),  
+ EventLevel(0),  
+ EventTypeName("FILTER_END") : amended  
+]  
+class W3FilterEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+   [WmiDataId(2),  
+    Description("Notification Status") : amended,  
+    ValueDescriptions{  
+        "Request finished",  
+        "Request finished keep alive",  
+        "Continue notification",  
+        "Notification finished",  
+        "Error",  
+        "Read next data"  
+     } : amended,  
+     DefineValues{  
+        "SF_STATUS_REQ_FINISHED",  
+        "SF_STATUS_REQ_FINISHED_KEEP_CONN",  
+        "SF_STATUS_REQ_NEXT_NOTIFICATION",  
+        "SF_STATUS_REQ_HANDLED_NOTIFICATION",  
+        "SF_STATUS_REQ_ERROR",  
+        "SF_STATUS_REQ_READ_NEXT"  
+    },  
+    Values{  
+        "SF_STATUS_REQ_FINISHED",  
+        "SF_STATUS_REQ_FINISHED_KEEP_CONN",  
+        "SF_STATUS_REQ_NEXT_NOTIFICATION",  
+        "SF_STATUS_REQ_HANDLED_NOTIFICATION",  
+        "SF_STATUS_REQ_ERROR",  
+        "SF_STATUS_REQ_READ_NEXT"  
+    },  
+    ValueMap{  
+        "0x08000000",  
+        "0x08000001",  
+        "0x08000002",  
+        "0x08000003",  
+        "0x08000004",  
+        "0x08000005"  
+    },  
+    ValueType("index")]  
+    uint32  NotificationStatus;  
+};  
+  
+[Dynamic,  
+ Description("Filter error") : amended,  
+ EventType(12),  
+ EventLevel(2),  
+ EventTypeName("FILTER_ERROR") : amended  
+]  
+class W3FilterError:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Filter Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Filter starts PREPROC_HEADERS notification") : amended,  
+ EventType(13),  
+ EventLevel(4),  
+ EventTypeName("FILTER_PREPROC_HEADERS_START") : amended  
+]  
+class W3FilterPreprocStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Filter ends PREPROC_HEADERS notification") : amended,  
+ EventType(14),  
+ EventLevel(4),  
+ EventTypeName("FILTER_PREPROC_HEADERS_END") : amended  
+]  
+class W3FilterPreprocEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS starts URL_MAP notification") : amended,  
+ EventType(15),  
+ EventLevel(4),  
+ EventTypeName("FILTER_URL_MAP_START") : amended  
+]  
+class W3FilterURLMapStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Original URL") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigURL;  
+    [WmiDataId(3),  
+     Description("Original Path") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigPath;  
+    [WmiDataId(4),  
+     Description("The AccessPerm that applies to this URL") : amended,  
+     format("x"),  
+     read]  
+     uint32  AccessPerms;  
+    [WmiDataId(5),  
+     Description("Number of matching characters in physical path") : amended,  
+     read]  
+     uint32  MatchingPath;  
+    [WmiDataId(6),  
+     Description("Number of matching characters in the URL") : amended,  
+     read]  
+     uint32  MatchingURL;  
+    [WmiDataId(7),  
+     Description("The script mapped entry for this URL") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  ScriptMapEntry;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends URL_MAP notification") : amended,  
+ EventType(16),  
+ EventLevel(4),  
+ EventTypeName("FILTER_URL_MAP_END") : amended  
+]  
+class W3FilterURLMapEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Final URL") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalURL;  
+    [WmiDataId(3),  
+     Description("Final Path") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalPath;  
+    [WmiDataId(4),  
+     Description("The AccessPerm that applies to this URL") : amended,  
+     format("x"),  
+     read]  
+     uint32  AccessPerms;  
+    [WmiDataId(5),  
+     Description("Number of matching characters in physical path") : amended,  
+     read]  
+     uint32  MatchingPath;  
+    [WmiDataId(6),  
+     Description("Number of matching characters in the URL") : amended,  
+     read]  
+     uint32  MatchingURL;  
+    [WmiDataId(7),  
+     Description("The script mapped entry for this URL") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  ScriptMapEntry;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts AUTHENTICATION notification") : amended,  
+ EventType(17),  
+ EventLevel(4),  
+ EventTypeName("FILTER_AUTHENTICATION_START") : amended  
+]  
+class W3FilterAuthenticationStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Original user name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigUserName;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends AUTHENTICATION notification") : amended,  
+ EventType(18),  
+ EventLevel(4),  
+ EventTypeName("FILTER_AUTHENTICATION_END") : amended  
+]  
+class W3FilterAuthenticationEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Final user name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalUserName;  
+    [WmiDataId(3),  
+     Description("Password changed or not") : amended,  
+     read]  
+     boolean PasswordChanged;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts AUTH_COMPLETE notification") : amended,  
+ EventType(19),  
+ EventLevel(4),  
+ EventTypeName("FILTER_AUTH_COMPLETE_START") : amended  
+]  
+class W3FilterAuthCompleteStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS ends AUTH_COMPLETE notification") : amended,  
+ EventType(20),  
+ EventLevel(4),  
+ EventTypeName("FILTER_AUTH_COMPLETE_END") : amended  
+]  
+class W3FilterAuthCompleteEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS starts SEND_RESPONSE notification") : amended,  
+ EventType(21),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SEND_RESPONSE_START") : amended  
+]  
+class W3FilterSendResponseStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The current HTTP status code") : amended,  
+     read]  
+     uint32  HttpStatus;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends SEND_RESPONSE notification") : amended,  
+ EventType(22),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SEND_RESPONSE_END") : amended  
+]  
+class W3FilterSendResponseEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS starts END_OF_REQUEST notification") : amended,  
+ EventType(23),  
+ EventLevel(4),  
+ EventTypeName("FILTER_END_OF_REQUEST_START") : amended  
+]  
+class W3FilterEndOfRequestStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS ends END_OF_REQUEST notification") : amended,  
+ EventType(24),  
+ EventLevel(4),  
+ EventTypeName("FILTER_END_OF_REQUEST_END") : amended  
+]  
+class W3FilterEndOfRequestEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS starts LOG notification") : amended,  
+ EventType(25),  
+ EventLevel(4),  
+ EventTypeName("FILTER_LOG_START") : amended  
+]  
+class W3FilterLogStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Original client host name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigClientHostName;  
+    [WmiDataId(3),  
+     Description("Original client user name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigClientUserName;  
+    [WmiDataId(4),  
+     Description("Original server name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigServerName;  
+    [WmiDataId(5),  
+     Description("Original operation") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigOperation;  
+    [WmiDataId(6),  
+     Description("Original target") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigTarget;  
+    [WmiDataId(7),  
+     Description("Original parameters") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  OrigParameters;  
+    [WmiDataId(8),  
+     Description("Original HTTP status") : amended,  
+     read]  
+     uint32  OrigHttpStatus;  
+    [WmiDataId(9),  
+     Description("Original win32 status") : amended,  
+     read]  
+     uint32  OrigWin32Status;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends LOG notification") : amended,  
+ EventType(26),  
+ EventLevel(4),  
+ EventTypeName("FILTER_LOG_END") : amended  
+]  
+class W3FilterLogEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Final client host name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalClientHostName;  
+    [WmiDataId(3),  
+     Description("Final client user name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalClientUserName;  
+    [WmiDataId(4),  
+     Description("Final server name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalServerName;  
+    [WmiDataId(5),  
+     Description("Final operation") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalOperation;  
+    [WmiDataId(6),  
+     Description("Final target") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalTarget;  
+    [WmiDataId(7),  
+     Description("Final parameters") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  FinalParameters;  
+    [WmiDataId(8),  
+     Description("Final HTTP status") : amended,  
+     read]  
+     uint32  FinalHttpStatus;  
+    [WmiDataId(9),  
+     Description("Final win32 status") : amended,  
+     read]  
+     uint32  FinalWin32Status;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts SEND_RAW_DATA notification") : amended,  
+ EventType(27),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SEND_RAW_DATA_START") : amended  
+]  
+class W3FilterSendRawDataStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS ends SEND_RAW_DATA notification") : amended,  
+ EventType(28),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SEND_RAW_DATA_END") : amended  
+]  
+class W3FilterSendRawDataEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS starts ACCESS_DENIED notification") : amended,  
+ EventType(29),  
+ EventLevel(4),  
+ EventTypeName("FILTER_ACCESS_DENIED_START") : amended  
+]  
+class W3FilterAccessDeniedStart:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The requested URL") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  RequestedURL;  
+    [WmiDataId(3),  
+     Description("The physical path of the sources") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  PhysicalPath;  
+    [WmiDataId(4),  
+     Description("Denial reason") : amended,  
+     read]  
+     uint32  DenialReason;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends ACCESS_DENIED notification") : amended,  
+ EventType(30),  
+ EventLevel(4),  
+ EventTypeName("FILTER_ACCESS_DENIED_END") : amended  
+]  
+class W3FilterAccessDeniedEnd:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS filter SET_REQ_HEADER") : amended,  
+ EventType(31),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SET_REQ_HEADER") : amended  
+]  
+class W3FilterSetReqHeader:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The header name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderName;  
+    [WmiDataId(3),  
+     Description("The header value") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderValue;  
+};  
+  
+[Dynamic,  
+ Description("IIS filter ADD_REQ_HEADER") : amended,  
+ EventType(32),  
+ EventLevel(4),  
+ EventTypeName("FILTER_ADD_REQ_HEADER") : amended  
+]  
+class W3FilterAddReqHeader:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The header name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderName;  
+    [WmiDataId(3),  
+     Description("The header value") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderValue;  
+};  
+  
+[Dynamic,  
+ Description("IIS filter SET_RESP_HEADER") : amended,  
+ EventType(33),  
+ EventLevel(4),  
+ EventTypeName("FILTER_SET_RESP_HEADER") : amended  
+]  
+class W3FilterSetRespHeader:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The header name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderName;  
+    [WmiDataId(3),  
+     Description("The header value") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderValue;  
+};  
+  
+[Dynamic,  
+ Description("IIS filter ADD_RESP_HEADER") : amended,  
+ EventType(34),  
+ EventLevel(4),  
+ EventTypeName("FILTER_ADD_RESP_HEADER") : amended  
+]  
+class W3FilterAddRespHeader:IIS_Filter_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("The header name") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderName;  
+    [WmiDataId(3),  
+     Description("The header value") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  HeaderValue;  
+};  
+  
+[Dynamic,  
+ Description("IIS static file events") : amended,  
+ Guid("{79b02104-0db9-4cda-a552-058d97c2ecfd}"),  
+ EventVersion(1),  
+ DisplayName("IISStaticFile"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Static_File_Trans:IIS_Trace  
+{  
+};  
+  
+  
+[Dynamic,  
+ Description("IIS ISAPI events") : amended,  
+ Guid("{2e94e6c7-eda0-4b73-9010-2529edce1c27}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISISAPI"),  
+ locale("MS\\0x409")  
+]  
+class Isapi_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS starts processing an ISAPI Request") : amended,  
+ EventType{1},  
+ EventLevel(0),  
+ EventTypeName{"ISAPI_START"} : amended  
+]  
+class W3ISAPIStart:Isapi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS ends processing an ISAPI Request") : amended,  
+ EventType{2},  
+ EventLevel(0),  
+ EventTypeName{"ISAPI_END"} : amended  
+]  
+class W3ISAPIEnd:Isapi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+
+[Dynamic,  
+ Description("IIS CGI events") : amended,  
+ Guid("{e2e55403-0d2e-4609-a470-be0da04013c0}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISCGI"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Cgi_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS starts processing a CGI Request") : amended,  
+ EventType{1},  
+ EventLevel(0),  
+ EventTypeName{"CGI_START"} : amended  
+]  
+class W3CGIStart:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS ends processing a CGI Request") : amended,  
+ EventType{2},  
+ EventLevel(0),  
+ EventTypeName{"CGI_END"} : amended  
+]  
+class W3CGIEnd:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS launches a CGI") : amended,  
+ EventType{3},  
+ EventLevel(4),  
+ EventTypeName{"CGI_LAUNCH"} : amended  
+]  
+class W3CGILaunch:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Command line") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  CommandLine;  
+    [WmiDataId(3),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+    [WmiDataId(4),  
+     Description("Process Id") : amended,  
+     read]  
+     uint32  ProcessId;  
+};  
+  
+[Dynamic,  
+ Description("IIS times out a CGI Request") : amended,  
+ EventType{4},  
+ EventLevel(4),  
+ EventTypeName{"CGI_TIMEOUT"} : amended  
+]  
+class W3CGITimeout:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Headers received") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  Headers;  
+};  
+  
+[Dynamic,  
+ Description("CGI terminates before providing a complete set of headers") : amended,  
+ EventType{5},  
+ EventLevel(4),  
+ EventTypeName{"CGI_PREMATURE_TERMINATION"} : amended  
+]  
+class W3CGIPrematureTermination:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Headers received") : amended,  
+     StringTermination("NullTerminated"),  
+     read]  
+     string  Headers;  
+};  
+  
+[Dynamic,  
+ Description("IIS has finished sending request entity to the CGI") : amended,  
+ EventType{6},  
+ EventLevel(4),  
+ EventTypeName{"CGI_REQUEST_ENTITY_SENT"} : amended  
+]  
+class W3CGIRequestEntitySent:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS has received headers from the CGI") : amended,  
+ EventType{7},  
+ EventLevel(4),  
+ EventTypeName{"CGI_HEADERS_RECEIVED"} : amended  
+]  
+class W3CGIHeadersReceived:IIS_Cgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+
+  
+[Dynamic,  
+ Description("IIS FastCGI events") : amended,  
+ Guid("{e3642acc-3627-42b0-8372-867baa033b07}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISFastCGI"),  
+ locale("MS\\0x409")  
+]  
+class IIS_FastCgi_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process exceeded activity timeout") : amended,  
+ EventType{1},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_ACTIVITY_TIMEOUT"} : amended  
+]  
+class W3CGIFActivityTimeout:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process exceeded request timeout") : amended,  
+ EventType{2},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_REQUEST_TIMEOUT"} : amended  
+]  
+class W3CGIFRequestTimeout:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process exited unexpectedly") : amended,  
+ EventType{3},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_UNEXPECTED_EXIT"} : amended  
+]  
+class W3CGIFUnexpectedExit:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process has failed too frequently recently") : amended,  
+ EventType{4},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_RAPID_FAILURE_PROTECTION"} : amended  
+]  
+class W3CGIFRapidFailureProtection:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process could not be found") : amended,  
+ EventType{5},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_PATH_NOT_FOUND"} : amended  
+]  
+class W3CGIFPathNotFound:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI script processor is not configured") : amended,  
+ EventType{6},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_SCRIPT_PROCESSOR_MISSING"} : amended  
+]  
+class W3CGIFScriptProcessorMissing:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI process could not be added to a JobObject") : amended,  
+ EventType{7},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_ADD_JOBOBJECT_FAIL"} : amended  
+]  
+class W3CGIFAddJobObjectFail:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Either the worker process is shutting down or a config change occurred") : amended,  
+ EventType{8},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_APPLICATION_MANAGER_SHUTDOWN"} : amended  
+]  
+class W3CGIFAppMgrShutdown:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("The FastCGI queue is full") : amended,  
+ EventType{9},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_QUEUE_FULL"} : amended  
+]  
+class W3CGIFQueueFull:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("An unknown FastCGI error occurred") : amended,  
+ EventType{10},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_UNKNOWN_ERROR"} : amended  
+]  
+class W3CGIFUnknownError:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("The FastCGI response has been written to IIS") : amended,  
+ EventType{11},  
+ EventLevel(4),  
+ EventTypeName{"FASTCGI_RESPONSE_WRITTEN"} : amended  
+]  
+class W3CGIFResponseWritten:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Waiting for FastCGI process to respond") : amended,  
+ EventType{12},  
+ EventLevel(5),  
+ EventTypeName{"FASTCGI_WAITING_FOR_RESPONSE"} : amended  
+]  
+class W3CGIFWaitingForResponse:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("FastCGI error trace on stderr stream") : amended,  
+ EventType{13},  
+ EventLevel(2),  
+ EventTypeName{"FASTCGI_STDERR_TRACE_ERROR"} : amended  
+]  
+class W3CGIFTraceError:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Message") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string Message;  
+};  
+  
+[Dynamic,  
+ Description("FastCGI warning trace on stderr stream") : amended,  
+ EventType{14},  
+ EventLevel(3),  
+ EventTypeName{"FASTCGI_STDERR_TRACE_WARNING"} : amended  
+]  
+class W3CGIFTraceWarning:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Message") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string Message;  
+};  
+  
+[Dynamic,  
+ Description("FastCGI info trace on stderr stream") : amended,  
+ EventType{15},  
+ EventLevel(5),  
+ EventTypeName{"FASTCGI_STDERR_TRACE_INFO"} : amended  
+]  
+class W3CGIFTraceInfo:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Message") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string Message;  
+};  
+  
+[Dynamic,  
+ Description("Adding request to wait queue because all processes are busy") : amended,  
+ EventType{16},  
+ EventLevel(0),  
+ EventTypeName{"FASTCGI_QUEUE_REQUEST"} : amended  
+]  
+class W3CGIFQueueRequest:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Position in queue") : amended,  
+     read]  
+     uint32  PositionInQueue;  
+    [WmiDataId(3),  
+     Description("Max fastcgi process allowed") : amended,  
+     read]  
+     uint32  MaxInstances;  
+};  
+  
+[Dynamic,  
+ Description("Fastcgi process assigned to this request") : amended,  
+ EventType{17},  
+ EventLevel(0),  
+ EventTypeName{"FASTCGI_ASSIGN_PROCESS"} : amended  
+]  
+class W3CGIFAssignProcess:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Command line") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  CommandLine;  
+    [WmiDataId(3),  
+     Description("Is a new process") : amended,  
+     read]  
+     boolean IsNewProcess;  
+    [WmiDataId(4),  
+     Description("Process Id") : amended,  
+     read]  
+     uint32  ProcessId;  
+    [WmiDataId(5),  
+     Description("Number of requests served by this process instance") : amended,  
+     read]  
+     uint32  RequestNumber;  
+};  
+  
+[Dynamic,  
+ Description("Request processing start") : amended,  
+ EventType{18},  
+ EventLevel(0),  
+ EventTypeName{"FASTCGI_START"} : amended  
+]  
+class W3CGIFStart:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Request processing end") : amended,  
+ EventType{19},  
+ EventLevel(0),  
+ EventTypeName{"FASTCGI_END"} : amended  
+]  
+class W3CGIFEnd:IIS_FastCgi_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+
+[Dynamic,  
+ Description("IIS Websocket events") : amended,  
+ Guid("{2ce74327-08be-425c-bfc5-1534fe7fefa6}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISWebSocket"),  
+ locale("MS\\0x409")  
+]  
+class IIS_WebSocket_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("Websocket request initialization failed") : amended,  
+ EventType{1},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_INITIALIZE_FAILED"} : amended  
+]  
+class W3WebSocketInitializeNotSuccess:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket is beginning server handshake") : amended,  
+ EventType{2},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_HANDSHAKE_START"} : amended  
+]  
+class W3WebSocketStart:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket completed server handshake successfully") : amended,  
+ EventType{3},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_HANDSHAKE_SUCCESS"} : amended  
+]  
+class W3WebSocketEndSuccess:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket completed server handshake unsuccessfully") : amended,  
+ EventType{4},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_HANDSHAKE_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketEndFailure:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket received a read request from application") : amended,  
+ EventType{5},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_READ_FRAGMENT_START"} : amended  
+]  
+class W3WebSocketReadFragmentStart:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Buffer Size") : amended,  
+     format("x"),  
+     read]  
+     uint32  BufferSize;  
+};  
+  
+[Dynamic,  
+ Description("Websocket returned Pending for an application read request") : amended,  
+ EventType{6},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_READ_FRAGMENT_END_PENDING"} : amended  
+]  
+class W3WebSocketReadFragmentEndPending:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket completed the application read request successfully") : amended,  
+ EventType{7},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_READ_FRAGMENT_END_SUCCESS"} : amended  
+]  
+class W3WebSocketReadFragmentEndSuccess:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Bytes Received") : amended,  
+     format("x"),  
+     read]  
+     uint32  BytesReceived;  
+};  
+  
+[Dynamic,  
+ Description("Websocket failed to complete application read request") : amended,  
+ EventType{8},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_READ_FRAGMENT_END_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketReadFragmentEndFailure:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket received a write request from application") : amended,  
+ EventType{9},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_WRITE_FRAGMENT_START"} : amended  
+]  
+class W3WebSocketWriteFragmentStart:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Data Type") : amended,  
+     format("x"),  
+     read]  
+     uint32  DataType;  
+  
+    [WmiDataId(3),  
+     Description("Data Size") : amended,  
+     format("x"),  
+     read]  
+     uint32  DataSize;  
+};  
+  
+[Dynamic,  
+ Description("Websocket returned Pending for an application write request") : amended,  
+ EventType{10},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_WRITE_FRAGMENT_END_PENDING"} : amended  
+]  
+class W3WebSocketWriteFragmentEndPending:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket completed the application write request successfully") : amended,  
+ EventType{11},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_WRITE_FRAGMENT_END_SUCCESS"} : amended  
+]  
+class W3WebSocketWriteFragmentEndSuccess:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Bytes Sent") : amended,  
+     format("x"),  
+     read]  
+     uint32  BytesSent;  
+};  
+  
+[Dynamic,  
+ Description("Websocket failed to complete application write request") : amended,  
+ EventType{12},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_WRITE_FRAGMENT_END_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketWriteFragmentEndFailure:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket received a close connection request from the application") : amended,  
+ EventType{13},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_APPLICATION_CLOSE_CONNECTION"} : amended  
+]  
+class W3WebSocketApplicationCloseConnection:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket closed the tcp connection") : amended,  
+ EventType{14},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_MODULE_CLOSE_CONNECTION"} : amended  
+]  
+class W3WebSocketModuleCloseConnection:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Reason for closing connection") : amended,  
+        ValueDescriptions{  
+            "Ping timeout reached" } : amended,  
+        DefineValues{  
+            "PING_TIMEOUT" },  
+        Values{  
+            "PING_TIMEOUT" },  
+        ValueMap{  
+            "1"},  
+        ValueType("index")]  
+     uint32  Reason;  
+};  
+  
+[Dynamic,  
+ Description("Websocket read IO failed") : amended,  
+ EventType{15},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_READ_IO_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketReadIoFailed:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket write IO failed ") : amended,  
+ EventType{16},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_WRITE_IO_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketWriteIoFailed:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Websocket received a close frame from the client") : amended,  
+ EventType{17},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_RECEIVED_CLOSE"} : amended  
+]  
+class W3WebSocketCloseReceived:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Close Status") : amended,  
+     format("x"),  
+     read]  
+     uint32  Status;  
+  
+    [WmiDataId(3),  
+     Description("Close Reason") : amended,  
+     format("w"),  
+     read]  
+     string Reason;  
+};  
+  
+[Dynamic,  
+ Description("Websocket received a request to send a close frame to the client") : amended,  
+ EventType{18},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_SEND_CLOSE_START"} : amended  
+]  
+class W3WebSocketCloseSendStart:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("Close Status") : amended,  
+     format("x"),  
+     read]  
+     uint32  Status;  
+  
+    [WmiDataId(3),  
+     Description("Close Reason") : amended,  
+     format("w"),  
+     read]  
+     string Reason;  
+};  
+  
+[Dynamic,  
+ Description("Websocket send a close frame successfully") : amended,  
+ EventType{19},  
+ EventLevel(5),  
+ EventTypeName{"WEBSOCKET_SEND_CLOSE_END_SUCCESS"} : amended  
+]  
+class W3WebSocketCloseSendSuccess:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Websocket failed to send a close frame") : amended,  
+ EventType{20},  
+ EventLevel(4),  
+ EventTypeName{"WEBSOCKET_SEND_CLOSE_END_NOT_SUCCESS"} : amended  
+]  
+class W3WebSocketCloseSendFailure:IIS_WebSocket_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+  
+    [WmiDataId(2),  
+     Description("ErrorCode") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+
+[Dynamic,  
+ Description("IIS compression event") : amended,  
+ Guid("{e60cee96-4472-448d-a13c-2170b18220ec}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISCompression"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Compression_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS is starting static compression") : amended,  
+ EventType{1},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_START"} : amended  
+]  
+class W3StaticCompressionStart:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS has successfully served static compressed content") : amended,  
+ EventType{2},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_SUCCESS"} : amended  
+]  
+class W3StaticCompressionSuccess:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS has been unsuccessful doing static compression") : amended,  
+ EventType{3},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_NOT_SUCCESS"} : amended  
+]  
+class W3StaticCompressionNotSuccess:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Reason for not doing static compression") : amended,  
+        ValueDescriptions{  
+            "No Accept-Encoding sent by client",  
+            "compression is disabled because no suitable configuration was found",  
+            "Server not configured to compress 1.0 requests",  
+            "Server not configured to compress proxy requests",  
+            "No compression scheme matches for this extension/Accept-Encoding",  
+            "Unknown error",  
+            "Server not configured to compress range requests",  
+            "File smaller than compression threshold",  
+            "File encrypted",  
+            "Compressed copy does not exist",  
+            "Compressed copy out of date",  
+            "Server not configured to compress content-Type for this extension",  
+            "Document footer enabled for static files",  
+            "Url has not been requested frequently enough to justify compression",  
+            "Compressed copy could not be created" } : amended,  
+        DefineValues{  
+            "NO_ACCEPT_ENCODING",  
+            "COMPRESSION_DISABLED",  
+            "NO_COMPRESSION_10",  
+            "NO_COMPRESSION_PROXY",  
+            "NO_MATCHING_SCHEME",  
+            "UNKNOWN_ERROR",  
+            "NO_COMPRESSION_RANGE",  
+            "FILE_TOO_SMALL",  
+            "FILE_ENCRYPTED",  
+            "COMPRESS_FILE_NOT_FOUND",  
+            "COMPRESS_FILE_STALE",  
+            "NO_MATCHING_CONTENT_TYPE",  
+            "FOOTER_ENABLED",  
+            "NOT_FREQUENTLY_HIT",  
+            "FAIL_TO_COMPRESS" },  
+        Values{  
+            "NO_ACCEPT_ENCODING",  
+            "COMPRESSION_DISABLED",  
+            "NO_COMPRESSION_10",  
+            "NO_COMPRESSION_PROXY",  
+            "NO_MATCHING_SCHEME",  
+            "UNKNOWN_ERROR",  
+            "NO_COMPRESSION_RANGE",  
+            "FILE_TOO_SMALL",  
+            "FILE_ENCRYPTED",  
+            "COMPRESS_FILE_NOT_FOUND",  
+            "COMPRESS_FILE_STALE",  
+            "NO_MATCHING_CONTENT_TYPE",  
+            "FOOTER_ENABLED",  
+            "NOT_FREQUENTLY_HIT",  
+            "FAIL_TO_COMPRESS" },  
+        ValueMap{  
+            "1",  
+            "2",  
+            "3",  
+            "4",  
+            "5",  
+            "6",  
+            "7",  
+            "8",  
+            "9",  
+            "10",  
+            "11",  
+            "12",  
+            "13",  
+            "14",  
+            "15"},  
+        ValueType("index")]  
+     uint32  Reason;  
+};  
+  
+[Dynamic,  
+ Description("IIS is starting to create static compressed copy") : amended,  
+ EventType{4},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_CREATE_START"} : amended  
+]  
+class W3StaticCompressionCreateStart:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Original File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  OriginalFileName;  
+};  
+  
+[Dynamic,  
+ Description("IIS has finished trying to create static compressed copy") : amended,  
+ EventType{5},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_CREATE_END"} : amended  
+]  
+class W3StaticCompressionCreateEnd:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+    [WmiDataId(3),  
+     Description("Original File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  OriginalFileName;  
+    [WmiDataId(4),  
+     Description("Original file size") : amended,  
+     read]  
+     uint32  OriginalFileSize;  
+    [WmiDataId(5),  
+     Description("Compressed File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  CompressedFileName;  
+    [WmiDataId(6),  
+     Description("Compressed file size") : amended,  
+     read]  
+     uint32  CompressedFileSize;  
+};  
+  
+[Dynamic,  
+ Description("IIS is starting dynamic compression") : amended,  
+ EventType{6},  
+ EventLevel(4),  
+ EventTypeName{"DYNAMIC_COMPRESSION_START"} : amended  
+]  
+class W3DynamicCompressionStart:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS is successfully doing dynamic compression") : amended,  
+ EventType{7},  
+ EventLevel(4),  
+ EventTypeName{"DYNAMIC_COMPRESSION_SUCCESS"} : amended  
+]  
+class W3DynamicCompressionSuccess:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("IIS has been unsuccessful doing dynamic compression") : amended,  
+ EventType{8},  
+ EventLevel(4),  
+ EventTypeName{"DYNAMIC_COMPRESSION_NOT_SUCCESS"} : amended  
+]  
+class W3DynamicCompressionNotSuccess:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Reason for not doing dynamic compression") : amended,  
+        ValueDescriptions{  
+            "No Accept-Encoding sent by client",  
+            "compression is disabled because no suitable configuration was found",  
+            "Server not configured to compress 1.0 requests",  
+            "Server not configured to compress proxy requests",  
+            "No compression scheme matches for this extension/Accept-Encoding",  
+            "Unknown Error",  
+            "Headers being sent twice for the same response",  
+            "No Headers sent before entity body send",  
+            "The response status code is not success",  
+            "There is a content-encoding already present in the response",  
+            "Server not configured to compress range requests",  
+            "Server not configured to compress this content-Type" } : amended,  
+        DefineValues{  
+            "NO_ACCEPT_ENCODING",  
+            "COMPRESSION_DISABLED",  
+            "NO_COMPRESSION_10",  
+            "NO_COMPRESSION_PROXY",  
+            "NO_MATCHING_SCHEME",  
+            "UNKNOWN_ERROR",  
+            "HEADERS_SENT_TWICE",  
+            "NO_HEADER_SENT",  
+            "NOT_SUCCESS_STATUS",  
+            "ALREADY_CONTENT_ENCODING",  
+            "NO_COMPRESSION_RANGE",  
+            "NO_MATCHING_CONTENT_TYPE" },  
+        Values{  
+            "NO_ACCEPT_ENCODING",  
+            "COMPRESSION_DISABLED",  
+            "NO_COMPRESSION_10",  
+            "NO_COMPRESSION_PROXY",  
+            "NO_MATCHING_SCHEME",  
+            "UNKNOWN_ERROR",  
+            "HEADERS_SENT_TWICE",  
+            "NO_HEADER_SENT",  
+            "NOT_SUCCESS_STATUS",  
+            "ALREADY_CONTENT_ENCODING",  
+            "NO_COMPRESSION_RANGE",  
+            "NO_MATCHING_CONTENT_TYPE" },  
+        ValueMap{  
+            "1",  
+            "2",  
+            "3",  
+            "4",  
+            "5",  
+            "6",  
+            "7",  
+            "8",  
+            "9",  
+            "10",  
+            "11",  
+            "12"},  
+        ValueType("index")]  
+     uint32  Reason;  
+};  
+  
+[Dynamic,  
+ Description("IIS has dynamically compressed some data") : amended,  
+ EventType{9},  
+ EventLevel(5),  
+ EventTypeName{"DYNAMIC_COMPRESSION_DO"} : amended  
+]  
+class W3DynamicCompressionDo:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Original size") : amended,  
+     read]  
+     uint32  OriginalSize;  
+    [WmiDataId(3),  
+     Description("Compressed size") : amended,  
+     read]  
+     uint32  CompressedSize;  
+};  
+  
+[Dynamic,  
+ Description("Dynamic compression has finished") : amended,  
+ EventType{10},  
+ EventLevel(4),  
+ EventTypeName{"DYNAMIC_COMPRESSION_END"} : amended  
+]  
+class W3DynamicCompressionEnd:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+[Dynamic,  
+ Description("Static compression has finished") : amended,  
+ EventType{11},  
+ EventLevel(4),  
+ EventTypeName{"STATIC_COMPRESSION_END"} : amended  
+]  
+class W3StaticCompressionEnd:IIS_Compression_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+};  
+  
+
+[Dynamic,  
+ Description("IIS cache events") : amended,  
+ Guid("{ac1d69f1-bf33-4ca0-9313-bca13873e1dc}"),  
+ EventVersion(1),  
+ DisplayName("IISCache"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Cache_Trans:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS starts accessing file cache") : amended,  
+ EventType(10),  
+ EventLevel(4),  
+ EventTypeName("FILE_CACHE_ACCESS_START") : amended  
+]  
+class W3CacheFileCacheAccessStart:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("File name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  FileName;  
+    [WmiDataId(3),  
+     Description("User name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  UserName;  
+    [WmiDataId(4),  
+     Description("Domain name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  DomainName;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends accessing file cache") : amended,  
+ EventType(11),  
+ EventLevel(4),  
+ EventTypeName("FILE_CACHE_ACCESS_END") : amended  
+]  
+class W3CacheFileCacheAccessEnd:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Successful") : amended,  
+     read]  
+     boolean Successful;  
+    [WmiDataId(3),  
+     Description("File from cache") : amended,  
+     read]  
+     boolean FileFromCache;  
+    [WmiDataId(4),  
+     Description("File added to cache") : amended,  
+     read]  
+     boolean FileAddedToCache;  
+    [WmiDataId(5),  
+     Description("File being dirmonitored") : amended,  
+     read]  
+     boolean FileDirmoned;  
+    [WmiDataId(6),  
+     Description("Last-modified check (if done) error ignored") : amended,  
+     read]  
+     boolean LastModCheckErrorIgnored;  
+    [WmiDataId(7),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+    [WmiDataId(8),  
+     Description("GMT last modified time") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  LastModifiedTime;  
+};  
+  
+[Dynamic,  
+ Description("IIS starts accessing URL cache to get metadata") : amended,  
+ EventType(12),  
+ EventLevel(4),  
+ EventTypeName("URL_CACHE_ACCESS_START") : amended  
+]  
+class W3CacheURLCacheAccessStart:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Request URL") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  RequestURL;  
+};  
+  
+[Dynamic,  
+ Description("IIS ends accessing URL cache") : amended,  
+ EventType(13),  
+ EventLevel(4),  
+ EventTypeName("URL_CACHE_ACCESS_END") : amended  
+]  
+class W3CacheURLCacheAccessEnd:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Request Physical Path") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  PhysicalPath;  
+    [WmiDataId(3),  
+     Description("URL info from cache") : amended,  
+     read]  
+     boolean URLInfoFromCache;  
+    [WmiDataId(4),  
+     Description("URL info added to cache") : amended,  
+     read]  
+     boolean URLInfoAddedToCache;  
+    [WmiDataId(5),  
+     Description("Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("IIS decides if the request is HTTP.SYS cacheable") : amended,  
+ EventType(14),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("HTTPSYS_CACHEABLE") : amended  
+]  
+class W3CacheHttpsysCacheable:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("HTTP.SYS cacheable") : amended,  
+     read]  
+     boolean HttpsysCacheable;  
+    [WmiDataId(3),  
+    Description("Reason for not HTTP.SYS cacheable") : amended,  
+        ValueDescriptions{  
+            "OK to cache the file",  
+            "No metadata",  
+            "HTTP.SYS cache disabled",  
+            "The file is compressible",  
+            "Footer is enabled",  
+            "Supress the entity",  
+            "URL is changed by filter",  
+            "HTTP status is not 200",  
+            "Child request",  
+            "The current handler is not HTTP.SYS friendly",  
+            "There are filters that are not cache aware",  
+            "Non anonymous auth was used",  
+            "IP restriction set on the URL",  
+            "Custom logging is enabled",  
+            "SSL restriction",  
+            "ISAPI did not specify caching for this response",  
+            "This static request contains a querystring",  
+            "There is more data remaining in this response",  
+            "This static file has not been cached in usermode",  
+            "This response is being sent using unparsed headers",  
+            "Dynamic compression enabled",  
+            "Nothing in the pipeline enabled HTTP.SYS caching",  
+            "HTTP verb must be GET for caching to occur",  
+            "Cache invalidator must be ready before caching",  
+            "Handler for the request was changed",  
+            "Request filter rule depends on headers" } : amended,  
+         DefineValues{  
+            "OK",  
+            "NO_METADATA",  
+            "HTTPSYS_CACHE_DISABLED",  
+            "FILE_COMPRESSIBLE",  
+            "FOOTER_ENABLED",  
+            "SUPRESSING_ENTITY",  
+            "URL_CHANGE_BY_FILTER",  
+            "HTTP_STATUS_NOT_OK",  
+            "CHILD_REQUEST",  
+            "HANDLER_HTTPSYS_UNFRIENDLY",  
+            "FILTER_CACHE_UNAWARE",  
+            "NON_ANONYMOUS_ACCESS",  
+            "IP_RESTRICTION_SET",  
+            "CUSTOM_LOGGING",  
+            "SSL_RESTRICTION",  
+            "ISAPI_NOT_CACHING",  
+            "STATIC_REQUEST_QUERYSTRING",  
+            "RESPONSE_MORE_DATA",  
+            "FILE_NOT_CACHED",  
+            "RESPONSE_SENDING_RAW_HEADERS",  
+            "DYNAMIC_COMPRESSION_ENABLED",  
+            "NO_PIPELINE_ENABLE",  
+            "VERB_NOT_GET",  
+            "NO_CACHE_INVALIDATOR",  
+            "HANDLER_CHANGED",  
+            "REQUEST_FILTER_RULE" },  
+        Values{  
+            "OK",  
+            "NO_METADATA",  
+            "HTTPSYS_CACHE_DISABLED",  
+            "FILE_COMPRESSIBLE",  
+            "FOOTER_ENABLED",  
+            "SUPRESSING_ENTITY",  
+            "URL_CHANGE_BY_FILTER",  
+            "HTTP_STATUS_NOT_OK",  
+            "CHILD_REQUEST",  
+            "HANDLER_HTTPSYS_UNFRIENDLY",  
+            "FILTER_CACHE_UNAWARE",  
+            "NON_ANONYMOUS_ACCESS",  
+            "IP_RESTRICTION_SET",  
+            "CUSTOM_LOGGING",  
+            "SSL_RESTRICTION",  
+            "ISAPI_NOT_CACHING",  
+            "STATIC_REQUEST_QUERYSTRING",  
+            "RESPONSE_MORE_DATA",  
+            "FILE_NOT_CACHED",  
+            "RESPONSE_SENDING_RAW_HEADERS",  
+            "DYNAMIC_COMPRESSION_ENABLED",  
+            "NO_PIPELINE_ENABLE",  
+            "VERB_NOT_GET",  
+            "NO_CACHE_INVALIDATOR",  
+            "HANDLER_CHANGED",  
+            "REQUEST_FILTER_RULE" },  
+        ValueMap{  
+            "0",  
+            "1",  
+            "2",  
+            "3",  
+            "4",  
+            "5",  
+            "6",  
+            "7",  
+            "8",  
+            "9",  
+            "10",  
+            "11",  
+            "12",  
+            "13",  
+            "14",  
+            "15",  
+            "16",  
+            "17",  
+            "18",  
+            "19",  
+            "20",  
+            "21",  
+            "22",  
+            "23",  
+            "24",  
+            "25"},  
+        ValueType("index")]  
+     uint32  Reason;  
+    [WmiDataId(4),  
+    Description("Cache policy") : amended,  
+        ValueDescriptions{  
+            "No cache",  
+            "User Invalidates",  
+            "Time to Live" } : amended,  
+        DefineValues{  
+            "NO_CACHE",  
+            "USER_INVALIDATES",  
+            "TIME_TO_LIVE" },  
+        Values{  
+            "NO_CACHE",  
+            "USER_INVALIDATES",  
+            "TIME_TO_LIVE" },  
+        ValueMap{  
+            "0",  
+            "1",  
+            "2"},  
+        ValueType("index")]  
+     uint32  CachePolicy;  
+   [WmiDataId(5),  
+     Description("Time to live") : amended,  
+     read]  
+     uint32  TimeToLive;  
+};  
+  
+[Dynamic,  
+ Description("Start lookup from output-cache") : amended,  
+ EventType(15),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("OUTPUT_CACHE_LOOKUP_START") : amended  
+]  
+class W3OutputCacheLookupStart:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;  
+};  
+  
+[Dynamic,  
+ Description("Finish lookup from output-cache") : amended,  
+ EventType(16),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("OUTPUT_CACHE_LOOKUP_END") : amended  
+]  
+class W3OutputCacheLookupEnd:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+    Description("Result of lookup") : amended,  
+        ValueDescriptions{  
+            "Not found",  
+            "Found and used",  
+            "Not used due to non-matching Accept header",  
+            "Not used due to non-matching Accept-Encoding header",  
+            "Caching disabled for this response",  
+            "Conditional headers Range/If-Match/If-Unmodified-Since present in the request" } : amended,  
+        DefineValues{  
+            "NOT_FOUND",  
+            "FOUND",  
+            "ACCEPT_NOT_MATCH",  
+            "ACCEPT_ENCODING_NOT_MATCH",  
+            "CACHING_DISABLED",  
+            "CONDITIONAL_HEADERS_PRESENT" },  
+        Values{  
+            "NOT_FOUND",  
+            "FOUND",  
+            "ACCEPT_NOT_MATCH",  
+            "ACCEPT_ENCODING_NOT_MATCH",  
+            "CACHING_DISABLED",  
+            "CONDITIONAL_HEADERS_PRESENT" },  
+        ValueMap{  
+            "0",  
+            "1",  
+            "2",  
+            "3",  
+            "4",  
+            "5"},  
+        ValueType("index")]  
+     uint32  Result;  
+};  
+  
+[Dynamic,  
+ Description("Start updating output-cache") : amended,  
+ EventType(17),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("OUTPUT_CACHE_UPDATE_START") : amended  
+]  
+class W3OutputCacheUpdateStart:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+    Description("Cache policy") : amended,  
+        ValueDescriptions{  
+            "No cache",  
+            "User Invalidates",  
+            "Time to Live" } : amended,  
+        DefineValues{  
+            "NO_CACHE",  
+            "USER_INVALIDATES",  
+            "TIME_TO_LIVE" },  
+        Values{  
+            "NO_CACHE",  
+            "USER_INVALIDATES",  
+            "TIME_TO_LIVE" },  
+        ValueMap{  
+            "0",  
+            "1",  
+            "2"},  
+        ValueType("index")]  
+     uint32  CachePolicy;  
+   [WmiDataId(3),  
+     Description("Time to live") : amended,  
+     read]  
+     uint32  TimeToLive;  
+};  
+  
+[Dynamic,  
+ Description("Finish updating output-cache") : amended,  
+ EventType(18),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("OUTPUT_CACHE_UPDATE_END") : amended  
+]  
+class W3OutputCacheUpdateEnd:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+    Description("Result of update") : amended,  
+        ValueDescriptions{  
+            "Added",  
+            "Unknown error",  
+            "Not frequently hit",  
+            "Headers already sent to client",  
+            "Headers suppressed",  
+            "Request verb is not GET",  
+            "Response status is not 200",  
+            "Caching disabled for this response",  
+            "Response size exceeded",  
+            "Cache size exceeded",  
+            "Non unique vary-by conditions",  
+            "Entry exists",  
+            "Already cached by another cache" } : amended,  
+        DefineValues{  
+            "ADDED",  
+            "UNKNOWN_ERROR",  
+            "NOT_FREQUENTLY_HIT",  
+            "HEADERS_FLUSHED",  
+            "HEADERS_SUPPRESSED",  
+            "VERB_NOT_GET",  
+            "STATUS_NOT_OK",  
+            "CACHING_DISABLED",  
+            "RESPONSE_TOO_BIG",  
+            "CACHE_FULL",  
+            "VARY_BY_NOT_MATCH",  
+            "ENTRY_EXISTS",  
+            "ALREADY_CACHED" },  
+        Values{  
+            "ADDED",  
+            "UNKNOWN_ERROR",  
+            "NOT_FREQUENTLY_HIT",  
+            "HEADERS_FLUSHED",  
+            "HEADERS_SUPPRESSED",  
+            "VERB_NOT_GET",  
+            "STATUS_NOT_OK",  
+            "CACHING_DISABLED",  
+            "RESPONSE_TOO_BIG",  
+            "CACHE_FULL",  
+            "VARY_BY_NOT_MATCH",  
+            "ENTRY_EXISTS",  
+            "ALREADY_CACHED" },  
+        ValueMap{  
+            "0",  
+            "1",  
+            "2",  
+            "3",  
+            "4",  
+            "5",  
+            "6",  
+            "7",  
+            "8",  
+            "9",  
+            "10",  
+            "11",  
+            "12"},  
+        ValueType("index")]  
+     uint32  Result;  
+};  
+  
+[Dynamic,  
+ Description("Output-cache disabled") : amended,  
+ EventType(19),  
+ EventLevel(4),  
+ EventHttpRequest,  
+ EventTypeName("OUTPUT_CACHE_DISABLED") : amended  
+]  
+class W3OutputCacheDisabled:IIS_Cache_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;  
+};  
+  
+ 
+  
+[Dynamic,  
+ Description("IIS core notifications") : amended,  
+ Guid("{002e91e3-e7ae-44ab-8e07-99230ffa6ade}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISRequestNotification"),  
+ locale("MS\\0x409")  
+]  
+class IISRequestNotificationEvents:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("Start notification for module") : amended,  
+ EventType(1),  
+ EventLevel(5),  
+ EventTypeName("NOTIFY_MODULE_START") : amended  
+]  
+class IISRequestNotificationEventsStart:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000001",  
+            "0x00000002",  
+            "0x00000004",  
+            "0x00000008",  
+            "0x00000010",  
+            "0x00000020",  
+            "0x00000040",  
+            "0x00000080",  
+            "0x00000100",  
+            "0x00000200",  
+            "0x00000400",  
+            "0x00000800",  
+            "0x10000000",  
+            "0x20000000", 
+            "0x40000000", 
+            "0x80000000"  
+        },  
+        ValueType("index")]  
+     uint32  Notification;  
+    [WmiDataId(4),  
+     Description("flag if this is a post notification event") : amended,  
+     read]  
+     boolean   fIsPostNotification;  
+};  
+  
+[Dynamic,  
+ Description("Finish notification for module") : amended,  
+ EventType(2),  
+ EventLevel(5),  
+ EventTypeName("NOTIFY_MODULE_END") : amended  
+]  
+class IISRequestNotificationEventsEnd:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000001",  // request is beginning  
+            "0x00000002",  // request is being authenticated  
+            "0x00000004",  // request is being authorized  
+            "0x00000008",  // satisfy request from cache  
+            "0x00000010",  // map handler for request  
+            "0x00000020",  // acquire request state  
+            "0x00000040",  // pre-execute handler  
+            "0x00000080",  // execute handler  
+            "0x00000100",  // release request state  
+            "0x00000200",  // update cache  
+            "0x00000400",  // log request  
+            "0x00000800",  // end request  
+            "0x10000000",  // custom notification  
+            "0x20000000",  // send response  
+            "0x40000000",  // read entity  
+            "0x80000000"   // map a url to phys path  
+        },  
+        ValueType("index")]  
+        uint32  Notification;  
+   [WmiDataId(4),  
+    Description("flag if this is a post notification event") : amended,  
+    read]  
+     boolean   fIsPostNotificationEvent;  
+   [WmiDataId(5),  
+    Description("Notification Status") : amended,  
+    ValueDescriptions{  
+        "continue processing for notification",  
+        "finish request processing"  
+     } : amended,  
+     DefineValues{  
+        "NOTIFICATION_CONTINUE",  
+        "NOTIFICATION_FINISH_REQUEST"  
+    },  
+    Values{  
+        "NOTIFICATION_CONTINUE",  
+        "NOTIFICATION_FINISH_REQUEST"  
+    },  
+    ValueMap{  
+        "0",  
+        "2"  
+    },  
+    ValueType("index")]  
+    uint32  NotificationStatus;  
+};  
+  
+[Dynamic,  
+ Description("Completion notification for module") : amended,  
+ EventType(3),  
+ EventLevel(5),  
+ EventTypeName("NOTIFY_MODULE_COMPLETION") : amended  
+]  
+class IISRequestNotificationEventsCompletion:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000001",  // request is beginning  
+            "0x00000002",  // request is being authenticated  
+            "0x00000004",  // request is being authorized  
+            "0x00000008",  // satisfy request from cache  
+            "0x00000010",  // map handler for request  
+            "0x00000020",  // acquire request state  
+            "0x00000040",  // pre-execute handler  
+            "0x00000080",  // execute handler  
+            "0x00000100",  // release request state  
+            "0x00000200",  // update cache  
+            "0x00000400",  // log request  
+            "0x00000800",  // end request  
+            "0x10000000",  // custom notification  
+            "0x20000000",  // send response  
+            "0x40000000",  // read entity  
+            "0x80000000"   // map a url to phys path  
+        },  
+        ValueType("index")]  
+        uint32  Notification;  
+    [WmiDataId(4),  
+     Description("flag if this is a post notification event") : amended,  
+     read]  
+     boolean   fIsPostNotificationEvent;  
+    [WmiDataId(5),  
+     Description("Bytes completed") : amended,  
+     read]  
+     uint32  CompletionBytes;  
+    [WmiDataId(6),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Start notification for pre-begin request") : amended,  
+ EventType(4),  
+ EventLevel(5),  
+ EventTypeName("PRE_BEGIN_REQUEST_START") : amended  
+]  
+class IISRequestNotificationPreBeginStart:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,       
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+};  
+  
+[Dynamic,  
+ Description("Finish notification for pre-begin request") : amended,  
+ EventType(5),  
+ EventLevel(5),  
+ EventTypeName("PRE_BEGIN_REQUEST_END") : amended  
+]  
+class IISRequestNotificationPreBeginEnd:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+   [WmiDataId(3),  
+    Description("Notification Status") : amended,  
+    ValueDescriptions{  
+        "continue processing for notification",  
+        "finish request processing"  
+     } : amended,  
+     DefineValues{  
+        "NOTIFICATION_CONTINUE",  
+        "NOTIFICATION_HANDLED"  
+    },  
+    Values{  
+        "NOTIFICATION_CONTINUE",  
+        "NOTIFICATION_HANDLED"  
+    },  
+    ValueMap{  
+        "0",  
+        "1"  
+    },  
+    ValueType("index")]  
+    uint32  NotificationStatus;  
+};  
+  
+  
+  
+[Dynamic,  
+ Description("Request processing failure") : amended,  
+ EventType(15),  
+ EventLevel(2),  
+ EventTypeName("REQUEST_PROCESSING_ERROR") : amended  
+]  
+class IISRequestNotificationEventsError:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000001",  // request is beginning  
+            "0x00000002",  // request is being authenticated  
+            "0x00000004",  // request is being authorized  
+            "0x00000008",  // satisfy request from cache  
+            "0x00000010",  // map handler for request  
+            "0x00000020",  // acquire request state  
+            "0x00000040",  // pre-execute handler  
+            "0x00000080",  // execute handler  
+            "0x00000100",  // release request state  
+            "0x00000200",  // update cache  
+            "0x00000400",  // log request  
+            "0x00000800",  // end request  
+            "0x10000000",  // custom notification  
+            "0x20000000",  // send response  
+            "0x40000000",  // read entity  
+            "0x80000000"   // map a url to phys path  
+        },  
+        ValueType("index")]  
+        uint32  Notification;  
+   [WmiDataId(4),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Set response error status") : amended,  
+ EventType(16),  
+ EventLevel(3),  
+ EventTypeName("MODULE_SET_RESPONSE_ERROR_STATUS") : amended  
+]  
+class IISRequestNotificationEventsResponseErrorStatus:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "before request is beginning",  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+            "PRE_BEGIN_REQUEST",  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "PRE_BEGIN_REQUEST",  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000000",  
+            "0x00000001",  // request is beginning  
+            "0x00000002",  // request is being authenticated  
+            "0x00000004",  // request is being authorized  
+            "0x00000008",  // satisfy request from cache  
+            "0x00000010",  // map handler for request  
+            "0x00000020",  // acquire request state  
+            "0x00000040",  // pre-execute handler  
+            "0x00000080",  // execute handler  
+            "0x00000100",  // release request state  
+            "0x00000200",  // update cache  
+            "0x00000400",  // log request  
+            "0x00000800",  // end request  
+            "0x10000000",  // custom notification  
+            "0x20000000",  // send response  
+            "0x40000000",  // read entity  
+            "0x80000000"   // map a url to phys path  
+        },  
+        ValueType("index")]  
+        uint32  Notification;  
+    [WmiDataId(4),  
+     Description("Response status code") : amended,  
+     read]  
+     uint32 HttpStatus;  
+    [WmiDataId(5),  
+     Description("Reason") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  HttpReason;  
+    [WmiDataId(6),  
+     Description("Response substatus code") : amended,  
+     read]  
+     uint16 HttpSubStatus;  
+    [WmiDataId(7),  
+     Description("Error code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+    [WmiDataId(8),  
+     Description("Configuration Exception Details") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ConfigExceptionInfo;  
+};  
+  
+[Dynamic,  
+ Description("Set response status") : amended,  
+ EventType(17),  
+ EventLevel(4),  
+ EventTypeName("MODULE_SET_RESPONSE_SUCCESS_STATUS") : amended  
+]  
+class IISRequestNotificationEventsResponseSuccessStatus:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;   
+    [WmiDataId(2),  
+     Description("Module Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Notification") : amended,  
+        ValueDescriptions{  
+            "request is beginning",  
+            "request is being authenticated",  
+            "request is being authorized",  
+            "satisfy request from cache",  
+            "map handler for request",  
+            "acquire request state",  
+            "pre-execute handler",  
+            "execute handler",  
+            "release request state",  
+            "update cache",  
+            "log request",  
+            "end request",  
+            "custom notification",  
+            "send response",  
+            "read entity",  
+            "map a url to phys path" } : amended,  
+         DefineValues{  
+  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",    
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",    
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        Values{  
+            "BEGIN_REQUEST",  
+            "AUTHENTICATE_REQUEST",  
+            "AUTHORIZE_REQUEST",   
+            "RESOLVE_REQUEST_CACHE",  
+            "MAP_REQUEST_HANDLER",           
+            "REQUEST_ACQUIRE_STATE",         
+            "PRE_EXECUTE_REQUEST_HANDLER",  
+            "EXECUTE_REQUEST_HANDLER",       
+            "RELEASE_REQUEST_STATE",         
+            "UPDATE_REQUEST_CACHE",          
+            "LOG_REQUEST",                  
+            "END_REQUEST",  
+            "CUSTOM_NOTIFICATION",  
+            "SEND_RESPONSE",                 
+            "READ_ENTITY",                   
+            "MAP_PATH"  
+        },  
+        ValueMap{  
+            "0x00000001",  // request is beginning  
+            "0x00000002",  // request is being authenticated  
+            "0x00000004",  // request is being authorized  
+            "0x00000008",  // satisfy request from cache  
+            "0x00000010",  // map handler for request  
+            "0x00000020",  // acquire request state  
+            "0x00000040",  // pre-execute handler  
+            "0x00000080",  // execute handler  
+            "0x00000100",  // release request state  
+            "0x00000200",  // update cache  
+            "0x00000400",  // log request  
+            "0x00000800",  // end request  
+            "0x10000000",  // custom notification  
+            "0x20000000",  // send response  
+            "0x40000000",  // read entity  
+            "0x80000000"   // map a url to phys path  
+        },  
+        ValueType("index")]  
+        uint32  Notification;  
+    [WmiDataId(4),  
+     Description("Response status code") : amended,  
+     read]  
+     uint32 HttpStatus;  
+    [WmiDataId(5),  
+     Description("Reason") : amended,  
+     StringTermination("NullTerminated"),  
+     format("a"),  
+     read]  
+     string  HttpReason;  
+};  
+  
+[Dynamic,  
+ Description("Set response error description") : amended,  
+ EventType(18),  
+ EventLevel(3),  
+ EventTypeName("SET_RESPONSE_ERROR_DESCRIPTION") : amended  
+]  
+class IISRequestNotificationEventsResponseErrorDescription:IISRequestNotificationEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Error description") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ErrorDescription;  
+};  
+  
+//  
+// 11. Module events  
+//  
+  
+[Dynamic,  
+ Description("IIS Module Events") : amended,  
+ Guid("{d79a948e-95f1-417b-a731-b7a79dec7ae5}"),  
+ EventVersion(1),  
+ EventHttpRequest,  
+ DisplayName("IISModule"),  
+ locale("MS\\0x409")  
+]  
+class IISModuleEvents:IIS_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("Start of module events") : amended,  
+ EventType(1),  
+ EventLevel(4),  
+ EventTypeName("MODULE_START") : amended  
+]  
+class IISModuleEventsModuleStart:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("End of module events") : amended,  
+ EventType(2),  
+ EventLevel(4),  
+ EventTypeName("MODULE_END") : amended  
+]  
+class IISModuleEventsModuleEnd:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Module Critical Error") : amended,  
+ EventType(3),  
+ EventLevel(1),  
+ EventTypeName("MODULE_CRITICAL_ERROR") : amended  
+]  
+class IISModuleEventsModuleCriticalError:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Module Error") : amended,  
+ EventType(4),  
+ EventLevel(2),  
+ EventTypeName("MODULE_ERROR") : amended  
+]  
+class IISModuleEventsModuleError:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Module Warning") : amended,  
+ EventType(5),  
+ EventLevel(3),  
+ EventTypeName("MODULE_WARNING") : amended  
+]  
+class IISModuleEventsModuleWarning:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Module Information") : amended,  
+ EventType(6),  
+ EventLevel(4),  
+ EventTypeName("MODULE_INFORMATION") : amended  
+]  
+class IISModuleEventsModuleInformation:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("Module Verbose") : amended,  
+ EventType(7),  
+ EventLevel(5),  
+ EventTypeName("MODULE_VERBOSE") : amended  
+]  
+class IISModuleEventsModuleVerbose:IISModuleEvents  
+{  
+    [WmiDataId(1),  
+     Description("Context ID") : amended,  
+     extension("Guid"),  
+     ActivityID,  
+     read]  
+     object  ContextId;  
+    [WmiDataId(2),  
+     Description("Name of module raising event") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  ModuleName;  
+    [WmiDataId(3),  
+     Description("Module data 1") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data1;  
+    [WmiDataId(4),  
+     Description("Module Data 2") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  Data2;  
+    [WmiDataId(5),  
+     Description("Module Error Code") : amended,  
+     format("x"),  
+     read]  
+     uint32  ErrorCode;  
+};  
+  
+
+[Dynamic,  
+ Description("IIS User Request") : amended,  
+ Guid("{d42cf7ef-de92-473e-8b6c-621ea663113a}"),  
+ EventVersion(0),  
+ EventDeprecated,  
+ EventArea(0),  
+ DisplayName("W3Server"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Trans_V0:IIS_Trace  
+{  
+  
+};  
+  
+[Dynamic,  
+ Description("W3 Service Received a New Request") : amended,  
+ EventType(1),  
+ EventLevel(0),  
+ EventTypeName("Start") : amended  
+]  
+class W3ReceiveNewRequest:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+    [WmiDataId(2),  
+     Description("Bytes Received") : amended,  
+     read]  
+     uint32 BytesReceived;  
+};  
+  
+[Dynamic,  
+ Description("W3 Service Send Response") : amended,  
+ EventType{2, 16, 17, 18, 19, 20, 21, 22, 23, 24},  
+ EventLevel(0),  
+ EventTypeName{"End", "SndBody", "SndResp", "SndEnt", "SndFilt", "ErrSnd", "ErrEnt", "ErrCtx", "ErrVec", "VecSnd"} : amended  
+]  
+class W3SendResponse:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+    [WmiDataId(2),  
+     Description("Bytes Sent") : amended,  
+     read]  
+     uint32 BytesSent;  
+};  
+  
+  
+[Dynamic,  
+ Description("W3 StaticFile request") : amended,  
+ EventType(10),  
+ EventLevel(0),  
+ EventTypeName("FileReq") : amended  
+]  
+class W3FileRequest:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+    [WmiDataId(2),  
+     Description("File Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FileName;  
+};  
+  
+[Dynamic,  
+ Description("W3 CGI request") : amended,  
+ EventType(11),  
+ EventLevel(0),  
+ EventTypeName("CGIReq") : amended  
+]  
+class W3CGIRequest:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+};  
+  
+[Dynamic,  
+ Description("W3 ISAPI request") : amended,  
+ EventType(12),  
+ EventLevel(0),  
+ EventTypeName("IsapiReq") : amended  
+]  
+class W3IsapiRequest:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+};  
+  
+  
+[Dynamic,  
+ Description("W3 Service makes an OOP ISAPI request") : amended,  
+ EventType(13),  
+ EventLevel(0),  
+ EventTypeName("OopReq") : amended  
+]  
+class W3OopRequest:IIS_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+    [WmiDataId(2),  
+     Description("Process ID") : amended,  
+     read]  
+     uint32 ProcessId;  
+    [WmiDataId(3),  
+     Description("Total Requests") : amended,  
+     read]  
+     uint32 TotalReqs;  
+    [WmiDataId(4),  
+     Description("Current Requests") : amended,  
+     read]  
+     uint32 CurrentReqs;  
+  
+};  
+  
+[Dynamic,  
+ Description("IIS Filter Request") : amended,  
+ Guid("{00237f0d-73eb-4bcf-a232-126693595847}"),  
+ EventVersion(0),  
+ EventArea(0),  
+ EventDeprecated,  
+ DisplayName("W3Filter"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Filter_Trans_V0:IIS_Trace  
+{  
+  
+};  
+  
+[Dynamic,  
+ Description("W3 Filter Request") : amended,  
+ EventType(1),  
+ EventLevel(0),  
+ EventTypeName("Start") : amended  
+]  
+class W3FilterTransStart:IIS_Filter_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+    [WmiDataId(2),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+};  
+  
+[Dynamic,  
+ Description("W3 Filter Request") : amended,  
+ EventType(2),  
+ EventLevel(0),  
+ EventTypeName("End") : amended  
+]  
+class W3FilterTransEnd:IIS_Filter_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+};  
+  
+  
+[Dynamic,  
+ Description("IIS CGI Request") : amended,  
+ Guid("{e2e55403-0d2e-4609-a470-be0da04013c0}"),  
+ EventVersion(0),  
+ EventArea( 0 ),  
+ EventDeprecated,  
+ DisplayName("W3Cgi"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Cgi_Trans_V0:IIS_Trace  
+{  
+  
+};  
+  
+[Dynamic,  
+ Description("CGI Request") : amended,  
+ EventType{1, 2},  
+ EventLevel(0),  
+ EventTypeName{"Start", "End"} : amended  
+]  
+class W3CgiTrans:IIS_Cgi_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;  
+};  
+  
+  
+  
+[Dynamic,  
+ Description("IIS User Request") : amended,  
+ Guid("{2e94e6c7-eda0-4b73-9010-2529edce1c27}"),  
+ EventVersion(0),  
+ EventDeprecated,  
+ EventArea(0),  
+ DisplayName("Isapi"),  
+ locale("MS\\0x409")  
+]  
+class Isapi_Trans_V0:IIS_Trace  
+{  
+  
+};  
+  
+[Dynamic,  
+ Description("Map RequestId to connID") : amended,  
+ EventType(1),  
+ EventLevel(0),  
+ EventTypeName("Start") : amended  
+]  
+class IsapiMapRequestId:Isapi_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;   
+    [WmiDataId(2),  
+     Description("connID") : amended,  
+     pointer,  
+     read]  
+     uint32 connID;  
+    [WmiDataId(3),  
+     Description("Boolean Out Of Process Flag") : amended,  
+     read]  
+     uint32  fOop;  
+};  
+  
+[Dynamic,  
+ Description("Delete Isapi Context") : amended,  
+ EventLevel(0),  
+ EventType{2, 10, 11, 12, 13, 14, 15},  
+ EventTypeName{"End", "SndHdr", "SndHdrEx", "VecSnd", "ErrSnd", "SsfSnd", "SsfErr"} : amended  
+]  
+class IsapiDeleteContext:Isapi_Trans_V0  
+{  
+    [WmiDataId(1),  
+     Description("Request ID") : amended,  
+     read]  
+     uint64  RequestId;   
+    [WmiDataId(2),  
+     Description("connID") : amended,  
+     pointer,  
+     read]  
+     uint32 connID;  
+};  
+  
+[Dynamic,  
+  Description("IIS: WWW Global"),  
+  Guid("{d55d3bc9-cba9-44df-827e-132d3a4596c2}"),  
+  HttpGlobalRawEtw,  
+  locale("MS\\0x409")]  
+class IIS_Global_Trace:EventTrace  
+{  
+    [Description ("Enable Flags") : amended,  
+        ValueDescriptions{  
+            "IIS process startup events",  
+            "IIS process shutdown events",  
+            "IIS global all events"} : amended,  
+         DefineValues{  
+            "ETW_IIS_GLOBAL_STARTUP",  
+            "ETW_IIS_GLOBAL_SHUTDOWN",  
+            "ETW_IIS_GLOBAL_ALL"},  
+        Values{  
+            "IISStartup",  
+            "IISShutdown",  
+            "All"  
+             },  
+        ValueMap{  
+            "0x0001",  
+            "0x0002",  
+            "0x0003"}  
+    ]  
+    uint32 Flags;  
+  
+    [Description ("Levels") : amended,  
+        ValueDescriptions{  
+            "Abnormal exit or termination",  
+            "Severe errors",  
+            "Warnings",  
+            "Information",  
+            "Detailed information" } : amended,  
+         DefineValues{  
+            "TRACE_LEVEL_FATAL",  
+            "TRACE_LEVEL_ERROR",   
+            "TRACE_LEVEL_WARNING",  
+            "TRACE_LEVEL_INFORMATION",             
+            "TRACE_LEVEL_VERBOSE" },                     
+        Values{  
+            "Fatal",  
+            "Error",  
+            "Warning",  
+            "Information",  
+            "Verbose" },  
+        ValueMap{  
+            "0x1",  
+            "0x2",  
+            "0x3",  
+            "0x4",  
+            "0x5" },  
+        ValueType("index")  
+    ]  
+    uint32 Level;  
+};  
+
+[Dynamic,  
+ Description("IIS process startup events") : amended,  
+ Guid("{35646e78-fe59-47e9-a617-eef5fc640816}"),  
+ EventVersion(1),  
+ DisplayName("IISStartup"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Startup_Trans:IIS_Global_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS process initialization info") : amended,  
+ EventType(10),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_PROCESS_START_INFO") : amended  
+]  
+class W3StartupProcessStartInfo:IIS_Startup_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Command line arguments") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  CommandLineArgs;  
+    [WmiDataId(2),  
+     Description("IIS5 compatibility mode") : amended,  
+     read]  
+     boolean IIS5CompatMode;  
+    [WmiDataId(3),  
+     Description("User name of the process") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string  UserName;  
+    [WmiDataId(4),  
+     Description("Process affinity mask") : amended,  
+     format("x"),  
+     read]  
+     uint32  ProcessAffinityMask;  
+};  
+  
+[Dynamic,  
+ Description("W3 server initialization starts") : amended,  
+ EventType(11),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_W3_SERVER_START") : amended  
+]  
+class W3StartupW3serverStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Resource dll initialization starts") : amended,  
+ EventType(12),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_RESOURCE_DLL_START") : amended  
+]  
+class W3StartupResourceDllStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("IISUTIL initialization starts") : amended,  
+ EventType(13),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_IISUTIL_START") : amended  
+]  
+class W3StartupIISUtilStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("WINSOCK initialization starts") : amended,  
+ EventType(14),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_WINSOCK_START") : amended  
+]  
+class W3StartupWinsockStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Metabase initialization starts") : amended,  
+ EventType(15),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_METABASE_START") : amended  
+]  
+class W3StartupMetabaseStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("MB listener initialization starts") : amended,  
+ EventType(16),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_MB_LISTENER_START") : amended  
+]  
+class W3StartupMblistenerStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 site initialization starts") : amended,  
+ EventType(17),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_W3_SITE_START") : amended  
+]  
+class W3StartupW3siteStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("ULATQ initialization starts") : amended,  
+ EventType(18),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_ULATQ_START") : amended  
+]  
+class W3StartupUlatqStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Global filter initialization starts") : amended,  
+ EventType(19),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_FILTER_START") : amended  
+]  
+class W3StartupGlobalFilterStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Site list initialization starts") : amended,  
+ EventType(20),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_SITE_LIST_START") : amended  
+]  
+class W3StartupSiteListStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Cache initialization starts") : amended,  
+ EventType(21),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_CACHE_START") : amended  
+]  
+class W3StartupCacheStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 connection initialization starts") : amended,  
+ EventType(22),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_W3_CONNECTION_START") : amended  
+]  
+class W3StartupW3connectionStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 context initialization starts") : amended,  
+ EventType(23),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_W3_CONTEXT_START") : amended  
+]  
+class W3StartupW3contextStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 request initialization starts") : amended,  
+ EventType(24),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_W3_REQUEST_START") : amended  
+]  
+class W3StartupW3requestStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 response initialization starts") : amended,  
+ EventType(25),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_W3_RESPONSE_START") : amended  
+]  
+class W3StartupW3responseStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Server variable initialization starts") : amended,  
+ EventType(26),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_SERVER_VARIABLE_START") : amended  
+]  
+class W3StartupServerVariableStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Mime map initialization starts") : amended,  
+ EventType(27),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_MIME_MAP_START") : amended  
+]  
+class W3StartupMimeMapStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Logging initialization starts") : amended,  
+ EventType(28),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_LOGGING_START") : amended  
+]  
+class W3StartupLoggingStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Raw connection initialization starts") : amended,  
+ EventType(29),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_RAW_CONNECTION_START") : amended  
+]  
+class W3StartupRawConnectionStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Certificate initialization starts") : amended,  
+ EventType(30),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_CERTIFICATE_START") : amended  
+]  
+class W3StartupCertificateStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("ISAPI restriction list initialization starts") : amended,  
+ EventType(31),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_ISAPI_RESTRICTION_LIST_START") : amended  
+]  
+class W3StartupISAPIRestrictionListStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("CGI restriction list initialization starts") : amended,  
+ EventType(32),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_CGI_RESTRICTION_LIST_START") : amended  
+]  
+class W3StartupCGIRestrictionListStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("Compression initialization starts") : amended,  
+ EventType(33),  
+ EventLevel(5),  
+ EventTypeName("GLOBAL_COMPRESSION_START") : amended  
+]  
+class W3StartupCompressionStart:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 server initialization ends") : amended,  
+ EventType(34),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_W3_SERVER_END") : amended  
+]  
+class W3StartupW3serverEnd:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 server initialization error") : amended,  
+ EventType(35),  
+ EventLevel(2),  
+ EventTypeName("GLOBAL_W3_SERVER_INIT_ERROR") : amended  
+]  
+class W3StartupW3serverInitError:IIS_Startup_Trans  
+{  
+    [WmiDataId(1),  
+     Description("W3 server initialization status") : amended,  
+     read]  
+     uint32 InitStatus;  
+    [WmiDataId(2),  
+     Description("W3 server initialization error code") : amended,  
+     format("x"),  
+     read]  
+     uint32 ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("W3 filter load starts") : amended,  
+ EventType(36),  
+ EventLevel(4),  
+ EventTypeName("FILTER_LOAD_START") : amended  
+]  
+class W3StartupFilterLoadStart:IIS_Startup_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+};  
+  
+[Dynamic,  
+ Description("W3 filter load ends") : amended,  
+ EventType(37),  
+ EventLevel(4),  
+ EventTypeName("FILTER_LOAD_END") : amended  
+]  
+class W3StartupFilterLoadEnd:IIS_Startup_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+    [WmiDataId(2),  
+     Description("W3 filter load return code") : amended,  
+     format("x"),  
+     read]  
+     uint32 ErrorCode;  
+};  
+  
+[Dynamic,  
+ Description("ULATQ starts listening for requests") : amended,  
+ EventType(38),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_ULATQ_START_LISTENING") : amended  
+]  
+class W3StartupUlatqStartListening:IIS_Startup_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS process shutdown events") : amended,  
+ Guid("{e1af7c2a-7bbe-4bec-b5e0-ba064e1d77da}"),  
+ EventVersion(1),  
+ DisplayName("IISShutdown"),  
+ locale("MS\\0x409")  
+]  
+class IIS_Shutdown_Trans:IIS_Global_Trace  
+{  
+};  
+  
+[Dynamic,  
+ Description("IIS process shutdown mode") : amended,  
+ EventType(10),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_PROCESS_SHUTDOWN_MODE") : amended  
+]  
+class W3ShutdownProcessMode:IIS_Shutdown_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Immediate shutdown") : amended,  
+     read]  
+     boolean ShutdownImmediate;  
+    [WmiDataId(2),  
+     Description("All CGI has been killed") : amended,  
+     read]  
+     boolean AllCGIKilled;  
+};  
+  
+[Dynamic,  
+ Description("W3 server termination starts") : amended,  
+ EventType(11),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_W3_SERVER_SHUTDOWN_START") : amended  
+]  
+class W3ShutdownW3serverShutdownStart:IIS_Shutdown_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 server termination ends") : amended,  
+ EventType(12),  
+ EventLevel(4),  
+ EventTypeName("GLOBAL_W3_SERVER_SHUTDOWN_END") : amended  
+]  
+class W3ShutdownW3serverShutdownEnd:IIS_Shutdown_Trans  
+{  
+};  
+  
+[Dynamic,  
+ Description("W3 filter unload starts") : amended,  
+ EventType(13),  
+ EventLevel(4),  
+ EventTypeName("FILTER_UNLOAD_START") : amended  
+]  
+class W3ShutdownFilterUnloadStart:IIS_Shutdown_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+};  
+  
+[Dynamic,  
+ Description("W3 filter unload ends") : amended,  
+ EventType(14),  
+ EventLevel(4),  
+ EventTypeName("FILTER_UNLOAD_END") : amended  
+]  
+class W3ShutdownFilterUnloadEnd:IIS_Shutdown_Trans  
+{  
+    [WmiDataId(1),  
+     Description("Filter Name") : amended,  
+     StringTermination("NullTerminated"),  
+     format("w"),  
+     read]  
+     string FilterName;  
+};  
+  
+[Dynamic,  
+ Description("IIS global cache events") : amended,  
+ Guid("{c4ccfe5b-639e-42d9-a9af-a5dee1688f35}"),  
+ EventVersion(1),  
+ DisplayName("IISGlobalCache"),  
+ locale("MS\\0x409")  
+]  
+class IISGlobalCacheEvents:IIS_Global_Trace  
+{  
+}; 
