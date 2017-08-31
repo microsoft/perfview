@@ -844,6 +844,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new SymbolTraceEventParser(this);
             new HeapTraceProviderTraceEventParser(this);
             new MicrosoftWindowsKernelFileTraceEventParser(this);
+            new IisTraceEventParser(this);
 
             new SampleProfilerTraceEventParser(this);
 #if false 
@@ -3178,7 +3179,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 66; }
+            get { return 67; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
