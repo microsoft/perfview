@@ -1328,7 +1328,7 @@ table {
             int endcount = 0;
 
 
-            iis.IIS_TransStart += delegate (W3GeneralStartNewRequest request)
+            iis.IISGeneralGeneralRequestStart += delegate (W3GeneralStartNewRequest request)
             {
 
                 IisRequest req = new IisRequest();
@@ -1349,7 +1349,7 @@ table {
 
             };
 
-            iis.IIS_TransStop += delegate (W3GeneralEndNewRequest req)
+            iis.IISGeneralGeneralRequestEnd += delegate (W3GeneralEndNewRequest req)
             {
                 IisRequest request;
                 if (m_Requests.TryGetValue(req.ContextId, out request))
@@ -1366,7 +1366,7 @@ table {
             };
 
 
-            iis.IISRequestNotificationEventsDC_Stop += delegate (IISRequestNotificationPreBeginStart preBeginEvent)
+            iis.IISRequestNotificationPreBeginRequestStart += delegate (IISRequestNotificationPreBeginStart preBeginEvent)
             {
                 IisRequest request;
                 if (!m_Requests.TryGetValue(preBeginEvent.ContextId, out request))
@@ -1388,7 +1388,7 @@ table {
                 request.PipelineEvents.Add(iisPrebeginModuleEvent);
             };
 
-            iis.IISRequestNotificationEventsExtension += delegate (IISRequestNotificationPreBeginEnd preBeginEvent)
+            iis.IISRequestNotificationPreBeginRequestEnd += delegate (IISRequestNotificationPreBeginEnd preBeginEvent)
             {
                 IisRequest request;
                 if (m_Requests.TryGetValue(preBeginEvent.ContextId, out request))
@@ -1410,7 +1410,7 @@ table {
                 //else { }  
             };
 
-            iis.IISRequestNotificationEventsStart += delegate (IISRequestNotificationEventsStart moduleEvent)
+            iis.IISRequestNotificationNotifyModuleStart += delegate (IISRequestNotificationEventsStart moduleEvent)
             {
                 IisRequest request;
                 if (!m_Requests.TryGetValue(moduleEvent.ContextId, out request))
@@ -1434,7 +1434,7 @@ table {
                 request.PipelineEvents.Add(iisModuleEvent);
             };
 
-            iis.IISRequestNotificationEventsStop += delegate (IISRequestNotificationEventsEnd moduleEvent)
+            iis.IISRequestNotificationNotifyModuleEnd += delegate (IISRequestNotificationEventsEnd moduleEvent)
             {
                 IisRequest request;
                 if (m_Requests.TryGetValue(moduleEvent.ContextId, out request))
@@ -1456,7 +1456,7 @@ table {
 
             };
 
-            iis.IISRequestNotificationEventsOpcode16 += delegate (IISRequestNotificationEventsResponseErrorStatus responseErrorStatusNotification)
+            iis.IISRequestNotificationModuleSetResponseErrorStatus += delegate (IISRequestNotificationEventsResponseErrorStatus responseErrorStatusNotification)
             {
                 IisRequest request;
                 if (m_Requests.TryGetValue(responseErrorStatusNotification.ContextId, out request))
@@ -1472,43 +1472,43 @@ table {
                 }
             };
 
-            iis.IIS_TransOpcode35 += delegate (W3GeneralFlushResponseStart traceEvent)
-            {
-                AddGenericStartEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3GeneralFlushResponse", traceEvent.TimeStampRelativeMSec);
+            iis.IISGeneralGeneralFlushResponseStart += delegate (W3GeneralFlushResponseStart traceEvent)
+            {                
+                AddGenericStartEventToRequest(traceEvent.ContextId , traceEvent);
             };
 
-            iis.IIS_TransOpcode36 += delegate (W3GeneralFlushResponseEnd traceEvent)
+            iis.IISGeneralGeneralFlushResponseEnd += delegate (W3GeneralFlushResponseEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3GeneralFlushResponse", traceEvent.TimeStampRelativeMSec);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
-            iis.IIS_TransOpcode37 += delegate (W3GeneralReadEntityStart traceEvent)
+            iis.IISGeneralGeneralReadEntityStart += delegate (W3GeneralReadEntityStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3GeneralReadEntity", traceEvent.TimeStampRelativeMSec);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
-            iis.IIS_TransOpcode38 += delegate (W3GeneralReadEntityEnd traceEvent)
+            iis.IISGeneralGeneralReadEntityEnd += delegate (W3GeneralReadEntityEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3GeneralReadEntity", traceEvent.TimeStampRelativeMSec);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
-            iis.IIS_Cache_TransOpcode10 += delegate (W3CacheFileCacheAccessStart traceEvent)
+            iis.IISCacheFileCacheAccessStart += delegate (W3CacheFileCacheAccessStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3CacheFileCacheAccess", traceEvent.TimeStampRelativeMSec);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
-            iis.IIS_Cache_TransOpcode11 += delegate (W3CacheFileCacheAccessEnd traceEvent)
+            iis.IISCacheFileCacheAccessEnd += delegate (W3CacheFileCacheAccessEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3CacheFileCacheAccess", traceEvent.TimeStampRelativeMSec);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
             };
-            iis.IIS_Cache_TransOpcode12 += delegate (W3CacheURLCacheAccessStart traceEvent)
+            iis.IISCacheUrlCacheAccessStart += delegate (W3CacheURLCacheAccessStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3CacheURLCacheAccess", traceEvent.TimeStampRelativeMSec);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
-            iis.IIS_Cache_TransOpcode13 += delegate (W3CacheURLCacheAccessEnd traceEvent)
+            iis.IISCacheUrlCacheAccessEnd += delegate (W3CacheURLCacheAccessEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ThreadID, traceEvent.ContextId, "W3CacheURLCacheAccess", traceEvent.TimeStampRelativeMSec);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
 
@@ -1843,7 +1843,7 @@ table {
             return request;
         }
 
-        private void AddGenericStartEventToRequest(int threadId, Guid contextId, string eventName, double timeStamp)
+        private void AddGenericStartEventToRequest(Guid contextId, TraceEvent traceEvent)
         {
             IisRequest request;
 
@@ -1853,27 +1853,28 @@ table {
                 // event but we got a Module Event fired for this request 
                 // so we do our best to create a FAKE start request event
                 // populating as much information as we can.
-                request = GenerateFakeIISRequest(contextId, null, timeStamp);
+                request = GenerateFakeIISRequest(contextId, null, traceEvent.TimeStampRelativeMSec);
                 m_Requests.Add(contextId, request);
             }
 
 
             var iisPipelineEvent = new IisPipelineEvent();
-            iisPipelineEvent.Name = eventName;
-            iisPipelineEvent.StartTimeRelativeMSec = timeStamp;
-            iisPipelineEvent.StartThreadId = threadId;
+            iisPipelineEvent.Name = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 6);
+            iisPipelineEvent.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+            iisPipelineEvent.StartThreadId = traceEvent.ThreadID;
             request.PipelineEvents.Add(iisPipelineEvent);
 
         }
 
-        private void AddGenericStopEventToRequest(int threadId, Guid contextId, string eventName, double timeStamp)
+        private void AddGenericStopEventToRequest(Guid contextId, TraceEvent traceEvent)
         {
             IisRequest request;
             if (m_Requests.TryGetValue(contextId, out request))
             {
+                string eventName = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 4);
                 var iisPipelineEvent = request.PipelineEvents.FirstOrDefault(m => (m.Name == eventName) && m.EndTimeRelativeMSec == 0);
-                iisPipelineEvent.EndTimeRelativeMSec = timeStamp;
-                iisPipelineEvent.EndThreadId = threadId;
+                iisPipelineEvent.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                iisPipelineEvent.EndThreadId = traceEvent.ThreadID;
             }
         }
         private IisPipelineEvent GetSlowestEvent(Guid contextId, List<IisPipelineEvent> pipeLineEvents)
