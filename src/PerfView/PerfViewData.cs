@@ -1862,6 +1862,7 @@ table {
             iisPipelineEvent.Name = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 6);
             iisPipelineEvent.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
             iisPipelineEvent.StartThreadId = traceEvent.ThreadID;
+            iisPipelineEvent.ProcessId = traceEvent.ProcessID;
             request.PipelineEvents.Add(iisPipelineEvent);
 
         }
