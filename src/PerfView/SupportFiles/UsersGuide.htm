@@ -4148,32 +4148,34 @@
                 </li>
             </ul>
         </li>
-        <ul>
-            <li>
-                <em>values</em> this is a list of semicolon-separated values KEY=VALUE, which are used to pass extra information to the provider or to the ETW system.&nbsp;&nbsp; KEY values that begin with an @ are commands to the ETW system.&nbsp;&nbsp; Everything else is passed
-                on the the provider (EventSources have direct support for accepting this information
-                in its OnEventCommand method).&nbsp; The special ETW keywords include
-                <ul>
-                    <li>@StacksEnabled - If this key&#39;s value is &#39;true&#39; then the stack associated with the event is taken (for every event in the provider)</li>
-                    <li>
-                        @ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected.
-                        Since IDs only exist after a process is created, this only works on processes that are running at the time collection starts.
-                    </li>
-                    <li>
-                        @ProcessNameFilter - a space separated list of process names (a process name is the file name (no path) of the executable INCLUDING the .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp;
-                        It does not matter if the process was running before collection or not.
-                    </li>
-                    <li>@EventIDsToEnable -a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be collected in addition to any events specified by the Keywords.&nbsp;&nbsp; </li>
-                    <li>@EventIDsToDisable - a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be suppressed from those specified by the Keywords.&nbsp;&nbsp; </li>
-                    <li>@EventIDStacksToEnable - a space separated list of decimal event ID numbers whose events should have their stacks collected.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will have a stack logged as well as the event information.</li>
-                    <li>@EventIDStacksToDisable - a space separated list of decimal event ID numbers whose events should have their stack collection suppressed.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will not have a stack collected even though the @StacksEnabled would otherwise have cause a stack collection.&nbsp; </li>
-                </ul>
-                <p>
-                    Because
-                    some of the lists use whitespace as a separator if you specify these on the command line, you will need to quote the command line qualifier.&nbsp;&nbsp;
-                </p>
-            </li>
-        </ul>
+        <li>
+            <ul>
+                <li>
+                    <em>values</em> this is a list of semicolon-separated values KEY=VALUE, which are used to pass extra information to the provider or to the ETW system.&nbsp;&nbsp; KEY values that begin with an @ are commands to the ETW system.&nbsp;&nbsp; Everything else is passed
+                    on the the provider (EventSources have direct support for accepting this information
+                    in its OnEventCommand method).&nbsp; The special ETW keywords include
+                    <ul>
+                        <li>@StacksEnabled - If this key&#39;s value is &#39;true&#39; then the stack associated with the event is taken (for every event in the provider)</li>
+                        <li>
+                            @ProcessIDFilter - a space separated list of decimal process IDs to collect data from.&nbsp; Only events from these processes (or those named in the @ProcessNameFilter) will be collected.
+                            Since IDs only exist after a process is created, this only works on processes that are running at the time collection starts.
+                        </li>
+                        <li>
+                            @ProcessNameFilter - a space separated list of process names (a process name is the file name (no path) of the executable INCLUDING the .EXE extension).&nbsp;&nbsp; Only events from the names processes&nbsp; (or those named in the @ProcessIDFilter)&nbsp; will be collected.&nbsp;
+                            It does not matter if the process was running before collection or not.
+                        </li>
+                        <li>@EventIDsToEnable -a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be collected in addition to any events specified by the Keywords.&nbsp;&nbsp; </li>
+                        <li>@EventIDsToDisable - a space separated list of decimal event ID numbers to collect.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will be suppressed from those specified by the Keywords.&nbsp;&nbsp; </li>
+                        <li>@EventIDStacksToEnable - a space separated list of decimal event ID numbers whose events should have their stacks collected.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will have a stack logged as well as the event information.</li>
+                        <li>@EventIDStacksToDisable - a space separated list of decimal event ID numbers whose events should have their stack collection suppressed.&nbsp;&nbsp; Event ETW event has a unique event ID and any IDs in this list will not have a stack collected even though the @StacksEnabled would otherwise have cause a stack collection.&nbsp; </li>
+                    </ul>
+                    <p>
+                        Because
+                        some of the lists use whitespace as a separator if you specify these on the command line, you will need to quote the command line qualifier.&nbsp;&nbsp;
+                    </p>
+                </li>
+            </ul>
+        </li>
     </ul>
     <p>
         In addition to the more advanced events there are additional advanced options that
