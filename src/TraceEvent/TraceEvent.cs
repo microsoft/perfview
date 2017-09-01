@@ -2460,6 +2460,10 @@ namespace Microsoft.Diagnostics.Tracing
                 if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
                     continue;
 
+                // The IIs parser uses Cap _ instead of PascalCase, normalize
+                if (GetType().Name == "IisTraceEventParser")
+                    eventName = eventName.ToLower();
+
                 declaredSet.Add(eventName, eventName);
             }
 
@@ -2484,6 +2488,10 @@ namespace Microsoft.Diagnostics.Tracing
                     eventName = "EventTraceHeader"; // They use opcode 0 which gets truncated.  
                 if (eventName == "Jscript_GC_IdleCollect")
                     eventName = eventName + template.OpcodeName;  // They use opcode 0 which gets truncated.
+
+                // The IIs parser uses Cap _ instead of PascalCase, normalize
+                if (template.ProviderGuid == IisTraceEventParser.ProviderGuid)
+                    eventName = eventName.ToLower().Replace("_", "");
 
                 // We register the same name for old classic and manifest for some old GC events (
                 if (eventName.StartsWith("GC") && template.ID == (TraceEventID)0xFFFF &&

@@ -136,6 +136,8 @@
       <LogicalName>.\x86\sd.exe</LogicalName>
       <Link>x86\sd.exe</Link>
       <Visible>False</Visible>
+      <!-- Copy to output directory. Needed for debugger to work in scenarios that use these DLLs. -->
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
       <Type>Non-Resx</Type>
@@ -258,6 +260,8 @@
       <LogicalName>.\x86\DiagnosticsHub.Packaging.dll</LogicalName>
       <Link>x86\DiagnosticsHub.Packaging.dll</Link>
       <Visible>False</Visible>
+      <!-- Copy to output directory. Needed for debugger to work in scenarios that use these DLLs. -->
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll">
       <Type>Non-Resx</Type>
@@ -265,6 +269,8 @@
       <LogicalName>.\amd64\DiagnosticsHub.Packaging.dll</LogicalName>
       <Link>x64\DiagnosticsHub.Packaging.dll</Link>
       <Visible>False</Visible>
+      <!-- Copy to output directory. Needed for debugger to work in scenarios that use these DLLs. -->
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\DiagnosticsHub.Packaging.Interop.dll">
       <Type>Non-Resx</Type>
@@ -407,25 +413,6 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <!-- Copy to output directory.  Needed for debugger to work.  in scenarios that use these DLLs -->
-  <ItemGroup>
-    <None Include="$(PerfViewSupportFilesBase)native\amd64\DiagnosticsHub.Packaging.dll">
-      <Link>amd64\DiagnosticsHub.Packaging.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(PerfViewSupportFilesBase)native\x86\DiagnosticsHub.Packaging.dll">
-      <Link>x86\DiagnosticsHub.Packaging.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
-    <None Include="$(PerfViewSupportFilesBase)native\x86\sd.exe">
-      <Link>x86\sd.exe</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>False</Visible>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
