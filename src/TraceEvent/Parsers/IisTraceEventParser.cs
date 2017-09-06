@@ -50,6 +50,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public static Guid IISModuleGuid = Guid.Parse("{d79a948e-95f1-417b-a731-b7a79dec7ae5}");
         public enum Keywords : long
         {
+            IISGeneral = 0x0000000000000000,        // IIS general events
+            UseUrlFilter = 0x0000000000000001,      // Allow tracing only selected requests
+            IISAuthentication = 0x0000000000000002, // IIS authentication events
+            IISSecurity = 0x0000000000000004,       // IIS security events
+            IISFilter = 0x0000000000000008,         // IIS filter events
+            IISStaticFile = 0x0000000000000010,     // IIS static file events
+            IISCGI = 0x0000000000000020,            // IIS CGI events
+            IISCompression = 0x0000000000000040,    // IIS compression events
+            IISCache = 0x0000000000000080,          // IIS cache events
+            IISRequestNotification = 0x0000000000000100, // IIS request notifications events
+            IISModule = 0x0000000000000200,         // IIS module events
+            IISFastCGI = 0x0000000000001000,        // IIS FastCGI events
+            IISISAPI = 0x0000000000002000,          // IIS ISAPI events
+            IISWebSocket = 0x0000000000004000,      // IIS WebSocket events
         };
 
         public IisTraceEventParser(TraceEventSource source) : base(source) { }
