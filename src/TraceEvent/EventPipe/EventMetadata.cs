@@ -66,6 +66,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             {
                 return ClrStressTraceEventParser.ProviderGuid;
             }
+            else if (name == FrameworkEventSourceTraceEventParser.ProviderName)
+            {
+                return FrameworkEventSourceTraceEventParser.ProviderGuid;
+            }
             // Needed as long as eventpipeinstance v1 objects are supported
             else if (name == SampleProfilerTraceEventParser.ProviderName)
             {
