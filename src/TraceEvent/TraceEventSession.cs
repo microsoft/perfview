@@ -1895,7 +1895,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// </summary>
         private TraceEventNativeMethods.EVENT_TRACE_PROPERTIES* GetProperties(byte* buffer)
         {
-            TraceEventNativeMethods.ZeroMemory((IntPtr)buffer, PropertiesSize);
+            Marshal.Copy(PropertiesMemoryInitializer, 0, (IntPtr)buffer, PropertiesSize);
             var properties = (TraceEventNativeMethods.EVENT_TRACE_PROPERTIES*)buffer;
 
             properties->LoggerNameOffset = (uint)sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES);
@@ -1972,7 +1972,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
 
         internal const int MaxNameSize = 1024;
         private const int MaxExtensionSize = 256;
-        private static int PropertiesSize = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + 2 * MaxNameSize * sizeof(char) + MaxExtensionSize;
+        private static readonly int PropertiesSize = sizeof(TraceEventNativeMethods.EVENT_TRACE_PROPERTIES) + 2 * MaxNameSize * sizeof(char) + MaxExtensionSize;
+        private static readonly byte[] PropertiesMemoryInitializer = new byte[PropertiesSize];
 
         // Data that is exposed through properties.  
         private string m_SessionName;             // Session name (identifies it uniquely on the machine)
