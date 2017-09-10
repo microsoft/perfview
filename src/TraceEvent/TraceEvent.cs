@@ -3169,9 +3169,15 @@ namespace Microsoft.Diagnostics.Tracing
                     templatesInfo = null;
                 }
             }
+
             if (templatesInfo == null)
-                templatesInfo = (TemplateEntry*)Marshal.AllocHGlobal(sizeof(TemplateEntry) * newLength);
-            TraceEventNativeMethods.ZeroMemory((IntPtr)templatesInfo, sizeof(TemplateEntry) * newLength);
+            {
+                var newTemplatesInfo = (TemplateEntry*)Marshal.AllocHGlobal(sizeof(TemplateEntry) * newLength);
+                for (int i = 0; i < newLength; i++)
+                    newTemplatesInfo[i] = default(TemplateEntry);
+
+                templatesInfo = newTemplatesInfo;
+            }
 
             numTemplates = 0;
             if (oldTemplates != null)

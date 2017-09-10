@@ -379,9 +379,9 @@ namespace Microsoft.Diagnostics.Tracing
             useClassicETW = !OperatingSystemVersion.AtLeast(OperatingSystemVersion.Vista);
             if (useClassicETW)
             {
-                IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
-                TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
-                convertedHeader = (TraceEventNativeMethods.EVENT_RECORD*)mem;
+                var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
+                *mem = default(TraceEventNativeMethods.EVENT_RECORD);
+                convertedHeader = mem;
                 logFiles[0].EventCallback = RawDispatchClassic;
             }
             else
