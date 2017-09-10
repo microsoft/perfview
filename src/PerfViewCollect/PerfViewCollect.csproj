@@ -115,7 +115,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\FastSerialization\bin\$(ConfigurationName)\netstandard1.3\Microsoft.Diagnostics.FastSerialization.dll">
+    <EmbeddedResource Include="..\FastSerialization\bin\$(ConfigurationName)\netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
