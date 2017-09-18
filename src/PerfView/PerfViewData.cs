@@ -1511,6 +1511,238 @@ table {
                 AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
+            var aspNet = new AspNetTraceEventParser(dispatcher);
+
+            // The logic used here is that delays between "AspNetTrace/AspNetReq/Start" and "AspNetTrace/AspNetReq/AppDomainEnter"
+            // will be due to the delay introduced due to the CLR threadpool code based on how
+            // ASP.NET code emits these events.
+            aspNet.AspNetReqStart += delegate (AspNetStartTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, "CLRThreadPoolQueue");
+                }
+            };
+            aspNet.AspNetReqAppDomainEnter += delegate (AspNetAppDomainEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, "CLRThreadPoolQueue");
+                }
+            };
+
+            // Lets look at the rest of Enter/Leave events in AspNetReq now.
+
+            aspNet.AspNetReqPageInitEnter += delegate (AspNetPageInitEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageInitLeave += delegate (AspNetPageInitLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePreInitEnter += delegate (AspNetPagePreInitEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePreInitLeave += delegate (AspNetPagePreInitLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageLoadEnter += delegate (AspNetPageLoadEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageLoadLeave += delegate (AspNetPageLoadLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageRenderEnter += delegate (AspNetPageRenderEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageRenderLeave += delegate (AspNetPageRenderLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePreRenderEnter += delegate (AspNetPagePreRenderEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePreRenderLeave += delegate (AspNetPagePreRenderLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageSaveViewstateEnter += delegate (AspNetPageSaveViewstateEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageSaveViewstateLeave += delegate (AspNetPageSaveViewstateLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageRaisePostbackEnter += delegate (AspNetPageRaisePostbackEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageRaisePostbackLeave += delegate (AspNetPageRaisePostbackLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePostDataChangedEnter += delegate (AspNetPagePostDataChangedEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPagePostDataChangedLeave += delegate (AspNetPagePostDataChangedLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqGetAppDomainEnter += delegate (AspNetGetAppDomainEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqGetAppDomainLeave += delegate (AspNetGetAppDomainLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqMapHandlerEnter += delegate (AspNetMapHandlerEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqMapHandlerLeave += delegate (AspNetMapHandlerLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageLoadPostDataEnter += delegate (AspNetPageLoadPostDataEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqPageLoadPostDataLeave += delegate (AspNetPageLoadPostDataLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqParseEnter += delegate (AspNetParseEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqParseLeave += delegate (AspNetParseLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqCompileEnter += delegate (AspNetCompileEnterTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
+            aspNet.AspNetReqCompileLeave += delegate (AspNetCompileLeaveTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                }
+            };
 
             dispatcher.Process();
 
@@ -1527,11 +1759,12 @@ table {
                 // stop event next to it. If we find, we just set the EndTimeRelativeMSec to the end of the trace
                 var incompletePipeLineEvents = request.PipelineEvents.Where(m => m.EndTimeRelativeMSec == 0);
 
-                if (incompletePipeLineEvents.Count() == 1)
+                if (incompletePipeLineEvents.Count() >= 1)
                 {
-                    var incompleteEvent = incompletePipeLineEvents.FirstOrDefault();
-                    incompleteEvent.EndTimeRelativeMSec = dataFile.SessionEndTimeRelativeMSec;
-
+                    foreach (var incompleteEvent in incompletePipeLineEvents)
+                    {
+                        incompleteEvent.EndTimeRelativeMSec = dataFile.SessionEndTimeRelativeMSec;
+                    }
                     // not setting incompleteEvent.EndThreadId as this is incorrectly adding a hyperlink for requests
                     // requests that are stuck in the session state module
                 }
@@ -1843,7 +2076,7 @@ table {
             return request;
         }
 
-        private void AddGenericStartEventToRequest(Guid contextId, TraceEvent traceEvent)
+        private void AddGenericStartEventToRequest(Guid contextId, TraceEvent traceEvent, string pipelineEventName = "")
         {
             IisRequest request;
 
@@ -1859,7 +2092,25 @@ table {
 
 
             var iisPipelineEvent = new IisPipelineEvent();
-            iisPipelineEvent.Name = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 6);
+            if (string.IsNullOrEmpty(pipelineEventName))
+            {
+                if (traceEvent.OpcodeName.ToLower().EndsWith("_start"))
+                {
+                    iisPipelineEvent.Name = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 6);
+                }
+                // For All the AspnetReq events, they start with Enter or Begin
+                // Also, we want to append the AspnetReq/ in front of them so we can easily distinguish them
+                // as coming from ASP.NET pipeline
+                else if (traceEvent.OpcodeName.ToLower().EndsWith("enter") || traceEvent.OpcodeName.ToLower().EndsWith("begin"))
+                {
+                    iisPipelineEvent.Name = traceEvent.EventName.Substring(0, traceEvent.EventName.Length - 5);
+                }
+            }
+            else
+            {
+                iisPipelineEvent.Name = pipelineEventName;
+            }
+
             iisPipelineEvent.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
             iisPipelineEvent.StartThreadId = traceEvent.ThreadID;
             iisPipelineEvent.ProcessId = traceEvent.ProcessID;
@@ -1867,12 +2118,32 @@ table {
 
         }
 
-        private void AddGenericStopEventToRequest(Guid contextId, TraceEvent traceEvent)
+        private void AddGenericStopEventToRequest(Guid contextId, TraceEvent traceEvent, string pipelineEventName = "")
         {
             IisRequest request;
             if (m_Requests.TryGetValue(contextId, out request))
             {
-                string eventName = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 4);
+                string eventName = "";
+
+                if (string.IsNullOrEmpty(pipelineEventName))
+                {
+                    if (traceEvent.OpcodeName.ToLower().EndsWith("_end"))
+                    {
+                        eventName = traceEvent.OpcodeName.Substring(0, traceEvent.OpcodeName.Length - 4);
+                    }
+
+                    // For All the AspnetReq events, they finish with Leave. Also, we want to append the AspnetReq/ 
+                    // in front of them so we can easily distinguish them as coming from ASP.NET pipeline
+                    else if (traceEvent.OpcodeName.ToLower().EndsWith("leave"))
+                    {
+                        eventName = traceEvent.EventName.Substring(0, traceEvent.EventName.Length - 5);
+                    }
+                }
+                else
+                {
+                    eventName = pipelineEventName;
+                }
+
                 var iisPipelineEvent = request.PipelineEvents.FirstOrDefault(m => (m.Name == eventName) && m.EndTimeRelativeMSec == 0);
                 iisPipelineEvent.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
                 iisPipelineEvent.EndThreadId = traceEvent.ThreadID;
@@ -1880,10 +2151,10 @@ table {
         }
         private IisPipelineEvent GetSlowestEvent(Guid contextId, List<IisPipelineEvent> pipeLineEvents)
         {
-            IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();
+            IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();            
             double slowestTime = 0;
 
-
+            
             foreach (var pipeLineEvent in pipeLineEvents)
             {
                 if (pipeLineEvent.StartTimeRelativeMSec != 0 && pipeLineEvent.EndTimeRelativeMSec != 0)
@@ -1893,8 +2164,23 @@ table {
                     {
                         slowestTime = timeinThisEvent;
                         slowestPipelineEvent = pipeLineEvent;
+
                     }
                 }
+            }
+
+            // Lets check for containment to see if a child event is taking more than 50% 
+            // of the time of this pipeline event, then we want to call that out
+            foreach (var pipeLineEvent in pipeLineEvents.Where(x => (x.StartTimeRelativeMSec > slowestPipelineEvent.StartTimeRelativeMSec) && (x.EndTimeRelativeMSec <= slowestPipelineEvent.EndTimeRelativeMSec)))
+            {
+                var timeinThisEvent = pipeLineEvent.EndTimeRelativeMSec - pipeLineEvent.StartTimeRelativeMSec;
+
+                if (((timeinThisEvent / slowestTime) * 100) > 50)
+                {
+                    slowestTime = timeinThisEvent;
+                    slowestPipelineEvent = pipeLineEvent;
+                }
+
             }
 
             return slowestPipelineEvent;
