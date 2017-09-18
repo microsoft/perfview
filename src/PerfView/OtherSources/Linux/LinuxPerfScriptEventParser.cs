@@ -474,6 +474,7 @@ namespace Diagnostics.Tracing.StackSources
 
             // Can't use Path.GetFileName Because it throws on illegal Windows characters 
             actualModule = GetFileName(actualModule);
+            actualSymbol = this.RemoveOffset(actualSymbol.Trim());
 
             return new StackFrame(address, actualModule, actualSymbol);
         }
@@ -536,6 +537,25 @@ namespace Diagnostics.Tracing.StackSources
                 || (s[0] == '[' && s[s.Length - 1] == ']'))
             {
                 s = s.Substring(1, s.Length - 2);
+            }
+
+            return s;
+        }
+
+        private string RemoveOffset(string s)
+        {
+            // Perf stack entries look like func+0xFFFFFFFFFFFFFFFF.
+            // Strip off the +0xFFFFFFFFFFFFFFFF so that PerfView can aggregate the stacks properly.
+
+            const string offsetPrefix = "+0x";
+            int offsetPrefixLength = offsetPrefix.Length;
+
+
+            // If the offset prefix is found and is not the beginning or end of the frame, then remove the offset.
+            int index = s.LastIndexOf(offsetPrefix);
+            if((index > 0) && (index < s.Length - offsetPrefixLength))
+            {
+                return s.Substring(0, index);
             }
 
             return s;
