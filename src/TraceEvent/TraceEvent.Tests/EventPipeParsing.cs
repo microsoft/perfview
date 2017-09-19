@@ -78,10 +78,7 @@ namespace TraceEventTests
             };
 
             // Process
-            using (new DebugListenerBlock())
-            {
-                traceSource.Process();
-            }
+            traceSource.Process();
 
             // Validate
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
