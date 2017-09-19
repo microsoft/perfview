@@ -163,7 +163,6 @@ namespace PerfView.Dialogs
                 {
                     
                     StatusBar.Status = "Data in: " + DataFileNameTextBox.Text + ".  Press 'Close' or 'Dump GC Heap' to continue.";
-                    StatusBar.Beep();
                     DataFileNameTextBox.Text = CommandProcessor.GetNewFile(DataFileNameTextBox.Text);
                 }
             });
