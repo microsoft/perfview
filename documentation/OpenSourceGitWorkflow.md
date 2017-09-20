@@ -1,6 +1,6 @@
-# Setting Up *With* a Fork with Visual Studio 2015
+# Setting Up *With* a Fork with Visual Studio 
 
- * See also [Setting up a Repo in VS 2015](SettingUpRepoInVS2015.md) for important background material.  
+ * See also [Setting up a Repo in VS](SettingUpRepoInVS2015.md) for important background material.  
  * See also [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for a simpler setup without a fork, 
    if you only need read-only access.  Note that this information is also relevent to this (more complex)
    workflow.   
@@ -13,7 +13,7 @@
 	 2. Make sure you have a GitHub account and that you are logged in (If you are logged into GitHub your user name 
 	    in the very upper right corner of display will be an icon for your user identity).  See https://github.com
 		for information on getting an account.   The instructions will tell you to download GIT tools.   You can
-		do this if you like, however Visual Studio 2015 has all the GIT functionality you will need so you don't
+		do this if you like, however Visual Studio has all the GIT functionality you will need so you don't
 		have to have them (but it does not hurt, and they are useful for more advanced scenarios).
 	 3. Click on the 'Fork' button in the upper right corner.   If it asks you were to put he fork, you will wish
 	    to put it in your account area (same as your user name).   Note that if the fork already exists it simply
@@ -31,7 +31,7 @@
 At this point you should have a local clone of your personal read-write fork of the main repository.    However this
 is a FULLY INDEPENDENT clone which will NEVER SEE ANY UPDATES from the main repository unless you explicitly integrate 
 (merge) them.   To make easy to do this updating, it is good to create an alias for the original master repository.  Here
-we show you how to do that in Visual Studio 2015.  
+we show you how to do that in Visual Studio.  
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the top bolded header (may say 'Home' or 'Changes', ...) and right click on 'Settings'
