@@ -93,9 +93,10 @@ all these changes to bring your fork up to date.   We do this in three steps
   3. Make sure that the 'active branch' (the one in bold) is 'master'.   If not double click on master to make it
      the active branch.  If it fails (and it could easily fail because you have modified files), you will have to
 	 commit or undo those changes before proceeding.   Ultimately you want 'master' to be the active branch.  
-  4. Click on the 'remotes/upstream/master' branch, right click on it and select 'merge from'  This says we want
-     to integrate (merge) all changes from the upstream/master branch into the currently active branch (which is master).
-	 A dialog will come up with text boxes filled out.  Simply click the 'Merge' button. 
+  4. Right Click on the 'master' branch, right click on it and select 'Merge from'.  Then in the 'merge from' textbox select
+         upstream/master and click the 'Merge' button.   This says we want to integrate (merge) all changes from the 
+	 upstream/master branch into the currently active branch (which is master).
+
 
 In most cases this merge operation goes without a hitch and Visual Studio will auto-commit the merge.   However if there
 is a merge conflict with changes that you have made to 'master' (you really should never do that, put changes in some other
