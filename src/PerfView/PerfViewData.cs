@@ -1979,7 +1979,6 @@ table {
         {
             IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();            
             double slowestTime = 0;
-
             
             foreach (var pipeLineEvent in pipeLineEvents)
             {
@@ -1990,7 +1989,6 @@ table {
                     {
                         slowestTime = timeinThisEvent;
                         slowestPipelineEvent = pipeLineEvent;
-
                     }
                 }
             }
