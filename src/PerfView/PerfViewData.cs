@@ -1534,215 +1534,41 @@ table {
             };
 
             // Lets look at the rest of Enter/Leave events in AspNetReq now.
+            
+            aspNet.AddCallbackForEvents(name => name.EndsWith("Enter"), null, (TraceEvent traceEvent) => {
 
-            aspNet.AspNetReqPageInitEnter += delegate (AspNetPageInitEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                // We are using AspNetReqAppDomainEnter to compute for ClrThreadPool so exclude that for now
+                if (!traceEvent.OpcodeName.EndsWith("AspNetReqAppDomainEnter"))
                 {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageInitLeave += delegate (AspNetPageInitLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePreInitEnter += delegate (AspNetPagePreInitEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePreInitLeave += delegate (AspNetPagePreInitLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageLoadEnter += delegate (AspNetPageLoadEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageLoadLeave += delegate (AspNetPageLoadLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageRenderEnter += delegate (AspNetPageRenderEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageRenderLeave += delegate (AspNetPageRenderLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePreRenderEnter += delegate (AspNetPagePreRenderEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePreRenderLeave += delegate (AspNetPagePreRenderLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageSaveViewstateEnter += delegate (AspNetPageSaveViewstateEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageSaveViewstateLeave += delegate (AspNetPageSaveViewstateLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageRaisePostbackEnter += delegate (AspNetPageRaisePostbackEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageRaisePostbackLeave += delegate (AspNetPageRaisePostbackLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePostDataChangedEnter += delegate (AspNetPagePostDataChangedEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPagePostDataChangedLeave += delegate (AspNetPagePostDataChangedLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqGetAppDomainEnter += delegate (AspNetGetAppDomainEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqGetAppDomainLeave += delegate (AspNetGetAppDomainLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqMapHandlerEnter += delegate (AspNetMapHandlerEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqMapHandlerLeave += delegate (AspNetMapHandlerLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageLoadPostDataEnter += delegate (AspNetPageLoadPostDataEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqPageLoadPostDataLeave += delegate (AspNetPageLoadPostDataLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqParseEnter += delegate (AspNetParseEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqParseLeave += delegate (AspNetParseLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqCompileEnter += delegate (AspNetCompileEnterTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
-            aspNet.AspNetReqCompileLeave += delegate (AspNetCompileLeaveTraceData traceEvent)
-            {
-                IisRequest iisRequest;
-                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
-                {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
-                }
-            };
+                    object contextObj = traceEvent.PayloadByName("ContextId");
+                    if (contextObj != null && contextObj.GetType() == typeof(Guid))
+                    {
+                        Guid contextGuid = (Guid)contextObj;
+
+                        IisRequest iisRequest;
+                        if (m_Requests.TryGetValue(contextGuid, out iisRequest))
+                        {
+                            AddGenericStartEventToRequest(contextGuid, traceEvent);
+                        }
+
+                    }
+                }               
+            });
+
+            aspNet.AddCallbackForEvents(name => name.EndsWith("Leave"), null, (TraceEvent traceEvent) => {
+                
+                    object contextObj = traceEvent.PayloadByName("ContextId");
+                    if (contextObj != null && contextObj.GetType() == typeof(Guid))
+                    {
+                        Guid contextGuid = (Guid)contextObj;
+
+                        IisRequest iisRequest;
+                        if (m_Requests.TryGetValue(contextGuid, out iisRequest))
+                        {
+                            AddGenericStopEventToRequest(contextGuid, traceEvent);
+                        }
+                    }
+            });
 
             dispatcher.Process();
 
