@@ -201,7 +201,7 @@ namespace Graphs
                 m_parent[i] = NodeIndex.Invalid;
 
             // We keep track of node depth so that we can limit it.   
-            ushort[] nodeDepth = new ushort[m_parent.Length];
+            int[] nodeDepth = new int[m_parent.Length];
             float[] nodePriorities = new float[m_parent.Length];
             MemoryGraph asMemoryGraph = m_graph as MemoryGraph;
 
@@ -236,13 +236,13 @@ namespace Graphs
                     if (m_parent[(int)childIndex] == NodeIndex.Invalid && childIndex != m_graph.RootIndex) 
                     {
                         m_parent[(int)childIndex] = nodeIndex;
-                        ushort parentDepth = nodeDepth[(int)nodeIndex];
+                        int parentDepth = nodeDepth[(int)nodeIndex];
                         if (parentDepth > MaxDepth)
                         {
                             m_log.WriteLine("WARNING: Orphaned node with index {0} because its depth from root exceeded {1}", childIndex, MaxDepth); 
                             continue;                   // TODO today we just drop it, but we should add it to some special overflow node.   
                         }
-                        nodeDepth[(int)childIndex] = (ushort)(parentDepth + 1);
+                        nodeDepth[(int)childIndex] = checked(parentDepth + 1);
 
                         // the priority of the child is determined by its type and 1/10 by its parent.  
                         var child = m_graph.GetNode(childIndex, m_childStorage);
@@ -394,7 +394,7 @@ namespace Graphs
         public override double SampleTimeRelativeMSecLimit { get { return m_maxAddress; } }
 
 
-        const int MaxDepth = 6000;      // We disallow depth above this to avoid stack overflow later.   
+        const int MaxDepth = int.MaxValue;      // We disallow depth above this to avoid stack overflow later.   
         #region private
 
         /// <summary>

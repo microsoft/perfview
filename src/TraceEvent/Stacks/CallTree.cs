@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;                        // For TextWriter.  
+using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
 {
@@ -148,7 +149,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void Sort(Comparison<CallTreeNode> comparer)
         {
-            m_root.SortAll(comparer);
+            m_root.SortAll(comparer, 0);
         }
         /// <summary>
         /// Sorting by InclusiveMetric Decending is so common, provide a shortcut.  
@@ -271,8 +272,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             public CallTreeNode Tree;
         }
 
-        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack)
+        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack, int depth = 0)
         {
+            if (depth > 400)
+            {
+                Task<CallTreeNode> result = Task.Factory.StartNew(
+                    () => FindTreeNode(stack, 0),
+                    TaskCreationOptions.LongRunning);
+
+                return result.GetAwaiter().GetResult();
+            }
+
             // Is it in our cache?
             int hash = (((int)stack) & (StackInfoCacheSize - 1));
             var entry = m_TreeForStack[hash];
@@ -283,7 +293,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 return m_root;
 
             var callerIndex = m_SampleInfo.GetCallerIndex(stack);
-            var callerNode = FindTreeNode(callerIndex);
+            var callerNode = FindTreeNode(callerIndex, depth + 1);
 
             var frameIndex = m_SampleInfo.GetFrameIndex(stack);
             var retNode = callerNode.FindCallee(frameIndex);
@@ -368,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 m_sumByID = new Dictionary<int, CallTreeNodeBase>();
                 var callersOnStack = new Dictionary<int, CallTreeNodeBase>();       // This is just a set
-                AccumulateSumByID(m_root, callersOnStack);
+                AccumulateSumByID(m_root, callersOnStack, 0);
             }
             return m_sumByID;
         }
@@ -377,8 +387,18 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// double-count inclusive times, so we have to keep track of all callers currently on the
         /// stack and we only add inclusive times for nodes that are not already on the stack.  
         /// </summary>
-        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack)
+        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, int depth)
         {
+            if (depth > 400)
+            {
+                Task result = Task.Factory.StartNew(
+                    () => AccumulateSumByID(treeNode, callersOnStack, 0),
+                    TaskCreationOptions.LongRunning);
+
+                result.GetAwaiter().GetResult();
+                return;
+            }
+
             CallTreeNodeBase byIDNode;
             if (!m_sumByID.TryGetValue((int)treeNode.m_id, out byIDNode))
             {
@@ -400,7 +420,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (newOnStack)
                     callersOnStack.Add((int)treeNode.m_id, null);
                 foreach (var child in treeNode.m_callees)
-                    AccumulateSumByID(child, callersOnStack);
+                    AccumulateSumByID(child, callersOnStack, depth + 1);
                 if (newOnStack)
                     callersOnStack.Remove((int)treeNode.m_id);
             }
@@ -1047,13 +1067,23 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer)
+        internal void SortAll(Comparison<CallTreeNode> comparer, int depth)
         {
+            if (depth > 400)
+            {
+                Task result = Task.Factory.StartNew(
+                    () => SortAll(comparer, 0),
+                    TaskCreationOptions.LongRunning);
+
+                result.GetAwaiter().GetResult();
+                return;
+            }
+
             if (Callees != null)
             {
                 m_callees.Sort(comparer);
                 for (int i = 0; i < m_callees.Count; i++)
-                    m_callees[i].SortAll(comparer);
+                    m_callees[i].SortAll(comparer, depth + 1);
                 m_displayCallees = null;    // Recompute
             }
 
@@ -1393,10 +1423,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_calleesByName = new Dictionary<string, CallTreeNodeBase>();
             m_callees = new List<CallTreeNodeBase>();
 
-            CallTreeNodeBase weightedSummary;
-            double weightedSummaryScale;
-            bool isUniform;
-            AccumlateSamplesForNode(callTree.Root, 0, out weightedSummary, out weightedSummaryScale, out isUniform);
+            var accumulated = AccumlateSamplesForNode(callTree.Root, 0, 0);
+            CallTreeNodeBase weightedSummary = accumulated.WeightedSummary;
+            double weightedSummaryScale = accumulated.WeightedSummaryScale;
+            bool isUniform = accumulated.IsUniform;
 
             m_callees.AddRange(m_calleesByName.Values);
             m_callees.Sort((x, y) => Math.Abs(y.InclusiveMetric).CompareTo(Math.Abs(x.InclusiveMetric)));
@@ -1529,20 +1559,28 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// isUniformRet is set to false if anyplace in 'treeNode' does not have the scaling factor weightedSummaryScaleRet.  This
         /// means the the caller cannot simply scale 'treeNode' by a weight to get weightedSummaryRet.  
         /// </summary>
-        private void AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount,
-            out CallTreeNodeBase weightedSummaryRet, out double weightedSummaryScaleRet, out bool isUniformRet)
+        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, int depth)
         {
+            if (depth > 400)
+            {
+                Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
+                    () => AccumlateSamplesForNode(treeNode, recursionCount, 0),
+                    TaskCreationOptions.LongRunning);
+
+                return result.GetAwaiter().GetResult();
+            }
+
             bool isFocusNode = treeNode.Name.Equals(Name);
             if (isFocusNode)
                 recursionCount++;
 
             // We hope we are uniform (will fix if this is not true)
-            isUniformRet = true;
+            bool isUniformRet = true;
 
             // Compute the weighting.   This is either 0 if we have not yet seen the focus node, or
             // 1/recusionCount if we have (splitting all samples equally among each of the samples)
-            weightedSummaryScaleRet = 0;
-            weightedSummaryRet = null;          // If the weight is zero, we don't care about the value
+            double weightedSummaryScaleRet = 0;
+            CallTreeNodeBase weightedSummaryRet = null;          // If the weight is zero, we don't care about the value
             if (recursionCount > 0)
             {
                 weightedSummaryScaleRet = 1.0F / recursionCount;
@@ -1562,10 +1600,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     CallTreeNode treeNodeCallee = treeNode.m_callees[i];
 
                     // Get the correct weighted summary for the children.  
-                    CallTreeNodeBase calleeWeightedSummary;
-                    double calleeWeightedSummaryScale;
-                    bool isUniform;
-                    AccumlateSamplesForNode(treeNodeCallee, recursionCount, out calleeWeightedSummary, out calleeWeightedSummaryScale, out isUniform);
+                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, depth + 1);
+                    CallTreeNodeBase calleeWeightedSummary = nestedResult.WeightedSummary;
+                    double calleeWeightedSummaryScale = nestedResult.WeightedSummaryScale;
+                    bool isUniform = nestedResult.IsUniform;
 
                     // Did we have any samples at all that contained the focus node this treeNode's callee?
                     if (weightedSummaryScaleRet != 0 && calleeWeightedSummaryScale != 0)
@@ -1623,6 +1661,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (callerTreeNode != null)
                     Find(ref m_callersByName, callerTreeNode.Name).CombineByIdSamples(weightedSummaryRet, true, weightedSummaryScaleRet);
             }
+
+            return new AccumulateSamplesResult { WeightedSummary = weightedSummaryRet, WeightedSummaryScale = weightedSummaryScaleRet, IsUniform = isUniformRet };
+        }
+
+        private struct AccumulateSamplesResult
+        {
+            public CallTreeNodeBase WeightedSummary;
+            public double WeightedSummaryScale;
+            public bool IsUniform;
         }
 
         /// <summary>
