@@ -7,6 +7,7 @@ using System.Xml;
 using System.IO;
 using System.Text;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using System.Threading.Tasks;
 
 namespace Diagnostics.Tracing.StackSources
 {
@@ -471,8 +472,17 @@ namespace Diagnostics.Tracing.StackSources
         /// FrameInfo contains information that is ONLY dependent on the frame name (not the stack it came from), so
         /// entry point groups and include patterns can not be completely processed at this point.   Never returns null. 
         /// </summary>
-        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex)
+        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex, int depth = 0)
         {
+            if (depth > 400)
+            {
+                Task<StackInfo> operation = Task.Factory.StartNew(
+                    () => GetStackInfo(stackIndex, 0),
+                    TaskCreationOptions.LongRunning);
+
+                return operation.GetAwaiter().GetResult();
+            }
+
             Debug.Assert(0 <= stackIndex);                              // No illegal stacks, or other special stacks.  
             Debug.Assert((int)stackIndex < CallStackIndexLimit);         // And in range.  
 
@@ -485,7 +495,7 @@ namespace Diagnostics.Tracing.StackSources
                 if (stackInfo.InUse)
                     stackInfo = new StackInfo(m_includePats.Length);
                 stackInfo.InUse = true;
-                GenerateStackInfo(stackIndex, stackInfo);
+                GenerateStackInfo(stackIndex, stackInfo, depth);
                 stackInfo.InUse = false;
             }
             return stackInfo;
@@ -493,7 +503,7 @@ namespace Diagnostics.Tracing.StackSources
         /// <summary>
         /// Generate the stack information for 'stack' and place it in stackInfoRet.  Only called by GetStackInfo.    
         /// </summary>
-        private void GenerateStackInfo(StackSourceCallStackIndex stackIndex, StackInfo stackInfoRet)
+        private void GenerateStackInfo(StackSourceCallStackIndex stackIndex, StackInfo stackInfoRet, int depth)
         {
             // Clear out old information.  
             stackInfoRet.StackIndex = stackIndex;
@@ -509,7 +519,7 @@ namespace Diagnostics.Tracing.StackSources
             StackInfo parentStackInfo = null;
             if (stackInfoRet.CallerIndex != StackSourceCallStackIndex.Invalid)
             {
-                parentStackInfo = GetStackInfo(stackInfoRet.CallerIndex);
+                parentStackInfo = GetStackInfo(stackInfoRet.CallerIndex, depth + 1);
                 if (parentStackInfo.FrameIndex == StackSourceFrameIndex.Discard)
                 {
                     stackInfoRet.FrameIndex = StackSourceFrameIndex.Discard;
