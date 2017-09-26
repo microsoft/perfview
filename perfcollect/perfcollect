@@ -702,6 +702,10 @@ BlueText()
 {
 	tput setaf 6
 }
+YellowText()
+{
+    tput setaf 3
+}
 
 ResetText()
 {
@@ -715,6 +719,15 @@ WriteStatus()
 	BlueText
 	echo $1
 	ResetText
+}
+
+# $1 == Message.
+WriteWarning()
+{
+    LogAppend $*
+    YellowText
+    echo $1
+    ResetText
 }
 
 # $1 == Message.
@@ -1401,6 +1414,8 @@ ProcessCollectedData()
 		else
 	            LogAppend "crossgen not found, skipping native image map generation."
 		    WriteStatus "...SKIPPED"
+            WriteWarning "Crossgen not found.  Framework symbols will be unavailable."
+            WriteWarning "See https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/linux-performance-tracing.md#resolving-framework-symbols for details."
 		fi
 
 		IFS=$OLDIFS
