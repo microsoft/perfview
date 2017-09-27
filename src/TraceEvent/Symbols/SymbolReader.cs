@@ -155,7 +155,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (pdbPath == null && dllFilePath != null)        // Check next to the file. 
             {
                 m_log.WriteLine("FindSymbolFilePath: Checking relative to DLL path {0}", dllFilePath);
-                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName)); 
+                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName));
                 if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                     pdbPath = pdbPathCandidate;
 
@@ -422,12 +422,6 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
-            // When V4.5 shipped, NGEN CreatePdb did not support looking up the IL pdb using symbol servers.  
-            // We work around by explicitly fetching the IL PDB and pointing NGEN CreatePdb at that.  
-            string ilPdbName = null;
-            Guid ilPdbGuid = Guid.Empty;
-            int ilPdbAge = 0;
-
             string pdbFileName;
             Guid pdbGuid;
             int pdbAge;
@@ -438,9 +432,6 @@ namespace Microsoft.Diagnostics.Symbols
                     m_log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
                     return null;
                 }
-
-                // Also get the IL pdb information (can rip out when we don't care about source code for pre V4.6 runtimes)
-                peFile.GetPdbSignature(out ilPdbName, out ilPdbGuid, out ilPdbAge, false);
             }
 
             // Fast path, the file already exists.
@@ -453,12 +444,18 @@ namespace Microsoft.Diagnostics.Symbols
 
             // We only handle cases where we generate NGEN pdbs.  
             if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+            {
+                m_log.WriteLine("Pdb does not have .ni.pdb suffix");
                 return null;
+            }
 
             string privateRuntimeVerString;
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, m_log, out privateRuntimeVerString);
             if (clrDir == null)
+            {
+                m_log.WriteLine("Could not find CLR Director for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
                 return HandleNetCorePdbs(ngenImageFullPath, pdbPath);
+            }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
             var lineNumberArg = "";
@@ -496,31 +493,6 @@ namespace Microsoft.Diagnostics.Symbols
                                 isV4_5Runtime = true;
                         }
                     }
-
-#if Skip_Symbol_Lookup_At_Collection_Time
-                    // Symbol lookup is not required at collection time in .Net Framework 4.6.1 and beyond
-#else
-                    // TODO FIX NOW:  In V4.6.1 of the runtime we no longer need /lines to get line number 
-                    // information (the native to IL mapping is always put in the NGEN image and that
-                    // is sufficient to look up line numbers later (not at NGEN pdb creation time).  
-                    // Thus this code could be removed once we really don't care about the case where
-                    // it is a V4.5.* runtime but not a V4.6.1+ runtime AND we care about line numbers.  
-                    // After 12/2016 we can probably pull this code.  
-                    if (isV4_5Runtime)
-                    {
-                        m_log.WriteLine("Is a V4.5 Runtime or beyond");
-                        if (ilPdbName != null)
-                        {
-                            var ilPdbPath = this.FindSymbolFilePath(ilPdbName, ilPdbGuid, ilPdbAge);
-                            if (ilPdbPath != null)
-                                lineNumberArg = "/lines " + Command.Quote(Path.GetDirectoryName(ilPdbPath));
-                            else
-                                m_log.WriteLine("Could not find IL PDB {0} Guid {1} Age {2}.", ilPdbName, ilPdbGuid, ilPdbAge);
-                        }
-                        else
-                            m_log.WriteLine("NGEN image did not have IL PDB information, giving up on line number info.");
-                    }
-#endif
                 }
             }
 
@@ -563,7 +535,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             try
             {
-                for (;;) // Loop for retrying without /lines 
+                for (; ; ) // Loop for retrying without /lines 
                 {
                     if (!string.IsNullOrEmpty(privateRuntimeVerString))
                     {
@@ -820,7 +792,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public void Dispose() { }
 
-#region private
+        #region private
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -852,7 +824,8 @@ namespace Microsoft.Diagnostics.Symbols
                 else
                     m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
             }
-            catch(Exception e) {
+            catch (Exception e)
+            {
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
             return false;
@@ -1056,7 +1029,7 @@ namespace Microsoft.Diagnostics.Symbols
                 using (Stream toStream = File.Create(copyToFileName))
                 {
                     byte[] buffer = new byte[8192];
-                    for (;;)
+                    for (; ; )
                     {
                         int count = fromStream.Read(buffer, 0, buffer.Length);
                         if (count == 0)
@@ -1394,7 +1367,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1609,7 +1582,7 @@ namespace Microsoft.Diagnostics.Symbols
                             m_session.findILOffsetsByRVA(rva, 0, out sourceLocs);
                             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
                             // and take the next valid line
-                            for (;;)
+                            for (; ; )
                             {
                                 sourceLocs.Next(1, out sourceLoc, out fetchCount);
                                 if (fetchCount == 0)
@@ -1693,7 +1666,7 @@ namespace Microsoft.Diagnostics.Symbols
             int lineNum;
             // FEEFEE is some sort of illegal line number that is returned some time,  It is better to ignore it.  
             // and take the next valid line
-            for (;;)
+            for (; ; )
             {
                 lineNum = (int)sourceLoc.lineNumber;
                 if (lineNum != 0xFEEFEE)
@@ -1766,7 +1739,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public SymbolReader SymbolReader { get { return m_reader; } }
 
-#region private
+        #region private
 
         private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
         {
@@ -1982,7 +1955,7 @@ namespace Microsoft.Diagnostics.Symbols
         IDiaEnumSymbolsByAddr m_symbolsByAddr;
         string m_pdbPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2052,7 +2025,7 @@ namespace Microsoft.Diagnostics.Symbols
 
             uint fetchCount;
             var ret = new List<Symbol>();
-            for (;;)
+            for (; ; )
             {
                 IDiaSymbol sym;
                 symEnum.Next(1, out sym, out fetchCount);
@@ -2072,7 +2045,7 @@ namespace Microsoft.Diagnostics.Symbols
         {
             return ((int)RVA - (int)other.RVA);
         }
-#region private
+        #region private
 #if false
         // TODO FIX NOW use or remove
         internal enum NameSearchOptions
@@ -2103,7 +2076,7 @@ namespace Microsoft.Diagnostics.Symbols
         private string m_name;
         private IDiaSymbol m_diaSymbol;
         private SymbolModule m_module;
-#endregion
+        #endregion
     }
 
 
@@ -2222,7 +2195,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             var curIdx = 0;
-            for (;;)
+            for (; ; )
             {
                 var sepIdx = BuildTimeFilePath.IndexOf('\\', curIdx);
                 if (sepIdx < 0)
@@ -2274,7 +2247,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
         }
 
-#region private
+        #region private
         /// <summary>
         /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
         /// represented by the 'this' pointer.   This target is iether a ULR or a local file
@@ -2363,7 +2336,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (localDirectoryToPlaceSourceFiles != null)
                 vars.Add("targ", localDirectoryToPlaceSourceFiles);
 
-            for (;;)
+            for (; ; )
             {
                 var line = reader.ReadLine();
                 if (line == null)
@@ -2714,7 +2687,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                     m_hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
                     break;
 
-                case 3: 
+                case 3:
                     m_hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
                     break;
 
@@ -2743,7 +2716,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         System.Security.Cryptography.HashAlgorithm m_hashAlgorithm;
         bool m_getSourceCalled;
         bool m_checksumMatches;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2759,7 +2732,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         /// The line number for the code.
         /// </summary>
         public int LineNumber { get; private set; }
-#region private
+        #region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -2769,7 +2742,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-#endregion
+        #endregion
     }
 }
 
@@ -2901,7 +2874,7 @@ namespace Dia2Lib
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }
-#region private
+        #region private
         [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
          InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface IClassFactory
@@ -2925,7 +2898,7 @@ namespace Dia2Lib
         /// after use.
         /// </summary>
         static bool s_loadedNativeDll;
-#endregion
+        #endregion
     }
 }
 #endregion

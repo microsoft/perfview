@@ -517,6 +517,18 @@ namespace Microsoft.Diagnostics.Tracing.Session
             flags |= stackCapture;
             lock (this)
             {
+#if !CONTAINER_WORKAROUND_NOT_NEEDED
+                // This is a work-around because in containers if you try to turn on kernel events that
+                // it does not support it simply silently fails.   We work around this by insuring that 
+                // we detect if we are in a container and if so strip out kernel events that might cause 
+                // problems.   Can be removed when containers do this automatically 
+                var containerTypeObj = Registry.GetValue(@"HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control", "ContainerType", null);
+                if (containerTypeObj != null && containerTypeObj is int)
+                {
+                    flags &= ~KernelTraceEventParser.Keywords.NonContainer;
+                    stackCapture &= ~KernelTraceEventParser.Keywords.NonContainer;
+                }
+#endif 
                 // many of the kernel events are missing the process or thread information and have to be fixed up.  In order to do this I need the
                 // process and thread events to do this, so we turn those on if any other keyword is on.  
                 if (flags != KernelTraceEventParser.Keywords.None)

@@ -9154,6 +9154,31 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
+        /// For a PMCCounterProfTraceData event, gets the TraceCodeAddress associated with the InstructionPointer address. 
+        /// </summary>
+        public static TraceCodeAddress IntructionPointerCodeAddress(this PMCCounterProfTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+            {
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            }
+            return log.GetCodeAddressAtEvent(anEvent.InstructionPointer, anEvent);
+        }
+        /// <summary>
+        /// For a PMCCounterProfTraceData event, gets the CodeAddressIndex associated with the InstructionPointer address. 
+        /// </summary>
+        public static CodeAddressIndex IntructionPointerCodeAddressIndex(this PMCCounterProfTraceData anEvent)
+        {
+            TraceLog log = anEvent.Source as TraceLog;
+            if (null == log)
+            {
+                throw new InvalidOperationException("Attempted to use TraceLog support on a non-TraceLog TraceEventSource.");
+            }
+            return log.GetCodeAddressIndexAtEvent(anEvent.InstructionPointer, anEvent);
+        }
+
+        /// <summary>
         /// For a ISRTraceData event, gets the CodeAddressIndex associated with the Routine address. 
         /// </summary>
         public static CodeAddressIndex RoutineCodeAddressIndex(this ISRTraceData anEvent)
