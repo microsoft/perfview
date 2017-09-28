@@ -1313,7 +1313,8 @@ table {
     public class PerfViewIisStats : PerfViewHtmlReport
     {
         Dictionary<Guid, IisRequest> m_Requests = new Dictionary<Guid, IisRequest>();
-
+        List<ExceptionDetails> allExceptions = new List<ExceptionDetails>();
+        
         public PerfViewIisStats(PerfViewFile dataFile) : base(dataFile, "IIS Stats") { }
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
@@ -1469,6 +1470,7 @@ table {
                     request.FailureDetails.ErrorCode = responseErrorStatusNotification.ErrorCode;
                     request.FailureDetails.ConfigExceptionInfo = responseErrorStatusNotification.ConfigExceptionInfo;
                     request.FailureDetails.Notification = (RequestNotification)responseErrorStatusNotification.Notification;
+                    request.FailureDetails.TimeStampRelativeMSec = responseErrorStatusNotification.TimeStampRelativeMSec;
                 }
             };
 
@@ -1569,6 +1571,19 @@ table {
                         }
                     }
             });
+
+            var clr = new ClrTraceEventParser(dispatcher);
+
+            clr.ExceptionStart += delegate (ExceptionTraceData data)
+            {
+                ExceptionDetails ex = new ExceptionDetails();
+                ex.ExceptionMessage = data.ExceptionMessage;
+                ex.ExceptionType = data.ExceptionType;
+                ex.ThreadId = data.ThreadID;
+                ex.ProcessId = data.ProcessID;
+                ex.TimeStampRelativeMSec = data.TimeStampRelativeMSec;
+                allExceptions.Add(ex);               
+            };
 
             dispatcher.Process();
 
@@ -1770,6 +1785,7 @@ table {
                 writer.Write("<TH Align='Center' Title='Additional error code that IIS generated for the failed request'>ErrorCode</TH>");
                 writer.Write("<TH Align='Center' Title='The module reponsible for setting the failed HTTP Status' >FailingModuleName</TH>");
                 writer.Write("<TH Align='Center' Title='The total time it took to execute the request on the server'>Duration(ms)</TH>");
+                writer.Write("<TH Align='Center' Title='Any CLR Exceptions that happened on this thread'>Exceptions</TH>");
                 writer.WriteLine("</TR>");
 
                 foreach (var request in m_Requests.Values.Where(x => x.FailureDetails != null))
@@ -1791,7 +1807,9 @@ table {
                     string csBytes = (request.BytesReceived == 0) ? "-" : request.BytesReceived.ToString();
                     string scBytes = (request.BytesSent == 0) ? "-" : request.BytesSent.ToString();
 
-                    writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{request.FailureDetails.HttpStatus}.{request.FailureDetails.HttpSubStatus}</TD><TD>{request.FailureDetails.HttpReason}</TD><TD>{request.FailureDetails.ErrorCode}</TD><TD>{request.FailureDetails.ModuleName} ({request.FailureDetails.Notification}) </TD><TD>{totalTimeSpent:0.00}</TD>");
+                    string exceptionDetails = FindExceptionForThisRequest(request);
+
+                    writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{request.FailureDetails.HttpStatus}.{request.FailureDetails.HttpSubStatus}</TD><TD>{request.FailureDetails.HttpReason}</TD><TD>{request.FailureDetails.ErrorCode}</TD><TD>{request.FailureDetails.ModuleName} ({request.FailureDetails.Notification}) </TD><TD>{totalTimeSpent:0.00}</TD><TD>{exceptionDetails}</TD>");
 
                     writer.Write("</TR>");
                 }
@@ -1804,6 +1822,58 @@ table {
             }
 
             writer.Flush();
+        }
+
+        private string FindExceptionForThisRequest(IisRequest request)
+        {
+            double startTimeForPipeLineEvent = 0;
+            string exceptionMessage = "";
+            int processId = 0;
+            int threadId = 0;
+            foreach (var item in request.PipelineEvents.OfType<IisModuleEvent>().Where(x => x.Name == request.FailureDetails.ModuleName))
+            {
+                var moduleEvent = item as IisModuleEvent;
+
+                if (moduleEvent.Notification == request.FailureDetails.Notification)
+                {
+                    startTimeForPipeLineEvent = moduleEvent.StartTimeRelativeMSec;
+                    processId = moduleEvent.ProcessId;
+                    if (moduleEvent.StartThreadId == moduleEvent.EndThreadId)
+                    {
+                        threadId = moduleEvent.StartThreadId;
+                    }
+                }
+            }
+
+            Dictionary<string,int> exceptionsList = new Dictionary<string, int>();
+
+            if (startTimeForPipeLineEvent > 0 && processId != 0 && threadId !=0)
+            {
+
+                foreach (var ex in allExceptions.Where(x => x.TimeStampRelativeMSec > startTimeForPipeLineEvent && x.TimeStampRelativeMSec <= request.FailureDetails.TimeStampRelativeMSec 
+                                                        && processId == x.ProcessId 
+                                                        && threadId == x.ThreadId))
+                {
+                    exceptionMessage = ex.ExceptionType + ":" + ex.ExceptionMessage;
+
+                    if (exceptionsList.ContainsKey(exceptionMessage))
+                    {
+                        exceptionsList[exceptionMessage] = exceptionsList[exceptionMessage] + 1;
+                    }
+                    else
+                    {
+                        exceptionsList.Add(exceptionMessage, 1);
+                    }
+                }
+            }
+
+            string returnString = "";
+            foreach (var item in exceptionsList.OrderByDescending(x => x.Value))
+            {
+                returnString = $"{item.Value}  exceptions [{item.Key.ToString()}] <br/>";
+            }
+            
+            return returnString;
         }
 
         protected override string DoCommand(string command, StatusBar worker)
@@ -2010,6 +2080,15 @@ table {
             return slowestPipelineEvent;
         }
 
+        class ExceptionDetails
+        {
+            public string ExceptionType;
+            public string ExceptionMessage;
+            public int ThreadId;
+            public int ProcessId;
+            public double TimeStampRelativeMSec;
+        }
+
         class IisRequest
         {
             public string Method;
@@ -2023,8 +2102,6 @@ table {
             public double EndTimeRelativeMSec;
             public double StartTimeRelativeMSec;
             public List<IisPipelineEvent> PipelineEvents = new List<IisPipelineEvent>();
-
-
         }
         class IisPipelineEvent
         {
@@ -2069,6 +2146,7 @@ table {
             public int HttpSubStatus;
             public int ErrorCode;
             public string ConfigExceptionInfo;
+            public double TimeStampRelativeMSec;
         }
 
         #endregion 
