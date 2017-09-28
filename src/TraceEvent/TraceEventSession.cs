@@ -523,7 +523,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 // we detect if we are in a container and if so strip out kernel events that might cause 
                 // problems.   Can be removed when containers do this automatically 
                 var containerTypeObj = Registry.GetValue(@"HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control", "ContainerType", null);
-                if (containerTypeObj != null && containerTypeObj is int)
+                if (containerTypeObj is int)    // false if containerTypeObj is null
                 {
                     flags &= ~KernelTraceEventParser.Keywords.NonContainer;
                     stackCapture &= ~KernelTraceEventParser.Keywords.NonContainer;
