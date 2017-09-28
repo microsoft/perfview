@@ -453,7 +453,7 @@ namespace Microsoft.Diagnostics.Symbols
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, m_log, out privateRuntimeVerString);
             if (clrDir == null)
             {
-                m_log.WriteLine("Could not find CLR Director for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
+                m_log.WriteLine("Could not find CLR directory for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
                 return HandleNetCorePdbs(ngenImageFullPath, pdbPath);
             }
 
