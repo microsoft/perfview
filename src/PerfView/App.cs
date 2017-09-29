@@ -47,7 +47,9 @@ namespace PerfView
             {
                 // Can't display on ARM because the SplashScreen is WPF
                 var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
-                    (args.Length > 0 && string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0);
+                    (args.Length > 0 &&
+                    (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
+                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));              
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
@@ -798,8 +800,9 @@ namespace PerfView
             if (s_splashScreen != null)
             {
                 var splashScreen = (SplashScreen)s_splashScreen.Target;
-                splashScreen.Close(new TimeSpan(0));
                 s_splashScreen = null;
+                if (splashScreen != null)
+                    splashScreen.Close(new TimeSpan(0));
             }
         }
         private static WeakReference s_splashScreen;

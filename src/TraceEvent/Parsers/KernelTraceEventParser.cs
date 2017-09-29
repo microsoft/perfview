@@ -190,6 +190,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 | SystemCall        // Interesting but very expensive. 
                 | OS,
 
+            /// <summary>
+            /// These are the kernel events that are not allowed in containers.  Can be subtracted out.  
+            /// </summary>
+            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch), 
+
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
             /// <summary>
@@ -3408,6 +3413,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 // TODO confirm that you are on the local machine before initializing in this way.  
                 if (kernelToDriveMap.Count == 0)
                     PopulateFromLocalMachine();
+
+#if !CONTAINER_WORKAROUND_NOT_NEEDED
+                // Currently ETW shows paths from the HOST not the CLIENT for some files.   We recognise them 
+                // because they have have the form of a GUID path \Files and then the client path.   We only
+                // need to fix this for windows (OS) files, so we use \Files\Windows\as the key that this is
+                // happening, and we morph the name to fix it.
+
+                // We can pull this out when the OS fixes ETW to show client names.  
+                var filesIdx = kernelName.IndexOf(@"\Files\Windows\", StringComparison.OrdinalIgnoreCase);
+                if (16 < filesIdx)
+                {
+                    var ret = systemDrive + kernelName.Substring(filesIdx + 6);
+                    return ret;
+                }
+
+#endif 
 
                 for (int i = 0; i < kernelToDriveMap.Count; i++)
                 {
