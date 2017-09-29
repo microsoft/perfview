@@ -8046,6 +8046,21 @@
         </li>
         -->
         <li>
+            Version 1.9.64 9/27/17
+            <ul>
+                <li>
+                    Added Support for Argon (light weight) Windows containers.   Most of this is in fact work-arounds which
+                    will eventually be removed, but this makes PerfView work with Argon containers in the RS3 version of the OS
+                    (the version currently available).   Note that there seems to still be issues with looking up symbols for SOME
+                    OS DLLs, but all managed code should work.    Also PerfView is a GUI app and Argon containers don't use
+                    gui, so you need to use the techniques in 'Automating data collection' to use perfView in the container. 
+                    (for example 'Perfview.exe /logfile:logfile.txt /accepteula /maxcollectsec:30 collect').  PerfView (like 
+                    all gui apps) will run in the background if run from the command line directly, but will block until exit
+                    when run from a batch script).  
+                   </li>
+            </ul>
+        </li> 
+        <li>
             Version 1.9.55 5/9/17
             <ul>
                 <li>

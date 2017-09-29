@@ -5844,7 +5844,7 @@ table {
                     {
                         obsolete.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
                     }
-                    else
+                    else if (!hasCSwitchStacks)
                         name += " (CPU ONLY)";
                     obsolete.Children.Add(new PerfViewStackSource(this, name));
                 }

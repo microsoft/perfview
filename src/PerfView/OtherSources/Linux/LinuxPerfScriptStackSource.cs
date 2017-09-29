@@ -409,24 +409,29 @@ namespace Diagnostics.Tracing.StackSources
         private Stream GetPerfScriptStream(string path, out ZipArchive archive)
         {
             archive = null;
-            if (path.EndsWith(".trace.zip"))
+            if (path.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
             {
                 archive = ZipFile.OpenRead(path);
                 ZipArchiveEntry foundEntry = null;
 
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
-                    if (entry.FullName.EndsWith(".data.txt"))
+                    if (entry.FullName.EndsWith(".data.txt", StringComparison.OrdinalIgnoreCase))
                     {
                         foundEntry = entry;
                         break;
                     }
                 }
 
-                return foundEntry?.Open();
+                if (foundEntry == null)
+                    throw new ApplicationException($"file {path} is does not have a *.data.txt file inside.");
+
+                return foundEntry.Open();
             }
-            else
+            else if (path.EndsWith(".data.txt", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".perf.data.dump", StringComparison.OrdinalIgnoreCase))
                 return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            else
+                throw new ApplicationException($"file {path} is not a *.trace.zip *.data.txt or a *.perf.data.dump suffix.");
         }
 
         private double? SampleEndTime;
