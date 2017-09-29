@@ -428,10 +428,10 @@ namespace Diagnostics.Tracing.StackSources
 
                 return foundEntry.Open();
             }
-            else if (path.EndsWith(".data.txt", StringComparison.OrdinalIgnoreCase))
+            else if (path.EndsWith(".data.txt", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".perf.data.dump", StringComparison.OrdinalIgnoreCase))
                 return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             else
-                throw new ApplicationException($"file {path} is not a *.trace.zip or *.data.txt file");
+                throw new ApplicationException($"file {path} is not a *.trace.zip *.data.txt or a *.perf.data.dump suffix.");
         }
 
         private double? SampleEndTime;
