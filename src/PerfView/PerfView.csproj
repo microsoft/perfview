@@ -11,7 +11,7 @@
     <Description>PerfView</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <FileVersion>1.9.64.0</FileVersion>
+    <FileVersion>1.9.65.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
