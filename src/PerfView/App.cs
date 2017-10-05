@@ -7,11 +7,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
-using PerfView.Dialogs;
 using PerfView.Properties;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
@@ -160,6 +157,7 @@ namespace PerfView
                 CommandLineArgs.DataFile.IndexOf('.') < 0 && CommandLineArgs.DataFile.IndexOf('\\') < 0)
                 throw new ApplicationException("Error " + CommandLineArgs.DataFile + " not a perfView command.");
 
+#if !DOTNET_CORE
             // Check for error where you have a TraceEvent dll in the wrong place.
             var traceEventDllPath = typeof(TraceEvent).Assembly.ManifestModule.FullyQualifiedName;
             if (!traceEventDllPath.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
@@ -173,6 +171,7 @@ namespace PerfView
                             "   You cannot place a version of Microsoft.Diagnostics.Tracing.TraceEvent.dll next to PerfView.exe.");
                 }
             }
+#endif
 
             // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
             if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
@@ -259,17 +258,19 @@ namespace PerfView
                 return 0;       // Does not actually return but 
             }
         }
-
+    
         /// <summary>
         /// Logic in DoMainForGui was segregated into its own method so that we don't load WPF until we need to (for ARM)
         /// </summary>
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DoMainForGui()
         {
+#if !PERFVIEW_COLLECT
             DisplaySplashScreen();          // If we have not already displayed the splash screen do it now.  
             s_splashScreen = null;          // this serves no purpose any more.  
             var app = new PerfView.GuiApp();
             app.Run();
+#endif
         }
 
         // ConfigData
@@ -344,7 +345,8 @@ namespace PerfView
                 // But we also need is original non .txt suffix so that source code fetching will find it.  
                 var tutorial = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs");
                 var tutorialTxt = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs.txt");
-                File.Copy(tutorialTxt, tutorial);
+                if (File.Exists(tutorialTxt))
+                    File.Copy(tutorialTxt, tutorial);
 
                 // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
                 if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
@@ -701,16 +703,18 @@ namespace PerfView
             ret.SourcePath = sourcePath;
             ret.Options = symbolFlags;
 
+#if !PERFVIEW_COLLECT
             if (!AppLog.InternalUser && !App.CommandLineArgs.TrustPdbs)
             {
                 ret.SecurityCheck = delegate (string pdbFile)
                 {
-                    var result = MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
-                        "Security Check", MessageBoxButton.YesNo);
-                    return result == MessageBoxResult.Yes;
+                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
+                        "Security Check", System.Windows.MessageBoxButton.YesNo);
+                    return result == System.Windows.MessageBoxResult.Yes;
                 };
             }
             else
+#endif
             {
                 ret.SecurityCheck = (pdbFile => true);
             }
@@ -723,7 +727,7 @@ namespace PerfView
             return ret;
         }
 
-        #region private
+#region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -783,27 +787,31 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DisplaySplashScreen()
         {
+#if !PERFVIEW_COLLECT
             try
             {
                 if (s_splashScreen == null)
                 {
-                    var splashScreen = new SplashScreen("splashscreen.png");
+                    var splashScreen = new System.Windows.SplashScreen("splashscreen.png");
                     s_splashScreen = new WeakReference(splashScreen);
                     splashScreen.Show(true);
                 }
             }
             catch (Exception) { }
+#endif
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void CloseSplashScreen()
         {
+#if !PERFVIEW_COLLECT
             if (s_splashScreen != null)
             {
-                var splashScreen = (SplashScreen)s_splashScreen.Target;
+                var splashScreen = (System.Windows.SplashScreen)s_splashScreen.Target;
                 s_splashScreen = null;
                 if (splashScreen != null)
                     splashScreen.Close(new TimeSpan(0));
             }
+#endif
         }
         private static WeakReference s_splashScreen;
 
@@ -819,6 +827,9 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static bool UserOKWithSymbolServerGui()
         {
+#if PERFVIEW_COLLECT
+            return true;
+#else
             // Ask the user if it is OK to use the Microsoft symbol server.  
             var done = false;
             var ret = false;
@@ -828,7 +839,7 @@ namespace PerfView
             // We are on the GUI thread, we can just open the dialog 
             if (GuiApp.MainWindow.Dispatcher.CheckAccess())
             {
-                var emptyPathDialog = new EmptySymbolPathDialog();
+                var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
                 emptyPathDialog.Owner = GuiApp.MainWindow;
                 emptyPathDialog.ShowDialog();
                 ret = emptyPathDialog.UseMSSymbols;
@@ -842,7 +853,7 @@ namespace PerfView
                 {
                     try
                     {
-                        var emptyPathDialog = new EmptySymbolPathDialog();
+                        var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
                         emptyPathDialog.Owner = GuiApp.MainWindow;
                         emptyPathDialog.ShowDialog();
                         ret = emptyPathDialog.UseMSSymbols;
@@ -858,11 +869,12 @@ namespace PerfView
                     System.Threading.Thread.Sleep(100);
             }
             return ret;
+#endif
         }
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-        #region CreateConsole
+#region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         static extern int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -892,7 +904,6 @@ namespace PerfView
             }
             return path;
         }
-
 
         /// <summary>
         /// Tries to fetch the console that created this process or creates a new one if the parent process has no 
@@ -950,8 +961,8 @@ namespace PerfView
         static Thread s_threadToInterrupt;
         static int s_controlCPressed = 0;
 
-        #endregion
-        #endregion
+#endregion
+#endregion
     }
 
     /// <summary>
@@ -1059,7 +1070,7 @@ namespace PerfView
         {
 #if PUBLIC_ONLY
             return false;
-#else 
+#else
             if (!CanSendFeedback)
                 return false;
             StringWriter sw = new StringWriter();
