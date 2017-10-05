@@ -104,7 +104,7 @@ namespace PerfView
 
         // Start options.
         public bool StackCompression;           // Used compresses stacks when collecting traces. 
-        public int BufferSizeMB = 64;
+        public int BufferSizeMB = 256;
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
