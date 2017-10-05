@@ -883,6 +883,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             return thread.ThreadID;
         }
+        internal unsafe override int LastChanceGetProcessID(TraceEvent data)
+        {
+            Debug.Assert(data.eventRecord->EventHeader.ProcessId == -1);          // we should only be calling this when we have no better answer.      
+            CallStackIndex callStack = data.CallStackIndex();
+            if (callStack == CallStackIndex.Invalid)
+                return -1;
+
+            TraceThread thread = CallStacks.Thread(callStack);
+            if (thread == null)
+                return -1;
+
+            return thread.Process.ProcessID;
+        }
+
 
         private void AddMarkThread(int threadID, long timeStamp, int heapNum)
         {

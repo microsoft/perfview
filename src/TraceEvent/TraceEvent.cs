@@ -482,6 +482,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is intended to be overridden by the TraceLog class that has this additional information. 
         /// </summary>
         internal virtual int LastChanceGetThreadID(TraceEvent data) { return -1; }
+        internal virtual int LastChanceGetProcessID(TraceEvent data) { return -1; }
         internal unsafe virtual Guid GetRelatedActivityID(TraceEventNativeMethods.EVENT_RECORD* eventRecord)
         {
             var extendedData = eventRecord->ExtendedData;
@@ -717,6 +718,8 @@ namespace Microsoft.Diagnostics.Tracing
             get
             {
                 var ret = eventRecord->EventHeader.ProcessId;
+                if (ret == -1)
+                    ret = source.LastChanceGetProcessID(this);     // See if the source has additional information (like a stack event associated with it)
                 return ret;
             }
         }
