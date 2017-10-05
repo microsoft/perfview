@@ -564,17 +564,20 @@ namespace PerfView
                                     ClrPrivateTraceEventParser.Keywords.Stack
                                 ));
 
-                            // Used to determine what is going on with tasks. 
-                            var netTaskStacks = stacksEnabled;
-                            if (TraceEventProviderOptions.FilteringSupported)
+                            if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
                             {
-                                // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
-                                netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
+                                // Used to determine what is going on with tasks.
+                                var netTaskStacks = stacksEnabled;
+                                if (TraceEventProviderOptions.FilteringSupported)
+                                {
+                                    // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
+                                    netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
+                                }
+                                EnableUserProvider(userModeSession, ".NETTasks",
+                                    TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
+                                    (ulong)parsedArgs.TplEvents,
+                                    netTaskStacks);
                             }
-                            EnableUserProvider(userModeSession, ".NETTasks",
-                                TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                (ulong)(TplEtwProviderTraceEventParser.Keywords.Default),
-                                netTaskStacks);
 
                             EnableUserProvider(userModeSession, ".NETFramework",
                                 FrameworkEventSourceTraceEventParser.ProviderGuid,
