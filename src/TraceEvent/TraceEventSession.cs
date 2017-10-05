@@ -1575,7 +1575,8 @@ namespace Microsoft.Diagnostics.Tracing.Session
             if ((stackCapture & KernelTraceEventParser.Keywords.SystemCall) != 0)
             {
                 stackTracingIds[curID].EventGuid = KernelTraceEventParser.PerfInfoTaskGuid;
-                stackTracingIds[curID].Type = 0x33;     // SysCall
+                // stackTracingIds[curID].Type = 0x33;     // SysCallEnter
+                stackTracingIds[curID].Type = 0x34;     // SysCallExit  (We want the stack on the exit as it has the return value).  
                 curID++;
             }
             // Thread

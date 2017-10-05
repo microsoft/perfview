@@ -9217,6 +9217,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             Debug.Assert(!(Version > 2 && EventDataLength < HostOffset(4, 1)));
             Action(this);
         }
+
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
