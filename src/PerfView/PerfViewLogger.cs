@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Session;
+using System.Diagnostics.Tracing;
 
 [EventSource(Name = "PerfView")]
-class PerfViewLogger : Microsoft.Diagnostics.Tracing.EventSource
+class PerfViewLogger : System.Diagnostics.Tracing.EventSource
 {
     [Event(1)]
     public void Mark(string message) { WriteEvent(1, message); }
@@ -39,12 +34,12 @@ class PerfViewLogger : Microsoft.Diagnostics.Tracing.EventSource
         WriteEvent(12, (int)keywords, (int)stacks);
     }
     [Event(13)]
-    public void ClrEnableParameters(ulong keywords, TraceEventLevel level)
+    public void ClrEnableParameters(ulong keywords, Microsoft.Diagnostics.Tracing.TraceEventLevel level)
     {
         WriteEvent(13, (long)keywords, (int)level);
     }
     [Event(14)]
-    public void ProviderEnableParameters(string providerName, Guid providerGuid, TraceEventLevel level, ulong keywords, int stacks, string values)
+    public void ProviderEnableParameters(string providerName, Guid providerGuid, Microsoft.Diagnostics.Tracing.TraceEventLevel level, ulong keywords, int stacks, string values)
     {
         WriteEvent(14, providerName, providerGuid, (int)level, keywords, stacks, values);
     }

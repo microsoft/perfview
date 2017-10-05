@@ -3216,6 +3216,59 @@ namespace PerfViewExtensibility
             OpenLog();
         }
 
+        /// <summary>
+        /// Fetch all the PDBs files needed for viewing 'etlFileName' locally.   If 'processName'
+        /// is present we only fetch PDBs needed for that process.  This can be either a process
+        /// name (exe without extention or path) or a decimal numeric ID.  
+        /// </summary>
+        public void FetchSymbolsForProcess(string etlFileName, string processName = null)
+        {
+            // Create a local symbols directory, and the normal logic will fill it.  
+            var symbolsDir = Path.Combine(Path.GetDirectoryName(etlFileName), "symbols");
+            if (!Directory.Exists(symbolsDir))
+                Directory.CreateDirectory(symbolsDir);
+
+            var etlFile = PerfViewFile.Get(etlFileName) as ETLPerfViewData;
+            if (etlFile == null)
+                throw new ApplicationException("FetchSymbolsForProcess only works on etl files.");
+
+            TraceLog traceLog = etlFile.GetTraceLog(LogFile);
+            TraceProcess focusProcess = null;
+            foreach (var process in traceLog.Processes)
+            {
+                if (processName == null)
+                {
+                    if (process.StartTimeRelativeMsec > 0)
+                    {
+                        LogFile.WriteLine("Focusing on first process {0} ID {1}", process.Name, process.ProcessID);
+                        focusProcess = process;
+                        break;
+                    }
+                }
+                else if (string.Compare(process.Name, processName, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    LogFile.WriteLine("Focusing on named process {0} ID {1}", process.Name, process.ProcessID);
+                    focusProcess = process;
+                    break;
+                }
+            }
+            if (focusProcess == null)
+            {
+                if (processName == null)
+                    throw new ApplicationException("No process started in the trace.  Nothing to focus on.");
+                else
+                    throw new ApplicationException("Could not find a process named " + processName + ".");
+            }
+
+            // Lookup all the pdbs for all modules.  
+            using (var symReader = etlFile.GetSymbolReader(LogFile))
+            {
+                foreach (var module in focusProcess.LoadedModules)
+                    traceLog.CodeAddresses.LookupSymbolsForModule(symReader, module.ModuleFile);
+            }
+        }
+
+
 #if ENUMERATE_SERIALIZED_EXCEPTIONS_ENABLED     // TODO turn on when CLRMD has been updated. 
         /// <summary>
         /// PrintSerializedExceptionFromProcessDump

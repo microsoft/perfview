@@ -167,8 +167,6 @@
       <Link>amd64\KernelTraceControl.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\msdia140.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
