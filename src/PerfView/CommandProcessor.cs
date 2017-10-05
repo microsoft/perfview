@@ -1,4 +1,4 @@
-﻿using Microsoft.Diagnostics.Tracing;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
@@ -1442,52 +1442,6 @@ namespace PerfView
             LogFile.WriteLine("[{0} Total Active sessions: (See Log)]", ctr);
             ShowLog = true;
         }
-        public void FetchSymbolsForProcess(CommandLineArgs parsedArgs)
-        {
-            // Create a local symbols directory, and the normal logic will fill it.  
-            var symbolsDir = Path.Combine(Path.GetDirectoryName(parsedArgs.DataFile), "symbols");
-            if (!Directory.Exists(symbolsDir))
-                Directory.CreateDirectory(symbolsDir);
-
-            var etlFile = PerfViewFile.Get(parsedArgs.DataFile) as ETLPerfViewData;
-            if (etlFile == null)
-                throw new ApplicationException("FetchSymbolsForProcess only works on etl files.");
-
-            TraceLog traceLog = etlFile.GetTraceLog(LogFile);
-            TraceProcess focusProcess = null;
-            foreach (var process in traceLog.Processes)
-            {
-                if (parsedArgs.Process == null)
-                {
-                    if (process.StartTimeRelativeMsec > 0)
-                    {
-                        LogFile.WriteLine("Focusing on first process {0} ID {1}", process.Name, process.ProcessID);
-                        focusProcess = process;
-                        break;
-                    }
-                }
-                else if (string.Compare(process.Name, parsedArgs.Process, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    LogFile.WriteLine("Focusing on named process {0} ID {1}", process.Name, process.ProcessID);
-                    focusProcess = process;
-                    break;
-                }
-            }
-            if (focusProcess == null)
-            {
-                if (parsedArgs.Process == null)
-                    throw new ApplicationException("No process started in the trace.  Nothing to focus on.");
-                else
-                    throw new ApplicationException("Could not find a process named " + parsedArgs.Process + ".");
-            }
-
-            // Lookup all the pdbs for all modules.  
-            using (var symReader = etlFile.GetSymbolReader(LogFile))
-            {
-                foreach (var module in focusProcess.LoadedModules)
-                    traceLog.CodeAddresses.LookupSymbolsForModule(symReader, module.ModuleFile);
-            }
-        }
 
         public void EnableKernelStacks(CommandLineArgs parsedArgs)
         {
@@ -2163,7 +2117,7 @@ namespace PerfView
                 return null;
             }
             RegistryKey memManagment = hklm.OpenSubKey(@"System\CurrentControlSet\Control\Session Manager\Memory Management", writable);
-            hklm.Close();
+            hklm.Dispose();
             return memManagment;
         }
         private static void SetKernelStacks64(bool crawlable, TextWriter writer)
@@ -2196,7 +2150,7 @@ namespace PerfView
                 if (memKey != null)
                 {
                     memKey.SetValue("DisablePagingExecutive", crawlable ? 1 : 0, RegistryValueKind.DWord);
-                    memKey.Close();
+                    memKey.Dispose();
                     writer.WriteLine();
                     writer.WriteLine("The memory management configuration has been {0} for stack crawling.", crawlable ? "enabled" : "disabled");
                     writer.WriteLine("However a reboot is needed for it to take effect.  You can reboot by executing");
@@ -2222,7 +2176,7 @@ namespace PerfView
                 {
                     ret = ((int)valueObj) != 0;
                 }
-                memKey.Close();
+                memKey.Dispose();
             }
             return ret;
         }
@@ -2416,69 +2370,6 @@ namespace PerfView
                 Environment.Exit(0);
 
             throw new UnauthorizedAccessException("Launching PerfView as an elevated app. Consider closing this instance.");
-        }
-
-        static internal List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile,
-            double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
-        {
-            // If a DLL is loaded into multiple processes or at different locations we can get repeats, strip them.  
-            var ret = new List<TraceModuleFile>();
-            var traceLog = etlFile.GetTraceLog(log);
-
-            // There can be several TraceModuleFile for a given path because the module is loaded more than once.
-            // Thus we need to accumulate the counts.  This is what moduleCodeAddressCounts does 
-            var moduleCodeAddressCounts = new Dictionary<string, int>();
-            // Get symbols in cache, generate NGEN images if necessary.  
-
-            IEnumerable<TraceModuleFile> moduleList = traceLog.ModuleFiles;
-            int totalCpu = traceLog.CodeAddresses.TotalCodeAddresses;
-            if (focusProcessIDs != null)
-            {
-                var processtotalCpu = 0;
-                var processModuleList = new List<TraceModuleFile>();
-                foreach (var process in traceLog.Processes)
-                {
-                    processtotalCpu += (int)process.CPUMSec;
-                    if (!focusProcessIDs.Contains(process.ProcessID))
-                        continue;
-                    log.WriteLine("Restricting to process {0} ({1})", process.Name, process.ProcessID);
-                    foreach (var mod in process.LoadedModules)
-                        processModuleList.Add(mod.ModuleFile);
-                }
-                if (processtotalCpu != 0 && processModuleList.Count > 0)
-                {
-                    totalCpu = processtotalCpu;
-                    moduleList = processModuleList;
-                }
-                else
-                    log.WriteLine("ERROR: could not find any CPU in focus processes, using machine wide total.");
-            }
-            log.WriteLine("Total CPU = {0} samples", totalCpu);
-            int pdbThreshold = (int)((pdbThresholdPercent * totalCpu) / 100.0);
-            log.WriteLine("Pdb threshold = {0:f2}% = {1} code address instances", pdbThresholdPercent, pdbThreshold);
-
-            foreach (var moduleFile in moduleList)
-            {
-                if (moduleFile.CodeAddressesInModule == 0)
-                    continue;
-
-                int count = 0;
-                if (moduleCodeAddressCounts.TryGetValue(moduleFile.FilePath, out count))
-                {
-                    // We have already hit the threshold so we don't need to do anything. 
-                    if (count >= pdbThreshold)
-                        continue;
-                }
-
-                count += moduleFile.CodeAddressesInModule;
-                moduleCodeAddressCounts[moduleFile.FilePath] = count;
-                if (count < pdbThreshold)
-                    continue;                   // Have not reached threshold
-
-                log.WriteLine("Addr Count = {0} >= {1}, adding: {2}", count, pdbThreshold, moduleFile.FilePath);
-                ret.Add(moduleFile);
-            }
-            return ret;
         }
 
         /// <summary>
@@ -3163,3 +3054,4 @@ namespace PerfView
 #endregion
     }
 }
+
