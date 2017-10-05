@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <DefineConstants>$(DefineConstants);PERFVIEW_COLLECT;DOTNET_CORE</DefineConstants>
+    <RootNamespace>PerfView</RootNamespace>
+    <AssemblyName>PerfViewCollect</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\PerfView\App.cs" />
+    <Compile Include="..\PerfView\CommandLineArgs.cs" />
+    <Compile Include="..\PerfView\CommandProcessor.cs" />
+    <Compile Include="..\PerfView\ConfigData.cs" />
+    <Compile Include="..\PerfView\Triggers.cs" />
+    <Compile Include="..\PerfView\PerfViewLogger.cs" />
+    <Compile Include="..\PerfView\Utilities\commandLine.cs" />
+    <Compile Include="..\PerfView\Utilities\CommandLineUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\SupportFiles.cs" />
+    <Compile Include="..\PerfView\Utilities\CacheFiles.cs" />
+    <Compile Include="..\PerfView\Utilities\ResourceUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\StreamUtilities.cs" />
+    <Compile Include="..\Utilities\FileUtilities.cs" />
+    <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
+    <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
+    <Compile Include="..\PerfView\Memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\Memory\HeapSnapshot.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+
+
+</Project>

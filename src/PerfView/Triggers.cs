@@ -35,7 +35,8 @@ namespace Triggers
         /// </summary>
         public virtual void Dispose() { }
     }
-
+    
+#if !DOTNET_CORE    // perfCounters don't exist on .NET Core
     /// <summary>
     /// PerformanceCounterTrigger is a class that knows how to determine if a particular performance counter has
     /// exceeded a particular threshold.   
@@ -304,6 +305,7 @@ namespace Triggers
         private DateTime m_startTimeUtc;
         #endregion
     }
+#endif
 
     /// <summary>
     /// A class that triggers when 
@@ -1228,6 +1230,7 @@ namespace Triggers
         }
     }
 
+#if !DOTNET_CORE // EventLog don't exist on .NET Core
     /// <summary>
     /// A class that will cause a callback if a particular event is writen to the windows event log.  
     /// </summary>
@@ -1277,8 +1280,9 @@ namespace Triggers
         Regex m_pat;
         #endregion
     };
+#endif 
 
-
+#if !DOTNET_CORE    // perfCounters don't exist on .NET Core
     /// <summary>
     /// Used to log a particular counter to the ETL file as a PerfViewLogger event. 
     /// </summary>
@@ -1359,6 +1363,7 @@ namespace Triggers
         TextWriter m_log;
         #endregion
     }
+#endif
 
     // TODO FIX NOW USE THE ONE IN TraceEvent
     #region private classes
