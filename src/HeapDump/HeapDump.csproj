@@ -56,7 +56,7 @@
     <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptDumpGraph.cs" />
     <Compile Include="..\PerfView\memory\JavaScriptHeapDumper.cs" />
-    <Compile Include="..\PerfView\PerfViewEventSource.cs" />
+    <Compile Include="..\PerfView\PerfViewLogger.cs" />
     <Compile Include="..\PerfView\Triggers.cs" />
     <Compile Include="..\Utilities\TeeTextWriter.cs" />
     <Compile Include="..\ETWHeapDump\DotNetHeapDumper.cs" />
