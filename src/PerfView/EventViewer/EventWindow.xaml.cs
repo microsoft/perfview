@@ -422,7 +422,7 @@ namespace PerfView
                                 SymbolReaderOptions.CacheOnly | SymbolReaderOptions.NoNGenSymbolCreation))
                             {
                                 // TODO FIX NOW, make this so that it uses the stacks in the view.  
-                                var moduleFiles = CommandProcessor.GetInterestingModuleFiles(etlDataFile, 5.0, StatusBar.LogWriter, null);
+                                var moduleFiles = ETLPerfViewData.GetInterestingModuleFiles(etlDataFile, 5.0, StatusBar.LogWriter, null);
                                 foreach (var moduleFile in moduleFiles)
                                     traceLog.CodeAddresses.LookupSymbolsForModule(reader, moduleFile);
                             }

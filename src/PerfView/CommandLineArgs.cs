@@ -560,11 +560,6 @@ namespace PerfView
                 "Creates a VS project for creates a perfView extension.");
             parser.DefineOptionalParameter("ExtensionName", ref ExtensionName, "The name of the extension (no .DLL)");
 
-            // TODO FIX NOW, this should be a user command 
-            parser.DefineParameterSet("FetchSymbolsForProcess", ref DoCommand, App.CommandProcessor.FetchSymbolsForProcess,
-                "Fetch all the PDBs files needed for viewing locally.  ");
-            parser.DefineOptionalParameter("DataFile", ref DataFile, "ETL file containing profile data.");
-
 #if CROSS_GENERATION_LIVENESS
             parser.DefineParameterSet("CollectCrossGenerationLiveness", ref DoCommand, App.CommandProcessor.CollectCrossGenerationLiveness,
                 "Collect a heap snapshot that can be used to do cross-generation liveness analysis.");

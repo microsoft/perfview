@@ -1473,8 +1473,8 @@ table {
             };
 
             iis.IISGeneralGeneralFlushResponseStart += delegate (W3GeneralFlushResponseStart traceEvent)
-            {                
-                AddGenericStartEventToRequest(traceEvent.ContextId , traceEvent);
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
             };
 
             iis.IISGeneralGeneralFlushResponseEnd += delegate (W3GeneralFlushResponseEnd traceEvent)
@@ -1534,8 +1534,9 @@ table {
             };
 
             // Lets look at the rest of Enter/Leave events in AspNetReq now.
-            
-            aspNet.AddCallbackForEvents(name => name.EndsWith("Enter"), null, (TraceEvent traceEvent) => {
+
+            aspNet.AddCallbackForEvents(name => name.EndsWith("Enter"), null, (TraceEvent traceEvent) =>
+            {
 
                 // We are using AspNetReqAppDomainEnter to compute for ClrThreadPool so exclude that for now
                 if (!traceEvent.OpcodeName.EndsWith("AspNetReqAppDomainEnter"))
@@ -1552,22 +1553,23 @@ table {
                         }
 
                     }
-                }               
+                }
             });
 
-            aspNet.AddCallbackForEvents(name => name.EndsWith("Leave"), null, (TraceEvent traceEvent) => {
-                
-                    object contextObj = traceEvent.PayloadByName("ContextId");
-                    if (contextObj != null && contextObj.GetType() == typeof(Guid))
-                    {
-                        Guid contextGuid = (Guid)contextObj;
+            aspNet.AddCallbackForEvents(name => name.EndsWith("Leave"), null, (TraceEvent traceEvent) =>
+            {
 
-                        IisRequest iisRequest;
-                        if (m_Requests.TryGetValue(contextGuid, out iisRequest))
-                        {
-                            AddGenericStopEventToRequest(contextGuid, traceEvent);
-                        }
+                object contextObj = traceEvent.PayloadByName("ContextId");
+                if (contextObj != null && contextObj.GetType() == typeof(Guid))
+                {
+                    Guid contextGuid = (Guid)contextObj;
+
+                    IisRequest iisRequest;
+                    if (m_Requests.TryGetValue(contextGuid, out iisRequest))
+                    {
+                        AddGenericStopEventToRequest(contextGuid, traceEvent);
                     }
+                }
             });
 
             dispatcher.Process();
@@ -1654,7 +1656,8 @@ table {
                 writer.Write("<TH Align='Center' Title='The number of requests that finished in more than 60 seconds'>&gt; 60s</TH>");
                 writer.WriteLine("</TR>");
 
-                var httpRequestExecutionPerUrl = m_Requests.Values.GroupBy(n => n.Path.Split('?')[0]).Select(c => new {
+                var httpRequestExecutionPerUrl = m_Requests.Values.GroupBy(n => n.Path.Split('?')[0]).Select(c => new
+                {
                     Path = c.Key,
                     Total = c.Count(),
                     OneSec = c.Count(s => (s.EndTimeRelativeMSec - s.StartTimeRelativeMSec) < 1000),
@@ -1874,7 +1877,7 @@ table {
 
                     //Thread(38008); (11276)
                     stacks.Filter.IncludeRegExs = $"Process% w3wp ({processID.ToString()});Thread ({threadId.ToString()})";
-                    
+
                     CommandEnvironment.OpenStackViewer(stacks);
 
                 }
@@ -1977,9 +1980,9 @@ table {
         }
         private IisPipelineEvent GetSlowestEvent(Guid contextId, List<IisPipelineEvent> pipeLineEvents)
         {
-            IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();            
+            IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();
             double slowestTime = 0;
-            
+
             foreach (var pipeLineEvent in pipeLineEvents)
             {
                 if (pipeLineEvent.StartTimeRelativeMSec != 0 && pipeLineEvent.EndTimeRelativeMSec != 0)
@@ -3208,7 +3211,7 @@ table {
                                 TraceLog traceLog = null;
                                 if (etlDataFile != null)
                                 {
-                                    var moduleFiles = CommandProcessor.GetInterestingModuleFiles(etlDataFile, 5.0, Viewer.StatusBar.LogWriter, processIDs);
+                                    var moduleFiles = ETLPerfViewData.GetInterestingModuleFiles(etlDataFile, 5.0, Viewer.StatusBar.LogWriter, processIDs);
                                     traceLog = etlDataFile.GetTraceLog(Viewer.StatusBar.LogWriter);
                                     using (var reader = etlDataFile.GetSymbolReader(Viewer.StatusBar.LogWriter,
                                         SymbolReaderOptions.CacheOnly | SymbolReaderOptions.NoNGenSymbolCreation))
@@ -4356,11 +4359,11 @@ table {
                         }
                     }
 
-                ADD_EVENT_FRAME:
+                    ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                ADD_SAMPLE:
+                    ADD_SAMPLE:
                     sample.StackIndex = stackIndex;
                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                     sample.Metric = 1;
@@ -4393,7 +4396,7 @@ table {
                 {
                     diskStartStack[data.Irp] = stackSource.GetCallStack(data.CallStackIndex(), data);
                 });
-                   
+
                 eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
                 {
                     StackSourceCallStackIndex stackIdx;
@@ -5729,7 +5732,7 @@ table {
 
             m_Children.Add(new PerfViewTraceInfo(this));
             m_Children.Add(new PerfViewProcesses(this));
-           
+
             m_Children.Add(new PerfViewStackSource(this, "Processes / Files / Registry") { SkipSelectProcess = true });
 
             if (hasCPUStacks)
@@ -6008,6 +6011,69 @@ table {
             base.Close();
         }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
+
+        static internal List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile, double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
+        {
+            // If a DLL is loaded into multiple processes or at different locations we can get repeats, strip them.  
+            var ret = new List<TraceModuleFile>();
+            var traceLog = etlFile.GetTraceLog(log);
+
+            // There can be several TraceModuleFile for a given path because the module is loaded more than once.
+            // Thus we need to accumulate the counts.  This is what moduleCodeAddressCounts does 
+            var moduleCodeAddressCounts = new Dictionary<string, int>();
+            // Get symbols in cache, generate NGEN images if necessary.  
+
+            IEnumerable<TraceModuleFile> moduleList = traceLog.ModuleFiles;
+            int totalCpu = traceLog.CodeAddresses.TotalCodeAddresses;
+            if (focusProcessIDs != null)
+            {
+                var processtotalCpu = 0;
+                var processModuleList = new List<TraceModuleFile>();
+                foreach (var process in traceLog.Processes)
+                {
+                    processtotalCpu += (int)process.CPUMSec;
+                    if (!focusProcessIDs.Contains(process.ProcessID))
+                        continue;
+                    log.WriteLine("Restricting to process {0} ({1})", process.Name, process.ProcessID);
+                    foreach (var mod in process.LoadedModules)
+                        processModuleList.Add(mod.ModuleFile);
+                }
+                if (processtotalCpu != 0 && processModuleList.Count > 0)
+                {
+                    totalCpu = processtotalCpu;
+                    moduleList = processModuleList;
+                }
+                else
+                    log.WriteLine("ERROR: could not find any CPU in focus processes, using machine wide total.");
+            }
+            log.WriteLine("Total CPU = {0} samples", totalCpu);
+            int pdbThreshold = (int)((pdbThresholdPercent * totalCpu) / 100.0);
+            log.WriteLine("Pdb threshold = {0:f2}% = {1} code address instances", pdbThresholdPercent, pdbThreshold);
+
+            foreach (var moduleFile in moduleList)
+            {
+                if (moduleFile.CodeAddressesInModule == 0)
+                    continue;
+
+                int count = 0;
+                if (moduleCodeAddressCounts.TryGetValue(moduleFile.FilePath, out count))
+                {
+                    // We have already hit the threshold so we don't need to do anything. 
+                    if (count >= pdbThreshold)
+                        continue;
+                }
+
+                count += moduleFile.CodeAddressesInModule;
+                moduleCodeAddressCounts[moduleFile.FilePath] = count;
+                if (count < pdbThreshold)
+                    continue;                   // Have not reached threshold
+
+                log.WriteLine("Addr Count = {0} >= {1}, adding: {2}", count, pdbThreshold, moduleFile.FilePath);
+                ret.Add(moduleFile);
+            }
+            return ret;
+        }
+
 
         #region private
         /// <summary>
