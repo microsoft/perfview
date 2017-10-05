@@ -1891,7 +1891,9 @@ namespace PerfView
             else
                 Console.WriteLine("Pre V4.0 .NET Rundown enabled, Type 'D' to disable and speed up .NET Rundown.");
 
+#if !PERFVIEW_COLLECT 
             Console.WriteLine("Do NOT close this console window.   It will leave collection on!");
+#endif
             var consider = "";
             if (parsedArgs.MaxCollectSec == 0)
                 consider = "(Also consider /MaxCollectSec:N)";
