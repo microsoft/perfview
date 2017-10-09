@@ -47,7 +47,7 @@ namespace PerfView
                 var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
                     (args.Length > 0 &&
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
-                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));        
+                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
@@ -111,13 +111,14 @@ namespace PerfView
                 CommandLineArgs.ParseArgs(args);   // This routine catches command line parsing exceptions.  (sets CommandLineFailure)
 
             // Figure out where output goes and set CommandProcessor.LogFile
-
 #if !PERFVIEW_COLLECT
             // On ARM we don't have a GUI
             if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
-#endif
+                CommandLineArgs.NoGui = true;
+#else
+            // We never support GUI in PerfViewCollect
             CommandLineArgs.NoGui = true;
-
+#endif
             // If the operation is to collect, we also need to create a new console
             // even if we already have one (because that console has already 'moved on' and is reading the next command)
             // To get data from that console would be very confusing.  
@@ -244,7 +245,7 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
-                else 
+                else
                     App.LogFileName = CommandLineArgs.LogFile;
 
                 var allArgs = string.Join(" ", args);
@@ -262,7 +263,7 @@ namespace PerfView
                 return 0;       // Does not actually return but 
             }
         }
-    
+
         /// <summary>
         /// Logic in DoMainForGui was segregated into its own method so that we don't load WPF until we need to (for ARM)
         /// </summary>
@@ -725,14 +726,14 @@ namespace PerfView
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
             if (localSymDir != null)
-                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log); 
+                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log);
 
             if (symbolFlags == SymbolReaderOptions.None)
                 s_symbolReader = ret;
             return ret;
         }
 
-#region private
+        #region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -880,7 +881,7 @@ namespace PerfView
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-#region CreateConsole
+        #region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         static extern int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -970,8 +971,8 @@ namespace PerfView
         static Thread s_threadToInterrupt;
         static int s_controlCPressed = 0;
 
-#endregion
-#endregion
+        #endregion
+        #endregion
     }
 
     /// <summary>
@@ -1131,7 +1132,7 @@ namespace PerfView
             }
         }
 
-#region private
+        #region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1174,7 +1175,7 @@ namespace PerfView
             }
             return false;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1220,9 +1221,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-#region private
+        #region private
         TextWriter m_verboseLog;
         TextWriter m_terseLog;
-#endregion
+        #endregion
     }
 }
