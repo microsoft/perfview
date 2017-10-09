@@ -42,15 +42,17 @@ namespace PerfView
             bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing            
             try
             {
+#if !PERFVIEW_COLLECT
                 // Can't display on ARM because the SplashScreen is WPF
                 var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
                     (args.Length > 0 &&
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
-                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));              
+                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));        
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
                     DisplaySplashScreen();
+#endif
                 App.Unpack();                   // Install the program if it is not done already 
                 App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally. 
 
@@ -110,9 +112,11 @@ namespace PerfView
 
             // Figure out where output goes and set CommandProcessor.LogFile
 
+#if !PERFVIEW_COLLECT
             // On ARM we don't have a GUI
             if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
-                CommandLineArgs.NoGui = true;
+#endif
+            CommandLineArgs.NoGui = true;
 
             // If the operation is to collect, we also need to create a new console
             // even if we already have one (because that console has already 'moved on' and is reading the next command)
@@ -196,11 +200,12 @@ namespace PerfView
 
                 if (CommandLineArgs.DoCommand == null || CommandLineArgs.DoCommand == CommandProcessor.View)
                 {
+#if !PERFVIEW_COLLECT // THese messages are confusing for PerfViewCollect given that it does not support View.  
                     if (CommandLineArgs.DataFile != null)
                         CommandProcessor.LogFile.WriteLine("Trying to view {0}", CommandLineArgs.DataFile);
                     else
                         CommandProcessor.LogFile.WriteLine("No command given, Trying to open viewer.");
-
+#endif 
                     CommandProcessor.LogFile.WriteLine("Use 'PerfView collect' or 'PerfView HeapSnapshot' to collect data.");
                     return -4;
                 }
@@ -239,7 +244,8 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
-                App.LogFileName = CommandLineArgs.LogFile;
+                else 
+                    App.LogFileName = CommandLineArgs.LogFile;
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
@@ -356,9 +362,10 @@ namespace PerfView
                 foreach (var arch in new string[] { "amd64", "arm" })
                 {
                     var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
-                    if (Directory.Exists(toDir))
+                    var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
+                    if (Directory.Exists(toDir) && File.Exists(fromFile))
                     {
-                        File.Copy(Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll"), Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
+                        File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
 
                         // ARM can use the X86 version of the heap dumper.  
                         if (arch == "arm")
@@ -913,7 +920,9 @@ namespace PerfView
         private static bool CreateConsole()
         {
             ConsoleCreated = true;
-
+#if DOTNET_CORE
+            return false;  // If you return true, it indicates at NEW console was created (this is not true for PerfViewCollect)
+#else
             // TODO AttachConsole is not reliable (GetStdHandle returns an invalid handle about half the time)
             // So I have given up on it, I always create a new console
             AllocConsole();
@@ -955,6 +964,7 @@ namespace PerfView
             });
 
             return true;
+#endif
         }
 
         static Thread s_threadToInterrupt;
