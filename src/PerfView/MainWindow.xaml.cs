@@ -1362,7 +1362,7 @@ namespace PerfView
             // TODO make a command
             StatusBar.StartWork("Unzipping " + inputName, delegate ()
             {
-                PerfView.ETLPerfViewData.UnZipIfNecessary(ref inputName, StatusBar.LogWriter, false);
+                CommandProcessor.UnZipIfNecessary(ref inputName, StatusBar.LogWriter, false);
                 StatusBar.EndWork(delegate ()
                 {
                     // Refresh the directory view

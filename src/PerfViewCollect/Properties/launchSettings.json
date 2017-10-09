@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PerfViewCollect": {
+      "commandName": "Project",
+      "commandLineArgs": "collect /maxCollectSec=30"
+    }
+  }
+}

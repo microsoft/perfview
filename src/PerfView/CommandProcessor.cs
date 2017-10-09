@@ -1,4 +1,4 @@
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
@@ -7,7 +7,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Utilities;
 using Microsoft.Win32;
-using PerfViewExtensibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,6 +21,7 @@ using Triggers;
 using Trigger = Triggers.Trigger;
 using Utilities;
 using Address = System.UInt64;
+using Microsoft.Diagnostics.Symbols;
 
 namespace PerfView
 {
@@ -218,6 +218,7 @@ namespace PerfView
         /// </summary>
         private void WaitForStart(CommandLineArgs parsedArgs, ManualResetEvent collectionCompleted)
         {
+#if !DOTNET_CORE // perf counters dont exist on .NET Core
             if (parsedArgs.StartOnPerfCounter != null)
             {
                 if (!App.IsElevated)
@@ -265,6 +266,7 @@ namespace PerfView
                         startTrigger.Dispose();
                 }
             }
+#endif
         }
 
         public void Start(CommandLineArgs parsedArgs)
@@ -605,13 +607,13 @@ namespace PerfView
                                 "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
                                 "Request.RequestUri" +
                                 "\n" +
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" + 
+                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
                                 "Response.StatusCode";
                             diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
                             const ulong IgnoreShortCutKeywords = 0x0800;
                             EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
-                                TraceEventLevel.Informational, ulong.MaxValue-IgnoreShortCutKeywords, diagSourceOptions);
+                                TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
 
                             // TODO should stacks be enabled?
                             EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
@@ -1255,12 +1257,70 @@ namespace PerfView
         public void Unzip(CommandLineArgs parsedArgs)
         {
             LogFile.WriteLine("[Unpacking the file {0}", parsedArgs.DataFile);
-            ETLPerfViewData.UnZipIfNecessary(ref parsedArgs.DataFile, LogFile, false, parsedArgs.Wpr);
+            UnZipIfNecessary(ref parsedArgs.DataFile, LogFile, false, parsedArgs.Wpr);
             LogFile.WriteLine("[Unpacked ETL file {0}", parsedArgs.DataFile);
+        }
+
+        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
+        {
+            if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                log.WriteLine($"'{inputFileName}' is a linux trace.");
+                return;
+            }
+
+            var extension = Path.GetExtension(inputFileName);
+            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
+                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                string unzipedEtlFile;
+                if (unpackInCache)
+                {
+                    unzipedEtlFile = CacheFiles.FindFile(inputFileName, ".etl");
+                    if (File.Exists(unzipedEtlFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzipedEtlFile))
+                    {
+                        log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
+                        inputFileName = unzipedEtlFile;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                        unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
+                    else if (inputFileName.EndsWith(".vspx", StringComparison.OrdinalIgnoreCase))
+                        unzipedEtlFile = Path.ChangeExtension(inputFileName, ".etl");
+                    else
+                        throw new ApplicationException("File does not end with the .etl.zip file extension");
+                }
+
+                ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
+                etlReader.EtlFileName = unzipedEtlFile;
+
+                // Figure out where to put the symbols.  
+                if (wprConventions)
+                    etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
+                else
+                {
+                    var inputDir = Path.GetDirectoryName(inputFileName);
+                    if (inputDir.Length == 0)
+                        inputDir = ".";
+                    var symbolsDir = Path.Combine(inputDir, "symbols");
+                    if (Directory.Exists(symbolsDir))
+                        etlReader.SymbolDirectory = symbolsDir;
+                    else
+                        etlReader.SymbolDirectory = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+                }
+                log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
+
+                etlReader.UnpackArchive();
+                inputFileName = unzipedEtlFile;
+            }
         }
 
         private void InformedAboutSkippingMerge()
         {
+#if !PERFVIEW_COLLECT
             GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
             {
                 MessageBox.Show(GuiApp.MainWindow,
@@ -1273,10 +1333,11 @@ namespace PerfView
                     "See the 'Merging' section in the users guide for complete details.",
                     "Skip Merging/Zipping for faster local processing.");
             });
+#endif 
         }
-
         public void GuiRun(CommandLineArgs parsedArgs)
         {
+#if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -1284,9 +1345,11 @@ namespace PerfView
                     GuiApp.MainWindow.DoRun(null, null);
                 });
             }
+#endif
         }
         public void GuiCollect(CommandLineArgs parsedArgs)
         {
+#if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -1294,6 +1357,7 @@ namespace PerfView
                     GuiApp.MainWindow.DoCollect(null, null);
                 });
             }
+#endif
         }
         public void View(CommandLineArgs parsedArgs)
         {
@@ -1306,6 +1370,7 @@ namespace PerfView
             if (processID < 0)
                 throw new ApplicationException("Could not find a process with a name or ID of '" + parsedArgs.Process + "'");
 
+#if !DOTNET_CORE // perf counters dont exist on .NET Core
             // Support StartOnPerfCounter 
             if (parsedArgs.StartOnPerfCounter != null)
             {
@@ -1318,6 +1383,7 @@ namespace PerfView
                 while (!done)
                     Thread.Sleep(10);
             }
+#endif
             HeapDumper.ForceGC(processID, LogFile);
         }
         public void HeapSnapshot(CommandLineArgs parsedArgs)
@@ -1386,6 +1452,7 @@ namespace PerfView
 
         public void GuiHeapSnapshot(CommandLineArgs parsedArgs, bool waitForCompletion)
         {
+#if !PERFVIEW_COLLECT
             // We'll wait on this handle until the heap snapshot completes.
             ManualResetEvent waitHandle = new ManualResetEvent(false);
 
@@ -1406,6 +1473,7 @@ namespace PerfView
             {
                 waitHandle.WaitOne();
             }
+#endif
         }
 
         public void ListCpuCounters(CommandLineArgs parsedArgs)
@@ -1455,12 +1523,13 @@ namespace PerfView
         }
         public void CreateExtensionProject(CommandLineArgs parsedArgs)
         {
+#if !PERFVIEW_COLLECT 
             // We do this to avoid a common mistake where people will create extensions on shared copies of perfView.  
-            if (Extensions.ExtensionsDirectory.StartsWith(@"\\") ||
-                Extensions.ExtensionsDirectory.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
+            if (PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(@"\\") ||
+                PerfViewExtensibility.Extensions.ExtensionsDirectory.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
                 throw new ApplicationException("Currently PerView.exe must be a machine-local copy of the EXE.  Copy it locally first.");
 
-            var extensionSrcDir = Path.Combine(Extensions.ExtensionsDirectory, parsedArgs.ExtensionName + "Src");
+            var extensionSrcDir = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, parsedArgs.ExtensionName + "Src");
             if (Directory.Exists(extensionSrcDir))
                 throw new ApplicationException("The extension directory " + extensionSrcDir + " already exists.");
 
@@ -1488,7 +1557,7 @@ namespace PerfView
 
             // Write out a solution file that combines all existing extensions.  
             var projectFiles = new List<string>();
-            foreach (var dirName in Directory.EnumerateDirectories(Extensions.ExtensionsDirectory, "*Src", SearchOption.TopDirectoryOnly))
+            foreach (var dirName in Directory.EnumerateDirectories(PerfViewExtensibility.Extensions.ExtensionsDirectory, "*Src", SearchOption.TopDirectoryOnly))
             {
                 var shortDirName = Path.GetFileName(dirName);
                 var extensionName = shortDirName.Substring(0, shortDirName.Length - 3);   // Remove .src
@@ -1497,15 +1566,17 @@ namespace PerfView
                     projectFiles.Add(projFile);
             }
 
-            var extensionsSolnName = Path.Combine(Extensions.ExtensionsDirectory, "Extensions.sln");
+            var extensionsSolnName = Path.Combine(PerfViewExtensibility.Extensions.ExtensionsDirectory, "Extensions.sln");
             LogFile.WriteLine("Updating solution file {0}.", extensionsSolnName);
             CreateSolution(extensionsSolnName, projectFiles);
 
             LogFile.WriteLine("Launching Visual Studio on {0}.", extensionsSolnName);
             Command.Run(Command.Quote(extensionsSolnName), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
+#endif
         }
         public void UserCommand(CommandLineArgs parsedArgs)
         {
+#if !PERFVIEW_COLLECT
             if (parsedArgs.CommandAndArgs.Length < 1)
                 throw new CommandLineParserException("User command missing.");
 
@@ -1516,11 +1587,11 @@ namespace PerfView
             Array.Copy(parsedArgs.CommandAndArgs, 1, userArgs, 0, userArgs.Length);
 
             PerfViewExtensibility.Extensions.ExecuteUserCommand(userCommand, userArgs);
+#endif
         }
         public void UserCommandHelp(CommandLineArgs parsedArgs)
         {
-
-
+#if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -1532,9 +1603,9 @@ namespace PerfView
             {
                 var log = App.CommandProcessor.LogFile;
                 log.WriteLine("All User Commands");
-                Extensions.GenerateHelp(log);
-
+                PerfViewExtensibility.Extensions.GenerateHelp(log);
             }
+#endif
         }
 
         // Given a path, keeps adding .N. before the extension until you find a new file 
@@ -1593,7 +1664,7 @@ namespace PerfView
         }
 #endif
 
-#region private
+        #region private
         private void DisableNetMonTrace()
         {
             string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
@@ -1657,9 +1728,12 @@ namespace PerfView
         private void WaitUntilCollectionDone(ManualResetEvent collectionCompleted, CommandLineArgs parsedArgs, DateTime startTime)
         {
             var triggers = new List<Trigger>();
+#if !DOTNET_CORE // perf counters dont exist on .NET Core
             var monitors = new List<PerformanceCounterMonitor>();
+#endif
             try
             {
+#if !DOTNET_CORE  // perf counters dont exist on .NET Core
                 if (parsedArgs.StopOnPerfCounter != null)
                 {
                     foreach (var perfCounterTrigger in parsedArgs.StopOnPerfCounter)
@@ -1681,6 +1755,7 @@ namespace PerfView
                         monitors.Add(new PerformanceCounterMonitor(perfCounterSpec, LogFile));
                     }
                 }
+#endif
 
                 if (parsedArgs.StopOnGCOverMsec > 0)
                 {
@@ -1736,7 +1811,7 @@ namespace PerfView
                         TriggerStop(collectionCompleted, trigger.TriggeredMessage, parsedArgs.DelayAfterTriggerSec);
                     }));
                 }
-
+#if !DOTNET_CORE // EventLog doesn't exist on .NET Core
                 if (parsedArgs.StopOnEventLogMessage != null)
                 {
                     LogFile.WriteLine("[Enabling StopOnEventLogMessage with Regex pattern: '{0}'.]", parsedArgs.StopOnEventLogMessage);
@@ -1746,7 +1821,7 @@ namespace PerfView
                             parsedArgs.DelayAfterTriggerSec);
                     }));
                 }
-
+#endif
                 var lastStatusTime = startTime;
                 LogFile.WriteLine("[Starting collection at {0}]", startTime);
                 string startedDropping = "";
@@ -1782,12 +1857,14 @@ namespace PerfView
                     foreach (Trigger trigger in triggers)
                         trigger.Dispose();
                 }
+#if !DOTNET_CORE // perf counters dont exist on .NET Core
                 if (monitors.Count > 0)
                 {
                     LogFile.WriteLine("Turning off perf monitoring.");
                     foreach (var monitor in monitors)
                         monitor.Dispose();
                 }
+#endif
             }
         }
 
@@ -1808,6 +1885,7 @@ namespace PerfView
 
         private void SetupWaitGui(ManualResetEvent collectionCompleted, CommandLineArgs parsedArgs)
         {
+#if !PERFVIEW_COLLECT
             RunCommandDialog collectWindow = null;
 
             // Hook up the logic to cause the 'Stop' button to set 'collectionCompleted'.
@@ -1855,6 +1933,7 @@ namespace PerfView
                     }
                 });
             });
+#endif
         }
 
         private void SetupWaitNoGui(ManualResetEvent collectionCompleted, CommandLineArgs parsedArgs)
@@ -1865,7 +1944,9 @@ namespace PerfView
             else
                 Console.WriteLine("Pre V4.0 .NET Rundown enabled, Type 'D' to disable and speed up .NET Rundown.");
 
+#if !PERFVIEW_COLLECT 
             Console.WriteLine("Do NOT close this console window.   It will leave collection on!");
+#endif
             var consider = "";
             if (parsedArgs.MaxCollectSec == 0)
                 consider = "(Also consider /MaxCollectSec:N)";
@@ -2442,6 +2523,7 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         void ShowAspNetWarningBox(string message)
         {
+#if !PERFVIEW_COLLECT
             // Are we activating with the GUI, then pop a dialog box
             if (App.CommandLineArgs.LogFile == null && GuiApp.MainWindow != null)
             {
@@ -2450,6 +2532,7 @@ namespace PerfView
                     MessageBox.Show(GuiApp.MainWindow, message, "Warning ASP.NET Tracing not installed");
                 });
             }
+#endif
         }
 
         void EnableUserProvider(TraceEventSession userModeSession, string providerName, Guid providerGuid,
@@ -2695,7 +2778,7 @@ namespace PerfView
 
         TextWriter m_logFile;
         bool m_aborted;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2743,7 +2826,7 @@ namespace PerfView
                     providerStr = "@" + wildCardFileName;
                 }
 
-            RETRY:
+                RETRY:
                 // Handle : style keyword, level and stacks description. 
                 m = Regex.Match(rest, @"^([^:=]*)(:(.*))?$");
                 if (m.Success)
@@ -2857,7 +2940,7 @@ namespace PerfView
             return ret;
         }
 
-#region private
+        #region private
 
         private static IList<int> ParseIntList(string spaceSeparatedList)
         {
@@ -2972,7 +3055,7 @@ namespace PerfView
             }
             return returnValue;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -3022,7 +3105,7 @@ namespace PerfView
             return manifest;
         }
 
-#region private
+        #region private
 
         private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
         {
@@ -3051,7 +3134,6 @@ namespace PerfView
                 }
             }
         }
-#endregion
+        #endregion
     }
 }
-

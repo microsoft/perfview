@@ -707,11 +707,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-#if DOTNET_CORE // TODO FIX use SafeHandles everywhere, but we have to decide how far back we want to support. 
-            bool success = OpenProcessToken(process.SafeHandle.DangerousGetHandle(), TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
-#else 
             bool success = OpenProcessToken(process.Handle, TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
-#endif
             if (!success)
                 throw new Win32Exception();
             GC.KeepAlive(process);                      // TODO get on SafeHandles. 
@@ -734,13 +730,8 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS 
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-#if DOTNET_CORE // TODO FIX use SafeHandles everywhere, but we have to decide how far back we want to support. 
-            if (!OpenProcessToken(process.SafeHandle.DangerousGetHandle(), TOKEN_QUERY, out tokenHandle))
-                return null;
-#else
             if (!OpenProcessToken(process.Handle, TOKEN_QUERY, out tokenHandle))
                 return null;
-#endif
 
             int tokenIsElevated = 0;
             int retSize;
