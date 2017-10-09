@@ -1185,7 +1185,7 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
             sb.AppendLine().Append(" ");
 
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             if (ActivityID != Guid.Empty || RelatedActivityID != Guid.Empty)
             {
                 if (ActivityID != Guid.Empty)
@@ -2634,7 +2634,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Actually Register it with the source.     
             source.RegisterEventTemplate(templateWithCallback);
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             Debug.Assert(templateWithCallback.source == Source ||
                 (templateWithCallback.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
                  Source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
@@ -3194,7 +3194,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private unsafe void Insert(TraceEvent template)
         {
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             Debug.Assert(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.source == this);
             Debug.Assert(!(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif

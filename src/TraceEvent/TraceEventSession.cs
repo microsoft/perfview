@@ -1335,11 +1335,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         // Returns 10 * Major + Minor version number for Windows.   Thus Windows 8 is 62 
         internal static int WindowsVersionMajorMinor()
         {
-#if DOTNET_CORE  // TODO FIX NOW Can remove after .NET Core 2.0 allows 
-            return 63;
-#else
             return Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-#endif
         }
 
         // We support file based, in memory circular, and real time.  

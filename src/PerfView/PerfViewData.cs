@@ -5914,7 +5914,7 @@ table {
             if (Directory.Exists(etwManifestDirPath))
                 options.ExplicitManifestDir = etwManifestDirPath;
 
-            UnZipIfNecessary(ref dataFileName, log);
+            CommandProcessor.UnZipIfNecessary(ref dataFileName, log);
 
             var etlxFile = dataFileName;
             var cachedEtlxFile = false;
@@ -6097,63 +6097,6 @@ table {
         }
         bool m_checkedForVSEvents;
         bool m_hasVSEvents;
-
-        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
-        {
-            if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
-            {
-                log.WriteLine($"'{inputFileName}' is a linux trace.");
-                return;
-            }
-
-            var extension = Path.GetExtension(inputFileName);
-            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
-                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
-            {
-                string unzipedEtlFile;
-                if (unpackInCache)
-                {
-                    unzipedEtlFile = CacheFiles.FindFile(inputFileName, ".etl");
-                    if (File.Exists(unzipedEtlFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzipedEtlFile))
-                    {
-                        log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
-                        inputFileName = unzipedEtlFile;
-                        return;
-                    }
-                }
-                else
-                {
-                    if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
-                        unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
-                    else if (inputFileName.EndsWith(".vspx", StringComparison.OrdinalIgnoreCase))
-                        unzipedEtlFile = Path.ChangeExtension(inputFileName, ".etl");
-                    else
-                        throw new ApplicationException("File does not end with the .etl.zip file extension");
-                }
-
-                ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
-                etlReader.EtlFileName = unzipedEtlFile;
-
-                // Figure out where to put the symbols.  
-                if (wprConventions)
-                    etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
-                else
-                {
-                    var inputDir = Path.GetDirectoryName(inputFileName);
-                    if (inputDir.Length == 0)
-                        inputDir = ".";
-                    var symbolsDir = Path.Combine(inputDir, "symbols");
-                    if (Directory.Exists(symbolsDir))
-                        etlReader.SymbolDirectory = symbolsDir;
-                    else
-                        etlReader.SymbolDirectory = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
-                }
-                log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
-
-                etlReader.UnpackArchive();
-                inputFileName = unzipedEtlFile;
-            }
-        }
 
         TraceLog m_traceLog;
         bool m_notifiedAboutLostEvents;
@@ -6745,7 +6688,7 @@ table {
                 {
                     DotNetHeapInfo dotNetHeapInfo = null;
                     var etlFile = FilePath;
-                    ETLPerfViewData.UnZipIfNecessary(ref etlFile, log);
+                    CommandProcessor.UnZipIfNecessary(ref etlFile, log);
 
                     MemoryGraph memoryGraph = null;
                     if (asSnapshot.Kind == "JS")

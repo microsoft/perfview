@@ -32,7 +32,7 @@ namespace PerfView
         /// Main is also responsible for doing the 'install On First launch' logic that unpacks the EXE if needed.  
         /// </summary>  
         [System.STAThreadAttribute()]
-        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        // [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static int Main(string[] args)
         {
             CommandProcessor = new CommandProcessor();
@@ -157,7 +157,6 @@ namespace PerfView
                 CommandLineArgs.DataFile.IndexOf('.') < 0 && CommandLineArgs.DataFile.IndexOf('\\') < 0)
                 throw new ApplicationException("Error " + CommandLineArgs.DataFile + " not a perfView command.");
 
-#if !DOTNET_CORE
             // Check for error where you have a TraceEvent dll in the wrong place.
             var traceEventDllPath = typeof(TraceEvent).Assembly.ManifestModule.FullyQualifiedName;
             if (!traceEventDllPath.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
@@ -171,7 +170,6 @@ namespace PerfView
                             "   You cannot place a version of Microsoft.Diagnostics.Tracing.TraceEvent.dll next to PerfView.exe.");
                 }
             }
-#endif
 
             // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
             if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
@@ -813,8 +811,9 @@ namespace PerfView
             }
 #endif
         }
+#if !PERFVIEW_COLLECT
         private static WeakReference s_splashScreen;
-
+#endif
         private const string EulaVersion = "1";
         private static ConfigData s_ConfigData;
         private static string s_ConfigDataName;
@@ -827,9 +826,7 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static bool UserOKWithSymbolServerGui()
         {
-#if PERFVIEW_COLLECT
-            return true;
-#else
+#if !PERFVIEW_COLLECT
             // Ask the user if it is OK to use the Microsoft symbol server.  
             var done = false;
             var ret = false;
@@ -869,6 +866,8 @@ namespace PerfView
                     System.Threading.Thread.Sleep(100);
             }
             return ret;
+#else
+            return true;
 #endif
         }
         private static string m_SymbolPath;

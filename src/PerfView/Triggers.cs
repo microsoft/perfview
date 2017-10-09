@@ -1230,7 +1230,7 @@ namespace Triggers
         }
     }
 
-#if !DOTNET_CORE // EventLog don't exist on .NET Core
+#if !DOTNET_CORE // EventLog doesn't exist on .NET Core
     /// <summary>
     /// A class that will cause a callback if a particular event is writen to the windows event log.  
     /// </summary>
