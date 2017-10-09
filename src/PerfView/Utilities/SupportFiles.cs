@@ -184,10 +184,7 @@ namespace Utilities
             get
             {
                 if (s_exePath == null)
-                {
                     s_exePath = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
-                    Debug.Assert(s_exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
-                }
                 return s_exePath;
             }
         }

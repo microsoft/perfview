@@ -7,11 +7,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Utilities;
-using PerfView.Dialogs;
 using PerfView.Properties;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
@@ -35,7 +32,7 @@ namespace PerfView
         /// Main is also responsible for doing the 'install On First launch' logic that unpacks the EXE if needed.  
         /// </summary>  
         [System.STAThreadAttribute()]
-        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        // [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static int Main(string[] args)
         {
             CommandProcessor = new CommandProcessor();
@@ -45,15 +42,17 @@ namespace PerfView
             bool newConsoleCreated = false;        // If we create a new console, we need to wait before existing            
             try
             {
+#if !PERFVIEW_COLLECT
                 // Can't display on ARM because the SplashScreen is WPF
                 var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
                     (args.Length > 0 &&
                     (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
-                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));              
+                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
                     DisplaySplashScreen();
+#endif
                 App.Unpack();                   // Install the program if it is not done already 
                 App.RelaunchIfNeeded(args);     // If we are running from a a network share, relaunch locally. 
 
@@ -112,11 +111,14 @@ namespace PerfView
                 CommandLineArgs.ParseArgs(args);   // This routine catches command line parsing exceptions.  (sets CommandLineFailure)
 
             // Figure out where output goes and set CommandProcessor.LogFile
-
+#if !PERFVIEW_COLLECT
             // On ARM we don't have a GUI
             if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
                 CommandLineArgs.NoGui = true;
-
+#else
+            // We never support GUI in PerfViewCollect
+            CommandLineArgs.NoGui = true;
+#endif
             // If the operation is to collect, we also need to create a new console
             // even if we already have one (because that console has already 'moved on' and is reading the next command)
             // To get data from that console would be very confusing.  
@@ -199,11 +201,12 @@ namespace PerfView
 
                 if (CommandLineArgs.DoCommand == null || CommandLineArgs.DoCommand == CommandProcessor.View)
                 {
+#if !PERFVIEW_COLLECT // THese messages are confusing for PerfViewCollect given that it does not support View.  
                     if (CommandLineArgs.DataFile != null)
                         CommandProcessor.LogFile.WriteLine("Trying to view {0}", CommandLineArgs.DataFile);
                     else
                         CommandProcessor.LogFile.WriteLine("No command given, Trying to open viewer.");
-
+#endif 
                     CommandProcessor.LogFile.WriteLine("Use 'PerfView collect' or 'PerfView HeapSnapshot' to collect data.");
                     return -4;
                 }
@@ -242,7 +245,8 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
-                App.LogFileName = CommandLineArgs.LogFile;
+                else
+                    App.LogFileName = CommandLineArgs.LogFile;
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
@@ -266,10 +270,12 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DoMainForGui()
         {
+#if !PERFVIEW_COLLECT
             DisplaySplashScreen();          // If we have not already displayed the splash screen do it now.  
             s_splashScreen = null;          // this serves no purpose any more.  
             var app = new PerfView.GuiApp();
             app.Run();
+#endif
         }
 
         // ConfigData
@@ -344,7 +350,8 @@ namespace PerfView
                 // But we also need is original non .txt suffix so that source code fetching will find it.  
                 var tutorial = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs");
                 var tutorialTxt = Path.Combine(SupportFiles.SupportFileDir, "tutorial.cs.txt");
-                File.Copy(tutorialTxt, tutorial);
+                if (File.Exists(tutorialTxt))
+                    File.Copy(tutorialTxt, tutorial);
 
                 // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
                 if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
@@ -356,9 +363,10 @@ namespace PerfView
                 foreach (var arch in new string[] { "amd64", "arm" })
                 {
                     var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
-                    if (Directory.Exists(toDir))
+                    var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
+                    if (Directory.Exists(toDir) && File.Exists(fromFile))
                     {
-                        File.Copy(Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll"), Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
+                        File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
 
                         // ARM can use the X86 version of the heap dumper.  
                         if (arch == "arm")
@@ -701,22 +709,24 @@ namespace PerfView
             ret.SourcePath = sourcePath;
             ret.Options = symbolFlags;
 
+#if !PERFVIEW_COLLECT
             if (!AppLog.InternalUser && !App.CommandLineArgs.TrustPdbs)
             {
                 ret.SecurityCheck = delegate (string pdbFile)
                 {
-                    var result = MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
-                        "Security Check", MessageBoxButton.YesNo);
-                    return result == MessageBoxResult.Yes;
+                    var result = System.Windows.MessageBox.Show("Found " + pdbFile + " in a location that may not be trustworthy, do you trust this file?",
+                        "Security Check", System.Windows.MessageBoxButton.YesNo);
+                    return result == System.Windows.MessageBoxResult.Yes;
                 };
             }
             else
+#endif
             {
                 ret.SecurityCheck = (pdbFile => true);
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
             if (localSymDir != null)
-                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log); 
+                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log);
 
             if (symbolFlags == SymbolReaderOptions.None)
                 s_symbolReader = ret;
@@ -783,30 +793,35 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void DisplaySplashScreen()
         {
+#if !PERFVIEW_COLLECT
             try
             {
                 if (s_splashScreen == null)
                 {
-                    var splashScreen = new SplashScreen("splashscreen.png");
+                    var splashScreen = new System.Windows.SplashScreen("splashscreen.png");
                     s_splashScreen = new WeakReference(splashScreen);
                     splashScreen.Show(true);
                 }
             }
             catch (Exception) { }
+#endif
         }
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static void CloseSplashScreen()
         {
+#if !PERFVIEW_COLLECT
             if (s_splashScreen != null)
             {
-                var splashScreen = (SplashScreen)s_splashScreen.Target;
+                var splashScreen = (System.Windows.SplashScreen)s_splashScreen.Target;
                 s_splashScreen = null;
                 if (splashScreen != null)
                     splashScreen.Close(new TimeSpan(0));
             }
+#endif
         }
+#if !PERFVIEW_COLLECT
         private static WeakReference s_splashScreen;
-
+#endif
         private const string EulaVersion = "1";
         private static ConfigData s_ConfigData;
         private static string s_ConfigDataName;
@@ -819,6 +834,7 @@ namespace PerfView
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static bool UserOKWithSymbolServerGui()
         {
+#if !PERFVIEW_COLLECT
             // Ask the user if it is OK to use the Microsoft symbol server.  
             var done = false;
             var ret = false;
@@ -828,7 +844,7 @@ namespace PerfView
             // We are on the GUI thread, we can just open the dialog 
             if (GuiApp.MainWindow.Dispatcher.CheckAccess())
             {
-                var emptyPathDialog = new EmptySymbolPathDialog();
+                var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
                 emptyPathDialog.Owner = GuiApp.MainWindow;
                 emptyPathDialog.ShowDialog();
                 ret = emptyPathDialog.UseMSSymbols;
@@ -842,7 +858,7 @@ namespace PerfView
                 {
                     try
                     {
-                        var emptyPathDialog = new EmptySymbolPathDialog();
+                        var emptyPathDialog = new PerfView.Dialogs.EmptySymbolPathDialog();
                         emptyPathDialog.Owner = GuiApp.MainWindow;
                         emptyPathDialog.ShowDialog();
                         ret = emptyPathDialog.UseMSSymbols;
@@ -858,6 +874,9 @@ namespace PerfView
                     System.Threading.Thread.Sleep(100);
             }
             return ret;
+#else
+            return true;
+#endif
         }
         private static string m_SymbolPath;
         private static string m_SourcePath;
@@ -893,7 +912,6 @@ namespace PerfView
             return path;
         }
 
-
         /// <summary>
         /// Tries to fetch the console that created this process or creates a new one if the parent process has no 
         /// console.   Returns true if a NEW console has been created.  
@@ -903,7 +921,9 @@ namespace PerfView
         private static bool CreateConsole()
         {
             ConsoleCreated = true;
-
+#if DOTNET_CORE
+            return false;  // If you return true, it indicates at NEW console was created (this is not true for PerfViewCollect)
+#else
             // TODO AttachConsole is not reliable (GetStdHandle returns an invalid handle about half the time)
             // So I have given up on it, I always create a new console
             AllocConsole();
@@ -945,6 +965,7 @@ namespace PerfView
             });
 
             return true;
+#endif
         }
 
         static Thread s_threadToInterrupt;
@@ -1059,7 +1080,7 @@ namespace PerfView
         {
 #if PUBLIC_ONLY
             return false;
-#else 
+#else
             if (!CanSendFeedback)
                 return false;
             StringWriter sw = new StringWriter();
@@ -1111,7 +1132,7 @@ namespace PerfView
             }
         }
 
-#region private
+        #region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1154,7 +1175,7 @@ namespace PerfView
             }
             return false;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1200,9 +1221,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-#region private
+        #region private
         TextWriter m_verboseLog;
         TextWriter m_terseLog;
-#endregion
+        #endregion
     }
 }
