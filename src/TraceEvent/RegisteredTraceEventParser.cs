@@ -381,11 +381,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-#if DOTNET_CORE // TODO Review after .NET Core 2.0 
-                manifest.WriteLine("  <resources culture=\"{0}\">", "en-us");
-#else
                 manifest.WriteLine("  <resources culture=\"{0}\">", Thread.CurrentThread.CurrentCulture.IetfLanguageTag);
-#endif
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
