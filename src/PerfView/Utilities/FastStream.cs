@@ -8,43 +8,43 @@ using System.Text;
 
 namespace PerfView.Utilities
 {
-	/// <summary>
-	/// The is really what BinaryReader should have been... (sigh)
-	/// 
-	/// We need really fast, byte-by-byte streaming. ReadChar needs to be inliable .... All the routines that
-	/// give back characters assume the bytes are ASCII (The translations from bytes to chars is simply a
-	/// cast).
-	/// 
-	/// The basic model is that of a Enumerator. There is a 'Current' property that represents the current
-	/// byte, and 'MoveNext' that moves to the next byte and returns false if there are no more bytes. Like
-	/// Enumerators 'MoveNext' needs to be called at least once before 'Current' is valid.
-	/// 
-	/// Unlike standard Enumerators, FastStream does NOT consider it an error to read 'Current' is read when
-	/// there are no more characters.  Instead Current returns a Sentinal value (by default this is 0, but
-	/// the 'Sentinal' property allow you to choose it).   This is often more convenient and efficient to
-	/// allow checking end-of-file (which is rare), to happen only at certain points in the parsing logic.  
-	/// 
-	/// Another really useful feature of this stream is that you can peek ahead efficiently a large number
-	/// of bytes (since you read ahead into a buffer anyway).
-	/// </summary>
-	public sealed class FastStream : IDisposable
-	{
+    /// <summary>
+    /// The is really what BinaryReader should have been... (sigh)
+    /// 
+    /// We need really fast, byte-by-byte streaming. ReadChar needs to be inliable .... All the routines that
+    /// give back characters assume the bytes are ASCII (The translations from bytes to chars is simply a
+    /// cast).
+    /// 
+    /// The basic model is that of a Enumerator. There is a 'Current' property that represents the current
+    /// byte, and 'MoveNext' that moves to the next byte and returns false if there are no more bytes. Like
+    /// Enumerators 'MoveNext' needs to be called at least once before 'Current' is valid.
+    /// 
+    /// Unlike standard Enumerators, FastStream does NOT consider it an error to read 'Current' is read when
+    /// there are no more characters.  Instead Current returns a Sentinal value (by default this is 0, but
+    /// the 'Sentinal' property allow you to choose it).   This is often more convenient and efficient to
+    /// allow checking end-of-file (which is rare), to happen only at certain points in the parsing logic.  
+    /// 
+    /// Another really useful feature of this stream is that you can peek ahead efficiently a large number
+    /// of bytes (since you read ahead into a buffer anyway).
+    /// </summary>
+    public sealed class FastStream : IDisposable
+    {
         // construction 
-		public FastStream(string filePath)
-			: this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-		{
-		}
-		public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
-		{
-			this.stream = stream;
-			this.closeStream = closeStream;
-			this.buffer = new byte[bufferSize];
-			this.bufferFillPos = 1;
-			this.bufferIndex = 0;
-			this.streamReadIn = 1;
-			this.streamPosition = 0;
-			this.IsDisposed = false;
-		}
+        public FastStream(string filePath)
+            : this(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+        {
+        }
+        public FastStream(Stream stream, int bufferSize = 262144, bool closeStream = false)
+        {
+            this.stream = stream;
+            this.closeStream = closeStream;
+            this.buffer = new byte[bufferSize];
+            this.bufferFillPos = 1;
+            this.bufferIndex = 0;
+            this.streamReadIn = 1;
+            this.streamPosition = 0;
+            this.IsDisposed = false;
+        }
         public FastStream(byte[] buffer, int start, int length)
         {
             this.stream = Stream.Null;
@@ -204,6 +204,21 @@ namespace PerfView.Utilities
         {
             return (ulong)ReadLong();
         }
+
+        /// <summary>
+        /// Reads 'charCount' characters into the string build sb from the source.  
+        /// </summary>
+        public void ReadFixedString(int charCount, StringBuilder sb)
+        {
+            while(charCount > 0)
+            {
+                sb.Append((char) Current);
+                if (!MoveNext())
+                    break;
+                --charCount;
+            }
+        }
+
         public void ReadAsciiStringUpTo(char endMarker, StringBuilder sb)
         {
             for (;;)
