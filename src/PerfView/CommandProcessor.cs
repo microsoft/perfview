@@ -1576,7 +1576,6 @@ namespace PerfView
         }
         public void UserCommand(CommandLineArgs parsedArgs)
         {
-#if !PERFVIEW_COLLECT
             if (parsedArgs.CommandAndArgs.Length < 1)
                 throw new CommandLineParserException("User command missing.");
 
@@ -1585,9 +1584,7 @@ namespace PerfView
             string userCommand = parsedArgs.CommandAndArgs[0];
             var userArgs = new string[parsedArgs.CommandAndArgs.Length - 1];
             Array.Copy(parsedArgs.CommandAndArgs, 1, userArgs, 0, userArgs.Length);
-
             PerfViewExtensibility.Extensions.ExecuteUserCommand(userCommand, userArgs);
-#endif
         }
         public void UserCommandHelp(CommandLineArgs parsedArgs)
         {
@@ -1600,12 +1597,13 @@ namespace PerfView
                 });
             }
             else
+#endif
             {
                 var log = App.CommandProcessor.LogFile;
                 log.WriteLine("All User Commands");
                 PerfViewExtensibility.Extensions.GenerateHelp(log);
             }
-#endif
+
         }
 
         // Given a path, keeps adding .N. before the extension until you find a new file 
@@ -1944,7 +1942,7 @@ namespace PerfView
             else
                 Console.WriteLine("Pre V4.0 .NET Rundown enabled, Type 'D' to disable and speed up .NET Rundown.");
 
-#if !PERFVIEW_COLLECT 
+#if !PERFVIEW_COLLECT
             Console.WriteLine("Do NOT close this console window.   It will leave collection on!");
 #endif
             var consider = "";
