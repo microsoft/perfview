@@ -13,9 +13,7 @@ using System.Xml;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Stacks;
-using Graphs;
 using PerfView;
-using PerfView.GuiUtilities;
 using PerfViewModel;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
@@ -29,8 +27,13 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using PerfView.Dialogs;
+
+#if !PERFVIEW_COLLECT
+using Graphs;
 using EventSources;
+using PerfView.Dialogs;
+using PerfView.GuiUtilities;
+#endif
 
 namespace PerfViewExtensibility
 {
@@ -79,6 +82,7 @@ namespace PerfViewExtensibility
             ret.Name = perfViewXmlFileName;
             return ret;
         }
+#if !PERFVIEW_COLLECT
         /// <summary>
         /// Opens a GCHeap dump (created with HeapSnapshot)
         /// </summary>
@@ -127,7 +131,7 @@ namespace PerfViewExtensibility
             retStacks.ExtraTopStats = extraTopStats;
             return retStacks;
         }
-
+#endif
         // Data Collection
         /// <summary>
         /// Runs the command 'commandLine' with ETW enabled.   Creates  data file 'outputFileName'.  
@@ -188,6 +192,7 @@ namespace PerfViewExtensibility
             App.CommandProcessor.HeapSnapshot(CommandLineArgs);
         }
 
+#if !PERFVIEW_COLLECT
         // gui operations 
         /// <summary>
         /// Open a new stack viewer GUI window in the dat in 'stacks'
@@ -332,6 +337,8 @@ namespace PerfViewExtensibility
 
             });
         }
+#endif
+
         /// <summary>
         /// Open Excel on csvFilePath.   
         /// </summary>
@@ -340,6 +347,7 @@ namespace PerfViewExtensibility
             LogFile.WriteLine("[Opening CSV on {0}]", csvFilePath);
             Command.Run(Command.Quote(csvFilePath), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
         }
+#if !PERFVIEW_COLLECT
         /// <summary>
         /// Opens the log window if this is running under the GUI, otherwise does nothing.  
         /// </summary>
@@ -352,6 +360,7 @@ namespace PerfViewExtensibility
                 GuiApp.MainWindow.StatusBar.OpenLog();
             });
         }
+#endif
 
         // environment support 
         /// <summary>
@@ -399,9 +408,9 @@ namespace PerfViewExtensibility
         public void Close() { Dispose(); }
         public virtual void Dispose() { }
 
-        #region private
+#region private
         protected string m_FilePath;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -445,10 +454,13 @@ namespace PerfViewExtensibility
         {
             return new Stacks(TraceLog.ThreadTimeWithTasksStacks(m_FilterProcess), "Thread Time (with Tasks)", this, loadAllCachedSymbols);
         }
+
+#if !PERFVIEW_COLLECT
         /// <summary>
         /// Get the list of raw events.  
         /// </summary>
         public Events Events { get { return new Events(this); } }
+#endif
 
         /// <summary>
         /// Open an existing ETL file by name
@@ -589,7 +601,7 @@ namespace PerfViewExtensibility
             m_TraceLog.Dispose();
             m_TraceLog = null;
         }
-        #region private
+#region private
 
         private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
         {
@@ -718,9 +730,10 @@ namespace PerfViewExtensibility
 
         TraceLog m_TraceLog;
         TraceProcess m_FilterProcess;       // Only care about this process. 
-        #endregion
+#endregion
     }
 
+#if !PERFVIEW_COLLECT
     public class Events : ETWEventSource
     {
         void SaveAsCSV(string csvFileName)
@@ -802,7 +815,7 @@ namespace PerfViewExtensibility
             m_EtlFile = etlFile;
         }
 
-        #region private
+#region private
         /// <summary>
         /// Returns a string that is will be exactly one field of a CSV file.  Thus it escapes , and ""
         /// </summary>
@@ -821,8 +834,9 @@ namespace PerfViewExtensibility
         }
 
         internal ETLDataFile m_EtlFile;
-        #endregion
+#endregion
     }
+#endif
 
     /// <summary>
     /// A Stacks class represents what the PerfView 'stacks' view shows you.   It has 
@@ -928,8 +942,10 @@ namespace PerfViewExtensibility
         public void SaveAsXml(string outputFileName, bool zip = true, bool includeGuiState = true)
         {
             // TODO remember the status log even when we don't have a gui. 
+#if !PERFVIEW_COLLECT
             if (GuiApp.MainWindow != null)
                 GuiState.Log = File.ReadAllText(App.LogFileName);
+#endif
 
             Action<XmlWriter> additionalData = null;
             if (includeGuiState)
@@ -1062,7 +1078,7 @@ namespace PerfViewExtensibility
             return sw.ToString();
         }
 
-        #region private
+#region private
         /// <summary>
         /// TODO should not have to specify the ETL file. 
         /// </summary>
@@ -1116,10 +1132,10 @@ namespace PerfViewExtensibility
         internal ETLDataFile m_EtlFile;                 // If this stack came from and ETL File this is that file.  
         internal string m_fileName;                     // TODO is this a hack.  This is the file name if present.  
         StackWindowGuiState m_GuiState;
-        #endregion
+#endregion
     }
 
-    #region internal classes
+#region internal classes
     internal static class Extensions
     {
         public static string ExtensionsDirectory
@@ -1141,6 +1157,7 @@ namespace PerfViewExtensibility
             }
         }
 
+#if !PERFVIEW_COLLECT
         public static void RunUserStartupCommands(StatusBar worker)
         {
             try
@@ -1213,6 +1230,7 @@ namespace PerfViewExtensibility
                 worker.LogError(@"Error executing PerfViewExtensions\PerfViewStartup file.\r\n" + e.Message);
             }
         }
+#endif
 
         public static IEnumerable<string> GetExtensionDlls()
         {
@@ -1308,7 +1326,7 @@ namespace PerfViewExtensibility
         {
             var ret = new List<MethodInfo>();
 
-            // Get the ones built into perfView itself (in Extensibilty.cs PerfViewExtensibility\Commands)
+            // Get the ones built into perfView itself (in UserCommands.cs PerfViewExtensibility\Commands)
             var methods = typeof(PerfViewExtensibility.Commands).GetMethods(
                 BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             foreach (var method in methods)
@@ -1499,7 +1517,7 @@ namespace PerfViewExtensibility
         }
 
 
-        #region private
+#region private
         private static string s_ExtensionsDirectory;
 
         private static Dictionary<string, object> LoadedObjects;
@@ -1577,7 +1595,7 @@ namespace PerfViewExtensibility
                     "Could not find user command {0} that takes {1} arguments.  Use /userCommandHelp for help.", methodSpec, args == null ? 0 : args.Length));
             }
         }
-        #endregion
+#endregion
     }
 
 #if false
@@ -1651,7 +1669,7 @@ static class GuiModel
     }
 }
 #endif
-    #endregion
+#endregion
 }
 
 // PerfViewModel contains things that are not very important for the user to see 

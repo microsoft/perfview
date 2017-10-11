@@ -13,9 +13,7 @@ using System.Xml;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Stacks;
-using Graphs;
 using PerfView;
-using PerfView.GuiUtilities;
 using PerfViewModel;
 using Microsoft.Diagnostics.Symbols;
 using Utilities;
@@ -29,8 +27,13 @@ using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Address = System.UInt64;
 using System.Threading.Tasks;
 using System.ComponentModel;
-using PerfView.Dialogs;
+
+#if !PERFVIEW_COLLECT
+using Graphs;
 using EventSources;
+using PerfView.Dialogs;
+using PerfView.GuiUtilities;
+#endif
 
 // This is an example use of the extensibility features.  
 namespace PerfViewExtensibility
@@ -41,6 +44,7 @@ namespace PerfViewExtensibility
     /// </summary>
     public class Commands : CommandEnvironment
     {
+#if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
         /// If the output file name is not given, the input filename's extension is changed to '.etl.xml' and that is used. 
@@ -1699,6 +1703,7 @@ namespace PerfViewExtensibility
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
         #endregion
+#endif
     }
 }
 

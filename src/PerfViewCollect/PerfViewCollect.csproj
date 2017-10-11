@@ -32,10 +32,15 @@
     <Compile Include="..\PerfView\Utilities\StreamUtilities.cs" />
     <Compile Include="..\Utilities\FileUtilities.cs" />
     <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\Utilities\StringUtilities.cs" />
+    <Compile Include="..\Utilities\XmlUtilities.cs" />
     <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
     <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
     <Compile Include="..\PerfView\Memory\ETWClrProfilerTraceEventParser.cs" />
     <Compile Include="..\PerfView\Memory\HeapSnapshot.cs" />
+    <Compile Include="..\PerfView\Extensibility.cs" />
+    <Compile Include="..\PerfView\UserCommands.cs" />
+    <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
   </ItemGroup>
 
   <ItemGroup>
