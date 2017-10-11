@@ -33,10 +33,18 @@
     <Compile Include="..\PerfView\Utilities\StreamUtilities.cs" />
     <Compile Include="..\Utilities\FileUtilities.cs" />
     <Compile Include="..\Utilities\DirectoryUtilities.cs" />
+    <Compile Include="..\Utilities\StringUtilities.cs" />
+    <Compile Include="..\Utilities\XmlUtilities.cs" />
     <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
     <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
-    <Compile Include="..\PerfView\Memory\ETWClrProfilerTraceEventParser.cs" />
-    <Compile Include="..\PerfView\Memory\HeapSnapshot.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\HeapSnapshot.cs" />
+    <Compile Include="..\PerfView\Extensibility.cs" />
+    <Compile Include="..\PerfView\UserCommands.cs" />
+    <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
+    <Compile Include="..\PerfView\ClrStats.cs" />
+    <Compile Include="..\PerfView\GcStats.cs" />
+    <Compile Include="..\PerfView\JitStats.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -129,7 +137,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
 
-    <EmbeddedResource Include="..\PerfView\SupportFiles\EULA.rtf">
+    <EmbeddedResource Include="..\PerfView\SupportFiles\Eula.rtf">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\EULA.rtf</LogicalName>
