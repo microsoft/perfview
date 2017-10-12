@@ -41,6 +41,9 @@
     <Compile Include="..\PerfView\Extensibility.cs" />
     <Compile Include="..\PerfView\UserCommands.cs" />
     <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
+    <Compile Include="..\PerfView\ClrStats.cs" />
+    <Compile Include="..\PerfView\GcStats.cs" />
+    <Compile Include="..\PerfView\JitStats.cs" />
   </ItemGroup>
 
   <ItemGroup>

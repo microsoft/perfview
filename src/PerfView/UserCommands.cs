@@ -44,6 +44,39 @@ namespace PerfViewExtensibility
     /// </summary>
     public class Commands : CommandEnvironment
     {
+        public void LinuxGCStats(string traceFileName)
+        {
+            var options = new TraceLogOptions();
+            options.ConversionLog = LogFile;
+            if (App.CommandLineArgs.KeepAllEvents)
+                options.KeepAllEvents = true;
+            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.SkipMSec = App.CommandLineArgs.SkipMSec;
+            options.LocalSymbolsOnly = false;
+            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+
+            string etlxFilePath = traceFileName + ".etlx";
+            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
+
+            TraceLog traceLog = new TraceLog(etlxFilePath);
+
+            List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            using (var source = traceLog.Events.GetSource())
+            {
+                Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+                source.Process();
+                foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                    if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) processes.Add(proc);
+            }
+
+            string outputFileName = traceFileName + ".gcStats.html";
+            using (StreamWriter output = File.CreateText(outputFileName))
+            {
+                Stats.ClrStats.ToHtml(output, processes, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC);
+            }
+
+        }
+
 #if !PERFVIEW_COLLECT
         /// <summary>
         /// Dump every event in 'etlFileName' (which can be a ETL file or an ETL.ZIP file), as an XML file 'xmlOutputFileName'
@@ -926,7 +959,7 @@ namespace PerfViewExtensibility
                 source.Clr.AddCallbackForEvents<CodeSymbolsTraceData>(OnCodeSymbols);
             }
 
-            #region private
+#region private
             private void OnModuleLoad(ModuleLoadUnloadTraceData data)
             {
                 Put(data.ProcessID, data.ModuleID, new CodeSymbolState(data, m_targetSymbolCachePath));
@@ -1003,7 +1036,7 @@ namespace PerfViewExtensibility
             // Indexed by key;
             Dictionary<long, CodeSymbolState> m_symbolFiles;
             string m_targetSymbolCachePath;
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -1380,7 +1413,7 @@ namespace PerfViewExtensibility
         }
 #endif
 
-#if false 
+#if false
         public void Test()
         {
             Cache<string, string> myCache = new Cache<string, string>(8);
@@ -1406,7 +1439,7 @@ namespace PerfViewExtensibility
             }
         }
 #endif
-        #region private
+#region private
         /// <summary>
         /// Strips the file extension for files and if extension is .etl.zip removes both.
         /// </summary>
@@ -1702,7 +1735,7 @@ namespace PerfViewExtensibility
 
             return (startEvent.Flags & ProcessFlags.PackageFullName) != 0;
         }
-        #endregion
+#endregion
 #endif
     }
 }
