@@ -74,7 +74,51 @@ namespace PerfViewExtensibility
             {
                 Stats.ClrStats.ToHtml(output, processes, outputFileName, "GCStats", Stats.ClrStats.ReportType.GC);
             }
+        }
 
+        public void LinuxJitStats(string traceFileName)
+        {
+            var options = new TraceLogOptions();
+            options.ConversionLog = LogFile;
+            if (App.CommandLineArgs.KeepAllEvents)
+                options.KeepAllEvents = true;
+            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.SkipMSec = App.CommandLineArgs.SkipMSec;
+            options.LocalSymbolsOnly = false;
+            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
+
+            string outputFileName = traceFileName + ".jitStats.html";
+            string etlxFilePath = traceFileName + ".etlx";
+            etlxFilePath = TraceLog.CreateFromLttngTextDataFile(traceFileName, etlxFilePath, options);
+
+            TraceLog traceLog = new TraceLog(etlxFilePath);
+            var source = traceLog.Events.GetSource();
+
+            Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> jitStats = new Dictionary<int, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
+            Dictionary<int, List<object>> bgJitEvents = new Dictionary<int, List<object>>();
+
+            // attach callbacks to grab background JIT events
+            var clrPrivate = new ClrPrivateTraceEventParser(source);
+            clrPrivate.ClrMulticoreJitCommon += delegate (Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate.MulticoreJitPrivateTraceData data)
+            {
+                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                bgJitEvents[data.ProcessID].Add(data.Clone());
+            };
+            source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
+            {
+                if (!bgJitEvents.ContainsKey(data.ProcessID)) bgJitEvents.Add(data.ProcessID, new List<object>());
+                bgJitEvents[data.ProcessID].Add(data.Clone());
+            };
+
+            // process the model
+            Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
+            source.Process();
+            foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !jitStats.ContainsKey(proc.ProcessID)) jitStats.Add(proc.ProcessID, proc);
+            using (TextWriter output = File.CreateText(outputFileName))
+            {
+                Stats.ClrStats.ToHtml(output, jitStats.Values.ToList(), outputFileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
+            }
         }
 
 #if !PERFVIEW_COLLECT
