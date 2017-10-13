@@ -36,8 +36,8 @@
     <Compile Include="..\Utilities\XmlUtilities.cs" />
     <Compile Include="..\PerfView\Utilities\ExceptionMessage.cs" />
     <Compile Include="..\PerfView\Properties\BuildDateAttribute.cs" />
-    <Compile Include="..\PerfView\Memory\ETWClrProfilerTraceEventParser.cs" />
-    <Compile Include="..\PerfView\Memory\HeapSnapshot.cs" />
+    <Compile Include="..\PerfView\memory\ETWClrProfilerTraceEventParser.cs" />
+    <Compile Include="..\PerfView\memory\HeapSnapshot.cs" />
     <Compile Include="..\PerfView\Extensibility.cs" />
     <Compile Include="..\PerfView\UserCommands.cs" />
     <Compile Include="..\PerfView\OtherSources\XMLStackSource.cs" />
@@ -136,7 +136,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
 
-    <EmbeddedResource Include="..\PerfView\SupportFiles\EULA.rtf">
+    <EmbeddedResource Include="..\PerfView\SupportFiles\Eula.rtf">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\EULA.rtf</LogicalName>
