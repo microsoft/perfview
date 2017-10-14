@@ -35,8 +35,6 @@ namespace PerfView
         // [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static int Main(string[] args)
         {
-            Console.WriteLine("Attach debugger and hit any key.");
-            Console.ReadKey();
             CommandProcessor = new CommandProcessor();
 
             StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.  
