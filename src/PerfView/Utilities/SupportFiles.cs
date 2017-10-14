@@ -149,7 +149,7 @@ namespace Utilities
                     string appData = Environment.GetEnvironmentVariable(appName + "_APPDATA");
                     if (appData == null)
                     {
-                        appData = Environment.GetEnvironmentVariable("APPDATA");
+                        appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                         if (appData == null)
                             appData = Path.GetFileName(MainAssemblyPath);
                     }
@@ -277,7 +277,7 @@ namespace Utilities
             var resourceAssembly = System.Reflection.Assembly.GetExecutingAssembly();
             foreach (var resourceName in resourceAssembly.GetManifestResourceNames())
             {
-                if (resourceName.StartsWith(@".\"))
+                if (resourceName.StartsWith(@".\") || resourceName.StartsWith(@"./"))
                 {
                     // Unpack everything, inefficient, but insures ldr64 works.  
                     string targetPath = Path.Combine(prepDir, resourceName);
