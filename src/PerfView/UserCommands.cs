@@ -382,7 +382,7 @@ namespace PerfViewExtensibility
             if (gcDumpOutputFileName == null)
                 gcDumpOutputFileName = PerfViewFile.ChangeExtension(etlFileName, ".gcdump");
 
-            ETLPerfViewData.UnZipIfNecessary(ref etlFileName, LogFile);
+            CommandProcessor.UnZipIfNecessary(ref etlFileName, LogFile);
 
             // TODO FIX NOW retrieve the process name, ID etc.  
             var reader = new DotNetHeapDumpGraphReader(LogFile);
@@ -408,7 +408,7 @@ namespace PerfViewExtensibility
             if (processId != null)
                 proccessIdInt = int.Parse(processId);
 
-            ETLPerfViewData.UnZipIfNecessary(ref etlFileName, LogFile);
+            CommandProcessor.UnZipIfNecessary(ref etlFileName, LogFile);
             var typeLookup = new Dictionary<Address, string>(500);
             var events = new List<TraceEvent>();
             var edges = new List<GCBulkEdgeTraceData>();
@@ -1124,7 +1124,7 @@ namespace PerfViewExtensibility
         /// </summary>
         public void GCStats(string etlFile)
         {
-            ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
+            CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
 
             List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> processes = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
             using (var source = new ETWTraceEventSource(etlFile))
@@ -1162,7 +1162,7 @@ namespace PerfViewExtensibility
         {
             if (PerfView.AppLog.InternalUser)
             {
-                ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
+                CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
 
                 List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> gcStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>();
                 using (TraceLog tracelog = TraceLog.OpenOrConvert(etlFile))
@@ -1193,7 +1193,7 @@ namespace PerfViewExtensibility
         /// </summary>
         public void JITStats(string etlFile)
         {
-            ETLPerfViewData.UnZipIfNecessary(ref etlFile, LogFile);
+            CommandProcessor.UnZipIfNecessary(ref etlFile, LogFile);
 
             List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> jitStats = new List<Microsoft.Diagnostics.Tracing.Analysis.TraceProcess>(); ;
             using (var source = new ETWTraceEventSource(etlFile))
