@@ -148,6 +148,11 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\UsersGuide.htm</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\PerfView\SupportFiles\HtmlReportUsersGuide.htm">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\HtmlReportUsersGuide.htm</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="..\PerfView\SupportFiles\PerfViewWebVideos.htm">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

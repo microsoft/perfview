@@ -1455,14 +1455,10 @@ namespace Stats
     {
         public static string WriteUsersGuide(string inputFileName)
         {
-#if !PERFVIEW_COLLECT
             var usersGuideName = Path.ChangeExtension(Path.ChangeExtension(inputFileName, null), "usersGuide.html");
             if (!File.Exists(usersGuideName) || (DateTime.UtcNow - File.GetLastWriteTimeUtc(usersGuideName)).TotalHours > 1)
                 File.Copy(Path.Combine(SupportFiles.SupportFileDir, "HtmlReportUsersGuide.htm"), usersGuideName, true);
             return Path.GetFileName(usersGuideName);        // return the relative path
-#else
-            return string.Empty;
-#endif
         }
     }
 }
