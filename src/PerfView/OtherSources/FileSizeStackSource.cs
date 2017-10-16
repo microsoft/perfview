@@ -15,7 +15,10 @@ namespace Diagnostics.Tracing.StackSources
     /// </summary>
     class FileSizeStackSource : InternStackSource
     {
-        public FileSizeStackSource(string directoryPath, TextWriter log, bool useWriteTime=false)
+        /// <summary>
+        /// Note that on windows, lastAccessTime does not really work (acts like lastWriteTime).  They turned it off for efficiency reasons. 
+        /// </summary>
+        public FileSizeStackSource(string directoryPath, TextWriter log, bool useWriteTime=true)
         {
             m_useWriteTime = useWriteTime;
             m_nowUtc = DateTime.UtcNow;
