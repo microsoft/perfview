@@ -5902,6 +5902,14 @@
         the success or failure of the collection and the log file will contain the detailed
         diagnostic messages.&nbsp;&nbsp;&nbsp;
     </p>
+    <p> Note that the /LogFile qualifer will supress the GUI, but it will not suppress the
+        generation of a console if the 'Collect' command is specified and no /MaxCollectSec
+        qualifer is given.   The reason is that without /MaxCollectSec=XXX the Collect command
+        could run forever and you woud have not way of stopping it cleanly (you would have
+        to kill the process).   If you wish to use /LogFile and Collect (because you wish
+        to use the /StopOn* qualifers), and wish to supress any consoles, you can do this by
+        specifying a very large /MaxCollectSec value.  
+    </p>
     <p>
         In addition to the /logFile qualifer it is good to also apply the /AcceptEula qualifer
         to scripts that call PerfView.  By default the first time PerfView is run on any particualr
