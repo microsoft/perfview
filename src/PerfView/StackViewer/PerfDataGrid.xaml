@@ -226,7 +226,7 @@
                                     The time interval (from Start to End) is divided up into 32 buckets.<LineBreak/>
                                     The buckets are normalized to a 100% value.<LineBreak/>
                                     For CPU (and other metrics that naturally represent time like disk time)<LineBreak/>
-                                    100% reprsents the use of 1 CPU (or disk, or thread ...)<LineBreak/>
+                                    100% represents the use of 1 CPU (or disk, or thread ...)<LineBreak/>
                                     For all other 100% represents half the maximum. <LineBreak/>
                                     _ = No samples<LineBreak/>
                                     . =  0% &lt; X &lt; .1%<LineBreak/>
