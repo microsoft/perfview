@@ -353,49 +353,52 @@ namespace PerfView
                 if (File.Exists(tutorialTxt))
                     File.Copy(tutorialTxt, tutorial);
 
-                // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
-                if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
-                    DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
-
-                // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
-                // so copy this dll to the other architectures.  
-                var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
-                foreach (var arch in new string[] { "amd64", "arm" })
+                if (Environment.OSVersion.Platform != PlatformID.Unix)
                 {
-                    var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
-                    var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
-                    if (Directory.Exists(toDir) && File.Exists(fromFile))
+                    // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
+                    if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+                        DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
+
+                    // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
+                    // so copy this dll to the other architectures.  
+                    var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
+                    foreach (var arch in new string[] { "amd64", "arm" })
                     {
-                        File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
+                        var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
+                        var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
+                        if (Directory.Exists(toDir) && File.Exists(fromFile))
+                        {
+                            File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
 
-                        // ARM can use the X86 version of the heap dumper.  
-                        if (arch == "arm")
-                            File.Copy(Path.Combine(fromDir, "HeapDump.exe"), Path.Combine(toDir, "HeapDump.exe"));
+                            // ARM can use the X86 version of the heap dumper.  
+                            if (arch == "arm")
+                                File.Copy(Path.Combine(fromDir, "HeapDump.exe"), Path.Combine(toDir, "HeapDump.exe"));
+                        }
                     }
-                }
 
-                // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
-                var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.MainAssemblyPath));
-                if (!File.Exists(targetExe))
-                {
-                    File.Copy(SupportFiles.MainAssemblyPath, targetExe);
-                    // This file indicates that we need to copy the extensions if we use this EXE to run from
-                    File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
-                }
+                    // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
+                    var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.MainAssemblyPath));
+                    if (!File.Exists(targetExe))
+                    {
+                        File.Copy(SupportFiles.MainAssemblyPath, targetExe);
+                        // This file indicates that we need to copy the extensions if we use this EXE to run from
+                        File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
+                    }
 
-                // The KernelTraceControl that works for Win10 and above does not work properly form older OSes
-                // The symptom is that when collecting data, it does not properly merge files and you don't get
-                // the KernelTraceControl events for PDBs and thus symbol lookup does not work.  
-                var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                if (version < 62)
-                {
-                    var kernelTraceControlDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
-                    var src = Path.Combine(kernelTraceControlDir, "KernelTraceControl.Win61.dll");
-                    var dest = Path.Combine(kernelTraceControlDir, "KernelTraceControl.dll");
-                    FileUtilities.ForceCopy(src, dest);
-                }
+                    // The KernelTraceControl that works for Win10 and above does not work properly form older OSes
+                    // The symptom is that when collecting data, it does not properly merge files and you don't get
+                    // the KernelTraceControl events for PDBs and thus symbol lookup does not work.  
+                    var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+                    if (version < 62)
+                    {
+                        var kernelTraceControlDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
+                        var src = Path.Combine(kernelTraceControlDir, "KernelTraceControl.Win61.dll");
+                        var dest = Path.Combine(kernelTraceControlDir, "KernelTraceControl.dll");
+                        FileUtilities.ForceCopy(src, dest);
+                    }
 
-                SetPermissionsForWin8Apps();
+                    SetPermissionsForWin8Apps();
+                }
             }
             return unpacked;
         }
