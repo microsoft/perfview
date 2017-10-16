@@ -3839,14 +3839,14 @@
         <li>
             The <strong><a id="ThreadTimeCheckbox">Thread Time Checkbox</a></strong> -
             This option is needed in any <a href="#BlockedTimeInvestigation">Blocked / Wall Clock Time Investigation</a>.
-            It causes
-            a kernel event to be logged every time a thread gets to use the CPU (a context switch).
+            It causes a kernel event to be logged every time a thread gets to use the CPU (a context switch).
             It also turns on 'ReadyThread' events that are logged when one thread 'awakens'
             another thread (e.g. sets an event that another thread is waiting for). This option
             also includes all the 'default' events. This is a relatively expensive option (without
             threadTime overhead is typically about 3% with thread time it is more typically 10%),
             but still low enough to use any production scenario.   If you care about non-CPU time
-            you will want to turn this on.
+            you will want to turn this on.  This can be turned on in the command line by using
+            the /threadTime option (which is a shortcut for /kernelEvents=ThreadTime).   
         </li>
         <li>
             The <strong><a id="MarkTextBox">Mark TextBox</a></strong> - It is possible to place
