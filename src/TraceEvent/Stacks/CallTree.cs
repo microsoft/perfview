@@ -745,7 +745,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// done with them so that even if they are pointed to by the GUI cache it does not hold onto most of the 
         /// (dead) model.    FreeMemory does this neutering.  
         /// </summary>
-        public virtual void FreeMemory()
+        public void FreeMemory()
+        {
+            var nodesToFree = new Stack<CallTreeNodeBase>();
+            nodesToFree.Push(this);
+            while (nodesToFree.Count > 0)
+            {
+                nodesToFree.Pop().FreeMemory(nodesToFree);
+            }
+        }
+
+        protected virtual void FreeMemory(Stack<CallTreeNodeBase> nodesToFree)
         {
             m_samples.Clear();
             m_nextSameId = null;
@@ -1044,16 +1054,16 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Implements CallTreeNodesBase interface
         /// </summary>
-        public override void FreeMemory()
+        protected override void FreeMemory(Stack<CallTreeNodeBase> nodesToFree)
         {
             if (m_callees != null)
             {
                 foreach (var node in m_callees)
-                    node.FreeMemory();
+                    nodesToFree.Push(node);
                 m_callees.Clear();
             }
             m_caller = null;
-            base.FreeMemory();
+            base.FreeMemory(nodesToFree);
         }
         #endregion
         #region private
@@ -1522,15 +1532,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Implements CallTreeNodesBase interface
         /// </summary>
-        public override void FreeMemory()
+        protected override void FreeMemory(Stack<CallTreeNodeBase> nodesToFree)
         {
             foreach (var node in m_callers)
-                node.FreeMemory();
+                nodesToFree.Push(node);
             m_callers = null;
             foreach (var node in m_callees)
-                node.FreeMemory();
+                nodesToFree.Push(node);
             m_callees = null;
-            base.FreeMemory();
+            base.FreeMemory(nodesToFree);
         }
         #endregion
         #region private
@@ -1770,10 +1780,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// Implementation of CallTreeNodeBase interface
         /// </summary>
-        public override void FreeMemory()
+        protected override void FreeMemory(Stack<CallTreeNodeBase> nodesToFree)
         {
             m_trees.Clear();
-            base.FreeMemory();
+            base.FreeMemory(nodesToFree);
         }
         /// <summary>
         /// Implementation of CallTreeNode interface
