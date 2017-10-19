@@ -48,8 +48,6 @@ public class GCHeapDumper
         m_origLog = log;
         m_copyOfLog = new StringWriter();
         m_log = new TeeTextWriter(m_copyOfLog, m_origLog);
-
-        MaxDumpCountK = 250;
     }
 
     /// <summary>

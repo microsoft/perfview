@@ -2404,7 +2404,7 @@ namespace PerfView
                 cmdLineArgs += " /SaveETL";
             if (parsedArgs.DumpData)
                 cmdLineArgs += " /DumpData";
-            if (parsedArgs.MaxDumpCountK != 250)
+            if (parsedArgs.MaxDumpCountK != 0)
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             if (parsedArgs.MaxNodeCountK != 0)
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
