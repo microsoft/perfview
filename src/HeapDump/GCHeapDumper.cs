@@ -280,9 +280,122 @@ public class GCHeapDumper
         return collectionMetadata;
     }
 
+    private sealed class DataReaderWrapper : IDisposable, IDataReader
+    {
+        private readonly IDataReader dataReader;
+
+        public DataReaderWrapper(IDataReader dataReader)
+        {
+            this.dataReader = dataReader;
+        }
+
+        [Obsolete]
+        public bool CanReadAsync => dataReader.CanReadAsync;
+
+        public bool IsMinidump => dataReader.IsMinidump;
+
+        public void Close()
+        {
+            dataReader.Close();
+        }
+
+        public void Dispose()
+        {
+            (dataReader as IDisposable)?.Dispose();
+        }
+
+        public IEnumerable<uint> EnumerateAllThreads()
+        {
+            return dataReader.EnumerateAllThreads();
+        }
+
+        public IList<ModuleInfo> EnumerateModules()
+        {
+            return dataReader.EnumerateModules();
+        }
+
+        public void Flush()
+        {
+            dataReader.Flush();
+        }
+
+        public Architecture GetArchitecture()
+        {
+            return dataReader.GetArchitecture();
+        }
+
+        public uint GetPointerSize()
+        {
+            return dataReader.GetPointerSize();
+        }
+
+        public bool GetThreadContext(uint threadID, uint contextFlags, uint contextSize, IntPtr context)
+        {
+            return dataReader.GetThreadContext(threadID, contextFlags, contextSize, context);
+        }
+
+        public bool GetThreadContext(uint threadID, uint contextFlags, uint contextSize, byte[] context)
+        {
+            return dataReader.GetThreadContext(threadID, contextFlags, contextSize, context);
+        }
+
+        public ulong GetThreadTeb(uint thread)
+        {
+            return dataReader.GetThreadTeb(thread);
+        }
+
+        public void GetVersionInfo(ulong baseAddress, out VersionInfo version)
+        {
+            dataReader.GetVersionInfo(baseAddress, out version);
+        }
+
+        public uint ReadDwordUnsafe(ulong addr)
+        {
+            return dataReader.ReadDwordUnsafe(SignExtend(addr));
+        }
+
+        public bool ReadMemory(ulong address, byte[] buffer, int bytesRequested, out int bytesRead)
+        {
+            return dataReader.ReadMemory(SignExtend(address), buffer, bytesRequested, out bytesRead);
+        }
+
+        public bool ReadMemory(ulong address, IntPtr buffer, int bytesRequested, out int bytesRead)
+        {
+            return dataReader.ReadMemory(SignExtend(address), buffer, bytesRequested, out bytesRead);
+        }
+
+        [Obsolete]
+        public AsyncMemoryReadResult ReadMemoryAsync(ulong address, int bytesRequested)
+        {
+            return dataReader.ReadMemoryAsync(address, bytesRequested);
+        }
+
+        public ulong ReadPointerUnsafe(ulong addr)
+        {
+            return dataReader.ReadPointerUnsafe(SignExtend(addr));
+        }
+
+        public bool VirtualQuery(ulong addr, out VirtualQueryData vq)
+        {
+            return dataReader.VirtualQuery(addr, out vq);
+        }
+
+        private static ulong SignExtend(ulong address)
+        {
+            if ((address & ~0x7FFFFFFFUL) == 0x80000000UL)
+                address |= ~0x7FFFFFFFUL;
+
+            return address;
+        }
+    }
+
     private void InitializeClrRuntime(string processDumpFile, out DataTarget target, out ClrRuntime runtime)
     {
-        target = DataTarget.LoadCrashDump(processDumpFile);
+        var reader = (IDataReader)Activator.CreateInstance(typeof(DataTarget).Assembly.GetType("Microsoft.Diagnostics.Runtime.DbgEngDataReader"), processDumpFile);
+        var debugInterface = reader.GetType().GetProperty("DebuggerInterface", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(reader);
+        var wrapper = new DataReaderWrapper(reader);
+        target = (DataTarget)typeof(DataTarget).GetMethod("CreateFromReader", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new[] { wrapper, debugInterface });
+
         if (target.PointerSize != IntPtr.Size)
         {
             if (IntPtr.Size == 8)
