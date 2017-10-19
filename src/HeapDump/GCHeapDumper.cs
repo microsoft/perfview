@@ -382,10 +382,10 @@ public class GCHeapDumper
 
         private static ulong SignExtend(ulong address)
         {
-            if ((address & ~0x7FFFFFFFUL) == 0x80000000UL)
-                address |= ~0x7FFFFFFFUL;
-
-            return address;
+            unsafe
+            {
+                return unchecked((ulong)(long)(IntPtr)(void*)address);
+            }
         }
     }
 
