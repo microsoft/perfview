@@ -405,11 +405,10 @@ namespace Graphs
         /// <param name="nodesToVisit"></param>
         private void AddOrphansToQueue(PriorityQueue nodesToVisit)
         {
-
             for (int i = 0; i < (int)m_graph.NodeIndexLimit; i++)
             {
                 if (m_parent[i] == NodeIndex.Invalid)
-                    MarkDecendentsIgnoringCycles((NodeIndex)i, 0);
+                    MarkDecendentsIgnoringCycles((NodeIndex)i);
             }
 
             // Collect up all the nodes that are not reachable from other nodes as the roots of the
@@ -443,41 +442,57 @@ namespace Graphs
         /// Mark all decedents (but not nodeIndex itself) as being visited.    Any arcs that form
         /// cycles are ignored, so nodeIndex is guaranteed to NOT be marked.     
         /// </summary>
-        private void MarkDecendentsIgnoringCycles(NodeIndex nodeIndex, int depth)
+        private void MarkDecendentsIgnoringCycles(NodeIndex entryNodeIndex)
         {
-            Debug.Assert(m_parent[(int)nodeIndex] == NodeIndex.Invalid);
-
             // This marks that there is a path from another orphan to this one (thus it is not a good root)
-            NodeIndex orphanVisitedMarker = NodeIndex.Invalid - 1;
+            const NodeIndex orphanVisitedMarker = NodeIndex.Invalid - 1;
 
             // To detect cycles we mark all nodes we not committed to (we are visiting, rather than visited)
             // If we detect this mark we understand it is a loop and ignore the arc.  
-            NodeIndex orphanVisitingMarker = NodeIndex.Invalid - 2;
-            m_parent[(int)nodeIndex] = orphanVisitingMarker;        // We are now visitING
+            const NodeIndex orphanVisitingMarker = NodeIndex.Invalid - 2;
 
-            // Mark all nodes as being visited.  
-            var node = m_graph.GetNode(nodeIndex, AllocNodeStorage());
-            for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
+            Stack<NodeIndex> workList = new Stack<NodeIndex>();
+            workList.Push(entryNodeIndex);
+            while (workList.Count > 0)
             {
-                // Has this child not been seen at all?  If so mark it.  
-                // Skip it if we are visiting (it would form a cycle) or visited (or not an orphan)
-                if (m_parent[(int)childIndex] == NodeIndex.Invalid)
+                var nodeIndex = workList.Peek();
+                switch (m_parent[(int)nodeIndex])
                 {
-                    // Skip children that exceed the depth limitation.   We don't warn about this because
-                    // this just means we have more orphan roots, which is OK.  
-                    if (depth < MaxDepth)
+                case orphanVisitingMarker:
+                    m_parent[(int)nodeIndex] = orphanVisitedMarker;
+                    goto case orphanVisitedMarker;
+
+                case orphanVisitedMarker:
+                    workList.Pop();
+                    continue;
+
+                case NodeIndex.Invalid:
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
+                }
+
+                m_parent[(int)nodeIndex] = orphanVisitingMarker;        // We are now visitING
+
+                // Mark all nodes as being visited.  
+                var node = m_graph.GetNode(nodeIndex, AllocNodeStorage());
+                for (var childIndex = node.GetFirstChildIndex(); childIndex != NodeIndex.Invalid; childIndex = node.GetNextChildIndex())
+                {
+                    // Has this child not been seen at all?  If so mark it.  
+                    // Skip it if we are visiting (it would form a cycle) or visited (or not an orphan)
+                    if (m_parent[(int)childIndex] == NodeIndex.Invalid)
                     {
-                        MarkDecendentsIgnoringCycles(childIndex, depth + 1);
-                        m_parent[(int)childIndex] = orphanVisitedMarker;
+                        workList.Push(childIndex);
                     }
                 }
+                FreeNodeStorage(node);
             }
-            FreeNodeStorage(node);
 
             // We set this above, and should not have changed it.  
-            Debug.Assert(m_parent[(int)nodeIndex] == orphanVisitingMarker);
+            Debug.Assert(m_parent[(int)entryNodeIndex] == orphanVisitedMarker);
             // Now that we are finished, we reset the visiting bit.  
-            m_parent[(int)nodeIndex] = NodeIndex.Invalid;
+            m_parent[(int)entryNodeIndex] = NodeIndex.Invalid;
         }
 
         /// <summary>
