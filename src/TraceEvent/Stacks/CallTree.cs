@@ -149,7 +149,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void Sort(Comparison<CallTreeNode> comparer)
         {
-            m_root.SortAll(comparer, RecursionGuard.Entry);
+            m_root.SortAll(comparer);
         }
         /// <summary>
         /// Sorting by InclusiveMetric Decending is so common, provide a shortcut.  
@@ -378,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 m_sumByID = new Dictionary<int, CallTreeNodeBase>();
                 var callersOnStack = new Dictionary<int, CallTreeNodeBase>();       // This is just a set
-                AccumulateSumByID(m_root, callersOnStack, RecursionGuard.Entry);
+                AccumulateSumByID(m_root, callersOnStack);
             }
             return m_sumByID;
         }
@@ -387,7 +387,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// double-count inclusive times, so we have to keep track of all callers currently on the
         /// stack and we only add inclusive times for nodes that are not already on the stack.  
         /// </summary>
-        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, RecursionGuard recursionGuard)
+        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
@@ -1077,7 +1077,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer, RecursionGuard recursionGuard)
+        internal void SortAll(Comparison<CallTreeNode> comparer, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
@@ -1433,7 +1433,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_calleesByName = new Dictionary<string, CallTreeNodeBase>();
             m_callees = new List<CallTreeNodeBase>();
 
-            var accumulated = AccumlateSamplesForNode(callTree.Root, 0, RecursionGuard.Entry);
+            var accumulated = AccumlateSamplesForNode(callTree.Root, 0);
             CallTreeNodeBase weightedSummary = accumulated.WeightedSummary;
             double weightedSummaryScale = accumulated.WeightedSummaryScale;
             bool isUniform = accumulated.IsUniform;
@@ -1569,7 +1569,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// isUniformRet is set to false if anyplace in 'treeNode' does not have the scaling factor weightedSummaryScaleRet.  This
         /// means the the caller cannot simply scale 'treeNode' by a weight to get weightedSummaryRet.  
         /// </summary>
-        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, RecursionGuard recursionGuard)
+        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
