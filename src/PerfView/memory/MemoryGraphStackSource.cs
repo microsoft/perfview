@@ -237,11 +237,6 @@ namespace Graphs
                     {
                         m_parent[(int)childIndex] = nodeIndex;
                         int parentDepth = nodeDepth[(int)nodeIndex];
-                        if (parentDepth > MaxDepth)
-                        {
-                            m_log.WriteLine("WARNING: Orphaned node with index {0} because its depth from root exceeded {1}", childIndex, MaxDepth); 
-                            continue;                   // TODO today we just drop it, but we should add it to some special overflow node.   
-                        }
                         nodeDepth[(int)childIndex] = checked(parentDepth + 1);
 
                         // the priority of the child is determined by its type and 1/10 by its parent.  
@@ -393,8 +388,6 @@ namespace Graphs
         /// </summary>
         public override double SampleTimeRelativeMSecLimit { get { return m_maxAddress; } }
 
-
-        const int MaxDepth = int.MaxValue;      // We disallow depth above this to avoid stack overflow later.   
         #region private
 
         /// <summary>
