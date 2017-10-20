@@ -472,9 +472,9 @@ namespace Diagnostics.Tracing.StackSources
         /// FrameInfo contains information that is ONLY dependent on the frame name (not the stack it came from), so
         /// entry point groups and include patterns can not be completely processed at this point.   Never returns null. 
         /// </summary>
-        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex, int depth = 0)
+        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex, int currentThreadRecursionDepth = 0)
         {
-            if (depth > 400)
+            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
             {
                 Task<StackInfo> operation = Task.Factory.StartNew(
                     () => GetStackInfo(stackIndex, 0),
@@ -495,7 +495,7 @@ namespace Diagnostics.Tracing.StackSources
                 if (stackInfo.InUse)
                     stackInfo = new StackInfo(m_includePats.Length);
                 stackInfo.InUse = true;
-                GenerateStackInfo(stackIndex, stackInfo, depth);
+                GenerateStackInfo(stackIndex, stackInfo, currentThreadRecursionDepth);
                 stackInfo.InUse = false;
             }
             return stackInfo;
