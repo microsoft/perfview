@@ -18,13 +18,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     public class CallTree
     {
         /// <summary>
-        /// For recursive methods that need to process deep stacks, this constant defines the limit for recursion within
-        /// a single thread. After reaching this limit, methods need to trampoline to a new thread before continuing to
-        /// recurse.
-        /// </summary>
-        internal const int SingleThreadRecursionLimit = 400;
-
-        /// <summary>
         /// Creates an empty call tree, indicating the scaling policy of the metric.   You populate it by assigning a StackSOurce to the tree.  
         /// </summary>
         public CallTree(ScalingPolicyKind scalingPolicy)
@@ -156,7 +149,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// </summary>
         public void Sort(Comparison<CallTreeNode> comparer)
         {
-            m_root.SortAll(comparer, 0);
+            m_root.SortAll(comparer, RecursionGuard.Entry);
         }
         /// <summary>
         /// Sorting by InclusiveMetric Decending is so common, provide a shortcut.  
@@ -279,12 +272,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             public CallTreeNode Tree;
         }
 
-        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack, int currentThreadRecursionDepth = 0)
+        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack, RecursionGuard recursionGuard = default(RecursionGuard))
         {
-            if (currentThreadRecursionDepth > SingleThreadRecursionLimit)
+            if (recursionGuard.RequiresNewThread)
             {
                 Task<CallTreeNode> result = Task.Factory.StartNew(
-                    () => FindTreeNode(stack, 0),
+                    () => FindTreeNode(stack, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -300,7 +293,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 return m_root;
 
             var callerIndex = m_SampleInfo.GetCallerIndex(stack);
-            var callerNode = FindTreeNode(callerIndex, currentThreadRecursionDepth + 1);
+            var callerNode = FindTreeNode(callerIndex, recursionGuard.Recurse);
 
             var frameIndex = m_SampleInfo.GetFrameIndex(stack);
             var retNode = callerNode.FindCallee(frameIndex);
@@ -385,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 m_sumByID = new Dictionary<int, CallTreeNodeBase>();
                 var callersOnStack = new Dictionary<int, CallTreeNodeBase>();       // This is just a set
-                AccumulateSumByID(m_root, callersOnStack, 0);
+                AccumulateSumByID(m_root, callersOnStack, RecursionGuard.Entry);
             }
             return m_sumByID;
         }
@@ -394,12 +387,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// double-count inclusive times, so we have to keep track of all callers currently on the
         /// stack and we only add inclusive times for nodes that are not already on the stack.  
         /// </summary>
-        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, int currentThreadRecursionDepth)
+        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, RecursionGuard recursionGuard)
         {
-            if (currentThreadRecursionDepth > SingleThreadRecursionLimit)
+            if (recursionGuard.RequiresNewThread)
             {
                 Task result = Task.Factory.StartNew(
-                    () => AccumulateSumByID(treeNode, callersOnStack, 0),
+                    () => AccumulateSumByID(treeNode, callersOnStack, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -427,7 +420,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (newOnStack)
                     callersOnStack.Add((int)treeNode.m_id, null);
                 foreach (var child in treeNode.m_callees)
-                    AccumulateSumByID(child, callersOnStack, currentThreadRecursionDepth + 1);
+                    AccumulateSumByID(child, callersOnStack, recursionGuard.Recurse);
                 if (newOnStack)
                     callersOnStack.Remove((int)treeNode.m_id);
             }
@@ -1084,12 +1077,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer, int currentThreadRecursionDepth)
+        internal void SortAll(Comparison<CallTreeNode> comparer, RecursionGuard recursionGuard)
         {
-            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
+            if (recursionGuard.RequiresNewThread)
             {
                 Task result = Task.Factory.StartNew(
-                    () => SortAll(comparer, 0),
+                    () => SortAll(comparer, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 result.GetAwaiter().GetResult();
@@ -1100,7 +1093,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 m_callees.Sort(comparer);
                 for (int i = 0; i < m_callees.Count; i++)
-                    m_callees[i].SortAll(comparer, currentThreadRecursionDepth + 1);
+                    m_callees[i].SortAll(comparer, recursionGuard.Recurse);
                 m_displayCallees = null;    // Recompute
             }
 
@@ -1440,7 +1433,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_calleesByName = new Dictionary<string, CallTreeNodeBase>();
             m_callees = new List<CallTreeNodeBase>();
 
-            var accumulated = AccumlateSamplesForNode(callTree.Root, 0, 0);
+            var accumulated = AccumlateSamplesForNode(callTree.Root, 0, RecursionGuard.Entry);
             CallTreeNodeBase weightedSummary = accumulated.WeightedSummary;
             double weightedSummaryScale = accumulated.WeightedSummaryScale;
             bool isUniform = accumulated.IsUniform;
@@ -1576,12 +1569,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// isUniformRet is set to false if anyplace in 'treeNode' does not have the scaling factor weightedSummaryScaleRet.  This
         /// means the the caller cannot simply scale 'treeNode' by a weight to get weightedSummaryRet.  
         /// </summary>
-        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, int currentThreadRecursionDepth)
+        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, RecursionGuard recursionGuard)
         {
-            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
+            if (recursionGuard.RequiresNewThread)
             {
                 Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
-                    () => AccumlateSamplesForNode(treeNode, recursionCount, currentThreadRecursionDepth: 0),
+                    () => AccumlateSamplesForNode(treeNode, recursionCount, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -1617,7 +1610,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     CallTreeNode treeNodeCallee = treeNode.m_callees[i];
 
                     // Get the correct weighted summary for the children.  
-                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, currentThreadRecursionDepth + 1);
+                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, recursionGuard.Recurse);
                     CallTreeNodeBase calleeWeightedSummary = nestedResult.WeightedSummary;
                     double calleeWeightedSummaryScale = nestedResult.WeightedSummaryScale;
                     bool isUniform = nestedResult.IsUniform;
