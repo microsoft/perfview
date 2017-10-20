@@ -18,6 +18,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     public class CallTree
     {
         /// <summary>
+        /// For recursive methods that need to process deep stacks, this constant defines the limit for recursion within
+        /// a single thread. After reaching this limit, methods need to trampoline to a new thread before continuing to
+        /// recurse.
+        /// </summary>
+        internal const int SingleThreadRecursionLimit = 400;
+
+        /// <summary>
         /// Creates an empty call tree, indicating the scaling policy of the metric.   You populate it by assigning a StackSOurce to the tree.  
         /// </summary>
         public CallTree(ScalingPolicyKind scalingPolicy)
@@ -272,9 +279,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             public CallTreeNode Tree;
         }
 
-        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack, int depth = 0)
+        private CallTreeNode FindTreeNode(StackSourceCallStackIndex stack, int currentThreadRecursionDepth = 0)
         {
-            if (depth > 400)
+            if (currentThreadRecursionDepth > SingleThreadRecursionLimit)
             {
                 Task<CallTreeNode> result = Task.Factory.StartNew(
                     () => FindTreeNode(stack, 0),
@@ -293,7 +300,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 return m_root;
 
             var callerIndex = m_SampleInfo.GetCallerIndex(stack);
-            var callerNode = FindTreeNode(callerIndex, depth + 1);
+            var callerNode = FindTreeNode(callerIndex, currentThreadRecursionDepth + 1);
 
             var frameIndex = m_SampleInfo.GetFrameIndex(stack);
             var retNode = callerNode.FindCallee(frameIndex);
@@ -387,9 +394,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// double-count inclusive times, so we have to keep track of all callers currently on the
         /// stack and we only add inclusive times for nodes that are not already on the stack.  
         /// </summary>
-        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, int depth)
+        private void AccumulateSumByID(CallTreeNode treeNode, Dictionary<int, CallTreeNodeBase> callersOnStack, int currentThreadRecursionDepth)
         {
-            if (depth > 400)
+            if (currentThreadRecursionDepth > SingleThreadRecursionLimit)
             {
                 Task result = Task.Factory.StartNew(
                     () => AccumulateSumByID(treeNode, callersOnStack, 0),
@@ -420,7 +427,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 if (newOnStack)
                     callersOnStack.Add((int)treeNode.m_id, null);
                 foreach (var child in treeNode.m_callees)
-                    AccumulateSumByID(child, callersOnStack, depth + 1);
+                    AccumulateSumByID(child, callersOnStack, currentThreadRecursionDepth + 1);
                 if (newOnStack)
                     callersOnStack.Remove((int)treeNode.m_id);
             }
@@ -1077,9 +1084,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// Sort the childre of every node in the te
         /// </summary>
         /// <param name="comparer"></param>
-        internal void SortAll(Comparison<CallTreeNode> comparer, int depth)
+        internal void SortAll(Comparison<CallTreeNode> comparer, int currentThreadRecursionDepth)
         {
-            if (depth > 400)
+            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
             {
                 Task result = Task.Factory.StartNew(
                     () => SortAll(comparer, 0),
@@ -1093,7 +1100,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 m_callees.Sort(comparer);
                 for (int i = 0; i < m_callees.Count; i++)
-                    m_callees[i].SortAll(comparer, depth + 1);
+                    m_callees[i].SortAll(comparer, currentThreadRecursionDepth + 1);
                 m_displayCallees = null;    // Recompute
             }
 
@@ -1569,12 +1576,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// isUniformRet is set to false if anyplace in 'treeNode' does not have the scaling factor weightedSummaryScaleRet.  This
         /// means the the caller cannot simply scale 'treeNode' by a weight to get weightedSummaryRet.  
         /// </summary>
-        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, int depth)
+        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, int currentThreadRecursionDepth)
         {
-            if (depth > 400)
+            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
             {
                 Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
-                    () => AccumlateSamplesForNode(treeNode, recursionCount, 0),
+                    () => AccumlateSamplesForNode(treeNode, recursionCount, currentThreadRecursionDepth: 0),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -1610,7 +1617,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     CallTreeNode treeNodeCallee = treeNode.m_callees[i];
 
                     // Get the correct weighted summary for the children.  
-                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, depth + 1);
+                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, currentThreadRecursionDepth + 1);
                     CallTreeNodeBase calleeWeightedSummary = nestedResult.WeightedSummary;
                     double calleeWeightedSummaryScale = nestedResult.WeightedSummaryScale;
                     bool isUniform = nestedResult.IsUniform;
