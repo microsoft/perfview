@@ -472,12 +472,12 @@ namespace Diagnostics.Tracing.StackSources
         /// FrameInfo contains information that is ONLY dependent on the frame name (not the stack it came from), so
         /// entry point groups and include patterns can not be completely processed at this point.   Never returns null. 
         /// </summary>
-        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex, int currentThreadRecursionDepth = 0)
+        private StackInfo GetStackInfo(StackSourceCallStackIndex stackIndex, RecursionGuard recursionGuard = default(RecursionGuard))
         {
-            if (currentThreadRecursionDepth > CallTree.SingleThreadRecursionLimit)
+            if (recursionGuard.RequiresNewThread)
             {
                 Task<StackInfo> operation = Task.Factory.StartNew(
-                    () => GetStackInfo(stackIndex, 0),
+                    () => GetStackInfo(stackIndex, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return operation.GetAwaiter().GetResult();
@@ -495,7 +495,7 @@ namespace Diagnostics.Tracing.StackSources
                 if (stackInfo.InUse)
                     stackInfo = new StackInfo(m_includePats.Length);
                 stackInfo.InUse = true;
-                GenerateStackInfo(stackIndex, stackInfo, currentThreadRecursionDepth);
+                GenerateStackInfo(stackIndex, stackInfo, recursionGuard);
                 stackInfo.InUse = false;
             }
             return stackInfo;
@@ -503,7 +503,7 @@ namespace Diagnostics.Tracing.StackSources
         /// <summary>
         /// Generate the stack information for 'stack' and place it in stackInfoRet.  Only called by GetStackInfo.    
         /// </summary>
-        private void GenerateStackInfo(StackSourceCallStackIndex stackIndex, StackInfo stackInfoRet, int depth)
+        private void GenerateStackInfo(StackSourceCallStackIndex stackIndex, StackInfo stackInfoRet, RecursionGuard recursionGuard)
         {
             // Clear out old information.  
             stackInfoRet.StackIndex = stackIndex;
@@ -519,7 +519,7 @@ namespace Diagnostics.Tracing.StackSources
             StackInfo parentStackInfo = null;
             if (stackInfoRet.CallerIndex != StackSourceCallStackIndex.Invalid)
             {
-                parentStackInfo = GetStackInfo(stackInfoRet.CallerIndex, depth + 1);
+                parentStackInfo = GetStackInfo(stackInfoRet.CallerIndex, recursionGuard.Recurse);
                 if (parentStackInfo.FrameIndex == StackSourceFrameIndex.Discard)
                 {
                     stackInfoRet.FrameIndex = StackSourceFrameIndex.Discard;
