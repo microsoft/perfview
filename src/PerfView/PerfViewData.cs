@@ -7670,7 +7670,7 @@ table {
                 });
 
                 // Get all ETL files
-                AddResourcesAsChildren(worker, dhPackage, "DiagnosticsHub.Resource.EtlFile", ".etl", (localFilePath) =>
+                AddEtlResourcesAsChildren(worker, dhPackage, (localFilePath) =>
                 {
                     return ETLPerfViewData.Get(localFilePath);
                 });
@@ -7711,13 +7711,8 @@ table {
             ResourceInfo[] resources;
             dhPackage.GetResourceInformationByType(resourceIdentity, out resources);
 
-            IEnumerable<ResourceInfo> orderedResources = resources
-                    .OrderBy(r => DhPackagingExtensions.ToDateTime(r.TimeAddedUTC));
-
             foreach (var resource in resources)
             {
-                Guid resourceId = resource.ResourceId;
-
                 string localFilePath = GetLocalFilePath(FilePath, dhPackage, resource, fileExtension);
 
                 worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");
@@ -7729,6 +7724,105 @@ table {
 
                 worker.Log("Loaded " + resource.Name + ". Loading ...");
             }
+        }
+
+        /// <summary>
+        /// Adds child files from ETL resources in the DhPackage
+        /// </summary>
+        private void AddEtlResourcesAsChildren(StatusBar worker, DhPackage dhPackage, Func<string/*localFileName*/, PerfViewFile> getPerfViewFile)
+        {
+            ResourceInfo[] resources;
+            dhPackage.GetResourceInformationByType("DiagnosticsHub.Resource.EtlFile", out resources);
+
+            var newResources = ConvertEtlResources(worker, dhPackage, resources);
+
+            foreach (var resource in newResources)
+            {
+                worker.Log("Found  resource '" + resource.Name + "'. Loading ...");
+
+                PerfViewFile perfViewFile = getPerfViewFile(resource.LocalFilePath);
+                perfViewFile.Name = resource.Name;
+
+                this.Children.Add(perfViewFile);
+
+                worker.Log("Loaded '" + resource.Name + "'. Loading ...");
+            }
+        }
+
+        struct DiagSessionEtl
+        {
+            public DateTime TimeAddedUTC;
+            public string LocalFilePath;
+            public string Name;
+        }
+
+        /// <summary>
+        /// Process raw DiagSession ETL resources and potentially merge them
+        /// </summary>
+        private IEnumerable<DiagSessionEtl> ConvertEtlResources(
+            StatusBar worker,
+            DhPackage dhPackage,
+            IEnumerable<ResourceInfo> resources)
+        {
+            DateTime earliestTime = DateTime.MaxValue;
+            var newResources = new List<DiagSessionEtl>();
+            foreach (var resource in resources)
+            {
+                var newRes = new DiagSessionEtl()
+                {
+                    TimeAddedUTC = resource.TimeAddedUTC.ToDateTime(),
+                    LocalFilePath = GetLocalFilePath(FilePath, dhPackage, resource, ".etl")
+                };
+
+                // Since we are going to try and merge multiple files, prefix each one with a number
+                newRes.Name = $"{newResources.Count + 1}) {resource.Name}";
+
+                if (newRes.TimeAddedUTC < earliestTime)
+                    earliestTime = newRes.TimeAddedUTC;
+
+                newResources.Add(newRes);
+            }
+
+            // Multiple ETL files in a DiagSession file usually means they can be merged together.
+            // If we fail to merge them for any reason, show them as we normally would.
+            if (newResources.Count > 1)
+            {
+                var etlsToMerge = (from r in newResources select r.LocalFilePath).ToArray();
+
+                try
+                {
+                    worker.Log("Found multiple ETL files in DiagSession. Attempting to merge...");
+
+                    var mergedEtlFilename = Path.GetFileNameWithoutExtension(FilePath) + "_m.etl";
+                    string localFilePath = CacheFiles.FindFile(FilePath, "_" + mergedEtlFilename);
+
+                    // Check if we have already merged the files
+                    if (!File.Exists(localFilePath))
+                    {
+                        Microsoft.Diagnostics.Tracing.Extensions.ETWKernelControl.Merge(
+                            etlsToMerge,
+                            localFilePath,
+                            Microsoft.Diagnostics.Tracing.Extensions.EVENT_TRACE_MERGE_EXTENDED_DATA.NONE);
+
+                        worker.Log("Successfully merged ETL files into: " + mergedEtlFilename);
+                    }
+
+                    // Insert the merged file at the top of the list
+                    newResources.Insert(0,
+                        new DiagSessionEtl()
+                        {
+                            TimeAddedUTC = earliestTime,
+                            LocalFilePath = localFilePath,
+                            Name = $"Merged ETL (1 - {newResources.Count})"
+                        });
+                }
+                catch (Exception e)
+                {
+                    worker.Log("Failed to merge DiagSession ETL files: " + e.Message);
+                }
+            }
+
+            return newResources;
         }
     }
 }
