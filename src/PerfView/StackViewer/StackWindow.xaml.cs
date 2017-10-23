@@ -1586,22 +1586,13 @@ namespace PerfView
             var cells = SelectedCells();
             if (cells != null)
             {
-                if (cells.Count == 2) // First and Last column cells
-                {
-                    StartTextBox.Text = GetCellStringValue(cells[0]);
-                    EndTextBox.Text = GetCellStringValue(cells[1]);
-                    Update();
-                }
-                else if (cells.Count == 1) // single cell from a row
-                {
-                    var callTreeNode = cells[0].Item as CallTreeNodeBase;
+                var callTreeNodes = cells.Select(cell => cell.Item).OfType<CallTreeNodeBase>();
 
-                    if (callTreeNode != null)
-                    {
-                        StartTextBox.Text = callTreeNode.FirstTimeRelativeMSec.ToString("n3");
-                        EndTextBox.Text = callTreeNode.LastTimeRelativeMSec.ToString("n3");
-                        Update();
-                    }
+                if (callTreeNodes.Any())
+                {
+                    StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
+                    EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
+                    Update();
                 }
                 else
                     StatusBar.LogError("Could not set time range.");
