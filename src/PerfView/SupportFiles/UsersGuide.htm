@@ -2884,10 +2884,10 @@
         you statistics about all the samples, including count, and total duration.&nbsp;&nbsp;&nbsp;
         It computes&nbsp; the &#39;TimeBucket&#39; size which is defined as 1/32 of the
         total time interval of the trace.&nbsp;&nbsp; This is the amount of time that is
-        represented by each character in the <a href="#WhenColumn">When column</a>.&nbsp;&nbsp;&nbsp;
-        It also compute the metric/msec.&nbsp;&nbsp; This is a quick measurement of how
-        CPU bound the trace is as a whole.&nbsp;&nbsp; A value of 1 indicates a program
-        that on average consumes all the CPU from a single processor.&nbsp;&nbsp;&nbsp;
+        represented by each character in the <a href="#WhenColumn">When column</a>.<br>
+        It also computes the <strong>Metric/Interval</strong>. This is a quick measurement of how
+        CPU bound the trace is as a whole. A value of 1 indicates a program
+        that on average consumes all the CPU from a single processor. Unless that is high, your problem is not CPU (it can be some blocking operation like network/disk read).<br>
         However this metric is average over the time data was collected, so can include
         time when the process of interest is not even running.&nbsp; Thus is typically better
         to use the <a href="#WhenColumn">When column</a> for the node presenting the process
