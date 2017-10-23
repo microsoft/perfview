@@ -1586,10 +1586,12 @@ namespace PerfView
             var cells = SelectedCells();
             if (cells != null)
             {
-                if (cells.Count == 2)
+                var callTreeNodes = cells.Select(cell => cell.Item).OfType<CallTreeNodeBase>();
+
+                if (callTreeNodes.Any())
                 {
-                    StartTextBox.Text = GetCellStringValue(cells[0]);
-                    EndTextBox.Text = GetCellStringValue(cells[1]);
+                    StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
+                    EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
                     Update();
                 }
                 else
