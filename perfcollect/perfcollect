@@ -1250,10 +1250,19 @@ SetupLTTngSession()
 	else
 		if [ "$events" == "" ]
 		then
-		# Enable All runtime events
-		# TODO:Filter events
-		RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntime:*"
-		RunSilent "lttng enable-event --userspace --tracepoint DotNETRuntimePrivate:*"
+            # Enable the default set of events.
+            EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword_ThreadTransferKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_NoKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_ExceptionKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_ContentionKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_JitKeyword_NGenKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_JitKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_LoaderKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntime_GCKeyword_GCCollectOnly[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_GCPrivateKeyword_GCCollectOnly[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_BindingKeyword[@]}
+            EnableLTTngEvents ${DotNETRuntimePrivate_MulticoreJitPrivateKeyword[@]}
 		elif [ "$events" == "threading" ]
 		then
 			EnableLTTngEvents ${DotNETRuntime_ThreadingKeyword[@]}
