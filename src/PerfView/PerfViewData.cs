@@ -7670,10 +7670,7 @@ table {
                 });
 
                 // Get all ETL files
-                AddResourcesAsChildren(worker, dhPackage, "DiagnosticsHub.Resource.EtlFile", ".etl", (localFilePath) =>
-                {
-                    return ETLPerfViewData.Get(localFilePath);
-                });
+                AddEtlResourcesAsChildren(worker, dhPackage);
             }
 
             return null;
@@ -7689,10 +7686,11 @@ table {
         /// <param name="package">The diagsession package object (opened from the file path)</param>
         /// <param name="resource">The diagsession resource object</param>
         /// <param name="fileExtension">The final extension to use</param>
+        /// <param name="alternateName">Alternate name to use for file</param>
         /// <returns>The full local file path to the resource</returns>
-        private static string GetLocalFilePath(string packageFilePath, DhPackage package, ResourceInfo resource, string fileExtension)
+        private static string GetLocalFilePath(string packageFilePath, DhPackage package, ResourceInfo resource, string fileExtension, string alternateName = null)
         {
-            string localFileName = Path.GetFileNameWithoutExtension(resource.Name);
+            string localFileName = alternateName ?? Path.GetFileNameWithoutExtension(resource.Name);
             string localFilePath = CacheFiles.FindFile(packageFilePath, "_" + localFileName + fileExtension);
 
             if (!File.Exists(localFilePath))
@@ -7711,13 +7709,8 @@ table {
             ResourceInfo[] resources;
             dhPackage.GetResourceInformationByType(resourceIdentity, out resources);
 
-            IEnumerable<ResourceInfo> orderedResources = resources
-                    .OrderBy(r => DhPackagingExtensions.ToDateTime(r.TimeAddedUTC));
-
             foreach (var resource in resources)
             {
-                Guid resourceId = resource.ResourceId;
-
                 string localFilePath = GetLocalFilePath(FilePath, dhPackage, resource, fileExtension);
 
                 worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");
@@ -7729,6 +7722,71 @@ table {
 
                 worker.Log("Loaded " + resource.Name + ". Loading ...");
             }
+        }
+
+        /// <summary>
+        /// Adds child files from ETL resources in the DhPackage
+        /// </summary>
+        private void AddEtlResourcesAsChildren(StatusBar worker, DhPackage dhPackage)
+        {
+            ResourceInfo[] resources;
+            dhPackage.GetResourceInformationByType("DiagnosticsHub.Resource.EtlFile", out resources);
+
+            foreach (var resource in CreateEtlResources(dhPackage, resources))
+            {
+                worker.Log("Found  resource '" + resource.Name + "'. Loading ...");
+
+                this.Children.Add(resource);
+
+                worker.Log("Loaded '" + resource.Name + "'. Loading ...");
+            }
+        }
+
+        /// <summary>
+        /// Organize DiagSession ETL resources for the UI
+        /// </summary>
+        private IEnumerable<PerfViewFile> CreateEtlResources(
+            DhPackage dhPackage,
+            IEnumerable<ResourceInfo> resources)
+        {
+            string auxStandardCollectorEtlFile = null;
+            var newResources = new List<PerfViewFile>();
+            foreach (var resource in resources)
+            {
+                // If the standard collector auxillary file is present, the standard collection (Diagnostics Hub)
+                // created this DiagSession which means we should process the ETL files in bulk.
+                if (resource.Name.Equals("sc.user_aux.etl", StringComparison.OrdinalIgnoreCase))
+                {
+                    auxStandardCollectorEtlFile = GetLocalFilePath(FilePath, dhPackage, resource, ".etl", "sc");
+                }
+                else
+                {
+                    var etlFile = GetLocalFilePath(FilePath, dhPackage, resource, ".etl");
+
+                    // The "sc." prefix is considered reserved when loading an ETL from a DiagSession, but we
+                    // still want to extract the file, even though the UI will not show it.
+                    if (!resource.Name.StartsWith("sc.", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var file = ETLPerfViewData.Get(etlFile);
+                        file.Name = resource.Name;
+                        newResources.Add(file);
+                    }
+                }
+            }
+
+            if (auxStandardCollectorEtlFile != null)
+            {
+                Debug.Assert(File.Exists(auxStandardCollectorEtlFile), "Standard Collector auxillary file must exist to properly handle bulk processing");
+                var mergedEtlFilename = Path.GetFileNameWithoutExtension(FilePath);
+
+                var file = ETLPerfViewData.Get(auxStandardCollectorEtlFile);
+                file.Name = $"{mergedEtlFilename}.etl (Merged)";
+
+                // Insert the "merged" file at the top of the list
+                newResources.Insert(0, file);
+            }
+
+            return newResources;
         }
     }
 }
