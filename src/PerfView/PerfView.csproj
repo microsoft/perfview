@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\dir.props" />
 
   <PropertyGroup>
     <TargetFramework>net45</TargetFramework>
@@ -41,8 +42,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.8" PrivateAssets="all" />
-    <PackageReference Include="PerfView.SupportFiles" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
+    <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -238,7 +239,7 @@
       <Link>Microsoft.Diagnostics.Tracing.TraceEvent.xml</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(NuGetPackageRoot)Microsoft.Diagnostics.Runtime\0.8.31-beta\lib\net40\Microsoft.Diagnostics.Runtime.dll">
+    <EmbeddedResource Include="$(NuGetPackageRoot)Microsoft.Diagnostics.Runtime\$(MicrosoftDiagnosticsRuntimeVersion)\lib\net40\Microsoft.Diagnostics.Runtime.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\Microsoft.Diagnostics.Runtime.dll</LogicalName>

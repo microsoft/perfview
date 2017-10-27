@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\dir.props" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -48,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="1.0.8" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
   </ItemGroup>
 
   <ItemGroup>
