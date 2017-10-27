@@ -4,7 +4,10 @@
   <!-- ******************************************************************** -->
   <!-- properties that can be global to all projects -->
 
-
+  <!-- ****************************** -->
+  <PropertyGroup>
+    <PerfViewVersion>1.9.66.0</PerfViewVersion>
+  </PropertyGroup>
 
   <!-- ****************************** -->
   <!-- versions of dependencies that more than one project use -->
