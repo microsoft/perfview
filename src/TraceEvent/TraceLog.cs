@@ -5275,6 +5275,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal TraceThread GetOrCreateThread(int threadID, long timeQPC, TraceProcess process, bool isThreadCreateEvent = false)
         {
             TraceThread retThread = GetThread(threadID, timeQPC);
+
+            if (process != null && retThread != null && retThread.process.ProcessID != -1 && retThread.process.ProcessID != process.ProcessID)
+                retThread = null;
+
             if (retThread == null || isThreadCreateEvent)
             {
                 InitThread();
