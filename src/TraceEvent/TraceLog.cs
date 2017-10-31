@@ -5276,14 +5276,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             TraceThread retThread = GetThread(threadID, timeQPC);
 
-            // ThreadIDs are machine wide, however, they are also reused.   Thus GetThread CAN give you an OLD thread IF 
-            // we are missing thread Death and creation events (thus silently it gets reused on another process).   This 
-            // can happen easily becasue Kernel events (which log thread creation and deaths), have a circular buffer that
-            // might get exhausted before user mode events (e.g. CLR events).   Thus try to keep as much sanity as possible
-            // by confirming that if the thread we get back had a process, that that process is the same as the process for 
-            // the currnet event.  If not, we assume that there were silent thread deaths and creations and simply create
-            // a new TraceThread.   Note that this problem mostly goes away when we have just a single circular buffer since
-            // we won't lose the Thread death and creation events.   
+            // ThreadIDs are machine wide, however, they are also reused. Thus GetThread CAN give you an OLD thread IF
+            // we are missing thread Death and creation events (thus silently it gets reused on another process). This
+            // can happen easily because Kernel events (which log thread creation and deaths), have a circular buffer that
+            // might get exhausted before user mode events (e.g. CLR events). Thus try to keep as much sanity as possible
+            // by confirming that if the thread we get back had a process, the process is the same as the process for
+            // the current event. If not, we assume that there were silent thread deaths and creations and simply create
+            // a new TraceThread. Note that this problem mostly goes away when we have just a single circular buffer since
+            // we won't lose the Thread death and creation events.
             if (process != null && process.ProcessID != -1 && retThread != null && retThread.process.ProcessID != -1 && process.ProcessID != retThread.process.ProcessID)
                 retThread = null;
 
