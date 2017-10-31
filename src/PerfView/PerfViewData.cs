@@ -2041,8 +2041,11 @@ table {
                 }
 
                 var iisPipelineEvent = request.PipelineEvents.FirstOrDefault(m => (m.Name == eventName) && m.EndTimeRelativeMSec == 0);
-                iisPipelineEvent.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
-                iisPipelineEvent.EndThreadId = traceEvent.ThreadID;
+                if (iisPipelineEvent != null)
+                {
+                    iisPipelineEvent.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                    iisPipelineEvent.EndThreadId = traceEvent.ThreadID;
+                }
             }
         }
         private IisPipelineEvent GetSlowestEvent(Guid contextId, List<IisPipelineEvent> pipeLineEvents)
