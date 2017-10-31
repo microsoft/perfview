@@ -21,6 +21,17 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <PerfViewVersion>1.9.66.0</PerfViewVersion>
+  </PropertyGroup>
+
+  <!-- versions of dependencies that more than one project use -->
+  <PropertyGroup>
+    <PerfViewSupportFilesVersion>1.0.5</PerfViewSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.8</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>0.8.31-beta</MicrosoftDiagnosticsRuntimeVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!--
       Make sure any documentation comments which are included in code get checked for syntax during the build, but do
       not report warnings for missing comments.
