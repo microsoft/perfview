@@ -795,13 +795,13 @@ namespace TraceEventTests
                 SendEvent(template.ProviderGuid, (int)template.eventID, template.lookupAsClassic);
 
             foreach (var template in m_inactiveTemplates)
-                Assert.True(!m_visited.Contains(template));
+                Assert.DoesNotContain(template, m_visited);
 
             foreach (var template in m_activeTemplates)
-                Assert.True(m_visited.Contains(template));
+                Assert.Contains(template, m_visited);
 
             foreach (var template in m_repeatTemplates)
-                Assert.True(m_visited.Contains(template));
+                Assert.Contains(template, m_visited);
         }
 
         Action<EmptyTraceData> MakeTarget(int i)
