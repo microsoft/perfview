@@ -112,6 +112,9 @@ namespace PerfView
             if (args.ClrEvents != ClrTraceEventParser.Keywords.None)
                 ClrCheckBox.IsChecked = true;
 
+            if (args.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
+                TplCaptureCheckBox.IsChecked = true;
+
             var kernelBase = (KernelTraceEventParser.Keywords)(KernelTraceEventParser.Keywords.Default - KernelTraceEventParser.Keywords.Profile);
             if ((args.KernelEvents & kernelBase) == kernelBase)
                 KernelBaseCheckBox.IsChecked = true;
@@ -413,6 +416,11 @@ namespace PerfView
                     m_args.ClrEvents = ClrTraceEventParser.Keywords.None;
                 else if (m_args.ClrEvents == ClrTraceEventParser.Keywords.None)
                     m_args.ClrEvents = ClrTraceEventParser.Keywords.Default;
+
+                if (!(TplCaptureCheckBox.IsChecked ?? true))
+                    m_args.TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
+                else if (m_args.TplEvents == TplEtwProviderTraceEventParser.Keywords.None)
+                    m_args.TplEvents = TplEtwProviderTraceEventParser.Keywords.Default;
 
                 m_args.NoNGenRundown = NoNGenRundownCheckBox.IsChecked ?? false;
                 m_args.DotNetAlloc = DotNetAllocCheckBox.IsChecked ?? false;
