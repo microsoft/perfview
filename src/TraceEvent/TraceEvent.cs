@@ -3171,13 +3171,10 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             if (templatesInfo == null)
-            {
-                var newTemplatesInfo = (TemplateEntry*)Marshal.AllocHGlobal(sizeof(TemplateEntry) * newLength);
-                for (int i = 0; i < newLength; i++)
-                    newTemplatesInfo[i] = default(TemplateEntry);
+                templatesInfo = (TemplateEntry*)Marshal.AllocHGlobal(sizeof(TemplateEntry) * newLength);
 
-                templatesInfo = newTemplatesInfo;
-            }
+            for (int i = 0; i < newLength; i++)
+                templatesInfo[i] = default(TemplateEntry);
 
             numTemplates = 0;
             if (oldTemplates != null)
