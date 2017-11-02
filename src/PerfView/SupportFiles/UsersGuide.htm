@@ -2193,12 +2193,14 @@
                         </li>
 
                         <li>
+                            <a id="Gen2ObjectDeaths(CoarseSampling)Stacks"/>
                             <strong><a id="Gen2ObjectDeathsStacks">Gen 2 Object Deaths</a></strong> - When the
                             DotNetAlloc or DotNetAllocSamp events are turned on the runtime will log the
                             stack of allocations as well as when GCs happen and what objects are collected.
                             In this view we show you the allocation stack of objects that DIED in Gen 2.
                             If your Gen 2 GCs are expensive, then reducing these objects are the most important
-                            way of bring the cost of those Gen 2 GCs down.
+                            way of bring the cost of those Gen 2 GCs down.  There is a (Coarse Sampling) version
+                            of this based on the sampling that happens by default every 100KB of allocation.  
                         </li>
                         <li>
                             <strong><a id="ServerGCStacks">Server GC Stacks</a></strong> - This
@@ -8053,6 +8055,20 @@
             </ul>
         </li>
         -->
+        <li>
+            Version 1.9.67 11/2/17
+            <ul>
+                <li> Added the Gen2 Object Death view that use the 100KB allocation events (coarse sampling).  Thus most traces 
+                will now have this view (inncluding the /GCOnly view).   This view shows you were you allocated objects that then die in Gen 2 (These are the 
+                most important for reducing the number of Gen2 GCs (and Gen 2 GC fragmentation)).   You coudl do this before 
+                when you truned on /DotNetAlloc or /DotNetAllocSampled collection but those are more expensive and can have
+                logistic issues (you can't attach to a existing process).    The view will only show you a coarse sampling 
+                but that often has useful information.  
+                </li>
+                <li>Added the 'GC Occured Gen(X)' frame to the GC Heap Net Alloc and GC 2 Object Death views.   These are 
+                useful for seeing where the GCs in time without having to go to the GCStats or Events views.</li>
+            </ul>
+        </li>
         <li>
             Version 1.9.66 10/27/17
             <ul>
