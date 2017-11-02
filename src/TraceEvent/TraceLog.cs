@@ -601,7 +601,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var nowTicks = Environment.TickCount;
                 // TODO review.  
-                for (;;)
+                for (; ; )
                 {
                     var count = realTimeQueue.Count;
                     if (count == 0)
@@ -1835,7 +1835,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // We are done with these data structures.  
                 process.codeAddressesInProcess = null;
                 process.unresolvedCodeAddresses.Clear();
+                // Link up all the 'Parent' fields of the process.   
+                process.SetParentForProcess();
             }
+
+#if DEBUG
+            // Confirm that there are no infinite chains (we guarentee this for sanity).  
+            foreach (var process in Processes)
+                Debug.Assert(process.ParentDepth() < Processes.Count);
+#endif
 
             // Sum up the module level statistics for code addresses.  
             for (int codeAddrIdx = 0; codeAddrIdx < CodeAddresses.Count; codeAddrIdx++)
@@ -3344,7 +3352,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public PastEventInfoIndex GetPreviousEventIndex(PastEventInfoIndex start, int threadID, bool exactMatch = false, EventIndex minIdx = (EventIndex)0)
             {
                 int idx = (int)start;
-                for (;;)
+                for (; ; )
                 {
                     // Event numbers should decrease.  
                     Debug.Assert(idx == curPastEventInfo || idx == 0 || pastEventInfo[idx - 1].EventIndex == EventIndex.Invalid ||
@@ -3378,7 +3386,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var ret = PastEventInfoIndex.Invalid;
                 bool exactMatch = false;
                 bool updateThread = false;
-                for (;;)
+                for (; ; )
                 {
                     // We match timestamps.  This is the main criteria 
                     if (QPCTime == pastEventInfo[idx].QPCTime)
@@ -4339,7 +4347,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             public bool MoveNext()
             {
-                for (;;)
+                for (; ; )
                 {
                     current = GetNext();
                     if (current.TimeStampQPC == long.MaxValue || current.TimeStampQPC > events.endTimeQPC)
@@ -4367,7 +4375,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             public bool MoveNext()
             {
-                for (;;)
+                for (; ; )
                 {
                     if (indexOnPage == 0)
                     {
@@ -4726,7 +4734,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public int ParentID { get { return parentID; } }
         /// <summary>
-        /// The process that started this process.  Returns null if unknown.  
+        /// The process that started this process.  Returns null if unknown    Unlike ParentID
+        /// the chain of Parent's will never form a loop.   
         /// </summary>
         public TraceProcess Parent { get { return parent; } }
         /// <summary>
@@ -4813,9 +4822,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.Append("<TraceProcess ");
             sb.Append("PID=").Append(XmlUtilities.XmlQuote(ProcessID)).Append(" ");
             sb.Append("ProcessIndex=").Append(XmlUtilities.XmlQuote(ProcessIndex)).Append(" ");
-            // TODO null parent pointers should be impossible
-            if (Parent != null)
-                sb.Append("ParentPID=").Append(XmlUtilities.XmlQuote(Parent.ProcessID)).Append(" ");
+            sb.Append("ParentID=").Append(XmlUtilities.XmlQuote(ParentID)).Append(" ");
             sb.Append("Exe=").Append(XmlUtilities.XmlQuote(Name)).Append(" ");
             sb.Append("Start=").Append(XmlUtilities.XmlQuote(StartTimeRelativeMsec)).Append(" ");
             sb.Append("End=").Append(XmlUtilities.XmlQuote(EndTimeRelativeMsec)).Append(" ");
@@ -4847,7 +4854,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.commandLine = data.CommandLine;
             this.imageFileName = data.ImageFileName;
             this.parentID = data.ParentID;
-            this.parent = log.Processes.GetProcess(data.ParentID, this.startTimeQPC);
         }
         internal void ProcessEnd(ProcessTraceData data)
         {
@@ -4855,10 +4861,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 this.commandLine = data.CommandLine;
             this.imageFileName = data.ImageFileName;        // Always overwrite as we might have guessed via the image loads
             if (this.parentID == 0 && data.ParentID != 0)
-            {
                 this.parentID = data.ParentID;
-                this.parent = log.Processes.GetProcess(data.ParentID, data.TimeStampQPC);
-            }
 
             if (data.Opcode != TraceEventOpcode.DataCollectionStop)
             {
@@ -4871,6 +4874,69 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Log.DebugWarn(startTimeQPC <= endTimeQPC, "Process Ends before it starts! StartTime: " + StartTimeRelativeMsec.ToString("f4"), data);
         }
 
+        /// <summary>
+        /// Sets the 'Parent' field for the process (based on the ParentID).   
+        /// 
+        /// sentinel is internal to the implementation, external callers should always pass null. 
+        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it woudl form
+        /// a loop in the parent chain, which we definately don't want.  
+        /// </summary>
+        internal void SetParentForProcess(TraceProcess sentinel = null)
+        {
+            if (parent != null)                     // already initialized, nothing to do.   
+                return;
+
+            if (parentID == -1)
+                return;
+
+            if (parentID == 0)                      // Zero is the idle process and we prefer that it not have children.  
+            {
+                parentID = -1;
+                return;
+            }
+
+            // Look up the process ID, if we fail, we are done.  
+            int index;
+            var potentialParent = Log.Processes.FindProcessAndIndex(parentID, startTimeQPC, out index);
+            if (potentialParent == null)
+                return;
+
+            // If this is called from the outside, intialize the sentinel.  We will pass it
+            // along in our recurisve calls.  It is just an illegal value that we can use 
+            // to indicate that a node is currnetly a valid parent (becase it would form a loop)
+            if (sentinel == null)
+                sentinel = new TraceProcess(-1, Log, ProcessIndex.Invalid);
+
+            // During our recursive calls mark our parent with the sentinel this avoids loops.
+            parent = sentinel;                      // Mark this node as off limits.  
+
+            // If the result is marked (would form a loop), give up setting the parent variable.  
+            if (potentialParent.parent == sentinel)
+            {
+                parent = null;
+                parentID = -1;                              // This process ID is wrong, poison it to avoid using it again.  
+                return;
+            }
+
+            potentialParent.SetParentForProcess(sentinel);   // Finish the intialization of the parent Process, also giving up if it hits a sentinel
+            parent = potentialParent;                        // OK parent is fully intialized, I can reset the sentenel
+        }
+
+#if DEBUG
+        internal int ParentDepth()
+        {
+            int depth = 0;
+            TraceProcess cur = this;
+            while (depth < Log.Processes.Count)
+            {
+                if (cur.parent == null)
+                    break;
+                depth++;
+                cur = cur.parent;
+            }
+            return depth;
+        }
+#endif
         #endregion
 
         /// <summary>
@@ -6718,7 +6784,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             // Skip to the addresses in this module 
             var codeAddrEnum = codeAddrs.GetEnumerator();
-            for (;;)
+            for (; ; )
             {
                 if (!codeAddrEnum.MoveNext())
                     return;
@@ -7253,7 +7319,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             MethodIndex currentMethodIndex = Microsoft.Diagnostics.Tracing.Etlx.MethodIndex.Invalid;
             Address currentMethodEnd = 0;
             Address endModule = moduleFile.ImageEnd;
-            for (;;)
+            for (; ; )
             {
                 // options.ConversionLog.WriteLine("Code address = " + Address(codeAddressIndexCursor.Current).ToString("x"));
                 totalAddressCount++;

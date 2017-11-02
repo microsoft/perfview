@@ -4956,11 +4956,7 @@ table {
             if (ret == StackSourceCallStackIndex.Invalid)
             {
                 StackSourceCallStackIndex parentStack = StackSourceCallStackIndex.Invalid;
-                // The ID check is because process 0 has itself as a parent, which creates a infinite recursion.      
-                if (process.ProcessID != process.ParentID)
-                {
-                    parentStack = GetStackForProcess(process.Parent, traceLog, stackSource, processStackCache);
-                }
+                parentStack = GetStackForProcess(process.Parent, traceLog, stackSource, processStackCache);
 
                 string parent = "";
                 if (parentStack == StackSourceCallStackIndex.Invalid)
