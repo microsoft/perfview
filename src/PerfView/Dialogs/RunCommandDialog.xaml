@@ -243,7 +243,12 @@
                     </TextBlock>
                     <CheckBox Grid.Column="10" Name="NetCaptureCheckBox" VerticalAlignment="Center" Margin="0,2" />
 
-                    <CheckBox Grid.Row="0" Grid.Column="12" Name="Box6" VerticalAlignment="Center" Visibility="Hidden" Margin="0,2" />
+                    <TextBlock Grid.Row="0" Grid.Column="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,5,2" 
+                               ToolTip="Capture events from the Task Parallel Library." >
+                    <Hyperlink Command="Help" CommandParameter="TplCaptureCheckBox">Tasks (TPL):</Hyperlink>
+                    </TextBlock>
+                    <CheckBox Grid.Column="12" Name="TplCaptureCheckBox" VerticalAlignment="Center" Margin="0,2" />
+
                     <CheckBox Grid.Row="0" Grid.Column="14" Name="Box7" VerticalAlignment="Center" Visibility="Hidden" Margin="0,2" />
                 </Grid>
 

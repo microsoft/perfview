@@ -20,6 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x2e5dba47), unchecked((short) 0xa3d2), unchecked((short) 0x4d16), 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5);
         public enum Keywords : long
         {
+            None = 0,
             Tasktransfer = 0x1,
             Tasks = 0x2,
             Parallel = 0x4,
