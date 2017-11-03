@@ -63,6 +63,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView.TestUtilities", "s
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceParserGen", "src\TraceParserGen\TraceParserGen.csproj", "{034CB9AF-7E9E-4D96-8F71-526999D284BA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfViewCollect", "src\PerfViewCollect\PerfViewCollect.csproj", "{945509BC-A133-493B-9295-43EC708FD57F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -133,6 +135,10 @@ Global
 		{034CB9AF-7E9E-4D96-8F71-526999D284BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{034CB9AF-7E9E-4D96-8F71-526999D284BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{034CB9AF-7E9E-4D96-8F71-526999D284BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{945509BC-A133-493B-9295-43EC708FD57F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{945509BC-A133-493B-9295-43EC708FD57F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{945509BC-A133-493B-9295-43EC708FD57F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{945509BC-A133-493B-9295-43EC708FD57F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
