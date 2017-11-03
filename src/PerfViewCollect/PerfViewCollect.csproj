@@ -3,19 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <DefineConstants>$(DefineConstants);PERFVIEW_COLLECT;DOTNET_CORE</DefineConstants>
     <RootNamespace>PerfView</RootNamespace>
     <AssemblyName>PerfViewCollect</AssemblyName>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+  <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>1573,1591,0649</NoWarn>
+    <DefineConstants>$(DefineConstants);PERFVIEW_COLLECT;DOTNET_CORE</DefineConstants>
+    <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
