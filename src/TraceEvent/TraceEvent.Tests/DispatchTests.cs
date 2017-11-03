@@ -795,7 +795,7 @@ namespace TraceEventTests
                 SendEvent(template.ProviderGuid, (int)template.eventID, template.lookupAsClassic);
 
             foreach (var template in m_inactiveTemplates)
-                Assert.DoesNotContain(template, m_visited);
+                Assert.True(!m_visited.Contains(template));
 
             foreach (var template in m_activeTemplates)
                 Assert.Contains(template, m_visited);
