@@ -4771,9 +4771,10 @@
         one process, or one thread, or isolate yourself to only one method.&nbsp;&nbsp;
         This is what the IncPats textbox does.&nbsp;&nbsp; The contents of the text box
         is a semicolon separated list of simplified regular expressions (see
-        <a href="#PatternMatching">Simplified Pattern matching</a>).&nbsp;&nbsp;&nbsp; It is required that a stack
-        matches at least ONE of the patterns in the IncPats list for it to be included in
-        the trace.&nbsp; The pattern does not have to match the complete frame name unless
+        <a href="#PatternMatching">Simplified Pattern matching</a>).&nbsp;&nbsp;&nbsp;
+        Samples are included if a stack matches <em>all</em> the semicolon-delimited patterns,
+        so a pattern such as ProcessName;FunctionName will only show frames spent in that function in that process.
+        The pattern does not have to match the complete frame name unless
         it is anchored (e.g. using ^).&nbsp;&nbsp; The patterns are matched AFTER grouping
         and folding.&nbsp;&nbsp;
     </p>
