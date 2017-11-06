@@ -708,10 +708,10 @@ namespace Graphs
         public override string ToString()
         {
             StringWriter sw = new StringWriter();
-            WriteXml(sw);
+            WriteXml(sw, includeChildren: false);
             return sw.ToString();
         }
-        public virtual void WriteXml(TextWriter writer, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
+        public virtual void WriteXml(TextWriter writer, bool includeChildren = true, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
         {
             Debug.Assert(this.Index != NodeIndex.Invalid);
             if (typeStorage == null)
@@ -730,20 +730,28 @@ namespace Graphs
             if (childIndex != NodeIndex.Invalid)
             {
                 writer.WriteLine(">");
-                writer.Write(prefix);
-                int i = 0;
-                do
+                if (includeChildren)
                 {
-                    writer.Write(" {0}", childIndex);
-                    childIndex = this.GetNextChildIndex();
-                    i++;
-                    if (i >= 32)
+                    writer.Write(prefix);
+                    int i = 0;
+                    do
                     {
-                        writer.WriteLine();
-                        writer.Write(prefix);
-                        i = 0;
-                    }
-                } while (childIndex != NodeIndex.Invalid);
+                        writer.Write(" {0}", childIndex);
+                        childIndex = this.GetNextChildIndex();
+                        i++;
+                        if (i >= 32)
+                        {
+                            writer.WriteLine();
+                            writer.Write(prefix);
+                            i = 0;
+                        }
+                    } while (childIndex != NodeIndex.Invalid);
+                }
+                else
+                {
+                    writer.Write(prefix);
+                    writer.WriteLine($"<!-- {ChildCount} children omitted... -->");
+                }
                 writer.WriteLine(" </Node>");
             }
             else
@@ -1028,7 +1036,7 @@ namespace Graphs
             foreach (var nodeIndex in nodes)
             {
                 node = graph.GetNode(nodeIndex, node);
-                node.WriteXml(sw, "  ", type1);
+                node.WriteXml(sw, prefix: "  ", typeStorage: type1);
             }
             sw.WriteLine("<NodeList>");
             return sw.ToString();
@@ -1064,7 +1072,7 @@ namespace Graphs
             for (NodeIndex nodeIndex = 0; nodeIndex < graph.NodeIndexLimit; nodeIndex++)
             {
                 var node = graph.GetNode(nodeIndex, nodeStorage);
-                node.WriteXml(writer, "  ");
+                node.WriteXml(writer, prefix: "  ");
             }
             writer.WriteLine(" </Nodes>");
             writer.WriteLine("</MemoryGraph>");
