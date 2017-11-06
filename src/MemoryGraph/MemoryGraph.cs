@@ -155,11 +155,11 @@ namespace Graphs
             m_memoryGraph = graph;
         }
 
-        public override void WriteXml(System.IO.TextWriter writer, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
+        public override void WriteXml(System.IO.TextWriter writer, bool includeChildren = true, string prefix = "", NodeType typeStorage = null, string additinalAttribs = "")
         {
             Address end = Address + (uint) Size;
             // base.WriteXml(writer, prefix, storage, typeStorage, additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"");
-            base.WriteXml(writer, prefix, typeStorage, 
+            base.WriteXml(writer, includeChildren, prefix, typeStorage, 
                 additinalAttribs + " Address=\"0x" + Address.ToString("x") + "\"" 
                                  + " End=\"0x" + end.ToString("x") + "\"");
         }
