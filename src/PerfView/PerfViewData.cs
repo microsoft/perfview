@@ -3637,13 +3637,31 @@ table {
                         sample.StackIndex = stackSource.Interner.CallStackIntern(objInfo.ClassFrame, objInfo.AllocStack);       // We remove the same stack we added at alloc.  
                         stackSource.AddSample(sample);
                     };
+
+                    newHeap.OnGC += delegate (double time, int gen)
+                    {
+                        sample.Metric = float.Epsilon;
+                        sample.Count = 1;
+                        sample.TimeRelativeMSec = time;
+                        StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
+                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
+                        stackSource.AddSample(sample);
+                    };
                 };
                 eventSource.Process();
                 stackSource.DoneAddingSamples();
             }
-            else if (streamName == "Gen 2 Object Deaths")
+            else if (streamName.StartsWith("Gen 2 Object Deaths"))
             {
                 var gcHeapSimulators = new GCHeapSimulators(eventLog, eventSource, stackSource, log);
+
+                if (streamName == "Gen 2 Object Deaths (Coarse Sampling)")
+                {
+                    gcHeapSimulators.UseOnlyAllocTicks = true;
+                    m_extraTopStats = "Sampled only 100K bytes";
+                }
+
                 gcHeapSimulators.OnNewGCHeapSimulator = delegate (GCHeapSimulator newHeap)
                 {
                     newHeap.OnObjectDestroy += delegate (double time, int gen, Address objAddress, GCHeapSimulatorObject objInfo)
@@ -3657,7 +3675,19 @@ table {
                             stackSource.AddSample(sample);
                         }
                     };
+
+                    newHeap.OnGC += delegate (double time, int gen)
+                    {
+                        sample.Metric = float.Epsilon;
+                        sample.Count = 1;
+                        sample.TimeRelativeMSec = time;
+                        StackSourceCallStackIndex processStack = stackSource.GetCallStackForProcess(newHeap.Process);
+                        StackSourceFrameIndex gcFrame = stackSource.Interner.FrameIntern("GC Occured Gen(" + gen + ")");
+                        sample.StackIndex = stackSource.Interner.CallStackIntern(gcFrame, processStack);
+                        stackSource.AddSample(sample);
+                    };
                 };
+
                 eventSource.Process();
                 stackSource.DoneAddingSamples();
             }
@@ -5843,14 +5873,17 @@ table {
             if (hasGCAllocationTicks)
             {
                 if (hasObjectUpdate)
+                {
                     memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem (Coarse Sampling)"));
+                    memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths (Coarse Sampling)"));
+                }
                 memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free (Coarse Sampling)"));
             }
             if (hasMemAllocStacks)
             {
                 memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem"));
                 memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free"));
-                memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths"));
+                memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths")); 
             }
 
             if (hasDllStacks)
