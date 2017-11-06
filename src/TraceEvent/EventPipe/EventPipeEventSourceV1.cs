@@ -29,9 +29,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             // We need to read the header to get the sync time information here
             ReadEventPipeTimeInfo();
 
-            IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
-            TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
-            _header = (TraceEventNativeMethods.EVENT_RECORD*)mem;
+            var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
+            *mem = default(TraceEventNativeMethods.EVENT_RECORD);
+            _header = mem;
 
             _eventParser = new EventPipeTraceEventParser(this);
         }
