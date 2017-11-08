@@ -8056,6 +8056,20 @@
         </li>
         -->
         <li>
+            Version 1.9.68 11/8/17
+            <ul>
+                <li>
+                    If you are collecting with something that needs a .NET Profiler (the .NET Alloc, .NET Alloc Sampled or .NET Calls).
+                    it is possible that modifications to the registry that install PerfViews profiler are not being cleaned up.
+                    The effect of this is mostly that other tools that might use the .NET Profiler will not work properly (e.g. 
+                    code coverage tools or other profilers).   This is most likely to happen on 64 bit and .NET Core (Desktop .NET
+                    is likely to work OK).   This fix makes the cleanup thorough.  The fix will 'clean up' any keys left behind 
+                    by old PerfView runs.   
+                </li>
+
+            </ul>
+        </li>
+        <li>
             Version 1.9.67 11/2/17
             <ul>
                 <li> Added the Gen2 Object Death view that use the 100KB allocation events (coarse sampling).  Thus most traces 

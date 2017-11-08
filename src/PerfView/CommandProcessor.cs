@@ -1029,7 +1029,7 @@ namespace PerfView
                     kernelSession.Stop();
                 }
             }
-            catch (FileNotFoundException) { LogFile.WriteLine("Kernel events were active for this trace."); }
+            catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
             catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Kernel session: " + e.Message); throw; }
 
             string dataFile = null;
@@ -1057,7 +1057,7 @@ namespace PerfView
                 using (var heapSession = new TraceEventSession(s_HeapSessionName, TraceEventSessionOptions.Attach))
                     heapSession.Stop();
             }
-            catch (FileNotFoundException) { LogFile.WriteLine("Heap events were active for this trace."); }
+            catch (FileNotFoundException) { LogFile.WriteLine("No Heap events were active for this trace."); }
             catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Heap session: " + e.Message); throw; }
 
             UninstallETWClrProfiler(LogFile);
@@ -2074,74 +2074,80 @@ namespace PerfView
         }
 
         private static string s_dotNetKey = @"Software\Microsoft\.NETFramework";
+        private static string s_dotNetKey32 = @"Software\Wow6432Node\Microsoft\.NETFramework";
 
         // Insures that our EtwClrProfiler is set up (for both X64 and X86).  Does not actually turn on the provider.  
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
             log.WriteLine("Insuring that the .NET CLR Profiler is installed.");
-
             var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
-            if (!File.Exists(profilerDll))
+            if (File.Exists(profilerDll))
             {
-                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
-                return;
-            }
-            log.WriteLine("Profiler DLL to load is {0}", profilerDll);
-
-            log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
-            {
-                var existingValue = key.GetValue("COR_PROFILER") as string;
-                if (existingValue != null && "{6652970f-1756-5d8d-0805-e9aad152aa84}" != existingValue)
+                log.WriteLine("Profiler DLL to load is {0}", profilerDll);
+                log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
+                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
                 {
-                    log.WriteLine("ERROR there is an existing CLR Profiler {0}.  Doing nothing.", existingValue);
-                    return;
+                    InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
+                    InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
                 }
-                key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                key.SetValue("COR_PROFILER_PATH", profilerDll);
-                key.SetValue("COR_ENABLE_PROFILING", 1);
-
-                // Also enable CoreCLR Profiling 
-                key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                key.SetValue("CORECLR_PROFILER_PATH", profilerDll);
-                key.SetValue("CORECLR_ENABLE_PROFILING", 1);
-
-                key.SetValue("PerfView_Keywords", profilerKeywords);
             }
+            else
+                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
 
-            // Set it up for X64.  
+            // If we are on a 64 bit system (in the wow), also enable the 64 bit version.     
             var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
             if (nativeArch != null)
             {
                 var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, nativeArch + "\\EtwClrProfiler.dll");
-                if (!File.Exists(profilerNativeDll))
+                if (File.Exists(profilerNativeDll))
                 {
-                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", nativeArch);
-                    return;
-                }
-                log.WriteLine(@"Detected 64 bit system, Adding 64 bit HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-                using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
-                using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
-                {
-                    var existingValue = key.GetValue("COR_PROFILER") as string;
-                    if (existingValue != null && "{6652970f-1756-5d8d-0805-e9aad152aa84}" != existingValue)
+                    log.WriteLine(@"Detected 64 bit system, Adding 64 bit HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
+                    using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+                    using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                     {
-                        log.WriteLine("ERROR there is an existing CLR Profiler arch {0} {1}.", nativeArch, existingValue);
-                        return;
+                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, nativeArch, log);
+                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, nativeArch, log);
                     }
-                    key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                    key.SetValue("COR_PROFILER_PATH", profilerNativeDll);
-                    key.SetValue("COR_ENABLE_PROFILING", 1);
-
-                    // Also enable CoreCLR Profiling 
-                    key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                    key.SetValue("CORECLR_PROFILER_PATH", profilerNativeDll);
-                    key.SetValue("CORECLR_ENABLE_PROFILING", 1);
-
-                    key.SetValue("PerfView_Keywords", profilerKeywords);
-
                 }
+                else
+                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", nativeArch);
             }
+            // If we are amd64 process, also install in the 32 bit subsystem.  
+            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
+            {
+                var arch = "x86";
+                var profilerNativeDll = Path.Combine(SupportFiles.SupportFileDir, arch + "\\EtwClrProfiler.dll");
+                if (File.Exists(profilerNativeDll))
+                {
+                    log.WriteLine(@"Detected 64 bit system, installing in the 32 bit subsystem.");
+                    using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
+                    {
+                        InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
+                        InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
+                    }
+                }
+                else
+                    log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
+            }
+        }
+
+        /// <summary>
+        /// Given a pointer to the .Net registry key area, 'dotnetHive' and a prefix (either COR or CORECLR)
+        /// as well as the profilerDll, profilerKeywords, and native arthcitecture, install the profiler DLL
+        /// as the EtwClr profiler.  Log status messages to 'log'.  
+        /// </summary>
+        private static void InsertEtwClrProfilerKeys(RegistryKey dotnetHive, string prefix, string profilerDll, int profilerKeywords, string nativeArch, TextWriter log)
+        {
+            var existingValue = dotnetHive.GetValue("_PROFILER") as string;
+            if (existingValue == null || "{6652970f-1756-5d8d-0805-e9aad152aa84}" == existingValue)
+            {
+                dotnetHive.SetValue(prefix + "_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
+                dotnetHive.SetValue(prefix + "_PROFILER_PATH", profilerDll);
+                dotnetHive.SetValue(prefix + "_ENABLE_PROFILING", 1);
+                dotnetHive.SetValue("PerfView_Keywords", profilerKeywords);
+            }
+            else
+                log.WriteLine("ERROR there is an existing CLR Profiler arch {0} {1}.", nativeArch, existingValue);
         }
 
         private static void UninstallETWClrProfiler(TextWriter log)
@@ -2150,42 +2156,51 @@ namespace PerfView
 
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
             {
-                string existingValue = key.GetValue("COR_PROFILER") as string;
-                if (existingValue == null)
-                    return;
-                if (existingValue != "{6652970f-1756-5d8d-0805-e9aad152aa84}")
-                {
-                    log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
-                    return;
-                }
-                key.DeleteValue("COR_PROFILER", false);
-                key.DeleteValue("COR_PROFILER_PATH", false);
-                key.DeleteValue("COR_ENABLE_PROFILING", false);
-
-                key.DeleteValue("CORECLR_PROFILER", false);
-                key.DeleteValue("CORECLR_PROFILER_PATH", false);
-                key.DeleteValue("CORECLR_ENABLE_PROFILING", false);
-
-                key.DeleteValue("PerfView_Keywords", false);
+                DeleteEtwClrProfilerKeys(key, "COR", log);
+                DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
-            if (Environment.Is64BitOperatingSystem)
+
+            var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
+            if (nativeArch != null)
             {
+                log.WriteLine(@"Detected 64 bit system, removing 64 bit keys");
                 using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
                 using (RegistryKey key = hklm.CreateSubKey(s_dotNetKey))
                 {
-                    string existingValue = key.GetValue("COR_PROFILER") as string;
-                    if (existingValue == null)
-                        return;
-                    if (existingValue != "{6652970f-1756-5d8d-0805-e9aad152aa84}")
-                    {
-                        log.WriteLine("ERROR trying to remove EtwClrProfiler of X64, found an existing Profiler {0} doing nothing.", existingValue);
-                        return;
-                    }
-                    key.DeleteValue("COR_PROFILER", false);
-                    key.DeleteValue("COR_PROFILER_PATH", false);
-                    key.DeleteValue("COR_ENABLE_PROFILING", false);
-                    key.DeleteValue("PerfView_Keywords", false);
+                    DeleteEtwClrProfilerKeys(key, "COR", log);
+                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
                 }
+            }
+            // If we are amd64 process, also uninstall in the WOW.  
+            else if (SupportFiles.ProcessArch == ProcessorArchitecture.Amd64)
+            {
+                log.WriteLine(@"Detected 64 bit system, removing 32 bit keys.");
+                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey32))
+                {
+                    DeleteEtwClrProfilerKeys(key, "COR", log);
+                    DeleteEtwClrProfilerKeys(key, "CORECLR", log);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Given a pointer to the .Net registry key area, 'dotnetHive' and a prefix (either COR or CORECLR)
+        /// delete all the .NET PROfiler keys for the EtwClrProfiler (if present).   Log messages to 'log'.  
+        /// </summary>
+        private static void DeleteEtwClrProfilerKeys(RegistryKey dotnetHive, string prefix, TextWriter log)
+        {
+            string existingValue = dotnetHive.GetValue(prefix + "_PROFILER") as string;
+            if (existingValue != null)
+            {
+                if (existingValue == "{6652970f-1756-5d8d-0805-e9aad152aa84}")
+                {
+                    dotnetHive.DeleteValue(prefix + "_PROFILER", false);
+                    dotnetHive.DeleteValue(prefix + "_PROFILER_PATH", false);
+                    dotnetHive.DeleteValue(prefix + "_ENABLE_PROFILING", false);
+                    dotnetHive.DeleteValue("PerfView_Keywords", false);
+                }
+                else
+                    log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
             }
         }
 
@@ -2694,7 +2709,7 @@ namespace PerfView
                             EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
                                 (ulong)(ClrRundownTraceEventParser.Keywords.Loader | ClrRundownTraceEventParser.Keywords.ForceEndRundown));
                         Thread.Sleep(500);                  // Give it some time to complete, so we don't have so many events firing simultaneously.  
-                        // when we do the method rundown below.  
+                                                            // when we do the method rundown below.  
 
                         // Enable rundown provider. (we don't do the loader events since we have done them above
                         EnableUserProvider(clrRundownSession, "CLRRundown", ClrRundownTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
