@@ -252,7 +252,7 @@ namespace Diagnostics.Tracing.StackSources
         static char[] pathSeparators = new char[] { '/', '\\' };
         const string NISuffix = ".ni.";
 
-        internal static string GetFileNameWithoutExtension(string path, bool stripNiSuffix = false)
+        internal static string GetFileNameWithoutExtension(string path, bool stripNiSuffix)
         {
             var start = path.LastIndexOfAny(pathSeparators);
             if (start < 0)
@@ -269,13 +269,12 @@ namespace Diagnostics.Tracing.StackSources
             {
                 var suffixStart = name.IndexOf(NISuffix);
                 var suffixEnd = suffixStart + NISuffix.Length - 1; // Leave the trailing '.' from ".ni."
-                start = 0;
-                end = name.Length;
-
-                var first = name.Substring(0, suffixStart);
-                var second = name.Substring(suffixEnd, name.Length - suffixEnd);
-
-                name = first + second;
+                if ((suffixStart >= 0) && (suffixEnd < name.Length))
+                {
+                    var first = name.Substring(0, suffixStart);
+                    var second = name.Substring(suffixEnd, name.Length - suffixEnd);
+                    name = first + second;
+                }
             }
 
             return name;
