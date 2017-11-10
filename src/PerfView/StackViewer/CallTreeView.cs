@@ -16,7 +16,7 @@ namespace PerfView
 {
     public class CallTreeView : IDisposable
     {
-        public CallTreeView(PerfDataGrid perfGrid, DataTemplate template)
+        public CallTreeView(PerfDataGrid perfGrid, DataTemplate template, MenuItem viewMenu)
         {
             m_flattenedTree = new ObservableCollectionEx<CallTreeViewNode>();
             m_perfGrid = perfGrid;
@@ -30,6 +30,35 @@ namespace PerfView
 
             // Put the indentation in when we cut and paste
             nameColumn.ClipboardContentBinding = new Binding("IndentedName");
+
+            // Populate View Menu for given perfGrid
+            foreach (DataGridColumn col in perfGrid.Grid.Columns)
+            {
+                // Create MenuItem based off of column header name, make it checkable.
+                // Initially checked because Visibility is set to visable.
+                MenuItem mItem = new MenuItem()
+                {
+                    Header = ((TextBlock)col.Header).Text,
+                    IsCheckable = true,
+                    IsChecked = true
+                };
+
+                // Create Click handler to collapse if unchecked, and make it visable when checked.
+                mItem.Click += delegate(object sender, RoutedEventArgs e)
+                {
+                    MenuItem source = sender as MenuItem;
+                    if (source.IsChecked)
+                    {
+                        col.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        col.Visibility = Visibility.Collapsed;
+                    }
+                };
+
+                viewMenu.Items.Add(mItem);
+            }
         }
         /// <summary>
         /// Returns the root node of the calltree being displayed
