@@ -28,6 +28,7 @@ using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using PerfView.GuiUtilities;
 using Utilities;
+using PerfView.StackViewer;
 
 namespace PerfView
 {
@@ -113,10 +114,10 @@ namespace PerfView
         }
         public void RemoveColumn(string columnName)
         {
-            ByNameDataGrid.RemoveColumn(columnName);
-            CallTreeDataGrid.RemoveColumn(columnName);
-            CalleesDataGrid.RemoveColumn(columnName);
-            CallersDataGrid.RemoveColumn(columnName);
+            ByNameDataGrid.RemoveColumn(columnName, this.ByNameViewMenu);
+            CallTreeDataGrid.RemoveColumn(columnName, this.CallTreeViewMenu);
+            CalleesDataGrid.RemoveColumn(columnName, this.CalleesViewMenu);
+            CallersDataGrid.RemoveColumn(columnName, this.CallersViewMenu);
             CallerCalleeView.RemoveCountColumn(columnName);
         }
 
@@ -2741,9 +2742,15 @@ namespace PerfView
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
             var template = (DataTemplate)Resources["TreeControlCell"];
-            m_callTreeView = new CallTreeView(CallTreeDataGrid, template, this.CallTreeViewMenu);
-            m_callersView = new CallTreeView(CallersDataGrid, template, this.CallerViewMenu);
-            m_calleesView = new CallTreeView(CalleesDataGrid, template, this.CalleeViewMenu);
+            m_callTreeView = new CallTreeView(CallTreeDataGrid, template);
+            m_callersView = new CallTreeView(CallersDataGrid, template);
+            m_calleesView = new CallTreeView(CalleesDataGrid, template);
+
+            // Populate ViewMenu items for showing/hiding columns
+            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(ByNameDataGrid, ByNameViewMenu);
+            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CallTreeDataGrid, CallTreeViewMenu);
+            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CallersDataGrid, CallersViewMenu);
+            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CalleesDataGrid, CalleesViewMenu);
 
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
