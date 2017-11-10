@@ -250,8 +250,9 @@ namespace Diagnostics.Tracing.StackSources
             return path.Substring(index + 1);
         }
         static char[] pathSeparators = new char[] { '/', '\\' };
+        const string NISuffix = ".ni.";
 
-        internal static string GetFileNameWithoutExtension(string path)
+        internal static string GetFileNameWithoutExtension(string path, bool stripNiSuffix = false)
         {
             var start = path.LastIndexOfAny(pathSeparators);
             if (start < 0)
@@ -262,7 +263,22 @@ namespace Diagnostics.Tracing.StackSources
             var end = path.LastIndexOf('.');
             if (end < start)
                 end = path.Length;
-            return path.Substring(start, end - start);
+            var name = path.Substring(start, end - start);
+
+            if (stripNiSuffix)
+            {
+                var suffixStart = name.IndexOf(NISuffix);
+                var suffixEnd = suffixStart + NISuffix.Length - 1; // Leave the trailing '.' from ".ni."
+                start = 0;
+                end = name.Length;
+
+                var first = name.Substring(0, suffixStart);
+                var second = name.Substring(suffixEnd, name.Length - suffixEnd);
+
+                name = first + second;
+            }
+
+            return name;
         }
 
 
@@ -680,7 +696,11 @@ namespace Diagnostics.Tracing.StackSources
                 if (MapFilePatterns.IsMatch(entry.FullName))
                 {
                     Mapper mapper = new Mapper();
-                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName)] = mapper;
+
+                    // Register the mapper both with and without the .ni extension.
+                    // Old versions of the runtime contain native images with the .ni extension.
+                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, false)] = mapper;
+                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, true)] = mapper;
                     using (Stream stream = entry.Open())
                     {
                         this.parser.ParseSymbolFile(stream, mapper);
