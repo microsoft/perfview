@@ -2741,9 +2741,9 @@ namespace PerfView
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
             var template = (DataTemplate)Resources["TreeControlCell"];
-            m_callTreeView = new CallTreeView(CallTreeDataGrid, template);
-            m_callersView = new CallTreeView(CallersDataGrid, template);
-            m_calleesView = new CallTreeView(CalleesDataGrid, template);
+            m_callTreeView = new CallTreeView(CallTreeDataGrid, template, this.CallTreeViewMenu);
+            m_callersView = new CallTreeView(CallersDataGrid, template, this.CallerViewMenu);
+            m_calleesView = new CallTreeView(CalleesDataGrid, template, this.CalleeViewMenu);
 
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
