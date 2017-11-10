@@ -194,9 +194,10 @@
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
                 <MenuItem x:Name="ViewMenu" Header="_View">
-                    <MenuItem x:Name="CallTreeViewMenu" Header="_CallTree" />
-                    <MenuItem x:Name="CallerViewMenu" Header="_Caller" />
-                    <MenuItem x:Name="CalleeViewMenu" Header="_Callee" />
+                    <MenuItem x:Name="ByNameViewMenu" Header="ByName" />
+                    <MenuItem x:Name="CallTreeViewMenu" Header="CallTree" />
+                    <MenuItem x:Name="CallersViewMenu" Header="Callers" />
+                    <MenuItem x:Name="CalleesViewMenu" Header="Callees" />
                 </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
