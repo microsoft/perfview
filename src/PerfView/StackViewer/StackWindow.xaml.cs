@@ -28,7 +28,6 @@ using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using PerfView.GuiUtilities;
 using Utilities;
-using PerfView.StackViewer;
 
 namespace PerfView
 {
@@ -2595,6 +2594,23 @@ namespace PerfView
             }
         }
 
+        public void SaveColumnViewSettings_Click(object sender, RoutedEventArgs e)
+        {
+            SaveViewSettings(ByNameViewMenu);
+            SaveViewSettings(CallTreeViewMenu);
+            SaveViewSettings(CalleesViewMenu);
+            SaveViewSettings(CallersViewMenu);
+        }
+
+        private void SaveViewSettings(MenuItem menuItems)
+        {
+            foreach(MenuItem mItem in menuItems.Items)
+            {
+                string name = XmlConvert.EncodeName(menuItems.Name + mItem.Header.ToString() + "ColumnView");
+                App.ConfigData[name] = mItem.IsChecked ? "1" : "0";
+            }
+        }
+
         /// <summary>
         /// Intended to be called from ConfigureStackWindow
         /// </summary>
@@ -2747,10 +2763,10 @@ namespace PerfView
             m_calleesView = new CallTreeView(CalleesDataGrid, template);
 
             // Populate ViewMenu items for showing/hiding columns
-            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(ByNameDataGrid, ByNameViewMenu);
-            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CallTreeDataGrid, CallTreeViewMenu);
-            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CallersDataGrid, CallersViewMenu);
-            StackViewerUtils.PopulateViewMenuItemForPerfDataGrid(CalleesDataGrid, CalleesViewMenu);
+            PopulateViewMenuItemForPerfDataGrid(ByNameDataGrid, ByNameViewMenu);
+            PopulateViewMenuItemForPerfDataGrid(CallTreeDataGrid, CallTreeViewMenu);
+            PopulateViewMenuItemForPerfDataGrid(CallersDataGrid, CallersViewMenu);
+            PopulateViewMenuItemForPerfDataGrid(CalleesDataGrid, CalleesViewMenu);
 
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
@@ -2845,6 +2861,49 @@ namespace PerfView
                 Width = App.ConfigData.GetDouble("StackWindowWidth", Width);
             }
         }
+        private void PopulateViewMenuItemForPerfDataGrid(PerfDataGrid grid, MenuItem viewMenu)
+        {
+            foreach (DataGridColumn col in grid.Grid.Columns)
+            {
+                // Create MenuItem based off of column header name, make it checkable.
+                // Initially checked because Visibility is set to visable.
+                MenuItem mItem = new MenuItem()
+                {
+                    IsCheckable = true
+                };
+
+                string header = ((TextBlock)col.Header).Text;
+                mItem.Header = header;
+                string configValue = App.ConfigData[XmlConvert.EncodeName(viewMenu.Name + header + "ColumnView")];
+                if (configValue == null || configValue == "1")
+                {
+                    mItem.IsChecked = true;
+                    col.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    mItem.IsChecked = false;
+                    col.Visibility = Visibility.Collapsed;
+                }
+
+                // Create Click handler to collapse if unchecked, and make it visable when checked.
+                mItem.Click += delegate (object sender, RoutedEventArgs e)
+                {
+                    MenuItem source = sender as MenuItem;
+                    if (source.IsChecked)
+                    {
+                        col.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        col.Visibility = Visibility.Collapsed;
+                    }
+                };
+
+                viewMenu.Items.Add(mItem);
+            }
+        }
+
 
         private bool DoForSelectedModules(Action<string> moduleAction)
         {
