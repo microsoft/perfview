@@ -2594,21 +2594,15 @@ namespace PerfView
             }
         }
 
+        /// <summary>
+        /// Saves all ColumnView settings to AppConfig.
+        /// </summary>
         public void SaveColumnViewSettings_Click(object sender, RoutedEventArgs e)
         {
             SaveViewSettings(ByNameViewMenu);
             SaveViewSettings(CallTreeViewMenu);
             SaveViewSettings(CalleesViewMenu);
             SaveViewSettings(CallersViewMenu);
-        }
-
-        private void SaveViewSettings(MenuItem menuItems)
-        {
-            foreach(MenuItem mItem in menuItems.Items)
-            {
-                string name = XmlConvert.EncodeName(menuItems.Name + mItem.Header.ToString() + "ColumnView");
-                App.ConfigData[name] = mItem.IsChecked ? "1" : "0";
-            }
         }
 
         /// <summary>
@@ -2861,12 +2855,24 @@ namespace PerfView
                 Width = App.ConfigData.GetDouble("StackWindowWidth", Width);
             }
         }
+
+        private void SaveViewSettings(MenuItem menuItems)
+        {
+            foreach (MenuItem mItem in menuItems.Items)
+            {
+                // Format of key is menuItemName + headerName + ColumnView
+                // XmlConvert.EncodeName is used to handle symbols like %
+                // E.g. CallTreeViewNameColumnView
+                string name = XmlConvert.EncodeName(menuItems.Name + mItem.Header.ToString() + "ColumnView");
+                App.ConfigData[name] = mItem.IsChecked ? "1" : "0";
+            }
+        }
+
         private void PopulateViewMenuItemForPerfDataGrid(PerfDataGrid grid, MenuItem viewMenu)
         {
             foreach (DataGridColumn col in grid.Grid.Columns)
             {
                 // Create MenuItem based off of column header name, make it checkable.
-                // Initially checked because Visibility is set to visable.
                 MenuItem mItem = new MenuItem()
                 {
                     IsCheckable = true
@@ -2874,6 +2880,9 @@ namespace PerfView
 
                 string header = ((TextBlock)col.Header).Text;
                 mItem.Header = header;
+
+                // Checked value and visibliity of column is based off of ConfigData.
+                // If there is no ConfigData property for it, it is defaulted to display. 
                 string configValue = App.ConfigData[XmlConvert.EncodeName(viewMenu.Name + header + "ColumnView")];
                 if (configValue == null || configValue == "1")
                 {
