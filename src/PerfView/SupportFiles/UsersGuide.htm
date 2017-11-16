@@ -3086,6 +3086,7 @@
     <p>
         See the <a href="#TutorialTopDown">tutorial</a> for an example of using this view.&nbsp;&nbsp;
         See <a href="#StackViewer">stack viewer</a> for more.&nbsp;
+        See <a href="#FlameGraphView">flame graph</a> for different visual representation.
     </p>
     <!--  ****************** -->
     <h3>
@@ -3243,6 +3244,21 @@
             and Callees view
         </a> for more.
     </p>
+    <!--  ****************** -->
+    <h3>
+        <a id="FlameGraphView">Flame Graph View</a>
+    </h3>
+    <p>
+        The flame graph view shows the same data as call tree view, but using different visualization.&nbsp;&nbsp;&nbsp;
+        It gives you very intelligible overview.&nbsp;&nbsp;
+        The graph starts at the bottom. Each box represents a method in the stack. Every parent is the caller, children are the callees.
+        The wider the box, the more time it was on-CPU. The samples count is shown in the tooltip and in the bottom panel.
+        To change the content of the flame graph you need to apply the filters for call tree view.&nbsp;&nbsp;
+    </p>
+    <center>
+        <img src="images/FlameGraphView.png" alt="FlameGraphView" />
+    </center>
+    <hr />
     <!--  ****************** -->
     <h3>
         <a id="NotesView">Notes View</a>
