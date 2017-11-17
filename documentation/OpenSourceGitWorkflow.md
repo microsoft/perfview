@@ -102,7 +102,7 @@ In most cases this merge operation goes without a hitch and Visual Studio will a
 is a merge conflict with changes that you have made to 'master' (you really should never do that, put changes in some other
 branch (see below)), then you will need to resolve them and commit the merge explicitly.  
 
-####Step 3: Pushing the LOCAL repository to your GitHub Fork
+#### Step 3: Pushing the LOCAL repository to your GitHub Fork
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
