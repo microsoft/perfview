@@ -36,7 +36,7 @@
                         </BeginStoryboard>
                     </EventTrigger.Actions>
                 </EventTrigger>
-            </TextBox.Triggers>g
+            </TextBox.Triggers>
         </TextBox>
         <TextBlock Grid.Column="1" Name ="m_ProgressText" Width="85" Text="Ready" Margin="5,0,0,0" TextAlignment="Left" VerticalAlignment="Center"></TextBlock>
         <Button Grid.Column="2" Name ="m_LogButton" IsEnabled="true" Margin="5,2" ToolTip="Open the diagnostic log" Click="Log_Click">Log</Button>
