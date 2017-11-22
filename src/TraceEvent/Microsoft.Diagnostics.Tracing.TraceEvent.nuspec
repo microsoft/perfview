@@ -32,28 +32,12 @@
     <file src="Microsoft.Diagnostics.Tracing.TraceEvent.props" target="build\Microsoft.Diagnostics.Tracing.TraceEvent.props" />
 
     <!-- Native binaries -->
-    <file src="$OutDir$net45\amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
-    <file src="$OutDir$net45\amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
+    <file src="$OutDir$netstandard1.6\amd64\KernelTraceControl.dll" target="lib\native\amd64\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard1.6\amd64\msdia140.dll" target="lib\native\amd64\msdia140.dll" />
 
-    <file src="$OutDir$net45\x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
-    <file src="$OutDir$net45\x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
-    <file src="$OutDir$net45\x86\msdia140.dll" target="lib\native\x86\msdia140.dll" />
-
-    <!-- NET45 Framework -->
-	
-    <!-- Built libraries -->
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\net45" />
-
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.dll" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.xml" target="lib\net45" />
-    <file src="$OutDir$net45\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\net45" />
-
-    <!-- Support Dlls -->
-    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\net45" />
-    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\net45" />
-    <file src="$OutDir$net45\OSExtensions.dll" target="lib\net45" />
+    <file src="$OutDir$netstandard1.6\x86\KernelTraceControl.dll" target="lib\native\x86\KernelTraceControl.dll" />
+    <file src="$OutDir$netstandard1.6\x86\KernelTraceControl.Win61.dll" target="lib\native\x86\KernelTraceControl.Win61.dll" />
+    <file src="$OutDir$netstandard1.6\x86\msdia140.dll" target="lib\native\x86\msdia140.dll" />
 
     <!-- NetStandard 1.6 Framework -->
 	
@@ -67,9 +51,9 @@
     <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard1.6" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Dia2Lib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\TraceReloggerLib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\OSExtensions.dll" target="lib\netstandard1.6" />
 
 
     <!-- Source code (All Frameworks *) -->
