@@ -14,7 +14,8 @@ namespace System.Collections.Generic
     /// an int which represents the logical charCount. It is a struct to avoid an extra pointer dereference, so this
     /// is really meant to be embedded in other structures.
     /// </summary>
-#if GROWABLEARRAY_PUBLIC 
+    [DebuggerDisplay("Count = {Count}")]
+#if GROWABLEARRAY_PUBLIC
     public 
 #endif
     struct GrowableArray<T>
