@@ -422,16 +422,14 @@ namespace Utilities
             if (options.elevate)
             {
                 options.useShellExecute = true;
-                startInfo.Verb = "runas";
+                startInfo.Arguments = "runas " + startInfo.Arguments;
                 if (options.currentDirectory == null)
-                    options.currentDirectory = Environment.CurrentDirectory;
+                    options.currentDirectory = Directory.GetCurrentDirectory();
             }
             startInfo.CreateNoWindow = options.noWindow;
             if (options.useShellExecute)
             {
                 startInfo.UseShellExecute = true;
-                if (options.noWindow)
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
             }
             else
             {
@@ -440,8 +438,6 @@ namespace Utilities
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardError = true;
                 startInfo.RedirectStandardOutput = true;
-                startInfo.ErrorDialog = false;
-                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 startInfo.CreateNoWindow = true;
 
                 process.OutputDataReceived += new DataReceivedEventHandler(OnProcessOutput);
