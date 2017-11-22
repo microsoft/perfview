@@ -38,7 +38,7 @@ namespace Utilities
         private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
 
         // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
-        private static bool AtLeast(int requiredOSVersion)
+        public static bool AtLeast(int requiredOSVersion)
         {
             RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
             osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);

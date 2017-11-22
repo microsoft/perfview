@@ -487,7 +487,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
 
-            if (Environment.Is64BitOperatingSystem)
+            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
                 this.pointerSize = 8;
 
             //double lastTime = 0;
