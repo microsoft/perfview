@@ -2682,15 +2682,15 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             switch (m_hashType)
             {
                 case 1:
-                    m_hashAlgorithm = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                    m_hashAlgorithm = System.Security.Cryptography.MD5.Create();
                     break;
 
                 case 2:
-                    m_hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    m_hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                     break;
 
                 case 3:
-                    m_hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    m_hashAlgorithm = System.Security.Cryptography.SHA256.Create();
                     break;
 
                 default:

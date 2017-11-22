@@ -54,6 +54,7 @@
         <PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
         <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="4.3.0" />
         <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+        <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.0" />
         <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
       </ItemGroup>
     </When>
