@@ -58,18 +58,18 @@
     <!-- NetStandard 2.0 Framework -->
 	
     <!-- Built libraries -->
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.xml" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.pdb" target="lib\netstandard1.6" />
 
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard2.0" />
-    <file src="$OutDir$netstandard2.0\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard2.0" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.xml" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard1.6" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard2.0" />
-    <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard2.0" />
+    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard1.6" />
 
 
     <!-- Source code (All Frameworks *) -->

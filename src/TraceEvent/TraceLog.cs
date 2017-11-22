@@ -413,7 +413,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return;
             }
             if (template.Target != null && !registeringStandardParsers)
-                throw new ApplicationException("You may not register callbacks in TraceEventParsers that you attach directly to a TraceLog.\r\n" +
+                throw new Exception("You may not register callbacks in TraceEventParsers that you attach directly to a TraceLog.\r\n" +
                     "Instead you should use TraceEvents.GetSource() and attach TraceEventParsers to that and define callbacks on them");
         }
 

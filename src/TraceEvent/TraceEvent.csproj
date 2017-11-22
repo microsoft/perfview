@@ -3,7 +3,7 @@
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -41,10 +41,14 @@
     support for net45 targets. Work around the issue by using conditional references.
   -->
   <Choose>
-    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <When Condition="'$(TargetFramework)' == 'netstandard1.6'">
       <ItemGroup>
         <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
         <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+        <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
+        <PackageReference Include="System.Runtime" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+        <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
       </ItemGroup>
     </When>
     <When Condition="'$(TargetFramework)' == 'net45'">

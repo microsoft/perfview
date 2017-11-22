@@ -592,7 +592,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, (IntPtr)0, (IntPtr)0);
             if (dwErr == 6)
-                throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
+                throw new Exception("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
 
             // ETW returns 1223 when you stop processing explicitly 
             if (!(dwErr == 1223 && stopProcessing))
@@ -611,7 +611,7 @@ namespace Microsoft.Diagnostics.Tracing
         // method (see http://msdn2.microsoft.com/en-us/library/aa364089.aspx) We set it up so that we call
         // back to ETWTraceEventSource.Dispatch which is the heart of the event callback logic.
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
+        //[AllowReversePInvokeCalls]
         private void RawDispatchClassic(TraceEventNativeMethods.EVENT_RECORD* eventData)
         {
             // TODO not really a EVENT_RECORD on input, but it is a pain to be type-correct.  
@@ -656,7 +656,7 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
+        //[AllowReversePInvokeCalls]
         private void RawDispatch(TraceEventNativeMethods.EVENT_RECORD* rawData)
         {
             if (stopProcessing)
@@ -757,7 +757,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Private data / methods 
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
+        //[AllowReversePInvokeCalls]
         private bool TraceEventBufferCallback(IntPtr rawLogFile)
         {
             return !stopProcessing;

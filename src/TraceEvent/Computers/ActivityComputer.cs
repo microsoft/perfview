@@ -1145,7 +1145,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
             if (!foundThreadingAPIs)
-                throw new ApplicationException("Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
+                throw new Exception("Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
         }
 
         /// <summary>
