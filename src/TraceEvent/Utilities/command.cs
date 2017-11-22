@@ -465,8 +465,8 @@ namespace Utilities
                             if (!m.Success) break;
                             string varName = m.Groups[1].Value;
                             string varValue;
-                            if (startInfo.EnvironmentVariables.ContainsKey(varName))
-                                varValue = startInfo.EnvironmentVariables[varName];
+                            if (startInfo.Environment.ContainsKey(varName))
+                                varValue = startInfo.Environment[varName];
                             else
                             {
                                 varValue = Environment.GetEnvironmentVariable(varName);
@@ -480,7 +480,7 @@ namespace Utilities
                             startAt = varStart + varValue.Length;
                         }
                     }
-                    startInfo.EnvironmentVariables[key] = value;
+                    startInfo.Environment[key] = value;
                 }
             }
             startInfo.WorkingDirectory = options.currentDirectory;
@@ -525,7 +525,7 @@ namespace Utilities
             if (options.input != null)
             {
                 process.StandardInput.Write(options.input);
-                process.StandardInput.Close();
+                process.StandardInput.Dispose();
             }
         }
         /// <summary>
