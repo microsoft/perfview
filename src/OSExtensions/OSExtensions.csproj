@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6</TargetFrameworks>
     <RootNamespace>OSExtensions</RootNamespace>
     <AssemblyName>OSExtensions</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -12,8 +12,8 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Win32.Registry" Version="4.0.0" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
   </ItemGroup>
 
   <PropertyGroup>
