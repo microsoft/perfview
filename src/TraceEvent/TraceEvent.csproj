@@ -58,6 +58,7 @@
         <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
       </ItemGroup>
     </When>
+
     <When Condition="'$(TargetFramework)' == 'net45'">
       <ItemGroup>
         <Reference Include="System.IO.Compression" />
