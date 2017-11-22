@@ -294,14 +294,14 @@ namespace Microsoft.Diagnostics.Tracing
             // char Description[ANYSIZE_ARRAY]; 
         };
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static internal extern int TraceSetInformation(
             [In] UInt64 traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
             [In] void* TraceInformation,
             [In] int InformationLength);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         static internal extern int TraceQueryInformation(
             [In] UInt64 traceHandle,
             [In] TRACE_INFO_CLASS InformationClass,
@@ -469,34 +469,34 @@ namespace Microsoft.Diagnostics.Tracing
         [DllImport("advapi32.dll",
             EntryPoint = "OpenTraceW",
             CharSet = CharSet.Unicode,
-            SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+            SetLastError = true)]
         internal extern static UInt64 OpenTrace(
             [In][Out] ref EVENT_TRACE_LOGFILEW logfile);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal extern static int ProcessTrace(
             [In] UInt64[] handleArray,
             [In] uint handleCount,
             [In] IntPtr StartTime,
             [In] IntPtr EndTime);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal extern static int CloseTrace(
             [In] UInt64 traceHandle);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal extern static int QueryAllTraces(
             [In] IntPtr propertyArray,
             [In] int propertyArrayCount,
             [In][Out] ref int sessionCount);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal extern static int StartTraceW(
             [Out] out UInt64 sessionHandle,
             [In] string sessionName,
             EVENT_TRACE_PROPERTIES* properties);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int EnableTrace(
             [In] uint enable,
             [In] int enableFlag,
@@ -504,7 +504,7 @@ namespace Microsoft.Diagnostics.Tracing
             [In] ref Guid controlGuid,
             [In] ulong sessionHandle);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int EnableTraceEx(
             [In] ref Guid ProviderId,
             [In] Guid* SourceId,
@@ -516,7 +516,7 @@ namespace Microsoft.Diagnostics.Tracing
             [In] uint EnableProperty,
             [In] EVENT_FILTER_DESCRIPTOR* filterData);
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int EnableTraceEx2(
             [In] ulong TraceHandle,
             [In] ref Guid ProviderId,
@@ -558,7 +558,7 @@ namespace Microsoft.Diagnostics.Tracing
             public int FilterDescCount;        // Only used for V2 (Win 8.1)
         };
 
-        [DllImport("advapi32.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
         internal static extern int ControlTrace(
             ulong sessionHandle,
             string sessionName,
@@ -622,7 +622,7 @@ namespace Microsoft.Diagnostics.Tracing
             MaxTokenInfoClass = 29  // MaxTokenInfoClass should always be the last enum
         }
 
-        [DllImport("advapi32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool OpenProcessToken(
             [In] IntPtr ProcessHandle,
@@ -638,7 +638,7 @@ namespace Microsoft.Diagnostics.Tracing
             int TokenInformationLength,
             out int ReturnLength);
 
-        [DllImport("advapi32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool AdjustTokenPrivileges(
            [In] IntPtr TokenHandle,
@@ -653,7 +653,7 @@ namespace Microsoft.Diagnostics.Tracing
         // clean up and it is cleaner if GetLastError still points at the orginal error, and not the failure
         // in CloseHandle.  If we ever care about exact errors of CloseHandle, we can make another entry
         // point 
-        [DllImport("kernel32.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("kernel32.dll")]
         internal static extern int CloseHandle([In] IntPtr hHandle);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -768,7 +768,7 @@ namespace Microsoft.Diagnostics.Tracing
             // TRACE_PROVIDER_INFO TraceProviderInfoArray[ANYSIZE];
         };
 
-        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll")]
         internal static extern int TdhEnumerateProviders(
             PROVIDER_ENUMERATION_INFO* pBuffer,
             ref int pBufferSize
@@ -809,7 +809,7 @@ namespace Microsoft.Diagnostics.Tracing
             public long MatchAllKeyword;
         };
 
-        [DllImport("advapi32.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("advapi32.dll")]
         internal static extern int EnumerateTraceGuidsEx(
         TRACE_QUERY_INFO_CLASS TraceQueryInfoClass,
             void* InBuffer,
@@ -842,7 +842,7 @@ namespace Microsoft.Diagnostics.Tracing
             public ulong Value;
         };
 
-        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll")]
         internal static extern int TdhEnumerateProviderFieldInformation(
             ref Guid guid,
             EVENT_FIELD_TYPE EventFieldType,
@@ -851,7 +851,7 @@ namespace Microsoft.Diagnostics.Tracing
         );
 
 #if false       // Enable when we support filtering by payload values.  
-        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll")]
         internal static extern int TdhCreatePayloadFilter(
             ref Guid ProviderGuid,
             ref EventDescriptor EventDescriptor,
@@ -861,7 +861,7 @@ namespace Microsoft.Diagnostics.Tracing
             void* PayloadFilter
             );
 
-        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll")]
         internal static extern int TdhAggregatePayloadFilters(
              int PayloadFilterCount,
              void* PayloadFilterPtrs,
@@ -901,7 +901,7 @@ namespace Microsoft.Diagnostics.Tracing
         // Used to decompress WinSat data 
         internal const int COMPRESSION_FORMAT_LZNT1 = 0x0002;
         internal const int COMPRESSION_ENGINE_MAXIMUM = 0x0100;
-        [DllImport("ntdll.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("ntdll.dll")]
         internal static extern int RtlDecompressBuffer(
           int CompressionFormat,
           byte* UncompressedBuffer,

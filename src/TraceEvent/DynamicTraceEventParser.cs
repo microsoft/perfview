@@ -1996,7 +1996,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             THROW:
             if (!noThrowOnError && error != null)
-                throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
+                throw new Exception("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
         }
 
         private class EventInfo

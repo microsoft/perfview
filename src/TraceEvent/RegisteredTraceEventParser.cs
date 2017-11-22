@@ -38,7 +38,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
-                throw new ApplicationException("Could not find provider with name " + providerName);
+                throw new Exception("Could not find provider with name " + providerName);
             return GetManifestForRegisteredProvider(providerGuid);
         }
         /// <summary>
@@ -306,7 +306,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             if (providerName == null)
-                throw new ApplicationException("Could not find provider with at GUID of " + providerGuid.ToString());
+                throw new Exception("Could not find provider with at GUID of " + providerGuid.ToString());
 
             StringWriter manifest = new StringWriter();
             manifest.WriteLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
@@ -1000,7 +1000,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #endregion // private
         }
 
-        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll")]
         internal static extern int TdhGetEventInformation(
             TraceEventNativeMethods.EVENT_RECORD* pEvent,
             uint TdhContextCount,
@@ -1009,7 +1009,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int* pBufferSize);
 
 
-        [DllImport("tdh.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("tdh.dll", CharSet = CharSet.Unicode)]
         internal static extern int TdhGetEventMapInformation(
             TraceEventNativeMethods.EVENT_RECORD* pEvent,
             string pMapName,

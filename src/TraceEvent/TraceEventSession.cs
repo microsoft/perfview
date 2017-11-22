@@ -568,7 +568,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
                     var cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
                     // The API seems to have an upper bound of 1 second.  
                     if (cpu100ns >= int.MaxValue || ((int)cpu100ns) > 10000000)
-                        throw new ApplicationException("CPU Sampling rate is too high.");
+                        throw new Exception("CPU Sampling rate is too high.");
                     var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
                     if (!succeeded && CpuSampleIntervalMSec != 1.0F)
                         throw new InvalidOperationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
@@ -644,7 +644,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public void EnableWindowsHeapProvider(int pid)
         {
             if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                throw new ApplicationException("Heap Provider can only be used in its own session.");
+                throw new Exception("Heap Provider can only be used in its own session.");
 
             var propertiesBuff = stackalloc byte[PropertiesSize];
             var properties = GetProperties(propertiesBuff);
@@ -662,7 +662,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         public void EnableWindowsHeapProvider(string exeFileName)
         {
             if (m_SessionHandle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
-                throw new ApplicationException("Heap Provider can only be used in its own session.");
+                throw new Exception("Heap Provider can only be used in its own session.");
 
             var propertiesBuff = stackalloc byte[PropertiesSize];
             var properties = GetProperties(propertiesBuff);
@@ -2527,7 +2527,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             var version = TraceEventSession.WindowsVersionMajorMinor();
             if (version < 62)
-                throw new ApplicationException("Profile source only availabe on Win8 and beyond.");
+                throw new Exception("Profile source only availabe on Win8 and beyond.");
 
             var ret = new Dictionary<string, ProfileSourceInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -2613,7 +2613,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         {
             var version = TraceEventSession.WindowsVersionMajorMinor();
             if (version < 62)
-                throw new ApplicationException("Profile source only available on Win8 and beyond.");
+                throw new Exception("Profile source only available on Win8 and beyond.");
 
             TraceEventNativeMethods.SetPrivilege(TraceEventNativeMethods.SE_SYSTEM_PROFILE_PRIVILEGE);
             var interval = new TraceEventNativeMethods.TRACE_PROFILE_INTERVAL();

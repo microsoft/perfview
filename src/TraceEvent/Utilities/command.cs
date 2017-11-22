@@ -511,7 +511,7 @@ namespace Utilities
 
                 if (Regex.IsMatch(startInfo.FileName, @"^(copy|dir|del|color|set|cd|cdir|md|mkdir|prompt|pushd|popd|start|assoc|ftype)", RegexOptions.IgnoreCase))
                     msg += "    Cmd " + startInfo.FileName + " implemented by Cmd.exe, fix by prefixing with 'cmd /c'.";
-                throw new ApplicationException(msg, e);
+                throw new Exception(msg, e);
             }
 
             if (!startInfo.UseShellExecute)
