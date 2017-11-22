@@ -261,9 +261,10 @@ namespace PerfView
         }
 
         /// <summary>
-        /// The ID of the process of interest.  Events from other processes are ignored.
+        /// The process of interest.  Events from other processes are ignored.
         /// </summary>
-        public int ProcessId { get { return m_processID; } }
+        public TraceProcess Process {  get { return m_process; } }
+
         /// <summary>
         /// The stack source where allocation stacks are interned.  
         /// </summary>
@@ -284,6 +285,13 @@ namespace PerfView
         ///    * The object information (where it was allocated)
         /// </summary>
         public Action<double, int, Address, GCHeapSimulatorObject> OnObjectDestroy;
+
+        /// <summary>
+        /// If you are interested in when GCs happen, this delegate gets called exactly once
+        /// when a GC completes (before all the OnObjectDestroy for that GC).  It is passed
+        /// the time of the GC (technically the STOP of hte GC) and the generation being collected.
+        /// </summary>
+        public Action<double, int> OnGC;
 
         /// <summary>
         /// You can override this function to cause the simulator to allocate subclasses 
@@ -353,6 +361,7 @@ namespace PerfView
                 return;
 
             double gcTime = data.TimeStampRelativeMSec;
+            OnGC?.Invoke(gcTime, m_condemedGenerationNum);
 
             for (int curGenNum = 0; curGenNum <= m_condemedGenerationNum; curGenNum++)
             {

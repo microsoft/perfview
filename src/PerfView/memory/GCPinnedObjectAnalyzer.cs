@@ -513,7 +513,7 @@ namespace PerfView
 
         private void OnSetGCHandle(SetGCHandleTraceData data)
         {
-            if (ProcessId != data.ProcessID)
+            if (Process.ProcessID != data.ProcessID)
                 return;
 
             // This is not a pinned handle.

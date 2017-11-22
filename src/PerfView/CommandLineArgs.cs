@@ -104,13 +104,14 @@ namespace PerfView
 
         // Start options.
         public bool StackCompression;           // Used compresses stacks when collecting traces. 
-        public int BufferSizeMB = 64;
+        public int BufferSizeMB = 256;
         public int CircularMB;
         public bool InMemoryCircularBuffer;         // Uses EVENT_TRACE_BUFFERING_MODE for an in-memory circular buffer
         public KernelTraceEventParser.Keywords KernelEvents = KernelTraceEventParser.Keywords.Default;
         public string[] CpuCounters;    // Specifies any profile sources (CPU counters) to turn on (Win 8 only)
         public ClrTraceEventParser.Keywords ClrEvents = ClrTraceEventParser.Keywords.Default;
         public TraceEventLevel ClrEventLevel = Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose;    // The verbosity of CLR events
+        public TplEtwProviderTraceEventParser.Keywords TplEvents = TplEtwProviderTraceEventParser.Keywords.Default;
         public bool ThreadTime;             // Shortcut for /KernelEvents=ThreadTime
         public bool GCOnly;                 // collect only enough for GC analysis
         public bool GCCollectOnly;          // Turn off even the allocation Tick
@@ -371,13 +372,14 @@ namespace PerfView
                     NoNGenRundown = true;   // We still do normal rundown because EventSource rundown is done there.   
                     NoClrRundown = true;
                 }
-                Providers = onlyProviders;
+
                 if (!hasTpl)
                 {
-                    Providers = new string[onlyProviders.Length + 1];
-                    Array.Copy(onlyProviders, Providers, onlyProviders.Length);
-                    Providers[onlyProviders.Length] = ".NETTasks:0x80";     // Turn on causality tracking.  
+                    // Turn on causality tracking.
+                    TplEvents = TplEtwProviderTraceEventParser.Keywords.TasksFlowActivityIds;
                 }
+
+                Providers = onlyProviders;
             }
             parser.DefineOptionalQualifier("ThreadTime", ref ThreadTime, "Shortcut for turning on context switch and readyThread events");
             if (ThreadTime)
@@ -392,6 +394,7 @@ namespace PerfView
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
                             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
                             ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
+                TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
 
                 // This is not quite correct if you have providers of your own, but this covers the most important case.  
                 if (Providers == null)
@@ -408,6 +411,7 @@ namespace PerfView
                 KernelEvents = KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad;     
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.Exception;
                 ClrEventLevel = TraceEventLevel.Informational;
+                TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
                 NoRundown = true;
                 CommandProcessor.s_UserModeSessionName = "PerfViewGCSession";
                 DataFile = "PerfViewGCCollectOnly.etl";
@@ -428,6 +432,8 @@ namespace PerfView
                 "A comma separated list of .NET CLR events to turn on.  See Users guide for details.");
             parser.DefineOptionalQualifier("KernelEvents", ref KernelEvents,
                 "A comma separated list of windows OS kernel events to turn on.  See Users guide for details.");
+            parser.DefineOptionalQualifier("TplEvents", ref TplEvents,
+                "A comma separated list of Task Parallel Library (TPL) events to turn on.  See Users guide for details.");
 
             parser.DefineOptionalQualifier("DotNetAlloc", ref DotNetAlloc, "Turns on per-allocation .NET profiling.");
             parser.DefineOptionalQualifier("DotNetAllocSampled", ref DotNetAllocSampled, "Turns on per-allocation .NET profiling, sampling types in a smart way to keep overhead low.");

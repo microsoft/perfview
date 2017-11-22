@@ -798,10 +798,10 @@ namespace TraceEventTests
                 Assert.True(!m_visited.Contains(template));
 
             foreach (var template in m_activeTemplates)
-                Assert.True(m_visited.Contains(template));
+                Assert.Contains(template, m_visited);
 
             foreach (var template in m_repeatTemplates)
-                Assert.True(m_visited.Contains(template));
+                Assert.Contains(template, m_visited);
         }
 
         Action<EmptyTraceData> MakeTarget(int i)

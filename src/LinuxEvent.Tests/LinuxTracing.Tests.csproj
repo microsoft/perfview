@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit" Version="2.3.0-beta3-build3705" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.0-beta3-build3705" PrivateAssets="all" />
+    <PackageReference Include="xunit" Version="$(XunitVersion)" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="$(XunitRunnerVisualstudioVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

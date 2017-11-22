@@ -683,15 +683,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         #endregion
 
-        // TODO remove this from TraceEventNativeMethods.  
-        internal static void ZeroMemory(IntPtr handle, int length)
-        {
-            byte* ptr = (byte*) handle;
-            byte* endPtr = ptr + length;
-            while (ptr < endPtr)
-                *ptr++ = 0;
-        }
-
         // TODO what is this for?
         internal static int GetHRForLastWin32Error()
         {
