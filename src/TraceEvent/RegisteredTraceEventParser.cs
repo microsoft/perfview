@@ -11,7 +11,7 @@ using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Extensions;
 using System.IO;
 using System.Threading;
-
+using System.Globalization;
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -381,7 +381,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", Thread.CurrentThread.CurrentCulture.IetfLanguageTag);
+                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -394,6 +394,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
 #region private
+        // Borrowed from Core CLR System.Globalization.CultureInfo
+        private static string IetfLanguageTag(CultureInfo culture)
+        {
+            // special case the compatibility cultures
+            switch (culture.Name)
+            {
+                case "zh-CHT":
+                    return "zh-Hant";
+                case "zh-CHS":
+                    return "zh-Hans";
+                default:
+                    return culture.Name;
+            }
+        }
+
+
         private static string MakeLegalIdentifier(string name)
         {
             // TODO FIX NOW beef this up.

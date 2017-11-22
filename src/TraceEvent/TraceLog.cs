@@ -2854,7 +2854,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // 'empty' parser to fill in with FromStream.  
             deserializer.RegisterDefaultFactory(delegate (Type typeToMake)
             {
-                if (typeToMake.IsSubclassOf(typeof(TraceEventParser)))
+                if (typeToMake.GetTypeInfo().IsSubclassOf(typeof(TraceEventParser)))
                     return (IFastSerializable)Activator.CreateInstance(typeToMake, new object[] { null });
                 return null;
             });

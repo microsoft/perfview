@@ -48,9 +48,12 @@
         <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
         <PackageReference Include="System.Runtime" Version="4.3.0" />
         <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+        <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
         <PackageReference Include="System.Net.Requests" Version="4.3.0" />
         <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
         <PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
+        <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
         <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
       </ItemGroup>
     </When>
