@@ -13,9 +13,9 @@
     <Description>TraceEvent library.</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <Version>2.0.1.0</Version>
-    <FileVersion>2.0.1.0</FileVersion>
-    <InformationalVersion>2.0.1-dev</InformationalVersion>
+    <Version>2.0.2.0</Version>
+    <FileVersion>2.0.2.0</FileVersion>
+    <InformationalVersion>2.0.2-dev</InformationalVersion>
     <NeutralLanguage>en</NeutralLanguage>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
