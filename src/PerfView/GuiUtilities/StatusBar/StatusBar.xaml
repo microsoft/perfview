@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:perfview="clr-namespace:PerfView"
              mc:Ignorable="d" 
              d:DesignHeight="25" d:DesignWidth="500">
 
@@ -13,7 +14,30 @@
             <ColumnDefinition Width="auto"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <TextBox Grid.Column="0" Name="m_StatusMessage" ContextMenu="{x:Null}" IsReadOnly="True" VerticalScrollBarVisibility="Auto"/> 
+        <TextBox Grid.Column="0" Name="m_StatusMessage" ContextMenu="{x:Null}" IsReadOnly="True" VerticalScrollBarVisibility="Auto">
+            <TextBox.Triggers>
+                <EventTrigger RoutedEvent="perfview:StatusBar.HighlightMessage">
+                    <EventTrigger.Actions>
+                        <BeginStoryboard>
+                            <Storyboard RepeatBehavior="2x" TargetName="m_StatusMessage" TargetProperty="(TextElement.FontWeight)">
+                                <ObjectAnimationUsingKeyFrames Duration="00:00:00.5">
+                                    <DiscreteObjectKeyFrame>
+                                        <DiscreteObjectKeyFrame.Value>
+                                            <FontWeight>Bold</FontWeight>
+                                        </DiscreteObjectKeyFrame.Value>
+                                    </DiscreteObjectKeyFrame>
+                                    <DiscreteObjectKeyFrame>
+                                        <DiscreteObjectKeyFrame.Value>
+                                            <FontWeight>Normal</FontWeight>
+                                        </DiscreteObjectKeyFrame.Value>
+                                    </DiscreteObjectKeyFrame>
+                                </ObjectAnimationUsingKeyFrames>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger.Actions>
+                </EventTrigger>
+            </TextBox.Triggers>
+        </TextBox>
         <TextBlock Grid.Column="1" Name ="m_ProgressText" Width="85" Text="Ready" Margin="5,0,0,0" TextAlignment="Left" VerticalAlignment="Center"></TextBlock>
         <Button Grid.Column="2" Name ="m_LogButton" IsEnabled="true" Margin="5,2" ToolTip="Open the diagnostic log" Click="Log_Click">Log</Button>
         <Button Grid.Column="3" Name ="m_CancelButton" IsEnabled="false" Margin="5,2" ToolTip="Cancel the operation in flight (ESC)" Click="Cancel_Click">Cancel</Button>
