@@ -108,7 +108,7 @@
     </EmbeddedResource>
 -->
 
-    <EmbeddedResource Include="..\TraceEvent\bin\$(ConfigurationName)\netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+    <EmbeddedResource Include="..\TraceEvent\bin\$(ConfigurationName)\netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
@@ -122,7 +122,7 @@
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)\netstandard2.0\OSExtensions.dll">
+    <EmbeddedResource Include="$(TraceEventSupportFilesBase)\netstandard1.6\OSExtensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\OSExtensions.dll</LogicalName>
