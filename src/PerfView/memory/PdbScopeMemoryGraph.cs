@@ -225,7 +225,7 @@ public class PdbScopeMemoryGraph : MemoryGraph
                     }
                 }
                 DebugWriteLine("Found pdb file " + pdbFilePath);
-                var module = symReader.OpenWindowsSymbolFile(pdbFilePath);
+                var module = symReader.OpenNativeSymbolFile(pdbFilePath);
                 m_moduleMap = module.GetMergedAssembliesMap();
             }
         }

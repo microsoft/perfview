@@ -2456,7 +2456,7 @@ public class GCHeapDumper
             if (pdb == null)
                 return null;
 
-            return new SymbolResolver(m_symbolReader.OpenWindowsSymbolFile(pdb));
+            return new SymbolResolver(m_symbolReader.OpenNativeSymbolFile(pdb));
         }
     }
 

@@ -7412,7 +7412,7 @@ table {
             NativeSymbolModule symbolModule = null;
             var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
             if (pdbPath != null)
-                symbolModule = m_symReader.OpenWindowsSymbolFile(pdbPath);
+                symbolModule = m_symReader.OpenNativeSymbolFile(pdbPath);
             else
             {
                 if (m_pdbLookupFailures == null)

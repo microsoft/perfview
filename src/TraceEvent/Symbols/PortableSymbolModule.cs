@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace Microsoft.Diagnostics.Symbols
 {
-    public class PortableSymbolModule : ManagedSymbolModule
+    class PortableSymbolModule : ManagedSymbolModule
     {
         public PortableSymbolModule(SymbolReader reader, string pdbFileName) : this(reader, File.Open(pdbFileName, FileMode.Open, FileAccess.Read, FileShare.Read), pdbFileName) { }
 
