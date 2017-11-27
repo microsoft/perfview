@@ -7409,10 +7409,10 @@ table {
             if (m_symReader == null)
                 m_symReader = App.GetSymbolReader(m_contextFilePath);
 
-            SymbolModule symbolModule = null;
+            NativeSymbolModule symbolModule = null;
             var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
             if (pdbPath != null)
-                symbolModule = m_symReader.OpenSymbolFile(pdbPath);
+                symbolModule = m_symReader.OpenWindowsSymbolFile(pdbPath);
             else
             {
                 if (m_pdbLookupFailures == null)
