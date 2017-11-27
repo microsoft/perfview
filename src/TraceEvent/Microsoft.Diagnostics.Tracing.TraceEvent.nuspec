@@ -24,7 +24,7 @@
     <summary>TraceEvent is a .NET Framework library for capturing and analyzing ETW events.</summary>
     <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/V$version$</releaseNotes>
     <copyright>Copyright © Microsoft Corporation</copyright>
-    <tags>TraceEvent EvenSource Microsoft ETW Event Tracing for Windows</tags>
+    <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
   </metadata>
 
   <files>
