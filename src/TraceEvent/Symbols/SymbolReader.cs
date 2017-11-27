@@ -2465,7 +2465,7 @@ namespace Microsoft.Diagnostics.Symbols
                     }
                     else
                     {
-                        log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
+                        log.WriteLine("Source Server command {0} is not recognized as safe (sd.exe or tf.exe), failing.", fetchCmdStr);
                         return null;
                     }
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
