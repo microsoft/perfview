@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard1.6</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,7 +37,7 @@
 
   <!--
     Unconditional use of PackageReference would work if we targeted net46, but the reference APIs do not include
-    support for net45 targets. Work around the issue by using conditional references.
+    support for net461 targets. Work around the issue by using conditional references.
   -->
   <Choose>
     <When Condition="'$(TargetFramework)' == 'netstandard1.6'">
@@ -58,9 +58,10 @@
       </ItemGroup>
     </When>
 
-    <When Condition="'$(TargetFramework)' == 'net45'">
+    <When Condition="'$(TargetFramework)' == 'net461'">
       <ItemGroup>
         <Reference Include="System.IO.Compression" />
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
       </ItemGroup>
     </When>
   </Choose>

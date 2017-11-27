@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard1.6</TargetFrameworks>
     <RootNamespace>OSExtensions</RootNamespace>
     <AssemblyName>OSExtensions</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -14,6 +14,9 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
   </ItemGroup>
 
   <PropertyGroup>
