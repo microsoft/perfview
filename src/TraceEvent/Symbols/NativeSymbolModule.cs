@@ -11,10 +11,16 @@ using Utilities;
 
 namespace Microsoft.Diagnostics.Symbols
 {
-
     /// <summary>
-    /// A symbolReaderModule represents a single PDB.   You get one from SymbolReader.OpenSymbolFile
-    /// It is effecively a managed interface to the Debug Interface Access (DIA) see 
+    /// A NativeSymbolModule represents symbol information for a native code module.   
+    /// NativeSymbolModules can potentially represent Managed modules (which is why it is a subclass of that interface).  
+    /// 
+    /// NativeSymbolModule should just be the CONTRACT for Native Symbols (some subclass implements
+    /// it for a particular format like Windows PDBs), however today because we have only one file format we
+    /// simply implement Windows PDBS here.   This can be factored out of this class when we 
+    /// support other formats (e.g. Dwarf).
+    /// 
+    /// To implmente support for Windows PDBs we use the Debug Interface Access (DIA).  See 
     /// http://msdn.microsoft.com/en-us/library/x93ctkx8.aspx for more.   I have only exposed what
     /// I need, and the interface is quite large (and not super pretty).  
     /// </summary>

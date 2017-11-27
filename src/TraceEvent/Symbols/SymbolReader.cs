@@ -310,9 +310,9 @@ namespace Microsoft.Diagnostics.Symbols
 
         /// <summary>
         /// Like OpenSymbolFile, which opens a PDB, but this version will fail (return null)
-        /// if it is not WindowsSymbolModule.  It is a shortcut for OpenSymbolFile as WindowsSymbolModule
+        /// if it is not WindowsSymbolModule.  It is a shortcut for OpenSymbolFile as NativeSymbolModule
         /// </summary>
-        public NativeSymbolModule OpenWindowsSymbolFile(string pdbFileName)
+        public NativeSymbolModule OpenNativeSymbolFile(string pdbFileName)
         {
             return OpenSymbolFile(pdbFileName) as NativeSymbolModule;
         }
