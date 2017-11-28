@@ -39,6 +39,7 @@ namespace PerfView
                 return;
             };
         }
+
         /// <summary>
         /// Report messages are short messages that are not persisted in the history, these are meant for
         /// messages that are not in direct response to a user command (and thus might be 'noise')
@@ -76,7 +77,18 @@ namespace PerfView
                     });
             }
             LoggedError = true;
+
+            m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
         }
+
+        public static readonly RoutedEvent HighlightMessageEvent = EventManager.RegisterRoutedEvent("HighlightMessage", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(StatusBar));
+
+        public event RoutedEventHandler HighlightMessage
+        {
+            add { AddHandler(HighlightMessageEvent, value); }
+            remove { RemoveHandler(HighlightMessageEvent, value); }
+        }
+
         /// <summary>
         /// Have we just logged an error (last message in status bar is an error message)
         /// </summary>
