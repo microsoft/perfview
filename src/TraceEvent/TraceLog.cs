@@ -769,58 +769,58 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
 
             // TODO copy the additional data from a ETLX file if the source is ETLX 
-            TraceLog newLog = new TraceLog();
-            newLog.rawEventSourceToConvert = source;
+            using (TraceLog newLog = new TraceLog()) {
+                newLog.rawEventSourceToConvert = source;
 
-            newLog.options = options;
+                newLog.options = options;
 
-            if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
-            {
-                var tmfDir = Path.Combine(options.ExplicitManifestDir, "TMF");
-                if (Directory.Exists(tmfDir))
+                if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
                 {
-                    options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
-                    new WppTraceEventParser(newLog, tmfDir);
+                    var tmfDir = Path.Combine(options.ExplicitManifestDir, "TMF");
+                    if (Directory.Exists(tmfDir))
+                    {
+                        options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
+                        new WppTraceEventParser(newLog, tmfDir);
+                    }
+                    options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
+                    source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
                 }
-                options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
-                source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
-            }
 
-            // Any parser that has state we need to turn on during the conversion so that the the state will build up
-            // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic 
-            // (which includes registered), an kernel)   
-            // TODO add an option that allows users to add their own here.   
-            // Note that I am not using the variables below, I am fetching the value so that it has the side
-            // effect of creating this parser (which will in turn indicate to the system that I care about the
-            // state these parsers generate as part of their operation).  
-            var dynamicParser = source.Dynamic;
-            var clrParser = source.Clr;
-            var kernelParser = source.Kernel;
+                // Any parser that has state we need to turn on during the conversion so that the the state will build up
+                // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic
+                // (which includes registered), an kernel)
+                // TODO add an option that allows users to add their own here.
+                // Note that I am not using the variables below, I am fetching the value so that it has the side
+                // effect of creating this parser (which will in turn indicate to the system that I care about the
+                // state these parsers generate as part of their operation).
+                var dynamicParser = source.Dynamic;
+                var clrParser = source.Clr;
+                var kernelParser = source.Kernel;
 
-            // Get all the users data from the original source.   Note that this happens by reference, which means 
-            // that even though we have not built up the state yet (since we have not scanned the data yet), it will
-            // still work properly (by the time we look at this user data, it will be updated). 
-            foreach (string key in source.UserData.Keys)
-                newLog.UserData[key] = source.UserData[key];
+                // Get all the users data from the original source.   Note that this happens by reference, which means
+                // that even though we have not built up the state yet (since we have not scanned the data yet), it will
+                // still work properly (by the time we look at this user data, it will be updated).
+                foreach (string key in source.UserData.Keys)
+                    newLog.UserData[key] = source.UserData[key];
 
-            // Avoid partially written files by writing to a temp and moving atomically to the
-            // final destination.  
-            string etlxTempPath = etlxFilePath + ".new";
-            try
-            {
-                //****************************************************************************************************
-                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
-                if (File.Exists(etlxFilePath))
-                    File.Delete(etlxFilePath);
-                File.Move(etlxTempPath, etlxFilePath);
+                // Avoid partially written files by writing to a temp and moving atomically to the
+                // final destination.
+                string etlxTempPath = etlxFilePath + ".new";
+                try
+                {
+                    //****************************************************************************************************
+                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                    using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                    if (File.Exists(etlxFilePath))
+                        File.Delete(etlxFilePath);
+                    File.Move(etlxTempPath, etlxFilePath);
+                }
+                finally
+                {
+                    if (File.Exists(etlxTempPath))
+                        File.Delete(etlxTempPath);
+                }
             }
-            finally
-            {
-                if (File.Exists(etlxTempPath))
-                    File.Delete(etlxTempPath);
-            }
-            // TODO FIX NOW Dispose the newlog?
         }
 
         internal void RegisterStandardParsers()
