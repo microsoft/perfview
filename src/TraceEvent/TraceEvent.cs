@@ -242,9 +242,9 @@ namespace Microsoft.Diagnostics.Tracing
         {
             get
             {
-                var ret = QPCTimeToDateTimeUTC(sessionEndTimeQPC);
+                var ret = QPCTimeToDateTimeUTC(sessionEndTimeQPC).ToLocalTime();
                 Debug.Assert(SessionStartTime <= ret);
-                return ret.ToLocalTime();
+                return ret;
             }
         }
         /// <summary>

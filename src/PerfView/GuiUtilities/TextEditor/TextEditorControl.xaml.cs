@@ -235,6 +235,7 @@ namespace Controls
             // Process open file dialog box results
             if (result == true && !string.IsNullOrEmpty(saveDialog.FileName))
             {
+                m_fileName = saveDialog.FileName;
                 Window window = Parent as Window;
                 if (window != null)
                     window.Title = "Editing: " + m_fileName;
