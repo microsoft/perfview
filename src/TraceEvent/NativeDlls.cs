@@ -24,7 +24,7 @@ class NativeDlls
         // When TraceEvent is loaded as embedded assembly the manifest path is <Unknown>
         // We use as fallback in that case the process executable location to enable scenarios where TraceEvent and related dlls
         // are loaded from byte arrays into the AppDomain to create self contained executables with no other dependent libraries. 
-        string assemblyLocation = typeof(NativeDlls).AssemblyQualifiedName;
+        string assemblyLocation = typeof(NativeDlls).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName;
         if (assemblyLocation == UnknownLocation)
             assemblyLocation = Process.GetCurrentProcess().MainModule.FileName;
 
