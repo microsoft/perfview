@@ -42,6 +42,7 @@ namespace Utilities
         {
             RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
             osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            RtlGetVersion(out osvi);
             uint osVersion = osvi.dwMajorVersion * 10 + osvi.dwMinorVersion;
             return osVersion >= requiredOSVersion;
         }
