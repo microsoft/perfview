@@ -2439,7 +2439,7 @@ namespace Microsoft.Diagnostics.Symbols
                 if (!File.Exists(target) && fetchCmdStr != null)
                 {
                     log.WriteLine("Trying to generate the file {0}.", target);
-                    var toolsDir = Path.GetDirectoryName(typeof(SourceFile).AssemblyQualifiedName);
+                    var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
                     var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
                     // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
