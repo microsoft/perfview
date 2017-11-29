@@ -611,7 +611,6 @@ namespace Microsoft.Diagnostics.Tracing
         // method (see http://msdn2.microsoft.com/en-us/library/aa364089.aspx) We set it up so that we call
         // back to ETWTraceEventSource.Dispatch which is the heart of the event callback logic.
         // [SecuritySafeCritical]
-        //[AllowReversePInvokeCalls]
         private void RawDispatchClassic(TraceEventNativeMethods.EVENT_RECORD* eventData)
         {
             // TODO not really a EVENT_RECORD on input, but it is a pain to be type-correct.  
@@ -656,7 +655,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // [SecuritySafeCritical]
-        //[AllowReversePInvokeCalls]
         private void RawDispatch(TraceEventNativeMethods.EVENT_RECORD* rawData)
         {
             if (stopProcessing)
@@ -757,7 +755,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Private data / methods 
         // [SecuritySafeCritical]
-        //[AllowReversePInvokeCalls]
         private bool TraceEventBufferCallback(IntPtr rawLogFile)
         {
             return !stopProcessing;
