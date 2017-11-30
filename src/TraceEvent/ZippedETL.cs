@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
 
@@ -431,7 +432,7 @@ namespace Microsoft.Diagnostics.Tracing
                     else if (archivePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                     {
                         if (seenEtlFile)
-                            throw new Exception("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
+                            throw new ApplicationException("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
                         seenEtlFile = true;
                         AtomicExtract(entry, EtlFileName);
                         Log.WriteLine("Extracting {0} Zipped size = {1:f3} MB Unzipped = {2:f3} MB", EtlFileName,
@@ -450,7 +451,7 @@ namespace Microsoft.Diagnostics.Tracing
                     }
                 }
                 if (!seenEtlFile)
-                    throw new Exception("The ZIP file does not have any ETL files in it!");
+                    throw new ApplicationException("The ZIP file does not have any ETL files in it!");
                 Log.WriteLine("Finished decompression, took {0:f0} sec", sw.Elapsed.TotalSeconds);
             }
         }

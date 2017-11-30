@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 
 /// <summary>
 /// Finds native DLLS next to the managed DLL that uses them.   
@@ -48,7 +49,7 @@ class NativeDlls
         if (ret != IntPtr.Zero)
             return;
 
-        throw new Exception("Could not load native DLL " + dllName);
+        throw new ApplicationException("Could not load native DLL " + dllName);
     }
 
     public static ProcessorArchitecture ProcessArch

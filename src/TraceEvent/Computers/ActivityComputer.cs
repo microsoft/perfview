@@ -12,6 +12,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1145,7 +1146,7 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
             if (!foundThreadingAPIs)
-                throw new Exception("Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
+                throw new ApplicationException("Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
         }
 
         /// <summary>
