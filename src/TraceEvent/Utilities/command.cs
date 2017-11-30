@@ -419,17 +419,27 @@ namespace Utilities
             process = new Process();
             process.StartInfo = startInfo;
             output = new StringBuilder();
+
+// The functions needed to implement elevation are not supported in netstandard1.6
+// The command may just work anyway if TraceEvent's process is already elevated
+#if ! NETSTANDARD1_6
             if (options.elevate)
             {
                 options.useShellExecute = true;
-                startInfo.Arguments = "runas " + startInfo.Arguments;
+                startInfo.Verb = "runas";
                 if (options.currentDirectory == null)
                     options.currentDirectory = Directory.GetCurrentDirectory();
             }
+#endif
+
             startInfo.CreateNoWindow = options.noWindow;
             if (options.useShellExecute)
             {
                 startInfo.UseShellExecute = true;
+#if ! NETSTANDARD1_6
+                if (options.noWindow)
+                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+#endif
             }
             else
             {
@@ -438,6 +448,10 @@ namespace Utilities
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardError = true;
                 startInfo.RedirectStandardOutput = true;
+#if ! NETSTANDARD1_6
+                startInfo.ErrorDialog = false;
+                startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+#endif
                 startInfo.CreateNoWindow = true;
 
                 process.OutputDataReceived += new DataReceivedEventHandler(OnProcessOutput);
