@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System.Threading;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Address = System.UInt64;
@@ -592,7 +593,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, (IntPtr)0, (IntPtr)0);
             if (dwErr == 6)
-                throw new Exception("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
+                throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
 
             // ETW returns 1223 when you stop processing explicitly 
             if (!(dwErr == 1223 && stopProcessing))

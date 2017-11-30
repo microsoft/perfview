@@ -14,6 +14,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Microsoft.Diagnostics.Utilities;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -413,7 +414,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return;
             }
             if (template.Target != null && !registeringStandardParsers)
-                throw new Exception("You may not register callbacks in TraceEventParsers that you attach directly to a TraceLog.\r\n" +
+                throw new ApplicationException("You may not register callbacks in TraceEventParsers that you attach directly to a TraceLog.\r\n" +
                     "Instead you should use TraceEvents.GetSource() and attach TraceEventParsers to that and define callbacks on them");
         }
 

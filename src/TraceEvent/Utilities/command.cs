@@ -15,6 +15,7 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;               // for StackTrace; Process
 using System.Threading;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 
 namespace Utilities
 {
@@ -521,7 +522,7 @@ namespace Utilities
 
                 if (Regex.IsMatch(startInfo.FileName, @"^(copy|dir|del|color|set|cd|cdir|md|mkdir|prompt|pushd|popd|start|assoc|ftype)", RegexOptions.IgnoreCase))
                     msg += "    Cmd " + startInfo.FileName + " implemented by Cmd.exe, fix by prefixing with 'cmd /c'.";
-                throw new Exception(msg, e);
+                throw new ApplicationException(msg, e);
             }
 
             if (!startInfo.UseShellExecute)

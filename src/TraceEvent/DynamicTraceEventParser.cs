@@ -2,6 +2,7 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
@@ -1996,7 +1997,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             THROW:
             if (!noThrowOnError && error != null)
-                throw new Exception("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
+                throw new ApplicationException("Error parsing the manifest for the provider " + (this.name ?? "UNKNOWN"), error);
         }
 
         private class EventInfo

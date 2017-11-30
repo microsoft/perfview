@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Extensions;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System.IO;
 using System.Threading;
 using System.Globalization;
@@ -38,7 +39,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             var providerGuid = TraceEventProviders.GetProviderGuidByName(providerName);
             if (providerGuid == Guid.Empty)
-                throw new Exception("Could not find provider with name " + providerName);
+                throw new ApplicationException("Could not find provider with name " + providerName);
             return GetManifestForRegisteredProvider(providerGuid);
         }
         /// <summary>
@@ -306,7 +307,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             if (providerName == null)
-                throw new Exception("Could not find provider with at GUID of " + providerGuid.ToString());
+                throw new ApplicationException("Could not find provider with at GUID of " + providerGuid.ToString());
 
             StringWriter manifest = new StringWriter();
             manifest.WriteLine("<instrumentationManifest xmlns=\"http://schemas.microsoft.com/win/2004/08/events\">");
