@@ -880,9 +880,6 @@ namespace Microsoft.Diagnostics.Symbols
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
-#if ! NETSTANDARD1_6
-                            req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
-#endif
                             var responseTask = req.GetResponseAsync();
                             responseTask.Wait();
                             var response = responseTask.Result;
