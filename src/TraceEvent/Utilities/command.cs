@@ -421,17 +421,17 @@ namespace Utilities
             process.StartInfo = startInfo;
             output = new StringBuilder();
 
-// The functions needed to implement elevation are not supported in netstandard1.6
-// The command may just work anyway if TraceEvent's process is already elevated
-#if ! NETSTANDARD1_6
             if (options.elevate)
             {
+#if NETSTANDARD1_6
+                throw new NotImplementedException("Launching elevated processes is not implemented when TraceEvent is built for NetStandard 1.6");
+#else
                 options.useShellExecute = true;
                 startInfo.Verb = "runas";
                 if (options.currentDirectory == null)
                     options.currentDirectory = Directory.GetCurrentDirectory();
-            }
 #endif
+            }
 
             startInfo.CreateNoWindow = options.noWindow;
             if (options.useShellExecute)
