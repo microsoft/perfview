@@ -77,9 +77,6 @@
     <Compile Include="..\Utilities\XmlUtilities.cs">
       <Link>Utilities\XmlUtilities.cs</Link>
     </Compile>
-    <Compile Include="..\TraceEvent\ZippedETL.cs">
-      <Link>ZippedETL.cs</Link>
-    </Compile>
     <Compile Include="..\EtwHeapDump\DotNetHeapDumper.cs">
       <Link>memory\DotNetHeapDumper.cs</Link>
     </Compile>

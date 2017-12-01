@@ -15,6 +15,7 @@ using System.IO;
 using System.Reflection;
 using System.Diagnostics;               // for StackTrace; Process
 using System.Threading;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 
 namespace Utilities
 {
@@ -419,19 +420,27 @@ namespace Utilities
             process = new Process();
             process.StartInfo = startInfo;
             output = new StringBuilder();
+
             if (options.elevate)
             {
+#if NETSTANDARD1_6
+                throw new NotImplementedException("Launching elevated processes is not implemented when TraceEvent is built for NetStandard 1.6");
+#else
                 options.useShellExecute = true;
                 startInfo.Verb = "runas";
                 if (options.currentDirectory == null)
-                    options.currentDirectory = Environment.CurrentDirectory;
+                    options.currentDirectory = Directory.GetCurrentDirectory();
+#endif
             }
+
             startInfo.CreateNoWindow = options.noWindow;
             if (options.useShellExecute)
             {
                 startInfo.UseShellExecute = true;
+#if ! NETSTANDARD1_6
                 if (options.noWindow)
                     startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+#endif
             }
             else
             {
@@ -440,8 +449,10 @@ namespace Utilities
                 startInfo.UseShellExecute = false;
                 startInfo.RedirectStandardError = true;
                 startInfo.RedirectStandardOutput = true;
+#if ! NETSTANDARD1_6
                 startInfo.ErrorDialog = false;
                 startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+#endif
                 startInfo.CreateNoWindow = true;
 
                 process.OutputDataReceived += new DataReceivedEventHandler(OnProcessOutput);
@@ -465,8 +476,8 @@ namespace Utilities
                             if (!m.Success) break;
                             string varName = m.Groups[1].Value;
                             string varValue;
-                            if (startInfo.EnvironmentVariables.ContainsKey(varName))
-                                varValue = startInfo.EnvironmentVariables[varName];
+                            if (startInfo.GetEnvironment().ContainsKey(varName))
+                                varValue = startInfo.GetEnvironment()[varName];
                             else
                             {
                                 varValue = Environment.GetEnvironmentVariable(varName);
@@ -480,7 +491,7 @@ namespace Utilities
                             startAt = varStart + varValue.Length;
                         }
                     }
-                    startInfo.EnvironmentVariables[key] = value;
+                    startInfo.GetEnvironment()[key] = value;
                 }
             }
             startInfo.WorkingDirectory = options.currentDirectory;
@@ -525,7 +536,7 @@ namespace Utilities
             if (options.input != null)
             {
                 process.StandardInput.Write(options.input);
-                process.StandardInput.Close();
+                process.StandardInput.Dispose();
             }
         }
         /// <summary>

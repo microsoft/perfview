@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Symbols;
 using Address = System.UInt64;
 using Microsoft.Diagnostics.Utilities;
+using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Symbols
 {
@@ -260,9 +261,9 @@ namespace Microsoft.Diagnostics.Symbols
             try
             {
                 System.Net.IPHostEntry ipEntry = null;
-                var result = System.Net.Dns.BeginGetHostEntry(computerName, null, null);
-                if (result.AsyncWaitHandle.WaitOne(timeoutMSec))
-                    ipEntry = System.Net.Dns.EndGetHostEntry(result);
+                var result = System.Net.Dns.GetHostEntryAsync(computerName);
+                if (Task.WaitAny(result, Task.Delay(timeoutMSec)) == 0)
+                    ipEntry = result.Result;
 
                 if (ipEntry != null)
                     return true;

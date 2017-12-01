@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -13,9 +13,9 @@
     <Description>TraceEvent library.</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <Version>2.0.1.0</Version>
-    <FileVersion>2.0.1.0</FileVersion>
-    <InformationalVersion>2.0.1-dev</InformationalVersion>
+    <Version>2.0.2.0</Version>
+    <FileVersion>2.0.2.0</FileVersion>
+    <InformationalVersion>2.0.2-dev</InformationalVersion>
     <NeutralLanguage>en</NeutralLanguage>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -40,15 +40,28 @@
     support for net45 targets. Work around the issue by using conditional references.
   -->
   <Choose>
-    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <When Condition="'$(TargetFramework)' == 'netstandard1.6'">
       <ItemGroup>
         <PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
         <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+        <PackageReference Include="System.Diagnostics.Process" Version="4.3.0" />
+        <PackageReference Include="System.Runtime" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
+        <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
+        <PackageReference Include="System.Net.Requests" Version="4.3.0" />
+        <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+        <PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
+        <PackageReference Include="System.IO.UnmanagedMemoryStream" Version="4.3.0" />
+        <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+        <PackageReference Include="System.Security.Cryptography.Algorithms" Version="4.3.0" />
+        <PackageReference Include="Microsoft.NETCore.Portable.Compatibility" Version="1.0.1" />
       </ItemGroup>
     </When>
+
     <When Condition="'$(TargetFramework)' == 'net45'">
       <ItemGroup>
         <Reference Include="System.IO.Compression" />
+        <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.3.0" />
       </ItemGroup>
     </When>
   </Choose>
