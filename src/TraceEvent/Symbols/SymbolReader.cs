@@ -300,7 +300,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 else
                 {
-                    stream.Close();
+                    stream.Dispose();
                     ret = new NativeSymbolModule(this, pdbFilePath);
                 }
                 m_symbolModuleCache.Add(pdbFilePath, ret);
@@ -888,8 +888,10 @@ namespace Microsoft.Diagnostics.Symbols
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
-                            req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
-                            var response = req.GetResponse();
+                            var responseTask = req.GetResponseAsync();
+                            responseTask.Wait();
+                            var response = responseTask.Result;
+
                             alive = true;
                             if (!canceled)
                             {
@@ -1633,7 +1635,6 @@ namespace Microsoft.Diagnostics.Symbols
                 _checksumMatches = true;
                 _filePath = filePath;
                 _log.WriteLine("Checksum matches for {0}", filePath);
-
                 return true;
             }
 

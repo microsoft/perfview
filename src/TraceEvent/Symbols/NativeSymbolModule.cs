@@ -443,7 +443,7 @@ namespace Microsoft.Diagnostics.Symbols
                         {
                             target = null;
                             var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
-                            if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetLeftPart(UriPartial.Authority), uri.AbsolutePath, newTarget))
+                            if (_symbolModule.SymbolReader.GetPhysicalFileFromServer(uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped), uri.AbsolutePath, newTarget))
                                 target = newTarget;
 
                             if (target == null)
@@ -462,7 +462,7 @@ namespace Microsoft.Diagnostics.Symbols
                     if (!File.Exists(target) && fetchCmdStr != null)
                     {
                         _log.WriteLine("Trying to generate the file {0}.", target);
-                        var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
+                        var toolsDir = Path.GetDirectoryName(typeof(SourceFile).GetTypeInfo().Assembly.ManifestModule.FullyQualifiedName);
                         var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
 
                         // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
@@ -490,7 +490,7 @@ namespace Microsoft.Diagnostics.Symbols
                         }
                         else
                         {
-                            _log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
+                            _log.WriteLine("Source Server command {0} is not recognized as safe (sd.exe or tf.exe), failing.", fetchCmdStr);
                             return null;
                         }
                         Directory.CreateDirectory(Path.GetDirectoryName(target));
@@ -540,11 +540,11 @@ namespace Microsoft.Diagnostics.Symbols
                 // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
                 // 3 checksum generated with the SHA256 hashing algorithm.
                 if (sourceFile.checksumType == 1)
-                    _hashAlgorithm = new System.Security.Cryptography.MD5CryptoServiceProvider();
+                    _hashAlgorithm = System.Security.Cryptography.MD5.Create();
                 else if (sourceFile.checksumType == 2)
-                    _hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                 else if (sourceFile.checksumType == 3)
-                    _hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
 
                 if (_hashAlgorithm != null)
                 {
@@ -881,7 +881,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             fixed (byte* bufferPtr = buffer)
             {
                 m_source.getStreamRawData("srcsrv", len, out *bufferPtr);
-                var ret = UTF8Encoding.Default.GetString(buffer);
+                var ret = new UTF8Encoding().GetString(buffer);
                 return ret;
             }
         }
@@ -1279,10 +1279,10 @@ namespace Dia2Lib
 
             // This is the value for msdia140.  
             var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
+            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GetTypeInfo().GUID);
 
             object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
+            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GetTypeInfo().GUID;
             comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
             return (comObject as IDiaDataSource3);
         }

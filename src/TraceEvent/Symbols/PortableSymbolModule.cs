@@ -152,9 +152,9 @@ namespace Microsoft.Diagnostics.Symbols
 
                 Guid hashAlgorithmGuid = _portablePdb._metaData.GetGuid(_sourceFileDocument.HashAlgorithm);
                 if (hashAlgorithmGuid == HashAlgorithmSha1)
-                    _hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
+                    _hashAlgorithm = System.Security.Cryptography.SHA1.Create();
                 else if (hashAlgorithmGuid == HashAlgorithmSha256)
-                    _hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
+                    _hashAlgorithm = System.Security.Cryptography.SHA256.Create();
                 if (_hashAlgorithm != null)
                     _hash = _portablePdb._metaData.GetBlobBytes(_sourceFileDocument.Hash);
 
