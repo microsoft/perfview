@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
 
     <Description>CSVReader</Description>
     <Company>Microsoft</Company>

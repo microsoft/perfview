@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net461</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>PerfDataService</AssemblyName>
@@ -25,7 +25,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net461' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="1.0.41" />
     <PackageReference Include="System.IO.Compression" Version="4.1.0" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.0.1" />

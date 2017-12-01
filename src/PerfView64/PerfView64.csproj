@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>net45</TargetFrameworks>
     <Prefer32Bit>False</Prefer32Bit>
 
     <OutputPath>..\PerfView\bin\$(Configuration)\</OutputPath>

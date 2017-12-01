@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 
 // This moduleFile contains Internal PINVOKE declarations and has no public API surface. 
 namespace Microsoft.Diagnostics.Tracing
@@ -698,7 +699,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-            bool success = OpenProcessToken(process.SafeHandle.DangerousGetHandle(), TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
+            bool success = OpenProcessToken(process.GetHandle(), TOKEN_ADJUST_PRIVILEGES, out tokenHandle);
             if (!success)
                 throw new Win32Exception();
             GC.KeepAlive(process);                      // TODO get on SafeHandles. 
@@ -721,7 +722,7 @@ namespace Microsoft.Diagnostics.Tracing
 #if !NOT_WINDOWS 
             Process process = Process.GetCurrentProcess();
             IntPtr tokenHandle = IntPtr.Zero;
-            if (!OpenProcessToken(process.SafeHandle.DangerousGetHandle(), TOKEN_QUERY, out tokenHandle))
+            if (!OpenProcessToken(process.GetHandle(), TOKEN_QUERY, out tokenHandle))
                 return null;
 
             int tokenIsElevated = 0;

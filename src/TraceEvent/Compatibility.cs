@@ -1,10 +1,13 @@
 using System;
+using System.Diagnostics;
+using System.Collections.Specialized;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.Tracing.Compatibility
 {
 #if NETSTANDARD1_6
 
-    // Designed from Core CLR 2.0.0
+    // Design based on Core CLR 2.0.0
     public class ApplicationException : Exception
     {
         internal const int COR_E_APPLICATION = unchecked((int)0x80131600);
@@ -28,4 +31,22 @@ namespace Microsoft.Diagnostics.Tracing.Compatibility
         }
     }    
 #endif
+
+    internal static class Extentions
+    {
+        public static IntPtr GetHandle(this Process process)
+        {
+#if NETSTANDARD1_6
+            return process.SafeHandle.DangerousGetHandle();
+#else
+            return process.Handle;
+#endif
+        }
+
+#if NET45
+        public static StringDictionary GetEnvironment(this ProcessStartInfo startInfo) => startInfo.EnvironmentVariables;
+#else
+        public static IDictionary<string, string> GetEnvironment(this ProcessStartInfo startInfo) => startInfo.Environment;
+#endif
+    }
 }
