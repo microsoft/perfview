@@ -476,8 +476,8 @@ namespace Utilities
                             if (!m.Success) break;
                             string varName = m.Groups[1].Value;
                             string varValue;
-                            if (startInfo.Environment.ContainsKey(varName))
-                                varValue = startInfo.Environment[varName];
+                            if (startInfo.GetEnvironment().ContainsKey(varName))
+                                varValue = startInfo.GetEnvironment()[varName];
                             else
                             {
                                 varValue = Environment.GetEnvironmentVariable(varName);
@@ -491,7 +491,7 @@ namespace Utilities
                             startAt = varStart + varValue.Length;
                         }
                     }
-                    startInfo.Environment[key] = value;
+                    startInfo.GetEnvironment()[key] = value;
                 }
             }
             startInfo.WorkingDirectory = options.currentDirectory;

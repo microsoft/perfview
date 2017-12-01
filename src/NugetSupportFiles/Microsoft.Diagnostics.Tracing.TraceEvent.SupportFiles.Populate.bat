@@ -12,9 +12,9 @@ xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.Tra
 @REM lib\native\x86\KernelTraceControl.dll
 @REM lib\native\x86\KernelTraceControl.Win61.dll
 @REM lib\native\x86\msdia140.dll
-@REM lib\net461\Dia2Lib.dll
-@REM lib\net461\OSExtensions.dll
-@REM lib\net461\TraceReloggerLib.dll
+@REM lib\net45\Dia2Lib.dll
+@REM lib\net45\OSExtensions.dll
+@REM lib\net45\TraceReloggerLib.dll
 @REM lib\netstandard1.6\Dia2Lib.dll
 @REM lib\netstandard1.6\OSExtensions.dll
 @REM lib\netstandard1.6\TraceReloggerLib.dll
