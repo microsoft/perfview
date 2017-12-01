@@ -55,7 +55,7 @@
     <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard1.6" />
     <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard1.6" />
 
-    <!-- NET 4.6.1 Framework -->
+    <!-- NET 4.5 Framework -->
 
     <!-- Built libraries -->
     <file src="$OutDir$net45\Microsoft.Diagnostics.Tracing.TraceEvent.dll" target="lib\net45" />
