@@ -3495,9 +3495,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             systemDrive = windows.Substring(0, 2);        // grab just the drive letter.  
         }
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern uint QueryDosDeviceW(string lpDeviceName, StringBuilder lpTargetPath, int ucchMax);
-        [DllImport("kernel32.dll", SetLastError = true), SuppressUnmanagedCodeSecurityAttribute]
+        [DllImport("kernel32.dll", SetLastError = true)]
         private static extern int GetLogicalDrives();
 
         internal List<KeyValuePair<string, string>> kernelToDriveMap;

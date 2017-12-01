@@ -14,6 +14,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Microsoft.Diagnostics.Utilities;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -487,7 +488,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
 
-            if (Environment.Is64BitOperatingSystem)
+            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
                 this.pointerSize = 8;
 
             //double lastTime = 0;
@@ -2862,7 +2863,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // 'empty' parser to fill in with FromStream.  
             deserializer.RegisterDefaultFactory(delegate (Type typeToMake)
             {
-                if (typeToMake.IsSubclassOf(typeof(TraceEventParser)))
+                if (typeToMake.GetTypeInfo().IsSubclassOf(typeof(TraceEventParser)))
                     return (IFastSerializable)Activator.CreateInstance(typeToMake, new object[] { null });
                 return null;
             });

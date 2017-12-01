@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using System.Threading;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Address = System.UInt64;
@@ -457,7 +458,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(_QPCFreq != 0);
             if (pointerSize == 0 || IsRealTime)  // We get on x64 OS 4 as pointer size which is wrong for realtime sessions. Fix it up. 
             {
-                pointerSize = Environment.Is64BitOperatingSystem ? 8 : 4;
+                pointerSize = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64) ? 8 : 4;
                 Debug.Assert((logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0);
             }
             Debug.Assert(pointerSize == 4 || pointerSize == 8);
@@ -611,7 +612,6 @@ namespace Microsoft.Diagnostics.Tracing
         // method (see http://msdn2.microsoft.com/en-us/library/aa364089.aspx) We set it up so that we call
         // back to ETWTraceEventSource.Dispatch which is the heart of the event callback logic.
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
         private void RawDispatchClassic(TraceEventNativeMethods.EVENT_RECORD* eventData)
         {
             // TODO not really a EVENT_RECORD on input, but it is a pain to be type-correct.  
@@ -656,7 +656,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
 
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
         private void RawDispatch(TraceEventNativeMethods.EVENT_RECORD* rawData)
         {
             if (stopProcessing)
@@ -757,7 +756,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         // Private data / methods 
         // [SecuritySafeCritical]
-        [AllowReversePInvokeCalls]
         private bool TraceEventBufferCallback(IntPtr rawLogFile)
         {
             return !stopProcessing;

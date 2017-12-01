@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using TraceReloggerLib;
+using Utilities;
 
 #pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
 
@@ -39,8 +40,7 @@ namespace Microsoft.Diagnostics.Tracing
         public ETWReloggerTraceEventSource(string fileOrSessionName, TraceEventSourceType type, string outputFileName)
             : base()
         {
-            var version = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-            if (version < 62)
+            if (!OperatingSystemVersion.AtLeast(62))
                 throw new NotSupportedException("System Tracing is only supported on Windows 8 and above.");
 
             m_relogger = new CTraceRelogger();
@@ -407,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // first event (real time case).   This is really a problem, as we need that information, but we will go ahead and
                         // try to initialize as best we can. 
 
-                        m_source.pointerSize = Environment.Is64BitOperatingSystem ? 8 : 4;
+                        m_source.pointerSize = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64) ? 8 : 4;
                         m_source.numberOfProcessors = Environment.ProcessorCount;
                         m_source._QPCFreq = Stopwatch.Frequency;
                         m_source._syncTimeUTC = DateTime.UtcNow;
