@@ -173,18 +173,12 @@ namespace PerfView
             }
             return ret;
         }
-        public void RemoveColumn(string columnName, MenuItem menuItem = null)
+        public void RemoveColumn(string columnName)
         {
             int col = GetColumnIndex(columnName);
             if (0 <= col)
             {
                 Grid.Columns.RemoveAt(col);
-
-                // Remove associated MenuItem.
-                if (menuItem != null)
-                {
-                    menuItem.Items.RemoveAt(col);
-                }
             }
         }
 
