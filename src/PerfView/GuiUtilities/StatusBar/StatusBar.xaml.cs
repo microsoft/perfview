@@ -69,16 +69,20 @@ namespace PerfView
             if (errorMessage.IndexOf('\n') < 0)     // Is it a one line error message?
             {
                 if (Dispatcher.CheckAccess())
+                {
+
                     Status = errorMessage;
+                    m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
+                }
                 else
-                    Dispatcher.BeginInvoke((Action)delegate()
+                    Dispatcher.BeginInvoke((Action)delegate ()
                     {
                         Status = errorMessage;
+                        m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
                     });
             }
             LoggedError = true;
 
-            m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
         }
 
         public static readonly RoutedEvent HighlightMessageEvent = EventManager.RegisterRoutedEvent("HighlightMessage", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(StatusBar));
