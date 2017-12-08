@@ -235,42 +235,43 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (enumBuffer == null)
                                         enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
 
-#if !NOT_WINDOWS
-                                    if (!enumIntern.ContainsKey(mapName))
+                                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                                     {
-                                        EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                        var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
-                                        if (hr == 0)
+                                        if (!enumIntern.ContainsKey(mapName))
                                         {
-                                            // We only support manifest enums for now.  
-                                            if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
-                                                enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
+                                            EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
+                                            var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
+                                            if (hr == 0)
                                             {
-                                                StringWriter enumWriter = new StringWriter();
-                                                string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-                                                enumAttrib = " map=\"" + enumName + "\"";
-                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
-                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
-                                                else
-                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
-
-                                                EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
-                                                for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                // We only support manifest enums for now.
+                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
+                                                    enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                                 {
-                                                    int value = mapEntries[k].Value;
-                                                    string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
-                                                    enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
+                                                    StringWriter enumWriter = new StringWriter();
+                                                    string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
+                                                    enumAttrib = " map=\"" + enumName + "\"";
+                                                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                        enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
+                                                    else
+                                                        enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
+
+                                                    EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
+                                                    for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                    {
+                                                        int value = mapEntries[k].Value;
+                                                        string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
+                                                        enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
+                                                        enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
+                                                    }
+                                                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                        enumWriter.WriteLine("     </valueMap>", enumName);
+                                                    else
+                                                        enumWriter.WriteLine("     </bitMap>", enumName);
+                                                    enumIntern[mapName] = enumWriter.ToString();
                                                 }
-                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
-                                                    enumWriter.WriteLine("     </valueMap>", enumName);
-                                                else
-                                                    enumWriter.WriteLine("     </bitMap>", enumName);
-                                                enumIntern[mapName] = enumWriter.ToString();
                                             }
                                         }
                                     }
-#endif //!NOT_WINDOWS
                                 }
 
                                 // Remove anything that does not look like an ID (.e.g space)
@@ -483,57 +484,59 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
 
-#if !NOT_WINDOWS
-            // Trace logging events are not guaranteed to be on channel 11.
-            // Trace logging events will have one of these headers.
-            bool hasETWEventInformation = false;
-            for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
-                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
-                    extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
+                // Trace logging events are not guaranteed to be on channel 11.
+                // Trace logging events will have one of these headers.
+                bool hasETWEventInformation = false;
+                for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
                 {
-                    hasETWEventInformation = true;
-                    break;
-                }
-            }
-
-#if USE_OS_DYNAMIC_EVENT_PARSING
-            // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
-            // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
-            // that happens this path where we parse the TraceLogging data explicitly will become 
-            // unreachable and can be removed.    A fair bit of code can be removed in this way. 
-            if (!hasETWEventInformation)
-                if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
-                {
-                    ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                    if (ret != null)
+                    var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
+                    if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
+                        extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
                     {
-                        ret.containsSelfDescribingMetadata = true;
-                        return ret;
+                        hasETWEventInformation = true;
+                        break;
                     }
                 }
+
+#if USE_OS_DYNAMIC_EVENT_PARSING
+                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging
+                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When
+                // that happens this path where we parse the TraceLogging data explicitly will become
+                // unreachable and can be removed.    A fair bit of code can be removed in this way.
+                if (!hasETWEventInformation)
+                    if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
+                    {
+                        ret = CheckForTraceLoggingEventDefinition(unknownEvent);
+                        if (ret != null)
+                        {
+                            ret.containsSelfDescribingMetadata = true;
+                            return ret;
+                        }
+                    }
 #endif
 
-            // TODO cache the buffer?, handle more types, handle structs...
-            int buffSize = 9000;
-            byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-            int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
-            if (status == 122)      // Buffer too small 
-            {
+                // TODO cache the buffer?, handle more types, handle structs...
+                int buffSize = 9000;
+                byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+                if (status == 122)      // Buffer too small
+                {
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
+                    buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                    status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+                }
+
+                if (status == 0)
+                {
+                    ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
+                    ret.containsSelfDescribingMetadata = hasETWEventInformation;
+                }
+
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
-                buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
             }
 
-            if (status == 0)
-            {
-                ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
-                ret.containsSelfDescribingMetadata = hasETWEventInformation;
-            }
-
-            System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
-#endif //!NOT_WINDOWS
             return ret;
         }
 
