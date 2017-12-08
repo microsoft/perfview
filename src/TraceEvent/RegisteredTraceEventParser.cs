@@ -235,6 +235,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (enumBuffer == null)
                                         enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
 
+#if !NOT_WINDOWS
                                     if (!enumIntern.ContainsKey(mapName))
                                     {
                                         EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
@@ -269,6 +270,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                             }
                                         }
                                     }
+#endif //!NOT_WINDOWS
                                 }
 
                                 // Remove anything that does not look like an ID (.e.g space)
@@ -481,6 +483,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
 
+#if !NOT_WINDOWS
             // Trace logging events are not guaranteed to be on channel 11.
             // Trace logging events will have one of these headers.
             bool hasETWEventInformation = false;
@@ -530,6 +533,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
+#endif //!NOT_WINDOWS
             return ret;
         }
 
