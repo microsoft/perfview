@@ -56,6 +56,8 @@ namespace PerfView
 
             MainWindow.StatusBar.LogWriter.WriteLine("Started with command line: {0}", Environment.CommandLine);
             MainWindow.StatusBar.LogWriter.WriteLine("PerfView Version: {0}  BuildDate: {1}", AppLog.VersionNumber, AppLog.BuildDate);
+            MainWindow.StatusBar.LogWriter.WriteLine("PerfView Start Time {0}", DateTime.Now);
+
             if (App.NeedsEulaConfirmation(App.CommandLineArgs))
             {
                 var eula = new PerfView.Dialogs.EULADialog();

@@ -1090,9 +1090,10 @@ table {
             if (len > 0)
                 writer.WriteLine("<TR><TD>ETL File Size (MB)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", len);
             string logPath = null;
-            int etlIdx = dataFile.FilePath.LastIndexOf(".etl", dataFile.FilePath.Length - 6);       // Start search right before .etlx
-            if (0 <= etlIdx)
-                logPath = dataFile.FilePath.Substring(0, etlIdx) + ".LogFile.txt";
+
+            Debug.Assert(fileName.EndsWith("TraceInfo.html"));
+            if (fileName.EndsWith(".TraceInfo.html"))
+                logPath = fileName.Substring(0, fileName.Length-15) + ".LogFile.txt";
             if (logPath != null && File.Exists(logPath))
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
             else
