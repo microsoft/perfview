@@ -135,6 +135,7 @@ namespace PerfView
         public bool NoNGenRundown;
         public bool NoClrRundown;
         public bool NoV2Rundown;
+        public bool LowPriority;
 
         public bool? Merge;
         public bool? Zip;
@@ -317,6 +318,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("Wpr", ref Wpr, "Make output mimic WPR (Windows Performance Recorder). Don't ZIP, make a .ngenpdbs directory.  " + 
                 "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " + 
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
+            parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
             parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't request CLR Rundown events.");
             parser.DefineOptionalQualifier("NoNGenRundown", ref NoNGenRundown,
                 "Don't do rundown of symbolic information in NGEN images (only needed pre V4.5).");

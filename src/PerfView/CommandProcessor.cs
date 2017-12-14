@@ -1214,6 +1214,8 @@ namespace PerfView
 
             // Set up the writer parameters.  
             ZippedETLWriter etlWriter = new ZippedETLWriter(parsedArgs.DataFile, LogFile);
+            if (parsedArgs.LowPriority)
+                etlWriter.LowPriority = true;
             if (parsedArgs.NoRundown)
                 etlWriter.NGenSymbolFiles = false;
             etlWriter.SymbolReader = App.GetSymbolReader(parsedArgs.DataFile);
@@ -1223,7 +1225,7 @@ namespace PerfView
                 etlWriter.CompressETL = true;
             etlWriter.DeleteInputFile = false;
             if (File.Exists(App.LogFileName))
-                etlWriter.AddFile(App.LogFileName, "PerfViewLogFile.txt");
+                etlWriter.AddFile(App.LogFileName, "LogFile.txt");
 
             // remember the .etlx file that would coorespond to the etl file 
             // that we are about to merge.   It is importnat to do this here
@@ -2656,7 +2658,7 @@ namespace PerfView
                         TraceEventLevel.Verbose, ulong.MaxValue);
                     Thread.Sleep(20);       // Give it time to startup 
                     PerfViewLogger.Log.StartRundown();
-
+                    
                     // If full rundown is configured, enable the specified providers.
                     if (!parsedArgs.NoRundown)
                     {
