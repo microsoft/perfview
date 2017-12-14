@@ -481,55 +481,59 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
 
-            // Trace logging events are not guaranteed to be on channel 11.
-            // Trace logging events will have one of these headers.
-            bool hasETWEventInformation = false;
-            for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
-                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
-                    extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
+                // Trace logging events are not guaranteed to be on channel 11.
+                // Trace logging events will have one of these headers.
+                bool hasETWEventInformation = false;
+                for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
                 {
-                    hasETWEventInformation = true;
-                    break;
-                }
-            }
-
-#if USE_OS_DYNAMIC_EVENT_PARSING
-            // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
-            // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
-            // that happens this path where we parse the TraceLogging data explicitly will become 
-            // unreachable and can be removed.    A fair bit of code can be removed in this way. 
-            if (!hasETWEventInformation)
-                if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
-                {
-                    ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                    if (ret != null)
+                    var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
+                    if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
+                        extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
                     {
-                        ret.containsSelfDescribingMetadata = true;
-                        return ret;
+                        hasETWEventInformation = true;
+                        break;
                     }
                 }
+
+#if USE_OS_DYNAMIC_EVENT_PARSING
+                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging
+                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When
+                // that happens this path where we parse the TraceLogging data explicitly will become
+                // unreachable and can be removed.    A fair bit of code can be removed in this way.
+                if (!hasETWEventInformation)
+                    if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
+                    {
+                        ret = CheckForTraceLoggingEventDefinition(unknownEvent);
+                        if (ret != null)
+                        {
+                            ret.containsSelfDescribingMetadata = true;
+                            return ret;
+                        }
+                    }
 #endif
 
-            // TODO cache the buffer?, handle more types, handle structs...
-            int buffSize = 9000;
-            byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-            int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
-            if (status == 122)      // Buffer too small 
-            {
+                // TODO cache the buffer?, handle more types, handle structs...
+                int buffSize = 9000;
+                byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+                if (status == 122)      // Buffer too small
+                {
+                    System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
+                    buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                    status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+                }
+
+                if (status == 0)
+                {
+                    ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
+                    ret.containsSelfDescribingMetadata = hasETWEventInformation;
+                }
+
                 System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
-                buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
             }
 
-            if (status == 0)
-            {
-                ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
-                ret.containsSelfDescribingMetadata = hasETWEventInformation;
-            }
-
-            System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             return ret;
         }
 
