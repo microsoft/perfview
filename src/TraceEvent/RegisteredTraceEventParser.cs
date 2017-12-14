@@ -235,40 +235,37 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                                     if (enumBuffer == null)
                                         enumBuffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
 
-                                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                    if (!enumIntern.ContainsKey(mapName))
                                     {
-                                        if (!enumIntern.ContainsKey(mapName))
+                                        EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
+                                        var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
+                                        if (hr == 0)
                                         {
-                                            EVENT_MAP_INFO* enumInfo = (EVENT_MAP_INFO*)enumBuffer;
-                                            var hr = TdhGetEventMapInformation(&eventRecord, mapName, enumInfo, ref buffSize);
-                                            if (hr == 0)
+                                            // We only support manifest enums for now.  
+                                            if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
+                                                enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
                                             {
-                                                // We only support manifest enums for now.
-                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP ||
-                                                    enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_BITMAP)
-                                                {
-                                                    StringWriter enumWriter = new StringWriter();
-                                                    string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
-                                                    enumAttrib = " map=\"" + enumName + "\"";
-                                                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
-                                                        enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
-                                                    else
-                                                        enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
+                                                StringWriter enumWriter = new StringWriter();
+                                                string enumName = new string((char*)(&enumBuffer[enumInfo->NameOffset]));
+                                                enumAttrib = " map=\"" + enumName + "\"";
+                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                    enumWriter.WriteLine("     <valueMap name=\"{0}\">", enumName);
+                                                else
+                                                    enumWriter.WriteLine("     <bitMap name=\"{0}\">", enumName);
 
-                                                    EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
-                                                    for (int k = 0; k < enumInfo->EntryCount; k++)
-                                                    {
-                                                        int value = mapEntries[k].Value;
-                                                        string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
-                                                        enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
-                                                        enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
-                                                    }
-                                                    if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
-                                                        enumWriter.WriteLine("     </valueMap>", enumName);
-                                                    else
-                                                        enumWriter.WriteLine("     </bitMap>", enumName);
-                                                    enumIntern[mapName] = enumWriter.ToString();
+                                                EVENT_MAP_ENTRY* mapEntries = &enumInfo->MapEntryArray;
+                                                for (int k = 0; k < enumInfo->EntryCount; k++)
+                                                {
+                                                    int value = mapEntries[k].Value;
+                                                    string valueName = new string((char*)(&enumBuffer[mapEntries[k].NameOffset])).Trim();
+                                                    enumWriter.WriteLine("      <map value=\"0x{0:x}\" message=\"$(string.map_{1}{2})\"/>", value, enumName, valueName);
+                                                    enumLocalizations.WriteLine("    <string id=\"map_{0}{1}\" value=\"{2}\"/>", enumName, valueName, valueName);
                                                 }
+                                                if (enumInfo->Flag == MAP_FLAGS.EVENTMAP_INFO_FLAG_MANIFEST_VALUEMAP)
+                                                    enumWriter.WriteLine("     </valueMap>", enumName);
+                                                else
+                                                    enumWriter.WriteLine("     </bitMap>", enumName);
+                                                enumIntern[mapName] = enumWriter.ToString();
                                             }
                                         }
                                     }
