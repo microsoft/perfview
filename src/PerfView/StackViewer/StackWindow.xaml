@@ -193,6 +193,8 @@
                     <MenuItem Header="Save View As" Command="{x:Static src:StackWindow.SaveAsCommand}" />
                     <MenuItem Header="_Close" Click="DoClose"/>
                 </MenuItem>
+                <MenuItem x:Name="ViewMenu" Header="_View">
+                </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
                 <MenuItem Header="_Help">
