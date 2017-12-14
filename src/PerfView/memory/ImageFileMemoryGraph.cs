@@ -13,7 +13,7 @@ static class ImageFileMemoryGraph
         string pdbPath = symbolReader.FindSymbolFilePathForModule(dllPath);
         symbolReader.Log.WriteLine("Got PDB path {0}", pdbPath);
 
-        SymbolModule module = symbolReader.OpenSymbolFile(pdbPath);
+        NativeSymbolModule module = symbolReader.OpenNativeSymbolFile(pdbPath);
         List<Symbol> symbols = new List<Symbol>();
         AddAllChildren(symbols, module.GlobalSymbol);
 

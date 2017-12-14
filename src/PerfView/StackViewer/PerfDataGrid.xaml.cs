@@ -177,7 +177,9 @@ namespace PerfView
         {
             int col = GetColumnIndex(columnName);
             if (0 <= col)
+            {
                 Grid.Columns.RemoveAt(col);
+            }
         }
 
         public int GetColumnIndex(string columnName)

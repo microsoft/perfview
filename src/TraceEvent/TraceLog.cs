@@ -6849,7 +6849,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return null;
             }
 
-            SymbolModule symbolReaderModule;
+            NativeSymbolModule windowsSymbolModule;
+            ManagedSymbolModule ilSymbolModule;
             // Is this address in the native code of the module (inside the bounds of module)
             var address = log.CodeAddresses.Address(codeAddressIndex);
             reader.m_log.WriteLine("GetSourceLine: address for code address is {0:x} module {1}", address, moduleFile.Name);
@@ -6857,14 +6858,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var methodRva = (uint)(address - moduleFile.ImageBase);
                 reader.m_log.WriteLine("GetSourceLine: address within module: native case, VA = {0:x}, ImageBase = {1:x}, RVA = {2:x}", address, moduleFile.ImageBase, methodRva);
-                symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
-                if (symbolReaderModule != null)
+                windowsSymbolModule = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+                if (windowsSymbolModule != null)
                 {
                     string ilAssemblyName;
                     uint ilMetaDataToken;
                     int ilMethodOffset;
 
-                    var ret = symbolReaderModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
+                    var ret = windowsSymbolModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
                     if (ret == null && ilAssemblyName != null)
                     {
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
@@ -6882,11 +6883,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             if (string.Compare(moduleFileName, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
-                                if (ilSymbolReaderModule != null)
+                                ilSymbolModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
+                                if (ilSymbolModule != null)
                                 {
-                                    reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolReaderModule.SymbolFilePath);
-                                    ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                                    reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolModule.SymbolFilePath);
+                                    ret = ilSymbolModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
                                 }
                             }
                             else
@@ -6899,9 +6900,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
 
                     // TODO FIX NOW, deal with this rather than simply warn. 
-                    if (ret == null && symbolReaderModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+                    if (ret == null && windowsSymbolModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                     {
-                        reader.m_log.WriteLine("GetSourceLine: Warning could not find line information in {0}", symbolReaderModule.SymbolFilePath);
+                        reader.m_log.WriteLine("GetSourceLine: Warning could not find line information in {0}", windowsSymbolModule.SymbolFilePath);
                         reader.m_log.WriteLine("GetSourceLine: Maybe because the NGEN pdb was generated without being able to reach the IL PDB");
                         reader.m_log.WriteLine("GetSourceLine: If you are on the machine where the data was collected, deleting the file may help");
                     }
@@ -6953,14 +6954,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (moduleFile.ManagedModule != null)
                 moduleFile = moduleFile.ManagedModule;
 
-            symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
-            if (symbolReaderModule == null)
+            ilSymbolModule = OpenPdbForModuleFile(reader, moduleFile);
+            if (ilSymbolModule == null)
             {
                 reader.m_log.WriteLine("GetSourceLine: Failed to look up PDB for {0}", moduleFile.FilePath);
                 return null;
             }
 
-            return symbolReaderModule.SourceLocationForManagedCode((uint)methodToken, ilOffset);
+            return ilSymbolModule.SourceLocationForManagedCode((uint)methodToken, ilOffset);
         }
         /// <summary>
         /// The number of times a particular code address appears in the log.   Unlike TraceCodeAddresses.Count, which tries
@@ -7318,7 +7319,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
-            SymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile);
+            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
             if (moduleReader == null)
             {
                 reader.m_log.WriteLine("Could not find PDB file.");
@@ -7415,7 +7416,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Look up the SymbolModule (open PDB) for a given moduleFile.   Will generate NGEN pdbs as needed.  
         /// </summary>
-        private unsafe SymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        private unsafe ManagedSymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
         {
             string pdbFileName = null;
             // If we have a signature, use it
@@ -7467,7 +7468,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // At this point pdbFileName is set,we are going to succeed.    
-            var symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
+            ManagedSymbolModule symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
             if (symbolReaderModule != null)
             {
                 if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
@@ -7481,7 +7482,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Thus we remember the lookup info for the managed PDB too so we have it if we need source server info 
                 var managed = moduleFile.ManagedModule;
                 if (managed != null)
-                    symbolReaderModule.LogManagedInfo(managed.PdbName, managed.PdbSignature, managed.pdbAge);
+                {
+                    var nativePdb = symbolReaderModule as NativeSymbolModule;
+                    if (nativePdb != null)
+                        nativePdb.LogManagedInfo(managed.PdbName, managed.PdbSignature, managed.pdbAge);
+                }
             }
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);
