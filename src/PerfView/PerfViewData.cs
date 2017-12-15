@@ -462,6 +462,11 @@ namespace PerfView
             return Path.Combine(dirName, fileName);
         }
 
+        public void Open(Action doAfter = null)
+        {
+            this.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
             if (!m_opened)
@@ -492,6 +497,11 @@ namespace PerfView
                 if (m_singletonStackSource != null && m_singletonStackSource.Viewer != null)
                     m_singletonStackSource.Viewer.Focus();
             }
+        }
+
+        public void OpenOnExistingWorker(Action doAfter = null)
+        {
+            this.OpenOnExistingWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
         }
 
         public void OpenOnExistingWorker(Window parentWindow, StatusBar worker, Action doAfter = null)
@@ -7876,13 +7886,6 @@ table {
             foreach (var resource in CreateEtlResources(dhPackage, resources))
             {
                 worker.Log("Found  resource '" + resource.Name + "'. Loading ...");
-
-                // for the very first Etl resource found, Open the resource in order to populate the data model for consumption by dependent extensions
-                if (!firstEtlHasBeenProcessed)
-                {
-                    firstEtlHasBeenProcessed = true;
-                    resource.OpenOnExistingWorker(window, worker);
-                }
 
                 this.Children.Add(resource);
 
