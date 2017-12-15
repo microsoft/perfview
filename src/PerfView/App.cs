@@ -979,20 +979,22 @@ namespace PerfView
             });
 
             return true;
-#endif
+#endif 
         }
 
+#if !DOTNET_CORE
         static Thread s_threadToInterrupt;
         static int s_controlCPressed = 0;
+#endif
 
-        #endregion
-        #endregion
-    }
+#endregion
+#endregion
+        }
 
-    /// <summary>
-    /// APIs for logging usage data and feedback.
-    /// </summary>
-    public static class AppLog
+        /// <summary>
+        /// APIs for logging usage data and feedback.
+        /// </summary>
+        public static class AppLog
     {
         /// <summary>
         /// Returns true if you have access to the file share where we log feedback
@@ -1146,7 +1148,7 @@ namespace PerfView
             }
         }
 
-        #region private
+#region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1189,7 +1191,7 @@ namespace PerfView
             }
             return false;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1235,9 +1237,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-        #region private
+#region private
         TextWriter m_verboseLog;
         TextWriter m_terseLog;
-        #endregion
+#endregion
     }
 }
