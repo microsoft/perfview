@@ -8078,10 +8078,20 @@
     </li>
     -->
         <li>
+            Version 1.9.70 12/15/17
+            <ul>
+                <li>
+                    Fixed issue where when PerfView is run on older .NET Runtime's it fails to load the 
+                    System.Runtime.InteropServices.RuntimeInformation.dll.  
+                </li>
+
+            </ul>
+        </li>
+        <li>
             Version 1.9.69 12/14/17
             <ul>
                 <li>
-                    Added the /LowPriority command line qualifier that causes the merging/NGENing/ZIPPing that 
+                    Added the /LowPriority command line qualifier that causes the merging/NGENing/ZIPPing that
                     perfview does to package up the data to happen at low CPU priority to minimize the impact
                     to the system.
                 </li>
