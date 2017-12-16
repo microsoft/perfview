@@ -181,7 +181,7 @@ namespace PerfView
             // It also can work if we only do viewing operations (msdia* uses old libraries), but again do we care?  
             // If we do we can move this to before the DLLs are loaded.   
             // Give the user a clean error.   
-            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major < 10)
+            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major  * 10 + Environment.OSVersion.Version.Minor < 62)
             {
                 throw new ApplicationException("The PerfView64 does not work properly Windows version < 10\r\n" +
                     "    Please use the 32 bit version (PerfView.exe).");
@@ -457,7 +457,7 @@ namespace PerfView
                 return;
 
             // Is the EXE on a network share 
-            var exe = SupportFiles.MainAssemblyPath;
+            var exe = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
             if (!exe.StartsWith(@"\\"))
                 return;
 
