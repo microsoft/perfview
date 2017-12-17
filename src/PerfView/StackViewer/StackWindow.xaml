@@ -94,6 +94,7 @@
             <CommandBinding Command="{x:Static src:StackWindow.CancelCommand}" Executed="DoCancel"/>
             <CommandBinding Command="{x:Static src:StackWindow.SaveCommand}" Executed="DoSave"/>
             <CommandBinding Command="{x:Static src:StackWindow.SaveAsCommand}" Executed="DoSaveAs"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" Executed="DoSaveFlameGraph"/>
             <CommandBinding Command="{x:Static src:StackWindow.UsersGuideCommand}" Executed="DoHyperlinkHelp"/>
             <CommandBinding Command="Help" Executed="DoHyperlinkHelp" />
         </DockPanel.CommandBindings>
@@ -462,6 +463,21 @@
                         <TextBlock x:Name="CalleesTitle" Grid.Row="0"  Style="{StaticResource HeaderStyle}"/>
                         <src:PerfDataGrid Grid.Row="1" x:Name="CalleesDataGrid" Margin="0,0,20,0" MouseDoubleClick="DataGrid_MouseDoubleClick"/>
                     </Grid>
+                </TabItem>
+                <!-- FlameGraphTab -->
+                <TabItem Name="FlameGraphTab" GotFocus="FlameGraphTab_GotFocus">
+                    <TabItem.Header>
+                        <TextBlock>
+                            Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
+                        </TextBlock>
+                    </TabItem.Header>
+                    <Canvas Name="FlameGraphCanvas" Background="Transparent" SizeChanged="FlameGraphCanvas_SizeChanged" MouseMove="FlameGraphCanvas_MouseMove">
+                        <Canvas.ContextMenu>
+                            <ContextMenu Name="noContextMenu" Visibility="Visible">
+                                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
+                            </ContextMenu>
+                        </Canvas.ContextMenu>
+                    </Canvas>
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
