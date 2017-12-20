@@ -770,7 +770,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
 
             // TODO copy the additional data from a ETLX file if the source is ETLX 
-            using (TraceLog newLog = new TraceLog()) {
+            using (TraceLog newLog = new TraceLog())
+            {
                 newLog.rawEventSourceToConvert = source;
 
                 newLog.options = options;

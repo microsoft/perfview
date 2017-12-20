@@ -421,7 +421,7 @@ namespace Microsoft.Diagnostics.Tracing
             int count = 0;
             string prevFilePath = null;
             bool seenThreadPoolDll = false;
-            for (;;)
+            for (; ; )
             {
                 CodeAddressIndex codeAddressIndex = eventLog.CallStacks.CodeAddressIndex(callStackIndex);
                 TraceModuleFile moduleFile = eventLog.CodeAddresses.ModuleFile(codeAddressIndex);
@@ -745,7 +745,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Stop all activities that are on the stack until we get to this one.   
             var cur = m_threadToCurrentActivity[(int)thread.ThreadIndex];
-            for (;;)
+            for (; ; )
             {
                 if (cur == null)
                 {
@@ -995,7 +995,7 @@ namespace Microsoft.Diagnostics.Tracing
         {
             CallStackIndex newStacks = startStack;
             StackSourceCallStackIndex existingStacks = baseStack;
-            for (;;)
+            for (; ; )
             {
                 if (newStacks == CallStackIndex.Invalid)
                     return StackSourceFrameIndex.Invalid;
@@ -1186,7 +1186,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private CallStackCache m_callStackCache;                  // Speeds things up by remembering previously computed entries. 
 
-#endregion
+        #endregion
     }
 
 #if UNUSED
@@ -1217,7 +1217,7 @@ namespace Microsoft.Diagnostics.Tracing
             return GetActivityForThread(ref m_ActivityMap[(int)thread.ThreadIndex], timeStampRelativeMSec, thread);
         }
 
-#region private
+    #region private
 
         private void InsertActivityForThread(ref GrowableArray<ActivityEntry> threadTable, TraceActivity activity)
         {
@@ -1240,7 +1240,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         GrowableArray<ActivityEntry>[] m_ActivityMap;
         ActivityComputer m_computer;
-#endregion
+    #endregion
     }
 #endif
 }
