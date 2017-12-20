@@ -1258,27 +1258,34 @@ namespace PerfView
                         StatusBar.Status = "CellContents: " + cellAsHexDec;
                     }
 
-                    var clipBoardStr = Clipboard.GetText().Trim();
-                    if (clipBoardStr.Length > 0)
+                   try
                     {
-                        double clipBoardVal;
-                        double cellVal;
-                        if (double.TryParse(clipBoardStr, out clipBoardVal) &&
-                            double.TryParse(cellStr, out cellVal))
+                        var clipBoardStr = Clipboard.GetText().Trim();
+                        if (clipBoardStr.Length > 0)
                         {
-                            var reply = string.Format("Cell Contents: {0:f3} ClipBoard: {1:n3}   Sum={2:n3}   Diff={3:n3}",
-                                cellAsHexDec, clipBoardVal, cellVal + clipBoardVal, Math.Abs(cellVal - clipBoardVal));
+                            double clipBoardVal;
+                            double cellVal;
+                            if (double.TryParse(clipBoardStr, out clipBoardVal) &&
+                                double.TryParse(cellStr, out cellVal))
+                            {
+                                var reply = string.Format("Cell Contents: {0:f3} ClipBoard: {1:n3}   Sum={2:n3}   Diff={3:n3}",
+                                    cellAsHexDec, clipBoardVal, cellVal + clipBoardVal, Math.Abs(cellVal - clipBoardVal));
 
-                            double product = cellVal * clipBoardVal;
-                            if (Math.Abs(product) <= 1000)
-                                reply += string.Format("   X*Y={0:n3}", product);
+                                double product = cellVal * clipBoardVal;
+                                if (Math.Abs(product) <= 1000)
+                                    reply += string.Format("   X*Y={0:n3}", product);
 
-                            double ratio = cellVal / clipBoardVal;
-                            if (.001 <= Math.Abs(ratio) && Math.Abs(ratio) <= 1000000)
-                                reply += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
+                                double ratio = cellVal / clipBoardVal;
+                                if (.001 <= Math.Abs(ratio) && Math.Abs(ratio) <= 1000000)
+                                    reply += string.Format("   X/Y={0:n3}   Y/X={1:n3}", ratio, 1 / ratio);
 
-                            StatusBar.Status = reply;
+                                StatusBar.Status = reply;
+                            }
                         }
+                    }
+                    catch(Exception eClipBoard)
+                    {
+                        StatusBar.Log("Warning: exception trying to get Clipboard: " + eClipBoard.Message);
                     }
                 }
                 Grid.ClipboardCopyMode = DataGridClipboardCopyMode.ExcludeHeader;

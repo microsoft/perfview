@@ -6604,7 +6604,7 @@ table {
                    graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
                    graph.SizeOfGraphDescription() / 1000000.0);
 
-            log.WriteLine("Type Histograph > 1% of heap size");
+            log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
 #if false // TODO FIX NOW remove
@@ -6646,7 +6646,7 @@ table {
                    graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
                    graph.SizeOfGraphDescription() / 1000000.0);
 
-            log.WriteLine("Type Histograph > 1% of heap size");
+            log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
 #if false // TODO FIX NOW remove
@@ -6731,7 +6731,7 @@ table {
                         gcDump.AverageCountMultiplier, gcDump.AverageSizeMultiplier);
             }
 
-            log.WriteLine("Type Histograph > 1% of heap size");
+            log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
             return ret;
         }

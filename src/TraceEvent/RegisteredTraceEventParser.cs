@@ -27,7 +27,44 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public RegisteredTraceEventParser(TraceEventSource source, bool dontRegister = false)
             : base(source, dontRegister)
-        { }
+        {
+
+#if !DOTNET_V35
+            var symbolSource = new SymbolTraceEventParser(source);
+
+            symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
+            {
+                DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
+
+                // Uncomment this if you want to see the template in the debugger at this point
+                // template.source = data.source;
+                // template.eventRecord = data.eventRecord;
+                // template.userData = data.userData;  
+                m_state.m_templates[template] = template;
+            };
+
+            // Try to parse bitmap and value map information.  
+            symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
+            {
+                try
+                {
+                    Guid providerID = *((Guid*)data.userData);
+                    byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
+                    RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
+                    IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer);
+                    if (eventInfo->NameOffset < data.EventDataLength - 16)
+                    {
+                        string mapName = new string((char*)(&eventInfoBuffer[eventInfo->NameOffset]));
+                        MapTable.Add(new MapKey(providerID, mapName), map);
+                    }
+                }
+                catch (Exception) { };
+            };
+
+#endif
+
+
+        }
 
         /// <summary>
         /// Given a provider name that has been registered with the operating system, get
@@ -1210,40 +1247,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 StateObject = m_state = new ExternalTraceEventParserState();
                 m_state.m_templates = new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
 
-#if !DOTNET_V35
-                var symbolSource = new SymbolTraceEventParser(source);
-
-                symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
-                {
-                    DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
-
-                // Uncomment this if you want to see the template in the debugger at this point
-                // template.source = data.source;
-                // template.eventRecord = data.eventRecord;
-                // template.userData = data.userData;  
-                m_state.m_templates[template] = template;
-                };
-
-                // Try to parse bitmap and value map information.  
-                symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
-                {
-                    try
-                    {
-                        Guid providerID = *((Guid*)data.userData);
-                        byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
-                        RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
-                        IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer);
-                        if (eventInfo->NameOffset < data.EventDataLength - 16)
-                        {
-                            string mapName = new string((char*)(&eventInfoBuffer[eventInfo->NameOffset]));
-                            MapTable.Add(new MapKey(providerID, mapName), map);
-                        }
-                    }
-                    catch (Exception) { };
-                };
-
-#endif
-
                 this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
                 // See if we already have this definition 
@@ -1339,7 +1342,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal abstract DynamicTraceEventData TryLookup(TraceEvent unknownEvent);
 
-        ExternalTraceEventParserState m_state;
+        internal ExternalTraceEventParserState m_state;
 
         internal Dictionary<MapKey, IDictionary<long, string>> MapTable
         {
