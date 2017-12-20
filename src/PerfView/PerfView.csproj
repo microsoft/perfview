@@ -15,6 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FilesToSign Include="$(OutDir)\PerfView.exe">
+        <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyAttribute Include="PerfView.Properties.BuildDateAttribute">
       <_Parameter1>$([System.DateTime]::Now.ToString(`r`))</_Parameter1>
     </AssemblyAttribute>
@@ -41,6 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
   </ItemGroup>

@@ -174,3 +174,7 @@ These docs are for specialized scenarios
   * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
 does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
 nuget package when these files need to be updated.  Very few people should care about these instructions.  
+
+  * [PerfView Mirror](https://devdiv.visualstudio.com/DefaultCollection/DevDiv/_git/perfview) this is a private version of
+the perfView repository that is used for Microsoft-internal purposes.   The link is likely to not work for most people.
+

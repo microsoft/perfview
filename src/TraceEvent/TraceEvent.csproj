@@ -24,6 +24,13 @@
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+  </ItemGroup>
+
   <Target Name="SetNuspecProperties">
     <PropertyGroup>
       <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(OutputPath)</NuspecProperties>
@@ -68,6 +75,7 @@
   </Choose>
 
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
   </ItemGroup>
