@@ -74,7 +74,7 @@ namespace Utilities
             }
 
             // Register a Assembly resolve event handler so that we find our support dlls in the support dir.
-            AppDomain.CurrentDomain.AssemblyResolve += delegate(object sender, ResolveEventArgs args)
+            AppDomain.CurrentDomain.AssemblyResolve += delegate (object sender, ResolveEventArgs args)
             {
                 var simpleName = args.Name;
                 var commaIdx = simpleName.IndexOf(',');
@@ -111,10 +111,10 @@ namespace Utilities
             // Note we do this AFTER setting up the Assemble Resolve event because we use FileUtiltities that
             // may not be in the EXE itself.  
             if (unpacked || File.Exists(Path.Combine(SupportFileDirBase, "CleanupNeeded")))
-                Cleanup(); 
-            
+                Cleanup();
+
             return unpacked;
-        }   
+        }
         /// <summary>
         /// SupportFileDir is a directory that is reserved for CURRENT VERSION of the software (if a later version is installed)
         /// It gets its own directory).   This is the directory where files in the EXE get unpacked to.  
@@ -263,7 +263,7 @@ namespace Utilities
             s_managedDllSearchPaths.Add(directory);
         }
 
-#region private
+        #region private
         private static void UnpackResources()
         {
             // We don't unpack into the final directory so we can be transactional (all or nothing).  
@@ -287,7 +287,7 @@ namespace Utilities
             }
 
             // Commit the unpack, we try several times since antiviruses often lock the directory
-            for (int retries = 0; ;retries++)
+            for (int retries = 0; ; retries++)
             {
                 try
                 {
@@ -305,7 +305,7 @@ namespace Utilities
         static void Cleanup()
         {
             string cleanupMarkerFile = Path.Combine(SupportFileDirBase, "CleanupNeeded");
-            var dirs = Directory.GetDirectories(SupportFileDirBase, "VER.*");  
+            var dirs = Directory.GetDirectories(SupportFileDirBase, "VER.*");
             if (dirs.Length > 1)
             {
                 // We will assume we should come and check again on our next launch.  
@@ -323,10 +323,10 @@ namespace Utilities
                         var deletingName = dir + ".deleting";
                         if (dir.EndsWith(".deleting"))
                             deletingName = dir;
-                        else 
+                        else
                             Directory.Move(dir, deletingName);
                         DirectoryUtilities.Clean(deletingName);
-                    }   
+                    }
                     catch (Exception) { }
                 }
             }
@@ -354,6 +354,6 @@ namespace Utilities
         private static string s_mainAssemblyPath;
         private static string s_exePath;
         private static List<string> s_managedDllSearchPaths;
-#endregion
+        #endregion
     }
 }
