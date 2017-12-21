@@ -845,9 +845,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new HeapTraceProviderTraceEventParser(this);
             new MicrosoftWindowsKernelFileTraceEventParser(this);
             new IisTraceEventParser(this);
-
             new SampleProfilerTraceEventParser(this);
-#if false 
+#if false
             new WpfTraceEventParser(newLog);
             new AppHostTraceEventParser(newLog);
             new ImmersiveShellTraceEventParser(newLog);

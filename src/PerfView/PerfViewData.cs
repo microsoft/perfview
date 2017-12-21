@@ -14,6 +14,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
+using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
@@ -4121,36 +4122,54 @@ table {
             }
             else if (streamName == "CCW Ref Count")
             {
-                // TODO use the callback model.  We seem to have an issue getting the names however. 
-                foreach (var data in events.ByEventType<CCWRefCountChangeTraceData>())
+                var interopTraceEventParser = new InteropTraceEventParser(eventSource);
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWQueryRuntimeClassNameArgs>(args =>
                 {
                     sample.Metric = 1;
-                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
 
-                    var operation = data.Operation;
-                    if (operation.StartsWith("Release", StringComparison.OrdinalIgnoreCase))
-                        sample.Metric = -1;
-
-                    var ccwRefKindName = "CCW " + operation;
-                    var ccwRefKindIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindIndex, stackIndex);
-
-                    var ccwRefCountName = "CCW NewRefCnt " + data.NewRefCount.ToString();
-                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCountName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
-
-                    var ccwInstanceName = "CCW Instance 0x" + data.COMInterfacePointer.ToString("x");
-                    var ccwInstanceIndex = stackSource.Interner.FrameIntern(ccwInstanceName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwInstanceIndex, stackIndex);
-
-                    var ccwTypeName = "CCW Type " + data.NameSpace + "." + data.ClassName;
-                    var ccwTypeIndex = stackSource.Interner.FrameIntern(ccwTypeName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwTypeIndex, stackIndex);
+                    var ccwRefKindName = "CCW QueryRuntimeClassName";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
 
                     sample.StackIndex = stackIndex;
                     stackSource.AddSample(sample);
-                }
+                });
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountIncArgs>(args=> {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+
+                    var ccwRefKindName = "CCW RefCountInc";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
+
+                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
+                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
+                    stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    stackSource.AddSample(sample);
+                });
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountDecArgs>(args =>
+                {
+                    sample.Metric = -1;
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+
+                    var ccwRefKindName = "CCW RefCountDec";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
+
+                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
+                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
+                    stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
             }
             else if (streamName == "Windows Handle Ref Count")
             {
@@ -5803,7 +5822,7 @@ table {
                         hasMemAllocStacks = true;
                     if (name.StartsWith("GC/SampledObjectAllocation"))
                         hasMemAllocStacks = true;
-                    if (name.StartsWith("GC/CCWRefCountChange"))
+                    if (name.StartsWith("GC/CCWRefCountChange") || name.StartsWith("TaskCCWRef"))
                         hasCCWRefCountStacks = true;
                     if (name.StartsWith("Object/CreateHandle"))
                         hasWindowsRefCountStacks = true;

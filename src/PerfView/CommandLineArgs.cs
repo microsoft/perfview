@@ -125,6 +125,7 @@ namespace PerfView
 
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
+        public bool CCWRefCount;            // Capture CCW references count increasing and decreasing
 
         public bool Wpr;                    // Collect like WPR (no zip, puts NGEN pdbs in a .ngenpdbs directory).  
 
@@ -440,7 +441,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DotNetCalls", ref DotNetCalls, "Turns on per-call .NET profiling.");
             parser.DefineOptionalQualifier("DotNetCallsSampled", ref DotNetCallsSampled, "Turns on per-call .NET profiling, sampling types in a smart way to keep overhead low.");
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
-
+            parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about CCW reference counting.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
 

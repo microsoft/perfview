@@ -975,7 +975,7 @@ namespace Microsoft.Diagnostics.Tracing
                         var asStruct = elem as IDictionary<string, object>;
                         if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
                             sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
-                        else 
+                        else
                             sb.Append(elem.ToString());
                     }
                     sb.Append(']');
@@ -2717,8 +2717,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return new ETWTraceEventSource(traceFileName);
 #endif
             else
-#endif 
-                    return null;
+#endif
+                return null;
         }
 
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However
@@ -2943,33 +2943,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                    anEvent.Dispatch();
-                if (anEvent.next != null)
+            if (anEvent.Target != null)
+                anEvent.Dispatch();
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (;;)
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (;;)
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
+                        break;
+                    if (nextEvent.Target != null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                            break;
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
-                        }
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
                     }
                 }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                        unhandledEventTemplate.PrepForCallback();
-                    AllEvents(anEvent);
-                }
-                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                    unhandledEventTemplate.PrepForCallback();
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)

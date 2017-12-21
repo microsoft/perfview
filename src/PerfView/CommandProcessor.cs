@@ -807,6 +807,11 @@ namespace PerfView
                         LogFile.WriteLine("netsh trace command succeeded.");
                     }
 
+                    if (parsedArgs.CCWRefCount)
+                    {
+                        EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+                        parsedArgs.Providers = null;
+                    }
                     LogFile.WriteLine("Enabling Providers specified by the user.");
                     if (parsedArgs.Providers != null)
                         EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine);
@@ -2426,6 +2431,8 @@ namespace PerfView
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             if (parsedArgs.MaxNodeCountK != 0)
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            if (parsedArgs.CCWRefCount)
+                cmdLineArgs += " /CCWRefCount";
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
             if (command == null)
@@ -3020,6 +3027,8 @@ namespace PerfView
                 providerGuid = new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E");
             else if (string.Compare(providerSpec, "Heap Trace Provider", StringComparison.OrdinalIgnoreCase) == 0)
                 providerGuid = HeapTraceProviderTraceEventParser.ProviderGuid;
+            else if (string.Compare(providerSpec, "InteropEventProvider", StringComparison.OrdinalIgnoreCase) == 0)
+                providerGuid = new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91");
             else
             {
                 providerGuid = TraceEventProviders.GetProviderGuidByName(providerSpec);
