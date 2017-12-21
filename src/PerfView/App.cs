@@ -176,17 +176,6 @@ namespace PerfView
                 }
             }
 
-            // The 64 bit version of some of the native DLLs we use are built against the new Win10 libraries and will 
-            // fail to bind if they are loaded on an older OS (it would probably work for Win8 but do we care?) 
-            // It also can work if we only do viewing operations (msdia* uses old libraries), but again do we care?  
-            // If we do we can move this to before the DLLs are loaded.   
-            // Give the user a clean error.   
-            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major  * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                throw new ApplicationException("The PerfView64 does not work properly Windows version < 10\r\n" +
-                    "    Please use the 32 bit version (PerfView.exe).");
-            }
-
             // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
             if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
                 throw new ApplicationException("Error: InMemoryCircularBuffer currently can't be used with separate Start and Stop processes.");
@@ -457,7 +446,7 @@ namespace PerfView
                 return;
 
             // Is the EXE on a network share 
-            var exe = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
+            var exe = SupportFiles.MainAssemblyPath;
             if (!exe.StartsWith(@"\\"))
                 return;
 
@@ -979,22 +968,20 @@ namespace PerfView
             });
 
             return true;
-#endif 
+#endif
         }
 
-#if !DOTNET_CORE
         static Thread s_threadToInterrupt;
         static int s_controlCPressed = 0;
-#endif
 
-#endregion
-#endregion
-        }
+        #endregion
+        #endregion
+    }
 
-        /// <summary>
-        /// APIs for logging usage data and feedback.
-        /// </summary>
-        public static class AppLog
+    /// <summary>
+    /// APIs for logging usage data and feedback.
+    /// </summary>
+    public static class AppLog
     {
         /// <summary>
         /// Returns true if you have access to the file share where we log feedback
@@ -1148,7 +1135,7 @@ namespace PerfView
             }
         }
 
-#region private
+        #region private
 
 
         private static string FeedbackServer { get { return "clrMain"; } }
@@ -1191,7 +1178,7 @@ namespace PerfView
             }
             return false;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1237,9 +1224,9 @@ namespace PerfView
             m_terseLog.Dispose();
             m_verboseLog.Dispose();
         }
-#region private
+        #region private
         TextWriter m_verboseLog;
         TextWriter m_terseLog;
-#endregion
+        #endregion
     }
 }

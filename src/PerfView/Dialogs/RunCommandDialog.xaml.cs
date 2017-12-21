@@ -139,6 +139,8 @@ namespace PerfView
                 NetCaptureCheckBox.IsChecked = true;
             if (args.NetMonCapture)
                 NetMonCheckBox.IsChecked = true;
+            if (args.CCWRefCount)
+                CCWRefCountCheckBox.IsChecked = true;
 
             if (args.DumpHeap)
                 HeapSnapshotCheckBox.IsChecked = true;
@@ -479,6 +481,8 @@ namespace PerfView
                         m_args.Merge = false;
                 }
 
+                m_args.CCWRefCount = CCWRefCountCheckBox.IsChecked ?? false;
+
                 string cpuCounters = CpuCountersTextBox.Text;
                 if (cpuCounters.Length != 0)
                     m_args.CpuCounters = cpuCounters.Split(' ');
@@ -529,6 +533,13 @@ namespace PerfView
                     if (providers.Length != 0)
                         providers += ",";
                     providers += "ClrPrivate";
+                }
+
+                if ((CCWRefCountCheckBox.IsChecked ?? false) && providers.IndexOf("InteropEventProvider", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    if (providers.Length != 0)
+                        providers += ",";
+                    providers += "InteropEventProvider";
                 }
 
                 m_args.DumpHeap = HeapSnapshotCheckBox.IsChecked ?? false;

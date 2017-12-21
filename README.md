@@ -15,7 +15,7 @@ to your desktop and then double click it from there).   It is a single EXE with 
 #### Getting the Latest Version of PerfView (from GitHub)
 
 The version on the download site is officially signed by Microsoft so it is a 'safe' choice, but it typically is
-months old.   If you need a recent bug fix or feature, it may not be in the offical version on the download site.  **In particular you will want at least version 1.9.65 if you are profiling .NET Core scenarios**.   You can get very recent builds by downloading from the [Release Tab on this site](https://github.com/Microsoft/perfview/releases), and of course you can always build it yourself by following the instructions below.   
+months old.   If you need a recent bug fix or feature, it may not be in the offical version on the download site.  **In particular you will want at least version 1.9.65 if you are profiling .NET Core scenarios**.   You can get very recient builds by downloading from the [Release Tab on this site](https://github.com/Microsoft/perfview/releases), and of course you can always build it yourself by following the instructions below.   
 
 ### Learning about PerfView 
 
@@ -174,7 +174,3 @@ These docs are for specialized scenarios
   * [Updating SupportFiles](documentation/MakingSupportFilesNugetPackages.md) PerfView uses some binary files that it
 does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
 nuget package when these files need to be updated.  Very few people should care about these instructions.  
-
-  * [PerfView Mirror](https://devdiv.visualstudio.com/DefaultCollection/DevDiv/_git/perfview) this is a private version of
-the perfView repository that is used for Microsoft-internal purposes.   The link is likely to not work for most people.
-

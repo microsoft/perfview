@@ -7,8 +7,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Tracing.Compatibility;
-using System.Threading;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
 
@@ -54,7 +52,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is the name of the output archive.  By default is the same as the ETL file name 
         /// with a .zip' suffix added (thus it will typically be .etl.zip).  
         /// </summary>
-        public string ZipArchivePath { get; set; }
+        public string ZipArchivePath { get; set; } 
 
         /// <summary>
         /// If set this is where messages about progress and detailed error information goes.  
@@ -95,10 +93,6 @@ namespace Microsoft.Diagnostics.Tracing
             FileUtilities.ForceDelete(newFileName);
             try
             {
-#if !NETSTANDARD1_6
-                if (LowPriority)
-                    Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
                 Log.WriteLine("[Zipping ETL file {0}]", m_etlFilePath);
                 using (var zipArchive = ZipFile.Open(newFileName, ZipArchiveMode.Create))
                 {
@@ -122,12 +116,6 @@ namespace Microsoft.Diagnostics.Tracing
                             // log.WriteLine("Writing PDB {0} to archive.", archivePath);
                             zipArchive.CreateEntryFromFile(pdb, archivePath, compressionLevel);
                         }
-
-                        // This is not the very end of ZIP generation, but I want the log to be IN the ZIP so this 
-                        // is the last point I can do this. 
-                        Log.WriteLine("ZIP generation took {0:f3} sec", sw.Elapsed.TotalSeconds);
-                        Log.WriteLine("ZIP output file {0}", ZipArchivePath);
-                        Log.WriteLine("Time: {0}", DateTime.Now);
                         Log.Flush();
 
                         if (m_additionalFiles != null)
@@ -161,11 +149,11 @@ namespace Microsoft.Diagnostics.Tracing
             }
             finally
             {
-#if !NETSTANDARD1_6
-                Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
                 FileUtilities.ForceDelete(newFileName);
             }
+            sw.Stop();
+            Log.WriteLine("ZIP generation took {0:f3} sec", sw.Elapsed.TotalSeconds);
+            Log.WriteLine("ZIP output file {0}", ZipArchivePath);
             return success;
         }
 
@@ -194,11 +182,6 @@ namespace Microsoft.Diagnostics.Tracing
         public bool NGenSymbolFiles { get; set; }
 
         /// <summary>
-        /// Do the work at low priority so as to avoid impacting the system. 
-        /// </summary>
-        public bool LowPriority { get; set; }
-
-        /// <summary>
         /// Normally WriteArchive creates a ZIP archive.  However it is possible that you only wish
         /// to do the merging and NGEN symbol generation.   Setting this property to false
         /// will supress the final ZIP operation.  
@@ -210,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public bool DeleteInputFile { get; set; }
 
-            #region private
+        #region private
         private List<string> PrepForWrite()
         {
             // If the user did not specify a place to put log messages, make one for them.  
@@ -240,68 +223,35 @@ namespace Microsoft.Diagnostics.Tracing
                     if (Merge)
                     {
                         var startTime = DateTime.UtcNow;
-#if !NETSTANDARD1_6
-                        if (LowPriority)
-                            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
-                        try
-                        {
-                            Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
+                        Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
 
-                            var options = Session.TraceEventMergeOptions.None;
-                            if (CompressETL)
-                                options |= Session.TraceEventMergeOptions.Compress;
+                        var options = Session.TraceEventMergeOptions.None;
+                        if (CompressETL)
+                            options |= Session.TraceEventMergeOptions.Compress;
 
-                            // Do the merge
-                            Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
-                            Log.WriteLine("Merging took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
-                        }
-                        finally
-                        {
-#if !NETSTANDARD1_6
-                            Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
-                        }
+                        // Do the merge
+                        Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
+                        Log.WriteLine("Merging took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
                     }
                     else
                         Log.WriteLine("Merge == false, skipping Merge operation.");
                 });
 
-                // If we are running low priority, don't do work in parallel, so wait merging before doing NGEN pdb generation. 
-                if (LowPriority)
-                {
-                    Log.WriteLine("Running Low Priority, Starting merge and waiting for it to complete before doing NGEN PDB generation.");
-                    mergeWorker.Wait();
-                    Log.WriteLine("Running Low Priority, Finished Merging, moving on to NGEN PDB generation.");
-                }
-
                 Task pdbWorker = Task.Factory.StartNew(delegate
                 {
                     if (NGenSymbolFiles)
                     {
-#if !NETSTANDARD1_6
-                        if (LowPriority)
-                            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
-#endif
-                        try
-                        {
-                            var startTime = DateTime.UtcNow;
-                            Log.WriteLine("Starting Generating NGEN pdbs for {0}", m_etlFilePath);
-                            var symbolReader = SymbolReader;
-                            if (symbolReader == null)
-                                symbolReader = new SymbolReader(Log);
-                            pdbFileList = GetNGenPdbs(m_etlFilePath, symbolReader, Log);
-                            Log.WriteLine("Generating NGEN Pdbs took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
-                        }
-                        finally
-                        {
-#if !NETSTANDARD1_6
-                            Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
-                        }
+                        var startTime = DateTime.UtcNow;
+                        Log.WriteLine("Starting Generating NGEN pdbs for {0}", m_etlFilePath);
+                        var symbolReader = SymbolReader;
+                        if (symbolReader == null)
+                            symbolReader = new SymbolReader(Log);
+                        pdbFileList = GetNGenPdbs(m_etlFilePath, symbolReader, Log);
+                        Log.WriteLine("Generating NGEN Pdbs took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
                     }
                     else
                         Log.WriteLine("NGenSymbolFiles == false, skipping NGEN pdb generation");
+
                 });
                 Task.WaitAll(mergeWorker, pdbWorker);
 
@@ -324,7 +274,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             sw.Stop();
-            Log.WriteLine("Merge and NGEN PDB Generation took {0:f3} sec.", sw.Elapsed.TotalSeconds);
+            Log.WriteLine("Merge took {0:f3} sec.", sw.Elapsed.TotalSeconds);
             Log.WriteLine("Merge output file {0}", m_etlFilePath);
 
             return pdbFileList;
@@ -340,31 +290,29 @@ namespace Microsoft.Diagnostics.Tracing
             var pdbFileList = new List<string>(100);
             foreach (var imageName in ETWTraceEventSource.GetModulesNeedingSymbols(etlFile))
             {
-                var sw = Stopwatch.StartNew();
                 var pdbName = symbolReader.GenerateNGenSymbolsForModule(imageName);
                 if (pdbName != null)
                 {
                     pdbFileList.Add(pdbName);
                     log.WriteLine("Found NGEN pdb {0}", pdbName);
                 }
-                log.WriteLine("NGEN PDB creation for {0} took {1:n2} Sec", imageName, sw.Elapsed.TotalSeconds);
             }
             return pdbFileList;
         }
 
         List<Tuple<string, string>> m_additionalFiles;
         string m_etlFilePath;
-            #endregion // private
+        #endregion // private
     }
-#endif
+#endif 
 
-            /// <summary>
-            /// ZippedETLReader is a helper class that unpacks the ZIP files generated
-            /// by the ZippedETLWriter class.    It can be smart about placing the 
-            /// symbolic information in these files on the SymbolReader's path so that
-            /// symbolic lookup 'just works'.  
-            /// </summary>
-        public class ZippedETLReader
+    /// <summary>
+    /// ZippedETLReader is a helper class that unpacks the ZIP files generated
+    /// by the ZippedETLWriter class.    It can be smart about placing the 
+    /// symbolic information in these files on the SymbolReader's path so that
+    /// symbolic lookup 'just works'.  
+    /// </summary>
+    public class ZippedETLReader
     {
         /// <summary>
         /// Declares the intent to unzip an .ETL.ZIP file that contain an compressed ETL file 
@@ -384,7 +332,7 @@ namespace Microsoft.Diagnostics.Tracing
         public TextWriter Log { get; set; }
 
         /// <summary>
-        /// The name of the ETL file to extract (it is an error if there is not exactly 1).  
+        /// The name of hte ETL file to extract (it is an error if there is not exactly 1).  
         /// If not present it is derived by changing the extension of the zip archive. 
         /// </summary>
         public string EtlFileName { get; set; }
@@ -489,7 +437,7 @@ namespace Microsoft.Diagnostics.Tracing
                         Log.WriteLine("Extracting {0} Zipped size = {1:f3} MB Unzipped = {2:f3} MB", EtlFileName,
                             entry.CompressedLength / 1000000.0, entry.Length / 1000000.0);
                     }
-                    else if (archivePath == "PerfViewLogFile.txt" || archivePath == "LogFile.txt")      // TODO we can remove the PerfViewLogFile.txt eventually (say in 2019)
+                    else if (archivePath == "LogFile.txt")
                     {
                         string logFilePath = Path.ChangeExtension(EtlFileName, ".LogFile.txt");
                         Log.WriteLine("Extracting LogFile.txt to {0}", logFilePath);

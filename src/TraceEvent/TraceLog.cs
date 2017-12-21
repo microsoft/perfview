@@ -14,7 +14,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Symbol;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -488,7 +487,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
 
-            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
+            if (Environment.Is64BitOperatingSystem)
                 this.pointerSize = 8;
 
             //double lastTime = 0;
@@ -770,59 +769,58 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
 
             // TODO copy the additional data from a ETLX file if the source is ETLX 
-            using (TraceLog newLog = new TraceLog())
+            TraceLog newLog = new TraceLog();
+            newLog.rawEventSourceToConvert = source;
+
+            newLog.options = options;
+
+            if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
             {
-                newLog.rawEventSourceToConvert = source;
-
-                newLog.options = options;
-
-                if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
+                var tmfDir = Path.Combine(options.ExplicitManifestDir, "TMF");
+                if (Directory.Exists(tmfDir))
                 {
-                    var tmfDir = Path.Combine(options.ExplicitManifestDir, "TMF");
-                    if (Directory.Exists(tmfDir))
-                    {
-                        options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
-                        new WppTraceEventParser(newLog, tmfDir);
-                    }
-                    options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
-                    source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
+                    options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
+                    new WppTraceEventParser(newLog, tmfDir);
                 }
-
-                // Any parser that has state we need to turn on during the conversion so that the the state will build up
-                // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic
-                // (which includes registered), an kernel)
-                // TODO add an option that allows users to add their own here.
-                // Note that I am not using the variables below, I am fetching the value so that it has the side
-                // effect of creating this parser (which will in turn indicate to the system that I care about the
-                // state these parsers generate as part of their operation).
-                var dynamicParser = source.Dynamic;
-                var clrParser = source.Clr;
-                var kernelParser = source.Kernel;
-
-                // Get all the users data from the original source.   Note that this happens by reference, which means
-                // that even though we have not built up the state yet (since we have not scanned the data yet), it will
-                // still work properly (by the time we look at this user data, it will be updated).
-                foreach (string key in source.UserData.Keys)
-                    newLog.UserData[key] = source.UserData[key];
-
-                // Avoid partially written files by writing to a temp and moving atomically to the
-                // final destination.
-                string etlxTempPath = etlxFilePath + ".new";
-                try
-                {
-                    //****************************************************************************************************
-                    // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
-                    using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
-                    if (File.Exists(etlxFilePath))
-                        File.Delete(etlxFilePath);
-                    File.Move(etlxTempPath, etlxFilePath);
-                }
-                finally
-                {
-                    if (File.Exists(etlxTempPath))
-                        File.Delete(etlxTempPath);
-                }
+                options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
+                source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
             }
+
+            // Any parser that has state we need to turn on during the conversion so that the the state will build up
+            // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic 
+            // (which includes registered), an kernel)   
+            // TODO add an option that allows users to add their own here.   
+            // Note that I am not using the variables below, I am fetching the value so that it has the side
+            // effect of creating this parser (which will in turn indicate to the system that I care about the
+            // state these parsers generate as part of their operation).  
+            var dynamicParser = source.Dynamic;
+            var clrParser = source.Clr;
+            var kernelParser = source.Kernel;
+
+            // Get all the users data from the original source.   Note that this happens by reference, which means 
+            // that even though we have not built up the state yet (since we have not scanned the data yet), it will
+            // still work properly (by the time we look at this user data, it will be updated). 
+            foreach (string key in source.UserData.Keys)
+                newLog.UserData[key] = source.UserData[key];
+
+            // Avoid partially written files by writing to a temp and moving atomically to the
+            // final destination.  
+            string etlxTempPath = etlxFilePath + ".new";
+            try
+            {
+                //****************************************************************************************************
+                // ******** This calls TraceLog.ToStream operation on TraceLog which does the real work.   ***********
+                using (Serializer serializer = new Serializer(etlxTempPath, newLog)) { }
+                if (File.Exists(etlxFilePath))
+                    File.Delete(etlxFilePath);
+                File.Move(etlxTempPath, etlxFilePath);
+            }
+            finally
+            {
+                if (File.Exists(etlxTempPath))
+                    File.Delete(etlxTempPath);
+            }
+            // TODO FIX NOW Dispose the newlog?
         }
 
         internal void RegisterStandardParsers()
@@ -847,9 +845,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             new HeapTraceProviderTraceEventParser(this);
             new MicrosoftWindowsKernelFileTraceEventParser(this);
             new IisTraceEventParser(this);
-
             new SampleProfilerTraceEventParser(this);
-#if false 
+#if false
             new WpfTraceEventParser(newLog);
             new AppHostTraceEventParser(newLog);
             new ImmersiveShellTraceEventParser(newLog);
@@ -2864,7 +2861,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // 'empty' parser to fill in with FromStream.  
             deserializer.RegisterDefaultFactory(delegate (Type typeToMake)
             {
-                if (typeToMake.GetTypeInfo().IsSubclassOf(typeof(TraceEventParser)))
+                if (typeToMake.IsSubclassOf(typeof(TraceEventParser)))
                     return (IFastSerializable)Activator.CreateInstance(typeToMake, new object[] { null });
                 return null;
             });
@@ -6850,8 +6847,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return null;
             }
 
-            NativeSymbolModule windowsSymbolModule;
-            ManagedSymbolModule ilSymbolModule;
+            SymbolModule symbolReaderModule;
             // Is this address in the native code of the module (inside the bounds of module)
             var address = log.CodeAddresses.Address(codeAddressIndex);
             reader.m_log.WriteLine("GetSourceLine: address for code address is {0:x} module {1}", address, moduleFile.Name);
@@ -6859,14 +6855,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var methodRva = (uint)(address - moduleFile.ImageBase);
                 reader.m_log.WriteLine("GetSourceLine: address within module: native case, VA = {0:x}, ImageBase = {1:x}, RVA = {2:x}", address, moduleFile.ImageBase, methodRva);
-                windowsSymbolModule = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-                if (windowsSymbolModule != null)
+                symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
+                if (symbolReaderModule != null)
                 {
                     string ilAssemblyName;
                     uint ilMetaDataToken;
                     int ilMethodOffset;
 
-                    var ret = windowsSymbolModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
+                    var ret = symbolReaderModule.SourceLocationForRva(methodRva, out ilAssemblyName, out ilMetaDataToken, out ilMethodOffset);
                     if (ret == null && ilAssemblyName != null)
                     {
                         // We found the RVA, but this is an NGEN image, and so we could not convert it completely to a line number.
@@ -6884,11 +6880,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             if (string.Compare(moduleFileName, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                                ilSymbolModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
-                                if (ilSymbolModule != null)
+                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
+                                if (ilSymbolReaderModule != null)
                                 {
-                                    reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolModule.SymbolFilePath);
-                                    ret = ilSymbolModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
+                                    reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolReaderModule.SymbolFilePath);
+                                    ret = ilSymbolReaderModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
                                 }
                             }
                             else
@@ -6901,9 +6897,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
 
                     // TODO FIX NOW, deal with this rather than simply warn. 
-                    if (ret == null && windowsSymbolModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+                    if (ret == null && symbolReaderModule.SymbolFilePath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
                     {
-                        reader.m_log.WriteLine("GetSourceLine: Warning could not find line information in {0}", windowsSymbolModule.SymbolFilePath);
+                        reader.m_log.WriteLine("GetSourceLine: Warning could not find line information in {0}", symbolReaderModule.SymbolFilePath);
                         reader.m_log.WriteLine("GetSourceLine: Maybe because the NGEN pdb was generated without being able to reach the IL PDB");
                         reader.m_log.WriteLine("GetSourceLine: If you are on the machine where the data was collected, deleting the file may help");
                     }
@@ -6955,14 +6951,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (moduleFile.ManagedModule != null)
                 moduleFile = moduleFile.ManagedModule;
 
-            ilSymbolModule = OpenPdbForModuleFile(reader, moduleFile);
-            if (ilSymbolModule == null)
+            symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
+            if (symbolReaderModule == null)
             {
                 reader.m_log.WriteLine("GetSourceLine: Failed to look up PDB for {0}", moduleFile.FilePath);
                 return null;
             }
 
-            return ilSymbolModule.SourceLocationForManagedCode((uint)methodToken, ilOffset);
+            return symbolReaderModule.SourceLocationForManagedCode((uint)methodToken, ilOffset);
         }
         /// <summary>
         /// The number of times a particular code address appears in the log.   Unlike TraceCodeAddresses.Count, which tries
@@ -7320,7 +7316,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             reader.m_log.WriteLine("[Loading symbols for " + moduleFile.FilePath + "]");
 
-            NativeSymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
+            SymbolModule moduleReader = OpenPdbForModuleFile(reader, moduleFile);
             if (moduleReader == null)
             {
                 reader.m_log.WriteLine("Could not find PDB file.");
@@ -7417,7 +7413,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// <summary>
         /// Look up the SymbolModule (open PDB) for a given moduleFile.   Will generate NGEN pdbs as needed.  
         /// </summary>
-        private unsafe ManagedSymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
+        private unsafe SymbolModule OpenPdbForModuleFile(SymbolReader symReader, TraceModuleFile moduleFile)
         {
             string pdbFileName = null;
             // If we have a signature, use it
@@ -7469,7 +7465,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
             // At this point pdbFileName is set,we are going to succeed.    
-            ManagedSymbolModule symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
+            var symbolReaderModule = symReader.OpenSymbolFile(pdbFileName);
             if (symbolReaderModule != null)
             {
                 if (!UnsafePDBMatching && moduleFile.PdbSignature != Guid.Empty && symbolReaderModule.PdbGuid != moduleFile.PdbSignature)
@@ -7483,11 +7479,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 // Thus we remember the lookup info for the managed PDB too so we have it if we need source server info 
                 var managed = moduleFile.ManagedModule;
                 if (managed != null)
-                {
-                    var nativePdb = symbolReaderModule as NativeSymbolModule;
-                    if (nativePdb != null)
-                        nativePdb.LogManagedInfo(managed.PdbName, managed.PdbSignature, managed.pdbAge);
-                }
+                    symbolReaderModule.LogManagedInfo(managed.PdbName, managed.PdbSignature, managed.pdbAge);
             }
 
             symReader.m_log.WriteLine("Opened Pdb file {0}", pdbFileName);

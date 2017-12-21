@@ -39,7 +39,6 @@ namespace PerfView
                 return;
             };
         }
-
         /// <summary>
         /// Report messages are short messages that are not persisted in the history, these are meant for
         /// messages that are not in direct response to a user command (and thus might be 'noise')
@@ -69,30 +68,15 @@ namespace PerfView
             if (errorMessage.IndexOf('\n') < 0)     // Is it a one line error message?
             {
                 if (Dispatcher.CheckAccess())
-                {
-
                     Status = errorMessage;
-                    m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
-                }
                 else
-                    Dispatcher.BeginInvoke((Action)delegate ()
+                    Dispatcher.BeginInvoke((Action)delegate()
                     {
                         Status = errorMessage;
-                        m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
                     });
             }
             LoggedError = true;
-
         }
-
-        public static readonly RoutedEvent HighlightMessageEvent = EventManager.RegisterRoutedEvent("HighlightMessage", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(StatusBar));
-
-        public event RoutedEventHandler HighlightMessage
-        {
-            add { AddHandler(HighlightMessageEvent, value); }
-            remove { RemoveHandler(HighlightMessageEvent, value); }
-        }
-
         /// <summary>
         /// Have we just logged an error (last message in status bar is an error message)
         /// </summary>

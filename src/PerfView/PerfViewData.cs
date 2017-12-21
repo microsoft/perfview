@@ -14,6 +14,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
+using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
@@ -1090,10 +1091,9 @@ table {
             if (len > 0)
                 writer.WriteLine("<TR><TD>ETL File Size (MB)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", len);
             string logPath = null;
-
-            Debug.Assert(fileName.EndsWith("TraceInfo.html"));
-            if (fileName.EndsWith(".TraceInfo.html"))
-                logPath = fileName.Substring(0, fileName.Length-15) + ".LogFile.txt";
+            int etlIdx = dataFile.FilePath.LastIndexOf(".etl", dataFile.FilePath.Length - 6);       // Start search right before .etlx
+            if (0 <= etlIdx)
+                logPath = dataFile.FilePath.Substring(0, etlIdx) + ".LogFile.txt";
             if (logPath != null && File.Exists(logPath))
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
             else
@@ -4122,36 +4122,54 @@ table {
             }
             else if (streamName == "CCW Ref Count")
             {
-                // TODO use the callback model.  We seem to have an issue getting the names however. 
-                foreach (var data in events.ByEventType<CCWRefCountChangeTraceData>())
+                var interopTraceEventParser = new InteropTraceEventParser(eventSource);
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWQueryRuntimeClassNameArgs>(args =>
                 {
                     sample.Metric = 1;
-                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
 
-                    var operation = data.Operation;
-                    if (operation.StartsWith("Release", StringComparison.OrdinalIgnoreCase))
-                        sample.Metric = -1;
-
-                    var ccwRefKindName = "CCW " + operation;
-                    var ccwRefKindIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindIndex, stackIndex);
-
-                    var ccwRefCountName = "CCW NewRefCnt " + data.NewRefCount.ToString();
-                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCountName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
-
-                    var ccwInstanceName = "CCW Instance 0x" + data.COMInterfacePointer.ToString("x");
-                    var ccwInstanceIndex = stackSource.Interner.FrameIntern(ccwInstanceName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwInstanceIndex, stackIndex);
-
-                    var ccwTypeName = "CCW Type " + data.NameSpace + "." + data.ClassName;
-                    var ccwTypeIndex = stackSource.Interner.FrameIntern(ccwTypeName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwTypeIndex, stackIndex);
+                    var ccwRefKindName = "CCW QueryRuntimeClassName";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
 
                     sample.StackIndex = stackIndex;
                     stackSource.AddSample(sample);
-                }
+                });
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountIncArgs>(args=> {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+
+                    var ccwRefKindName = "CCW RefCountInc";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
+
+                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
+                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
+                    stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    stackSource.AddSample(sample);
+                });
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountDecArgs>(args =>
+                {
+                    sample.Metric = -1;
+                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+
+                    var ccwRefKindName = "CCW RefCountDec";
+                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
+
+                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
+                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
+                    stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    stackSource.AddSample(sample);
+                });
+                eventSource.Process();
             }
             else if (streamName == "Windows Handle Ref Count")
             {
@@ -5804,7 +5822,7 @@ table {
                         hasMemAllocStacks = true;
                     if (name.StartsWith("GC/SampledObjectAllocation"))
                         hasMemAllocStacks = true;
-                    if (name.StartsWith("GC/CCWRefCountChange"))
+                    if (name.StartsWith("GC/CCWRefCountChange") || name.StartsWith("TaskCCWRef"))
                         hasCCWRefCountStacks = true;
                     if (name.StartsWith("Object/CreateHandle"))
                         hasWindowsRefCountStacks = true;
@@ -6604,7 +6622,7 @@ table {
                    graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
                    graph.SizeOfGraphDescription() / 1000000.0);
 
-            log.WriteLine("Type Histogram > 1% of heap size");
+            log.WriteLine("Type Histograph > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
 #if false // TODO FIX NOW remove
@@ -6646,7 +6664,7 @@ table {
                    graph.TotalNumberOfReferences / 1000.0, (int)graph.NodeTypeIndexLimit / 1000.0,
                    graph.SizeOfGraphDescription() / 1000000.0);
 
-            log.WriteLine("Type Histogram > 1% of heap size");
+            log.WriteLine("Type Histograph > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
 #if false // TODO FIX NOW remove
@@ -6731,7 +6749,7 @@ table {
                         gcDump.AverageCountMultiplier, gcDump.AverageSizeMultiplier);
             }
 
-            log.WriteLine("Type Histogram > 1% of heap size");
+            log.WriteLine("Type Histograph > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
             return ret;
         }
@@ -7410,10 +7428,10 @@ table {
             if (m_symReader == null)
                 m_symReader = App.GetSymbolReader(m_contextFilePath);
 
-            NativeSymbolModule symbolModule = null;
+            SymbolModule symbolModule = null;
             var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
             if (pdbPath != null)
-                symbolModule = m_symReader.OpenNativeSymbolFile(pdbPath);
+                symbolModule = m_symReader.OpenSymbolFile(pdbPath);
             else
             {
                 if (m_pdbLookupFailures == null)

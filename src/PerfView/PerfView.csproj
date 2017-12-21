@@ -15,12 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FilesToSign Include="$(OutDir)\PerfView.exe">
-        <Authenticode>Microsoft</Authenticode>
-    </FilesToSign>
-  </ItemGroup>
-
-  <ItemGroup>
     <AssemblyAttribute Include="PerfView.Properties.BuildDateAttribute">
       <_Parameter1>$([System.DateTime]::Now.ToString(`r`))</_Parameter1>
     </AssemblyAttribute>
@@ -47,7 +41,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" PrivateAssets="all" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
   </ItemGroup>
@@ -83,6 +76,9 @@
     </Compile>
     <Compile Include="..\Utilities\XmlUtilities.cs">
       <Link>Utilities\XmlUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\TraceEvent\ZippedETL.cs">
+      <Link>ZippedETL.cs</Link>
     </Compile>
     <Compile Include="..\EtwHeapDump\DotNetHeapDumper.cs">
       <Link>memory\DotNetHeapDumper.cs</Link>
@@ -233,13 +229,6 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
       <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\TraceEvent\$(OutDir)System.Runtime.InteropServices.RuntimeInformation.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\System.Runtime.InteropServices.RuntimeInformation.dll</LogicalName>
-      <Link>System.Runtime.InteropServices.RuntimeInformation.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
     <EmbeddedResource Include="..\TraceEvent\$(OutDir)Microsoft.Diagnostics.Tracing.TraceEvent.xml">

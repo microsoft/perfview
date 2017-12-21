@@ -9,10 +9,9 @@ using System.Text.RegularExpressions;
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Extensions;
-using Microsoft.Diagnostics.Tracing.Compatibility;
 using System.IO;
 using System.Threading;
-using System.Globalization;
+
 
 namespace Microsoft.Diagnostics.Tracing.Parsers
 {
@@ -27,44 +26,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public RegisteredTraceEventParser(TraceEventSource source, bool dontRegister = false)
             : base(source, dontRegister)
-        {
-
-#if !DOTNET_V35
-            var symbolSource = new SymbolTraceEventParser(source);
-
-            symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
-            {
-                DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
-
-                // Uncomment this if you want to see the template in the debugger at this point
-                // template.source = data.source;
-                // template.eventRecord = data.eventRecord;
-                // template.userData = data.userData;  
-                m_state.m_templates[template] = template;
-            };
-
-            // Try to parse bitmap and value map information.  
-            symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
-            {
-                try
-                {
-                    Guid providerID = *((Guid*)data.userData);
-                    byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
-                    RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
-                    IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer);
-                    if (eventInfo->NameOffset < data.EventDataLength - 16)
-                    {
-                        string mapName = new string((char*)(&eventInfoBuffer[eventInfo->NameOffset]));
-                        MapTable.Add(new MapKey(providerID, mapName), map);
-                    }
-                }
-                catch (Exception) { };
-            };
-
-#endif
-
-
-        }
+        { }
 
         /// <summary>
         /// Given a provider name that has been registered with the operating system, get
@@ -419,7 +381,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
+                manifest.WriteLine("  <resources culture=\"{0}\">", Thread.CurrentThread.CurrentCulture.IetfLanguageTag);
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -432,22 +394,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
 #region private
-        // Borrowed from Core CLR System.Globalization.CultureInfo
-        private static string IetfLanguageTag(CultureInfo culture)
-        {
-            // special case the compatibility cultures
-            switch (culture.Name)
-            {
-                case "zh-CHT":
-                    return "zh-Hant";
-                case "zh-CHS":
-                    return "zh-Hans";
-                default:
-                    return culture.Name;
-            }
-        }
-
-
         private static string MakeLegalIdentifier(string name)
         {
             // TODO FIX NOW beef this up.
@@ -518,59 +464,55 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             // Is this a TraceLogging style 
             DynamicTraceEventData ret = null;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            // Trace logging events are not guaranteed to be on channel 11.
+            // Trace logging events will have one of these headers.
+            bool hasETWEventInformation = false;
+            for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
             {
-                // Trace logging events are not guaranteed to be on channel 11.
-                // Trace logging events will have one of these headers.
-                bool hasETWEventInformation = false;
-                for (int i = 0; i != unknownEvent.eventRecord->ExtendedDataCount; i++)
+                var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
+                if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
+                    extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
                 {
-                    var extType = unknownEvent.eventRecord->ExtendedData[i].ExtType;
-                    if (extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_KEY ||
-                        extType == TraceEventNativeMethods.EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TL)
-                    {
-                        hasETWEventInformation = true;
-                        break;
-                    }
+                    hasETWEventInformation = true;
+                    break;
                 }
-
-#if USE_OS_DYNAMIC_EVENT_PARSING
-                // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging
-                // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When
-                // that happens this path where we parse the TraceLogging data explicitly will become
-                // unreachable and can be removed.    A fair bit of code can be removed in this way.
-                if (!hasETWEventInformation)
-                    if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
-                    {
-                        ret = CheckForTraceLoggingEventDefinition(unknownEvent);
-                        if (ret != null)
-                        {
-                            ret.containsSelfDescribingMetadata = true;
-                            return ret;
-                        }
-                    }
-#endif
-
-                // TODO cache the buffer?, handle more types, handle structs...
-                int buffSize = 9000;
-                byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
-                if (status == 122)      // Buffer too small
-                {
-                    System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
-                    buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
-                    status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
-                }
-
-                if (status == 0)
-                {
-                    ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
-                    ret.containsSelfDescribingMetadata = hasETWEventInformation;
-                }
-
-                System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             }
 
+#if USE_OS_DYNAMIC_EVENT_PARSING
+            // TODO FIX NOW after 2016.   Windows is going to back-port the logic that makes TraceLogging 
+            // events trigger the EVENT_HEADER_EXT_TYPE_EVENT_SCHEMA_TDH extended data marker.   When 
+            // that happens this path where we parse the TraceLogging data explicitly will become 
+            // unreachable and can be removed.    A fair bit of code can be removed in this way. 
+            if (!hasETWEventInformation)
+                if (unknownEvent.Channel == TraceLoggingMarker && !hasETWEventInformation)
+                {
+                    ret = CheckForTraceLoggingEventDefinition(unknownEvent);
+                    if (ret != null)
+                    {
+                        ret.containsSelfDescribingMetadata = true;
+                        return ret;
+                    }
+                }
+#endif
+
+            // TODO cache the buffer?, handle more types, handle structs...
+            int buffSize = 9000;
+            byte* buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+            int status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            if (status == 122)      // Buffer too small 
+            {
+                System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
+                buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
+                status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
+            }
+
+            if (status == 0)
+            {
+                ret = (new TdhEventParser(buffer, unknownEvent.eventRecord, mapTable)).ParseEventMetaData();
+                ret.containsSelfDescribingMetadata = hasETWEventInformation;
+            }
+
+            System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)buffer);
             return ret;
         }
 
@@ -1058,7 +1000,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 #endregion // private
         }
 
-        [DllImport("tdh.dll")]
+        [DllImport("tdh.dll"), SuppressUnmanagedCodeSecurityAttribute]
         internal static extern int TdhGetEventInformation(
             TraceEventNativeMethods.EVENT_RECORD* pEvent,
             uint TdhContextCount,
@@ -1067,7 +1009,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             int* pBufferSize);
 
 
-        [DllImport("tdh.dll", CharSet = CharSet.Unicode)]
+        [DllImport("tdh.dll", CharSet = CharSet.Unicode), SuppressUnmanagedCodeSecurityAttribute]
         internal static extern int TdhGetEventMapInformation(
             TraceEventNativeMethods.EVENT_RECORD* pEvent,
             string pMapName,
@@ -1247,6 +1189,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 StateObject = m_state = new ExternalTraceEventParserState();
                 m_state.m_templates = new Dictionary<TraceEvent, DynamicTraceEventData>(new ExternalTraceEventParserState.TraceEventComparer());
 
+#if !DOTNET_V35
+                var symbolSource = new SymbolTraceEventParser(source);
+
+                symbolSource.MetaDataEventInfo += delegate (EmptyTraceData data)
+                {
+                    DynamicTraceEventData template = (new RegisteredTraceEventParser.TdhEventParser((byte*)data.userData, null, MapTable)).ParseEventMetaData();
+
+                // Uncomment this if you want to see the template in the debugger at this point
+                // template.source = data.source;
+                // template.eventRecord = data.eventRecord;
+                // template.userData = data.userData;  
+                m_state.m_templates[template] = template;
+                };
+
+                // Try to parse bitmap and value map information.  
+                symbolSource.MetaDataEventMapInfo += delegate (EmptyTraceData data)
+                {
+                    try
+                    {
+                        Guid providerID = *((Guid*)data.userData);
+                        byte* eventInfoBuffer = (byte*)(data.userData + sizeof(Guid));
+                        RegisteredTraceEventParser.EVENT_MAP_INFO* eventInfo = (RegisteredTraceEventParser.EVENT_MAP_INFO*)eventInfoBuffer;
+                        IDictionary<long, string> map = RegisteredTraceEventParser.TdhEventParser.ParseMap(eventInfo, eventInfoBuffer);
+                        if (eventInfo->NameOffset < data.EventDataLength - 16)
+                        {
+                            string mapName = new string((char*)(&eventInfoBuffer[eventInfo->NameOffset]));
+                            MapTable.Add(new MapKey(providerID, mapName), map);
+                        }
+                    }
+                    catch (Exception) { };
+                };
+
+#endif
+
                 this.source.RegisterUnhandledEvent(delegate (TraceEvent unknown)
                 {
                 // See if we already have this definition 
@@ -1342,7 +1318,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         internal abstract DynamicTraceEventData TryLookup(TraceEvent unknownEvent);
 
-        internal ExternalTraceEventParserState m_state;
+        ExternalTraceEventParserState m_state;
 
         internal Dictionary<MapKey, IDictionary<long, string>> MapTable
         {
