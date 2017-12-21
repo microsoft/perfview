@@ -200,4 +200,3 @@ PerfView.exe
 src/TraceEvent/EventCounterHandler.cs
 OSExtensions.cs
 password.txt
-/src
