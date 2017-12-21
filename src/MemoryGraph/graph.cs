@@ -1960,8 +1960,8 @@ public class GraphSampler
     public MemoryGraph GetSampledGraph()
     {
         m_log.WriteLine("************* SAMPLING GRAPH TO REDUCE SIZE ***************");
-        m_log.WriteLine("Original graph count {0:n0}, targetCount {1:n0} targetRatio {2:f2}", m_graph.NodeCount, m_targetNodeCount, m_filteringRatio);
-        m_log.WriteLine("Original graph Size {0:n0} TypeCount {1:n0}", m_graph.TotalSize, m_graph.NodeTypeCount);
+        m_log.WriteLine("Original graph object count {0:n0}, targetObjectCount {1:n0} targetRatio {2:f2}", m_graph.NodeCount, m_targetNodeCount, m_filteringRatio);
+        m_log.WriteLine("Original graph Size MB {0:n0} TypeCount {1:n0}", m_graph.TotalSize, m_graph.NodeTypeCount);
 
         // Get the spanning tree
         m_spanningTree = new SpanningTree(m_graph, m_log);

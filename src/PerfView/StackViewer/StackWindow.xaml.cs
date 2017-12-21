@@ -113,11 +113,24 @@ namespace PerfView
         }
         public void RemoveColumn(string columnName)
         {
+            // Remove View First or else GetColumnIndex will not work
+            // Assumes ByNameDataGrid.Columns == CallTreeDataGrid.Columns == CalleesDataGrid.Columns == CallersDataGrid.Columns
+            RemoveViewMenuColumn(ByNameDataGrid, this.ViewMenu, columnName);
+
             ByNameDataGrid.RemoveColumn(columnName);
             CallTreeDataGrid.RemoveColumn(columnName);
             CalleesDataGrid.RemoveColumn(columnName);
             CallersDataGrid.RemoveColumn(columnName);
             CallerCalleeView.RemoveCountColumn(columnName);
+        }
+
+        public void RemoveViewMenuColumn(PerfDataGrid perfDataGrid, MenuItem viewMenu, string columnName)
+        {
+            int col = perfDataGrid.GetColumnIndex(columnName);
+            if (col > -1)
+            {
+                viewMenu.Items.RemoveAt(col);
+            }
         }
 
         public bool IsMemoryWindow
@@ -2745,6 +2758,17 @@ namespace PerfView
             m_callersView = new CallTreeView(CallersDataGrid, template);
             m_calleesView = new CallTreeView(CalleesDataGrid, template);
 
+            List<PerfDataGrid> perfDataGrids = new List<PerfDataGrid>()
+            {
+                ByNameDataGrid,
+                CallTreeDataGrid,
+                CallersDataGrid,
+                CalleesDataGrid
+            };
+
+            // Populate ViewMenu items for showing/hiding columns
+            PopularViewMenuWithPerfDataGridItems(perfDataGrids);
+
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
 
@@ -2837,6 +2861,115 @@ namespace PerfView
                 Height = App.ConfigData.GetDouble("StackWindowHeight", Height);
                 Width = App.ConfigData.GetDouble("StackWindowWidth", Width);
             }
+        }
+
+        /// <summary>
+        /// Populate the View MenuItem
+        /// 
+        /// Creates checkable boxes for each Column in the PerfDataGrid, then adds a seperator and Save View Settings button.
+        /// </summary>
+        /// <param name="perfDataGrids"></param>
+        private void PopularViewMenuWithPerfDataGridItems(List<PerfDataGrid> perfDataGrids)
+        {
+            List<Tuple<string, MenuItem>> perfDataGridMenuItems = new List<Tuple<string, MenuItem>>();
+
+            foreach (PerfDataGrid perfDataGrid in perfDataGrids)
+            {
+                foreach (DataGridColumn col in perfDataGrid.Grid.Columns)
+                {
+                    MenuItem menuItem = null;
+
+                    // Find the associated PerfDataGridMenuItem by name
+                    IEnumerable<Tuple<string, MenuItem>> temp = perfDataGridMenuItems.Where(x => x.Item1 == ((TextBlock)col.Header).Text);
+
+                    // If it has not been created yet. Create an instance.
+                    if (temp.Count() == 0)
+                    {
+                        // Create MenuItem based off of column header name, make it checkable.
+                        menuItem = new MenuItem()
+                        {
+                            IsCheckable = true
+                        };
+
+                        string header = ((TextBlock)col.Header).Text;
+                        menuItem.Header = header;
+
+                        // Checked value and visibliity of column is based off of ConfigData.
+                        // If there is no ConfigData property for it, it is defaulted to display. 
+                        string configValue = App.ConfigData[XmlConvert.EncodeName(header + "ColumnView")];
+                        if (configValue == null || configValue == "1")
+                        {
+                            menuItem.IsChecked = true;
+                            col.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            menuItem.IsChecked = false;
+                            col.Visibility = Visibility.Collapsed;
+                        }
+
+                        perfDataGridMenuItems.Add(new Tuple<string, MenuItem>(header, menuItem));
+                        ViewMenu.Items.Add(menuItem);
+                    }
+                    // If it exists, retrieve the MenuItem.
+                    else
+                    {
+                        menuItem = temp.First().Item2;
+                    }
+
+                    // Attach Click handler to collapse if unchecked, and make it visable when checked.
+                    menuItem.Click += delegate (object sender, RoutedEventArgs e)
+                    {
+                        MenuItem source = sender as MenuItem;
+                        if (source.IsChecked)
+                        {
+                            col.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            col.Visibility = Visibility.Collapsed;
+                        }
+                    };
+                }
+            }
+
+            // Add Seperator
+            ViewMenu.Items.Add(new Separator());
+
+            // Add Save View Settings Menu Item
+            string saveViewSettingsStr = "Save View Settings";
+            MenuItem saveSettings = new MenuItem()
+            {
+                Header = saveViewSettingsStr,
+            };
+
+            saveSettings.Click += delegate (object sender, RoutedEventArgs e)
+            {
+                for (int i = 0; i < ViewMenu.Items.Count; i++)
+                {
+                    // Ignore if it is a Sperator
+                    if (ViewMenu.Items[i] is MenuItem)
+                    {
+                        MenuItem mItem = ViewMenu.Items[i] as MenuItem;
+
+                        string header = mItem.Header.ToString();
+
+                        // Skip Save View Settings Menu Item
+                        if (header == saveViewSettingsStr)
+                        {
+                            continue;
+                        }
+
+                        // Format of key is menuItemName + ColumnView
+                        // XmlConvert.EncodeName is used to handle symbols like %
+                        // E.g. CallTreeViewNameColumnView
+                        string name = XmlConvert.EncodeName(header + "ColumnView");
+                        App.ConfigData[name] = mItem.IsChecked ? "1" : "0";
+                    }
+                }
+            };
+
+            ViewMenu.Items.Add(saveSettings);
         }
 
         private bool DoForSelectedModules(Action<string> moduleAction)

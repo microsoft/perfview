@@ -2456,15 +2456,15 @@ public class GCHeapDumper
             if (pdb == null)
                 return null;
 
-            return new SymbolResolver(m_symbolReader.OpenSymbolFile(pdb));
+            return new SymbolResolver(m_symbolReader.OpenNativeSymbolFile(pdb));
         }
     }
 
     private class SymbolResolver : ISymbolResolver
     {
-        private SymbolModule m_symbolModule;
+        private NativeSymbolModule m_symbolModule;
 
-        public SymbolResolver(SymbolModule symbolModule)
+        public SymbolResolver(NativeSymbolModule symbolModule)
         {
             m_symbolModule = symbolModule;
         }

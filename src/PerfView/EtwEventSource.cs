@@ -466,11 +466,7 @@ namespace PerfView
 
                 AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
 
-                var message = data.FormattedMessage;
-                if (message != null)
-                    AddField("FormattedMessage", message, columnOrder, restString);
-
-                if (0 < durationMSec)
+               if (0 < durationMSec)
                     AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString);
 
                 var payloadNames = data.PayloadNames;
@@ -491,6 +487,10 @@ namespace PerfView
                 {
                     AddField("ErrorParsingFields", e.Message, columnOrder, restString);
                 }
+
+                var message = data.FormattedMessage;
+                if (message != null)
+                    AddField("FormattedMessage", message, columnOrder, restString);
 
                 if (source.m_needsComputers)
                 {

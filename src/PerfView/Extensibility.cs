@@ -122,7 +122,7 @@ namespace PerfViewExtensibility
                         gcDump.AverageCountMultiplier, gcDump.AverageSizeMultiplier);
             }
 
-            log.WriteLine("Type Histograph > 1% of heap size");
+            log.WriteLine("Type Histogram > 1% of heap size");
             log.Write(graph.HistogramByTypeXml(graph.TotalSize / 100));
 
             // TODO FIX NOW better name. 

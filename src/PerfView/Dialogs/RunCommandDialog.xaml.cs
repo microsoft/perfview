@@ -451,7 +451,7 @@ namespace PerfView
                 {
                     if (!int.TryParse(OSHeapProcessTextBox.Text, out m_args.OSHeapProcess))
                     {
-                        m_mainWindow.StatusBar.LogError("Could parse OS Heap Process ID '" + OSHeapProcessTextBox.Text + "' as a integer ");
+                        m_mainWindow.StatusBar.LogError("Could parse OS Heap Process ID '" + OSHeapProcessTextBox.Text + "' as an integer ");
                         return;
                     }
                 }
@@ -555,8 +555,16 @@ namespace PerfView
                 // m_args.Zip = ZipCheckBox.IsChecked;
                 m_args.Message = MarkTextBox.Text;
 
-                // This also throws an exception if there are illegal chars.  
-                var fullPath = System.IO.Path.GetFullPath(App.CommandLineArgs.DataFile);
+                string fullPath;
+                try
+                {
+                    fullPath = System.IO.Path.GetFullPath(App.CommandLineArgs.DataFile);
+                }
+                catch (Exception ex)
+                {
+                    m_mainWindow.StatusBar.LogError("Invalid datafile '" + App.CommandLineArgs.DataFile + "'. " + ex.Message);
+                    return;
+                }
 
                 if (m_isCollect)
                 {

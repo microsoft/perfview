@@ -2,6 +2,7 @@
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Compatibility;
 using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Collections.Generic;
