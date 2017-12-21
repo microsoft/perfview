@@ -2308,6 +2308,25 @@ namespace PerfView
             }
         }
 
+        private void DoCollapse(object sender, ExecutedRoutedEventArgs e)
+        {
+            CallTreeViewNode selectedNode = null;
+            CallTreeView view = null;
+            if (CallTreeTab.IsSelected)
+                view = CallTreeView;
+            else if (CallersTab.IsSelected)
+                view = m_callersView;
+            else if (CalleesTab.IsSelected)
+                view = m_calleesView;
+
+            if (view != null)
+            {
+                selectedNode = view.SelectedNode;
+                if (selectedNode != null)
+                    selectedNode.IsExpanded = false;
+            }
+        }
+
         private void CanExpand(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = (CallTreeTab.IsSelected && CallTreeView.SelectedNode != null) ||
@@ -2721,6 +2740,8 @@ namespace PerfView
         public static RoutedUICommand ExpandAllCommand = new RoutedUICommand("Expand All", "ExpandAll", typeof(StackWindow));
         public static RoutedUICommand ExpandCommand = new RoutedUICommand("Expand", "Expand", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Space) });
+        public static RoutedUICommand CollapseCommand = new RoutedUICommand("Collapse", "Collapse", typeof(StackWindow),
+            new InputGestureCollection() { new KeyGesture(Key.Space, ModifierKeys.Shift) });
         public static RoutedUICommand FoldPercentCommand = new RoutedUICommand("Fold %", "FoldPercent", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F6) });
         public static RoutedUICommand IncreaseFoldPercentCommand = new RoutedUICommand("Increase Fold %", "Increase FoldPercent", typeof(StackWindow),
