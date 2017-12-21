@@ -84,6 +84,7 @@
             <CommandBinding Command="{x:Static src:StackWindow.DumpObjectCommand}" Executed="DoDumpObject" />
 
             <CommandBinding Command="{x:Static src:StackWindow.ExpandCommand}" Executed="DoExpand" CanExecute="CanExpand"/>
+            <CommandBinding Command="{x:Static src:StackWindow.CollapseCommand}" Executed="DoCollapse" CanExecute="CanExpand"/>
             <CommandBinding Command="{x:Static src:StackWindow.ExpandAllCommand}" Executed="DoExpandAll" CanExecute="CanExpand"/>
             <CommandBinding Command="{x:Static src:StackWindow.FoldPercentCommand}" Executed="DoFoldPercent" />
             <CommandBinding Command="{x:Static src:StackWindow.IncreaseFoldPercentCommand}" Executed="DoIncreaseFoldPercent" />
@@ -156,6 +157,7 @@
                 <Separator/>
                 <MenuItem Command="{x:Static src:StackWindow.ExpandAllCommand}" />
                 <MenuItem Command="{x:Static src:StackWindow.ExpandCommand}" />
+                <MenuItem Command="{x:Static src:StackWindow.CollapseCommand}" />
                 <Separator/>
                 <MenuItem Header="FilterParams">
                     <MenuItem Command="{x:Static src:StackWindow.CopyFilterParamsCommand}" />

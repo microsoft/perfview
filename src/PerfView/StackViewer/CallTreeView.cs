@@ -360,6 +360,9 @@ namespace PerfView
 
                     m_treeView.m_flattenedTree.RemoveRange(firstChild, lastChild - firstChild);
                     m_isExpanded = false;
+
+                    // set the selected node to my caller (if available) or myself if there is none.  
+                    m_treeView.Select(Data.Caller ?? Data);  
                 }
                 ValidateTree();
             }
