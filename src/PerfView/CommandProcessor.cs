@@ -806,6 +806,8 @@ namespace PerfView
 
                         LogFile.WriteLine("netsh trace command succeeded.");
                     }
+                    if (parsedArgs.CCWRefCount)
+                        EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
 
                     LogFile.WriteLine("Enabling Providers specified by the user.");
                     if (parsedArgs.Providers != null)
@@ -2428,6 +2430,8 @@ namespace PerfView
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             if (parsedArgs.MaxNodeCountK != 0)
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            if (parsedArgs.CCWRefCount)
+                cmdLineArgs += " /CCWRefCount";
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
             if (command == null)
