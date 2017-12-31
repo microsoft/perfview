@@ -2845,21 +2845,6 @@ namespace PerfView
 
             // Customize the control
             ByNameDataGrid.Grid.CanUserSortColumns = true;
-            var columns = ByNameDataGrid.Grid.Columns;
-
-
-            // Put the exlusive columns first if they are not already there.  
-            var col = ByNameDataGrid.GetColumnIndex("ExcPercentColumn");
-            if (0 <= col && col != 1)
-                ByNameDataGrid.Grid.Columns.Move(col, 1);
-
-            col = ByNameDataGrid.GetColumnIndex("ExcColumn");
-            if (0 <= col && col != 2)
-                ByNameDataGrid.Grid.Columns.Move(col, 2);
-
-            col = ByNameDataGrid.GetColumnIndex("ExcCountColumn");
-            if (0 <= col && col != 3)
-                ByNameDataGrid.Grid.Columns.Move(col, 3);
 
             // Initialize the CallTree, Callers, and Callees tabs
             // TODO:  Gross that the caller has to pass this in.  
