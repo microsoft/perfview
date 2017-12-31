@@ -1175,7 +1175,7 @@ public class GCHeapDumper
     private void DumpDotNetHeapData(ClrHeap heap, ref ICorDebugProcess debugProcess, bool isDump)
     {
         // We retry if we run out of memory with smaller MaxNodeCount.  
-        for (double retryScale = 1; ; retryScale = retryScale * 1.5)
+        for (double retryScale = 1; ; retryScale = retryScale * 1.1)
         {
             try
             {
