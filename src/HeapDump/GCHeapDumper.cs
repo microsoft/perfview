@@ -1888,6 +1888,22 @@ public class GCHeapDumper
                     memoryGraphTypeIdx = GetTypeIndexForName(typeName, null, objSizeAsInt);
                 }
 
+                if (type.Name == "Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle")
+                {
+                    // If the handle is not closed, adjust the size
+                    var field = type.GetFieldByName("_state");
+                    var stateObj = field?.GetValue(objAddr);
+                    if (stateObj is int && (((int)stateObj) & 1) != 1)
+                    {
+                        field = type.GetFieldByName("_numBytes");
+                        var mappedSizeObj = field?.GetValue(objAddr);
+                        if (mappedSizeObj is ulong)
+                        {
+                            objSizeAsInt += (int)(ulong)mappedSizeObj;
+                        }
+                    }
+                }
+
 #if DEPENDENT_HANDLE
                 // Add arcs from this node to any live dependent handles.
                 if (m_dependentHandles != null)
