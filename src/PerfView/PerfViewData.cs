@@ -1324,11 +1324,53 @@ table {
 
             var dispatcher = dataFile.Events.GetSource();
 
+            dispatcher.Dynamic.AddCallbackForProviderEvent("Microsoft-Windows-ASPNET", "Request/Send", delegate (TraceEvent data)
+            {
+                IisRequest request;
+                if (m_Requests.TryGetValue(data.ActivityID, out request))
+                {
+                    if (data.RelatedActivityID != Guid.Empty)
+                    {
+                        request.RelatedActivityId = data.RelatedActivityID;
+                    }
+                }
+            });
+
+            Dictionary<Guid, int> childRequests = new Dictionary<Guid, int>();
+
             var iis = new IisTraceEventParser(dispatcher);
 
             int startcount = 0;
             int endcount = 0;
 
+            iis.IISGeneralGeneralChildRequestStart += delegate (W3GeneralChildRequestStart traceEvent)
+            {
+                int childRequestRecurseLevel = 0;
+                if (childRequests.ContainsKey(traceEvent.ContextId))
+                {
+                    if (childRequests.TryGetValue(traceEvent.ContextId, out childRequestRecurseLevel))
+                    {
+                        childRequests[traceEvent.ContextId] = childRequestRecurseLevel + 1;
+                    }
+                }
+                else
+                {
+                    childRequests.Add(traceEvent.ContextId, 1);
+                }
+
+            };
+
+            iis.IISGeneralGeneralChildRequestEnd += delegate (W3GeneralChildRequestEnd traceEvent)
+            {
+                int childRequestRecurseLevel = 0;
+                if (childRequests.ContainsKey(traceEvent.ContextId))
+                {
+                    if (childRequests.TryGetValue(traceEvent.ContextId, out childRequestRecurseLevel))
+                    {
+                        childRequests[traceEvent.ContextId] = childRequestRecurseLevel - 1;
+                    }
+                }
+            };
 
             iis.IISGeneralGeneralRequestStart += delegate (W3GeneralStartNewRequest request)
             {
@@ -1381,21 +1423,25 @@ table {
                     request = GenerateFakeIISRequest(preBeginEvent.ContextId, preBeginEvent);
                     m_Requests.Add(preBeginEvent.ContextId, request);
                 }
+                int childRequestRecurseLevel = GetChildEventRecurseLevel(preBeginEvent.ContextId, childRequests);
 
                 var iisPrebeginModuleEvent = new IisPrebeginModuleEvent();
                 iisPrebeginModuleEvent.Name = preBeginEvent.ModuleName;
                 iisPrebeginModuleEvent.StartTimeRelativeMSec = preBeginEvent.TimeStampRelativeMSec;
                 iisPrebeginModuleEvent.ProcessId = preBeginEvent.ProcessID;
                 iisPrebeginModuleEvent.StartThreadId = preBeginEvent.ThreadID;
+                iisPrebeginModuleEvent.ChildRequestRecurseLevel = childRequestRecurseLevel;
                 request.PipelineEvents.Add(iisPrebeginModuleEvent);
+                
             };
 
             iis.IISRequestNotificationPreBeginRequestEnd += delegate (IISRequestNotificationPreBeginEnd preBeginEvent)
             {
                 IisRequest request;
+                int childRequestRecurseLevel = GetChildEventRecurseLevel(preBeginEvent.ContextId, childRequests);
                 if (m_Requests.TryGetValue(preBeginEvent.ContextId, out request))
                 {
-                    var module = request.PipelineEvents.FirstOrDefault(m => m.Name == preBeginEvent.ModuleName);
+                    var module = request.PipelineEvents.FirstOrDefault(m => m.Name == preBeginEvent.ModuleName && m.ChildRequestRecurseLevel == childRequestRecurseLevel);
 
                     if (module != null)
                     {
@@ -1426,6 +1472,7 @@ table {
                     m_Requests.Add(moduleEvent.ContextId, request);
                 }
 
+                int childRequestRecurseLevel = GetChildEventRecurseLevel(moduleEvent.ContextId, childRequests);
                 var iisModuleEvent = new IisModuleEvent();
                 iisModuleEvent.Name = moduleEvent.ModuleName;
                 iisModuleEvent.StartTimeRelativeMSec = moduleEvent.TimeStampRelativeMSec;
@@ -1433,20 +1480,24 @@ table {
                 iisModuleEvent.StartThreadId = moduleEvent.ThreadID;
                 iisModuleEvent.fIsPostNotification = moduleEvent.fIsPostNotification;
                 iisModuleEvent.Notification = (RequestNotification)moduleEvent.Notification;
+                iisModuleEvent.ChildRequestRecurseLevel = childRequestRecurseLevel;
+                iisModuleEvent.foundEndEvent = false;
                 request.PipelineEvents.Add(iisModuleEvent);
             };
 
             iis.IISRequestNotificationNotifyModuleEnd += delegate (IISRequestNotificationEventsEnd moduleEvent)
             {
                 IisRequest request;
+                int childRequestRecurseLevel = GetChildEventRecurseLevel(moduleEvent.ContextId, childRequests);
                 if (m_Requests.TryGetValue(moduleEvent.ContextId, out request))
                 {
                     IEnumerable<IisModuleEvent> iisModuleEvents = request.PipelineEvents.OfType<IisModuleEvent>();
-                    var module = iisModuleEvents.FirstOrDefault(m => m.Name == moduleEvent.ModuleName && m.Notification == (RequestNotification)moduleEvent.Notification && m.fIsPostNotification == moduleEvent.fIsPostNotificationEvent);
+                    var module = iisModuleEvents.FirstOrDefault(m => m.Name == moduleEvent.ModuleName && m.Notification == (RequestNotification)moduleEvent.Notification && m.fIsPostNotification == moduleEvent.fIsPostNotificationEvent && m.ChildRequestRecurseLevel == childRequestRecurseLevel && m.foundEndEvent == false);
                     if (module != null)
                     {
                         module.EndTimeRelativeMSec = moduleEvent.TimeStampRelativeMSec;
                         module.EndThreadId = moduleEvent.ThreadID;
+                        module.foundEndEvent = true;
                     }
                 }
 
@@ -1477,41 +1528,90 @@ table {
 
             iis.IISGeneralGeneralFlushResponseStart += delegate (W3GeneralFlushResponseStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISGeneralGeneralFlushResponseEnd += delegate (W3GeneralFlushResponseEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISGeneralGeneralReadEntityStart += delegate (W3GeneralReadEntityStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISGeneralGeneralReadEntityEnd += delegate (W3GeneralReadEntityEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISCacheFileCacheAccessStart += delegate (W3CacheFileCacheAccessStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISCacheFileCacheAccessEnd += delegate (W3CacheFileCacheAccessEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
             iis.IISCacheUrlCacheAccessStart += delegate (W3CacheURLCacheAccessStart traceEvent)
             {
-                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             iis.IISCacheUrlCacheAccessEnd += delegate (W3CacheURLCacheAccessEnd traceEvent)
             {
-                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent);
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+
+            iis.IISFilterFilterStart += delegate (W3FilterStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISFilterFilterEnd += delegate (W3FilterEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISAuthenticationAuthStart += delegate (W3AuthStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISAuthenticationAuthEnd += delegate (W3AuthEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCacheOutputCacheLookupStart += delegate (W3OutputCacheLookupStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCacheOutputCacheLookupEnd += delegate (W3OutputCacheLookupEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCompressionDynamicCompressionStart += delegate (W3DynamicCompressionStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCompressionDynamicCompressionEnd += delegate (W3DynamicCompressionEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCompressionStaticCompressionStart += delegate (W3StaticCompressionStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISCompressionStaticCompressionEnd += delegate (W3StaticCompressionEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISFilterFilterPreprocHeadersStart += delegate (W3FilterPreprocStart traceEvent)
+            {
+                AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
+            };
+            iis.IISFilterFilterPreprocHeadersEnd += delegate (W3FilterPreprocEnd traceEvent)
+            {
+                AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests);
             };
 
             var aspNet = new AspNetTraceEventParser(dispatcher);
@@ -1524,7 +1624,7 @@ table {
                 IisRequest iisRequest;
                 if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
                 {
-                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, "CLRThreadPoolQueue");
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests, "CLRThreadPoolQueue");
                 }
             };
             aspNet.AspNetReqAppDomainEnter += delegate (AspNetAppDomainEnterTraceData traceEvent)
@@ -1532,17 +1632,68 @@ table {
                 IisRequest iisRequest;
                 if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
                 {
-                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, "CLRThreadPoolQueue");
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests, "CLRThreadPoolQueue");
                 }
             };
 
+            aspNet.AspNetReqSessionDataBegin += delegate (AspNetAcquireSessionBeginTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStartEventToRequest(traceEvent.ContextId, traceEvent, childRequests, "AspNetReqSessionData");
+                }
+            };
+            aspNet.AspNetReqSessionDataEnd += delegate (AspNetAcquireSessionEndTraceData traceEvent)
+            {
+                IisRequest iisRequest;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out iisRequest))
+                {
+                    AddGenericStopEventToRequest(traceEvent.ContextId, traceEvent, childRequests, "AspNetReqSessionData");
+                }
+            };
+
+            aspNet.AspNetReqPipelineModuleEnter += delegate (AspNetPipelineModuleEnterTraceData traceEvent)
+            {
+                IisRequest request;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out request))
+                {
+
+                    var aspnetPipelineModuleEvent = new AspNetPipelineModuleEvent()
+                    {
+                        Name = traceEvent.ModuleName,
+                        ModuleName = traceEvent.ModuleName,
+                        StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec,
+                        ProcessId = traceEvent.ProcessID,
+                        StartThreadId = traceEvent.ThreadID,
+                    };
+                    request.PipelineEvents.Add(aspnetPipelineModuleEvent);
+                }
+
+            };
+
+            aspNet.AspNetReqPipelineModuleLeave += delegate (AspNetPipelineModuleLeaveTraceData traceEvent)
+            {
+                IisRequest request;
+                if (m_Requests.TryGetValue(traceEvent.ContextId, out request))
+                {
+                    IEnumerable<AspNetPipelineModuleEvent> aspnetPipelineModuleEvents = request.PipelineEvents.OfType<AspNetPipelineModuleEvent>();
+                    var module = aspnetPipelineModuleEvents.FirstOrDefault(m => m.ModuleName == traceEvent.ModuleName && m.foundEndEvent == false);
+                    if (module != null)
+                    {
+                        module.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
+                        module.EndThreadId = traceEvent.ThreadID;
+                        module.foundEndEvent = true;
+                    }
+                }
+            };
             // Lets look at the rest of Enter/Leave events in AspNetReq now.
 
             aspNet.AddCallbackForEvents(name => name.EndsWith("Enter"), null, (TraceEvent traceEvent) =>
             {
 
                 // We are using AspNetReqAppDomainEnter to compute for ClrThreadPool so exclude that for now
-                if (!traceEvent.OpcodeName.EndsWith("AspNetReqAppDomainEnter"))
+                if (!traceEvent.OpcodeName.EndsWith("AppDomainEnter") && !traceEvent.OpcodeName.EndsWith("PipelineModuleEnter"))
                 {
                     object contextObj = traceEvent.PayloadByName("ContextId");
                     if (contextObj != null && contextObj.GetType() == typeof(Guid))
@@ -1552,7 +1703,7 @@ table {
                         IisRequest iisRequest;
                         if (m_Requests.TryGetValue(contextGuid, out iisRequest))
                         {
-                            AddGenericStartEventToRequest(contextGuid, traceEvent);
+                            AddGenericStartEventToRequest(contextGuid, traceEvent, childRequests);
                         }
 
                     }
@@ -1561,16 +1712,18 @@ table {
 
             aspNet.AddCallbackForEvents(name => name.EndsWith("Leave"), null, (TraceEvent traceEvent) =>
             {
-
-                object contextObj = traceEvent.PayloadByName("ContextId");
-                if (contextObj != null && contextObj.GetType() == typeof(Guid))
+                if (!traceEvent.OpcodeName.EndsWith("PipelineModuleLeave"))
                 {
-                    Guid contextGuid = (Guid)contextObj;
-
-                    IisRequest iisRequest;
-                    if (m_Requests.TryGetValue(contextGuid, out iisRequest))
+                    object contextObj = traceEvent.PayloadByName("ContextId");
+                    if (contextObj != null && contextObj.GetType() == typeof(Guid))
                     {
-                        AddGenericStopEventToRequest(contextGuid, traceEvent);
+                        Guid contextGuid = (Guid)contextObj;
+
+                        IisRequest iisRequest;
+                        if (m_Requests.TryGetValue(contextGuid, out iisRequest))
+                        {
+                            AddGenericStopEventToRequest(contextGuid, traceEvent, childRequests);
+                        }
                     }
                 }
             });
@@ -1714,6 +1867,7 @@ table {
             writer.Write("<TH Align='Center' Title='This is the slowest module in the IIS request processing pipeline. Click on the the slowest module to see user mode stack trace for the thread. Hyperlinks to open thread stack traces are added only if the starting thread and ending thread for the module are the same.'>Slowest Module</TH>");
             writer.Write("<TH Align='Center' Title='This represents the time spent in the slowest module (in milliseconds)'>Time Spent In Slowest Module(ms)</TH>");
             writer.Write("<TH Align='Center' Title='This column gives you a percentage of time spent in the slowest module to the total time spent in request execution'>%Time Spent In Slowest Module</TH>");
+            writer.Write("<TH Align='Center' Title='Click on the relevant Views to see the stack traces captured for the request'>Stack Traces</TH>");
             writer.WriteLine("</TR>");
 
 
@@ -1722,7 +1876,7 @@ table {
             {
                 writer.WriteLine("<TR>");
                 double slowestTime = 0;
-                IisPipelineEvent slowestPipelineEvent = GetSlowestEvent(request.ContextId, request.PipelineEvents);
+                IisPipelineEvent slowestPipelineEvent = GetSlowestEvent(request);
                 slowestTime = slowestPipelineEvent.EndTimeRelativeMSec - slowestPipelineEvent.StartTimeRelativeMSec;
 
                 int processId = slowestPipelineEvent.ProcessId;
@@ -1732,6 +1886,7 @@ table {
                 double endTimePipelineEvent = slowestPipelineEvent.EndTimeRelativeMSec;
 
                 string threadTimeStacksString = $"{processId};{ThreadId};{startTimePipelineEvent};{endTimePipelineEvent}";
+                string activityStacksString = $"{processId};{request.RelatedActivityId.ToString()};{startTimePipelineEvent};{endTimePipelineEvent}";
 
                 double totalTimeSpent = request.EndTimeRelativeMSec - request.StartTimeRelativeMSec;
 
@@ -1742,7 +1897,8 @@ table {
                     requestPath = requestPath.Substring(0, 80) + "...";
 
 
-                string slowestPipelineEventWithDetails = "";
+                string threadTimeStacks = "";
+                string activityStacks = "";
 
                 // limit display of even the module names to specific charachter length only otherwise the table is expanding crazily
                 string slowestPipelineEventDisplay = slowestPipelineEvent.ToString();
@@ -1752,13 +1908,14 @@ table {
 
                 if (slowestPipelineEvent.StartThreadId == slowestPipelineEvent.EndThreadId)
                 {
-
-                    slowestPipelineEventWithDetails = $"<A HREF =\"command:threadtimestacks:{threadTimeStacksString}\">{slowestPipelineEventDisplay}</A>";
+                    threadTimeStacks = $"<A HREF =\"command:threadtimestacks:{threadTimeStacksString}\">Thread Time stacks</A>";
                 }
                 else
                 {
-                    slowestPipelineEventWithDetails = $"{slowestPipelineEventDisplay}";
+                    threadTimeStacks = "";
                 }
+
+                activityStacks = $"<A HREF =\"command:activitystacks:{activityStacksString}\">Activity Stacks</A>";
 
                 string detailedRequestCommandString = $"detailedrequestevents:{request.ContextId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
 
@@ -1766,7 +1923,7 @@ table {
                 string scBytes = (request.BytesSent == 0) ? "-" : request.BytesSent.ToString();
                 string statusCode = (request.StatusCode == 0) ? "-" : $"{ request.StatusCode}.{ request.SubStatusCode}";
 
-                writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{statusCode}</TD><TD>{totalTimeSpent:0.00}</TD><TD>{slowestPipelineEventWithDetails}</TD><TD>{slowestTime:0.00}</TD><TD>{((slowestTime / totalTimeSpent * 100)):0.00}%</TD>");
+                writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{statusCode}</TD><TD>{totalTimeSpent:0.00}</TD><TD>{slowestPipelineEventDisplay}</TD><TD>{slowestTime:0.00}</TD><TD>{((slowestTime / totalTimeSpent * 100)):0.00}%</TD><TD>{activityStacks} {threadTimeStacks}</TD>");
                 writer.Write("</TR>");
             }
             writer.WriteLine("</TABLE>");
@@ -1786,6 +1943,7 @@ table {
                 writer.Write("<TH Align='Center' Title='sc-bytes represents the total bytes that the server sent for the HTTP Response'>sc-bytes</TH>");
                 writer.Write("<TH Align='Center' Title='The HTTP Status Code and Substatus code that server sent for this HTTP request'>HttpStatus</TH>");
                 writer.Write("<TH Align='Center' Title='A user-friendly description of the error code sent by the server'>Reason</TH>");
+                writer.Write("<TH Align='Center' Title='This is the actual HTTP Status which the server sent for this request irrespective of the failure'>Final Status</TH>");
                 writer.Write("<TH Align='Center' Title='Additional error code that IIS generated for the failed request'>ErrorCode</TH>");
                 writer.Write("<TH Align='Center' Title='The module reponsible for setting the failed HTTP Status' >FailingModuleName</TH>");
                 writer.Write("<TH Align='Center' Title='The total time it took to execute the request on the server'>Duration(ms)</TH>");
@@ -1813,7 +1971,7 @@ table {
 
                     string exceptionDetails = FindExceptionForThisRequest(request);
 
-                    writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{request.FailureDetails.HttpStatus}.{request.FailureDetails.HttpSubStatus}</TD><TD>{request.FailureDetails.HttpReason}</TD><TD>{request.FailureDetails.ErrorCode}</TD><TD>{request.FailureDetails.ModuleName} ({request.FailureDetails.Notification}) </TD><TD>{totalTimeSpent:0.00}</TD><TD>{exceptionDetails}</TD>");
+                    writer.WriteLine($"<TD>{request.Method}</TD><TD><A HREF=\"command:{detailedRequestCommandString}\">{requestPath}</A></TD><TD>{csBytes}</TD><TD>{scBytes}</TD><TD>{request.FailureDetails.HttpStatus}.{request.FailureDetails.HttpSubStatus}</TD><TD>{request.FailureDetails.HttpReason}</TD><TD>{request.StatusCode}.{request.SubStatusCode}</TD><TD>{request.FailureDetails.ErrorCode}</TD><TD>{request.FailureDetails.ModuleName} ({request.FailureDetails.Notification}) </TD><TD>{totalTimeSpent:0.00}</TD><TD>{exceptionDetails}</TD>");
 
                     writer.Write("</TR>");
                 }
@@ -1826,6 +1984,16 @@ table {
             }
 
             writer.Flush();
+        }
+
+        private int GetChildEventRecurseLevel(Guid contextId, Dictionary<Guid, int> childRequests)
+        {
+            int childRequestRecurseLevel = 0;
+            if (childRequests.ContainsKey(contextId))
+            {
+                childRequests.TryGetValue(contextId, out childRequestRecurseLevel);
+            }
+            return childRequestRecurseLevel;
         }
 
         private string FindExceptionForThisRequest(IisRequest request)
@@ -1953,6 +2121,40 @@ table {
 
                 }
             }
+            else if (command.StartsWith("activitystacks:"))
+            {
+                string activityStacksString = command.Substring(16);
+
+                var activityStacksParams = activityStacksString.Split(';');
+
+                int processID = Convert.ToInt32(activityStacksParams[0]);
+                string relatedActivityId= activityStacksParams[1];
+                string startTime = activityStacksParams[2];
+                string endTime = activityStacksParams[3];
+
+                using (var etlFile = CommandEnvironment.OpenETLFile(DataFile.FilePath))
+                {
+                    var startStopSource = new MutableTraceEventStackSource(etlFile.TraceLog);
+
+                    var computer = new ThreadTimeStackComputer(etlFile.TraceLog, App.GetSymbolReader(etlFile.TraceLog.FilePath))
+                    {
+                        UseTasks = true,
+                        GroupByStartStopActivity = true,
+                        ExcludeReadyThread = true
+                    };
+                    computer.GenerateThreadTimeStacks(startStopSource);
+                    
+                    etlFile.SetFilterProcess(processID);
+                    var stacks = new Stacks(startStopSource, "Thread Time (with StartStop Activities)", etlFile, false);
+                    
+                    stacks.Filter.StartTimeRelativeMSec = startTime;
+                    stacks.Filter.EndTimeRelativeMSec = endTime;
+                    stacks.Filter.IncludeRegExs = relatedActivityId;
+                    stacks.Filter.FoldRegExs = "ntoskrnl!%ServiceCopyEnd;System.Runtime.CompilerServices.Async%MethodBuilder;^STARTING TASK";
+
+                    CommandEnvironment.OpenStackViewer(stacks);
+                }
+            }
             return base.DoCommand(command, worker);
         }
 
@@ -1976,7 +2178,7 @@ table {
             return request;
         }
 
-        private void AddGenericStartEventToRequest(Guid contextId, TraceEvent traceEvent, string pipelineEventName = "")
+        private void AddGenericStartEventToRequest(Guid contextId, TraceEvent traceEvent, Dictionary<Guid, int> childRequests, string pipelineEventName = "")
         {
             IisRequest request;
 
@@ -2011,14 +2213,16 @@ table {
                 iisPipelineEvent.Name = pipelineEventName;
             }
 
+            int childRequestRecurseLevel = GetChildEventRecurseLevel(contextId, childRequests);
             iisPipelineEvent.StartTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
             iisPipelineEvent.StartThreadId = traceEvent.ThreadID;
             iisPipelineEvent.ProcessId = traceEvent.ProcessID;
+            iisPipelineEvent.ChildRequestRecurseLevel = childRequestRecurseLevel;
             request.PipelineEvents.Add(iisPipelineEvent);
 
         }
 
-        private void AddGenericStopEventToRequest(Guid contextId, TraceEvent traceEvent, string pipelineEventName = "")
+        private void AddGenericStopEventToRequest(Guid contextId, TraceEvent traceEvent, Dictionary<Guid, int> childRequests, string pipelineEventName = "")
         {
             IisRequest request;
             if (m_Requests.TryGetValue(contextId, out request))
@@ -2044,7 +2248,8 @@ table {
                     eventName = pipelineEventName;
                 }
 
-                var iisPipelineEvent = request.PipelineEvents.FirstOrDefault(m => (m.Name == eventName) && m.EndTimeRelativeMSec == 0);
+                int childRequestRecurseLevel = GetChildEventRecurseLevel(contextId, childRequests);
+                var iisPipelineEvent = request.PipelineEvents.FirstOrDefault(m => (m.Name == eventName) && m.EndTimeRelativeMSec == 0 && m.ChildRequestRecurseLevel == childRequestRecurseLevel);
                 if (iisPipelineEvent != null)
                 {
                     iisPipelineEvent.EndTimeRelativeMSec = traceEvent.TimeStampRelativeMSec;
@@ -2052,12 +2257,12 @@ table {
                 }
             }
         }
-        private IisPipelineEvent GetSlowestEvent(Guid contextId, List<IisPipelineEvent> pipeLineEvents)
+        private IisPipelineEvent GetSlowestEvent(IisRequest request)
         {
             IisPipelineEvent slowestPipelineEvent = new IisPipelineEvent();
             double slowestTime = 0;
 
-            foreach (var pipeLineEvent in pipeLineEvents)
+            foreach (var pipeLineEvent in request.PipelineEvents)
             {
                 if (pipeLineEvent.StartTimeRelativeMSec != 0 && pipeLineEvent.EndTimeRelativeMSec != 0)
                 {
@@ -2072,7 +2277,7 @@ table {
 
             // Lets check for containment to see if a child event is taking more than 50% 
             // of the time of this pipeline event, then we want to call that out
-            foreach (var pipeLineEvent in pipeLineEvents.Where(x => (x.StartTimeRelativeMSec > slowestPipelineEvent.StartTimeRelativeMSec) && (x.EndTimeRelativeMSec <= slowestPipelineEvent.EndTimeRelativeMSec)))
+            foreach (var pipeLineEvent in request.PipelineEvents.Where(x => (x.StartTimeRelativeMSec > slowestPipelineEvent.StartTimeRelativeMSec) && (x.EndTimeRelativeMSec <= slowestPipelineEvent.EndTimeRelativeMSec)))
             {
                 var timeinThisEvent = pipeLineEvent.EndTimeRelativeMSec - pipeLineEvent.StartTimeRelativeMSec;
 
@@ -2084,7 +2289,64 @@ table {
 
             }
 
+            var timeInSlowestEvent = slowestPipelineEvent.EndTimeRelativeMSec - slowestPipelineEvent.StartTimeRelativeMSec;
+            var requestExecutionTime = request.EndTimeRelativeMSec - request.StartTimeRelativeMSec;
+
+            if (timeInSlowestEvent > 0 && requestExecutionTime > 500)
+            {
+                if (((timeInSlowestEvent / requestExecutionTime) * 100) < 50)
+                {
+                    // So this is the scenario where the default set of events that we are tracking
+                    // do not have any delay. Lets do our best and see if we can atleast
+                    // populate the StartTime, EndTime                    
+
+                    IisPipelineEvent unKnownPipeLineEvent = CheckForDelayInUnknownEvents(request, timeInSlowestEvent);
+
+                    if (unKnownPipeLineEvent != null)
+                    {
+                        slowestPipelineEvent = unKnownPipeLineEvent;
+                    }
+                }
+            }
+
             return slowestPipelineEvent;
+        }
+
+        private IisPipelineEvent CheckForDelayInUnknownEvents(IisRequest request, double timeInSlowestEvent)
+        {
+            double slowestTimeInThisEvent = 0;
+            int position = 0;
+            var pipelineEventsArray = request.PipelineEvents.ToArray();
+            for (int i = 0; i < pipelineEventsArray.Length - 1; i++)
+            {
+                if (pipelineEventsArray[i].EndTimeRelativeMSec != 0)
+                {
+                    var timeDiff = pipelineEventsArray[i + 1].StartTimeRelativeMSec - pipelineEventsArray[i].EndTimeRelativeMSec;
+                    if (slowestTimeInThisEvent < timeDiff)
+                    {
+                        slowestTimeInThisEvent = timeDiff;
+                        position = i;
+                    }
+                }
+            }
+
+            IisPipelineEvent unknownEvent = null;
+
+            if ((slowestTimeInThisEvent / timeInSlowestEvent) > 1.5)
+            {
+                if (position > 0)
+                {
+                    unknownEvent = new IisPipelineEvent();
+                    unknownEvent.Name = "UNKNOWN";
+                    unknownEvent.StartThreadId = pipelineEventsArray[position].EndThreadId;
+                    unknownEvent.EndThreadId = pipelineEventsArray[position + 1].StartThreadId;
+                    unknownEvent.StartTimeRelativeMSec = pipelineEventsArray[position].EndTimeRelativeMSec;
+                    unknownEvent.EndTimeRelativeMSec = pipelineEventsArray[position + 1].StartTimeRelativeMSec;
+                    unknownEvent.ProcessId = pipelineEventsArray[position + 1].ProcessId;
+                }
+            }
+
+            return unknownEvent;
         }
 
         class ExceptionDetails
@@ -2109,6 +2371,7 @@ table {
             public double EndTimeRelativeMSec;
             public double StartTimeRelativeMSec;
             public List<IisPipelineEvent> PipelineEvents = new List<IisPipelineEvent>();
+            public Guid RelatedActivityId;
         }
         class IisPipelineEvent
         {
@@ -2118,10 +2381,20 @@ table {
             public int EndThreadId;
             public double StartTimeRelativeMSec = 0;
             public double EndTimeRelativeMSec = 0;
-
+            public int ChildRequestRecurseLevel = 0;
             public override string ToString()
             {
                 return Name;
+            }
+        }
+        class AspNetPipelineModuleEvent : IisPipelineEvent
+        {
+            public string ModuleName;
+            public bool foundEndEvent = false;
+
+            public override string ToString()
+            {
+                return ModuleName;
             }
         }
 
@@ -2129,6 +2402,7 @@ table {
         {
             public RequestNotification Notification;
             public bool fIsPostNotification;
+            public bool foundEndEvent = false;
 
             public override string ToString()
             {
