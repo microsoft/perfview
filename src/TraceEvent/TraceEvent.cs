@@ -2816,6 +2816,28 @@ namespace Microsoft.Diagnostics.Tracing
         /// Subscribers of Completed will be called after processing is complete (right before TraceEventDispatcher.Process returns.    
         /// </summary>
         public event Action Completed;
+
+        /// <summary>
+        /// Add a hook right before dispatch that determines if an event should be dispatched
+        /// Multiple subscribers may hook this event, in that case they are called in lifo order,
+        /// once a subscriber indicates that an event should not be processed the chain of dispatchers is no longer searched
+        /// <input>TraceEvent - the event that is ready for dispatch</input>
+        /// <return>True - dispatch this event</return>
+        /// <return>False - not dispatch the event</return>
+        /// </summary>
+        public void AddDispatchHook(Func<TraceEvent, bool> onDispatch)
+        {
+            var hook = new DispatchHookEntry()
+            {
+                OnDispatch = onDispatch,
+                Next = null
+            };
+
+            // last in first out order
+            if (DispatchHook != null) hook.Next = DispatchHook;
+            DispatchHook = hook;
+        }
+
         #region protected
         /// <summary>
         /// Called when processing is complete.  You can call this more than once if your not sure if it has already been called.  
@@ -2943,6 +2965,19 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
+                // check if there is a registered dispatch hook
+                if (DispatchHook != null)
+                {
+                    // check if we should dispatch this event, the first to indicate
+                    // false we will return without dispatching
+                    var hook = DispatchHook;
+                    while (hook != null && hook.OnDispatch != null)
+                    {
+                        if (!hook.OnDispatch(anEvent)) return;
+                        hook = hook.Next;
+                    }
+                }
+
                 if (anEvent.Target != null)
                     anEvent.Dispatch();
                 if (anEvent.next != null)
@@ -3299,6 +3334,16 @@ namespace Microsoft.Diagnostics.Tracing
             bytes[14] += (byte)(taskNumber >> 8);
             return new Guid(bytes);
         }
+
+        #region DispatchHook Members
+        class DispatchHookEntry
+        {
+            public Func<TraceEvent, bool> OnDispatch;
+            public DispatchHookEntry Next;
+        }
+        private DispatchHookEntry DispatchHook;
+        #endregion
+
 
         #region TemplateHashTable
         struct TemplateEntry
