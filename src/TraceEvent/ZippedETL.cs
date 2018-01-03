@@ -12,6 +12,8 @@ using System.Threading;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
 
+namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
+
 
 namespace Microsoft.Diagnostics.Tracing
 {
@@ -54,7 +56,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is the name of the output archive.  By default is the same as the ETL file name 
         /// with a .zip' suffix added (thus it will typically be .etl.zip).  
         /// </summary>
-        public string ZipArchivePath { get; set; }
+        public string ZipArchivePath { get; set; } 
 
         /// <summary>
         /// If set this is where messages about progress and detailed error information goes.  
@@ -248,20 +250,13 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             Log.WriteLine("Starting Merging of {0}", m_etlFilePath);
 
-                            var options = Session.TraceEventMergeOptions.None;
-                            if (CompressETL)
-                                options |= Session.TraceEventMergeOptions.Compress;
+                        var options = Session.TraceEventMergeOptions.None;
+                        if (CompressETL)
+                            options |= Session.TraceEventMergeOptions.Compress;
 
-                            // Do the merge
-                            Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
-                            Log.WriteLine("Merging took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
-                        }
-                        finally
-                        {
-#if !NETSTANDARD1_6
-                            Thread.CurrentThread.Priority = ThreadPriority.Normal;
-#endif
-                        }
+                        // Do the merge
+                        Session.TraceEventSession.Merge(mergeInputs.ToArray(), tempName, options);
+                        Log.WriteLine("Merging took {0:f1} sec", (DateTime.UtcNow - startTime).TotalSeconds);
                     }
                     else
                         Log.WriteLine("Merge == false, skipping Merge operation.");
@@ -340,7 +335,6 @@ namespace Microsoft.Diagnostics.Tracing
             var pdbFileList = new List<string>(100);
             foreach (var imageName in ETWTraceEventSource.GetModulesNeedingSymbols(etlFile))
             {
-                var sw = Stopwatch.StartNew();
                 var pdbName = symbolReader.GenerateNGenSymbolsForModule(imageName);
                 if (pdbName != null)
                 {
@@ -356,15 +350,15 @@ namespace Microsoft.Diagnostics.Tracing
         string m_etlFilePath;
             #endregion // private
     }
-#endif
+#endif 
 
-            /// <summary>
-            /// ZippedETLReader is a helper class that unpacks the ZIP files generated
-            /// by the ZippedETLWriter class.    It can be smart about placing the 
-            /// symbolic information in these files on the SymbolReader's path so that
-            /// symbolic lookup 'just works'.  
-            /// </summary>
-        public class ZippedETLReader
+    /// <summary>
+    /// ZippedETLReader is a helper class that unpacks the ZIP files generated
+    /// by the ZippedETLWriter class.    It can be smart about placing the 
+    /// symbolic information in these files on the SymbolReader's path so that
+    /// symbolic lookup 'just works'.  
+    /// </summary>
+    public class ZippedETLReader
     {
         /// <summary>
         /// Declares the intent to unzip an .ETL.ZIP file that contain an compressed ETL file 

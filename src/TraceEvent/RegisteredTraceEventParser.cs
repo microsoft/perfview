@@ -419,7 +419,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             if (strings.Length > 0)
             {
                 manifest.WriteLine(" <localization>");
-                manifest.WriteLine("  <resources culture=\"{0}\">", IetfLanguageTag(CultureInfo.CurrentCulture));
+#if DOTNET_CORE // TODO Review after .NET Core 2.0 
+                manifest.WriteLine("  <resources culture=\"{0}\">", "en-us");
+#else
+                manifest.WriteLine("  <resources culture=\"{0}\">", Thread.CurrentThread.CurrentCulture.IetfLanguageTag);
+#endif
                 manifest.WriteLine("   <stringTable>");
                 manifest.Write(strings);
                 manifest.WriteLine("   </stringTable>");
@@ -432,22 +436,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
 #region private
-        // Borrowed from Core CLR System.Globalization.CultureInfo
-        private static string IetfLanguageTag(CultureInfo culture)
-        {
-            // special case the compatibility cultures
-            switch (culture.Name)
-            {
-                case "zh-CHT":
-                    return "zh-Hant";
-                case "zh-CHS":
-                    return "zh-Hans";
-                default:
-                    return culture.Name;
-            }
-        }
-
-
         private static string MakeLegalIdentifier(string name)
         {
             // TODO FIX NOW beef this up.
@@ -561,6 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     buffer = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(buffSize);
                     status = TdhGetEventInformation(unknownEvent.eventRecord, 0, null, buffer, &buffSize);
                 }
+#endif
 
                 if (status == 0)
                 {

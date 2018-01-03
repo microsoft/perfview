@@ -45,9 +45,7 @@ namespace PerfView
 #if !PERFVIEW_COLLECT
                 // Can't display on ARM because the SplashScreen is WPF
                 var noGui = SupportFiles.ProcessArch == ProcessorArchitecture.Arm ||
-                    (args.Length > 0 &&
-                    (string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0 ||
-                     string.Compare(args[0], 0, "/logFile", 0, 8, StringComparison.OrdinalIgnoreCase) == 0));
+                    (args.Length > 0 && string.Compare(args[0], "/noGui", StringComparison.OrdinalIgnoreCase) == 0);
 
                 // If we need to install, display the splash screen early, otherwise wait
                 if (!Directory.Exists(SupportFiles.SupportFileDir) && !noGui)
@@ -176,17 +174,6 @@ namespace PerfView
                 }
             }
 
-            // The 64 bit version of some of the native DLLs we use are built against the new Win10 libraries and will 
-            // fail to bind if they are loaded on an older OS (it would probably work for Win8 but do we care?) 
-            // It also can work if we only do viewing operations (msdia* uses old libraries), but again do we care?  
-            // If we do we can move this to before the DLLs are loaded.   
-            // Give the user a clean error.   
-            if (Environment.Is64BitProcess && Environment.OSVersion.Version.Major  * 10 + Environment.OSVersion.Version.Minor < 62)
-            {
-                throw new ApplicationException("The PerfView64 does not work properly Windows version < 10\r\n" +
-                    "    Please use the 32 bit version (PerfView.exe).");
-            }
-
             // For reasons I have not dug into SetFileName does not work if you attach to a session.  Warn the user.  
             if (CommandLineArgs.InMemoryCircularBuffer && CommandLineArgs.DoCommand == CommandProcessor.Start)
                 throw new ApplicationException("Error: InMemoryCircularBuffer currently can't be used with separate Start and Stop processes.");
@@ -256,8 +243,7 @@ namespace PerfView
                         verboseLog = File.CreateText(verboseLogName);
                     CommandProcessor.LogFile = new VerboseLogWriter(verboseLog, CommandProcessor.LogFile);
                 }
-                else
-                    App.LogFileName = CommandLineArgs.LogFile;
+                App.LogFileName = CommandLineArgs.LogFile;
 
                 var allArgs = string.Join(" ", args);
                 CommandProcessor.LogFile.WriteLine("[EXECUTING: PerfView {0}]", allArgs);
@@ -364,7 +350,14 @@ namespace PerfView
                 if (File.Exists(tutorialTxt))
                     File.Copy(tutorialTxt, tutorial);
 
-                if (Environment.OSVersion.Platform != PlatformID.Unix)
+                // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
+                if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
+                    DirectoryUtilities.Clean(Path.Combine(SupportFiles.SupportFileDir, "amd64"));
+
+                // We have two versions of HeapDump.exe, and they each need their own copy of  Microsoft.Diagnostics.Runtime.dll 
+                // so copy this dll to the other architectures.  
+                var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
+                foreach (var arch in new string[] { "amd64", "arm" })
                 {
                     // You don't need amd64 on ARM (TODO remove it on X86 machines too).  
                     if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm)
@@ -375,11 +368,7 @@ namespace PerfView
                     var fromDir = Path.Combine(SupportFiles.SupportFileDir, "x86");
                     foreach (var arch in new string[] { "amd64", "arm" })
                     {
-                        var toDir = Path.Combine(SupportFiles.SupportFileDir, arch);
-                        var fromFile = Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll");
-                        if (Directory.Exists(toDir) && File.Exists(fromFile))
-                        {
-                            File.Copy(fromFile, Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
+                        File.Copy(Path.Combine(fromDir, "Microsoft.Diagnostics.Runtime.dll"), Path.Combine(toDir, "Microsoft.Diagnostics.Runtime.dll"));
 
                             // ARM can use the X86 version of the heap dumper.  
                             if (arch == "arm")
@@ -387,14 +376,14 @@ namespace PerfView
                         }
                     }
 
-                    // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
-                    var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.MainAssemblyPath));
-                    if (!File.Exists(targetExe))
-                    {
-                        File.Copy(SupportFiles.MainAssemblyPath, targetExe);
-                        // This file indicates that we need to copy the extensions if we use this EXE to run from
-                        File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
-                    }
+                // To support intellisense for extensions, we need the PerfView.exe to be next to the .XML file that describes it
+                var targetExe = Path.Combine(SupportFiles.SupportFileDir, Path.GetFileName(SupportFiles.MainAssemblyPath));
+                if (!File.Exists(targetExe))
+                {
+                    File.Copy(SupportFiles.MainAssemblyPath, targetExe);
+                    // This file indicates that we need to copy the extensions if we use this EXE to run from
+                    File.WriteAllText(Path.Combine(SupportFiles.SupportFileDir, "ExtensionsNotCopied"), "");
+                }
 
                     // The KernelTraceControl that works for Win10 and above does not work properly form older OSes
                     // The symptom is that when collecting data, it does not properly merge files and you don't get
@@ -457,7 +446,7 @@ namespace PerfView
                 return;
 
             // Is the EXE on a network share 
-            var exe = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
+            var exe = SupportFiles.MainAssemblyPath;
             if (!exe.StartsWith(@"\\"))
                 return;
 
@@ -740,7 +729,7 @@ namespace PerfView
             }
             ret.SourceCacheDirectory = Path.Combine(CacheFiles.CacheDir, "src");
             if (localSymDir != null)
-                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log);
+                ret.OnSymbolFileFound += (pdbPath, pdbGuid, pdbAge) => CacheInLocalSymDir(localSymDir, pdbPath, pdbGuid, pdbAge, log); 
 
             if (symbolFlags == SymbolReaderOptions.None)
                 s_symbolReader = ret;
@@ -1096,7 +1085,7 @@ namespace PerfView
         {
 #if PUBLIC_ONLY
             return false;
-#else
+#else 
             if (!CanSendFeedback)
                 return false;
             StringWriter sw = new StringWriter();

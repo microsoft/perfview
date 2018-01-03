@@ -65,9 +65,9 @@ namespace Microsoft.Diagnostics.Tracing
                 }
 
 
-                var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
-                *mem = default(TraceEventNativeMethods.EVENT_RECORD);
-                _header = mem;
+                IntPtr mem = Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
+                TraceEventNativeMethods.ZeroMemory(mem, sizeof(TraceEventNativeMethods.EVENT_RECORD));
+                _header = (TraceEventNativeMethods.EVENT_RECORD*)mem;
 
                 int processors = (from entry in _channels
                                   let filename = entry.Item1.FullName

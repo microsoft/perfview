@@ -2,7 +2,7 @@
 <package >
   <metadata minClientVersion="2.5">
     <id>Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles</id>
-    <version>1.0.9</version>
+    <version>1.0.2</version>
     <title>Non-Source files needed to Build TraceEvent</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>

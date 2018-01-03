@@ -179,6 +179,22 @@ namespace Utilities
         /// <summary>
         /// The path to the entry executable.
         /// </summary>
+        public static string MainAssemblyPath
+        {
+            get
+            {
+                if (s_mainAssemblyPath == null)
+                {
+                    s_exePath = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
+                    Debug.Assert(s_exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+                }
+
+                return s_mainAssemblyPath;
+            }
+        }
+        /// <summary>
+        /// The path to the entry executable.
+        /// </summary>
         public static string ExePath
         {
             get
@@ -263,7 +279,7 @@ namespace Utilities
             s_managedDllSearchPaths.Add(directory);
         }
 
-        #region private
+#region private
         private static void UnpackResources()
         {
             // We don't unpack into the final directory so we can be transactional (all or nothing).  
@@ -354,6 +370,6 @@ namespace Utilities
         private static string s_mainAssemblyPath;
         private static string s_exePath;
         private static List<string> s_managedDllSearchPaths;
-        #endregion
+#endregion
     }
 }

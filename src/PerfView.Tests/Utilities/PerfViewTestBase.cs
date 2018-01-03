@@ -84,7 +84,7 @@ namespace PerfViewTests.Utilities
         {
             GuiApp.MainWindow?.Close();
             JoinableTaskFactory?.Context.Dispose();
-            Assert.Empty(StackWindow.StackWindows);
+            Assert.Equal(0, StackWindow.StackWindows.Count);
 
             GuiApp.MainWindow = new MainWindow();
             JoinableTaskFactory = new JoinableTaskFactory(new JoinableTaskContext());

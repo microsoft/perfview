@@ -768,7 +768,6 @@ namespace PerfView
             new DiagSessionPerfViewFile(),
             new LinuxPerfViewData(),
             new XmlTreeFile(),
-            new EventPipePerfViewData()
         };
 
         #region private
@@ -2319,7 +2318,9 @@ table {
             var pipelineEventsArray = request.PipelineEvents.ToArray();
             for (int i = 0; i < pipelineEventsArray.Length - 1; i++)
             {
-                if (pipelineEventsArray[i].EndTimeRelativeMSec != 0)
+                var csvFile = CacheFiles.FindFile(FilePath, ".processesSummary.csv");
+                if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     var timeDiff = pipelineEventsArray[i + 1].StartTimeRelativeMSec - pipelineEventsArray[i].EndTimeRelativeMSec;
                     if (slowestTimeInThisEvent < timeDiff)
@@ -2334,7 +2335,9 @@ table {
 
             if ((slowestTimeInThisEvent / timeInSlowestEvent) > 1.5)
             {
-                if (position > 0)
+                var csvFile = CacheFiles.FindFile(FilePath, ".processesModule.csv");
+                if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
+                    File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     unknownEvent = new IisPipelineEvent();
                     unknownEvent.Name = "UNKNOWN";
@@ -2414,7 +2417,23 @@ table {
         {
             public override string ToString()
             {
-                return $"{Name} (PreBegin)";
+                //add headers 
+                string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
+                writer.WriteLine("ProcessName{0}ProcessID{0}Name{0}FileVersion{0}Commit{0}BuildTime{0}FilePath{0}", listSeparator);
+                foreach (TraceProcess process in processes)  //turn into private function 
+                {
+                    foreach (TraceLoadedModule module in process.LoadedModules)
+                    {
+                        writer.Write("{0}{1}", process.Name, listSeparator);
+                        writer.Write("{0}{1}", process.ProcessID, listSeparator);
+                        writer.Write("{0}{1}", module.ModuleFile.Name, listSeparator);
+                        writer.Write("{0}{1}", module.ModuleFile.FileVersion, listSeparator);
+                        writer.Write("{0}{1}", module.ModuleFile.GitCommitHash, listSeparator);
+                        writer.Write("{0}{1}", PerfViewExtensibility.Events.EscapeForCsv(module.ModuleFile.BuildTime.ToString(), listSeparator), listSeparator);
+                        writer.Write("{0}", module.ModuleFile.FilePath);
+                        writer.WriteLine();
+                    }
+                }
             }
         }
 
@@ -4693,7 +4712,7 @@ table {
                                 if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
                                 {
                                     // Create a node that indicates where in the file (in buckets) the access was from 
-                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
+                                    double normalizeDistance = (address - module.ImageBase) / ((double) module.ModuleFile.ImageSize);
                                     if (0 <= normalizeDistance && normalizeDistance < 1)
                                     {
                                         const int numBuckets = 20;
@@ -6397,69 +6416,6 @@ table {
         }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
 
-        static internal List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile, double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
-        {
-            // If a DLL is loaded into multiple processes or at different locations we can get repeats, strip them.  
-            var ret = new List<TraceModuleFile>();
-            var traceLog = etlFile.GetTraceLog(log);
-
-            // There can be several TraceModuleFile for a given path because the module is loaded more than once.
-            // Thus we need to accumulate the counts.  This is what moduleCodeAddressCounts does 
-            var moduleCodeAddressCounts = new Dictionary<string, int>();
-            // Get symbols in cache, generate NGEN images if necessary.  
-
-            IEnumerable<TraceModuleFile> moduleList = traceLog.ModuleFiles;
-            int totalCpu = traceLog.CodeAddresses.TotalCodeAddresses;
-            if (focusProcessIDs != null)
-            {
-                var processtotalCpu = 0;
-                var processModuleList = new List<TraceModuleFile>();
-                foreach (var process in traceLog.Processes)
-                {
-                    processtotalCpu += (int)process.CPUMSec;
-                    if (!focusProcessIDs.Contains(process.ProcessID))
-                        continue;
-                    log.WriteLine("Restricting to process {0} ({1})", process.Name, process.ProcessID);
-                    foreach (var mod in process.LoadedModules)
-                        processModuleList.Add(mod.ModuleFile);
-                }
-                if (processtotalCpu != 0 && processModuleList.Count > 0)
-                {
-                    totalCpu = processtotalCpu;
-                    moduleList = processModuleList;
-                }
-                else
-                    log.WriteLine("ERROR: could not find any CPU in focus processes, using machine wide total.");
-            }
-            log.WriteLine("Total CPU = {0} samples", totalCpu);
-            int pdbThreshold = (int)((pdbThresholdPercent * totalCpu) / 100.0);
-            log.WriteLine("Pdb threshold = {0:f2}% = {1} code address instances", pdbThresholdPercent, pdbThreshold);
-
-            foreach (var moduleFile in moduleList)
-            {
-                if (moduleFile.CodeAddressesInModule == 0)
-                    continue;
-
-                int count = 0;
-                if (moduleCodeAddressCounts.TryGetValue(moduleFile.FilePath, out count))
-                {
-                    // We have already hit the threshold so we don't need to do anything. 
-                    if (count >= pdbThreshold)
-                        continue;
-                }
-
-                count += moduleFile.CodeAddressesInModule;
-                moduleCodeAddressCounts[moduleFile.FilePath] = count;
-                if (count < pdbThreshold)
-                    continue;                   // Have not reached threshold
-
-                log.WriteLine("Addr Count = {0} >= {1}, adding: {2}", count, pdbThreshold, moduleFile.FilePath);
-                ret.Add(moduleFile);
-            }
-            return ret;
-        }
-
-
         #region private
         /// <summary>
         /// See if the log has events from VS providers.  If so we should register the VS providers. 
@@ -6479,6 +6435,65 @@ table {
                 m_checkedForVSEvents = true;
             }
             return m_hasVSEvents;
+        }
+        bool m_checkedForVSEvents;
+        bool m_hasVSEvents;
+
+        internal static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true, bool wprConventions = false)
+        {
+            if (inputFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
+            {
+                log.WriteLine($"'{inputFileName}' is a linux trace.");
+                return;
+            }
+
+            var extension = Path.GetExtension(inputFileName);
+            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0 ||
+                string.Compare(extension, ".vspx", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                string unzipedEtlFile;
+                if (unpackInCache)
+                {
+                    unzipedEtlFile = CacheFiles.FindFile(inputFileName, ".etl");
+                    if (File.Exists(unzipedEtlFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzipedEtlFile))
+                    {
+                        log.WriteLine("Found a existing unzipped file {0}", unzipedEtlFile);
+                        inputFileName = unzipedEtlFile;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                        unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
+                    else if (inputFileName.EndsWith(".vspx", StringComparison.OrdinalIgnoreCase))
+                        unzipedEtlFile = Path.ChangeExtension(inputFileName, ".etl");
+                    else
+                        throw new ApplicationException("File does not end with the .etl.zip file extension");
+                }
+
+                ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
+                etlReader.EtlFileName = unzipedEtlFile;
+
+                // Figure out where to put the symbols.  
+                if (wprConventions)
+                    etlReader.SymbolDirectory = Path.ChangeExtension(inputFileName, ".ngenpdb");
+                else
+                {
+                    var inputDir = Path.GetDirectoryName(inputFileName);
+                    if (inputDir.Length == 0)
+                        inputDir = ".";
+                    var symbolsDir = Path.Combine(inputDir, "symbols");
+                    if (Directory.Exists(symbolsDir))
+                        etlReader.SymbolDirectory = symbolsDir;
+                    else
+                        etlReader.SymbolDirectory = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+                }
+                log.WriteLine("Putting symbols in {0}", etlReader.SymbolDirectory);
+
+                etlReader.UnpackArchive();
+                inputFileName = unzipedEtlFile;
+            }
         }
         bool m_checkedForVSEvents;
         bool m_hasVSEvents;
@@ -7398,228 +7413,6 @@ table {
         #endregion
     }
 
-    public partial class EventPipePerfViewData : PerfViewFile
-    {
-        public override string FormatName => EventPipeEventSource.EventPipe;
-
-        public override string[] FileExtensions => new string[] { ".netperf" };
-
-        protected internal override EventSource OpenEventSourceImpl(TextWriter log)
-        {
-            var traceLog = GetTraceLog(log);
-            return new ETWEventSource(traceLog);
-        }
-
-        protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
-        {
-            // Open the file.
-            m_traceLog = GetTraceLog(worker.LogWriter);
-
-            bool hasGC = false;
-            bool hasJIT = false;
-            bool hasAnyStacks = false;
-            if (m_traceLog != null)
-            {
-                foreach (TraceEventCounts eventStats in m_traceLog.Stats)
-                {
-                    if (eventStats.StackCount > 0)
-                        hasAnyStacks = true;
-
-                    if (eventStats.EventName.StartsWith("GC/Start"))
-                        hasGC = true;
-                    else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
-                        hasJIT = true;
-                }
-            }
-
-            m_Children = new List<PerfViewTreeItem>();
-            var advanced = new PerfViewTreeGroup("Advanced Group");
-            var memory = new PerfViewTreeGroup("Memory Group");
-
-            if (m_traceLog != null)
-            {
-                m_Children.Add(new PerfViewEventSource(this));
-                m_Children.Add(new PerfViewEventStats(this));
-
-                if (hasAnyStacks)
-                {
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Any"));
-                }
-
-                if (hasGC)
-                    memory.AddChild(new PerfViewGCStats(this));
-
-                if (hasJIT)
-                    advanced.AddChild(new PerfViewJitStats(this));
-            }
-
-            if (memory.Children.Count > 0)
-                m_Children.Add(memory);
-
-            if (advanced.Children.Count > 0)
-                m_Children.Add(advanced);
-
-            return null;
-        }
-
-        protected internal override StackSource OpenStackSourceImpl(string streamName, TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity, Predicate<TraceEvent> predicate = null)
-        {
-            switch (streamName)
-            {
-                case "Any":
-                    {
-                        var eventLog = GetTraceLog(log);
-
-                        var stackSource = new MutableTraceEventStackSource(eventLog);
-                        // EventPipe currently only has managed code stacks.
-                        stackSource.OnlyManagedCodeStacks = true;
-
-                        stackSource.ShowUnknownAddresses = App.CommandLineArgs.ShowUnknownAddresses;
-
-                        TraceEvents events = eventLog.Events;
-
-                        if (startRelativeMSec != 0 || endRelativeMSec != double.PositiveInfinity)
-                            events = events.FilterByTime(startRelativeMSec, endRelativeMSec);
-
-                        var eventSource = events.GetSource();
-                        var sample = new StackSourceSample(stackSource);
-
-                        eventSource.AllEvents += (data) =>
-                        {
-                            var callStackIdx = data.CallStackIndex();
-                            if (callStackIdx != CallStackIndex.Invalid)
-                            {
-                                StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(callStackIdx, data);
-                                // Tack on event name
-                                var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
-                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                                // Add sample
-                                sample.StackIndex = stackIndex;
-                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                sample.Metric = 1;
-                                stackSource.AddSample(sample);
-                            }
-                        };
-                        eventSource.Process();
-
-                        stackSource.DoneAddingSamples();
-                        return stackSource;
-                    }
-                case "Thread Time (with StartStop Activities)":
-                    {
-                        var eventLog = GetTraceLog(log);
-
-                        var startStopSource = new MutableTraceEventStackSource(eventLog);
-                        // EventPipe currently only has managed code stacks.
-                        startStopSource.OnlyManagedCodeStacks = true;
-
-                        var computer = new SampleProfilerThreadTimeComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
-                        computer.GenerateThreadTimeStacks(startStopSource);
-
-                        return startStopSource;
-                    }
-                default:
-                    return null;
-            }
-        }
-
-        protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
-        {
-            if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
-            {
-                var taskFoldPat = "^STARTING TASK";
-                stackWindow.FoldRegExTextBox.Items.Add(taskFoldPat);
-                stackWindow.FoldRegExTextBox.Text = taskFoldPat;
-
-                var excludePat = "LAST_BLOCK";
-                stackWindow.ExcludeRegExTextBox.Items.Add(excludePat);
-                stackWindow.ExcludeRegExTextBox.Text = excludePat;
-            }
-        }
-
-        public override void Close()
-        {
-            if (m_traceLog != null)
-            {
-                m_traceLog.Dispose();
-                m_traceLog = null;
-            }
-            base.Close();
-        }
-
-        public TraceLog GetTraceLog(TextWriter log)
-        {
-            if (m_traceLog != null)
-            {
-                if (IsUpToDate)
-                    return m_traceLog;
-                m_traceLog.Dispose();
-                m_traceLog = null;
-            }
-            else if (m_noTraceLogInfo)
-                return null;
-
-            var dataFileName = FilePath;
-            var options = new TraceLogOptions();
-            options.ConversionLog = log;
-            if (App.CommandLineArgs.KeepAllEvents)
-                options.KeepAllEvents = true;
-            options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
-            options.SkipMSec = App.CommandLineArgs.SkipMSec;
-            //options.OnLostEvents = onLostEvents;
-            options.LocalSymbolsOnly = false;
-            options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
-
-            // Generate the etlx file path / name.
-            string etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
-            if (!File.Exists(etlxFile) || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
-            {
-                FileUtilities.ForceDelete(etlxFile);
-                log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
-                try
-                {
-                    TraceLog.CreateFromEventPipeDataFile(dataFileName, etlxFile, options);
-                }
-                catch (Exception e)
-                {
-                    log.WriteLine("Error: Exception EventPipe conversion: {0}", e.ToString());
-                    log.WriteLine("[Error: exception while opening EventPipe data.]");
-
-                    Debug.Assert(m_traceLog == null);
-                    m_noTraceLogInfo = true;
-                    return m_traceLog;
-                }
-            }
-
-            var dataFileSize = "Unknown";
-            if (File.Exists(dataFileName))
-                dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
-            log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
-
-            // Open the ETLX file.  
-            m_traceLog = new TraceLog(etlxFile);
-            m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
-            if (App.CommandLineArgs.UnsafePDBMatch)
-                m_traceLog.CodeAddresses.UnsafePDBMatching = true;
-            if (m_traceLog.Truncated)   // Warn about truncation.  
-            {
-                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
-                {
-                    MessageBox.Show("The ETL file was too big to convert and was truncated.\r\nSee log for details", "Log File Truncated", MessageBoxButton.OK);
-                });
-            }
-            return m_traceLog;
-        }
-
-        public TraceLog TryGetTraceLog() { return m_traceLog; }
-
-        #region Private
-        TraceLog m_traceLog;
-        bool m_noTraceLogInfo;
-        #endregion
-    }
-
     /// <summary>
     /// A simple helper class that looks up symbols for Project N GCDumps 
     /// </summary>
@@ -7684,10 +7477,10 @@ table {
             if (m_symReader == null)
                 m_symReader = App.GetSymbolReader(m_contextFilePath);
 
-            NativeSymbolModule symbolModule = null;
+            SymbolModule symbolModule = null;
             var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
             if (pdbPath != null)
-                symbolModule = m_symReader.OpenNativeSymbolFile(pdbPath);
+                symbolModule = m_symReader.OpenSymbolFile(pdbPath);
             else
             {
                 if (m_pdbLookupFailures == null)
@@ -8073,9 +7866,9 @@ table {
         /// <param name="fileExtension">The final extension to use</param>
         /// <param name="alternateName">Alternate name to use for file</param>
         /// <returns>The full local file path to the resource</returns>
-        private static string GetLocalFilePath(string packageFilePath, DhPackage package, ResourceInfo resource, string fileExtension, string alternateName = null)
+        private static string GetLocalFilePath(string packageFilePath, DhPackage package, ResourceInfo resource, string fileExtension)
         {
-            string localFileName = alternateName ?? Path.GetFileNameWithoutExtension(resource.Name);
+            string localFileName = Path.GetFileNameWithoutExtension(resource.Name);
             string localFilePath = CacheFiles.FindFile(packageFilePath, "_" + localFileName + fileExtension);
 
             if (!File.Exists(localFilePath))
@@ -8096,6 +7889,8 @@ table {
 
             foreach (var resource in resources)
             {
+                Guid resourceId = resource.ResourceId;
+
                 string localFilePath = GetLocalFilePath(FilePath, dhPackage, resource, fileExtension);
 
                 worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");

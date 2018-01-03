@@ -1120,7 +1120,7 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceModuleFile moduleFile = m_eventLog.ModuleFiles[methods.MethodModuleFileIndex(methodIndex)];
                 if (moduleFile == null)
                     continue;
-                if (moduleFile.Name.StartsWith("mscorlib", StringComparison.OrdinalIgnoreCase) || moduleFile.Name.IndexOf("system.private.corelib", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (moduleFile.Name.StartsWith("mscorlib", StringComparison.OrdinalIgnoreCase) || moduleFile.Name.StartsWith("system.private.corelib", StringComparison.OrdinalIgnoreCase))
                 {
                     string name = methods.FullMethodName(methodIndex);
                     if (name.StartsWith("System.Threading.ExecutionContext.Run") ||

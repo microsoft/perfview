@@ -65,7 +65,7 @@ namespace TraceEventTests
             int lineNum = 0;
             var histogram = new SortedDictionary<string, int>(StringComparer.Ordinal);
 
-            // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during development of test itself
+            // TraceLog traceLog = TraceLog.OpenOrConvert(etlFilePath);    // This one can be used during developent of test itself
             TraceLog traceLog = new TraceLog(TraceLog.CreateFromEventTraceLogFile(etlFilePath));
 
             var traceSource = traceLog.Events.GetSource();

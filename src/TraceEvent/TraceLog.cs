@@ -134,7 +134,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
 
         /// <summary>
-        /// Creates a ETLX file an Lttng Text file 'filePath'.    
+        /// CReates a ETLX file an Lttng Text file 'filePath'.    
         /// </summary>
         public static string CreateFromLttngTextDataFile(string filePath, string etlxFilePath = null, TraceLogOptions options = null)
         {
@@ -719,7 +719,28 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             newLog.rawEventSourceToConvert = source;
             newLog.options = options;
 
+            if (options.ExplicitManifestDir != null && Directory.Exists(options.ExplicitManifestDir))
+            {
+                var tmfDir = Path.Combine(options.ExplicitManifestDir, "TMF");
+                if (Directory.Exists(tmfDir))
+                {
+                    options.ConversionLog.WriteLine("Looking for WPP metaData in {0}", tmfDir);
+                    new WppTraceEventParser(newLog, tmfDir);
+                }
+                options.ConversionLog.WriteLine("Looking for explicit manifests in {0}", options.ExplicitManifestDir);
+                source.Dynamic.ReadAllManifests(options.ExplicitManifestDir);
+            }
+
+            // Any parser that has state we need to turn on during the conversion so that the the state will build up
+            // (we copy it out below).   To date there are only three parsers that do this (registered, dynamic 
+            // (which includes registered), an kernel)   
+            // TODO add an option that allows users to add their own here.   
+            // Note that I am not using the variables below, I am fetching the value so that it has the side
+            // effect of creating this parser (which will in turn indicate to the system that I care about the
+            // state these parsers generate as part of their operation).  
             var dynamicParser = source.Dynamic;
+            var clrParser = source.Clr;
+            var kernelParser = source.Kernel;
 
             // Get all the users data from the original source.   Note that this happens by reference, which means 
             // that even though we have not built up the state yet (since we have not scanned the data yet), it will
@@ -3203,7 +3224,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 67; }
+            get { return 66; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -3278,7 +3299,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // at them with the index into this array.  (see TraceLog.GetRelatedActivityID).
         internal GrowableArray<Guid> relatedActivityIDs;
 
-        #region EventPages
+#region EventPages
         internal const int eventsPerPage = 1024;    // We keep track of  where events are in 'pages' of this size.
         private struct EventPageEntry
         {
@@ -3290,11 +3311,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             public long TimeQPC;                        // Time for the first items in this page. 
             public StreamLabel Position;                // Offset to this page. 
         }
-        #endregion
+#endregion
 
         // These classes are only used during conversion from ETL files 
         // They are not needed for ETLX consumption.  
-        #region PastEventInfo
+#region PastEventInfo
         enum PastEventInfoIndex { Invalid = -1 };
 
         /// <summary>
@@ -3457,7 +3478,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 return stackInfo;
             }
             public void SetEventStackInfo(PastEventInfoIndex index, IncompleteStack stackInfo) { pastEventInfo[(int)index].EventStackInfo = stackInfo; }
-            #region private
+#region private
             // Stuff we remember about past events, mostly it is the IncompleteStack (partial stacks to be put together)
             // and the counts of each event type.
             private struct PastEventInfoEntry
@@ -3481,11 +3502,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             PastEventInfoEntry[] pastEventInfo;
             int curPastEventInfo;                       // points at the first INVALD entry.  
             TraceLog log;
-            #endregion
+#endregion
         }
-        #endregion
+#endregion
 
-        #region EventsToStackIndex
+#region EventsToStackIndex
         internal struct EventsToStackIndex
         {
             internal EventsToStackIndex(EventIndex eventIndex, CallStackIndex stackIndex)
@@ -3551,9 +3572,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private static readonly Func<EventIndex, EventsToStackIndex, int> stackComparer = delegate (EventIndex eventID, EventsToStackIndex elem)
             { return TraceEvent.Compare(eventID, elem.EventIndex); };
 
-        #endregion
+#endregion
 
-        #region EventsToCodeAddressIndex
+#region EventsToCodeAddressIndex
 
         struct EventsToCodeAddressIndex
         {
@@ -3570,7 +3591,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private static readonly Func<EventIndex, EventsToCodeAddressIndex, int> CodeAddressComparer = delegate (EventIndex eventIndex, EventsToCodeAddressIndex elem)
             { return TraceEvent.Compare(eventIndex, elem.EventIndex); };
 
-        #endregion
+#endregion
 
         // These are only used when converting from ETL
         internal TraceEventDispatcher rawEventSourceToConvert;      // used to convert from raw format only.  Null for ETLX files.
@@ -3591,7 +3612,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -3741,7 +3762,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal bool HasActivitySubscriptions { get { return activityScheduled != null || activityStarted != null || activityCompleted != null; } }
 #endif
 
-        #region private
+#region private
         /// <summary>
         /// override
         /// </summary>
@@ -3782,7 +3803,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         bool registeredUnhandledEvents;
         internal bool ownsItsTraceLog;          // Used for real time sessions, Dispose the TraceLog if this is disposed.  
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -3807,7 +3828,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
 
-        #region private
+#region private
         /// <summary>
         /// Given an event 'data' look up the statistics for events that type.  
         /// </summary>
@@ -3876,7 +3897,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         Dictionary<TraceEventCountsKey, TraceEventCounts> m_counts;
         internal TraceLog m_log;
-        #endregion
+#endregion
     }
 
     [StructLayout(LayoutKind.Auto)]
@@ -4066,7 +4087,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("/>");
             return sb.ToString();
         }
-        #region private
+#region private
         private TraceEvent Template
         {
             get
@@ -4125,7 +4146,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // Not serialized
         bool m_templateInited;
         TraceEvent m_template;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -4219,7 +4240,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         public double EndTimeRelativeMSec { get { return log.QPCTimeToRelMSec(endTimeQPC); } }
 
-        #region private
+#region private
 
         IEnumerator<TraceEvent> IEnumerable<TraceEvent>.GetEnumerator()
         {
@@ -4410,7 +4431,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal long endTimeQPC;
         internal Predicate<TraceEvent> predicate;
         internal bool backwards;
-        #endregion
+#endregion
     }
     /// <summary>
     /// Each process is given a unique index from 0 to TraceProcesses.Count-1 and unlike 
@@ -4538,7 +4559,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceProcesses>");
             return sb.ToString();
         }
-        #region Private
+#region Private
         /// <summary>
         /// Enumerate all the processes that occurred in the trace log, ordered by creation time.   
         /// </summary> 
@@ -4674,7 +4695,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -4836,8 +4857,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.Append("/>");
             return sb.ToString();
         }
-        #region Private
-        #region EventHandlersCalledFromTraceLog
+#region Private
+#region EventHandlersCalledFromTraceLog
         // #ProcessHandlersCalledFromTraceLog
         // 
         // called from TraceLog.CopyRawEvents
@@ -4876,70 +4897,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Log.DebugWarn(startTimeQPC <= endTimeQPC, "Process Ends before it starts! StartTime: " + StartTimeRelativeMsec.ToString("f4"), data);
         }
 
-        /// <summary>
-        /// Sets the 'Parent' field for the process (based on the ParentID).   
-        /// 
-        /// sentinel is internal to the implementation, external callers should always pass null. 
-        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it woudl form
-        /// a loop in the parent chain, which we definately don't want.  
-        /// </summary>
-        internal void SetParentForProcess(TraceProcess sentinel = null)
-        {
-            if (parent != null)                     // already initialized, nothing to do.   
-                return;
-
-            if (parentID == -1)
-                return;
-
-            if (parentID == 0)                      // Zero is the idle process and we prefer that it not have children.  
-            {
-                parentID = -1;
-                return;
-            }
-
-            // Look up the process ID, if we fail, we are done.  
-            int index;
-            var potentialParent = Log.Processes.FindProcessAndIndex(parentID, startTimeQPC, out index);
-            if (potentialParent == null)
-                return;
-
-            // If this is called from the outside, intialize the sentinel.  We will pass it
-            // along in our recurisve calls.  It is just an illegal value that we can use 
-            // to indicate that a node is currnetly a valid parent (becase it would form a loop)
-            if (sentinel == null)
-                sentinel = new TraceProcess(-1, Log, ProcessIndex.Invalid);
-
-            // During our recursive calls mark our parent with the sentinel this avoids loops.
-            parent = sentinel;                      // Mark this node as off limits.  
-
-            // If the result is marked (would form a loop), give up setting the parent variable.  
-            if (potentialParent.parent == sentinel)
-            {
-                parent = null;
-                parentID = -1;                              // This process ID is wrong, poison it to avoid using it again.  
-                return;
-            }
-
-            potentialParent.SetParentForProcess(sentinel);   // Finish the intialization of the parent Process, also giving up if it hits a sentinel
-            parent = potentialParent;                        // OK parent is fully intialized, I can reset the sentenel
-        }
-
-#if DEBUG
-        internal int ParentDepth()
-        {
-            int depth = 0;
-            TraceProcess cur = this;
-            while (depth < Log.Processes.Count)
-            {
-                if (cur.parent == null)
-                    break;
-                depth++;
-                cur = cur.parent;
-            }
-            return depth;
-        }
-#endif
-        #endregion
+#endregion
 
         /// <summary>
         /// Create a new TraceProcess.  It should only be done by log.CreateTraceProcess because
@@ -5225,7 +5183,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// activity ID reused by another activity).
         /// </summary>
         internal Dictionary<Address, ActivityIndex> scheduledActivityIdToActivityIndex;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -5302,7 +5260,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceThreads>");
             return sb.ToString();
         }
-        #region Private
+#region Private
         internal TraceThread GetThread(int threadID, long timeQPC)
         {
             InitThread();
@@ -5409,7 +5367,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             throw new NotImplementedException(); // GetEnumerator
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -5544,7 +5502,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     "EndTimeRelative=" + XmlUtilities.XmlQuote(EndTimeRelativeMSec).PadRight(8) + " " +
                    "/>";
         }
-        #region Private
+#region Private
         /// <summary>
         /// Create a new TraceProcess.  It should only be done by log.CreateTraceProcess because
         /// only TraceLog is responsible for generating a new ProcessIndex which we need.   'processIndex'
@@ -5628,7 +5586,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// compute this.   It is only used during generation of a TraceLog file.  
         /// </summary>
         internal EventIndex lastBlockingCSwitchEventIndex;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -5683,7 +5641,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return sb.ToString();
         }
 
-        #region Private
+#region Private
         /// <summary>
         /// Returns all modules in the process.  Note that managed modules may appear twice 
         /// (once for the managed load and once for an unmanaged (LoadLibrary) load.  
@@ -6070,7 +6028,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         TraceProcess process;
         GrowableArray<TraceLoadedModule> modules;               // Contains unmanaged modules sorted by key
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -6154,7 +6112,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                    "/>";
         }
 
-        #region Private
+#region Private
 
         internal TraceLoadedModule(TraceProcess process, TraceModuleFile moduleFile, Address imageBase)
         {
@@ -6211,7 +6169,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private TraceModuleFile moduleFile;         // Can be null (modules with files)
 
         internal int stackVisitedID;                // Used to determine if we have already visited this node or not.   
-        #endregion
+#endregion
     }
     /// <summary>
     /// A TraceManagedModule represents the loading of a .NET module into .NET AppDomain.
@@ -6251,7 +6209,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                    nativeInfo +
                    "</TraceManagedModule>";
         }
-        #region Private
+#region Private
         internal TraceManagedModule(TraceProcess process, TraceModuleFile moduleFile, long moduleID)
             : base(process, moduleFile, moduleID)
         { }
@@ -6276,7 +6234,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out nativeModule);
             deserializer.Read(out flags); this.flags = (ModuleFlags)flags;
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -6390,7 +6348,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceCallStacks>");
             return sb.ToString();
         }
-        #region private
+#region private
         /// <summary>
         /// IEnumerable Support
         /// </summary>
@@ -6575,7 +6533,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private DeferedRegion lazyCallStacks;
         private TraceCodeAddresses codeAddresses;
         private TraceLog log;
-        #endregion
+#endregion
     }
     /// <summary>
     /// A TraceCallStack is a structure that represents a call stack as a linked list. Each TraceCallStack 
@@ -6621,7 +6579,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
             return sb;
         }
-        #region private
+#region private
         internal TraceCallStack(TraceCallStacks stacks, CallStackIndex stackIndex)
         {
             this.callStacks = stacks;
@@ -6630,7 +6588,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         private TraceCallStacks callStacks;
         private CallStackIndex stackIndex;
-        #endregion
+#endregion
     }
 
 
@@ -6859,8 +6817,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var methodRva = (uint)(address - moduleFile.ImageBase);
                 reader.m_log.WriteLine("GetSourceLine: address within module: native case, VA = {0:x}, ImageBase = {1:x}, RVA = {2:x}", address, moduleFile.ImageBase, methodRva);
-                windowsSymbolModule = OpenPdbForModuleFile(reader, moduleFile) as NativeSymbolModule;
-                if (windowsSymbolModule != null)
+                symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
+                if (symbolReaderModule != null)
                 {
                     string ilAssemblyName;
                     uint ilMetaDataToken;
@@ -6884,8 +6842,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                             if (string.Compare(moduleFileName, ilAssemblyName, StringComparison.OrdinalIgnoreCase) == 0)
                             {
                                 TraceModuleFile ilAssemblyModule = moduleFile.ManagedModule;
-                                ilSymbolModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
-                                if (ilSymbolModule != null)
+                                SymbolModule ilSymbolReaderModule = OpenPdbForModuleFile(reader, ilAssemblyModule);
+                                if (ilSymbolReaderModule != null)
                                 {
                                     reader.m_log.WriteLine("GetSourceLine: Found PDB for IL module {0}", ilSymbolModule.SymbolFilePath);
                                     ret = ilSymbolModule.SourceLocationForManagedCode(ilMetaDataToken, ilMethodOffset);
@@ -6955,8 +6913,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (moduleFile.ManagedModule != null)
                 moduleFile = moduleFile.ManagedModule;
 
-            ilSymbolModule = OpenPdbForModuleFile(reader, moduleFile);
-            if (ilSymbolModule == null)
+            symbolReaderModule = OpenPdbForModuleFile(reader, moduleFile);
+            if (symbolReaderModule == null)
             {
                 reader.m_log.WriteLine("GetSourceLine: Failed to look up PDB for {0}", moduleFile.FilePath);
                 return null;
@@ -6994,7 +6952,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceCodeAddresses>");
             return sb.ToString();
         }
-        #region private
+#region private
         /// <summary>
         /// We expose ILToNativeMap internally so we can do diagnostics.   
         /// </summary>
@@ -7888,7 +7846,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private DeferedRegion lazyCodeAddresses;
         internal GrowableArray<CodeAddressInfo> codeAddresses;
 
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -8038,7 +7996,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.Append("/>");
             return sb;
         }
-        #region private
+#region private
         internal TraceCodeAddress(TraceCodeAddresses codeAddresses, CodeAddressIndex codeAddressIndex)
         {
             this.codeAddresses = codeAddresses;
@@ -8047,7 +8005,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         TraceCodeAddresses codeAddresses;
         CodeAddressIndex codeAddressIndex;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -8166,7 +8124,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceMethods>");
             return sb.ToString();
         }
-        #region private
+#region private
         internal TraceMethods(TraceCodeAddresses codeAddresses) { this.codeAddresses = codeAddresses; }
 
         /// <summary>
@@ -8248,7 +8206,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private GrowableArray<MethodInfo> methods;
         private TraceMethod[] methodObjects;
         internal TraceCodeAddresses codeAddresses;
-        #endregion
+#endregion
     }
     /// <summary>
     /// A TraceMethod represents the symbolic information for a particular method.   To maximizes haring a TraceMethod 
@@ -8311,7 +8269,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.Append("/>");
             return sb;
         }
-        #region private
+#region private
         internal TraceMethod(TraceMethods methods, MethodIndex methodIndex)
         {
             this.methods = methods;
@@ -8320,7 +8278,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         TraceMethods methods;
         MethodIndex methodIndex;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -8378,7 +8336,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             sb.AppendLine("</TraceModuleFiles>");
             return sb.ToString();
         }
-        #region private
+#region private
         /// <summary>
         /// Enumerate all the files that occurred in the trace log.  
         /// </summary> 
@@ -8488,7 +8446,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private TraceLog log;
         private Dictionary<string, TraceModuleFile> moduleFilesByName;
         private GrowableArray<TraceModuleFile> moduleFiles;
-        #endregion
+#endregion
     }
     /// <summary>
     /// The TraceModuleFile represents a executable file that can be loaded into memory (either an EXE or a
@@ -8634,7 +8592,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     "FileVersion=" + XmlUtilities.XmlQuote(FileVersion) + " " +
                    "/>";
         }
-        #region Private
+#region Private
         internal TraceModuleFile(string fileName, Address imageBase, ModuleFileIndex moduleFileIndex)
         {
             if (fileName != null)
@@ -8696,7 +8654,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             deserializer.Read(out codeAddressesInModule);
             deserializer.Read(out managedModule);
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -8929,7 +8887,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             return Name;
         }
 
-        #region private
+#region private
         internal TraceActivity(ActivityIndex activityIndex, TraceActivity creator, EventIndex creationEventIndex,
             CallStackIndex creationCallStackIndex, long creationTimeQPC, Address rawID, bool multiTrigger, bool gcBound, TraceActivity.ActivityKind kind)
         {
@@ -8998,7 +8956,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal Address rawID;                      // ID used to identify this activity before we normalized it.  
         internal TraceActivity prevActivityOnThread; // We can have a stack of active activities on a given thread.  This points to the one we preempted.  
                                                      // This is only used in the ActivityComputer.      
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -9098,9 +9056,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         ///  starts.  
         /// </summary>
         public string ExplicitManifestDir;
-        #region private
+#region private
         private TextWriter m_ConversionLog;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -9300,7 +9258,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
     }
 
-    #region Private Classes
+#region Private Classes
 
 
     internal struct JavaScriptSourceKey : IEquatable<JavaScriptSourceKey>
@@ -9341,5 +9299,5 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     }
 
 
-    #endregion
+#endregion
 }

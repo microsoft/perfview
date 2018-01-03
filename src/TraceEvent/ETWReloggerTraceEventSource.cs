@@ -11,6 +11,8 @@ using Utilities;
 
 #pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
 
+#pragma warning disable 0414 // This is is because m_scratchBufferSize was #if conditionally removed, and I don't want it to complain about it.  
+
 namespace Microsoft.Diagnostics.Tracing
 {
     /// <summary>
@@ -515,6 +517,6 @@ namespace Microsoft.Diagnostics.Tracing
         TraceEventNativeMethods.EVENT_RECORD* m_curTraceEventRecord;             // This is the TraceEvent eventRecord that corresponds to the ITraceEvent. 
         TraceLoggingEventId m_traceLoggingEventId;                               // Used to give TraceLogging events Event IDs. 
 
-        #endregion
+#endregion
     }
 }

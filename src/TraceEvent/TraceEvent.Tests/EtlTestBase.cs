@@ -10,22 +10,45 @@ using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
-    public abstract class EtlTestBase : TestBase
+    public abstract class EtlTestBase
     {
+        protected static readonly string OriginalBaselineDir = FindInputDir();
+        protected static readonly string TestDataDir = @".\inputs";
+        protected static readonly string UnZippedDataDir = @".\unzipped";
+        protected static readonly string BaseOutputDir = @".\output";
+
         protected EtlTestBase(ITestOutputHelper output)
-            : base(output)
         {
+            Output = output;
+            OutputDir = Path.Combine(BaseOutputDir, Guid.NewGuid().ToString("N").Substring(0, 8));
         }
 
-        public static IEnumerable<object[]> TestEtlFiles
+        protected ITestOutputHelper Output
         {
-            get
+            get;
+        }
+
+        protected string OutputDir
+        {
+            get;
+        }
+
+        /// <summary>
+        ///  Tries to find the original place in the source base where input data comes from 
+        ///  This may not always work if the tests are copied away from the source code (cloud test does this).  
+        /// </summary>
+        /// <returns></returns>
+        private static string FindInputDir()
+        {
+            string dir = Environment.CurrentDirectory;
+            while (dir != null)
             {
-                // The test data is contained in files of the same name, but with a .zip extension.
-                // Only the names are returned since the extracted files will be in a different directory.
-                return from file in Directory.EnumerateFiles(TestDataDir, "*.etl.zip")
-                       select new[] { Path.GetFileNameWithoutExtension(file) };
+                string candidate = Path.Combine(dir, @"TraceEvent\TraceEvent.Tests\inputs");
+                if (Directory.Exists(candidate))
+                    return Path.GetFullPath(candidate);
+                dir = Path.GetDirectoryName(dir);
             }
+            return @"%PERFVIEW%\src\TraceEvent\TraceEvent.Tests\inputs";
         }
 
         private static bool s_fileUnzipped;
@@ -57,6 +80,17 @@ namespace TraceEventTests
             }
             Trace.WriteLine("Finished unzipping data");
             s_fileUnzipped = true;
+        }
+
+        public static IEnumerable<object[]> TestEtlFiles
+        {
+            get
+            {
+                // The test data is contained in files of the same name, but with a .zip extension.
+                // Only the names are returned since the extracted files will be in a different directory.
+                return from file in Directory.EnumerateFiles(TestDataDir, "*.etl.zip")
+                       select new[] { Path.GetFileNameWithoutExtension(file) };
+            }
         }
 
         protected void PrepareTestData()
