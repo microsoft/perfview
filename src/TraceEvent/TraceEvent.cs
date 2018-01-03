@@ -2827,6 +2827,8 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public void AddDispatchHook(Func<TraceEvent, bool> onDispatch)
         {
+            if (onDispatch == null) throw new ArgumentException("Must provide a non-null callback", "onDispatch", null);
+
             var hook = new DispatchHookEntry()
             {
                 OnDispatch = onDispatch,
@@ -2834,7 +2836,7 @@ namespace Microsoft.Diagnostics.Tracing
             };
 
             // last in first out order
-            if (DispatchHook != null) hook.Next = DispatchHook;
+            hook.Next = DispatchHook;
             DispatchHook = hook;
         }
 
@@ -2970,11 +2972,13 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     // check if we should dispatch this event, the first to indicate
                     // false we will return without dispatching
-                    var hook = DispatchHook;
-                    while (hook != null && hook.OnDispatch != null)
+                    for (var hook = DispatchHook; hook != null; hook = hook.Next)
                     {
-                        if (!hook.OnDispatch(anEvent)) return;
-                        hook = hook.Next;
+                        if (!hook.OnDispatch(anEvent))
+                        {
+                            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                            return;
+                        }
                     }
                 }
 
@@ -3343,7 +3347,6 @@ namespace Microsoft.Diagnostics.Tracing
         }
         private DispatchHookEntry DispatchHook;
         #endregion
-
 
         #region TemplateHashTable
         struct TemplateEntry
