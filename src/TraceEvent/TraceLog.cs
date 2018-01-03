@@ -496,53 +496,56 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Set up callbacks that handle stack processing 
             Action<TraceEvent> onAllEvents = delegate (TraceEvent data)
             {
-                // we delay things so we have a chance to match up stacks.  
-
-                // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
-                //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
-                TraceEventCounts countForEvent = this.Stats.GetEventCounts(data);
-                Debug.Assert((int)data.EventIndex == this.eventCount);
-                countForEvent.m_count++;
-                countForEvent.m_eventDataLenTotal += data.EventDataLength;
-
-                // Remember past events so we can hook up stacks to them.  
-                data.eventIndex = (EventIndex)this.eventCount;
-                this.pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-                this.eventCount++;
-
-                // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
-                // same notion of what that is if we have two dispatcher.  
-                if (this.rawKernelEventSource != null)
+                // we need to guard our data structures from concurrent access which would otherwise 
+                // lead to sporadic errors when RemoveAllButLastEntries(ref this.eventsToStacks, dd) is executed.
+                // During a realtime session where the normal trace thread processes a callstack event and at the same time the realtime timer queue thread 
+                // is called for onAllEnents it can cause sporadic IndexOutOfRangeExceptions
+                lock (realTimeQueue)    
                 {
-                    this.rawEventSourceToConvert.currentID = (EventIndex)this.eventCount;
-                    this.rawKernelEventSource.currentID = (EventIndex)this.eventCount;
-                }
+                    // we delay things so we have a chance to match up stacks.  
 
-                // Skip samples from the idle thread.   
-                if (data.ProcessID == 0 && data is SampledProfileTraceData)
-                    return;
+                    // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
+                    //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
+                    TraceEventCounts countForEvent = this.Stats.GetEventCounts(data);
+                    Debug.Assert((int)data.EventIndex == this.eventCount);
+                    countForEvent.m_count++;
+                    countForEvent.m_eventDataLenTotal += data.EventDataLength;
 
-                var extendedDataCount = data.eventRecord->ExtendedDataCount;
-                if (extendedDataCount != 0)
-                    this.bookKeepingEvent |= this.ProcessExtendedData(data, extendedDataCount, countForEvent);
+                    // Remember past events so we can hook up stacks to them.  
+                    data.eventIndex = (EventIndex)this.eventCount;
+                    this.pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
+                    this.eventCount++;
 
-                // TODO Is there a better way of keeping the history under control?   We need to worry about wrap around as well. 
-                if (this.eventsToStacks.Count > 5000)
-                    RemoveAllButLastEntries(ref this.eventsToStacks, 60);
-                if (this.eventsToCodeAddresses.Count > 5000)
-                    RemoveAllButLastEntries(ref this.eventsToCodeAddresses, 60);
-                if (this.cswitchBlockingEventsToStacks.Count > 5000)
-                    RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, 60);
+                    // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
+                    // same notion of what that is if we have two dispatcher.  
+                    if (this.rawKernelEventSource != null)
+                    {
+                        this.rawEventSourceToConvert.currentID = (EventIndex)this.eventCount;
+                        this.rawKernelEventSource.currentID = (EventIndex)this.eventCount;
+                    }
 
-                // Optimization.  if we are running on Win7 (this.rawKernelEventSource != null) you don't need to take a lock
-                // here because we are already under lock for the whole dispatch.   
-                if (this.rawKernelEventSource == null)
-                {
-                    lock (realTimeQueue)    // We use the queue to lock pretty much all data associated with the log.   
-                        realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
-                }
-                else
+                    // Skip samples from the idle thread.   
+                    if (data.ProcessID == 0 && data is SampledProfileTraceData)
+                        return;
+
+                    var extendedDataCount = data.eventRecord->ExtendedDataCount;
+                    if (extendedDataCount != 0)
+                        this.bookKeepingEvent |= this.ProcessExtendedData(data, extendedDataCount, countForEvent);
+
+                    const int MaxEventCountBeforeReset = 10000;  // For large applications 7K events are not unusual. Keep a good amount of them until we run into perf problems
+                                                                 // For now favor stacks over perf 
+
+                    // It is important to resize down to MaxEventCountBeforeReset/2, otherwise
+                    // we will copy the array around after every new event in a steady fashion which would be very inefficient
+                    if (this.eventsToStacks.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.eventsToStacks, MaxEventCountBeforeReset/2);
+                    if (this.eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.eventsToCodeAddresses, MaxEventCountBeforeReset/2);
+                    if (this.cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, MaxEventCountBeforeReset/2);
+
                     realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
+                }
             };
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
