@@ -488,7 +488,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
 
-            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
+            if (Environment.Is64BitOperatingSystem)
                 this.pointerSize = 8;
 
             //double lastTime = 0;
@@ -496,53 +496,56 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Set up callbacks that handle stack processing 
             Action<TraceEvent> onAllEvents = delegate (TraceEvent data)
             {
-                // we delay things so we have a chance to match up stacks.  
-
-                // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
-                //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
-                TraceEventCounts countForEvent = this.Stats.GetEventCounts(data);
-                Debug.Assert((int)data.EventIndex == this.eventCount);
-                countForEvent.m_count++;
-                countForEvent.m_eventDataLenTotal += data.EventDataLength;
-
-                // Remember past events so we can hook up stacks to them.  
-                data.eventIndex = (EventIndex)this.eventCount;
-                this.pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
-                this.eventCount++;
-
-                // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
-                // same notion of what that is if we have two dispatcher.  
-                if (this.rawKernelEventSource != null)
+                // we need to guard our data structures from concurrent access which would otherwise 
+                // lead to sporadic errors when RemoveAllButLastEntries(ref this.eventsToStacks, dd) is executed.
+                // During a realtime session where the normal trace thread processes a callstack event and at the same time the realtime timer queue thread 
+                // is called for onAllEnents it can cause sporadic IndexOutOfRangeExceptions
+                lock (realTimeQueue)    
                 {
-                    this.rawEventSourceToConvert.currentID = (EventIndex)this.eventCount;
-                    this.rawKernelEventSource.currentID = (EventIndex)this.eventCount;
-                }
+                    // we delay things so we have a chance to match up stacks.  
 
-                // Skip samples from the idle thread.   
-                if (data.ProcessID == 0 && data is SampledProfileTraceData)
-                    return;
+                    // if (!removeFromStream && data.Opcode != TraceEventOpcode.DataCollectionStart && data.ProcessID != 0 && data.ProviderGuid != ClrRundownTraceEventParser.ProviderGuid)
+                    //     Trace.WriteLine("REAL TIME QUEUE:  " + data.ToString());
+                    TraceEventCounts countForEvent = this.Stats.GetEventCounts(data);
+                    Debug.Assert((int)data.EventIndex == this.eventCount);
+                    countForEvent.m_count++;
+                    countForEvent.m_eventDataLenTotal += data.EventDataLength;
 
-                var extendedDataCount = data.eventRecord->ExtendedDataCount;
-                if (extendedDataCount != 0)
-                    this.bookKeepingEvent |= this.ProcessExtendedData(data, extendedDataCount, countForEvent);
+                    // Remember past events so we can hook up stacks to them.  
+                    data.eventIndex = (EventIndex)this.eventCount;
+                    this.pastEventInfo.LogEvent(data, data.eventIndex, countForEvent);
+                    this.eventCount++;
 
-                // TODO Is there a better way of keeping the history under control?   We need to worry about wrap around as well. 
-                if (this.eventsToStacks.Count > 5000)
-                    RemoveAllButLastEntries(ref this.eventsToStacks, 60);
-                if (this.eventsToCodeAddresses.Count > 5000)
-                    RemoveAllButLastEntries(ref this.eventsToCodeAddresses, 60);
-                if (this.cswitchBlockingEventsToStacks.Count > 5000)
-                    RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, 60);
+                    // currentID is used by the dispatcher to define the EventIndex.  Make sure at both sources have the
+                    // same notion of what that is if we have two dispatcher.  
+                    if (this.rawKernelEventSource != null)
+                    {
+                        this.rawEventSourceToConvert.currentID = (EventIndex)this.eventCount;
+                        this.rawKernelEventSource.currentID = (EventIndex)this.eventCount;
+                    }
 
-                // Optimization.  if we are running on Win7 (this.rawKernelEventSource != null) you don't need to take a lock
-                // here because we are already under lock for the whole dispatch.   
-                if (this.rawKernelEventSource == null)
-                {
-                    lock (realTimeQueue)    // We use the queue to lock pretty much all data associated with the log.   
-                        realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
-                }
-                else
+                    // Skip samples from the idle thread.   
+                    if (data.ProcessID == 0 && data is SampledProfileTraceData)
+                        return;
+
+                    var extendedDataCount = data.eventRecord->ExtendedDataCount;
+                    if (extendedDataCount != 0)
+                        this.bookKeepingEvent |= this.ProcessExtendedData(data, extendedDataCount, countForEvent);
+
+                    const int MaxEventCountBeforeReset = 10000;  // For large applications 7K events are not unusual. Keep a good amount of them until we run into perf problems
+                                                                 // For now favor stacks over perf 
+
+                    // It is important to resize down to MaxEventCountBeforeReset/2, otherwise
+                    // we will copy the array around after every new event in a steady fashion which would be very inefficient
+                    if (this.eventsToStacks.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.eventsToStacks, MaxEventCountBeforeReset/2);
+                    if (this.eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.eventsToCodeAddresses, MaxEventCountBeforeReset/2);
+                    if (this.cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
+                        RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, MaxEventCountBeforeReset/2);
+
                     realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
+                }
             };
 
             // See if we are on Win7 and have a separate kernel session associated with 'session'
@@ -770,8 +773,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
 
             // TODO copy the additional data from a ETLX file if the source is ETLX 
-            using (TraceLog newLog = new TraceLog())
-            {
+            using (TraceLog newLog = new TraceLog()) {
                 newLog.rawEventSourceToConvert = source;
 
                 newLog.options = options;
@@ -3255,6 +3257,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         bool bookeepingEventThatMayHaveStack;               // Some bookkeeping events (ThreadDCEnd) might have stacks 
         bool noStack;                                       // This event should never have a stack associated with it, so skip them if we every try to attach a stack. 
 
+        /// <summary>
+        /// Get number of JITed methods which tend to consuem more and more memory over time
+        /// </summary>
+        public int JittedMethodsCount
+        {
+            get { return jittedMethods.Count; }
+        }
+
         // TODO FIX NOW remove the jittedMethods ones.  
         List<MethodLoadUnloadVerboseTraceData> jittedMethods;
         List<MethodLoadUnloadJSTraceData> jsJittedMethods;
@@ -3611,6 +3621,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public EventIndex CurrentEventIndex { get { return currentID - 1; } }
 
         /// <summary>
+        /// Register to this event to prevent unhandled thread exceptions when a Realtime ETW kernel trace session could not be started.
+        /// This is pretty common on Windows 7 machines where only one Kernel ETW session is allowed.
+        /// </summary>
+        public event Action<Exception> OnKernelETWSessionThreadException;
+
+        /// <summary>
         /// override
         /// </summary>
         public override bool Process()
@@ -3622,11 +3638,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Thread kernelTask = null;
                 if (TraceLog.rawKernelEventSource != null)
                 {
-                    kernelTask = new Thread(delegate (object o)
-                    {
-                        TraceLog.rawKernelEventSource.Process();
-                        TraceLog.rawEventSourceToConvert.StopProcessing();
-                    });
+                    kernelTask = new Thread(                        
+                        delegate (object o)
+                        {
+                            try
+                            {
+                                TraceLog.rawKernelEventSource.Process();
+                                TraceLog.rawEventSourceToConvert.StopProcessing();
+                            }
+                            catch (Exception ex)
+                            {
+                                // prevent unhandled exceptions bubbling up 
+                                if (OnKernelETWSessionThreadException != null)
+                                {
+                                    OnKernelETWSessionThreadException(ex);
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException("Realtime ETW Kernel thread processor did throw. Please register to TraceLogEventSource.OnKernelETWSessionThreadException to prevent this exception to become unhandled.", ex);
+                                }
+                            }
+                        });
                     kernelTask.Start();
                 }
                 TraceLog.rawEventSourceToConvert.Process();
