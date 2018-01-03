@@ -458,7 +458,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(_QPCFreq != 0);
             if (pointerSize == 0 || IsRealTime)  // We get on x64 OS 4 as pointer size which is wrong for realtime sessions. Fix it up. 
             {
-                pointerSize = Environment.Is64BitOperatingSystem ? 8 : 4;
+                pointerSize = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64) ? 8 : 4;
                 Debug.Assert((logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0);
             }
             Debug.Assert(pointerSize == 4 || pointerSize == 8);

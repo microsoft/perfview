@@ -488,7 +488,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
 
-            if (Environment.Is64BitOperatingSystem)
+            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
                 this.pointerSize = 8;
 
             //double lastTime = 0;
@@ -773,7 +773,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 options = new TraceLogOptions();
 
             // TODO copy the additional data from a ETLX file if the source is ETLX 
-            using (TraceLog newLog = new TraceLog()) {
+            using (TraceLog newLog = new TraceLog())
+            {
                 newLog.rawEventSourceToConvert = source;
 
                 newLog.options = options;
@@ -3257,14 +3258,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         bool bookeepingEventThatMayHaveStack;               // Some bookkeeping events (ThreadDCEnd) might have stacks 
         bool noStack;                                       // This event should never have a stack associated with it, so skip them if we every try to attach a stack. 
 
-        /// <summary>
-        /// Get number of JITed methods which tend to consuem more and more memory over time
-        /// </summary>
-        public int JittedMethodsCount
-        {
-            get { return jittedMethods.Count; }
-        }
-
         // TODO FIX NOW remove the jittedMethods ones.  
         List<MethodLoadUnloadVerboseTraceData> jittedMethods;
         List<MethodLoadUnloadJSTraceData> jsJittedMethods;
@@ -3621,12 +3614,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public EventIndex CurrentEventIndex { get { return currentID - 1; } }
 
         /// <summary>
-        /// Register to this event to prevent unhandled thread exceptions when a Realtime ETW kernel trace session could not be started.
-        /// This is pretty common on Windows 7 machines where only one Kernel ETW session is allowed.
-        /// </summary>
-        public event Action<Exception> OnKernelETWSessionThreadException;
-
-        /// <summary>
         /// override
         /// </summary>
         public override bool Process()
@@ -3638,27 +3625,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Thread kernelTask = null;
                 if (TraceLog.rawKernelEventSource != null)
                 {
-                    kernelTask = new Thread(                        
-                        delegate (object o)
-                        {
-                            try
-                            {
-                                TraceLog.rawKernelEventSource.Process();
-                                TraceLog.rawEventSourceToConvert.StopProcessing();
-                            }
-                            catch (Exception ex)
-                            {
-                                // prevent unhandled exceptions bubbling up 
-                                if (OnKernelETWSessionThreadException != null)
-                                {
-                                    OnKernelETWSessionThreadException(ex);
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException("Realtime ETW Kernel thread processor did throw. Please register to TraceLogEventSource.OnKernelETWSessionThreadException to prevent this exception to become unhandled.", ex);
-                                }
-                            }
-                        });
+                    kernelTask = new Thread(delegate (object o)
+                    {
+                        TraceLog.rawKernelEventSource.Process();
+                        TraceLog.rawEventSourceToConvert.StopProcessing();
+                    });
                     kernelTask.Start();
                 }
                 TraceLog.rawEventSourceToConvert.Process();
