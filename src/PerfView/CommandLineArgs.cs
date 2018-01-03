@@ -396,6 +396,7 @@ namespace PerfView
                 ClrEvents = ClrTraceEventParser.Keywords.GC | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement | ClrTraceEventParser.Keywords.Stack |
                             ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.StopEnumeration | ClrTraceEventParser.Keywords.SupressNGen | 
                             ClrTraceEventParser.Keywords.Loader | ClrTraceEventParser.Keywords.Exception;
+                TplEvents = TplEtwProviderTraceEventParser.Keywords.None;
 
                 // This is not quite correct if you have providers of your own, but this covers the most important case.  
                 if (Providers == null)

@@ -1,65 +1,45 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props" Condition="Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props')" />
-  <Import Project="..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props" Condition="Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <PerfLibRootPath>$(MSBuildThisFileDirectory)\..</PerfLibRootPath>
-    <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
+    <TargetFrameworks>net45;netstandard1.6</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup>
-    <AllowCrossTargeting>true</AllowCrossTargeting>
-    <TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v4.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.settings.targets" />
-  <PropertyGroup Condition=" '$(BuildInRazzle)' == 'true' ">
-    <UseVsVersion>true</UseVsVersion>
-    <CreateMetaAssembly>true</CreateMetaAssembly>
-    <PublishMetaAssemblyVisibility>Inter</PublishMetaAssemblyVisibility>
-  </PropertyGroup>
-  <PropertyGroup>
-    <ProjectGuid>{B68F4968-A7CF-41CC-AD6E-373DB5E67944}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.Diagnostics.Tracing</RootNamespace>
     <AssemblyName>Microsoft.Diagnostics.Tracing.TraceEvent</AssemblyName>
-    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
-    <AssemblyAttributeComVisible>false</AssemblyAttributeComVisible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <LangVersion>6</LangVersion>
-    <Features>strict</Features>
+
+    <Description>TraceEvent library.</Description>
+    <Company>Microsoft</Company>
+    <Copyright>Copyright © Microsoft 2010</Copyright>
+    <Version>2.0.2.0</Version>
+    <FileVersion>2.0.2.0</FileVersion>
+    <InformationalVersion>2.0.2-dev</InformationalVersion>
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>
+    <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>0649,0618</NoWarn>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
-    <CodeAnalysisIgnoreGeneratedCode>true</CodeAnalysisIgnoreGeneratedCode>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>3</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>0649,0618</NoWarn>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DocumentationFile>bin\Release\Microsoft.Diagnostics.Tracing.TraceEvent.xml</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
+
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+  </ItemGroup>
+
+  <Target Name="SetNuspecProperties">
+    <PropertyGroup>
+      <NuspecProperties>Configuration=$(Configuration);version=$(InformationalVersion);OutDir=$(OutputPath)</NuspecProperties>
+    </PropertyGroup>
+  </Target>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
+    <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
   <!--
@@ -120,97 +100,13 @@
     <Compile Include="..\Utilities\XmlUtilities.cs">
       <Link>Utilities\XmlUtilities.cs</Link>
     </Compile>
-    <Compile Include="Computers\ActivityComputer.cs" />
-    <Compile Include="Computers\GCReferenceComputer.cs" />
-    <Compile Include="Computers\TraceManagedProcess.cs" />
-    <Compile Include="Computers\TraceProcess.cs" />
-    <Compile Include="Computers\ServerRequestComputer.cs" />
-    <Compile Include="Computers\StartStopActivityComputer.cs" />
-    <Compile Include="Computers\TcpIpComputer.cs" />
-    <Compile Include="Computers\ThreadTimeComputer.cs" />
-    <Compile Include="Ctf\CtfChannel.cs" />
-    <Compile Include="Ctf\CtfReader.cs" />
-    <Compile Include="Ctf\CtfMetadata.cs" />
-    <Compile Include="Ctf\CtfMetadataLegacyParser.cs" />
-    <Compile Include="Ctf\CtfMetadataParser.cs" />
-    <Compile Include="Ctf\CtfMetadataTypes.cs" />
-    <Compile Include="ETWReloggerTraceEventSource.cs" />
-    <Compile Include="EventCounterSource.cs" />
-    <Compile Include="NativeDlls.cs" />
-    <Compile Include="Parsers\ApplicationServerTraceEventParser.cs" />
-    <Compile Include="Parsers\ASPNetTraceEventParser.cs" />
-    <Compile Include="Parsers\ClrPrivateTraceEventParser.cs" />
-    <Compile Include="Parsers\ClrTraceEventParser.cs" />
-    <Compile Include="Parsers\FrameworkTraceEventParser.cs" />
-    <Compile Include="Parsers\Microsoft-Windows-Kernel-File.cs" />
-    <Compile Include="Parsers\Microsoft-Windows-TCPIP.cs" />
-    <Compile Include="Ctf\CtfTraceEventSource.cs" />
-    <Compile Include="Stacks\AggregateStackSource.cs" />
-    <Compile Include="Stacks\FilterStacks.cs" />
-    <Compile Include="Stacks\IndexMap.cs" />
-    <Compile Include="Symbols\SymbolReader.cs" />
-    <Compile Include="DynamicTraceEventParser.cs" />
-    <Compile Include="ETWTraceEventSource.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="ManifestEnvelope.cs" />
-    <Compile Include="Parsers\JScriptTraceEventParser.cs" />
-    <Compile Include="Parsers\JSDumpHeapTraceEventParser.cs" />
-    <Compile Include="TraceLoggingEventId.cs" />
-    <Compile Include="TraceUtilities\PEFile.cs" />
-    <Compile Include="Stacks\CallTree.cs" />
-    <Compile Include="Stacks\Histogram.cs" />
-    <Compile Include="Stacks\Stacks.cs" />
-    <Compile Include="Parsers\SymbolTraceEventParser.cs" />
-    <Compile Include="Symbols\SymbolPath.cs" />
-    <Compile Include="Parsers\KernelTraceEventParser.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" Condition=" '$(BuildInRazzle)' != 'true' " />
-    <Compile Include="RegisteredTraceEventParser.cs" />
-    <Compile Include="Parsers\TplTraceEventParser.cs" />
-    <Compile Include="TraceEvent.cs" />
-    <Compile Include="TraceEventNativeMethods.cs" />
-    <Compile Include="TraceEventSession.cs" />
-    <Compile Include="TraceEventStacks.cs" />
-    <Compile Include="TraceLog.cs" />
-    <Compile Include="Utilities\Cache.cs" />
-    <Compile Include="Utilities\command.cs" />
-    <Compile Include="TraceUtilities\HistoryDictionary.cs" />
-    <Compile Include="Utilities\StringBuilderCache.cs" />
-    <Compile Include="WPPTraceEventParser.cs" />
-    <Compile Include="ZippedETL.cs" />
-    <Compile Include="_README.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Interop.Dia2Lib, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\Interop.Dia2Lib.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-      <SpecificVersion>False</SpecificVersion>
-    </Reference>
-    <Reference Include="OSExtensions, Version=1.0.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\OSExtensions.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.XML" />
-    <Reference Include="TraceReloggerLib, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\lib\net40\TraceReloggerLib.dll</HintPath>
-      <Private>True</Private>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
+    <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
+    <Compile Remove="TraceEvent.Tests/**/*.*" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FastSerialization\FastSerialization.csproj">
-      <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
-      <Name>FastSerialization</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <NuGetManifest Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec">
-      <Symbols>true</Symbols>
-    </NuGetManifest>
-  </ItemGroup>
+
   <ItemGroup>
     <None Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
       <Link>amd64\KernelTraceControl.dll</Link>
@@ -237,17 +133,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+    <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
-    <None Include="packages.config" />
   </ItemGroup>
-  <Import Project="$(PerfLibRootPath)\PerfLib.targets" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.1.0.2\build\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles.props'))" />
-    <Error Condition="!Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.props'))" />
-    <Error Condition="!Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets'))" />
-  </Target>
-  <Import Project="..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets" Condition="Exists('..\..\packages\Tvl.NuGet.BuildTasks.1.0.0-alpha002\build\Tvl.NuGet.BuildTasks.targets')" />
+
 </Project>

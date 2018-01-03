@@ -4,6 +4,7 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
@@ -410,13 +411,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal double QPCTimeToRelMSec(long QPCTime)
         {
-            // Anything that is out of bounds is limited. 
-            // This is important becasuse we use 0 and MaxValue to repsesent unknown
-            // but in analysis we don't expect all times to be limited to the trace.   
+            // Insure that we have a certain amount of sanity (events don't occur before sessionStartTime).  
             if (QPCTime < sessionStartTimeQPC)
                 QPCTime = sessionStartTimeQPC;
-            if (QPCTime > sessionEndTimeQPC)
-                QPCTime = sessionEndTimeQPC;
+
+            // We used to have a sanity check to insure that the time was always inside sessionEndTimeQPC
+            // ETLX files enforce this, but sometimes ETWTraceEventParser (ETL) traces have bad session times.
+            // After some thought, the best answer seems to be not to try to enforce this consistantancy.
+            // (it will be true for ETLX but maybe not for ETWTraceEventParser scenarios).  
 
             Debug.Assert(sessionStartTimeQPC != 0 && _syncTimeQPC != 0 && _syncTimeUTC.Ticks != 0 && _QPCFreq != 0);
             // TODO this does not work for very long traces.   
@@ -1183,7 +1185,7 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
             sb.AppendLine().Append(" ");
 
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             if (ActivityID != Guid.Empty || RelatedActivityID != Guid.Empty)
             {
                 if (ActivityID != Guid.Empty)
@@ -2632,7 +2634,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Actually Register it with the source.     
             source.RegisterEventTemplate(templateWithCallback);
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             Debug.Assert(templateWithCallback.source == Source ||
                 (templateWithCallback.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog &&
                  Source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
@@ -2706,6 +2708,8 @@ namespace Microsoft.Diagnostics.Tracing
 #if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
+            else if(traceFileName.EndsWith(".netperf", StringComparison.OrdinalIgnoreCase))
+                return EventPipeEventSourceFactory.CreateEventPipeEventSource(traceFileName);
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
@@ -3193,7 +3197,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         private unsafe void Insert(TraceEvent template)
         {
-#if !DOTNET_V35 && !DOTNET_CORE_HACK
+#if !DOTNET_V35
             Debug.Assert(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLog || template.source == this);
             Debug.Assert(!(template.source is Microsoft.Diagnostics.Tracing.Etlx.TraceLogEventSource));
 #endif

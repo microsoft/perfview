@@ -24,7 +24,7 @@ namespace Microsoft.Diagnostics.Symbols
         public SymbolReader(TextWriter log, string nt_symbol_path = null)
         {
             this.m_log = log;
-            this.m_symbolModuleCache = new Cache<string, SymbolModule>(10);
+            this.m_symbolModuleCache = new Cache<string, ManagedSymbolModule>(10);
             this.m_pdbPathCache = new Cache<PdbSignature, string>(10);
 
             m_symbolPath = nt_symbol_path;
@@ -149,7 +149,7 @@ namespace Microsoft.Diagnostics.Symbols
             if (pdbPath == null && dllFilePath != null)        // Check next to the file. 
             {
                 m_log.WriteLine("FindSymbolFilePath: Checking relative to DLL path {0}", dllFilePath);
-                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName)); 
+                string pdbPathCandidate = Path.Combine(Path.GetDirectoryName(dllFilePath), Path.GetFileName(pdbFileName));
                 if (PdbMatches(pdbPathCandidate, pdbIndexGuid, pdbIndexAge))
                     pdbPath = pdbPathCandidate;
 
@@ -284,12 +284,25 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         /// <param name="pdbFilePath">The name of the PDB file to open.</param>
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
-        public SymbolModule OpenSymbolFile(string pdbFilePath)
+        public ManagedSymbolModule OpenSymbolFile(string pdbFilePath)
         {
-            SymbolModule ret;
+            ManagedSymbolModule ret;
             if (!m_symbolModuleCache.TryGet(pdbFilePath, out ret))
             {
-                ret = new SymbolModule(this, pdbFilePath);
+                Stream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                byte[] firstBytes = new byte[4];
+                if (stream.Read(firstBytes, 0, firstBytes.Length) != 4)
+                    throw new InvalidOperationException("PDB corrupted (too small) " + pdbFilePath);
+                if (firstBytes[0] == 'B' && firstBytes[1] == 'S' && firstBytes[2] == 'J' && firstBytes[3] == 'B')
+                {
+                    stream.Seek(0, SeekOrigin.Begin);   // Start over
+                    ret = new PortableSymbolModule(this, pdbFilePath);
+                }
+                else
+                {
+                    stream.Dispose();
+                    ret = new NativeSymbolModule(this, pdbFilePath);
+                }
                 m_symbolModuleCache.Add(pdbFilePath, ret);
             }
             return ret;
@@ -417,12 +430,6 @@ namespace Microsoft.Diagnostics.Symbols
                 return null;
             }
 
-            // When V4.5 shipped, NGEN CreatePdb did not support looking up the IL pdb using symbol servers.  
-            // We work around by explicitly fetching the IL PDB and pointing NGEN CreatePdb at that.  
-            string ilPdbName = null;
-            Guid ilPdbGuid = Guid.Empty;
-            int ilPdbAge = 0;
-
             string pdbFileName;
             Guid pdbGuid;
             int pdbAge;
@@ -433,9 +440,6 @@ namespace Microsoft.Diagnostics.Symbols
                     m_log.WriteLine("Could not get PDB signature for {0}", ngenImageFullPath);
                     return null;
                 }
-
-                // Also get the IL pdb information (can rip out when we don't care about source code for pre V4.6 runtimes)
-                peFile.GetPdbSignature(out ilPdbName, out ilPdbGuid, out ilPdbAge, false);
             }
 
             // Fast path, the file already exists.
@@ -448,12 +452,18 @@ namespace Microsoft.Diagnostics.Symbols
 
             // We only handle cases where we generate NGEN pdbs.  
             if (!pdbPath.EndsWith(".ni.pdb", StringComparison.OrdinalIgnoreCase))
+            {
+                m_log.WriteLine("Pdb does not have .ni.pdb suffix");
                 return null;
+            }
 
             string privateRuntimeVerString;
             var clrDir = GetClrDirectoryForNGenImage(ngenImageFullPath, m_log, out privateRuntimeVerString);
             if (clrDir == null)
+            {
+                m_log.WriteLine("Could not find CLR directory for NGEN image {0}, Trying .NET Core", ngenImageFullPath);
                 return HandleNetCorePdbs(ngenImageFullPath, pdbPath);
+            }
 
             // See if this is a V4.5 CLR, if so we can do line numbers too.l  
             var lineNumberArg = "";
@@ -491,31 +501,6 @@ namespace Microsoft.Diagnostics.Symbols
                                 isV4_5Runtime = true;
                         }
                     }
-
-#if Skip_Symbol_Lookup_At_Collection_Time
-                    // Symbol lookup is not required at collection time in .Net Framework 4.6.1 and beyond
-#else
-                    // TODO FIX NOW:  In V4.6.1 of the runtime we no longer need /lines to get line number 
-                    // information (the native to IL mapping is always put in the NGEN image and that
-                    // is sufficient to look up line numbers later (not at NGEN pdb creation time).  
-                    // Thus this code could be removed once we really don't care about the case where
-                    // it is a V4.5.* runtime but not a V4.6.1+ runtime AND we care about line numbers.  
-                    // After 12/2016 we can probably pull this code.  
-                    if (isV4_5Runtime)
-                    {
-                        m_log.WriteLine("Is a V4.5 Runtime or beyond");
-                        if (ilPdbName != null)
-                        {
-                            var ilPdbPath = this.FindSymbolFilePath(ilPdbName, ilPdbGuid, ilPdbAge);
-                            if (ilPdbPath != null)
-                                lineNumberArg = "/lines " + Command.Quote(Path.GetDirectoryName(ilPdbPath));
-                            else
-                                m_log.WriteLine("Could not find IL PDB {0} Guid {1} Age {2}.", ilPdbName, ilPdbGuid, ilPdbAge);
-                        }
-                        else
-                            m_log.WriteLine("NGEN image did not have IL PDB information, giving up on line number info.");
-                    }
-#endif
                 }
             }
 
@@ -815,7 +800,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public void Dispose() { }
 
-#region private
+        #region private
         /// <summary>
         /// Returns true if 'filePath' exists and is a PDB that has pdbGuid and pdbAge.  
         /// if pdbGuid == Guid.Empty, then the pdbGuid and pdbAge checks are skipped. 
@@ -847,7 +832,8 @@ namespace Microsoft.Diagnostics.Symbols
                 else
                     m_log.WriteLine("FindSymbolFilePath: Probed file location {0} does not exist", filePath);
             }
-            catch(Exception e) {
+            catch (Exception e)
+            {
                 m_log.WriteLine("FindSymbolFilePath: Aborting pdbMatch of {0} Exception thrown: {1}", filePath, e.Message);
             }
             return false;
@@ -1387,11 +1373,11 @@ namespace Microsoft.Diagnostics.Symbols
         private DateTime m_lastDeadTimeUtc;     // The last time something went dead.  
         private string m_SymbolCacheDirectory;
         private string m_SourceCacheDirectory;
-        private Cache<string, SymbolModule> m_symbolModuleCache;
+        private Cache<string, ManagedSymbolModule> m_symbolModuleCache;
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1438,13 +1424,10 @@ namespace Microsoft.Diagnostics.Symbols
 
         internal TextWriter _log { get { return _reader.m_log; } }
 
-            var sourceFile = new SourceFile(this, diaSrcFile);
-            if (lineNum == 0xFEEFEE)
-                lineNum = 0;
-            var sourceLocation = new SourceLocation(sourceFile, lineNum);
-            m_reader.m_log.WriteLine("SourceLocationForRva: RVA {0:x} maps to line {1} file {2} ", rva, lineNum, sourceFile.BuildTimeFilePath);
-            return sourceLocation;
-        }
+        string _pdbPath;
+        SymbolReader _reader;
+        #endregion
+    }
 
     /// <summary>
     /// A SourceLocation represents a point in the source code.  That is the file and the line number.  
@@ -1460,393 +1443,17 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public int LineNumber { get; private set; }
 
-#if TEST_FIRST
-        /// <summary>
-        /// Returns a list of all source files referenced in the PDB
-        /// </summary>
-        public IEnumerable<SourceFile> AllSourceFiles()
+        #region private
+        internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
-
-            IDiaEnumTables tables;
-            m_session.getEnumTables(out tables);
-
-            IDiaEnumSourceFiles sourceFiles;
-            IDiaTable table = null;
-            uint fetchCount = 0;
-            for (; ; )
-            {
-                tables.Next(1, ref table, ref fetchCount);
-                if (fetchCount == 0)
-                    return null;
-                sourceFiles = table as IDiaEnumSourceFiles;
-                if (sourceFiles != null)
-                    break;
-            }
-
-            var ret = new List<SourceFile>();
-            IDiaSourceFile sourceFile = null;
-            for (; ; )
-            {
-                sourceFiles.Next(1, out sourceFile, out fetchCount);
-                if (fetchCount == 0)
-                    break;
-                ret.Add(new SourceFile(this, sourceFile));
-            }
-            return ret;
-        }
-#endif
-
-        /// <summary>
-        /// The a unique identifier that is used to relate the DLL and its PDB.   
-        /// </summary>
-        public Guid PdbGuid { get { return m_session.globalScope.guid; } }
-        /// <summary>
-        /// Along with the PdbGuid, there is a small integer 
-        /// call the age is also used to find the PDB (it represents the different 
-        /// post link transformations the DLL has undergone).  
-        /// </summary>
-        public int PdbAge { get { return (int)m_session.globalScope.age; } }
-
-        /// <summary>
-        /// The symbol reader this SymbolModule was created from.  
-        /// </summary>
-        public SymbolReader SymbolReader { get { return m_reader; } }
-
-#region private
-
-        private void Initialize(SymbolReader reader, string pdbFilePath, Action loadData)
-        {
-            m_pdbPath = pdbFilePath;
-            this.m_reader = reader;
-
-            m_source = DiaLoader.GetDiaSourceObject();
-            loadData();
-            m_source.openSession(out m_session);
-            m_session.getSymbolsByAddr(out m_symbolsByAddr);
-
-            m_reader.m_log.WriteLine("Opening PDB {0} with signature GUID {1} Age {2}", pdbFilePath, PdbGuid, PdbAge);
-        }
-
-        internal SymbolModule(SymbolReader reader, string pdbFilePath)
-        {
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromPdb(pdbFilePath));
-        }
-
-        internal SymbolModule(SymbolReader reader, string pdbFilePath, Stream pdbStream)
-        {
-            IStream comStream = new ComStreamWrapper(pdbStream);
-            Initialize(reader, pdbFilePath, () => m_source.loadDataFromIStream(comStream));
-        }
-
-        internal void LogManagedInfo(string pdbName, Guid pdbGuid, int pdbAge)
-        {
-            // Simply remember this if we decide we need it for source server support
-            m_managedPdbName = pdbName;
-            m_managedPdbGuid = pdbGuid;
-            m_managedPdbAge = pdbAge;
-        }
-
-        /// <summary>
-        /// Gets the 'srcsvc' data stream from the PDB and return it in as a string.   Returns null if it is not present. 
-        /// 
-        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
-        ///     pdbstr -r -s:srcsrv -p:PDBPATH
-        /// will dump it. 
-        /// </summary>
-        internal string GetSrcSrvStream()
-        {
-            // In order to get the IDiaDataSource3 which includes'getStreamSize' API, you need to use the 
-            // dia2_internal.idl file from devdiv to produce the Interop.Dia2Lib.dll 
-            // see class DiaLoader for more
-            var log = m_reader.m_log;
-            log.WriteLine("Getting source server stream for PDB {0}", SymbolFilePath);
-            uint len = 0;
-            m_source.getStreamSize("srcsrv", out len);
-            if (len == 0)
-            {
-                if (0 <= SymbolFilePath.IndexOf(".ni.", StringComparison.OrdinalIgnoreCase))
-                    log.WriteLine("Error, trying to look up source information on an NGEN file, giving up");
-                else
-                    log.WriteLine("Pdb {0} does not have source server information (srcsrv stream) in it", SymbolFilePath);
-                return null;
-            }
-
-            byte[] buffer = new byte[len];
-            fixed (byte* bufferPtr = buffer)
-            {
-                m_source.getStreamRawData("srcsrv", len, out *bufferPtr);
-                var ret = UTF8Encoding.Default.GetString(buffer);
-                return ret;
-            }
-        }
-
-        // returns the path of the PDB that has source server information in it (which for NGEN images is the PDB for the managed image)
-        internal SymbolModule PdbForSourceServer
-        {
-            get
-            {
-                if (m_managedPdbName == null)
-                    return this;
-
-                if (!m_managedPdbAttempted)
-                {
-                    m_reader.m_log.WriteLine("We have a NGEN image with an IL PDB {0}, looking it up", m_managedPdbName);
-                    m_managedPdbAttempted = true;
-                    var managedPdbPath = m_reader.FindSymbolFilePath(m_managedPdbName, m_managedPdbGuid, m_managedPdbAge);
-                    if (managedPdbPath != null)
-                    {
-                        m_reader.m_log.WriteLine("Found managed PDB path {0}", managedPdbPath);
-                        m_managedPdb = m_reader.OpenSymbolFile(managedPdbPath);
-                    }
-                    else
-                        m_reader.m_log.WriteLine("Could not find managed PDB {0}", m_managedPdbName);
-                }
-                return m_managedPdb;
-            }
-        }
-
-        /// <summary>
-        /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
-        /// </summary>
-        [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
-        public Dictionary<int, string> GetMergedAssembliesMap()
-        {
-            if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
-            {
-                IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
-                m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
-                foreach (IDiaInputAssemblyFile inputAssembly in diaMergedAssemblyRecords)
-                {
-                    int index = (int)inputAssembly.index;
-                    string assemblyName = inputAssembly.fileName;
-
-                    if (m_mergedAssemblies == null)
-                        m_mergedAssemblies = new Dictionary<int, string>();
-                    m_mergedAssemblies.Add(index, assemblyName);
-                }
-                m_checkedForMergedAssemblies = true;
-            }
-            return m_mergedAssemblies;
-        }
-
-        /// <summary>
-        /// For ProjectN modules, gets the merged IL image embedded in the .PDB (only valid for single-file compilation)
-        /// </summary>
-        public MemoryStream GetEmbeddedILImage()
-        {
-            try
-            {
-                uint ilimageSize;
-                m_source.getStreamSize("ilimage", out ilimageSize);
-                if (ilimageSize > 0)
-                {
-                    byte[] ilImage = new byte[ilimageSize];
-                    m_source.getStreamRawData("ilimage", ilimageSize, out ilImage[0]);
-                    return new MemoryStream(ilImage);
-                }
-            }
-            catch (COMException)
-            {
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// For ProjectN modules, gets the pseudo-assembly embedded in the .PDB, if there is one.
-        /// </summary>
-        /// <returns></returns>
-        public MemoryStream GetPseudoAssembly()
-        {
-            try
-            {
-                uint ilimageSize;
-                m_source.getStreamSize("pseudoil", out ilimageSize);
-                if (ilimageSize > 0)
-                {
-                    byte[] ilImage = new byte[ilimageSize];
-                    m_source.getStreamRawData("pseudoil", ilimageSize, out ilImage[0]);
-                    return new MemoryStream(ilImage, writable: false);
-                }
-            }
-            catch (COMException)
-            {
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// For ProjectN modules, gets the binary blob that describes the mapping from RVAs to methods.
-        /// </summary>
-        public byte[] GetFuncMDTokenMap()
-        {
-            uint mapSize;
-            m_session.getFuncMDTokenMapSize(out mapSize);
-
-            byte[] buf = new byte[mapSize];
-            fixed (byte* pBuf = buf)
-            {
-                m_session.getFuncMDTokenMap((uint)buf.Length, out mapSize, out buf[0]);
-                Debug.Assert(mapSize == buf.Length);
-            }
-
-            return buf;
-        }
-
-        /// <summary>
-        /// For ProjectN modules, gets the binary blob that describes the mapping from RVAs to types.
-        /// </summary>
-        /// <returns></returns>
-        public byte[] GetTypeMDTokenMap()
-        {
-            uint mapSize;
-            m_session.getTypeMDTokenMapSize(out mapSize);
-
-            byte[] buf = new byte[mapSize];
-            fixed (byte* pBuf = buf)
-            {
-                m_session.getTypeMDTokenMap((uint)buf.Length, out mapSize, out buf[0]);
-                Debug.Assert(mapSize == buf.Length);
-            }
-
-            return buf;
-        }
-
-        bool m_checkedForMergedAssemblies;
-        Dictionary<int, string> m_mergedAssemblies;
-
-        private string m_managedPdbName;
-        private Guid m_managedPdbGuid;
-        private int m_managedPdbAge;
-        private SymbolModule m_managedPdb;
-        private bool m_managedPdbAttempted;
-
-        internal SymbolReader m_reader;
-        internal IDiaSession m_session;
-        IDiaDataSource3 m_source;
-        IDiaEnumSymbolsByAddr m_symbolsByAddr;
-        string m_pdbPath;
-
-#endregion
-    }
-
-    /// <summary>
-    /// Represents a single symbol in a PDB file.  
-    /// </summary>
-    public class Symbol : IComparable<Symbol>
-    {
-        /// <summary>
-        /// The name for the symbol 
-        /// </summary>
-        public string Name { get { return m_name; } }
-        /// <summary>
-        /// The relative virtual address (offset from the image base when loaded in memory) of the symbol
-        /// </summary>
-        public uint RVA { get { return m_diaSymbol.relativeVirtualAddress; } }
-        /// <summary>
-        /// The length of the memory that the symbol represents.  
-        /// </summary>
-        public ulong Length { get { return m_diaSymbol.length; } }
-        /// <summary>
-        /// A small integer identifier tat is unique for that symbol in the DLL. 
-        /// </summary>
-        public uint Id { get { return m_diaSymbol.symIndexId; } }
-
-        /// <summary>
-        /// Decorated names are names that most closely resemble the source code (have overloading).  
-        /// However when the linker does not directly support all the expressiveness of the
-        /// source language names are encoded to represent this.   This return this encoded name. 
-        /// </summary>
-        public string UndecoratedName
-        {
-            get
-            {
-                const uint UNDNAME_NO_PTR64 = 0x20000;
-                string undecoratedName;
-                m_diaSymbol.get_undecoratedNameEx(UNDNAME_NO_PTR64, out undecoratedName);
-
-                return undecoratedName ?? m_diaSymbol.name;
-            }
-        }
-
-        /// <summary>
-        /// Returns true if the two symbols live in the same linker section (e.g. text,  data ...)
-        /// </summary>
-        public static bool InSameSection(Symbol a, Symbol b)
-        {
-            return a.m_diaSymbol.addressSection == b.m_diaSymbol.addressSection;
-        }
-
-        /// <summary>
-        /// Returns the children of the symbol.  Will return null if there are no children.  
-        /// </summary>
-        public IEnumerable<Symbol> GetChildren()
-        {
-            return GetChildren(SymTagEnum.SymTagNull);
-        }
-
-        /// <summary>
-        /// Returns the children of the symbol, with the given tag.  Will return null if there are no children.  
-        /// </summary>
-        public IEnumerable<Symbol> GetChildren(SymTagEnum tag)
-        {
-            IDiaEnumSymbols symEnum = null;
-            m_module.m_session.findChildren(m_diaSymbol, tag, null, 0, out symEnum);
-            if (symEnum == null)
-                return null;
-
-            uint fetchCount;
-            var ret = new List<Symbol>();
-            for (;;)
-            {
-                IDiaSymbol sym;
-                symEnum.Next(1, out sym, out fetchCount);
-                if (fetchCount == 0)
-                    break;
-                SymTagEnum symTag = (SymTagEnum)sym.symTag;
-                ret.Add(new Symbol(m_module, sym));
-            }
-
-            return ret;
-        }
-
-        /// <summary>
-        /// Compares the symbol by their relative virtual address (RVA)
-        /// </summary>
-        public int CompareTo(Symbol other)
-        {
-            return ((int)RVA - (int)other.RVA);
-        }
-#region private
-#if false
-        // TODO FIX NOW use or remove
-        internal enum NameSearchOptions
-        {
-            nsNone,
-            nsfCaseSensitive = 0x1,
-            nsfCaseInsensitive = 0x2,
-            nsfFNameExt = 0x4,                  // treat as a file path
-            nsfRegularExpression = 0x8,         // * and ? wildcards
-            nsfUndecoratedName = 0x10,          // A undecorated name is the name you see in the source code.  
-        };
-#endif
-
-        /// <summary>
-        /// override
-        /// </summary>
-        public override string ToString()
-        {
-            return string.Format("Symbol({0}, RVA=0x{1:x}", Name, RVA);
-        }
+            // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
+            if (0xFEEFEE <= lineNumber)
+                lineNumber = 0;
 
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-        private string m_name;
-        private IDiaSymbol m_diaSymbol;
-        private SymbolModule m_module;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1875,33 +1482,14 @@ namespace Microsoft.Diagnostics.Symbols
         /// <summary>
         /// The path of the file at the time the source file was built.   We also look here when looking for the source.  
         /// </summary>
-        public string BuildTimeFilePath { get; internal set; }
+        public string BuildTimeFilePath { get; protected set; }
 
         /// <summary>
         /// If the source file is directly available on the web (that is there is a Url that 
         /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
         /// point exists this property will return null.   
         /// </summary>
-        public string Url
-        {
-            get
-            {
-                string target, command;
-                GetSourceServerTargetAndCommand(out target, out command);
-
-                if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
-                    return target;
-                else
-                    return null;
-            }
-        }
-
-        /// <summary>
-        /// If the source file is directly available on the web (that is there is a Url that 
-        /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
-        /// point exists this property will return null.   
-        /// </summary>
-        public bool HasChecksum { get { return m_hashAlgorithm != null; } }
+        public virtual string Url { get { return null; } }
 
         /// <summary>
         /// Look up the source from the source server.  Returns null if it can't find the source
@@ -2009,10 +1597,6 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public bool HasChecksum { get { return _hashAlgorithm != null; } }
 
-            log.WriteLine("[Could not find source for {0}]", BuildTimeFilePath);
-            return null;
-        }
-
         /// <summary>
         /// If GetSourceFile is called and 'requireChecksumMatch' == false then you can call this property to 
         /// determine if the checksum actually matched or not.   This will return true if the original
@@ -2025,529 +1609,65 @@ namespace Microsoft.Diagnostics.Symbols
 
         protected TextWriter _log { get { return _symbolModule._log; } }
 
-#region private
         /// <summary>
-        /// Parse the 'srcsrv' stream in a PDB file and return the target for SourceFile
-        /// represented by the 'this' pointer.   This target is iether a ULR or a local file
-        /// path.  
+        /// Given 'fileName' which is a path to a file (which may  not exist), set 
+        /// _filePath and _checksumMatches appropriately.    Namely _filePath should
+        /// always be the 'best' candidate for the soruce file path (matching checksum
+        /// wins, otherwise first existing file wins).  
         /// 
-        /// You can dump the srcsrv stream using a tool called pdbstr 
-        ///     pdbstr -r -s:srcsrv -p:PDBPATH
-        /// 
-        /// The target in this stream is called SRCSRVTRG and there is another variable SRCSRVCMD
-        /// which represents the command to run to fetch the soruce into SRCSRVTRG
-        /// 
-        /// To form the target, the stream expect you to private a %targ% variable which is a directory
-        /// prefix to tell where to put the source file being fetched.   If the source file is
-        /// available via a URL this variable is not needed.  
-        /// 
-        ///  ********* This is a typical example of what is in a PDB with source server information. 
-        ///  SRCSRV: ini ------------------------------------------------
-        ///  VERSION=3
-        ///  INDEXVERSION=2
-        ///  VERCTRL=Team Foundation Server
-        ///  DATETIME=Thu Mar 10 16:15:55 2016
-        ///  SRCSRV: variables ------------------------------------------
-        ///  TFS_EXTRACT_CMD=tf.exe view /version:%var4% /noprompt "$%var3%" /server:%fnvar%(%var2%) /output:%srcsrvtrg%
-        ///  TFS_EXTRACT_TARGET=%targ%\%var2%%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
-        ///  VSTFDEVDIV_DEVDIV2=http://vstfdevdiv.redmond.corp.microsoft.com:8080/DevDiv2
-        ///  SRCSRVVERCTRL=tfs
-        ///  SRCSRVERRDESC=access
-        ///  SRCSRVERRVAR=var2
-        ///  SRCSRVTRG=%TFS_extract_target%
-        ///  SRCSRVCMD=%TFS_extract_cmd%
-        ///  SRCSRV: source files ---------------------------------------
-        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvconst.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvconst.h*1363200
-        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\cvinfo.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/cvinfo.h*1363200
-        ///  f:\dd\externalapis\legacy\vctools\vc12\inc\vc\ammintrin.h*VSTFDEVDIV_DEVDIV2*/DevDiv/Fx/Rel/NetFxRel3Stage/externalapis/legacy/vctools/vc12/inc/vc/ammintrin.h*1363200
-        ///  SRCSRV: end ------------------------------------------------
-        ///  
-        ///  ********* And here is a more modern one where the source code is available via a URL.  
-        ///  SRCSRV: ini ------------------------------------------------
-        ///  VERSION=2
-        ///  INDEXVERSION=2
-        ///  VERCTRL=http
-        ///  SRCSRV: variables ------------------------------------------
-        ///  SRCSRVTRG=https://nuget.smbsrc.net/src/%fnfile%(%var1%)/%var2%/%fnfile%(%var1%)
-        ///  SRCSRVCMD=
-        ///  SRCSRVVERCTRL=http
-        ///  SRCSRV: source files ---------------------------------------
-        ///  c:\Users\rafalkrynski\Documents\Visual Studio 2012\Projects\DavidSymbolSourceTest\DavidSymbolSourceTest\Demo.cs*SQPvxWBMtvANyCp8Pd3OjoZEUgpKvjDVIY1WbaiFPMw=
-        ///  SRCSRV: end ------------------------------------------------
-        ///  
+        /// Returns true if we have a perfect match (no additional probing needed).  
         /// </summary>
-        /// <param name="target">returns the target source file path</param>
-        /// <param name="command">returns the command to fetch the target source file</param>
-        /// <param name="localDirectoryToPlaceSourceFiles">Specify the value for %targ% variable. This is the
-        /// directory where source files can be fetched to.  Typically the returned file is under this directory
-        /// If the value is null, %targ% variable be emtpy.  This assumes that the resulting file is something
-        /// that does not need to be copied to the machine (either a URL or a file that already exists)</param>
-        private void GetSourceServerTargetAndCommand(out string target, out string command, string localDirectoryToPlaceSourceFiles = null)
+        private bool ProbeForBestMatch(string filePath)
         {
-            target = null;
-            command = null;
-
-            var log = m_symbolModule.m_reader.m_log;
-            log.WriteLine("*** Looking up {0} using source server", BuildTimeFilePath);
+            // We already have a perfect match, this one can't be better.  
+            if (_filePath != null && _checksumMatches)
+                return false;
 
             // If this candidate does not even exist, we can't do anything.  
             if (filePath == null || !File.Exists(filePath))
             {
-                log.WriteLine("*** Could not find PDB to look up source server information");
-                return;
+                _log.WriteLine("  Probe failed, file does not exist {0}", filePath);
+                return false;
             }
 
             if (ComputeChecksumMatch(filePath))
             {
-                log.WriteLine("*** Could not find srcsrv stream in PDB file");
-                return;
+                _checksumMatches = true;
+                _filePath = filePath;
+                _log.WriteLine("Checksum matches for {0}", filePath);
+                return true;
             }
 
-            log.WriteLine("*** Found srcsrv stream in PDB file. of size {0}", srcsvcStream.Length);
-            StringReader reader = new StringReader(srcsvcStream);
-
-            bool inSrc = false;
-            bool inVars = false;
-            var vars = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            if (localDirectoryToPlaceSourceFiles != null)
-                vars.Add("targ", localDirectoryToPlaceSourceFiles);
-
-            for (;;)
+            // If we don't match but we have nothinging better, remember it.   Otherwise do nothing as first hit is better.  
+            if (filePath == null)
             {
-                var line = reader.ReadLine();
-                if (line == null)
-                    break;
-
-                // log.WriteLine("Got srcsrv line {0}", line);
-                if (line.StartsWith("SRCSRV: "))
-                {
-                    inSrc = line.StartsWith("SRCSRV: source files");
-                    inVars = line.StartsWith("SRCSRV: variables");
-                    continue;
-                }
-                if (inSrc)
-                {
-                    var pieces = line.Split('*');
-                    if (pieces.Length >= 2)
-                    {
-                        var buildTimePath = pieces[0];
-                        // log.WriteLine("Found source {0} in the PDB", buildTimePath);
-                        if (string.Compare(BuildTimeFilePath, buildTimePath, StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            // Create variables for each of the pieces.  
-                            for (int i = 0; i < pieces.Length; i++)
-                                vars.Add("var" + (i + 1).ToString(), pieces[i]);
-
-                            target = SourceServerFetchVar("SRCSRVTRG", vars);
-                            command = SourceServerFetchVar("SRCSRVCMD", vars);
-
-                            return;
-                        }
-                    }
-                }
-                else if (inVars)
-                {
-                    // Gather up the KEY=VALUE pairs into a dictionary.  
-                    var m = Regex.Match(line, @"^(\w+)=(.*?)\s*$");
-                    if (m.Success)
-                        vars[m.Groups[1].Value] = m.Groups[2].Value;
-                }
+                _filePath = filePath;
+                _log.WriteLine("Checksum does NOT match for {0}, but it is our best guess.", filePath);
             }
-        }
+            else
+                _log.WriteLine("Checksum does NOT match for {0} but we already have a non-ideal match so discarding this probe.", filePath);
 
-        /// <summary>
-        /// Try to fetch the source file associated with 'buildTimeFilePath' from the symbol server 
-        /// information from the PDB from 'pdbPath'.   Will return a path to the returned file (uses 
-        /// SourceCacheDirectory associated symbol reader for context where to put the file), 
-        /// or null if unsuccessful.  
-        /// 
-        /// There is a tool called pdbstr associated with srcsrv that basically does this.  
-        ///     pdbstr -r -s:srcsrv -p:PDBPATH
-        /// will dump it. 
-        ///
-        /// The basic flow is 
-        /// 
-        /// There is a variables section and a files section
-        /// 
-        /// The file section is a list of items separated by *.   The first is the path, the rest are up to you
-        /// 
-        /// You form a command by using the SRCSRVTRG variable and substituting variables %var1 where var1 is the first item in the * separated list
-        /// There are special operators %fnfile%(XXX), etc that manipulate the string XXX (get file name, translate \ to / ...
-        /// 
-        /// If what is at the end is a valid URL it is looked up.   
-        /// </summary>
-        string GetSourceFromSrcServer()
-        {
-            var log = m_symbolModule.m_reader.m_log;
-            var cacheDir = m_symbolModule.m_reader.SourceCacheDirectory;
-
-            string target, fetchCmdStr;
-            GetSourceServerTargetAndCommand(out target, out fetchCmdStr, cacheDir);
-
-            if (target != null)
-            {
-                if (!target.StartsWith(cacheDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    // if target is not in cache dir, it means it's from a remote server.
-                    Uri uri = null;
-                    if (Uri.TryCreate(target, UriKind.Absolute, out uri))
-                    {
-                        target = null;
-                        var newTarget = Path.Combine(cacheDir, uri.AbsolutePath.TrimStart('/').Replace('/', '\\'));
-                        if (m_symbolModule.m_reader.GetPhysicalFileFromServer(uri.GetLeftPart(UriPartial.Authority), uri.AbsolutePath, newTarget))
-                            target = newTarget;
-
-                        if (target == null)
-                        {
-                            log.WriteLine("Could not fetch {0} from web", uri.AbsoluteUri);
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        log.WriteLine("Source Server string {0} is targeting an unsafe location.  Giving up.", target);
-                        return null;
-                    }
-                }
-
-                if (!File.Exists(target) && fetchCmdStr != null)
-                {
-                    log.WriteLine("Trying to generate the file {0}.", target);
-                    var toolsDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().ManifestModule.FullyQualifiedName);
-                    var archToolsDir = Path.Combine(toolsDir, NativeDlls.ProcessArchitectureDirectory);
-
-                    // Find the EXE to do the source server fetch.  We only support SD.exe and TF.exe.   
-                    string addToPath = null;
-                    if (fetchCmdStr.StartsWith("sd.exe ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!File.Exists(Path.Combine(archToolsDir, "sd.exe")))
-                            log.WriteLine("WARNING: Could not find sd.exe that should have been deployed at {0}", archToolsDir);
-                        addToPath = archToolsDir;
-                    }
-                    else
-                    if (fetchCmdStr.StartsWith("tf.exe ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var tfExe = Command.FindOnPath("tf.exe");
-                        if (tfExe == null)
-                        {
-                            tfExe = FindTfExe();
-                            if (tfExe == null)
-                            {
-                                log.WriteLine("Could not find TF.exe, place it on the PATH environment variable to fix this.");
-                                return null;
-                            }
-                            addToPath = Path.GetDirectoryName(tfExe);
-                        }
-                    }
-                    else
-                    {
-                        log.WriteLine("Source Server command is not recognized as safe (sd.exe or tf.exe), failing.");
-                        return null;
-                    }
-                    Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    fetchCmdStr = "cmd /c " + fetchCmdStr;
-                    var options = new CommandOptions().AddOutputStream(log).AddNoThrow();
-                    if (addToPath != null)
-                        options = options.AddEnvironmentVariable("PATH", addToPath + ";%PATH%");
-
-                    log.WriteLine("Source Server command {0}.", fetchCmdStr);
-                    var fetchCmd = Command.Run(fetchCmdStr, options);
-                    if (fetchCmd.ExitCode != 0)
-                        log.WriteLine("Source Server command failed with exit code {0}", fetchCmd.ExitCode);
-                    if (File.Exists(target))
-                    {
-                        // If TF.exe command files it might still create an empty output file.   Fix that 
-                        if (new FileInfo(target).Length == 0)
-                        {
-                            File.Delete(target);
-                            target = null;
-                        }
-                    }
-                    else
-                        target = null;
-
-                    if (target == null)
-                        log.WriteLine("Source Server command failed to produce the output file.");
-                    else
-                        log.WriteLine("Source Server command succeeded creating {0}", target);
-                }
-                else
-                    log.WriteLine("Found an existing source server file {0}.", target);
-                return target;
-            }
-
-            log.WriteLine("Did not find source file in the set of source files in the PDB.");
-            return null;
+            // We did not get a perfect match.  
+            return false;
         }
 
         /// <summary>
         /// Returns true if 'filePath' matches the checksum OR we don't have a checkdum
         /// (thus if we pass what validity check we have).    
         /// </summary>
-        /// <returns></returns>
-        private static string FindTfExe()
+        private bool ComputeChecksumMatch(string filePath)
         {
-            // If you have VS installed used that TF.exe associated with that.  
-            var progFiles = Environment.GetEnvironmentVariable("ProgramFiles (x86)");
-            if (progFiles == null)
-                progFiles = Environment.GetEnvironmentVariable("ProgramFiles");
-            if (progFiles != null)
-            {
-                // Find the oldest Visual Studio directory;
-                var dirs = Directory.GetDirectories(progFiles, "Microsoft Visual Studio*");
-                Array.Sort(dirs);
-                if (dirs.Length > 0)
-                {
-                    var VSDir = Path.Combine(dirs[dirs.Length - 1], @"Common7\IDE");
-                    var tfexe = Path.Combine(VSDir, "tf.exe");
-                    if (File.Exists(tfexe))
-                        return tfexe;
-                }
-            }
-            return null;
-        }
-
-        private string SourceServerFetchVar(string variable, Dictionary<string, string> vars)
-        {
-            var log = m_symbolModule.m_reader.m_log;
-            string result = "";
-            if (vars.TryGetValue(variable, out result))
-            {
-                if (0 <= result.IndexOf('%'))
-                    log.WriteLine("SourceServerFetchVar: Before Evaluation {0} = '{1}'", variable, result);
-                result = SourceServerEvaluate(result, vars);
-            }
-            log.WriteLine("SourceServerFetchVar: {0} = '{1}'", variable, result);
-            return result;
-        }
-
-        private string SourceServerEvaluate(string result, Dictionary<string, string> vars)
-        {
-            if (0 <= result.IndexOf('%'))
-            {
-                // see http://msdn.microsoft.com/en-us/library/windows/desktop/ms680641(v=vs.85).aspx for details on the %fn* variables 
-                result = Regex.Replace(result, @"%fnvar%\((.*?)\)", delegate (Match m)
-                {
-                    return SourceServerFetchVar(SourceServerEvaluate(m.Groups[1].Value, vars), vars);
-                });
-                result = Regex.Replace(result, @"%fnbksl%\((.*?)\)", delegate (Match m)
-                {
-                    return SourceServerEvaluate(m.Groups[1].Value, vars).Replace('/', '\\');
-                });
-                result = Regex.Replace(result, @"%fnfile%\((.*?)\)", delegate (Match m)
-                {
-                    return Path.GetFileName(SourceServerEvaluate(m.Groups[1].Value, vars));
-                });
-                // Normal variable substitution
-                result = Regex.Replace(result, @"%(\w+)%", delegate (Match m)
-                {
-                    return SourceServerFetchVar(m.Groups[1].Value, vars);
-                });
-            }
-            return result;
-        }
-
-
-        // Here is an example of the srcsrv stream.  
-#if false
-SRCSRV: ini ------------------------------------------------
-VERSION=3
-INDEXVERSION=2
-VERCTRL=Team Foundation Server
-DATETIME=Wed Nov 28 03:47:14 2012
-SRCSRV: variables ------------------------------------------
-TFS_EXTRACT_CMD=tf.exe view /version:%var4% /noprompt "$%var3%" /server:%fnvar%(%var2%) /console >%srcsrvtrg%
-TFS_EXTRACT_TARGET=%targ%\%var2%%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
-SRCSRVVERCTRL=tfs
-SRCSRVERRDESC=access
-SRCSRVERRVAR=var2
-DEVDIV_TFS2=http://vstfdevdiv.redmond.corp.microsoft.com:8080/devdiv2
-SRCSRVTRG=%TFS_extract_target%
-SRCSRVCMD=%TFS_extract_cmd%
-SRCSRV: source files ---------------------------------------
-f:\dd\ndp\clr\src\vm\i386\gmsasm.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/gmsasm.asm*592925
-f:\dd\ndp\clr\src\vm\i386\jithelp.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm*592925
-f:\dd\ndp\clr\src\vm\i386\RedirectedHandledJITCase.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/RedirectedHandledJITCase.asm*592925
-f:\dd\public\devdiv\inc\ddbanned.h*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/public/devdiv/inc/ddbanned.h*592925
-f:\dd\ndp\clr\src\debug\ee\i386\dbghelpers.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/Debug/EE/i386/dbghelpers.asm*592925
-SRCSRV: end ------------------------------------------------
-      
-        // Here is one for SD. 
-
-SRCSRV: ini ------------------------------------------------
-VERSION=1
-VERCTRL=Source Depot
-SRCSRV: variables ------------------------------------------
-SRCSRVTRG=%targ%\%var2%\%fnbksl%(%var3%)\%var4%\%fnfile%(%var1%)
-SRCSRVCMD=sd.exe -p %fnvar%(%var2%) print -o %srcsrvtrg% -q %depot%/%var3%#%var4%
-DEPOT=//depot
-SRCSRVVERCTRL=sd
-SRCSRVERRDESC=Connect to server failed
-SRCSRVERRVAR=var2
-WIN_MINKERNEL=minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020
-WIN_PUBLIC=publicdepot.sys-ntgroup.ntdev.microsoft.com:2017
-WIN_PUBLICINT=publicintdepot.sys-ntgroup.ntdev.microsoft.com:2018
-SRCSRV: source files ---------------------------------------
-d:\win7sp1_gdr.public.amd64fre\sdk\inc\pshpack4.h*WIN_PUBLIC*win7sp1_gdr/public/sdk/inc/pshpack4.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\cm.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/cm.h*1
-d:\win7sp1_gdr.public.amd64fre\internal\minwin\priv_sdk\inc\ntos\pnp_x.h*WIN_PUBLICINT*win7sp1_gdr/publicint/minwin/priv_sdk/inc/ntos/pnp_x.h*2
-SRCSRV: end ------------------------------------------------
-
-
-#endif
-#if false
-        // Here is ana example of the stream in use for the jithlp.asm file.  
-
-f:\dd\ndp\clr\src\vm\i386\jithelp.asm*DEVDIV_TFS2*/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm*592925
-
-        // Here is the command that it issues.  
-tf.exe view /version:592925 /noprompt "$/DevDiv/D11RelS/FX45RTMGDR/ndp/clr/src/VM/i386/jithelp.asm" /server:http://vstfdevdiv.redmond.corp.microsoft.com:8080/devdiv2 /console >"C:\Users\vancem\AppData\Local\Temp\PerfView\src\DEVDIV_TFS2\DevDiv\D11RelS\FX45RTMGDR\ndp\clr\src\VM\i386\jithelp.asm\592925\jithelp.asm"
-
-sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users\vancem\AppData\Local\Temp\PerfView\src\WIN_MINKERNEL\win8_gdr\minkernel\ntdll\rtlstrt.c\1\rtlstrt.c" -q //depot/win8_gdr/minkernel/ntdll/rtlstrt.c#1
-
-#endif
-
-        private bool DoesChecksumMatch(string filePath)
-        {
-            if (!HasChecksum)
+            if (_hashAlgorithm == null && _hash == null)
                 return true;
 
-            byte[] checksum = ComputeHash(filePath);
-            if (checksum.Length != m_hash.Length)
-                return false;
-            for (int i = 0; i < checksum.Length; i++)
-                if (checksum[i] != m_hash[i])
-                    return false;
-            return true;
-        }
-
-        unsafe internal SourceFile(SymbolModule module, IDiaSourceFile sourceFile)
-        {
-            m_symbolModule = module;
-            BuildTimeFilePath = sourceFile.fileName;
-
-            // 0 No checksum present.
-            // 1 CALG_MD5 checksum generated with the MD5 hashing algorithm.
-            // 2 CALG_SHA1 checksum generated with the SHA1 hashing algorithm.
-            // 3 checksum generated with the SHA256 hashing algorithm.
-            m_hashType = sourceFile.checksumType;
-            SetCryptoProvider();
-
-            if (HasChecksum)
-            {
-                uint hashSizeInBytes;
-                fixed (byte* bufferPtr = m_hash)
-                    sourceFile.get_checksum(0, out hashSizeInBytes, out *bufferPtr);
-
-                // MD5 is 16 bytes
-                // SHA1 is 20 bytes  
-                // SHA-256 is 32 bytes
-                m_hash = new byte[hashSizeInBytes];
-
-                uint bytesFetched;
-                fixed (byte* bufferPtr = m_hash)
-                    sourceFile.get_checksum((uint)m_hash.Length, out bytesFetched, out *bufferPtr);
-                Debug.Assert(bytesFetched == m_hash.Length);
-            }
-        }
-
-        private void SetCryptoProvider()
-        {
-            switch (m_hashType)
-            {
-                case 1:
-                    m_hashAlgorithm = new System.Security.Cryptography.MD5CryptoServiceProvider();
-                    break;
-
-                case 2:
-                    m_hashAlgorithm = new System.Security.Cryptography.SHA1CryptoServiceProvider();
-                    break;
-
-                case 3: 
-                    m_hashAlgorithm = new System.Security.Cryptography.SHA256CryptoServiceProvider();
-                    break;
-
-                default:
-                    m_hashAlgorithm = null; // unknown hash type
-                    break;
-            }
-        }
-
-        private System.Security.Cryptography.HashAlgorithm GetCryptoProvider()
-        {
-            return m_hashAlgorithm;
-        }
-
-        private byte[] ComputeHash(string filePath)
-        {
-            Debug.Assert(m_hashAlgorithm != null);
-
             using (var fileStream = File.OpenRead(filePath))
-                return m_hashAlgorithm.ComputeHash(fileStream);
+            {
+                byte[] computedHash = _hashAlgorithm.ComputeHash(fileStream);
+                return ArrayEquals(computedHash, _hash);
+            }
         }
 
-        SymbolModule m_symbolModule;
-        uint m_hashType;
-        byte[] m_hash;
-        System.Security.Cryptography.HashAlgorithm m_hashAlgorithm;
-        bool m_getSourceCalled;
-        bool m_checksumMatches;
-#endregion
-    }
-
-    /// <summary>
-    /// A SourceLocation represents a point in the source code.  That is the file and the line number.  
-    /// </summary>
-    public class SourceLocation
-    {
-        /// <summary>
-        /// The source file for the code
-        /// </summary>
-        public SourceFile SourceFile { get; private set; }
-        /// <summary>
-        /// The line number for the code.
-        /// </summary>
-        public int LineNumber { get; private set; }
-#region private
-        internal SourceLocation(SourceFile sourceFile, int lineNumber)
-        {
-            // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
-            if (0xFEEFEE <= lineNumber)
-                lineNumber = 0;
-
-            SourceFile = sourceFile;
-            LineNumber = lineNumber;
-        }
-#endregion
-    }
-}
-
-#region private classes
-
-internal sealed class ComStreamWrapper : IStream
-{
-    private readonly Stream stream;
-
-    public ComStreamWrapper(Stream stream)
-    {
-        this.stream = stream;
-    }
-
-    public void Commit(uint grfCommitFlags)
-    {
-        throw new NotSupportedException();
-    }
-
-    public unsafe void RemoteRead(out byte pv, uint cb, out uint pcbRead)
-    {
-        byte[] buf = new byte[cb];
-
-        int bytesRead = stream.Read(buf, 0, (int)cb);
-        pcbRead = (uint)bytesRead;
-
-        fixed (byte* p = &pv)
+        private string GetCachePathForUrl(string url)
         {
             var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
             return (Path.Combine(cacheDir, new Uri(url).AbsolutePath.TrimStart('/').Replace('/', '\\')));
@@ -2563,28 +1683,7 @@ internal sealed class ComStreamWrapper : IStream
                 if (bytes1[i] != bytes2[i])
                     return false;
             }
-
-            // This is the value it was for msdia120 and before 
-            // var diaSourceClassGuid = new Guid("{3BFCEA48-620F-4B6B-81F7-B9AF75454C7D}");
-
-            // This is the value for msdia140.  
-            var diaSourceClassGuid = new Guid("{e6756135-1e65-4d17-8576-610761398c3c}");
-            var comClassFactory = (IClassFactory)DllGetClassObject(diaSourceClassGuid, typeof(IClassFactory).GUID);
-
-            object comObject = null;
-            Guid iDataDataSourceGuid = typeof(IDiaDataSource3).GUID;
-            comClassFactory.CreateInstance(null, ref iDataDataSourceGuid, out comObject);
-            return (comObject as IDiaDataSource3);
-        }
-#region private
-        [ComImport, ComVisible(false), Guid("00000001-0000-0000-C000-000000000046"),
-         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        private interface IClassFactory
-        {
-            void CreateInstance([MarshalAs(UnmanagedType.Interface)] object aggregator,
-                                ref Guid refiid,
-                                [MarshalAs(UnmanagedType.Interface)] out object createdObject);
-            void LockServer(bool incrementRefCount);
+            return true;
         }
 
         // TO be filled in by superclass on construction.  
@@ -2592,14 +1691,11 @@ internal sealed class ComStreamWrapper : IStream
         protected System.Security.Cryptography.HashAlgorithm _hashAlgorithm;
         protected ManagedSymbolModule _symbolModule;
 
-        /// <summary>
-        /// Used to ensure the native library is loaded at least once prior to trying to use it. No protection is
-        /// included to avoid multiple loads, but this is not a problem since we aren't trying to unload the library
-        /// after use.
-        /// </summary>
-        static bool s_loadedNativeDll;
-#endregion
+        // Filled in when GetSource() is called.  
+        protected string _filePath;
+        bool _getSourceCalled;
+        bool _checksumMatches;
+        #endregion
     }
 }
-#endregion
 

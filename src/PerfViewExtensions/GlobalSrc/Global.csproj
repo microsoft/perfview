@@ -2,41 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{91DFAE19-098F-4E19-B81D-6CB36A9020D6}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>Global</RootNamespace>
-    <AssemblyName>Global</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <LangVersion>6</LangVersion>
-    <Features>strict</Features>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
-    <DocumentationFile>bin\Debug\Global.XML</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\Global.XML</DocumentationFile>
-    <Prefer32Bit>false</Prefer32Bit>
+    <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,9 +11,7 @@
     <Reference Include="System.Xaml" />
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Commands.cs" />
-  </ItemGroup>
+
   <PropertyGroup>
     <!-- Determine if we are building 'next to' the main PerfView sources -->
     <PerfViewProj>$(MSBuildProjectDirectory)\..\..\PerfView\PerfView.csproj</PerfViewProj>
@@ -57,22 +21,10 @@
     <When Condition=" '$(BuildingPerfView)' == 'True' ">
       <!-- Use project references -->
       <ItemGroup>
-        <ProjectReference Include="..\..\CSVReader\CSVReader.csproj">
-          <Project>{f7d0f851-9b0d-4224-91ab-7fc12477f206}</Project>
-          <Name>CSVReader</Name>
-        </ProjectReference>
-        <ProjectReference Include="..\..\FastSerialization\FastSerialization.csproj">
-          <Project>{e6eacf92-f22d-47dc-8eeb-9bbc4df1e4d5}</Project>
-          <Name>FastSerialization</Name>
-        </ProjectReference>
-        <ProjectReference Include="..\..\PerfView\PerfView.csproj">
-          <Project>{6bac7496-6953-41b8-9042-aae45405a095}</Project>
-          <Name>PerfView</Name>
-        </ProjectReference>
-        <ProjectReference Include="..\..\traceEvent\TraceEvent.csproj">
-          <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
-          <Name>TraceEvent</Name>
-        </ProjectReference>
+        <ProjectReference Include="..\..\CSVReader\CSVReader.csproj" />
+        <ProjectReference Include="..\..\FastSerialization\FastSerialization.csproj" />
+        <ProjectReference Include="..\..\PerfView\PerfView.csproj" />
+        <ProjectReference Include="..\..\traceEvent\TraceEvent.csproj" />
       </ItemGroup>
     </When>
     <Otherwise>
@@ -92,21 +44,5 @@
       </ItemGroup>
     </Otherwise>
   </Choose>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PreBuildEvent>
-    </PreBuildEvent>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- Determine if we are building 'next to' the main PerfView sources -->
-    <PerfViewProj>$(MSBuildProjectDirectory)\..\..\PerfView\PerfView.csproj</PerfViewProj>
-    <BuildingPerfView>$([System.IO.File]::Exists($(PerfViewProj)))</BuildingPerfView>
-  </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

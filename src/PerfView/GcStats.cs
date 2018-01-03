@@ -1,20 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation.  All rights reserved
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Analysis;
 using Microsoft.Diagnostics.Tracing.Analysis.GC;
-using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Utilities;
+
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
+using System.Security;
 using Utilities;
-using Address = System.UInt64;
 
 namespace Stats
 {
@@ -192,7 +189,8 @@ namespace Stats
                 writer.WriteLine("<TR><TH>Type</TH><TH>Count</TH></TR>");
                 foreach (var finalized in runtime.GC.Stats().FinalizedObjects.OrderByDescending(f => f.Value).Take(resultsToShow))
                 {
-                    writer.WriteLine("<TR><TD Align=\"Center\">{0}</TD><TD Align=\"Center\">{1}</TD><TR>", finalized.Key, finalized.Value);
+                    var encodedTypeName = SecurityElement.Escape(finalized.Key);
+                    writer.WriteLine("<TR><TD Align=\"Center\">{0}</TD><TD Align=\"Center\">{1}</TD><TR>", encodedTypeName, finalized.Value);
                 }
                 writer.WriteLine("</Table></Center>");
                 if (resultsToShow < runtime.GC.Stats().FinalizedObjects.Count)

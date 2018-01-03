@@ -1,5 +1,5 @@
 using System;
-
+using System.Runtime.InteropServices;
 
 namespace Utilities
 {
@@ -19,15 +19,31 @@ namespace Utilities
         ///     Vista == 60
         /// This returns true if true OS version is >= 'requiredOSVersion
         /// </summary>
+
+        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RTL_OSVERSIONINFOEX
+        {
+            internal uint dwOSVersionInfoSize;
+            internal uint dwMajorVersion;
+            internal uint dwMinorVersion;
+            internal uint dwBuildNumber;
+            internal uint dwPlatformId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            internal string szCSDVersion;
+        }
+
+        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
+        [DllImport("ntdll.dll")]
+        private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
+
+        // Code borrowed from CoreFX System.PlatformDetection.Windows to allow targeting nestandard1.6
         public static bool AtLeast(int requiredOSVersion)
         {
-#if !DOTNET_CORE
-            int osVersion = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-#else
-            // FIX NOW. we assume we are on windows 10 if we are running .NET Core 
-            // Need to actually PINVOKE to something.   
-            int osVersion = 100;
-#endif
+            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            RtlGetVersion(out osvi);
+            uint osVersion = osvi.dwMajorVersion * 10 + osvi.dwMinorVersion;
             return osVersion >= requiredOSVersion;
         }
     }

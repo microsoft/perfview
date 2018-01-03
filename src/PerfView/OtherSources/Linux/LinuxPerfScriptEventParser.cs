@@ -306,22 +306,12 @@ namespace Diagnostics.Tracing.StackSources
 
                 StringBuilder sb = new StringBuilder();
 
-                // Command - Stops at first number AFTER first word(non-whitespace) and whitespace
-                for (;;)
-                {
-                    if (sb.Length != 0)
-                    {
-                        if (this.IsNumberChar((char)source.Current))
-                            break;
-                        sb.Append(' ');
-                    }
-                    source.ReadAsciiStringUpToTrue(sb, delegate (byte c)
-                    {
-                        return !char.IsWhiteSpace((char)c);
-                    });
-                    source.SkipWhiteSpace();
-                }
-
+                // Fetch Command (processName) - Stops when it sees the pattern \s+\d+/\d
+                int idx = FindSpaceNumSlash(source);
+                if (idx < 0)
+                    break;
+                source.ReadFixedString(idx, sb);
+                source.SkipWhiteSpace();
                 string comm = sb.ToString();
                 sb.Clear();
 
@@ -419,6 +409,51 @@ namespace Diagnostics.Tracing.StackSources
             }
         }
 
+
+        /// <summary>
+        /// Peeks ahead on source until we see \s+\d+/\d (that is space num/num) and returns the index to first (space)
+        /// character in the pattern.  Returns -1 if not found.  
+        /// 
+        /// We need this complex regular expression because process names in linux can have spaces and numbers and slashes
+        /// in them For example here is a real process name (rs:action 13 qu) or  (kworker/1:3)
+        /// </summary>
+        private static int FindSpaceNumSlash(FastStream source)
+        {
+            uint idx = 0;
+
+            startOver:
+            int firstSpaceIdx = -1;
+            bool seenDigit = false;
+            for (; ; )
+            {
+                idx++;
+                if (idx >= source.MaxPeek-1)
+                    return -1;
+                byte val = source.Peek(idx);
+                if (firstSpaceIdx < 0)
+                {
+                    if (char.IsWhiteSpace((char)val))
+                        firstSpaceIdx = (int) idx;
+                    else 
+                        goto startOver;
+                }
+                else if (!seenDigit)
+                {
+                    if (char.IsDigit((char)val))
+                        seenDigit = true;
+                    else if (!char.IsWhiteSpace((char)val))
+                        goto startOver;
+                }
+                else
+                {
+                    if (val == '/' && char.IsDigit((char)source.Peek(idx + 1)))
+                        return firstSpaceIdx;
+                    else if (!char.IsDigit((char)val))
+                        goto startOver;
+                }
+            }
+        }
+
         private List<Frame> ReadFramesForSample(string command, int processID, int threadID, Frame threadTimeFrame, FastStream source)
         {
             List<Frame> frames = new List<Frame>();
@@ -489,6 +524,7 @@ namespace Diagnostics.Tracing.StackSources
 
             // Can't use Path.GetFileName Because it throws on illegal Windows characters 
             actualModule = GetFileName(actualModule);
+            actualSymbol = this.RemoveOffset(actualSymbol.Trim());
 
             return new StackFrame(address, actualModule, actualSymbol);
         }
@@ -551,6 +587,25 @@ namespace Diagnostics.Tracing.StackSources
                 || (s[0] == '[' && s[s.Length - 1] == ']'))
             {
                 s = s.Substring(1, s.Length - 2);
+            }
+
+            return s;
+        }
+
+        private string RemoveOffset(string s)
+        {
+            // Perf stack entries look like func+0xFFFFFFFFFFFFFFFF.
+            // Strip off the +0xFFFFFFFFFFFFFFFF so that PerfView can aggregate the stacks properly.
+
+            const string offsetPrefix = "+0x";
+            int offsetPrefixLength = offsetPrefix.Length;
+
+
+            // If the offset prefix is found and is not the beginning or end of the frame, then remove the offset.
+            int index = s.LastIndexOf(offsetPrefix);
+            if((index > 0) && (index < s.Length - offsetPrefixLength))
+            {
+                return s.Substring(0, index);
             }
 
             return s;
@@ -640,7 +695,11 @@ namespace Diagnostics.Tracing.StackSources
                 if (MapFilePatterns.IsMatch(entry.FullName))
                 {
                     Mapper mapper = new Mapper();
-                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName)] = mapper;
+
+                    // Register the mapper both with and without the .ni extension.
+                    // Old versions of the runtime contain native images with the .ni extension.
+                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, false)] = mapper;
+                    this.fileSymbolMappers[LinuxPerfScriptEventParser.GetFileNameWithoutExtension(entry.FullName, true)] = mapper;
                     using (Stream stream = entry.Open())
                     {
                         this.parser.ParseSymbolFile(stream, mapper);

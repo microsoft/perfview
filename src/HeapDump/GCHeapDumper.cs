@@ -1129,8 +1129,8 @@ public class GCHeapDumper
             MaxDumpCountK = 10;
         m_log.WriteLine("{0,5:f1}s: Size of heap = {1:f3} GB", m_sw.Elapsed.TotalSeconds, ((double)totalGCSize) / 1000000000.0);
 
-        /// We have an overhead of about 52 bytes per object (24 for the hash table, 28 for the rest)
-        /// we have 1GB in a 32 bit process 
+        // We have an overhead of about 52 bytes per object (24 for the hash table, 28 for the rest)
+        // we have 1GB in a 32 bit process 
         m_maxNodeCount = 1000000000 / 52;       // 20 Meg objects;
         if (EnvironmentUtilities.Is64BitOperatingSystem)
             m_maxNodeCount *= 3;                // We have 4GB instead of 2GB, so we 3GB instead of 1GB available for us to use in 32 bit processes = 60Meg objects

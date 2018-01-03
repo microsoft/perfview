@@ -610,13 +610,13 @@ namespace PerfView
                                 "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
                                 "Request.RequestUri" +
                                 "\n" +
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" + 
+                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
                                 "Response.StatusCode";
                             diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
                             const ulong IgnoreShortCutKeywords = 0x0800;
                             EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
                                 new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
-                                TraceEventLevel.Informational, ulong.MaxValue-IgnoreShortCutKeywords, diagSourceOptions);
+                                TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
 
                             // TODO should stacks be enabled?
                             EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
@@ -1515,52 +1515,6 @@ namespace PerfView
             LogFile.WriteLine("[{0} Total Active sessions: (See Log)]", ctr);
             ShowLog = true;
         }
-        public void FetchSymbolsForProcess(CommandLineArgs parsedArgs)
-        {
-            // Create a local symbols directory, and the normal logic will fill it.  
-            var symbolsDir = Path.Combine(Path.GetDirectoryName(parsedArgs.DataFile), "symbols");
-            if (!Directory.Exists(symbolsDir))
-                Directory.CreateDirectory(symbolsDir);
-
-            var etlFile = PerfViewFile.Get(parsedArgs.DataFile) as ETLPerfViewData;
-            if (etlFile == null)
-                throw new ApplicationException("FetchSymbolsForProcess only works on etl files.");
-
-            TraceLog traceLog = etlFile.GetTraceLog(LogFile);
-            TraceProcess focusProcess = null;
-            foreach (var process in traceLog.Processes)
-            {
-                if (parsedArgs.Process == null)
-                {
-                    if (process.StartTimeRelativeMsec > 0)
-                    {
-                        LogFile.WriteLine("Focusing on first process {0} ID {1}", process.Name, process.ProcessID);
-                        focusProcess = process;
-                        break;
-                    }
-                }
-                else if (string.Compare(process.Name, parsedArgs.Process, StringComparison.OrdinalIgnoreCase) == 0)
-                {
-                    LogFile.WriteLine("Focusing on named process {0} ID {1}", process.Name, process.ProcessID);
-                    focusProcess = process;
-                    break;
-                }
-            }
-            if (focusProcess == null)
-            {
-                if (parsedArgs.Process == null)
-                    throw new ApplicationException("No process started in the trace.  Nothing to focus on.");
-                else
-                    throw new ApplicationException("Could not find a process named " + parsedArgs.Process + ".");
-            }
-
-            // Lookup all the pdbs for all modules.  
-            using (var symReader = etlFile.GetSymbolReader(LogFile))
-            {
-                foreach (var module in focusProcess.LoadedModules)
-                    traceLog.CodeAddresses.LookupSymbolsForModule(symReader, module.ModuleFile);
-            }
-        }
 
         public void EnableKernelStacks(CommandLineArgs parsedArgs)
         {
@@ -1713,7 +1667,7 @@ namespace PerfView
         }
 #endif
 
-#region private
+        #region private
         private void DisableNetMonTrace()
         {
             string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
@@ -2128,34 +2082,16 @@ namespace PerfView
         private static void InstallETWClrProfiler(TextWriter log, int profilerKeywords)
         {
             log.WriteLine("Insuring that the .NET CLR Profiler is installed.");
-
             var profilerDll = Path.Combine(SupportFiles.SupportFileDir, SupportFiles.ProcessArchitectureDirectory, "EtwClrProfiler.dll");
-            if (!File.Exists(profilerDll))
+            if (File.Exists(profilerDll))
             {
-                log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
-                return;
-            }
-            log.WriteLine("Profiler DLL to load is {0}", profilerDll);
-
-            log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
-            using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
-            {
-                var existingValue = key.GetValue("COR_PROFILER") as string;
-                if (existingValue != null && "{6652970f-1756-5d8d-0805-e9aad152aa84}" != existingValue)
+                log.WriteLine("Profiler DLL to load is {0}", profilerDll);
+                log.WriteLine(@"Adding HKLM\Software\Microsoft\.NETFramework\COR* registry keys");
+                using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
                 {
                     InsertEtwClrProfilerKeys(key, "COR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
                     InsertEtwClrProfilerKeys(key, "CORECLR", profilerDll, profilerKeywords, SupportFiles.ProcessArch.ToString(), log);
                 }
-                key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                key.SetValue("COR_PROFILER_PATH", profilerDll);
-                key.SetValue("COR_ENABLE_PROFILING", 1);
-
-                // Also enable CoreCLR Profiling 
-                key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                key.SetValue("CORECLR_PROFILER_PATH", profilerDll);
-                key.SetValue("CORECLR_ENABLE_PROFILING", 1);
-
-                key.SetValue("PerfView_Keywords", profilerKeywords);
             }
             else
                 log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", SupportFiles.ProcessArch);
@@ -2191,17 +2127,6 @@ namespace PerfView
                         InsertEtwClrProfilerKeys(key, "COR", profilerNativeDll, profilerKeywords, arch, log);
                         InsertEtwClrProfilerKeys(key, "CORECLR", profilerNativeDll, profilerKeywords, arch, log);
                     }
-                    key.SetValue("COR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                    key.SetValue("COR_PROFILER_PATH", profilerNativeDll);
-                    key.SetValue("COR_ENABLE_PROFILING", 1);
-
-                    // Also enable CoreCLR Profiling 
-                    key.SetValue("CORECLR_PROFILER", "{6652970f-1756-5d8d-0805-e9aad152aa84}");
-                    key.SetValue("CORECLR_PROFILER_PATH", profilerNativeDll);
-                    key.SetValue("CORECLR_ENABLE_PROFILING", 1);
-
-                    key.SetValue("PerfView_Keywords", profilerKeywords);
-
                 }
                 else
                     log.WriteLine("ERROR do not have a ETWClrProfiler.dll for architecture {0}", arch);
@@ -2233,23 +2158,8 @@ namespace PerfView
 
             using (RegistryKey key = Registry.LocalMachine.CreateSubKey(s_dotNetKey))
             {
-                string existingValue = key.GetValue("COR_PROFILER") as string;
-                if (existingValue == null)
-                    return;
-                if (existingValue != "{6652970f-1756-5d8d-0805-e9aad152aa84}")
-                {
-                    log.WriteLine("ERROR trying to remove EtwClrProfiler, found an existing Profiler {0} doing nothing.", existingValue);
-                    return;
-                }
-                key.DeleteValue("COR_PROFILER", false);
-                key.DeleteValue("COR_PROFILER_PATH", false);
-                key.DeleteValue("COR_ENABLE_PROFILING", false);
-
-                key.DeleteValue("CORECLR_PROFILER", false);
-                key.DeleteValue("CORECLR_PROFILER_PATH", false);
-                key.DeleteValue("CORECLR_ENABLE_PROFILING", false);
-
-                key.DeleteValue("PerfView_Keywords", false);
+                DeleteEtwClrProfilerKeys(key, "COR", log);
+                DeleteEtwClrProfilerKeys(key, "CORECLR", log);
             }
 
             var nativeArch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432");
@@ -2886,7 +2796,7 @@ namespace PerfView
 
         TextWriter m_logFile;
         bool m_aborted;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -2934,7 +2844,7 @@ namespace PerfView
                     providerStr = "@" + wildCardFileName;
                 }
 
-            RETRY:
+                RETRY:
                 // Handle : style keyword, level and stacks description. 
                 m = Regex.Match(rest, @"^([^:=]*)(:(.*))?$");
                 if (m.Success)
@@ -3048,7 +2958,7 @@ namespace PerfView
             return ret;
         }
 
-#region private
+        #region private
 
         private static IList<int> ParseIntList(string spaceSeparatedList)
         {
@@ -3163,7 +3073,7 @@ namespace PerfView
             }
             return returnValue;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -3213,7 +3123,7 @@ namespace PerfView
             return manifest;
         }
 
-#region private
+        #region private
 
         private static void GetStaticReferencedAssemblies(Assembly assembly, Dictionary<Assembly, Assembly> soFar)
         {
@@ -3242,6 +3152,6 @@ namespace PerfView
                 }
             }
         }
-#endregion
+        #endregion
     }
 }
