@@ -126,10 +126,26 @@ namespace PerfView
 
         public void RemoveViewMenuColumn(PerfDataGrid perfDataGrid, MenuItem viewMenu, string columnName)
         {
+            // First find the string displayed for the named column (e.g IncCount -> Inc Ct)
             int col = perfDataGrid.GetColumnIndex(columnName);
             if (col > -1)
             {
-                viewMenu.Items.RemoveAt(col);
+                string columnDisplayString = ((TextBlock)perfDataGrid.Grid.Columns[col].Header).Text;
+
+                // Find that in the list of MenuItems, and delete it if present.  
+                for (int i = 0; i < viewMenu.Items.Count; i++)
+                {
+                    MenuItem item = viewMenu.Items[i] as MenuItem;
+                    if (item != null)
+                    {
+                        string name = (string)item.Header;
+                        if (name == columnDisplayString)
+                        {
+                            viewMenu.Items.RemoveAt(i);
+                            return;
+                        }
+                    }
+                }
             }
         }
 
@@ -266,7 +282,7 @@ namespace PerfView
                 StatusBar.AbortWork(true);
             }
 #endif
-            StatusBar.StartWork("Computing Stack Traces", delegate()
+            StatusBar.StartWork("Computing Stack Traces", delegate ()
             {
                 CallTree newCallTree = new CallTree(ScalingPolicy);
 
@@ -325,7 +341,7 @@ namespace PerfView
                 // Compute the byName items sorted by exclusive time.  
                 var byNameItems = newCallTree.ByIDSortedExclusiveMetric();
 
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     var oldCallTree = m_callTree;
                     m_callTree = newCallTree;
@@ -742,7 +758,7 @@ namespace PerfView
         }
         private void DoSetSourcePath(object sender, RoutedEventArgs e)
         {
-            var symPathDialog = new SymbolPathDialog(App.SourcePath, "Source", delegate(string newPath)
+            var symPathDialog = new SymbolPathDialog(App.SourcePath, "Source", delegate (string newPath)
             {
                 App.SourcePath = newPath;
             });
@@ -832,7 +848,7 @@ namespace PerfView
                 var filteredSource = new FilterStackSource(Filter, StackSource, ScalingPolicy);
                 InternStackSource source = new InternStackSource(filteredSource, StackSource);
 
-                XmlStackSourceWriter.WriteStackViewAsZippedXml(source, m_fileName, delegate(XmlWriter writer)
+                XmlStackSourceWriter.WriteStackViewAsZippedXml(source, m_fileName, delegate (XmlWriter writer)
                 {
                     GuiState.WriteToXml("StackWindowGuiState", writer);
                 });
@@ -855,7 +871,7 @@ namespace PerfView
             {
                 var htmlReport = Path.Combine(CacheFiles.CacheDir, "OverweightAnalysis." + DateTime.Now.ToString("MM-dd.HH.mm.ss.fff") + ".html");
                 OverWeigthReport.GenerateOverweightReport(htmlReport, this, baselineWindow);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     OverWeigthReport.ViewOverweightReport(htmlReport, reportName);
                 });
@@ -900,12 +916,12 @@ namespace PerfView
 
             stackWindow.Show();
 
-            stackWindow.StatusBar.StartWork("Computing " + dataFile.Name, delegate()
+            stackWindow.StatusBar.StartWork("Computing " + dataFile.Name, delegate ()
             {
                 var source = InternStackSource.Diff(
                     new FilterStackSource(testFilter, this.StackSource, ScalingPolicy), this.StackSource,
                     new FilterStackSource(baselineFilter, baselineWindow.StackSource, ScalingPolicy), baselineWindow.StackSource);
-                stackWindow.StatusBar.EndWork(delegate()
+                stackWindow.StatusBar.EndWork(delegate ()
                 {
                     stackWindow.SetStackSource(source);
                 });
@@ -985,7 +1001,7 @@ namespace PerfView
                     }
                 }
 
-                asCallTreeNodeBase.GetSamples(exclusiveSamples, delegate(StackSourceSampleIndex sampleIdx)
+                asCallTreeNodeBase.GetSamples(exclusiveSamples, delegate (StackSourceSampleIndex sampleIdx)
                 {
                     // We should only count a sample once unless we are combining different cells. 
                     Debug.Assert((int)sampleIdx < localSampleSet.Length);
@@ -1336,7 +1352,7 @@ namespace PerfView
                                         // if we have {*}->module $1 and we are ungrouping 'module mscorlib' then
                                         // make mscorlib->;
                                         char captureNum = '0';
-                                        var newPat = Regex.Replace(pat, "{.*?}", delegate(Match m)
+                                        var newPat = Regex.Replace(pat, "{.*?}", delegate (Match m)
                                         {
                                             captureNum++;
                                             var varValue = match.Groups["V" + new string(captureNum, 1)];
@@ -1483,7 +1499,7 @@ namespace PerfView
         private void DoFoldModule(object sender, ExecutedRoutedEventArgs e)
         {
             var str = FoldRegExTextBox.Text;
-            DoForSelectedModules(delegate(string moduleName)
+            DoForSelectedModules(delegate (string moduleName)
             {
                 str = AddSet(str, FilterParams.EscapeRegEx(moduleName) + "!");
             });
@@ -1817,11 +1833,11 @@ namespace PerfView
             }
 
             var filter = Filter;        // Fetch when you are still on the GUI thread.  
-            StatusBar.StartWork("Warm Symbol Lookup", delegate()
+            StatusBar.StartWork("Warm Symbol Lookup", delegate ()
             {
                 var filteredSource = new FilterStackSource(filter, m_stackSource, ScalingPolicy);
                 PrimeWarmSymbols(filteredSource, processID, etlDataFile, StatusBar.LogWriter);
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     Update();
                 });
@@ -1852,7 +1868,7 @@ namespace PerfView
             var totalMetric = 0.0F;
             var modulesSeenOnStack = new Dictionary<int, int>(16);
 
-            stackSource.ForEach(delegate(StackSourceSample sample)
+            stackSource.ForEach(delegate (StackSourceSample sample)
             {
                 totalMetric += sample.Metric;
                 var stackIdx = sample.StackIndex;
@@ -1930,7 +1946,7 @@ namespace PerfView
 
             //create the list of module names to look up
             var moduleNames = new HashSet<string>();
-            var success = DoForSelectedModules(delegate(string moduleName)
+            var success = DoForSelectedModules(delegate (string moduleName)
             {
                 moduleNames.Add(moduleName);
             });
@@ -1943,7 +1959,7 @@ namespace PerfView
 
 
             // Look them up.
-            StatusBar.StartWork("Symbol Lookup", delegate()
+            StatusBar.StartWork("Symbol Lookup", delegate ()
             {
                 foreach (var moduleName in moduleNames)
                 {
@@ -1961,7 +1977,7 @@ namespace PerfView
                         StatusBar.LogError("Error looking up " + moduleName + "\r\n    " + ex.Message);
                     }
                 }
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     Update();
                 });
@@ -2006,7 +2022,7 @@ namespace PerfView
                 }
             }
 
-            StatusBar.StartWork("Fetching Source code for " + cellText, delegate()
+            StatusBar.StartWork("Fetching Source code for " + cellText, delegate ()
             {
                 SortedDictionary<int, float> metricOnLine;
                 var sourceLocation = GetSourceLocation(asCallTreeNodeBase, cellText, out metricOnLine);
@@ -2035,7 +2051,7 @@ namespace PerfView
                         }
                     }
                 }
-                StatusBar.EndWork(delegate()
+                StatusBar.EndWork(delegate ()
                 {
                     if (sourcePathToOpen != null)
                     {
@@ -2082,7 +2098,7 @@ namespace PerfView
             // Find the most numerous call stack
             // TODO this can be reasonably expensive.   If it is a problem do something about it (e.g. sampling)
             var frameIndexCounts = new Dictionary<StackSourceFrameIndex, float>();
-            asCallTreeNodeBase.GetSamples(false, delegate(StackSourceSampleIndex sampleIdx)
+            asCallTreeNodeBase.GetSamples(false, delegate (StackSourceSampleIndex sampleIdx)
             {
                 // Find the callStackIdx which corresponds to the name in the cell, and log it to callStackIndexCounts
                 var matchingFrameIndex = StackSourceFrameIndex.Invalid;
@@ -2788,7 +2804,7 @@ namespace PerfView
             };
 
             // Populate ViewMenu items for showing/hiding columns
-            PopularViewMenuWithPerfDataGridItems(perfDataGrids);
+            PopulateViewMenuWithPerfDataGridItems(perfDataGrids);
 
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
@@ -2796,11 +2812,11 @@ namespace PerfView
             StackWindows.Add(this);
 
             // TODO really should simply update Diff Menu lazily
-            IsVisibleChanged += delegate(object sender, DependencyPropertyChangedEventArgs e)
+            IsVisibleChanged += delegate (object sender, DependencyPropertyChangedEventArgs e)
             {
                 UpdateDiffMenus(StackWindows);
             };
-            Closing += delegate(object sender, CancelEventArgs e)
+            Closing += delegate (object sender, CancelEventArgs e)
             {
                 if (StatusBar.IsWorking)
                 {
@@ -2848,7 +2864,7 @@ namespace PerfView
                 if (m_callTreeView != null)
                     m_calleesView.Dispose();
             };
-            TopStats.PreviewMouseDoubleClick += delegate(object sender, MouseButtonEventArgs e)
+            TopStats.PreviewMouseDoubleClick += delegate (object sender, MouseButtonEventArgs e)
             {
                 e.Handled = StatusBar.ExpandSelectionByANumber(TopStats);
                 return;
@@ -2890,7 +2906,7 @@ namespace PerfView
         /// Creates checkable boxes for each Column in the PerfDataGrid, then adds a seperator and Save View Settings button.
         /// </summary>
         /// <param name="perfDataGrids"></param>
-        private void PopularViewMenuWithPerfDataGridItems(List<PerfDataGrid> perfDataGrids)
+        private void PopulateViewMenuWithPerfDataGridItems(List<PerfDataGrid> perfDataGrids)
         {
             List<Tuple<string, MenuItem>> perfDataGridMenuItems = new List<Tuple<string, MenuItem>>();
 
@@ -3294,7 +3310,7 @@ namespace PerfView
 
             var helpMenuItem = new MenuItem();
             helpMenuItem.Header = "Help for " + diffName;
-            helpMenuItem.Click += delegate(object sender, RoutedEventArgs e) { MainWindow.DisplayUsersGuide(diffName); };
+            helpMenuItem.Click += delegate (object sender, RoutedEventArgs e) { MainWindow.DisplayUsersGuide(diffName); };
             diffMenuItem.Items.Add(helpMenuItem);
         }
         private void CopyTo(ItemCollection toCollection, IEnumerable fromCollection)
