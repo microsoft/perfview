@@ -2827,7 +2827,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public void AddDispatchHook(Func<TraceEvent, bool> onDispatch)
         {
-            if (onDispatch == null) throw new ArgumentException("Must provide a non-null callback", "onDispatch", null);
+            if (onDispatch == null) throw new ArgumentException("Must provide a non-null callback", nameof(onDispatch), null);
 
             var hook = new DispatchHookEntry()
             {
