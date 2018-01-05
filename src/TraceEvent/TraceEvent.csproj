@@ -13,9 +13,9 @@
     <Description>TraceEvent library.</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <Version>2.0.2.0</Version>
-    <FileVersion>2.0.2.0</FileVersion>
-    <InformationalVersion>2.0.2-dev</InformationalVersion>
+    <Version>2.0.2</Version>
+    <FileVersion>2.0.2</FileVersion>
+    <InformationalVersion>2.0.2</InformationalVersion>
     <NeutralLanguage>en</NeutralLanguage>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -24,12 +24,6 @@
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
-      <Authenticode>Microsoft</Authenticode>
-      <StrongName>StrongName</StrongName>
-    </FilesToSign>
-  </ItemGroup>
 
   <Target Name="SetNuspecProperties">
     <PropertyGroup>
@@ -40,11 +34,6 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
-
-    <DefineConstants Condition="'$(SIGNING_BUILD)'!=''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
-    <DelaySign>true</DelaySign>
   </PropertyGroup>
 
   <!--
@@ -80,7 +69,6 @@
   </Choose>
 
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
   </ItemGroup>
@@ -139,6 +127,7 @@
       <Visible>False</Visible>
     </None>
 
+    <!-- *********************************************************** -->
     <!-- Copying thee managed binaries explicitly should not be needed because the 
          dependency logic should just do it for us, but for some reason ths only
          works for the net45 target framework and not the netstandard1.6.  We 
@@ -160,5 +149,23 @@
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
   </ItemGroup>
+
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <DefineConstants Condition="'$(SIGNING_BUILD)'!=''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
 </Project>

@@ -14,13 +14,6 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
-    <DelaySign>true</DelaySign>
-    <AssemblyOriginatorKeyFile>..\..\MSFT.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
     <PackageReference Include="xunit" Version="$(XunitVersion)" />
@@ -52,5 +45,21 @@
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <!-- We don't need to actually sign this official, but we do need
+       to use the right key because TraceEvent (which is signed)
+       needs to give this DLL 'InternalVisibleTo' and signed DLLs
+       can only give this to other signed DLLs.  But since we run
+       on dev machines with signing validation skipped, we can
+       delay sign it and never real sign it.  Note that we don't
+       even delay sign it unless we are on a SIGNING_BUILD -->
+
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
 </Project>
