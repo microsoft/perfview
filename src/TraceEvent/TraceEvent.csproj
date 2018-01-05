@@ -38,11 +38,11 @@
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+	-->
     <FilesToSign Include="$(OutDir)\Dia2Lib.dll">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-	-->
   </ItemGroup>
 
   <Target Name="SetNuspecProperties">
