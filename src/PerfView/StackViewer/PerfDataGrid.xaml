@@ -7,7 +7,6 @@
         xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
         mc:Ignorable="d" 
         d:DesignHeight="223" d:DesignWidth="600">
-
     <UserControl.Resources>
         <!-- Shared Styles -->
         <Style x:Key="RightAlign">
@@ -25,11 +24,27 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
+        <Style x:Key="customDataGridRowStyle" TargetType="{x:Type DataGridRow}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding State}" Value="1">
+                    <Setter Property="Background" Value="LightSkyBlue"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="2">
+                    <Setter Property="Background" Value="BurlyWood"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding State}" Value="3">
+                    <Setter Property="Background" Value="Coral"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="dataGridStyle" TargetType="DataGrid">
+            <Setter Property="AlternatingRowBackground" Value="#FFF2F1A4"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+        </Style>
     </UserControl.Resources>
     <WPFToolKit:DataGrid Name="Grid" 
-        AutoGenerateColumns="False" 
-        Background="White"
-        AlternatingRowBackground="#FFF2F1A4"
+        Style="{StaticResource dataGridStyle}"
+        RowStyle ="{StaticResource customDataGridRowStyle}"
         SelectionMode="Extended" SelectionUnit="CellOrRowHeader" 
         SelectedCellsChanged="SelectedCellsChanged" 
         CanUserSortColumns="False" 

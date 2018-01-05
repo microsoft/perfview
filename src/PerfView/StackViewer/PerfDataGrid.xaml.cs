@@ -135,6 +135,7 @@ namespace PerfView
                 }
             }
         }
+
         public void Select(object item)
         {
             Grid.SelectedCells.Clear();
