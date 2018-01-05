@@ -29,6 +29,18 @@
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+    <FilesToSign Include="$(OutDir)\OSExtensions.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <FilesToSign Include="$(OutDir)\TraceReloggerLib.dll.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
+    <FilesToSign Include="$(OutDir)\Dia2Lib.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
   </ItemGroup>
 
   <Target Name="SetNuspecProperties">
@@ -40,6 +52,9 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>true</DelaySign>
   </PropertyGroup>
 
   <!--
@@ -135,6 +150,7 @@
     </None>
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.props" />
+    <None Include="MSFT.snk" />
   </ItemGroup>
 
 </Project>

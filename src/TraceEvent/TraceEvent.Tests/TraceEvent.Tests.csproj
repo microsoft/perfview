@@ -16,6 +16,10 @@
 
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(SIGNING_BUILD)'!= ''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -43,6 +47,7 @@
 
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="MSFT.snk" />
   </ItemGroup>
 
   <ItemGroup>
