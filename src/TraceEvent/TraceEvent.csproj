@@ -139,7 +139,6 @@
       <Visible>False</Visible>
     </None>
 
-    <!-------------------------------------------------------------------------->
     <!-- Copying thee managed binaries explicitly should not be needed because the 
          dependency logic should just do it for us, but for some reason ths only
          works for the net45 target framework and not the netstandard1.6.  We 
