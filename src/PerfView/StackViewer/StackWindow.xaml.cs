@@ -28,6 +28,7 @@ using Microsoft.Diagnostics.Utilities;
 using System.Threading;
 using PerfView.GuiUtilities;
 using Utilities;
+using Path = System.IO.Path;
 
 namespace PerfView
 {
@@ -410,6 +411,8 @@ namespace PerfView
                         stats += string.Format(" MaxMetric: {0:n3}M at {1:n3}ms",
                             cumMax / 1000000, controller.GetStartTimeForBucket((HistogramCharacterIndex)cumMaxIdx));
                     }
+
+                    RedrawFlameGraph();
 
                     TopStats.Text = stats;
 
@@ -2529,6 +2532,55 @@ namespace PerfView
             m_NotesTabActive = false;
         }
 
+        private void FlameGraphTab_GotFocus(object sender, RoutedEventArgs e)
+        {
+            if (FlameGraphCanvas.Children.Count == 0)
+                RedrawFlameGraph();
+        }
+
+        private void FlameGraphCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => RedrawFlameGraph();
+
+        private void RedrawFlameGraph()
+            => FlameGraph.Draw(
+                CallTree.Root.HasChildren
+                    ? FlameGraph.Calculate(CallTree, FlameGraphCanvas.ActualWidth, FlameGraphCanvas.ActualHeight)
+                    : Enumerable.Empty<FlameGraph.FlameBox>(),
+                FlameGraphCanvas);
+
+        private void FlameGraphCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (StatusBar.LoggedError || FlameGraphCanvas.Children.Count == 0)
+                return;
+
+            var pointed = FlameGraphCanvas.Children.OfType<FrameworkElement>().FirstOrDefault(box => box.IsMouseOver);
+            var toolTip = pointed?.ToolTip as ToolTip;
+            if (toolTip != null)
+                StatusBar.Status = toolTip.Content as string;
+        }
+
+        private void DoSaveFlameGraph(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog();
+            var baseName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(DataSource.FilePath));
+
+            for (int i = 1; ; i++)
+            {
+                saveDialog.FileName = baseName + ".flameGraph" + i.ToString() + ".png";
+                if (!File.Exists(saveDialog.FileName))
+                    break;
+            }
+            saveDialog.InitialDirectory = Path.GetDirectoryName(DataSource.FilePath);
+            saveDialog.Title = "File to save flame graph";
+            saveDialog.DefaultExt = ".png";
+            saveDialog.Filter = "Image files (*.png)|*.png|All files (*.*)|*.*";
+            saveDialog.AddExtension = true;
+            saveDialog.OverwritePrompt = true;
+
+            var result = saveDialog.ShowDialog();
+            if (result == true)
+                FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
+        }
+
         private TabItem SelectedTab
         {
             get
@@ -2543,8 +2595,11 @@ namespace PerfView
                     return CallersTab;
                 else if (CalleesTab.IsSelected)
                     return CalleesTab;
+                else if (FlameGraphTab.IsSelected)
+                    return FlameGraphTab;
                 else if (NotesTab.IsSelected)
                     return NotesTab;
+
                 Debug.Assert(false, "No tab selected!");
                 return null;
             }
@@ -2601,22 +2656,25 @@ namespace PerfView
                 {
                     switch (value.TabSelected)
                     {
-                        case "ByNameTab":
+                        case nameof(ByNameTab):
                             ByNameTab.IsSelected = true;
                             break;
-                        case "CallerCalleeTab":
+                        case nameof(CallerCalleeTab):
                             CallerCalleeTab.IsSelected = true;
                             break;
-                        case "CallTreeTab":
+                        case nameof(CallTreeTab):
                             CallTreeTab.IsSelected = true;
                             break;
-                        case "CalleesTab":
+                        case nameof(CalleesTab):
                             CalleesTab.IsSelected = true;
                             break;
-                        case "CallersTab":
+                        case nameof(CallersTab):
                             CallersTab.IsSelected = true;
                             break;
-                        case "NotesTab":
+                        case nameof(FlameGraphTab):
+                            FlameGraphTab.IsSelected = true;
+                            break;
+                        case nameof(NotesTab):
                             NotesTab.IsSelected = true;
                             break;
                     }
@@ -2656,6 +2714,7 @@ namespace PerfView
         public static RoutedUICommand SaveCommand = new RoutedUICommand("Save", "Save", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.S, ModifierKeys.Control) });
         public static RoutedUICommand SaveAsCommand = new RoutedUICommand("SaveAs", "SaveAs", typeof(StackWindow));
+        public static RoutedUICommand SaveFlameGraphCommand = new RoutedUICommand("SaveFlameGraph", "SaveFlameGraph", typeof(StackWindow));
         public static RoutedUICommand CancelCommand = new RoutedUICommand("Cancel", "Cancel", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Escape) });
         public static RoutedUICommand UpdateCommand = new RoutedUICommand("Update", "Update", typeof(StackWindow),
