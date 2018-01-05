@@ -27,7 +27,7 @@
   <!-- versions of dependencies that more than one project use -->
   <PropertyGroup>
     <PerfViewSupportFilesVersion>1.0.5</PerfViewSupportFilesVersion>
-    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.10</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
+    <MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>1.0.12</MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion>
     <MicrosoftDiagnosticsRuntimeVersion>0.8.31-beta</MicrosoftDiagnosticsRuntimeVersion>
     <XunitVersion>2.3.0</XunitVersion>
     <XunitRunnerVisualstudioVersion>2.3.0</XunitRunnerVisualstudioVersion>

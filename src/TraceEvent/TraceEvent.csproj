@@ -29,27 +29,6 @@
       <Authenticode>Microsoft</Authenticode>
       <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.FastSerialization.dll">
-      <Authenticode>Microsoft</Authenticode>
-      <StrongName>StrongName</StrongName>
-    </FilesToSign>
-
-    <FilesToSign Include="$(OutDir)\x86\KernelTraceControl.Win61.dll">
-      <Authenticode>Microsoft</Authenticode>
-    </FilesToSign>
-
-    <FilesToSign Include="$(OutDir)\OSExtensions.dll">
-      <Authenticode>Microsoft</Authenticode>
-      <StrongName>StrongName</StrongName>
-    </FilesToSign>
-    <FilesToSign Include="$(OutDir)\TraceReloggerLib.dll">
-      <Authenticode>Microsoft</Authenticode>
-      <StrongName>StrongName</StrongName>
-    </FilesToSign>
-    <FilesToSign Include="$(OutDir)\Dia2Lib.dll">
-      <Authenticode>Microsoft</Authenticode>
-      <StrongName>StrongName</StrongName>
-    </FilesToSign>
   </ItemGroup>
 
   <Target Name="SetNuspecProperties">
@@ -160,14 +139,23 @@
       <Visible>False</Visible>
     </None>
 
-    <None Include="$(TraceEventSupportFilesBase)net45\Dia2Lib.dll">
+    <!-------------------------------------------------------------------------->
+    <!-- Copying thee managed binaries explicitly should not be needed because the 
+         dependency logic should just do it for us, but for some reason ths only
+         works for the net45 target framework and not the netstandard1.6.  We 
+         work around it here by copying the files explicitly. -->
+
+    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\Dia2Lib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)net45\OSExtensions.dll">
+    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\OSExtensions.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
     </None>
-    <None Include="$(TraceEventSupportFilesBase)net45\TraceReloggerLib.dll">
+    <None Include="$(TraceEventSupportFilesBase)$(TargetFramework)\TraceReloggerLib.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
     </None>
 
     <None Include="Microsoft.Diagnostics.Tracing.TraceEvent.nuspec" />
