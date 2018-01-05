@@ -12,22 +12,24 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;STREAMREADER_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
+  </PropertyGroup>
+
+  <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
-    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.FastSerialization.dll">
+    <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
+  <!-- .NET Strong Name Signing -->
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);GROWABLEARRAY_PUBLIC;STREAMREADER_PUBLIC;FASTSERIALIZATION_PUBLIC</DefineConstants>
     <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
-  </ItemGroup>
 
 </Project>
