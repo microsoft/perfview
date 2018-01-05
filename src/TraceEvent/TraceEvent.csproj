@@ -29,11 +29,12 @@
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+    <!--
     <FilesToSign Include="$(OutDir)\OSExtensions.dll">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <FilesToSign Include="$(OutDir)\TraceReloggerLib.dll.dll">
+    <FilesToSign Include="$(OutDir)\TraceReloggerLib.dll">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
@@ -41,6 +42,7 @@
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+	-->
   </ItemGroup>
 
   <Target Name="SetNuspecProperties">
