@@ -1,6 +1,4 @@
-﻿# The TraceEvent Library Programmers Guide
-
-Vance Morrison
+# The TraceEvent Library Programmers Guide
 
 ## Introduction: Strongly Typed (Semantic) Logging
 
