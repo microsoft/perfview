@@ -25,9 +25,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Utilities;
 using Address = System.UInt64;
-#if !NUGET
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
-#endif
 using Microsoft.Diagnostics.Tracing.Utilities;
 using Microsoft.Diagnostics.Tracing.Parsers.FrameworkEventSource;
 using Microsoft.Diagnostics.Tracing.Session;
@@ -836,9 +834,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var clrParser = Clr;
             new ClrRundownTraceEventParser(this);
             new ClrStressTraceEventParser(this);
-#if !NUGET
             new ClrPrivateTraceEventParser(this);
-#endif
             new JScriptTraceEventParser(this);
             new JSDumpHeapTraceEventParser(this);
             new AspNetTraceEventParser(this);
@@ -1347,10 +1343,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             var eventPipeParser = new SampleProfilerTraceEventParser(rawEvents);
             eventPipeParser.ThreadStackWalk += clrThreadStackWalk;
 
-#if !NUGET
             var clrPrivate = new ClrPrivateTraceEventParser(rawEvents);
             clrPrivate.ClrStackWalk += clrStackWalk;
-#endif
             kernelParser.StackWalkStack += delegate (StackWalkStackTraceData data)
             {
                 bookKeepingEvent = true;
@@ -1477,7 +1471,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
             };
-#if !NUGET
             rawEvents.Clr.GCMarkWithType += delegate (GCMarkWithTypeTraceData data)
             {
                 if (data.Type == (int)MarkRootType.MarkHandles)
@@ -1487,13 +1480,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 AddMarkThread(data.ThreadID, data.TimeStampQPC, data.HeapNum);
             };
-#endif
 
             var aspNetParser = new AspNetTraceEventParser(rawEvents);
             aspNetParser.AspNetReqStart += delegate (AspNetStartTraceData data) { CategorizeThread(data, "Incoming Request Thread"); };
             rawEvents.Clr.GCFinalizersStart += delegate (GCNoUserDataTraceData data) { CategorizeThread(data, ".NET Finalizer Thread"); };
             rawEvents.Clr.GCFinalizersStop += delegate (GCFinalizersEndTraceData data) { CategorizeThread(data, ".NET Finalizer Thread"); };
-#if !NUGET
             Action<TraceEvent> MarkAsBGCThread = delegate (TraceEvent data)
             {
                 var thread = Threads.GetThread(data.ThreadID, data.TimeStampQPC);
@@ -1507,7 +1498,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             clrPrivate.GCBGC1stConStop += delegate (GCNoUserDataTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCDrainMark += delegate (BGCDrainMarkTraceData data) { MarkAsBGCThread(data); };
             clrPrivate.GCBGCRevisit += delegate (BGCRevisitTraceData data) { MarkAsBGCThread(data); };
-#endif
             rawEvents.Clr.ThreadPoolWorkerThreadStart += delegate (ThreadPoolWorkerThreadTraceData data) { CategorizeThread(data, ".NET ThreadPool"); };
             rawEvents.Clr.ThreadPoolWorkerThreadAdjustmentSample += delegate (ThreadPoolWorkerThreadAdjustmentSampleTraceData data)
             {
@@ -3327,11 +3317,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 pastEventInfo[curPastEventInfo].QPCTime = data.TimeStampQPC;
                 pastEventInfo[curPastEventInfo].EventIndex = eventIndex;
                 pastEventInfo[curPastEventInfo].CountForEvent = countForEvent;
-                pastEventInfo[curPastEventInfo].isClrEvent = (data.ProviderGuid == ClrTraceEventParser.ProviderGuid
-#if !NUGET
- || data.ProviderGuid == ClrPrivateTraceEventParser.ProviderGuid
-#endif
-);
+                pastEventInfo[curPastEventInfo].isClrEvent = (data.ProviderGuid == ClrTraceEventParser.ProviderGuid || data.ProviderGuid == ClrPrivateTraceEventParser.ProviderGuid);
                 pastEventInfo[curPastEventInfo].hasAStack = false;
                 pastEventInfo[curPastEventInfo].BlockingEventIndex = EventIndex.Invalid;
                 // Remember the eventIndex of where the current thread blocks.  
