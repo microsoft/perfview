@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PerfViewVersion>2.0.0.0</PerfViewVersion>
+    <PerfViewVersion>2.0.1.0</PerfViewVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->

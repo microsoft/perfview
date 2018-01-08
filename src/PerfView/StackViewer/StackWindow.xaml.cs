@@ -412,7 +412,7 @@ namespace PerfView
                             cumMax / 1000000, controller.GetStartTimeForBucket((HistogramCharacterIndex)cumMaxIdx));
                     }
 
-                    RedrawFlameGraph();
+                    RedrawFlameGraphIfVisible();
 
                     TopStats.Text = stats;
 
@@ -2532,20 +2532,34 @@ namespace PerfView
             m_NotesTabActive = false;
         }
 
+        private bool m_RedrawFlameGraphWhenItBecomesVisible = false;
+
         private void FlameGraphTab_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (FlameGraphCanvas.Children.Count == 0)
+            if (FlameGraphCanvas.Children.Count == 0 || m_RedrawFlameGraphWhenItBecomesVisible)
                 RedrawFlameGraph();
         }
 
-        private void FlameGraphCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => RedrawFlameGraph();
+        private void FlameGraphCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => RedrawFlameGraphIfVisible();
+
+        private void RedrawFlameGraphIfVisible()
+        {
+            if (FlameGraphTab.IsSelected)
+                RedrawFlameGraph();
+            else
+                m_RedrawFlameGraphWhenItBecomesVisible = true;
+        }
 
         private void RedrawFlameGraph()
-            => FlameGraph.Draw(
-                CallTree.Root.HasChildren
-                    ? FlameGraph.Calculate(CallTree, FlameGraphCanvas.ActualWidth, FlameGraphCanvas.ActualHeight)
-                    : Enumerable.Empty<FlameGraph.FlameBox>(),
-                FlameGraphCanvas);
+        {
+            FlameGraph.Draw(
+                  CallTree.Root.HasChildren
+                      ? FlameGraph.Calculate(CallTree, FlameGraphCanvas.ActualWidth, FlameGraphCanvas.ActualHeight)
+                      : Enumerable.Empty<FlameGraph.FlameBox>(),
+                  FlameGraphCanvas);
+
+            m_RedrawFlameGraphWhenItBecomesVisible = false;
+        }
 
         private void FlameGraphCanvas_MouseMove(object sender, MouseEventArgs e)
         {

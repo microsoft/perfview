@@ -415,6 +415,11 @@
       <WithCulture>false</WithCulture>
       <LogicalName>.\Images\ThreadTimeWithStartStop.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="SupportFiles\Images\FlameGraphView.png">
+      <Type>Non-Resx</Type>
+      <WithCulture>false</WithCulture>
+      <LogicalName>.\Images\FlameGraphView.png</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
