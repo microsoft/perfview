@@ -37,7 +37,7 @@ namespace PerfViewTests.StackViewer
             return TestIncludeItemAsync(KnownDataGrid.ByName);
         }
 
-        [WpfFact(Skip = "Failing with indexOutOfRange and Debug testing.   See issue https://github.com/Microsoft/perfview/issues/354")]
+        [WpfFact]
         [WorkItem(316, "https://github.com/Microsoft/perfview/issues/316")]
         public Task TestIncludeItemOnCallerCalleeTabCallerAsync()
         {
@@ -201,7 +201,8 @@ namespace PerfViewTests.StackViewer
                     var textBlock = (TextBlock)VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(border, 0), 0), 0);
                     Point controlCenter = new Point(textBlock.ActualWidth / 2, textBlock.ActualHeight / 2);
                     Point controlCenterOnView = textBlock.TranslatePoint(controlCenter, (UIElement)Helpers.RootVisual(textBlock));
-                    RaiseMouseInputReportEvent(textBlock, Environment.TickCount, (int)controlCenterOnView.X, (int)controlCenterOnView.Y, 0);
+                    Point controlCenterOnDevice = PresentationSource.FromDependencyObject(Helpers.RootVisual(textBlock)).CompositionTarget.TransformToDevice.Transform(controlCenterOnView);
+                    RaiseMouseInputReportEvent(textBlock, Environment.TickCount, (int)controlCenterOnDevice.X, (int)controlCenterOnDevice.Y, 0);
 
                     gridToDoubleClick.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = Control.MouseDoubleClickEvent, Source = textBlock });
 
@@ -219,7 +220,7 @@ namespace PerfViewTests.StackViewer
             Assembly targetAssembly = Assembly.GetAssembly(typeof(InputEventArgs));
             Type mouseInputReportType = targetAssembly.GetType("System.Windows.Input.RawMouseInputReport");
 
-            const int AbsoluteMove = 8;
+            const int AbsoluteMove = 0x10;
             const int Activate = 2;
             Type rawMouseActionsType = targetAssembly.GetType("System.Windows.Input.RawMouseActions");
 
