@@ -2818,26 +2818,25 @@ namespace Microsoft.Diagnostics.Tracing
         public event Action Completed;
 
         /// <summary>
-        /// Add a hook right before dispatch that determines if an event should be dispatched
-        /// Multiple subscribers may hook this event, in that case they are called in lifo order,
-        /// once a subscriber indicates that an event should not be processed the chain of dispatchers is no longer searched
-        /// <input>TraceEvent - the event that is ready for dispatch</input>
-        /// <return>True - dispatch this event</return>
-        /// <return>False - not dispatch the event</return>
+        /// Wrap (or filter) the dispatch of every event from the TraceEventDispatcher stream.   
+        /// Instead of calling the normal code it calls 'hook' with both the event to be dispatched
+        /// and the method the would normally do the processing.    Thus the routine has 
+        /// the option to call normal processing, surround it with things like a lock
+        /// or skip it entirely.  This can be called more than once, in which case the last
+        /// hook method gets called first (which may end up calling the second ...)
+        /// 
+        /// For example,here is an example that uses AddDispatchHook to 
+        /// take a lock is taken whenever dispatch work is being performed.  
+        /// 
+        /// AddDispatchHook((anEvent, dispatcher) => { lock (this) { dispatcher(anEvent); } });
         /// </summary>
-        public void AddDispatchHook(Func<TraceEvent, bool> onDispatch)
+        public void AddDispatchHook(Action<TraceEvent, Action<TraceEvent>> hook)
         {
-            if (onDispatch == null) throw new ArgumentException("Must provide a non-null callback", nameof(onDispatch), null);
+            if (hook == null) throw new ArgumentException("Must provide a non-null callback", nameof(hook), null);
 
-            var hook = new DispatchHookEntry()
-            {
-                OnDispatch = onDispatch,
-                Next = null
-            };
-
-            // last in first out order
-            hook.Next = DispatchHook;
-            DispatchHook = hook;
+            // Make a new dispatcher which calls the hook with the old dispatcher.   
+            Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
+            userDefinedDispatch = delegate(TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
         }
 
         #region protected
@@ -2963,25 +2962,22 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal protected void Dispatch(TraceEvent anEvent)
         {
+            if (userDefinedDispatch == null)
+                DoDispatch(anEvent);
+            else
+            {
+                // Rare case, there is a dispatch hook, call it (which may call the original Dispatch logic)
+                userDefinedDispatch(anEvent);
+            }
+            anEvent.eventRecord = null;
+        }
+
+        private void DoDispatch(TraceEvent anEvent)
+        {
 #if DEBUG
             try
             {
 #endif
-                // check if there is a registered dispatch hook
-                if (DispatchHook != null)
-                {
-                    // check if we should dispatch this event, the first to indicate
-                    // false we will return without dispatching
-                    for (var hook = DispatchHook; hook != null; hook = hook.Next)
-                    {
-                        if (!hook.OnDispatch(anEvent))
-                        {
-                            anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
-                            return;
-                        }
-                    }
-                }
-
                 if (anEvent.Target != null)
                     anEvent.Dispatch();
                 if (anEvent.next != null)
@@ -2998,7 +2994,6 @@ namespace Microsoft.Diagnostics.Tracing
                             nextEvent.userData = anEvent.userData;
                             nextEvent.eventIndex = anEvent.eventIndex;
                             nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
                         }
                     }
                 }
@@ -3008,7 +3003,6 @@ namespace Microsoft.Diagnostics.Tracing
                         unhandledEventTemplate.PrepForCallback();
                     AllEvents(anEvent);
                 }
-                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
 #if DEBUG
             }
             catch (Exception e)
@@ -3339,15 +3333,6 @@ namespace Microsoft.Diagnostics.Tracing
             return new Guid(bytes);
         }
 
-        #region DispatchHook Members
-        class DispatchHookEntry
-        {
-            public Func<TraceEvent, bool> OnDispatch;
-            public DispatchHookEntry Next;
-        }
-        private DispatchHookEntry DispatchHook;
-        #endregion
-
         #region TemplateHashTable
         struct TemplateEntry
         {
@@ -3530,6 +3515,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ bool stopProcessing;
         internal EventIndex currentID;
         Func<TraceEvent, bool>[] lastChanceHandlers;
+
+        private Action<TraceEvent> userDefinedDispatch; // If non-null, call this when dispatching
         #endregion
     }
 
