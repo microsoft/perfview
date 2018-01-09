@@ -708,7 +708,7 @@ namespace PerfView
             stackWindow.RemoveColumn("LastColumn");
             stackWindow.RemoveColumn("IncAvgColumn");
         }
-        internal static void ConfigureAsEtwStackWindow(StackWindow stackWindow, bool removeCounts = true, bool removeScenarios = true, bool removeIncAvg = true)
+        internal static void ConfigureAsEtwStackWindow(StackWindow stackWindow, bool removeCounts = true, bool removeScenarios = true, bool removeIncAvg = true, bool windows = true)
         {
             if (removeCounts)
             {
@@ -728,12 +728,13 @@ namespace PerfView
             stackWindow.FoldRegExTextBox.Items.Clear();
             if (!string.IsNullOrWhiteSpace(defaultEntry))
                 stackWindow.FoldRegExTextBox.Items.Add(defaultEntry);
-            if (defaultEntry != "ntoskrnl!%ServiceCopyEnd")
+            if (windows && defaultEntry != "ntoskrnl!%ServiceCopyEnd")
                 stackWindow.FoldRegExTextBox.Items.Add("ntoskrnl!%ServiceCopyEnd");
 
             stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
             stackWindow.GroupRegExTextBox.Items.Clear();
             stackWindow.GroupRegExTextBox.Items.Add(@"[no grouping]");
+            if (windows)
             stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group modules]           {%}!->module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group module entries]  {%}!=>module $1");
@@ -7526,6 +7527,7 @@ table {
 
         protected internal override void ConfigureStackWindow(string stackSourceName, StackWindow stackWindow)
         {
+            ConfigureAsEtwStackWindow(stackWindow, true, true, true, false);
             if (stackSourceName.Contains("(with Tasks)") || stackSourceName.Contains("(with StartStop Activities)"))
             {
                 var taskFoldPat = "^STARTING TASK";

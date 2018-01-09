@@ -2877,18 +2877,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(0 < MaxEventIndex);
         }
 
+        private static char[] s_directorySeparators = { '\\', '/' };
+
         // Path  GetFileNameWithoutExtension will throw on illegal chars, which is too strong, so avoid that here.  
         internal static string GetFileNameWithoutExtensionNoIllegalChars(string filePath)
         {
-            int lastBackslashIdx = filePath.LastIndexOf('\\');
-            if (lastBackslashIdx < 0)
-                lastBackslashIdx = 0;
+            int lastDirectorySep = filePath.LastIndexOfAny(s_directorySeparators);
+            if (lastDirectorySep < 0)
+                lastDirectorySep = 0;
             else
-                lastBackslashIdx++;
+                lastDirectorySep++;
             int dotIdx = filePath.LastIndexOf('.');
-            if (dotIdx < lastBackslashIdx)
+            if (dotIdx < lastDirectorySep)
                 dotIdx = filePath.Length;
-            return filePath.Substring(lastBackslashIdx, dotIdx - lastBackslashIdx);
+            return filePath.Substring(lastDirectorySep, dotIdx - lastDirectorySep);
         }
 
 #if DEBUG

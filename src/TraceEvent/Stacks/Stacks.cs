@@ -935,9 +935,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             if (!fullModulePath)
             {
-                var lastBackSlash = moduleName.LastIndexOf('\\');
-                if (lastBackSlash >= 0)
-                    moduleName = moduleName.Substring(lastBackSlash + 1);
+                var lastDirectorySep = moduleName.LastIndexOfAny(s_directorySeparators);
+                if (0 <= lastDirectorySep)
+                    moduleName = moduleName.Substring(lastDirectorySep + 1);
+
             }
             // Remove a .dll or .exe extension 
             // TODO should we be doing this here?  This feels like a presentation transformation
@@ -1260,6 +1261,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             private T[] _entries;
             private int _count;
         }
+        private static char[] s_directorySeparators = { '\\', '/' };
 
         private readonly InternTable<string> m_moduleIntern;
         private readonly StackSourceModuleIndex m_emptyModuleIdx;
