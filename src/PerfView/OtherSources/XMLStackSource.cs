@@ -221,7 +221,7 @@ namespace Diagnostics.Tracing.StackSources
                     if (0 < exclaimIdx)
                     {
                         // Becomes 0 if it fails, which is what we want. 
-                        var startIdx = ret.LastIndexOf('\\', exclaimIdx - 1, exclaimIdx - 1) + 1;
+                        var startIdx = ret.LastIndexOfAny(s_directorySeparators, exclaimIdx - 1, exclaimIdx - 1) + 1;
                         shortName = ret.Substring(startIdx);
                     }
                     m_shortFrameNames.Set((int)frameIndex, shortName);
@@ -471,6 +471,8 @@ namespace Diagnostics.Tracing.StackSources
             public int frameID;
             public int callerID;
         }
+
+        private static char[] s_directorySeparators = { '\\', '/' };
 
         GrowableArray<string> m_shortFrameNames;
         GrowableArray<string> m_frames;
