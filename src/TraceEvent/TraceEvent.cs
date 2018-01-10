@@ -1737,6 +1737,20 @@ namespace Microsoft.Diagnostics.Tracing
             if (myBuffer != IntPtr.Zero)
                 Marshal.FreeHGlobal(myBuffer);
         }
+
+        /// <summary>
+        /// For debugging. dumps an array.   If you specify a size of 0 (the default) it dumps the whole array.  
+        /// </summary>
+        internal static string DumpArray(byte[] bytes, int size = 0)
+        {
+            if (size == 0)
+                size = bytes.Length;
+            StringWriter sw = new StringWriter();
+            DumpBytes(bytes, size, sw, "");
+            ;
+            return sw.ToString();
+        }
+
         internal static void DumpBytes(byte[] bytes, int length, TextWriter output, string indent, int startTruncate = int.MaxValue)
         {
             startTruncate &= ~0xF;  // Make a multiple of 16
