@@ -3247,6 +3247,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         bool bookeepingEventThatMayHaveStack;               // Some bookkeeping events (ThreadDCEnd) might have stacks 
         bool noStack;                                       // This event should never have a stack associated with it, so skip them if we every try to attach a stack. 
 
+        /// <summary>
+        /// Get number of JITed methods which tend to consume more and more memory over time
+        /// </summary>
+        public int JittedMethodsCount
+        {
+            get { return jittedMethods.Count; }
+        }
+
         // TODO FIX NOW remove the jittedMethods ones.  
         List<MethodLoadUnloadVerboseTraceData> jittedMethods;
         List<MethodLoadUnloadJSTraceData> jsJittedMethods;
