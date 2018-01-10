@@ -3599,6 +3599,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         public EventIndex CurrentEventIndex { get { return currentID - 1; } }
 
         /// <summary>
+        /// Register to this event to prevent unhandled thread exceptions when a Realtime ETW kernel trace session could not be started.
+        /// This is pretty common on Windows 7 machines where only one Kernel ETW session is allowed.
+        /// </summary>
+        public event Action<Exception> OnKernelETWSessionThreadException;
+
+        /// <summary>
         /// override
         /// </summary>
         public override bool Process()
@@ -3610,11 +3616,27 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 Thread kernelTask = null;
                 if (TraceLog.rawKernelEventSource != null)
                 {
-                    kernelTask = new Thread(delegate (object o)
-                    {
-                        TraceLog.rawKernelEventSource.Process();
-                        TraceLog.rawEventSourceToConvert.StopProcessing();
-                    });
+                    kernelTask = new Thread(                        
+                        delegate (object o)
+                        {
+                            try
+                            {
+                                TraceLog.rawKernelEventSource.Process();
+                                TraceLog.rawEventSourceToConvert.StopProcessing();
+                            }
+                            catch (Exception ex)
+                            {
+                                // prevent unhandled exceptions bubbling up 
+                                if (OnKernelETWSessionThreadException != null)
+                                {
+                                    OnKernelETWSessionThreadException(ex);
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException("Realtime ETW Kernel thread processor did throw. Please register to TraceLogEventSource.OnKernelETWSessionThreadException to prevent this exception to become unhandled.", ex);
+                                }
+                            }
+                        });
                     kernelTask.Start();
                 }
                 TraceLog.rawEventSourceToConvert.Process();
