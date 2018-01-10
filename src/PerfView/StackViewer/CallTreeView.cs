@@ -360,6 +360,9 @@ namespace PerfView
 
         private void CollapseNode()
         {
+            if (!m_isExpanded)
+                return;
+
             ValidateTree();
 
             int firstChild = MyIndex + 1;
