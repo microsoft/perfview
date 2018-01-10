@@ -771,6 +771,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         private IEnumerable<string> fileNames;        // Used if more than one file being processed.  (Null otherwise)
 
+        // TODO this can be removed, and use AddDispatchHook instead.  
         /// <summary>
         /// Used by real time TraceLog on Windows7.   
         /// If we have several real time sources we have them coming in on several threads, but we want the illusion that they
