@@ -2968,8 +2968,8 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 // Rare case, there is a dispatch hook, call it (which may call the original Dispatch logic)
                 userDefinedDispatch(anEvent);
+                anEvent.eventRecord = null;
             }
-            anEvent.eventRecord = null;
         }
 
         private void DoDispatch(TraceEvent anEvent)
@@ -2994,6 +2994,7 @@ namespace Microsoft.Diagnostics.Tracing
                             nextEvent.userData = anEvent.userData;
                             nextEvent.eventIndex = anEvent.eventIndex;
                             nextEvent.Dispatch();
+                            nextEvent.eventRecord = null;
                         }
                     }
                 }
@@ -3003,6 +3004,7 @@ namespace Microsoft.Diagnostics.Tracing
                         unhandledEventTemplate.PrepForCallback();
                     AllEvents(anEvent);
                 }
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
