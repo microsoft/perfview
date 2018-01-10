@@ -32,6 +32,8 @@ using Microsoft.Diagnostics.Tracing.Session;
 using System.Threading;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tracing.EventPipe;
+using System.Threading.Tasks;
+
 
 namespace Microsoft.Diagnostics.Tracing.Etlx
 {
@@ -3607,10 +3609,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 Debug.Assert(this == TraceLog.realTimeSource);
 
-                Thread kernelTask = null;
+                Task kernelTask = null;
                 if (TraceLog.rawKernelEventSource != null)
                 {
-                    kernelTask = new Thread(delegate (object o)
+                    kernelTask = Task.Factory.StartNew(delegate
                     {
                         TraceLog.rawKernelEventSource.Process();
                         TraceLog.rawEventSourceToConvert.StopProcessing();
@@ -3621,7 +3623,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (kernelTask != null)
                 {
                     TraceLog.rawKernelEventSource.StopProcessing();
-                    kernelTask.Join();
+                    kernelTask.Wait();
                 }
                 return true;
             }
