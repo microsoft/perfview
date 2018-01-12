@@ -395,7 +395,12 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 get
                 {
-                    string target, command;
+                    string target = base.Url; // See if it is in sourceLink information.
+                    if (target != null)
+                        return target;
+
+                    // Use srcsrv information 
+                    string command;
                     GetSourceServerTargetAndCommand(out target, out command);
 
                     if (!string.IsNullOrEmpty(target) && Uri.IsWellFormedUriString(target, UriKind.Absolute))
@@ -426,8 +431,13 @@ namespace Microsoft.Diagnostics.Symbols
             /// 
             /// If what is at the end is a valid URL it is looked up.   
             /// </summary>
-            public override  string GetSourceFromSrcServer()
+            protected override string GetSourceFromSrcServer()
             {
+                // Try getting the source from the source server using SourceLink information.  
+                var ret = base.GetSourceFromSrcServer();
+                if (ret != null)
+                    return ret;
+
                 var cacheDir = _symbolModule.SymbolReader.SourceCacheDirectory;
 
                 string target, fetchCmdStr;
@@ -627,7 +637,7 @@ namespace Microsoft.Diagnostics.Symbols
 
                 _log.WriteLine("*** Looking up {0} using source server", BuildTimeFilePath);
 
-                var srcServerPdb = (_symbolModule as NativeSymbolModule).PdbForSourceServer as NativeSymbolModule;
+                NativeSymbolModule srcServerPdb = (_symbolModule as NativeSymbolModule).PdbForSourceServer as NativeSymbolModule;
                 if (srcServerPdb == null)
                 {
                     _log.WriteLine("*** Could not find PDB to look up source server information");
@@ -884,6 +894,33 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 var ret = new UTF8Encoding().GetString(buffer);
                 return ret;
             }
+        }
+
+        protected override string GetSourceLinkJson()
+        {
+            // To avoid the expensive match below, don't even try to get SourceLink data if you have srcsrv data.  
+            // This at least avoids the cost on many OS PDBs.  
+            // You can remove this when we can look up SourceLink information easily.  
+            uint len = 0;
+            m_source.getStreamSize("srcsrv", out len);
+            if (len != 0)
+            {
+                m_reader.m_log.WriteLine("Has srcsrv information, skipping looking for SourceLink information for {0}", SymbolFilePath);
+                return null;
+            }
+
+            // TODO We should be using msdia APIs to fetch this. 
+            // I don't know exactly which ones.  In the mean time we grep for something in the PDB that looks like the SourceLink json blob. 
+            string allData = File.ReadAllText(SymbolFilePath);
+            Match m = Regex.Match(allData, "({\\s*\"documents\"\\s*:\\s*{[ -~]*?}\\s*})", RegexOptions.Singleline);
+            if (m.Success)
+            {
+                string ret = m.Groups[1].Value;
+                m_reader.m_log.WriteLine("Found SourceLink Infomation for {0}\r\nData:    {1}", SymbolFilePath, ret.Replace("\r\n", " "));
+                return ret;
+            }
+            m_reader.m_log.WriteLine("Failed to look up SourceLink Infomation for {0}.", SymbolFilePath);
+            return null;
         }
 
         // returns the path of the PDB that has source server information in it (which for NGEN images is the PDB for the managed image)

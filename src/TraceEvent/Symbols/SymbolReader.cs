@@ -1419,13 +1419,95 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public abstract SourceLocation SourceLocationForManagedCode(uint methodMetadataToken, int ilOffset);
 
+        /// <summary>
+        /// If the symbol file format supports SourceLink JSON this routine should be overriden
+        /// to return it.  
+        /// </summary>
+        protected virtual string GetSourceLinkJson() { return null; }
+
         #region private 
+
         protected ManagedSymbolModule(SymbolReader reader, string path) { _pdbPath = path; _reader = reader; }
 
         internal TextWriter _log { get { return _reader.m_log; } }
 
+        /// <summary>
+        /// Return a URL for 'buildTimeFilePath' using the source link mapping (that 'GetSourceLinkJson' fetched)
+        /// Returns null if there is URL using the SourceLink 
+        /// </summary>
+        /// <param name="buildTimeFilePath"></param>
+        /// <returns></returns>
+        internal string GetUrlForFilePathUsingSourceLink(string buildTimeFilePath)
+        {
+            if (!_sourceLinkMappingInited)
+            {
+                _sourceLinkMappingInited = true;
+                string sourceLinkJson = GetSourceLinkJson();
+                if (sourceLinkJson != null)
+                    _sourceLinkMapping = ParseSourceLinkJson(sourceLinkJson);
+            }
+
+            if (_sourceLinkMapping != null)
+            {
+                foreach (Tuple<string, string> map in _sourceLinkMapping)
+                {
+                    string path = map.Item1;
+                    string urlReplacement = map.Item2;
+
+                    if (buildTimeFilePath.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+                    {
+                        string tail = buildTimeFilePath.Substring(path.Length, buildTimeFilePath.Length - path.Length).Replace('\\', '/');
+                        return urlReplacement.Replace("*", tail);
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Parses SourceLink information and returns a list of filepath -> url Prefix tuples.  
+        /// </summary>  
+        private List<Tuple<string, string>> ParseSourceLinkJson(string sourceLinkJson)
+        {
+            List<Tuple<string, string>> ret = null;
+            // TODO this is not right for corner cases (e.g. file paths with " or , } in them)
+            Match m = Regex.Match(sourceLinkJson, @"documents.?\s*:\s*{(.*?)}", RegexOptions.Singleline);
+            if (m.Success)
+            {
+                string mappings = m.Groups[1].Value;
+                while (!string.IsNullOrWhiteSpace(mappings))
+                {
+                    m = Regex.Match(m.Groups[1].Value, "^\\s*\"(.*?)\"\\s*:\\s*\"(.*?)\"\\s*,?(.*)", RegexOptions.Singleline);
+                    if (m.Success)
+                    {
+                        if (ret == null)
+                            ret = new List<Tuple<string, string>>();
+                        string pathSpec = m.Groups[1].Value.Replace("\\\\", "\\");
+                        if (pathSpec.EndsWith("*"))
+                        {
+                            pathSpec = pathSpec.Substring(0, pathSpec.Length - 1);      // Remove the *
+                            ret.Add(new Tuple<string, string>(pathSpec, m.Groups[2].Value));
+                        }
+                        else
+                            _log.WriteLine("Warning: {0} does not end in *, skipping this mapping.", pathSpec);
+                        mappings = m.Groups[3].Value;
+                    }
+                    else
+                    {
+                        _log.WriteLine("Error: Could not parse SourceLink Mapping: {0}", mappings);
+                        break;
+                    }
+                }
+            }
+            else
+                _log.WriteLine("Error: Could not parse SourceLink Json: {0}", sourceLinkJson);
+            return ret;
+        }
+
         string _pdbPath;
         SymbolReader _reader;
+        List<Tuple<string, string>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (see GetUrlForFilePath)
+        bool _sourceLinkMappingInited;                       // Lazy init flag. 
         #endregion
     }
 
@@ -1489,36 +1571,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// can be used to fetch it with HTTP Get), then return that Url.   If no such publishing 
         /// point exists this property will return null.   
         /// </summary>
-        public virtual string Url { get { return null; } }
-
-        /// <summary>
-        /// Look up the source from the source server.  Returns null if it can't find the source
-        /// By default this simply uses the Url to look it up on the web.   If 'Url' returns null
-        /// so does this.   
-        /// </summary>
-        public virtual string GetSourceFromSrcServer()
-        {
-            // Search the SourceLink url location 
-            string url = Url;
-            if (url != null)
-            {
-                HttpClient httpClient = new HttpClient();
-                HttpResponseMessage response = httpClient.GetAsync(url).Result;
-
-                response.EnsureSuccessStatusCode();
-                Stream content = response.Content.ReadAsStreamAsync().Result;
-                string cachedLocation = GetCachePathForUrl(url);
-                if (cachedLocation != null)
-                {
-                    using (FileStream file = File.Create(_filePath))
-                        content.CopyTo(file);
-                    return cachedLocation;
-                }
-                else
-                    _log.WriteLine("Warning: SourceCache not set, giving up fetching source from the network.");
-            }
-            return null;
-        }
+        public virtual string Url { get { return _symbolModule.GetUrlForFilePathUsingSourceLink(BuildTimeFilePath); } }
 
         /// <summary>
         /// This may fetch things from the source server, and thus can be very slow, which is why it is not a property. 
@@ -1610,9 +1663,39 @@ namespace Microsoft.Diagnostics.Symbols
         protected TextWriter _log { get { return _symbolModule._log; } }
 
         /// <summary>
+        /// Look up the source from the source server.  Returns null if it can't find the source
+        /// By default this simply uses the Url to look it up on the web.   If 'Url' returns null
+        /// so does this.   
+        /// </summary>
+        protected virtual string GetSourceFromSrcServer()
+        {
+            // Search the SourceLink url location 
+            string url = Url;
+            if (url != null)
+            {
+                HttpClient httpClient = new HttpClient();
+                HttpResponseMessage response = httpClient.GetAsync(url).Result;
+
+                response.EnsureSuccessStatusCode();
+                Stream content = response.Content.ReadAsStreamAsync().Result;
+                string cachedLocation = GetCachePathForUrl(url);
+                if (cachedLocation != null)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(cachedLocation));
+                    using (FileStream file = File.Create(cachedLocation))
+                        content.CopyTo(file);
+                    return cachedLocation;
+                }
+                else
+                    _log.WriteLine("Warning: SourceCache not set, giving up fetching source from the network.");
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Given 'fileName' which is a path to a file (which may  not exist), set 
         /// _filePath and _checksumMatches appropriately.    Namely _filePath should
-        /// always be the 'best' candidate for the soruce file path (matching checksum
+        /// always be the 'best' candidate for the source file path (matching checksum
         /// wins, otherwise first existing file wins).  
         /// 
         /// Returns true if we have a perfect match (no additional probing needed).  
