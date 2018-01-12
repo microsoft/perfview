@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
     ///     * ThreadIndex
     ///     * ProcessIndex
     ///     * BrokenStacks (One per thread)
-    ///     * Stacks for threads without explicit stacks (Limited to 1K)
+    ///     * Stacks for CPU samples without explicit stacks (we make 1 element stacks out of them)
     ///         
     /// TraceEventStackSource create the following meaning for the StackSourceFrameIndex
     /// 
@@ -66,7 +66,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_curSample = new StackSourceSample(this);
             m_curSample.Metric = (float)events.Log.SampleProfileInterval.TotalMilliseconds;
             m_events = events;
-            m_maxPseudoStack = m_log.CodeAddresses.Count;     // This really is a guess as to how many stacks we need.  
+            m_maxPseudoStack = m_log.CodeAddresses.Count  * 2 + m_log.Threads.Count;     // This really is a guess as to how many stacks we need.   You can have as many as codeAddresses*threads   
         }
 
         // These are TraceEventStackSource specific.  
@@ -240,7 +240,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     nextIndex += (int)threadIndex;
 
                     if (!OnlyManagedCodeStacks && !ReasonableTopFrame(callStackIndex, threadIndex))
-                    { 
+                    {
                         nextIndex += m_log.Threads.Count + m_log.Processes.Count;
                     }
                 }
@@ -379,7 +379,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 return (int)StackSourceCallStackIndex.Start + m_log.CallStacks.Count +
                     2 * m_log.Threads.Count + m_log.Processes.Count +     // *2 one for normal threads, one for broken threads. 
-                    m_maxPseudoStack;                                                        // These are for the threads with no explicit stacks. 
+                    m_maxPseudoStack;                                     // These are for the samples with no ETW stacks but we have a codeaddress in the event.  
             }
         }
         /// <summary>
@@ -516,7 +516,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         private StackSourceCallStackIndex GetStack(TraceEvent event_)
         {
             // Console.WriteLine("Getting Stack for sample at {0:f4}", sample.TimeStampRelativeMSec);
-            var ret = (int)event_.CallStackIndex();
+            int ret = (int)event_.CallStackIndex();
             if (ret == (int)CallStackIndex.Invalid)
             {
                 var thread = event_.Thread();
@@ -539,17 +539,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     // Encode the code address for the given thread.  
                     int pseudoStackIndex = GetPseudoStack(thread.ThreadIndex, codeAddrIdx);
-                    if (pseudoStackIndex < 0)
-                        return StackSourceCallStackIndex.Start;
-
                     // Psuedostacks happen after all the others.  
-                    ret = m_log.CallStacks.Count + 2 * m_log.Threads.Count + m_log.Processes.Count + pseudoStackIndex;
+                    if (0 <= pseudoStackIndex)
+                        ret = m_log.CallStacks.Count + 2 * m_log.Threads.Count + m_log.Processes.Count + pseudoStackIndex;
                 }
-                else
-                {
-                    // Otherwise we encode the stack as being at the thread.  
+
+                // If we have run out of pseudo-stacks, we encode the stack as being at the thread.  
+                if (ret == (int)CallStackIndex.Invalid)
                     ret = m_log.CallStacks.Count + (int)thread.ThreadIndex;
-                }
+            }
+            else
+            {
+                // We expect the thread we get when looking at the CallStack to match the thread of the event.  
+                Debug.Assert(m_log.CallStacks.Thread((CallStackIndex)ret).ThreadID == event_.ThreadID);
+                Debug.Assert(event_.Thread().Process.ProcessID == event_.ProcessID);
             }
             ret = ret + (int)StackSourceCallStackIndex.Start;
             return (StackSourceCallStackIndex)ret;
