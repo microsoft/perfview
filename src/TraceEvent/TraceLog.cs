@@ -475,7 +475,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         /// <summary>
         /// Create a new real time session called 'sessionName' and connect a TraceLog to it and return that TraceLog.
-        /// Functionality of TraceLog that does not depend on either remembering past EVENTS or require future 
+        /// Functionality of TraceLog that does not depend on either remembering past EVENTS or require future
         /// knowledge (e.g. stacks of kernel events), will 'just work'.  
         /// </summary>
         private unsafe TraceLog(TraceEventSession session)
@@ -496,10 +496,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Set up callbacks that handle stack processing 
             Action<TraceEvent> onAllEvents = delegate (TraceEvent data)
             {
-                // we need to guard our data structures from concurrent access which would otherwise 
-                // lead to sporadic errors when RemoveAllButLastEntries(ref this.eventsToStacks, dd) is executed.
-                // During a realtime session where the normal trace thread processes a callstack event and at the same time the realtime timer queue thread 
-                // is called for onAllEnents it can cause sporadic IndexOutOfRangeExceptions
+                // we need to guard our data structures from concurrent access.  TraceLog data 
+                // is modified by this code as well as code in FlushRealTimeEvents.  
                 lock (realTimeQueue)    
                 {
                     // we delay things so we have a chance to match up stacks.  
@@ -531,18 +529,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     var extendedDataCount = data.eventRecord->ExtendedDataCount;
                     if (extendedDataCount != 0)
                         this.bookKeepingEvent |= this.ProcessExtendedData(data, extendedDataCount, countForEvent);
-
-                    const int MaxEventCountBeforeReset = 10000;  // For large applications 7K events are not unusual. Keep a good amount of them until we run into perf problems
-                                                                 // For now favor stacks over perf 
-
-                    // It is important to resize down to MaxEventCountBeforeReset/2, otherwise
-                    // we will copy the array around after every new event in a steady fashion which would be very inefficient
-                    if (this.eventsToStacks.Count > MaxEventCountBeforeReset)
-                        RemoveAllButLastEntries(ref this.eventsToStacks, MaxEventCountBeforeReset/2);
-                    if (this.eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
-                        RemoveAllButLastEntries(ref this.eventsToCodeAddresses, MaxEventCountBeforeReset/2);
-                    if (this.cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
-                        RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, MaxEventCountBeforeReset/2);
 
                     realTimeQueue.Enqueue(new QueueEntry(data.Clone(), Environment.TickCount));
                 }
@@ -618,6 +604,23 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     DispatchClonedEvent(entry.data);
                     realTimeQueue.Dequeue();
                 }
+
+                // Try to keep our memory under control by removing old data.  
+                // Lots of data structures in TraceLog can grow over time.  
+                // However currently we only trim three, all CAN grow on every event (so they grow most quickly of all data structures)
+                // and we know they are not needed after dispatched the events they are for.  
+
+                // To keep overhead reasonable, we assume the worst case (every event has an entry) and we allow the tables to grow
+                // to 3X what is needed, and then we slide down the 1X of entries we need.  
+                // We could be more accurate, but this at least keeps THESE arrays under control.  
+                int MaxEventCountBeforeReset = Math.Max(realTimeQueue.Count * 3, 1000);
+
+                if (this.eventsToStacks.Count > MaxEventCountBeforeReset)
+                    RemoveAllButLastEntries(ref this.eventsToStacks, realTimeQueue.Count);
+                if (this.eventsToCodeAddresses.Count > MaxEventCountBeforeReset)
+                    RemoveAllButLastEntries(ref this.eventsToCodeAddresses, realTimeQueue.Count);
+                if (this.cswitchBlockingEventsToStacks.Count > MaxEventCountBeforeReset)
+                    RemoveAllButLastEntries(ref this.cswitchBlockingEventsToStacks, realTimeQueue.Count);
             }
         }
 
