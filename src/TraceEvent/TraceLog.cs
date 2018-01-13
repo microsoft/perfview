@@ -475,7 +475,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         /// <summary>
         /// Create a new real time session called 'sessionName' and connect a TraceLog to it and return that TraceLog.
-        /// Functionality of TraceLog that does not depend on either remembering past EVENTS or require future 
+        /// Functionality of TraceLog that does not depend on either remembering past EVENTS or require future
         /// knowledge (e.g. stacks of kernel events), will 'just work'.  
         /// </summary>
         private unsafe TraceLog(TraceEventSession session)
