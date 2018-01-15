@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
 {
-    internal unsafe sealed class EventPipeEventSourceV1 : EventPipeEventSource
+    internal unsafe class EventPipeEventSourceV1 : EventPipeEventSource
     {
         public EventPipeEventSourceV1(Deserializer deserializer, string fileName, int version)
             : base(deserializer)
@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             numberOfProcessors = 1;
 
             // We need to read the header to get the sync time information here
-            ReadEventPipeTimeInfo();
+            ReadHeaderInfo();
 
             var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             *mem = default(TraceEventNativeMethods.EVENT_RECORD);
@@ -66,7 +66,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         }
 
         #region Private
-        private void ReadEventPipeTimeInfo()
+        protected virtual void ReadHeaderInfo()
         {
             // Read and check the type name
             _deserializer.ReadStringAndVerify("Microsoft.DotNet.Runtime.EventPipeFile");

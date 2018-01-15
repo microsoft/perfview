@@ -37,6 +37,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             {
                 case 1:
                 case 2: return new EventPipeEventSourceV1(deserializer, fileName, version);
+                case 3: return new EventPipeEventSourceV2(deserializer, fileName, version);
                 default: throw new NotSupportedException($"The version of {fileName} is {version} which is not yet supported.");
             }
         }
