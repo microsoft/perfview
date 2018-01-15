@@ -40,6 +40,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="MSFT.snk" />
+    <Content Include="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
