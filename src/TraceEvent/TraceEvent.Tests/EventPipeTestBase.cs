@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using PerfView.TestUtilities;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -8,6 +9,7 @@ using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
+    [UseCulture("en-US")]
     public abstract class EventPipeTestBase : TestBase
     {
         protected EventPipeTestBase(ITestOutputHelper output)

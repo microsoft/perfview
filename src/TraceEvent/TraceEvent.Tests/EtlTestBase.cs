@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.Tracing;
+using PerfView.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace TraceEventTests
 {
+    [UseCulture("en-US")]
     public abstract class EtlTestBase : TestBase
     {
         protected EtlTestBase(ITestOutputHelper output)
