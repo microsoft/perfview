@@ -22,6 +22,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <NuspecFile>Microsoft.Diagnostics.Tracing.TraceEvent.nuspec</NuspecFile>
     <GenerateNuspecDependsOn>$(GenerateNuspecDependsOn);SetNuspecProperties</GenerateNuspecDependsOn>
+
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
 
 

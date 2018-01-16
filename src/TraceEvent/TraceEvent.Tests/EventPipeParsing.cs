@@ -1,5 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.EventPipe;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +22,58 @@ namespace TraceEventTests
         public EventPipeParsing(ITestOutputHelper output)
             : base(output)
         {
+        }
+
+        [Fact]
+        public void CanReadInitialDataFrom10File()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.0-linux-objver1.netperf";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            var deserializer = new FastSerialization.Deserializer(eventPipeFilePath);
+
+            var initialData = EventPipeEventSourceFactory.Read(deserializer, eventPipeFileName);
+
+            Assert.Equal(1, initialData.Version);
+            Assert.Equal(0, initialData.ReaderVersion);
+
+            Assert.Equal(8, initialData.PointerSize);
+            Assert.Equal(10, initialData.CpuSpeedMHz);
+
+            Assert.Equal(75399820, (int)initialData.EndOfStream);
+            Assert.Equal(636414354195130000, initialData.CreationTime.Ticks);
+            Assert.Equal(1477613380157300, initialData.StartTimeStamp);
+            Assert.Equal(1000000000, initialData.ClockFrequency);
+        }
+
+        [Fact]
+        public void CanReadInitialDataFrom21File()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.0-win-x86.netperf";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            var deserializer = new FastSerialization.Deserializer(eventPipeFilePath);
+
+            var initialData = EventPipeEventSourceFactory.Read(deserializer, eventPipeFileName);
+
+            Assert.Equal(2, initialData.Version);
+            Assert.Equal(1, initialData.ReaderVersion);
+
+            Assert.Equal(4, initialData.PointerSize);
+            Assert.Equal(4, initialData.NumberOfProcessors);
+            
+            Assert.Equal(7262328, (int)initialData.EndOfStream);
+            Assert.Equal(636517443804970000, initialData.CreationTime.Ticks);
+            Assert.Equal(58178912802, initialData.StartTimeStamp);
+            Assert.Equal(2533310, initialData.ClockFrequency);
+
+            Assert.Equal(10, initialData.CpuSpeedMHz);
         }
 
         [Theory]
