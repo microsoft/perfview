@@ -324,49 +324,66 @@ namespace PerfView
             {
                 if (m_isExpanded == value)
                     return;
+
                 if (value == true)
-                {
-                    ValidateTree();
-
-                    // We are trying to expand the treeNode, add the children after me. 
-                    var children = MakeChildren();
-                    m_treeView.m_flattenedTree.InsertRange(MyIndex + 1, children);
-                    m_isExpanded = true;
-
-                    ValidateTree();
-                    // Auto expand nodes that have only one real child.  (Don't do this for graph nodes as it may not terminate.  
-                    if (children.Count == 1 && !Data.IsGraphNode)
-                    {
-                        var onlyChild = children[0];
-                        if (onlyChild.HasChildren)
-                            onlyChild.IsExpanded = true;
-                    }
-                    else
-                        m_treeView.m_perfGrid.Select(this);         // We want expanding the node to select the node
-                }
+                    ExpandNode();
                 else
-                {
-                    ValidateTree();
-
-                    int firstChild = MyIndex + 1;
-                    int lastChild = firstChild;
-                    int myDepth = m_depth;
-                    while (lastChild < m_treeView.m_flattenedTree.Count)
-                    {
-                        if (m_treeView.m_flattenedTree[lastChild].m_depth <= myDepth)
-                            break;
-                        lastChild++;
-                    }
-
-                    m_treeView.m_flattenedTree.RemoveRange(firstChild, lastChild - firstChild);
-                    m_isExpanded = false;
-
-                    // set the selected node to my caller (if available) or myself if there is none.  
-                    m_treeView.Select(Data.Caller ?? Data);  
-                }
-                ValidateTree();
+                    CollapseNode();
             }
         }
+
+        private void ExpandNode(bool selectExpandedNode = true)
+        {
+            if (m_isExpanded)
+                return;
+
+            ValidateTree();
+
+            // We are trying to expand the treeNode, add the children after me. 
+            var children = MakeChildren();
+            m_treeView.m_flattenedTree.InsertRange(MyIndex + 1, children);
+            m_isExpanded = true;
+
+            ValidateTree();
+            // Auto expand nodes that have only one real child.  (Don't do this for graph nodes as it may not terminate.  
+            if (children.Count == 1 && !Data.IsGraphNode)
+            {
+                var onlyChild = children[0];
+                if (onlyChild.HasChildren)
+                    onlyChild.ExpandNode(selectExpandedNode);
+            }
+            else if (selectExpandedNode)
+                m_treeView.m_perfGrid.Select(this);         // We want expanding the node to select the node
+
+            ValidateTree();
+        }
+
+        private void CollapseNode()
+        {
+            if (!m_isExpanded)
+                return;
+
+            ValidateTree();
+
+            int firstChild = MyIndex + 1;
+            int lastChild = firstChild;
+            int myDepth = m_depth;
+            while (lastChild < m_treeView.m_flattenedTree.Count)
+            {
+                if (m_treeView.m_flattenedTree[lastChild].m_depth <= myDepth)
+                    break;
+                lastChild++;
+            }
+
+            m_treeView.m_flattenedTree.RemoveRange(firstChild, lastChild - firstChild);
+            m_isExpanded = false;
+
+            // set the selected node to my caller (if available) or myself if there is none.  
+            m_treeView.Select(Data.Caller ?? Data);
+
+            ValidateTree();
+        }
+
         // The actual Tree node that this OpenStacks node represents.  
         public CallTreeNode Data { get; set; }
         /// <summary>
@@ -481,16 +498,17 @@ namespace PerfView
         /// </summary>
         /// <param name="maxDepth">Maximum depth to expand</param>
         /// <param name="expandGraphNodes">If true graph nodes (which are not guarnteed to terminate) are expanded. </param>
-        public void ExpandToDepth(int maxDepth, bool expandGraphNodes = false)
+        public void ExpandToDepth(int maxDepth, bool expandGraphNodes = false, bool selectExpandedNode = true)
         {
             if (maxDepth == 0)
                 return;
             if (!expandGraphNodes && Data.IsGraphNode)
                 return;
 
-            IsExpanded = true;
+            ExpandNode(selectExpandedNode);
+
             foreach (var child in VisibleChildren)
-                child.ExpandToDepth(maxDepth - 1, expandGraphNodes);
+                child.ExpandToDepth(maxDepth - 1, expandGraphNodes, selectExpandedNode);
         }
 
 

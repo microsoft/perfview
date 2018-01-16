@@ -8095,6 +8095,19 @@
     </li>
     -->
         <li>
+            Version 2.0.2 1/12/18
+            <ul>
+                <li>
+                    Added support for SourceLink for 'Goto Source' functionality.   
+                    Symlink is a technique of finding source files by placing a mapping from built time file name to URL into the
+                    symbol file so that the source code can be fetched by url at debug/profiling time.  
+                    .NET Core annotates all its symbol files this way.   The result is that 'Goto Source' on .NET Core assemblies
+                    (that is the framework and ASP.NET) just work in PerfView (it will bring up the relevant source).  
+                </li>
+
+            </ul>
+        </li>
+        <li>
             Version 2.0.1 1/8/18
             <ul>
                 <li>
@@ -8106,8 +8119,9 @@
         <li>
             Version 2.0.0 1/5/18
             <ul>
-                <li> Officially update the version number to 2.0 in preparation for signing and releasing officially.  
-                     Only the version number update happens here.   
+                <li>
+                    Officially update the version number to 2.0 in preparation for signing and releasing officially.
+                    Only the version number update happens here.
                 </li>
 
             </ul>

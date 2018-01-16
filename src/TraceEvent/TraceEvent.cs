@@ -1737,6 +1737,20 @@ namespace Microsoft.Diagnostics.Tracing
             if (myBuffer != IntPtr.Zero)
                 Marshal.FreeHGlobal(myBuffer);
         }
+
+        /// <summary>
+        /// For debugging. dumps an array.   If you specify a size of 0 (the default) it dumps the whole array.  
+        /// </summary>
+        internal static string DumpArray(byte[] bytes, int size = 0)
+        {
+            if (size == 0)
+                size = bytes.Length;
+            StringWriter sw = new StringWriter();
+            DumpBytes(bytes, size, sw, "");
+            ;
+            return sw.ToString();
+        }
+
         internal static void DumpBytes(byte[] bytes, int length, TextWriter output, string indent, int startTruncate = int.MaxValue)
         {
             startTruncate &= ~0xF;  // Make a multiple of 16
@@ -2816,6 +2830,29 @@ namespace Microsoft.Diagnostics.Tracing
         /// Subscribers of Completed will be called after processing is complete (right before TraceEventDispatcher.Process returns.    
         /// </summary>
         public event Action Completed;
+
+        /// <summary>
+        /// Wrap (or filter) the dispatch of every event from the TraceEventDispatcher stream.   
+        /// Instead of calling the normal code it calls 'hook' with both the event to be dispatched
+        /// and the method the would normally do the processing.    Thus the routine has 
+        /// the option to call normal processing, surround it with things like a lock
+        /// or skip it entirely.  This can be called more than once, in which case the last
+        /// hook method gets called first (which may end up calling the second ...)
+        /// 
+        /// For example,here is an example that uses AddDispatchHook to 
+        /// take a lock is taken whenever dispatch work is being performed.  
+        /// 
+        /// AddDispatchHook((anEvent, dispatcher) => { lock (this) { dispatcher(anEvent); } });
+        /// </summary>
+        public void AddDispatchHook(Action<TraceEvent, Action<TraceEvent>> hook)
+        {
+            if (hook == null) throw new ArgumentException("Must provide a non-null callback", nameof(hook), null);
+
+            // Make a new dispatcher which calls the hook with the old dispatcher.   
+            Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
+            userDefinedDispatch = delegate(TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
+        }
+
         #region protected
         /// <summary>
         /// Called when processing is complete.  You can call this more than once if your not sure if it has already been called.  
@@ -2939,6 +2976,18 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         internal protected void Dispatch(TraceEvent anEvent)
         {
+            if (userDefinedDispatch == null)
+                DoDispatch(anEvent);
+            else
+            {
+                // Rare case, there is a dispatch hook, call it (which may call the original Dispatch logic)
+                userDefinedDispatch(anEvent);
+                anEvent.eventRecord = null;
+            }
+        }
+
+        private void DoDispatch(TraceEvent anEvent)
+        {
 #if DEBUG
             try
             {
@@ -2959,7 +3008,7 @@ namespace Microsoft.Diagnostics.Tracing
                             nextEvent.userData = anEvent.userData;
                             nextEvent.eventIndex = anEvent.eventIndex;
                             nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                            nextEvent.eventRecord = null;
                         }
                     }
                 }
@@ -2969,7 +3018,7 @@ namespace Microsoft.Diagnostics.Tracing
                         unhandledEventTemplate.PrepForCallback();
                     AllEvents(anEvent);
                 }
-                anEvent.eventRecord = null;      // Technically not needed but detects user errors sooner. 
+                anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
@@ -3482,6 +3531,8 @@ namespace Microsoft.Diagnostics.Tracing
         internal /*protected*/ bool stopProcessing;
         internal EventIndex currentID;
         Func<TraceEvent, bool>[] lastChanceHandlers;
+
+        private Action<TraceEvent> userDefinedDispatch; // If non-null, call this when dispatching
         #endregion
     }
 

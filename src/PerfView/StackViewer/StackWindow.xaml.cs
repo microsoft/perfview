@@ -2291,7 +2291,7 @@ namespace PerfView
                 selectedNode = m_calleesView.SelectedNode;
 
             if (selectedNode != null)
-                selectedNode.ExpandToDepth(int.MaxValue);
+                selectedNode.ExpandToDepth(int.MaxValue, selectExpandedNode: false); // we don't want to select every node while expanding, it takes too much time
         }
 
         private void DoExpand(object sender, ExecutedRoutedEventArgs e)
