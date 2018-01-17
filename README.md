@@ -5,18 +5,9 @@ If you are unfamiliar with PerfView, there are [PerfView video tutorials](http:/
 Also, [Vance Morrison's blog](http://blogs.msdn.com/b/vancem/archive/tags/perfview) gives overview and getting 
 started information. 
 
-### Getting PerfView (If you are NOT profiling .NET Core scenarios)
-The PerfView executable is officialy published at the 
-[PerfView download site](http://www.microsoft.com/en-us/download/details.aspx?id=28567).  **If you are profiling .NET Core scenarios, however it is recommended you pick up the latest version from GitHub (see next section).**
-The download site has a single standalone executable file (packaged in a ZIP archive). You can be running it in a few clicks. Click the 
-[PerfView download site](http://www.microsoft.com/en-us/download/details.aspx?id=28567), click download, open the resulting downloaded
-zip file, and either execute PerfView directly (double click on it in the ZIP archive), or better, copy it to your machine (e.g., drag it 
-to your desktop and then double click it from there).   It is a single EXE with no installation.  You can be running in literally seconds.
-
-#### Getting the Latest Version of PerfView (from GitHub)
-
-The version on the download site is officially signed by Microsoft so it is a 'safe' choice, but it typically is
-months old.   If you need a recent bug fix or feature, it may not be in the offical version on the download site.  **In particular you will want at least version 1.9.65 if you are profiling .NET Core scenarios**.   You can get very recent builds by downloading from the [Release Tab on this site](https://github.com/Microsoft/perfview/releases), and of course you can always build it yourself by following the instructions below.   
+### Getting PerfView 
+Please see the [PerfView Download Page](documentation/Downloading.md) for the link and instructions for downloading the 
+current version of PerfView.  
 
 ### Learning about PerfView 
 
@@ -29,12 +20,14 @@ download PerfView using the instructions above and select the Help -> User's Gui
 
 When you have question about PerfView, your first reaction should be to search the Users Guide (Help -> User's Guide) and 
 see if you can find the answer already.   If that does not work you can ask a question by creating a [new PerfView Issue](https://github.com/Microsoft/perfview/issues/new).
-State your question succinctly in the title, and if necessary give details in the body of the issue.   If the question is on 
-a particular *.ETL.ZIP file you can drag that file onto the issue and it will be downloaded.  This allows those watching for
-issues to reproduce your environment and give much more detailed and useful answer.
+State your question succinctly in the title, and if necessary give details in the body of the issue, there is a issue tag
+called 'question' that you should use as well that marks your issue as a question rather than some bug report.
+If the question is is specific to a particular trace (*.ETL.ZIP file) you can drag that file onto the issue and it will be downloaded.
+This allows those watching for issues to reproduce your environment and give much more detailed and useful answer.
 
 Note that once you have your question answered, if the issue is likley to be common, you should strongly consider updating the
-documentation to include the information.  The documentation is pretty much just one file https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm.
+documentation to include the information.  The documentation is pretty much just
+one file https://github.com/Microsoft/perfview/blob/master/src/PerfView/SupportFiles/UsersGuide.htm.
 You will need to clone the repository and create a pull request (see [OpenSourceGitWorkflow](https://github.com/Microsoft/perfview/blob/master/documentation/OpenSourceGitWorkflow.md)
 for instructions for setting up and creating a pull request.  
 
@@ -54,31 +47,30 @@ coverage status reflected here is the AppVeyor build status of the **master** br
 > :warning: Builds produced by AppVeyor are not considered official builds of PerfView, and are not signed or otherwise
 > validated for safety or security in any way. This build integration is provided as a convenience for community
 > participants, but is not endorsed by Microsoft nor is it considered an official release channel in any way. For
-> information about official builds, see [Getting PerfView](#getting-perfview) above.
+> information about official builds, see the [PerfView Download Page](documentation/Downloading.md) page.
 
 # Building PerfView Yourself
 
 If you just want to do a performance investigation, you don't need to build PerfView yourself.
-Just use the one from the download center or the GitHub release site.
+Just use the one from the [PerfView Download Page](documentation/Downloading.md).
 However if you want new features or just want to contribute to PerfView to make it better
 (see [issues](https://github.com/Microsoft/perfview/issues) for things people want)
 you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tool you need to build PerfView is Visual Studio 2017.   The [Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/) 
+The only tool you need to build PerfView is Visual Studio 2017.   The [Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/)
 can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you
 to download Visual Studio 2017 Community Edition if you don't already have Visual Studio 2017.
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
-(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
-If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
+(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
 but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
 to do this and everything should 'just work'.    
 
 ### Cloning the PerfView GitHub Repository. 
 
-The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.   
+The first step in getting started with the PerfView source code is to clone the PerfView GitHub respository.
 If you are already familiar with how GIT, GitHub, and Visual Studio 2017 GIT support works, than you can skip this section.
 However, if not, the [Setting up a Local GitHub repository with Visual Studio 2017](documentation/SettingUpRepoInVS.md) document
 will lead you through the basics of doing this.   All it assumes is that you have Visual Studio 2017 installed.
@@ -89,21 +81,21 @@ PerfView is developed in Visual Studio 2017 using features through C# 6.
 
   * The solution file is PerfView.sln.  Opening this file in Visual Studio (or double clicking on it in 
   the Windows Explorer) and selecting Build -> Build Solution, will build it.    You can also build the 
-  non-debug version from the command line using msbuild or the build.cmd file at the base of the repository.  
+  non-debug version from the command line using msbuild or the build.cmd file at the base of the repository.
   The build follows standard Visual Studio conventions, and the resulting PerfView.exe file ends up in
   src/PerfView/bin/*BuildType*/PerfView.exe.   You need only deploy this one EXE to use it.  
 
   * The solution consists of 11 projects, representing support DLLs and the main EXE.   To run PerfView in the 
   debugger **you need to make sure that the 'Startup Project' is set to the 'PerfView' project** so that it launches 
   the main EXE.   If the PerfView project in the Solution Explorer (on the right) is not bold, right click on the PerfView project 
-  and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.   
+  and select 'Set as Startup Project'.    After doing this 'Start Debugging' (F5) should work.
   (It is annoying that this is not part of the .sln file...).  
 
 ### Deploying your new version of Perfview
 
 You will want to deploy the 'Release' rather than the 'Debug' version of PerfView.  Thus, first set your build configuration
 to 'Release' (Text window in the top toolbar, or right click on the .SLN file -> Configuration Manager -> Active Solution Configuration).
-Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\perfView\bin\Release directory there will be
+Next build (Build -> Build Solution (Ctrl-Shift-B)).   The result will be that in the src\perfView\bin\net45\Release directory there will be
 among other things a PerfView.exe.   This one file is all you need to deploy.   Simply copy it to where you wish to deploy the app.  
 
 ### Information for build troubleshooting.  
@@ -111,14 +103,14 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   * One of the unusual things about PerfView is that it incorporates its support DLL into the EXE itself, and these get 
   unpacked on first launch.  This means that there are tricky dependencies in the build that are not typical.    You will 
   see errors that certain DLLs can't be found if there were build problems earlier in the build.   Typically you can fix 
-  this simply by doing a normal (non-clean) build, since the missing file will be present from the last compilation.     
-  If this does not fix things, see if the DLL being looked for actually exists (if it does, then rebuilding should fix it).   
-  It can make sense to go down the project one by one and build them individually to see which one fails 'first'.  
+  this simply by doing a normal (non-clean) build, since the missing file will be present from the last compilation.
+  If this does not fix things, see if the DLL being looked for actually exists (if it does, then rebuilding should fix it).
+  It can make sense to go down the project one by one and build them individually to see which one fails 'first'.
   
-  * Another unusual thing about PerfView is that it includes an extension mechanism complete with samples.   
+  * Another unusual thing about PerfView is that it includes an extension mechanism complete with samples.
   This extensions mechanism is the 'Global' project (called that because it is the Global Extension whose commands don't have an
-  explicit 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found' 
-  issues in the 'Global' project.  These can be ignored until you get every other part of the build working. 
+  explicit 'scope') and needs to refer to PerfView to resolve some of its references.   Thus you will get many 'not found'
+  issues in the 'Global' project.  These can be ignored until you get every other part of the build working.
 
   * One of the invariants of the repo is that if you are running Visual Studio 2017 and you simply sync and build the
   PerfView.sln file, it is supposed to 'just work'.   If that does not happen, and the advice above does not help, then
@@ -133,7 +125,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
 
 PerfView has a number of *.Test projects that have automated tests.  They can be run in Visual Studio by selecting the
 Test -> Run -> All Tests menu item.    For the most thorough results (and certainly if you intend to submit changes) you 
-need to run these tests with a Debug build of the product (see the text window in the top toolbar, it says 'Debug' or 'Release').  
+need to run these tests with a Debug build of the product (see the text window in the top toolbar, it says 'Debug' or 'Release').
 If tests fail you can right click on the failed test and select the 'Debug' context menu item to run the test under 
 the debugger to figure out what went wrong.  
 
@@ -143,7 +135,7 @@ You can get a lot of value out of the source code base simply by being able to b
 through it or make a local, specialized feature.    But the real power of open source software happens when
 you contribute back to the shared code base and thus help the community as a whole.   **While we encourage this it 
 requires significantly more effort on your part**.   If you are interested in stepping up, see the 
-[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start. 
+[PerfView Contribution Guide](CONTRIBUTING.md) and [PerfView Coding Standards](documentation/CodingStandards.md) before you start.
 
 ### Code Organization 
 
@@ -179,7 +171,7 @@ and organizing it in interesting ways.   PerfView can be thought of as a GUI ven
 if you had need to do automated monitoring or want to use the data you see in PerfView in ways that don't make
 sense as an extension to PerfView, you can use the TraceEvent library to do this. 
 
-See the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md) for more. 
+See the [TraceEvent Library Documentation](documentation/TraceEvent/TraceEventLibrary.md) for more.
 
 ### Other Documentation
 

@@ -9,22 +9,22 @@
  If you want to be able to submit pull requests, you need to create a fork (which you will have read-write access to)
  and use that for your updates.   To do this do the following:
 
-     1. Open a web browser to the GitHub project page (in our case https://github.com/Microsoft/perfview)
-	 2. Make sure you have a GitHub account and that you are logged in (If you are logged into GitHub your user name 
-	    in the very upper right corner of display will be an icon for your user identity).  See https://github.com
-		for information on getting an account.   The instructions will tell you to download GIT tools.   You can
-		do this if you like, however Visual Studio has all the GIT functionality you will need so you don't
-		have to have them (but it does not hurt, and they are useful for more advanced scenarios).
-	 3. Click on the 'Fork' button in the upper right corner.   If it asks you were to put he fork, you will wish
-	    to put it in your account area (same as your user name).   Note that if the fork already exists it simply
-		navigates to the existing fork, so this is also a way of finding a fork if needed. 
-	 4. Once that has completed (it does not take long), it will take you to a page that looks VERY similar to 
-	    the original but is in fact a clone.   It should have a URL like https://github.com/vancem/perfview that has  
-		your user name in it.  
-	 5. At this point you can follow the instructions above for [setting up a local clone](SimpleGitWorkflow.md).  The only difference is 
-	    that the GitHub URL will be the *URL of the fork and not the main repository*.   You may also wish to give
-		it a local name that makes it clear that it is a fork (for example the local directory name for my fork is perfview-vancem).
-		Otherwise keeping track of which were direct clones (option 1) and which were not (option2) becomes more difficult.  
+   1. Open a web browser to the GitHub project page (in our case https://github.com/Microsoft/perfview)
+   2. Make sure you have a GitHub account and that you are logged in (If you are logged into GitHub your user name 
+      in the very upper right corner of display will be an icon for your user identity).  See https://github.com
+    for information on getting an account.   The instructions will tell you to download GIT tools.   You can
+    do this if you like, however Visual Studio has all the GIT functionality you will need so you don't
+    have to have them (but it does not hurt, and they are useful for more advanced scenarios).
+   3. Click on the 'Fork' button in the upper right corner.   If it asks you were to put he fork, you will wish
+      to put it in your account area (same as your user name).   Note that if the fork already exists it simply
+    navigates to the existing fork, so this is also a way of finding a fork if needed. 
+   4. Once that has completed (it does not take long), it will take you to a page that looks VERY similar to 
+      the original but is in fact a clone.   It should have a URL like https://github.com/vancem/perfview that has  
+    your user name in it.  
+   5. At this point you can follow the instructions above for [setting up a local clone](SimpleGitWorkflow.md).  The only difference is 
+      that the GitHub URL will be the *URL of the fork and not the main repository*.   You may also wish to give
+    it a local name that makes it clear that it is a fork (for example the local directory name for my fork is perfview-vancem).
+    Otherwise keeping track of which were direct clones (option 1) and which were not (option2) becomes more difficult.  
 
 ### Creating a 'upstream' Repository alias.  
 
@@ -76,26 +76,26 @@ all these changes to bring your fork up to date.   We do this in three steps
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
      up the synchronization page, and one of the options will be 'Fetch'  click on that.   This brings up a dialog filled
-	 out with 'origin' which says it will pull all changes from the 'origin' repository (which is your GitHub fork).
-	 However we don't want that since we are interested in the changes from the original master (which we named upstream)
-	 You should be able type a down arrow and 'upstream' should be one of the choices (since we added 'upstream' as a
-	 known remote).    Select 'upstream' and click the 'Fetch' button.  That will fetch all the changes from 'upstream', 
-	 and put them in the LOCAL GitHub repository.  So far we have made or local repository bigger (more commits) but we have 
-	 not changed any existing branch (the transitive closure of any branch is the same as it was before). 
+   out with 'origin' which says it will pull all changes from the 'origin' repository (which is your GitHub fork).
+   However we don't want that since we are interested in the changes from the original master (which we named upstream)
+   You should be able type a down arrow and 'upstream' should be one of the choices (since we added 'upstream' as a
+   known remote).    Select 'upstream' and click the 'Fetch' button.  That will fetch all the changes from 'upstream', 
+   and put them in the LOCAL GitHub repository.  So far we have made or local repository bigger (more commits) but we have 
+   not changed any existing branch (the transitive closure of any branch is the same as it was before). 
 
 #### Step 2: Merging the LOCAL repository's master branch to include changes from upstream/master
 
   1. Click on the View -> Team Explorer menu item 
   2. Click on the top bolded header (may say 'Home' or 'Changes', ...) and right click on 'Branches' item which show you
      all branches associated with the LOCAL repository (that is the repository clone on your local disk).   There will
-	 be at least one branch called 'master' as well as branches under 'remotes/origin' (these are branches in the
-	 private fork on GitHub) and 'remotes/upstream' (these are branches in the original main repository).   
+   be at least one branch called 'master' as well as branches under 'remotes/origin' (these are branches in the
+   private fork on GitHub) and 'remotes/upstream' (these are branches in the original main repository).   
   3. Make sure that the 'active branch' (the one in bold) is 'master'.   If not double click on master to make it
      the active branch.  If it fails (and it could easily fail because you have modified files), you will have to
-	 commit or undo those changes before proceeding.   Ultimately you want 'master' to be the active branch.  
+   commit or undo those changes before proceeding.   Ultimately you want 'master' to be the active branch.  
   4. Right Click on the 'master' branch, right click on it and select 'Merge from'.  Then in the 'merge from' textbox select
          upstream/master and click the 'Merge' button.   This says we want to integrate (merge) all changes from the 
-	 upstream/master branch into the currently active branch (which is master).
+   upstream/master branch into the currently active branch (which is master).
 
 
 In most cases this merge operation goes without a hitch and Visual Studio will auto-commit the merge.   However if there
@@ -107,24 +107,24 @@ branch (see below)), then you will need to resolve them and commit the merge exp
   1. Click on the View -> Team Explorer menu item 
   2. Click on the bolded header (may say 'Home' or 'Changes', ...) and right click on 'Sync' option.  This will bring
      up the synchronization page, and one of the options will be 'Sync'  click on that.   This will push all your 
-	 changes to 'origin' (which is your GitHub fork) as well as pull down any changes from origin (there should be 
-	 none as you are the only one modifying this fork).  
+   changes to 'origin' (which is your GitHub fork) as well as pull down any changes from origin (there should be 
+   none as you are the only one modifying this fork).  
 
 At this point you should be able to go to your GitHub web page for the fork and see a line like this
 
-	This branch is even with Microsoft:master. 
+  * This branch is even with Microsoft:master. 
 
-Which says that you have integrated all the changes from the original main repository into your private fork.   
+Which says that you have integrated all the changes from the original main repository into your private fork.
 Congratulations, you have successfully brought your private fork up to date with respect to its upstream master.   
 
 ## Creating a pull request to the Main Repository.  
 
-Creating a pull request starts by making the modification in the local repository *in its own branch*.  
+Creating a pull request starts by making the modification in the local repository *in its own branch*.
 Thus you have to follow the instructions in [Simple GitHub Setup and Workflow](SimpleGitWorkflow.md) for creating
 a new branch, committing changes to the new branch, and pushing (syncing) those changes to your personal GitHub 
 fork.   Lets assume we did this using the branch name 'TestPullRequest' as the branch name.
 
-One key aspect to syncing is that you must make sure that the new branch name is 'published' to the GitHub fork. 
+One key aspect to syncing is that you must make sure that the new branch name is 'published' to the GitHub fork.
 This publishing step can be done on the View -> Team Explorer -> Synchronization pane.   You should see at the
 bottom a hyperlink that indicates that you wish to publish the branch 'TestPullRequest'  You will want to click
 that hyperlink.   This insures that the name (and not just the (anonymous) commit) 'TestPullRequest' is copied into
@@ -145,9 +145,9 @@ you are happy with it, you can complete the submission of the pull request.
 
 At that point it is out of your hands.   The pull request will send mail to the maintainers of the repository 
 and they may comment on your change and may require changes.    If you need to make changes, simply make the 
-changes in the branch (in our case TestPullRequest), first locally, then sync to push it to the GitHub fork.  
+changes in the branch (in our case TestPullRequest), first locally, then sync to push it to the GitHub fork.
 Doing so will automatically update the pull request.   Eventually the maintainers will either reject your request
-(by closing it with an explanation), or accept it (in which case it will be merged into the main repository).  
+(by closing it with an explanation), or accept it (in which case it will be merged into the main repository).
 You can then use the 'Pulling updates' procedure above to pull changes into your GitHub fork, and from there
 you can synchronize to bring it to your local repository.
 

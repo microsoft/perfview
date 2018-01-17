@@ -2,11 +2,12 @@
 
 This section tells you how to set up to build a project that is hosted on GitHub, 
 using Visual Studio 2017.   If you don't already have Visual Studio 2017, you 
-can get the community edition for free from [this link](https://www.visualstudio.com/vs/community/).  
+can get the community edition for free from 
+[this link](https://www.visualstudio.com/vs/community/).
 This section also goes through important routine tasks like getting the latest 
 changes from GitHub and submitting a pull request to the master branch.
 
-It will show you how to do this using just Visual Studio 2017.   Older version 
+It will show you how to do this using just Visual Studio 2017.   Older versions 
 of Visual Studio as well as other IDEs are possible, but not covered here.  
 You can also use 'raw' git commands but I don't cover that here.  
 
@@ -24,8 +25,8 @@ The set of all files versioned as a unit by the GIT source code control system i
 called a repository, or *repo* for short.   Logically a GIT repository contains a 
 collection of snapshots called *commits* which represents a set of files at one
 point in time.   The data in any such snapshot is hashed (including all its meta
-data like when the commit was made), and this hash is the ID
-for the commit.   In theory the ID is very long (64+ bytes), but in practice all
+data like when the commit was made), and this hash is the ID for the commit.
+In theory the ID is very long (64+ bytes), but in practice all
 GIT commands will take a unambiguous prefix.  Typically 8 Hex digits is more than
 sufficient so you will see instructions talking about commit 534aab38 or commit 3abcd333. 
 
@@ -84,7 +85,7 @@ If one of the following two conditions hold
 
 You can use a simple GIT setup with only two repositories (the one on GitHub and the local
 repository on your development machine).   In this setup you can pull new commits
-from the GitHub repository to your local one to keep your local copy up to date.  
+from the GitHub repository to your local one to keep your local copy up to date.
 You can even make local changes for your own personal experimentation in your local repository.
 However you can only 'push' those changes back to GitHub if you have write permission to
 the repo.  This is fine for personal projects, but not good enough for open source projects
@@ -119,7 +120,7 @@ Thus the typical flow for an open source project is
  be other locations (shared by a group) that you may put the fork, so when clicking the 'Fork' button may prompt 
  you with choices of where to put it.   Typically you want to use the area associated with just your user.  For example my
  GitHub user name is vancem, so the fork created when I click on fork button of https://github.com/Microsoft/perfview creates 
- the fork called https://github.com/vancem/perfview (notice it in the 'vancem' area of GitHub which is writable by me).   
+ the fork called https://github.com/vancem/perfview (notice it in the 'vancem' area of GitHub which is writable by me).
  If the fork already exists, it simply takes me there (so you can find your existing forks easily).
 
  2. Clone your GitHub fork locally on your machine.   This works just like if you had cloned the
@@ -128,9 +129,9 @@ Thus the typical flow for an open source project is
 
  3. Prepare a change by making a new *branch* in your *GitHub* fork with the changes you want.     This actually
  involves several sub-steps 
-    A. Create a new branch representing your proposed change in your local repository which is a clone of *your GitHub Fork*.
-	B. Create one or more commits in this branch that embody the change you want.  
-	C. Push your changes to your GitHub Fork.   
+    1. Create a new branch representing your proposed change in your local repository which is a clone of *your GitHub Fork*.
+	  2. Create one or more commits in this branch that embody the change you want.  
+	  3. Push your changes to your GitHub Fork.   
 
  4. Once you have a branch you are happy with in your own fork, there is a button on YOUR FORKs GitHub page that 
  allow you to submit that branch as a pull request.   When you do this you write a description / rationale for The

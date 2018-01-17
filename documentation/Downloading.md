@@ -6,17 +6,26 @@ It shows the release notes and the full set of binaries for all current and past
 
 ## Shortcut to Download the Latest PerfView.exe
 
-The latest version of PerfView can be downloaded with the following link:
+In the common case, the only file you need one file, PerfView.exe, to use the tool.  It can be downloaded here
 
 * [Download Version 2.02 of PerfView.exe](https://github.com/Microsoft/perfview/releases/download/P2.0.2/PerfView.exe)
 
+Once you click the above link in your browser it will start downloading, the details of which vary from browser to browser.
+In some cases it will prompt for more information (IE) and in others (Chrome) it may not be obvious that
+you clicked on anything (look at the bottom of the pane for changes).  The result, however will be a PerfVIew.exe on your
+local machine.   
+
+Once downloaded you you can simply double click on the downloaded EXE to launch PerfView. 
+While Github itself and your browser do some validation, to be extra careful you can
+also explicitly validate the digital signature of the downloaded file before running it.  
 
 ### Explicitly Validating PerfView's Digital Signature
 
 Like all official Microsoft software, PerfView.exe is digitally signed
 by Microsoft so you can have confidence that this software came from Microsoft
-and has not been tampered with.  You can confirm this by opening the directory
-where you downloaded PerfView.exe, and select the Digital Signatures page for perfView by
+and has not been tampered with since the time it was created by Microsoft.
+You can confirm this by opening the directory where you downloaded PerfView.exe and selecting
+the Digital Signatures page for perfView by
 
 * Selecting PerfView -> right click -> Properties -> Digital Signatures.  
 

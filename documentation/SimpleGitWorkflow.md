@@ -7,23 +7,23 @@ Here we describe how to use Visual Studio 2015 to set a local build of the GitHu
 Because this project is open source, anyone can read it so this works even if you don't have a GitHub account, but
 of course you will only have read-only access.   
 
-	1. Open Visual Studio and select the View -> Team Explorer menu item
-	2. This brings up the Team Explorer pane.  At the top of the display is a bold word (probably Home) which 
-	   indicates which Team Explorer view is being displayed if you left click 
-       on this bolded item you will get a menu of possible displays.   Select Projects -> Manage Connections
-	3. At the bottom of this display you should see a section called 'Local GIT Repositories'.  and under this a
-	   set of hyperlinks.   Click on the 'Clone' hyperlink.
-	4. It will bring up a dialog box where you enter two pieces of information 
-	   a. The name of the source to clone.  Enter the GitHub URL (in our example https://github.com/Microsoft/perfview)
-	   b. The name of the local directory to place the clone (The default is probably OK, but you can decide place it somewhere else)
-	5. Click the Clone button. 
-	
+  1. Open Visual Studio and select the View -> Team Explorer menu item
+  2. This brings up the Team Explorer pane.  At the top of the display is a bold word (probably Home) which
+     indicates which Team Explorer view is being displayed if you left click
+     on this bolded item you will get a menu of possible displays.   Select Projects -> Manage Connections
+  3. At the bottom of this display you should see a section called 'Local GIT Repositories'.  and under this a
+     set of hyperlinks.   Click on the 'Clone' hyperlink.
+  4. It will bring up a dialog box where you enter two pieces of information
+     a. The name of the source to clone.  Enter the GitHub URL (in our example https://github.com/Microsoft/perfview)
+     b. The name of the local directory to place the clone (The default is probably OK, but you can decide place it somewhere else)
+  5. Click the Clone button. 
+  
 At this point Visual Studio will create a local clone all the files in a project in the directory you specified.  This represents
 the final state of all files in the default branch (probably 'master').   It also clones repository (thus the history for all time)
 and places it in a hidden .git directory in the directory you specified.   It is this cloned local repository where most GIT 
 commands you do operate.   By default your clone ended up in %HOMEPATH%\Source\Repos\PerfView.   
 
-Once the clone is complete, you will see the new local repository added to the list under 'Local Repositories'.   
+Once the clone is complete, you will see the new local repository added to the list under 'Local Repositories'.
 You can see which one is 'active' because it is bold-faced.   This is the repository that all other VS GIT commands will
 operate on.   Double click on the new entry (perfView in this example) to make it the active GIT repos.
 
@@ -81,11 +81,11 @@ It is only at commit time that you need to make the choice.
 To make a new branch for feature, follow the same procedure as committing to master, but before
 hitting the 'Commit All' button, click the hyperlink on the branch name at the top of the pane.  
 
-This takes you to the Branches pane, and the current branch (likely to be master) is highlighted.  
-You can then right click on that branch and select 'New Local Branch From' which will prompt 
-you for a new branch name and hit the 'Create Branch' button.   This new branch is now the 
+This takes you to the Branches pane, and the current branch (likely to be master) is highlighted.
+You can then right click on that branch and select 'New Local Branch From' which will prompt
+you for a new branch name and hit the 'Create Branch' button.   This new branch is now the
 active branch so you can go back to the 'Changes' pane (left click on the 'Branches' Header) and
-complete the commit.  
+complete the commit.
 
 ## Switching Branches 
 
@@ -94,12 +94,12 @@ one branch to another.   You do this in the 'Branches' pane (View -> Team Explor
 Note that whatever branch is bolded is the active branch and simply double clicking on a 
 branch makes it active.   
 
-When you switch branches YOU UPDATE THE LOCAL REPOSITORY WITH THE CONTENTS OF THAT BRANCH.   
-Thus with one double click potentially all the local files in the repo may change.   If you have any uncommitted 
-changes, THE SWITCH IS LIKELY TO FAIL (it checks for this before doing any updates).   
-Typically you only switch branches if you have no modified files (in which case the switch is guaranteed to succeed).   
-If you hit this error (and you will), the solution is to commit your changes (if necessary to a 
-new temporary branch for that purpose) at which point you can switch branches.  
+When you switch branches YOU UPDATE THE LOCAL REPOSITORY WITH THE CONTENTS OF THAT BRANCH.
+Thus with one double click potentially all the local files in the repo may change.   If you have any uncommitted
+changes, THE SWITCH IS LIKELY TO FAIL (it checks for this before doing any updates).
+Typically you only switch branches if you have no modified files (in which case the switch is guaranteed to succeed).
+If you hit this error (and you will), the solution is to commit your changes (if necessary to a
+new temporary branch for that purpose) at which point you can switch branches.
 
 ## Synchronizing the GitHub repository and the Local Repository.  
 
@@ -117,11 +117,11 @@ branch on top of master  (TODO reference instructions for this).
 
 To synchronize the master branch do the following
 
-	1. Set the active branch to 'master' with no modified files, by following the procedure 'Switching Branches'
-	   above.   You may need to commit things to a temporary local branch to get to this state, but 
-	   one way or the other you need to get there.
-	2. Go the Synchronization pane of team explorer.  
-	3. Click on the 'sync' hyperlink.
+  1. Set the active branch to 'master' with no modified files, by following the procedure 'Switching Branches'
+     above.   You may need to commit things to a temporary local branch to get to this state, but 
+     one way or the other you need to get there.
+  2. Go the Synchronization pane of team explorer.  
+  3. Click on the 'sync' hyperlink.
 
 If there are no conflicts doing the update, then the resulting updates are automatically committed to 
 the active branch.   
