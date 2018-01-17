@@ -5,6 +5,7 @@
 
 * [TraceEvent Programmers Guide](./TraceEventProgrammersGuide.md) - To understand the 
 basic architecture and usefulness from a programmer's perspective. 
+* [EventPipe Developer Guide](./EventPipeDeveloperGuide.md) - How to build, develop and test `EventPipe`. 
 
 
 
