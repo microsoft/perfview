@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using FastSerialization;
 
 namespace Microsoft.Diagnostics.Tracing.EventPipe
@@ -16,19 +15,21 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         public long ClockFrequency { get; }
 
         internal int PointerSize { get; }
+        internal int ProcessId { get; }
         internal int NumberOfProcessors { get; }
 
         internal StreamLabel EndOfStream { get; }
 
         internal EventPipeEventSourceInitialData(string processName, int version, int readerVersion,
             DateTime creationTime, long startTimeStamp, long clockFrequency,
-            int pointerSize, int numberOfProcessors,
+            int pointerSize, int processId, int numberOfProcessors,
             StreamLabel endOfStream)
         {
             ProcessName = processName;
             Version = version;
             ReaderVersion = readerVersion;
             PointerSize = pointerSize;
+            ProcessId = processId;
             NumberOfProcessors = numberOfProcessors;
             CreationTime = creationTime;
             StartTimeStamp = startTimeStamp;
@@ -45,10 +46,5 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         /// currently no info about CpuSpeedMHz, returns 10
         /// </summary>
         internal int CpuSpeedMHz => 10;
-
-        /// <summary>
-        /// currently no info about ProcessId, returns 0
-        /// </summary>
-        internal int ProcessId => 0;
     }
 }

@@ -66,6 +66,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             var clockFrequency = deserializer.ReadInt64();
 
             var pointerSize = deserializer.ReadInt();
+            var processId = deserializer.ReadInt();
             var numberOfProcessors = deserializer.ReadInt();
 
             // we now move the the pointer to the start of events (end of initial data)
@@ -75,7 +76,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
             return new EventPipeEventSourceInitialData(processName, version, minimumReaderVersion,
                 creationTime, startTimeStamp, clockFrequency,
-                pointerSize, numberOfProcessors,
+                pointerSize, processId, numberOfProcessors,
                 endOfEventStream);
         }
 
@@ -97,7 +98,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             return new EventPipeEventSourceInitialData(processName, version, minimumReaderVersion,
                 creationTime, startTimeStamp, clockFrequency,
                 8, // V1 EventPipe only supported x64
-                1, // // old version has not info about processors#
+                0, // old version had no process Id
+                1, // old version has not info about processors#
                 endOfEventStream);
         }
 
