@@ -235,12 +235,34 @@ namespace FastSerialization
             return new Guid(bytes);
         }
 
+        public static string ReadNullTerminatedUnicodeString(this IStreamReader reader, StringBuilder sb = null)
+        {
+            if (sb == null)
+                sb = new StringBuilder();
+            short value = reader.ReadInt16();
+            while (value != 0)
+            {
+                sb.Append(Convert.ToChar(value));
+                value = reader.ReadInt16();
+            }
+
+            return sb.ToString();
+        }
+
         /// <summary>
         /// Returns a StreamLabel that is the sum of label + offset.  
         /// </summary>
         public static StreamLabel Add(this StreamLabel label, int offset)
         {
             return (StreamLabel) (((int) label) + offset);
+        }
+
+        /// <summary>
+        /// Returns the difference between two stream labels (currently guarenteed to fit in an int)
+        /// </summary>
+        public static int Sub(this StreamLabel label, StreamLabel other)
+        {
+            return (int)label - (int)other;
         }
 
         /// <summary>

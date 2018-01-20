@@ -14,7 +14,15 @@ namespace Microsoft.Diagnostics.Tracing
     {
         public EventPipeEventSourceNew(string fileName)
         {
-            _deserializer = new Deserializer(new PinnedStreamReader(fileName, 0x10000), fileName);
+            // TODO need to get real values for this as well as the process ID and name.  
+            _processId = 0xFFFE;
+            _processName = "ProcessBeingTraced";
+            osVersion = new Version("0.0.0.0");
+            cpuSpeedMHz = 10;
+            pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
+            numberOfProcessors = 1;
+
+            _deserializer = new Deserializer(new PinnedStreamReader(fileName, 0x20000), fileName);
             _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
         
             var entryObj = _deserializer.GetEntryObject();
@@ -38,6 +46,11 @@ namespace Microsoft.Diagnostics.Tracing
                 TraceEventNativeMethods.EVENT_RECORD* eventRecord = ReadEvent(deserializerReader);
                 if (eventRecord != null)
                 {
+                    // in the code below we set sessionEndTimeQPC to be the timestamp of the last event.  
+                    // Thus the new timestamp should be later, and not more than 1 day later.  
+                    Debug.Assert(sessionEndTimeQPC <= eventRecord->EventHeader.TimeStamp);
+                    Debug.Assert(sessionEndTimeQPC == 0 || eventRecord->EventHeader.TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
+
                     TraceEvent event_ = Lookup(eventRecord);
                     Dispatch(event_);
                     sessionEndTimeQPC = eventRecord->EventHeader.TimeStamp;
@@ -47,15 +60,26 @@ namespace Microsoft.Diagnostics.Tracing
             return true;
         }
 
+        internal override string ProcessName(int processID, long timeQPC)
+        {
+            return _processName;
+        }
+
         private TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader)
         {
-            const int eventSizeGuess = 512;
+            // Guess that the event is < 1000 bytes or whatever is left in the stream.  
+            int eventSizeGuess = Math.Min(1000, _endOfEventStream.Sub(reader.Current));
             EventPipeEventHeader* eventData = (EventPipeEventHeader*)reader.GetPointer(eventSizeGuess);
+            // Basic sanity checks.  Are the timestamps and sizes sane.  
+            Debug.Assert(sessionEndTimeQPC <= eventData->TimeStamp);
+            Debug.Assert(sessionEndTimeQPC == 0 || eventData->TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
+            Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->EventSize);
+            Debug.Assert(eventData->MetaDataId <= reader.Current);       // IDs are the location in the of of the data, so it comes before
+            Debug.Assert(0 < eventData->EventSize && eventData->EventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
+
             if (eventSizeGuess < eventData->EventSize)
                 eventData = (EventPipeEventHeader*)reader.GetPointer(eventData->EventSize);
-            
-            Debug.Assert(0 < eventData->EventSize && eventData->EventSize < 0x10000);
-            Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->EventSize);
+
             Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->EventSize);
 
             // TODO FIX NOW: EventSize does not include the size of the int that indicates the number of stack frames. 
@@ -70,7 +94,7 @@ namespace Microsoft.Diagnostics.Tracing
                 StreamLabel metaDataStreamOffset = reader.Current;  // Used as the 'id' for the meta-data
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
                 reader.Skip(EventPipeEventHeader.HeaderSize);
-                metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber);
+                metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
                 _eventMetadataDictionary.Add(metaDataStreamOffset, metaData);
                 _eventParser.AddTemplate(metaData);
                 int stackBytes = reader.ReadInt32();        // Meta-data events should always have a empty stack.  
@@ -140,6 +164,8 @@ namespace Microsoft.Diagnostics.Tracing
         Dictionary<StreamLabel, EventPipeEventMetaData> _eventMetadataDictionary = new Dictionary<StreamLabel, EventPipeEventMetaData>();
         Deserializer _deserializer;
         EventPipeTraceEventParser _eventParser; // TODO does this belong here?
+        string _processName;
+        int _processId;
 
         #endregion
     }
@@ -153,19 +179,26 @@ namespace Microsoft.Diagnostics.Tracing
         /// (since that affects the parsing of this data).   When this constructor returns the reader
         /// has read all data given to it (thus it has move the read pointer by 'length'.  
         /// </summary>
-        public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber)
+        public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
         {
             StreamLabel eventDataEnd = reader.Current.Add(length);
 
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
 
+            if (pointerSize == 4)
+                _eventRecord->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
+            else
+                _eventRecord->EventHeader.Flags = TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+
+            _eventRecord->EventHeader.ProcessId = processId;
+
             StreamLabel metaDataStart = reader.Current;
             if (fileFormatVersionNumber == 1)
                 _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
             else
             {
-                ProviderName = reader.ReadString();
+                ProviderName = reader.ReadNullTerminatedUnicodeString();
                 _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
             }
 
@@ -181,9 +214,11 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(0 <= metadataLength && metadataLength < length);
             if (0 < metadataLength)
             {
-                // FIX NOW : We see to have two IDs and Version numbers.
-                _eventRecord->EventHeader.Id = (ushort)reader.ReadInt32();
-                EventName = reader.ReadString();
+                // TODO why do we repeat the event number it is redundant.  
+                eventId = (ushort)reader.ReadInt32();
+                Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No trucation
+                EventName = reader.ReadNullTerminatedUnicodeString();
+                Debug.Assert(EventName.Length < length / 2);
 
                 // Deduce the opcode from the name.   
                 if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
@@ -192,8 +227,15 @@ namespace Microsoft.Diagnostics.Tracing
                     _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
 
                 _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();
-                _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
 
+                // TODO why do we repeat the event number it is redundant.  
+                version = reader.ReadInt32();
+                Debug.Assert(_eventRecord->EventHeader.Version == version);     // No trucation
+
+                _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
+                Debug.Assert(_eventRecord->EventHeader.Level <= 5);
+
+                // Fetch the parameter information
                 int parameterCount = reader.ReadInt32();
                 Debug.Assert(0 <= parameterCount && parameterCount < length / 8); // Each parameter takes at least 8 bytes.  
                 if (parameterCount > 0)
@@ -202,8 +244,10 @@ namespace Microsoft.Diagnostics.Tracing
                     for (int i = 0; i < parameterCount; i++)
                     {
                         var type = (TypeCode)reader.ReadInt32();
-                        var name = reader.ReadString();
+                        Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
+                        var name = reader.ReadNullTerminatedUnicodeString();
                         ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
+                        Debug.Assert(reader.Current <= eventDataEnd);
                     }
                 }
             }
@@ -220,7 +264,12 @@ namespace Microsoft.Diagnostics.Tracing
             _eventRecord->EventHeader.ActivityId = eventData->ActivityID;
             // EVENT_RECORD does not field for ReleatedActivityID (because it is rarely used).  See GetRelatedActivityID;
             _eventRecord->UserDataLength = (ushort)eventData->PayloadSize;
-            Debug.Assert(_eventRecord->UserDataLength == eventData->PayloadSize, "Payload size truncation!");
+
+            // TODO the extra || operator is a hack becase the runtime actually tries to emit events that
+            // exceed this for the GC/BulkSurvivingObjectRanges (event id == 21).  We supress that assert 
+            // for now but this is a real bug in the runtime's event logging.  ETW can't handle payloads > 64K.  
+            Debug.Assert(_eventRecord->UserDataLength == eventData->PayloadSize ||
+                _eventRecord->EventHeader.ProviderId == ClrTraceEventParser.ProviderGuid && _eventRecord->EventHeader.Id == 21);
             _eventRecord->UserData = (IntPtr)eventData->Payload;
 
             int stackBytesSize = EventPipeEventHeader.StackBytesSize(eventData);
