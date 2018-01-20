@@ -2613,7 +2613,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         unsafe private static void WriteBlob(IntPtr source, IStreamWriter writer, int byteCount)
         {
-            Debug.Assert(((long)source) % 4 == 0);
+            // TODO: currently most uses the source aligned so
+            // I don't bother trying to insure that the copy is aligned.
             Debug.Assert(byteCount % 4 == 0);
             int* sourcePtr = (int*)source;
             int intCount = byteCount >> 2;

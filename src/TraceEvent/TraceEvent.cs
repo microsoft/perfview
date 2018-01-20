@@ -1799,7 +1799,9 @@ namespace Microsoft.Diagnostics.Tracing
         }
         unsafe internal static void CopyBlob(IntPtr source, IntPtr destination, int byteCount)
         {
-            Debug.Assert((long)source % 4 == 0);
+            // TODO: currently most uses the source aligned so
+            // I don't bother trying to insure that the copy is aligned.
+            // Consider moving to Buffer.MemoryCopy
             Debug.Assert((long)destination % 4 == 0);
             Debug.Assert(byteCount % 4 == 0);
             int* sourcePtr = (int*)source;

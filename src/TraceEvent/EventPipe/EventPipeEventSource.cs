@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.Tracing
         public EventPipeEventSourceNew(string fileName)
         {
             // TODO need to get real values for this as well as the process ID and name.  
-            _processId = 0xFFFE;
+            _processId = 0xFFFE;    // Arbitrary
             _processName = "ProcessBeingTraced";
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
