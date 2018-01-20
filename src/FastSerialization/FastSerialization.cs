@@ -1828,11 +1828,6 @@ namespace FastSerialization
                 StreamLabel objectLabel = reader.Current;
                 // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized. 
                 Tags tag = ReadTag();
-                if ((int)tag == 0x54)
-                {
-                    reader.Skip(-1);
-                    tag = Tags.EndObject;
-                }
                 int nesting = 0;
                 switch (tag)
                 {
