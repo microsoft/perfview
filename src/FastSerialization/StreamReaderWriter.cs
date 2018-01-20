@@ -39,14 +39,6 @@ namespace FastSerialization
         /// The total length of bytes that this reader can read.  
         /// </summary>
         public virtual long Length { get { return endPosition; } }
-        /// <summary>
-        /// Convenince function for skipping a a certain number of bytes in the stream.  
-        /// </summary>
-        /// <param name="byteCount"></param>
-        public virtual void Skip(int byteCount)
-        {
-            Goto((StreamLabel)((int)Current + byteCount));
-        }
 
         #region implemenation of IStreamReader
         /// <summary>

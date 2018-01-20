@@ -165,7 +165,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 etlxFilePath = filePath + ".etlx";
             }
 
-            using (EventPipeEventSource source = EventPipeEventSourceFactory.CreateEventPipeEventSource(filePath))
+            // using (EventPipeEventSource source = EventPipeEventSourceFactory.CreateEventPipeEventSource(filePath))
+            using (var source = new EventPipeEventSourceNew(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -711,7 +712,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        internal static void CreateFromEventPipeEventSources(EventPipeEventSource source, string etlxFilePath, TraceLogOptions options)
+        internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options)
         {
             if (options == null)
             {

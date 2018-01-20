@@ -234,6 +234,22 @@ namespace FastSerialization
                 bytes[i] = reader.ReadByte();
             return new Guid(bytes);
         }
+
+        /// <summary>
+        /// Returns a StreamLabel that is the sum of label + offset.  
+        /// </summary>
+        public static StreamLabel Add(this StreamLabel label, int offset)
+        {
+            return (StreamLabel) (((int) label) + offset);
+        }
+
+        /// <summary>
+        /// Convenience method for skipping a a certain number of bytes in the stream.  
+        /// </summary>
+        public static void Skip(this IStreamReader reader, int byteCount)
+        {
+            reader.Goto((StreamLabel)((int)reader.Current + byteCount));
+        }
     }
 #endif
 
@@ -1785,6 +1801,11 @@ namespace FastSerialization
                 StreamLabel objectLabel = reader.Current;
                 // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized. 
                 Tags tag = ReadTag();
+                if ((int)tag == 0x54)
+                {
+                    reader.Skip(-1);
+                    tag = Tags.EndObject;
+                }
                 int nesting = 0;
                 switch (tag)
                 {

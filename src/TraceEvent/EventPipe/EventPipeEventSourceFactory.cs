@@ -13,6 +13,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         /// <returns>The compatible EventPipe event source.</returns>
         public static EventPipeEventSource CreateEventPipeEventSource(string fileName)
         {
+            // throw new NotImplementedException();
+
             if (fileName == null)
             {
                 throw new ArgumentNullException(nameof(fileName));
