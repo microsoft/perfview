@@ -3,7 +3,6 @@ using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Session;
-using Microsoft.DotNet.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,17 +10,17 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing
 {
-    unsafe public class EventPipeEventSourceNew : TraceEventDispatcher
+    unsafe public class EventPipeEventSourceNew : TraceEventDispatcher, IFastSerializable
     {
         public EventPipeEventSourceNew(string fileName)
         {
             _deserializer = new Deserializer(new PinnedStreamReader(fileName, 0x10000), fileName);
-
-            _deserializer.TypeResolver = typeName => System.Type.GetType(typeName);  // resolve types in this assembly (and mscorlib)
-            _deserializer.RegisterFactory(typeof(EventPipeFile), delegate { return new EventPipeFile(); });
-
-
-            _eventPipeFile = (EventPipeFile)_deserializer.GetEntryObject();
+            _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
+        
+            var entryObj = _deserializer.GetEntryObject();
+            // Because we told the deserialize to use 'this' when creating a EventPipeFile, we 
+            // expect the entry object to be 'this'.
+            Debug.Assert(entryObj == this);
 
             _eventParser = new EventPipeTraceEventParser(this);
         }
@@ -33,8 +32,8 @@ namespace Microsoft.Diagnostics.Tracing
         {
             PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
 
-            deserializerReader.Goto(_eventPipeFile._startOfStream);
-            while (deserializerReader.Current < _eventPipeFile._endOfEventStream)
+            deserializerReader.Goto(_startEventOfStream);
+            while (deserializerReader.Current < _endOfEventStream)
             {
                 TraceEventNativeMethods.EVENT_RECORD* eventRecord = ReadEvent(deserializerReader);
                 if (eventRecord != null)
@@ -68,7 +67,7 @@ namespace Microsoft.Diagnostics.Tracing
                 StreamLabel metaDataStreamOffset = reader.Current;
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
                 reader.Skip(EventPipeEventHeader.HeaderSize);
-                metaData = new EventPipeEventMetaData(reader, payloadSize, _eventPipeFile._version);
+                metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber);
                 _eventMetadataDictionary.Add(metaDataStreamOffset, metaData);
                 _eventParser.AddTemplate(metaData);
                 int stackBytes = reader.ReadInt32();        // Meta-data events should always have a empty stack.  
@@ -95,9 +94,42 @@ namespace Microsoft.Diagnostics.Tracing
             return event_->RelatedActivityID;
         }
 
+        // We dont ever serialize one of these in managed code so we don't need to implement ToSTream
+        public void ToStream(Serializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void FromStream(Deserializer deserializer)
+        {
+            _fileFormatVersionNumber = deserializer.VersionBeingRead;
+
+            ForwardReference reference = deserializer.ReadForwardReference();
+            _endOfEventStream = deserializer.ResolveForwardReference(reference, preserveCurrent: true);
+
+            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.  
+            short year = deserializer.ReadInt16();
+            short month = deserializer.ReadInt16();
+            short dayOfWeek = deserializer.ReadInt16();
+            short day = deserializer.ReadInt16();
+            short hour = deserializer.ReadInt16();
+            short minute = deserializer.ReadInt16();
+            short second = deserializer.ReadInt16();
+            short milliseconds = deserializer.ReadInt16();
+            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
+
+            deserializer.Read(out _syncTimeQPC);
+            deserializer.Read(out _QPCFreq);
+
+            _startEventOfStream = deserializer.Current;      // Events immediately after the header.  
+        }
+
+        int _fileFormatVersionNumber;
+        StreamLabel _startEventOfStream;
+        StreamLabel _endOfEventStream;
+
         Dictionary<StreamLabel, EventPipeEventMetaData> _eventMetadataDictionary = new Dictionary<StreamLabel, EventPipeEventMetaData>();
         Deserializer _deserializer;
-        EventPipeFile _eventPipeFile;
         EventPipeTraceEventParser _eventParser; // TODO does this belong here?
 
         #endregion
@@ -111,6 +143,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// 'fileFormatVersionNumber' is the version number of the file as a whole
         /// (since that affects the parsing of this data).   When this constructor returns the reader
         /// has read all data given to it (thus it has move the read pointer by 'length'.  
+        /// </summary>
         public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber)
         {
             StreamLabel eventDataEnd = reader.Current.Add(length);
@@ -168,7 +201,7 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(reader.Current == eventDataEnd);
         }
 
-        public TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(EventPipeEventHeader* eventData, int pointerSize)
+        internal TraceEventNativeMethods.EVENT_RECORD* GetEventRecordForEventData(EventPipeEventHeader* eventData, int pointerSize)
         {
 
             // We have already initialize all the fields of _eventRecord that do no vary from event to event. 
@@ -293,10 +326,6 @@ namespace Microsoft.Diagnostics.Tracing
         #endregion
     }
 
-}
-
-namespace Microsoft.DotNet.Runtime
-{
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     unsafe struct EventPipeEventHeader
     {
@@ -323,49 +352,6 @@ namespace Microsoft.DotNet.Runtime
         {
             return (byte*)(&header->Payload[header->PayloadSize + 4]);
         }
-    }
-
-    class EventPipeFile : IFastSerializable
-    {
-        #region private 
-        public void FromStream(Deserializer deserializer)
-        {
-            _version = deserializer.VersionBeingRead;
-
-            ForwardReference reference = deserializer.ReadForwardReference();
-            _endOfEventStream = deserializer.ResolveForwardReference(reference, preserveCurrent: true);
-
-            // The start time is stored as a SystemTime which is a bunch of shorts, convert to DateTime.  
-            short year = deserializer.ReadInt16();
-            short month = deserializer.ReadInt16();
-            short dayOfWeek = deserializer.ReadInt16();
-            short day = deserializer.ReadInt16();
-            short hour = deserializer.ReadInt16();
-            short minute = deserializer.ReadInt16();
-            short second = deserializer.ReadInt16();
-            short milliseconds = deserializer.ReadInt16();
-            _syncTimeUTC = new DateTime(year, month, day, hour, minute, second, milliseconds, DateTimeKind.Utc);
-
-            deserializer.Read(out _syncTimeQPC);
-            deserializer.Read(out _QPCFreq);
-
-            _startOfStream = deserializer.Current;      // Events immediately after the header.  
-        }
-
-        public void ToStream(Serializer serializer)
-        {
-            // Managed code does not make a EventPipe today so we don't need to implement the serialization code.  
-            throw new NotImplementedException();
-        }
-
-        internal int _version;
-        internal StreamLabel _startOfStream;
-        internal StreamLabel _endOfEventStream;
-
-        DateTime _syncTimeUTC;
-        long _syncTimeQPC;
-        long _QPCFreq;
-        #endregion
     }
 }
 

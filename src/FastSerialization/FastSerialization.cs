@@ -1465,6 +1465,11 @@ namespace FastSerialization
         {
             factories[type.FullName] = factory;
         }
+        public void RegisterFactory(string typeName, Func<IFastSerializable> factory)
+        {
+            factories[typeName] = factory;
+        }
+
         /// <summary>
         /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
         /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
