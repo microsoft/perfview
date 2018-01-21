@@ -30,6 +30,9 @@ namespace Microsoft.Diagnostics.Tracing
         public EventPipeEventSource(string fileName)
         {
             // TODO need to get real values for this as well as the process ID and name.  
+            // Also add Operating system name, machine name.
+            // Ideally events about loaded Dlls.  
+            // Memory size, 
             _processId = 0xFFFE;    // Arbitrary
             _processName = "ProcessBeingTraced";
             osVersion = new Version("0.0.0.0");
