@@ -2724,8 +2724,8 @@ namespace Microsoft.Diagnostics.Tracing
 #if !DOTNET_V35
             if (traceFileName.EndsWith(".trace.zip", StringComparison.OrdinalIgnoreCase))
                 return new CtfTraceEventSource(traceFileName);
-            else if(traceFileName.EndsWith(".netperf", StringComparison.OrdinalIgnoreCase))
-                return EventPipeEventSourceFactory.CreateEventPipeEventSource(traceFileName);
+            else if (traceFileName.EndsWith(".netperf", StringComparison.OrdinalIgnoreCase))
+                return new EventPipeEventSource(traceFileName);
 #if !NOT_WINDOWS
             else if (traceFileName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase) ||
                      traceFileName.EndsWith(".etlx", StringComparison.OrdinalIgnoreCase) ||
@@ -2733,8 +2733,8 @@ namespace Microsoft.Diagnostics.Tracing
                 return new ETWTraceEventSource(traceFileName);
 #endif
             else
-#endif 
-                    return null;
+#endif
+                return null;
         }
 
         // Normally you subscribe to events using parsers that 'attach' themselves to the source. However

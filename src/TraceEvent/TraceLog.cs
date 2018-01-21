@@ -165,8 +165,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 etlxFilePath = filePath + ".etlx";
             }
 
-            // using (EventPipeEventSource source = EventPipeEventSourceFactory.CreateEventPipeEventSource(filePath))
-            using (var source = new EventPipeEventSourceNew(filePath))
+            using (var source = new EventPipeEventSource(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);

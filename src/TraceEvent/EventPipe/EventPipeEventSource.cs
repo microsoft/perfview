@@ -25,9 +25,9 @@ namespace Microsoft.Diagnostics.Tracing
     /// 
     /// See the E
     /// </summary>
-    unsafe public class EventPipeEventSourceNew : TraceEventDispatcher, IFastSerializable
+    unsafe public class EventPipeEventSource : TraceEventDispatcher, IFastSerializable
     {
-        public EventPipeEventSourceNew(string fileName)
+        public EventPipeEventSource(string fileName)
         {
             // TODO need to get real values for this as well as the process ID and name.  
             _processId = 0xFFFE;    // Arbitrary
@@ -184,6 +184,8 @@ namespace Microsoft.Diagnostics.Tracing
 
         #endregion
     }
+
+    #region private classes 
 
     /// <summary>
     /// Private utility class.
@@ -464,43 +466,5 @@ namespace Microsoft.Diagnostics.Tracing
             return (byte*)(&header->Payload[header->PayloadSize + 4]);
         }
     }
+    #endregion
 }
-
-#if !OLD
-namespace Microsoft.Diagnostics.Tracing.EventPipe
-{
-    public abstract class EventPipeEventSource : TraceEventDispatcher
-    {
-        public EventPipeEventSource(Deserializer deserializer)
-        {
-            if (deserializer == null)
-            {
-                throw new ArgumentNullException(nameof(deserializer));
-            }
-
-            _deserializer = deserializer;
-        }
-
-        ~EventPipeEventSource()
-        {
-            Dispose(false);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _deserializer?.Dispose();
-            }
-
-            base.Dispose(disposing);
-            GC.SuppressFinalize(this);
-        }
-
-        #region Private
-        protected Deserializer _deserializer;
-        #endregion
-
-    }
-}
-#endif
