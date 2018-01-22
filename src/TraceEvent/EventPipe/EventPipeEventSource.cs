@@ -91,23 +91,22 @@ namespace Microsoft.Diagnostics.Tracing
             // Basic sanity checks.  Are the timestamps and sizes sane.  
             Debug.Assert(sessionEndTimeQPC <= eventData->TimeStamp);
             Debug.Assert(sessionEndTimeQPC == 0 || eventData->TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
-            Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->EventSize);
+            Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->TotalEventSize);
             Debug.Assert(eventData->MetaDataId <= reader.Current);       // IDs are the location in the of of the data, so it comes before
-            Debug.Assert(0 < eventData->EventSize && eventData->EventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
+            Debug.Assert(0 < eventData->TotalEventSize && eventData->TotalEventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
 
-            if (eventSizeGuess < eventData->EventSize)
-                eventData = (EventPipeEventHeader*)reader.GetPointer(eventData->EventSize);
+            if (eventSizeGuess < eventData->TotalEventSize)
+                eventData = (EventPipeEventHeader*)reader.GetPointer(eventData->TotalEventSize);
 
-            Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->EventSize);
-
-            // TODO FIX NOW: EventSize does not include the size of the int that indicates the number of stack frames. 
-            Debug.Assert(eventData->PayloadSize + EventPipeEventHeader.HeaderSize + EventPipeEventHeader.StackBytesSize(eventData) == eventData->EventSize);
+            Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->TotalEventSize);
+            // This asserts that the header size + payload + stackSize field + StackSize == TotalEventSize;
+            Debug.Assert(eventData->PayloadSize + EventPipeEventHeader.HeaderSize + sizeof(int) + EventPipeEventHeader.StackBytesSize(eventData) == eventData->TotalEventSize);
 
             TraceEventNativeMethods.EVENT_RECORD* ret = null;
             EventPipeEventMetaData metaData;
             if (eventData->MetaDataId == 0)     // Is this a Meta-data event?  
             {               
-                int eventSize = eventData->EventSize;
+                int totalEventSize = eventData->TotalEventSize;
                 int payloadSize = eventData->PayloadSize;
                 StreamLabel metaDataStreamOffset = reader.Current;  // Used as the 'id' for the meta-data
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
@@ -118,9 +117,8 @@ namespace Microsoft.Diagnostics.Tracing
                 int stackBytes = reader.ReadInt32();        // Meta-data events should always have a empty stack.  
                 Debug.Assert(stackBytes == 0);
 
-                // We have read all the bytes in the event as given by the EventSize  
-                // FIX NOW the sizeof Int is because eventSize does not include the int that indicate no stack.  
-                Debug.Assert(reader.Current == metaDataStreamOffset.Add(eventSize + sizeof(int)));
+                // We have read all the bytes in the event
+                Debug.Assert(reader.Current == metaDataStreamOffset.Add(totalEventSize));
             }
             else
             {
@@ -129,10 +127,7 @@ namespace Microsoft.Diagnostics.Tracing
                     ret = metaData.GetEventRecordForEventData(eventData);
                 else
                     Debug.Assert(false, "Warning can't find metaData for ID " + eventData->MetaDataId.ToString("x"));
-
-                // TODO FIX NOW EventSize should include the sizeof(int) so we don't need to put it here. 
-                Debug.Assert(eventData->PayloadSize + EventPipeEventHeader.HeaderSize + sizeof(int) + EventPipeEventHeader.StackBytesSize(eventData) == eventData->EventSize + sizeof(int));
-                reader.Skip(eventData->EventSize + sizeof(int));
+                reader.Skip(eventData->TotalEventSize);
             }
 
             return ret;
@@ -445,14 +440,16 @@ namespace Microsoft.Diagnostics.Tracing
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     unsafe struct EventPipeEventHeader
     {
-        public int EventSize;           // Size bytes of this header and the payload and stacks if any 
+        private int EventSize;          // Size bytes of this header and the payload and stacks if any.  does NOT incode the size of the EventSize field itself. 
         public StreamLabel MetaDataId;  // a number identifying the description of this event.  It is a stream location. 
         public int ThreadId;
         public long TimeStamp;
         public Guid ActivityID;
         public Guid RelatedActivityID;
         public int PayloadSize;         // size in bytes of the user defined payload data. 
-        public fixed byte Payload[4];     // Actually of variable size.  4 is used to avoid potential alignment issues.   This 4 also appears in HeaderSize below. 
+        public fixed byte Payload[4];   // Actually of variable size.  4 is used to avoid potential alignment issues.   This 4 also appears in HeaderSize below. 
+
+        public int TotalEventSize { get { return EventSize + sizeof(int); } } // Includes the size of the EventSize field itself 
 
         /// <summary>
         /// Header Size is defined to be the number of bytes before the Payload bytes.  
