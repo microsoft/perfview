@@ -23,7 +23,7 @@ namespace TraceEventTests
         {
         }
 
-        [Theory]
+        [Theory(Skip = "https://github.com/Microsoft/perfview/issues/529")]
         [MemberData(nameof(TestEventPipeFiles))]
         public void Basic(string eventPipeFileName)
         {
