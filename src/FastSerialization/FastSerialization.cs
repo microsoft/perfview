@@ -234,6 +234,44 @@ namespace FastSerialization
                 bytes[i] = reader.ReadByte();
             return new Guid(bytes);
         }
+
+        public static string ReadNullTerminatedUnicodeString(this IStreamReader reader, StringBuilder sb = null)
+        {
+            if (sb == null)
+                sb = new StringBuilder();
+            short value = reader.ReadInt16();
+            while (value != 0)
+            {
+                sb.Append(Convert.ToChar(value));
+                value = reader.ReadInt16();
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Returns a StreamLabel that is the sum of label + offset.  
+        /// </summary>
+        public static StreamLabel Add(this StreamLabel label, int offset)
+        {
+            return (StreamLabel) (((int) label) + offset);
+        }
+
+        /// <summary>
+        /// Returns the difference between two stream labels (currently guarenteed to fit in an int)
+        /// </summary>
+        public static int Sub(this StreamLabel label, StreamLabel other)
+        {
+            return (int)label - (int)other;
+        }
+
+        /// <summary>
+        /// Convenience method for skipping a a certain number of bytes in the stream.  
+        /// </summary>
+        public static void Skip(this IStreamReader reader, int byteCount)
+        {
+            reader.Goto((StreamLabel)((int)reader.Current + byteCount));
+        }
     }
 #endif
 
@@ -1449,6 +1487,11 @@ namespace FastSerialization
         {
             factories[type.FullName] = factory;
         }
+        public void RegisterFactory(string typeName, Func<IFastSerializable> factory)
+        {
+            factories[typeName] = factory;
+        }
+
         /// <summary>
         /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
         /// that 'FromStream' is invoked on.  The Deserializer gets these 'empty' objects by calling a 'factory'
@@ -1785,6 +1828,20 @@ namespace FastSerialization
                 StreamLabel objectLabel = reader.Current;
                 // If this fails, the likely culprit is the FromStream of the objectBeingDeserialized. 
                 Tags tag = ReadTag();
+
+                // TODO this is a hack.   The .NET Core Runtime < V2.1 do not emit an EndObject tag
+                // properly for its V1 EventPipeFile object.   The next object is always data that happens
+                // to be size that is likley to be in the range 0x50-0xFF.  Thus we can fix this
+                // and implicilty insert the EndObject and fix things up.   This is acceptable because
+                // it really does not change non-error behavior.   
+                // V2.1 of NET Core will ship in 4/2018 so a year or so after that is is probably OK
+                // to remove this hack (basically dropping support for V1 of EventPipeFile)
+                if (type.FullName == "Microsoft.DotNet.Runtime.EventPipeFile" && type.Version <= 2 && (int)tag > 0x50)
+                {
+                    reader.Skip(-1);        // Undo the read of the byte 
+                    tag = Tags.EndObject;   // And make believe we saw the EntObject instead.  
+                }
+
                 int nesting = 0;
                 switch (tag)
                 {
@@ -1865,7 +1922,8 @@ namespace FastSerialization
 #if DEBUG
             Log("<ReadTag Type=\"" + tag + "\" Value=\"" + ((int)tag).ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
-            Debug.Assert(Tags.Error < tag && tag < Tags.Limit);
+            // The tag > 0x50 is a work around see comment in FindEndTag
+            Debug.Assert(Tags.Error < tag && tag < Tags.Limit || (int) tag > 0x50);
             return tag;
         }
 

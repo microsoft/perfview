@@ -165,7 +165,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 etlxFilePath = filePath + ".etlx";
             }
 
-            using (EventPipeEventSource source = EventPipeEventSourceFactory.CreateEventPipeEventSource(filePath))
+            using (var source = new EventPipeEventSource(filePath))
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
@@ -711,7 +711,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
         }
 
-        internal static void CreateFromEventPipeEventSources(EventPipeEventSource source, string etlxFilePath, TraceLogOptions options)
+        internal static void CreateFromEventPipeEventSources(TraceEventDispatcher source, string etlxFilePath, TraceLogOptions options)
         {
             if (options == null)
             {
@@ -2612,7 +2612,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         unsafe private static void WriteBlob(IntPtr source, IStreamWriter writer, int byteCount)
         {
-            Debug.Assert(((long)source) % 4 == 0);
+            // TODO: currently most uses the source aligned so
+            // I don't bother trying to insure that the copy is aligned.
             Debug.Assert(byteCount % 4 == 0);
             int* sourcePtr = (int*)source;
             int intCount = byteCount >> 2;

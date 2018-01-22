@@ -7401,7 +7401,7 @@ table {
 
     public partial class EventPipePerfViewData : PerfViewFile
     {
-        public override string FormatName => EventPipeEventSource.EventPipe;
+        public override string FormatName => "EventPipe";
 
         public override string[] FileExtensions => new string[] { ".netperf" };
 

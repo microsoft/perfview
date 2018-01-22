@@ -14,12 +14,12 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         {
         }
 
-        public void AddTemplate(EventMetadata eventMetadata)
+        internal void AddTemplate(EventPipeEventMetaData eventMetadata)
         {
             var key = Tuple.Create(eventMetadata.ProviderId, (TraceEventID)eventMetadata.EventId);
             if (!_templates.ContainsKey(key))
             {
-                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.ProviderName, eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
+                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.ProviderName, (uint) eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
                 _templates.Add(key, template);
                 OnNewEventDefintion(template, mayHaveExistedBefore: false);
             }
