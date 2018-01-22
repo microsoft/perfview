@@ -61,6 +61,53 @@ namespace TraceEventTests
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
         }
 
+        [Fact]
+        public void CanParseHeaderOfV1EventPipeFile()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.0-linux-objver1.netperf";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            using (var eventPipeSource = new EventPipeEventSource(eventPipeFilePath))
+            {
+                Assert.Equal(8, eventPipeSource.PointerSize);
+                Assert.Equal(0, eventPipeSource._processId);
+                Assert.Equal(1, eventPipeSource.NumberOfProcessors);
+
+                Assert.Equal(636414354195130000, eventPipeSource._syncTimeUTC.Ticks);
+                Assert.Equal(1477613380157300, eventPipeSource._syncTimeQPC);
+                Assert.Equal(1000000000, eventPipeSource._QPCFreq);
+
+                Assert.Equal(10, eventPipeSource.CpuSpeedMHz);
+            }
+        }
+
+        [Fact]
+        public void CanParseHeaderOfV3EventPipeFile()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.1-win-x86-objver3.netperf";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            using (var eventPipeSource = new EventPipeEventSource(eventPipeFilePath))
+            {
+                Assert.Equal(4, eventPipeSource.PointerSize);
+                Assert.Equal(11376, eventPipeSource._processId);
+                Assert.Equal(4, eventPipeSource.NumberOfProcessors);
+                Assert.Equal(1000000, eventPipeSource._expectedCPUSamplingRate);
+
+                Assert.Equal(636522350205880000, eventPipeSource._syncTimeUTC.Ticks);
+                Assert.Equal(44518740604, eventPipeSource._syncTimeQPC);
+                Assert.Equal(2533308, eventPipeSource._QPCFreq);
+
+                Assert.Equal(10, eventPipeSource.CpuSpeedMHz);
+            }
+        }
+
         private void ValidateEventStatistics(SortedDictionary<string, EventRecord> eventStatistics, string eventPipeFileName)
         {
             StringBuilder sb = new StringBuilder(1024 * 1024);

@@ -1836,7 +1836,7 @@ namespace FastSerialization
                 // it really does not change non-error behavior.   
                 // V2.1 of NET Core will ship in 4/2018 so a year or so after that is is probably OK
                 // to remove this hack (basically dropping support for V1 of EventPipeFile)
-                if (type.FullName == "Microsoft.DotNet.Runtime.EventPipeFile" && type.Version == 1 && (int)tag > 0x50)
+                if (type.FullName == "Microsoft.DotNet.Runtime.EventPipeFile" && type.Version <= 2 && (int)tag > 0x50)
                 {
                     reader.Skip(-1);        // Undo the read of the byte 
                     tag = Tags.EndObject;   // And make believe we saw the EntObject instead.  

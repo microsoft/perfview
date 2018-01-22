@@ -29,21 +29,15 @@ namespace Microsoft.Diagnostics.Tracing
     {
         public EventPipeEventSource(string fileName)
         {
-            // TODO need to get real values for this as well as the process ID and name.  
-            // Also add Operating system name, machine name.
-            // Ideally events about loaded Dlls.  
-            // Memory size, 
-            _processId = 0xFFFE;    // Arbitrary
             _processName = "ProcessBeingTraced";
             osVersion = new Version("0.0.0.0");
             cpuSpeedMHz = 10;
-            pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
-            numberOfProcessors = 1;
 
             _deserializer = new Deserializer(new PinnedStreamReader(fileName, 0x20000), fileName);
             _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
         
-            var entryObj = _deserializer.GetEntryObject();
+            var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
+
             // Because we told the deserialize to use 'this' when creating a EventPipeFile, we 
             // expect the entry object to be 'this'.
             Debug.Assert(entryObj == this);
@@ -54,6 +48,14 @@ namespace Microsoft.Diagnostics.Tracing
         #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.  
         public override int EventsLost => 0;
+
+        protected override void Dispose(bool disposing)
+        {
+            _deserializer.Dispose();
+
+            base.Dispose(disposing);
+        }
+
         public override bool Process()
         {
             PinnedStreamReader deserializerReader = (PinnedStreamReader)_deserializer.Reader;
@@ -150,6 +152,11 @@ namespace Microsoft.Diagnostics.Tracing
         {
             _fileFormatVersionNumber = deserializer.VersionBeingRead;
 
+            if (deserializer.VersionBeingRead >= 3)
+            {
+                var startEventStreamReference = deserializer.ReadForwardReference();
+                _startEventOfStream = deserializer.ResolveForwardReference(startEventStreamReference, preserveCurrent: true);
+            }
             ForwardReference reference = deserializer.ReadForwardReference();
             _endOfEventStream = deserializer.ResolveForwardReference(reference, preserveCurrent: true);
 
@@ -167,7 +174,22 @@ namespace Microsoft.Diagnostics.Tracing
             deserializer.Read(out _QPCFreq);
 
             sessionStartTimeQPC = _syncTimeQPC;
-            _startEventOfStream = deserializer.Current;      // Events immediately after the header.  
+
+            if (deserializer.VersionBeingRead >= 3)
+            {
+                deserializer.Read(out pointerSize);
+                deserializer.Read(out _processId);
+                deserializer.Read(out numberOfProcessors);
+                deserializer.Read(out _expectedCPUSamplingRate);
+            }
+            else
+            {
+                _processId = 0; // V1 && V2 tests expect 0 for process Id
+                pointerSize = 8; // V1 EventPipe only supports Linux which is x64 only.
+                numberOfProcessors = 1;
+
+                _startEventOfStream = deserializer.Current;      // Events immediately after the header.  
+            }
         }
 
         int _fileFormatVersionNumber;
@@ -178,7 +200,8 @@ namespace Microsoft.Diagnostics.Tracing
         Deserializer _deserializer;
         EventPipeTraceEventParser _eventParser; // TODO does this belong here?
         string _processName;
-        int _processId;
+        internal int _processId;
+        internal int _expectedCPUSamplingRate;
 
         #endregion
     }
@@ -238,11 +261,17 @@ namespace Microsoft.Diagnostics.Tracing
 
             var eventId = (ushort)reader.ReadInt32();
             _eventRecord->EventHeader.Id = eventId;
-            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No trucation
+            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
 
             var version = reader.ReadInt32();
             _eventRecord->EventHeader.Version = (byte)version;
-            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No trucation
+            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
+
+            if (fileFormatVersionNumber >= 3)
+            {
+                long keywords = reader.ReadInt64();
+                _eventRecord->EventHeader.Keyword = (ulong)keywords;
+            }
 
             int metadataLength = reader.ReadInt32();
             Debug.Assert(0 <= metadataLength && metadataLength < length);
@@ -250,7 +279,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 // TODO why do we repeat the event number it is redundant.  
                 eventId = (ushort)reader.ReadInt32();
-                Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No trucation
+                Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
                 EventName = reader.ReadNullTerminatedUnicodeString();
                 Debug.Assert(EventName.Length < length / 2);
 
@@ -264,7 +293,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // TODO why do we repeat the event number it is redundant.  
                 version = reader.ReadInt32();
-                Debug.Assert(_eventRecord->EventHeader.Version == version);     // No trucation
+                Debug.Assert(_eventRecord->EventHeader.Version == version);     // No truncation
 
                 _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
                 Debug.Assert(_eventRecord->EventHeader.Level <= 5);
