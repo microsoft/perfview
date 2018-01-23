@@ -169,7 +169,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (source.EventsLost != 0 && options != null && options.OnLostEvents != null)
                     options.OnLostEvents(false, source.EventsLost, 0);
-                CreateFromEventPipeEventSources(source, etlxFilePath, null);
+                CreateFromEventPipeEventSources(source, etlxFilePath, options);
             }
 
             return etlxFilePath;
@@ -8429,11 +8429,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     moduleFile = moduleFiles[i];
                     Debug.Assert(moduleFile.next == null);
+
+                    if (string.IsNullOrEmpty(moduleFile.fileName))
+                        continue;
+
                     TraceModuleFile collision;
-                    if (moduleFilesByName.TryGetValue(moduleFile.FilePath, out collision))
+                    if (moduleFilesByName.TryGetValue(moduleFile.fileName, out collision))
                         moduleFile.next = collision;
                     else
-                        moduleFilesByName.Add(moduleFile.FilePath, moduleFile);
+                        moduleFilesByName.Add(moduleFile.fileName, moduleFile);
                 }
             }
             if (moduleFilesByName.TryGetValue(fileName, out moduleFile))
