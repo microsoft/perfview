@@ -8385,20 +8385,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         internal void SetModuleFileName(TraceModuleFile moduleFile, string fileName)
         {
             Debug.Assert(moduleFile.fileName == null);
-
-            if (moduleFile.fileName == fileName)
-                return;
-            
-            var nameBefore = moduleFile.FilePath; // if fileName == null this property returns "ManagedModule"
             moduleFile.fileName = fileName;
             if (moduleFilesByName != null)
-            {
                 moduleFilesByName[fileName] = moduleFile;
-
-                // we have changed the name, so we also need to remove the old name from the dictionary
-                if (moduleFilesByName.ContainsKey(nameBefore))
-                    moduleFilesByName.Remove(nameBefore);
-            }
         }
         /// <summary>
         /// We cache information about a native image load in a TraceModuleFile.  Retrieve or create a new
@@ -8440,11 +8429,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 {
                     moduleFile = moduleFiles[i];
                     Debug.Assert(moduleFile.next == null);
+
+                    if (string.IsNullOrEmpty(moduleFile.fileName))
+                        continue;
+
                     TraceModuleFile collision;
-                    if (moduleFilesByName.TryGetValue(moduleFile.FilePath, out collision))
+                    if (moduleFilesByName.TryGetValue(moduleFile.fileName, out collision))
                         moduleFile.next = collision;
                     else
-                        moduleFilesByName.Add(moduleFile.FilePath, moduleFile);
+                        moduleFilesByName.Add(moduleFile.fileName, moduleFile);
                 }
             }
             if (moduleFilesByName.TryGetValue(fileName, out moduleFile))
