@@ -93,7 +93,7 @@ BeginObject Tag  (begins the EventTrace Object)
 BeginObject Tag  (begins the Type Object for EventTrace)
 NullReference Tag (represents the type of type, which is by convention null)
 4 byte integer Version field for type
-4 byte integer MinimumVersion field for type
+4 byte integer MinimumReaderVersion field for type
 SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
 EndObject Tag (ends Type Object)
 DATA FIELDS FOR EVENTTRACE OBJECT  
@@ -115,7 +115,7 @@ BeginObject Tag  (begins the EventBlock Object)
 BeginObject Tag  (begins the Type Object for EventBlock)
 NullReference Tag (represents the type of type, which is by convention null)
 4 byte integer Version field for type
-4 byte integer MinimumVersion field for type
+4 byte integer MinimumReaderVersion field for type
 SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
 EndObject Tag (ends Type Object)
 DATA FIELDS FOR EVENTBLOCK OBJECT (size of blob + event bytes blob)
@@ -147,14 +147,95 @@ After the last EventBlock is emitted, the stream is ended by
 emitting a NullReference Tag which indicates that there are no 
 more objects in the stream to read.  
 
-## Suport for Random Access Streams
-
-TODO Finish
-
 ## Versioning the Format While Maintaining Compatibility
 
-TODO Finish 
+### Backward compatibility
 
+It is a relatively straightforward excercise to update the file format
+to add more information while maintaining backward compatibility (that is
+new readers can read old writers).   What is necessary is to 
 
+1. For the EventTrace Type, Increment the Version number 
+and set the MinimumReaderVersion number to this same value.   
+2. Update the reader for the changed type to look at the Version
+number of the type and if it is less than the new version do
+what you did before, and if it is the new version read the new format
+for that object.    
 
+By doing (1) we make it so that every OLD reader does not simply 
+crash misinterpreting data, but will learly notice that it does 
+not support this new version (because the readers Version is less
+than the MinimumReaderVersion value), and can issue a clean error
+that is useful to the user.  
 
+Doing (2) is also straightforward, but it does mean keeping the old
+reading code.  This is the price of compatibility.  
+
+### Forward compatibility
+
+Making changes so that we preserve FORWARD compatibility (old readers
+can read new writers) is more constaining, because old readers have
+to at least know how to 'skip' things they don't understand.  
+
+There are however several ways to do this.  The simplest way is to
+
+* Add Tagged values to an object.
+
+Every object has a begin tag, a type, data objects, and an end tag.
+One feature of the FastSerialiable library is that it has a tag 
+for all the different data types (bool, byte, short, int, long, string blob).
+It also has logic that after parsing the data area it 'looks' for 
+the end tag (so we know the data is partially sane at least).  However
+during this search if it finds other tags, it knows how to skip them.
+Thus if after the 'Know Version 0' data objects, you place tagged
+data, ANY reader will know how to skip it (it skips all tagged things
+until it finds an endObject tag).  
+
+This allows you to add new fields to an object in a way that OLD
+readers can still parse (at least enough to skip them).   
+
+Another way to add new data to the file is to 
+
+* Add new object (and object types) to the list of objects.
+
+The format is basically a list of objects, but there is no requirement
+that there are only very loose requirements on the order or number of these
+Thus you can create a new object type and insert that object in the
+stream (that object must have only tagged fields however but a tagged
+blob can do almost anything).  This allows whole new objects to be 
+added to the file format without breaking existing readers.  
+
+#### Version Numbers and forward compatibility.
+
+There is no STRONG reason to update the version number when you make
+changes to the format that are both forward (and backward compatible).
+However it can be useful to update the file version because it allows
+readers to quickly determine the set of things it can 'count on' and 
+therefore what user interface can be supported.   Thus it can be useful
+to update the version number when a non-trival amount of new functionality
+is added.  
+
+You can update the Version number but KEEP the MinimumReaderVersion 
+unchanged to do this.  THus readers quickly know what they can count on
+but old readers can still read the new format.   
+
+## Suport for Random Access Streams
+
+So far the features used in the file format are the simplest.  In particular
+on object never directly 'points' at another and the stream can be 
+processed usefully without needing information later in the file.  
+
+But we pay a price for this: namely you have to read all the data in the 
+file even if you only care about a small fraction of it.    If however
+you have random access (seeking) for your stream (that is it is a file), 
+you can overcome this.
+
+The serialization library allows this by supporting a table of pointers
+to objects and placing this table at the end of the stream (when you 
+know the stream locations of all objects).  This would allow you to
+seek to any particular object and only read what you need.   
+
+The FastSerialization library supports this, but the need for this kind
+of 'random access' is not clear at this time (mostly the data needs 
+to be processed again and thus you need to read it all anyway).  For
+now it is is enough to know that this capability exists if we need it.  

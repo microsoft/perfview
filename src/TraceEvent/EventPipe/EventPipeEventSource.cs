@@ -27,7 +27,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// 
     /// See the E
     /// </summary>
-    unsafe public class EventPipeEventSource : TraceEventDispatcher, IFastSerializable
+    unsafe public class EventPipeEventSource : TraceEventDispatcher, IFastSerializable, IFastSerializableVersion
     {
         public EventPipeEventSource(string fileName)
         {
@@ -59,6 +59,30 @@ namespace Microsoft.Diagnostics.Tracing
         #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.  
         public override int EventsLost => 0;
+
+        /// <summary>
+        /// This is the version number reader and writer (although we don't don't have a writer at the moment)
+        /// It MUST be updated (as well as MinimumReaderVersion), if breaking changes have been made.
+        /// If your changes are forward compatible (old readers can still read the new format) you 
+        /// don't have to update the version number but it is useful to do so (while keeping MinimumReaderVersion unchanged)
+        /// so that readers can quickly determine what new content is available.  
+        /// </summary>
+        public int Version => 3;
+
+        /// <summary>
+        /// This field is only used for writers, and this code does not have writers so it is not used.
+        /// It should be set to Version unless changes since the last version are forward compatible
+        /// (old readers can still read this format), in which case this shoudl be unchanged.  
+        /// </summary>
+        public int MinimumReaderVersion => Version;
+
+        /// <summary>
+        /// This is the smallest version that the deserializer here can read.   Currently 
+        /// we are careful about backward compat so our deserializer can read anything that
+        /// has ever been produced.   We may change this when we believe old writers basically
+        /// no longer exist (and we can remove that support code). 
+        /// </summary>
+        public int MinimumVersionCanRead => 0;
 
         protected override void Dispose(bool disposing)
         {
