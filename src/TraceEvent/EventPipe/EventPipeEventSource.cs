@@ -337,12 +337,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
         {
-            // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.  
-            if (fileFormatVersionNumber < 3)
-                MetaDataId = ((int) reader.Current) - EventPipeEventHeader.HeaderSize;
-
-            StreamLabel eventDataEnd = reader.Current.Add(length);
-
+            // Get the event record and fill in fields that we can without deserializing anything.  
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
 
@@ -353,72 +348,17 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.ProcessId = processId;
 
-            StreamLabel metaDataStart = reader.Current;
-            if (fileFormatVersionNumber == 1)
-                _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
-            else
-            {
-                ProviderName = reader.ReadNullTerminatedUnicodeString();
-                _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
-            }
-
-            var eventId = (ushort)reader.ReadInt32();
-            _eventRecord->EventHeader.Id = eventId;
-            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
-
-            var version = reader.ReadInt32();
-            _eventRecord->EventHeader.Version = (byte)version;
-            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
-
+            // Read the metaData
+            StreamLabel eventDataEnd = reader.Current.Add(length);
             if (3 <= fileFormatVersionNumber)
             {
-                long keywords = reader.ReadInt64();
-                _eventRecord->EventHeader.Keyword = (ulong)keywords;
+                MetaDataId = reader.ReadInt32();
+                ProviderName = reader.ReadNullTerminatedUnicodeString();
+                ReadEventMetaData(reader, fileFormatVersionNumber);
             }
+            else
+                ReadObsoleteEventMetaData(reader, fileFormatVersionNumber);
 
-            int metadataLength = reader.ReadInt32();
-            Debug.Assert(0 <= metadataLength && metadataLength < length);
-            if (0 < metadataLength)
-            {
-                if (3 <= fileFormatVersionNumber)
-                    MetaDataId = reader.ReadInt32(); 
-                // TODO why do we repeat the event number it is redundant.  
-                eventId = (ushort)reader.ReadInt32();
-                Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
-                EventName = reader.ReadNullTerminatedUnicodeString();
-                Debug.Assert(EventName.Length < length / 2);
-
-                // Deduce the opcode from the name.   
-                if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
-                    _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Start;
-                else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
-                    _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
-
-                _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();
-
-                // TODO why do we repeat the event number it is redundant.  
-                version = reader.ReadInt32();
-                Debug.Assert(_eventRecord->EventHeader.Version == version);     // No truncation
-
-                _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
-                Debug.Assert(_eventRecord->EventHeader.Level <= 5);
-
-                // Fetch the parameter information
-                int parameterCount = reader.ReadInt32();
-                Debug.Assert(0 <= parameterCount && parameterCount < length / 8); // Each parameter takes at least 8 bytes.  
-                if (parameterCount > 0)
-                {
-                    ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
-                    for (int i = 0; i < parameterCount; i++)
-                    {
-                        var type = (TypeCode)reader.ReadInt32();
-                        Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
-                        var name = reader.ReadNullTerminatedUnicodeString();
-                        ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
-                        Debug.Assert(reader.Current <= eventDataEnd);
-                    }
-                }
-            }
             Debug.Assert(reader.Current == eventDataEnd);
         }
 
@@ -494,6 +434,77 @@ namespace Microsoft.Diagnostics.Tracing
         public int Level { get { return _eventRecord->EventHeader.Level; } }
 
         #region private 
+
+        /// <summary>
+        /// Reads the meta data for information specific to one event.  
+        /// </summary>
+        private void ReadEventMetaData(PinnedStreamReader reader, int fileFormatVersionNumber)
+        {
+            int eventId = (ushort)reader.ReadInt32();
+            _eventRecord->EventHeader.Id = (ushort)eventId;
+            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
+
+            EventName = reader.ReadNullTerminatedUnicodeString();
+
+            // Deduce the opcode from the name.   
+            if (EventName.EndsWith("Start", StringComparison.OrdinalIgnoreCase))
+                _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Start;
+            else if (EventName.EndsWith("Stop", StringComparison.OrdinalIgnoreCase))
+                _eventRecord->EventHeader.Opcode = (byte)TraceEventOpcode.Stop;
+
+            _eventRecord->EventHeader.Keyword = (ulong)reader.ReadInt64();
+
+            int version = reader.ReadInt32();
+            _eventRecord->EventHeader.Version = (byte)version;
+            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
+
+            _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
+            Debug.Assert(_eventRecord->EventHeader.Level <= 5);
+
+            // Fetch the parameter information
+            int parameterCount = reader.ReadInt32();
+            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000); 
+            if (0 < parameterCount)
+            {
+                ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    var type = (TypeCode)reader.ReadInt32();
+                    Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
+                    var name = reader.ReadNullTerminatedUnicodeString();
+                    ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
+                }
+            }
+        }
+
+        private void ReadObsoleteEventMetaData(PinnedStreamReader reader, int fileFormatVersionNumber)
+        {
+            Debug.Assert(fileFormatVersionNumber < 3);
+
+            // Old versions use the stream offset as the MetaData ID, but the reader has advanced to the payload so undo it.  
+            MetaDataId = ((int)reader.Current) - EventPipeEventHeader.HeaderSize;
+
+            if (fileFormatVersionNumber == 1)
+                _eventRecord->EventHeader.ProviderId = reader.ReadGuid();
+            else
+            {
+                ProviderName = reader.ReadNullTerminatedUnicodeString();
+                _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
+            }
+
+            var eventId = (ushort)reader.ReadInt32();
+            _eventRecord->EventHeader.Id = eventId;
+            Debug.Assert(_eventRecord->EventHeader.Id == eventId);  // No truncation
+
+            var version = reader.ReadInt32();
+            _eventRecord->EventHeader.Version = (byte)version;
+            Debug.Assert(_eventRecord->EventHeader.Version == version);  // No truncation
+
+            int metadataLength = reader.ReadInt32();
+            if (0 < metadataLength)
+                ReadEventMetaData(reader, fileFormatVersionNumber);
+        }
+
         ~EventPipeEventMetaData()
         {
             if (_eventRecord != null)
