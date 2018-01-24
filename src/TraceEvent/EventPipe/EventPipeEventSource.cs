@@ -93,8 +93,6 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override bool Process()
         {
-
-
             if (3 <= _fileFormatVersionNumber)
             {
                 Debug.Assert(_deserializer.Reader.Current != _objectsAfterHeaderObject);

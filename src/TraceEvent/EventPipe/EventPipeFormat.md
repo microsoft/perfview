@@ -1,4 +1,4 @@
-#EventPipe (File) Format
+# EventPipe (File) Format
 
 EventPipe is the name of the logging mechanism given to system used by the .NET Core 
 runtime to log events in a OS independent way.   It is meant to serve roughly the same
