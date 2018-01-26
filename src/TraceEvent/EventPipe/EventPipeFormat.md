@@ -89,15 +89,15 @@ a special tag call the NullReference that represent null.
 After the Trace Header comes the EventTrace object, which represents all the data
 about the Trace as a whole.   
 
-BeginObject Tag  (begins the EventTrace Object)
-BeginObject Tag  (begins the Type Object for EventTrace)
-NullReference Tag (represents the type of type, which is by convention null)
-4 byte integer Version field for type
-4 byte integer MinimumReaderVersion field for type
-SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
-EndObject Tag (ends Type Object)
-DATA FIELDS FOR EVENTTRACE OBJECT  
-End Object Tag (for EventTrace object)  
+* BeginObject Tag  (begins the EventTrace Object)
+* BeginObject Tag  (begins the Type Object for EventTrace)
+* NullReference Tag (represents the type of type, which is by convention null)
+* 4 byte integer Version field for type
+* 4 byte integer MinimumReaderVersion field for type
+* SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
+* EndObject Tag (ends Type Object)
+* DATA FIELDS FOR EVENTTRACE OBJECT  
+* End Object Tag (for EventTrace object)  
 
 The data field for object depend are deserialized in the 'FromStream' for
 the class that deserialize the object.   EventPipeEventSource is the class
@@ -111,15 +111,15 @@ After the EventTrace object there are zero or more EventBlock objects.
 they look very much like the EventTrace object's layout ultimate fields
 are different
 
-BeginObject Tag  (begins the EventBlock Object)
-BeginObject Tag  (begins the Type Object for EventBlock)
-NullReference Tag (represents the type of type, which is by convention null)
-4 byte integer Version field for type
-4 byte integer MinimumReaderVersion field for type
-SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
-EndObject Tag (ends Type Object)
-DATA FIELDS FOR EVENTBLOCK OBJECT (size of blob + event bytes blob)
-End Object Tag (for EventBlock object)  
+* BeginObject Tag  (begins the EventBlock Object)
+* BeginObject Tag  (begins the Type Object for EventBlock)
+* NullReference Tag (represents the type of type, which is by convention null)
+* 4 byte integer Version field for type
+* 4 byte integer MinimumReaderVersion field for type
+* SERIALIZED STRING for FullName Field for type (4 byte length + UTF8 bytes)
+* EndObject Tag (ends Type Object)
+* DATA FIELDS FOR EVENTBLOCK OBJECT (size of blob + event bytes blob)
+* End Object Tag (for EventBlock object)  
 
 The data in an EventBlock is simply an integer representing the size (in
 bytes not including the size int itself) of the data blob and the event
