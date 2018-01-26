@@ -588,12 +588,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             eventInRealTimeSource.userData = toSend.userData;
             eventInRealTimeSource.eventIndex = toSend.eventIndex;           // Lookup assigns the EventIndex, but we want to keep the original. 
             this.realTimeSource.Dispatch(eventInRealTimeSource);
-            GC.KeepAlive(toSend);       // Keep the event alive because eventInRealTimeSource has pointers into its data.  
 
             // Optimization, remove 'toSend' from the finalization queue.  
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
-            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
-            GC.SuppressFinalize(toSend);
+            GC.SuppressFinalize(toSend);    // Tell the finalizer you don't need it because I will do the cleanup
+            // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.  
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);   
         }
 
         /// <summary>
