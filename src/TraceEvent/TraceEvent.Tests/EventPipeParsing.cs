@@ -34,29 +34,33 @@ namespace TraceEventTests
 
             Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(eventPipeFilePath)));
 
-            var traceSource = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)).Events.GetSource();
             var eventStatistics = new SortedDictionary<string, EventRecord>(StringComparer.Ordinal);
-            traceSource.AllEvents += delegate (TraceEvent data)
+
+            using (var traceLog = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)))
             {
-                string eventName = data.ProviderName + "/" + data.EventName;
+                var traceSource = traceLog.Events.GetSource();
 
-                if (eventStatistics.ContainsKey(eventName))
+                traceSource.AllEvents += delegate (TraceEvent data)
                 {
-                    eventStatistics[eventName].TotalCount++;
-                }
-                else
-                {
-                    eventStatistics[eventName] = new EventRecord()
+                    string eventName = data.ProviderName + "/" + data.EventName;
+
+                    if (eventStatistics.ContainsKey(eventName))
                     {
-                        TotalCount = 1,
-                        FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray()) 
-                    };
-                }
-            };
+                        eventStatistics[eventName].TotalCount++;
+                    }
+                    else
+                    {
+                        eventStatistics[eventName] = new EventRecord()
+                        {
+                            TotalCount = 1,
+                            FirstSeriazliedSample = new String(data.ToString().Replace("\n", "\\n").Replace("\r", "\\r").Take(1000).ToArray())
+                        };
+                    }
+                };
 
-            // Process
-            traceSource.Process();
-
+                // Process
+                traceSource.Process();
+            }
             // Validate
             ValidateEventStatistics(eventStatistics, eventPipeFileName);
         }
@@ -105,6 +109,31 @@ namespace TraceEventTests
                 Assert.Equal(2533308, eventPipeSource._QPCFreq);
 
                 Assert.Equal(10, eventPipeSource.CpuSpeedMHz);
+            }
+        }
+
+        [Fact]
+        public void AllEventsLeavesNoUnhandledEvents()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.1-win-x86-objver3.netperf";
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            using (var traceSource = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)).Events.GetSource())
+            {
+                int dynamicAllInvocationCount = 0;
+                int unhandledEvents = 0;
+
+                traceSource.AllEvents += _ => dynamicAllInvocationCount++;
+
+                traceSource.UnhandledEvents += _ => unhandledEvents++;
+
+                traceSource.Process();
+
+                Assert.NotEqual(0, dynamicAllInvocationCount);
+                Assert.Equal(0, unhandledEvents);
             }
         }
 
