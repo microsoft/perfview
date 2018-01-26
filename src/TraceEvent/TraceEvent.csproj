@@ -98,6 +98,7 @@
   <ItemGroup>
     <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
     <Compile Remove="TraceEvent.Tests/**/*.*" />
+    <Compile Remove="Samples/**/*.*" />
   </ItemGroup>
 
   <ItemGroup>
