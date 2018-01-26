@@ -343,11 +343,6 @@ namespace Microsoft.Diagnostics.Tracing
 
             int stackBytesSize = EventPipeEventHeader.StackBytesSize(eventData);
 
-            // TODO remove once .NET Core has been fixed to not emit stacks on CLR method events which are just for bookeeping.  
-            if (ProviderId == ClrRundownTraceEventParser.ProviderGuid ||
-               (ProviderId == ClrTraceEventParser.ProviderGuid && (140 <= EventId && EventId <= 144 || EventId == 190)))     // These are various CLR method Events.  
-                stackBytesSize = 0;
-
             if (0 < stackBytesSize)
             {
                 // Lazy allocation (destructor frees it). 
