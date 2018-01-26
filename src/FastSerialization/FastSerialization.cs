@@ -254,7 +254,7 @@ namespace FastSerialization
         /// </summary>
         public static StreamLabel Add(this StreamLabel label, int offset)
         {
-            return (StreamLabel)(((int)label) + offset);
+            return (StreamLabel) (((int) label) + offset);
         }
 
         /// <summary>
@@ -697,10 +697,12 @@ namespace FastSerialization
 
         // data added after V1 needs to be tagged so that V1 deserializers can skip it. 
 
+
+
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a byte.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
-        public void WriteTagged(bool value) { WriteTag(Tags.Byte); Write(value ? (byte)1 : (byte)0); }
+        public void WriteTagged(bool value) { WriteTag(Tags.Byte); Write(value?(byte)1:(byte)0); }
         /// <summary>
         /// Write a byte preceded by a tag that indicates its a byte.  These should be read with the corresponding TryReadTagged operation
         /// </summary>
@@ -731,19 +733,6 @@ namespace FastSerialization
             Write(endRegion);        // Allow the reader to skip this. 
             Write(value);            // Write the data we can skip
             DefineForwardReference(endRegion);  // This is where the forward reference refers to 
-        }
-
-        /// <summary>
-        /// Writes the header for a skipping an arbitrary blob.   THus it writes a Blob
-        /// tag and the size, and the caller must then write 'sizes' bytes of data in 
-        /// some way.   This allows you to create regions of arbitrary size that can
-        /// be skipped by old as well as new parsers.  
-        /// </summary>
-        /// <param name="size"></param>
-        public void WriteTaggedBlobHeader(int size)
-        {
-            WriteTag(Tags.Blob);
-            Write(size);
         }
 
         /// <summary>
@@ -999,7 +988,7 @@ namespace FastSerialization
                 if (reader.ReadByte() != expectedSig[i])
                     goto ThrowException;
             return;
-            ThrowException:
+        ThrowException:
             throw new SerializationException("Not a understood file format: " + streamName);
         }
 
@@ -1271,13 +1260,6 @@ namespace FastSerialization
                 }
                 Log("</ReadForwardRef>");
             }
-            else if (tag == Tags.Blob)
-            {
-                // If it is a blob skip it and try again (presumably other things point at it.  
-                int size = reader.ReadInt32();
-                reader.Skip(size);
-                return ReadObject();
-            }
             else
             {
                 ret = ReadObjectDefinition(tag, objectLabel);
@@ -1492,7 +1474,7 @@ namespace FastSerialization
         /// data is encountered.  It is your you then need to look that up.  If it is not present 
         /// it uses Type.GetType(string) which only checks the current assembly and mscorlib. 
         /// </summary>
-        public Func<string, Type> TypeResolver { get; set; }
+        public Func<string, Type> TypeResolver { get; set; } 
 
         /// <summary>
         /// For every IFastSerializable object being deserialized, the Deserializer needs to create 'empty' objects 
@@ -1622,20 +1604,6 @@ namespace FastSerialization
             }
             reader.Goto(Current - 1);
             return false;
-        }
-        /// <summary>
-        /// Try to read the header for a tagged blob of bytes.  If Current points at a tagged
-        /// blob it succeeds and returns the size of the blob (the caller must read or skip 
-        /// past it manually) If it is not a tagged blob it returns a size of 0 and resets
-        /// the read pointer to what it was before this method was called.  
-        /// </summary>
-        public int TryReadTaggedBlobHeader()
-        {
-            Tags tag = ReadTag();
-            if (tag == Tags.Blob)
-                return reader.ReadInt32();
-            reader.Goto(Current - 1);
-            return 0;
         }
         /// <summary>
         /// Try to read tagged value from the stream.  If it is a tagged FastSerializable, return int in ret and return true, otherwise leave the cursor unchanged and return false
@@ -1823,9 +1791,9 @@ namespace FastSerialization
             Type type;
             if (TypeResolver != null)
                 type = TypeResolver(fullName);
-            else
+            else 
                 type = Type.GetType(fullName);
-            if (type == null)
+           if (type == null)
                 throw new TypeLoadException("Could not find type " + fullName);
             return delegate
             {
@@ -1911,10 +1879,6 @@ namespace FastSerialization
                         StreamLabel endSkip = ResolveForwardReference(endSkipRef);
                         reader.Goto(endSkip);
                         break;
-                    case Tags.Blob:
-                        var size = reader.ReadInt32();
-                        reader.Skip(size);
-                        break;
                     case Tags.EndObject:
                         --nesting;
                         if (nesting < 0)
@@ -1925,7 +1889,7 @@ namespace FastSerialization
                 }
                 i++;
             }
-            done:
+        done:
             Log("</EndTagSearch>");
             // TODO would like some redundancy, so that failure happen close to the cause.  
         }
@@ -1959,7 +1923,7 @@ namespace FastSerialization
             Log("<ReadTag Type=\"" + tag + "\" Value=\"" + ((int)tag).ToString() + "\" StreamLabel=\"0x" + label.ToString("x") + "\"/>");
 #endif
             // The tag > 0x50 is a work around see comment in FindEndTag
-            Debug.Assert(Tags.Error < tag && tag < Tags.Limit || (int)tag > 0x50);
+            Debug.Assert(Tags.Error < tag && tag < Tags.Limit || (int) tag > 0x50);
             return tag;
         }
 
@@ -2358,8 +2322,7 @@ namespace FastSerialization
         Int32,
         Int64,
         SkipRegion,
-        String,             // Size of string (in bytes) followed by UTF8 bytes.  
-        Blob,               // Size of bytes followed by bytes. 
+        String,
         Limit,              // Just past the last valid tag, used for asserts.  
     }
     #endregion
