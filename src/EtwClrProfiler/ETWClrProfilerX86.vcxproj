@@ -104,6 +104,18 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
+
+  <!--******** Signing Support *********-->
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\EtwClrProfiler.dll">
+        <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="ETWClrProfiler.def" />
     <None Include="ETWClrProfiler.man" />
