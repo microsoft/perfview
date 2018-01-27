@@ -1,86 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2D5418E0-6513-4285-8B0D-53A30CBEF242}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TraceEventSamples</RootNamespace>
-    <AssemblyName>TraceEventSamples</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
-    <TargetFrameworkProfile />
-    <ExternallyShipping>false</ExternallyShipping>
+    <TargetFrameworks>net45</TargetFrameworks>
+
+    <Company>Microsoft</Company>
+    <Product>TraceEvent Samples</Product>
+    <Description>A set of samples for the Microsoft.Diagnostics.Tracinging.TraceEvent library</Description>
+    <Copyright>Copyright © Microsoft 2018</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-    <LangVersion>7</LangVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\TraceEvent.csproj">
-      <Project>{b68f4968-a7cf-41cc-ad6e-373db5e67944}</Project>
-      <Name>TraceEvent</Name>
-    </ProjectReference>
+    <PackageReference Include="System.Reactive.Linq" Version="3.1.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="00_AllSamples.cs" />
-    <Compile Include="10_SimpleEventSourceMonitor.cs" />
-    <Compile Include="11_SimpleEventSourceFile.cs" />
-    <Compile Include="12_SimpleOSEventMonitor.cs" />
-    <Compile Include="20_ObserveGCEvent.cs" />
-    <Compile Include="21_ObserveJitEvents.cs" />
-    <Compile Include="22_ObserveEventSource.cs" />
-    <Compile Include="30_MonitorLoads.cs" />
-    <Compile Include="31_KernelAndClrMonitor.cs" />
-    <Compile Include="32_KernelAndClrFile.cs" />
-    <Compile Include="33_KernelAndClrMonitorWin7.cs" />
-    <Compile Include="34_KernelAndClrFileWin7.cs" />
-    <Compile Include="40_SimpleTraceLog.cs" />
-    <Compile Include="41_TraceLogMonitor.cs" />
-    <Compile Include="50_SimpleFileRelogger.cs" />
-    <Compile Include="51_SimpleMonitorRelogger.cs" />
-    <Compile Include="SupportFiles\EventProducer.cs" />
-    <Compile Include="MainProgram\Program.cs" />
+    <ProjectReference Include="..\TraceEvent.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Reactive.Core, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\System.Reactive.Core.3.1.1\lib\net45\System.Reactive.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Interfaces, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\System.Reactive.Interfaces.3.1.1\lib\net45\System.Reactive.Interfaces.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Reactive.Linq, Version=3.0.1000.0, Culture=neutral, PublicKeyToken=94bc3704cddfc263, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\System.Reactive.Linq.3.1.1\lib\net45\System.Reactive.Linq.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>
+
