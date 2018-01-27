@@ -9,17 +9,24 @@
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
 
-  <!--******** Signing Support *********-->
   <ItemGroup>
-    <FilesToSign Include="$(OutDir)\CsvReader.dll">
+    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
+  </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
-    <ProjectReference Include="..\TraceEvent\TraceEvent.csproj" />
-  </ItemGroup>
+  <!-- .NET Strong Name Signing -->
+  <PropertyGroup>
+    <SignAssembly Condition="'$(SIGNING_BUILD)'!= ''">true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
 </Project>
