@@ -1747,7 +1747,7 @@ namespace Microsoft.Diagnostics.Tracing
                 size = bytes.Length;
             StringWriter sw = new StringWriter();
             DumpBytes(bytes, size, sw, "");
-            ;
+    
             return sw.ToString();
         }
 
