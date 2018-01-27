@@ -281,13 +281,6 @@
       <Link>DiagnosticsHub.Packaging.Interop.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PerfViewSupportFilesBase)net40\Microsoft.Diagnostics.Tracing.EventSource.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Microsoft.Diagnostics.Tracing.EventSource.dll</LogicalName>
-      <Link>Microsoft.Diagnostics.Tracing.EventSource.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
     <EmbeddedResource Include="$(TraceEventSupportFilesBase)net45\OSExtensions.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>

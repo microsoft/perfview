@@ -26,5 +26,21 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
+
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\OSExtensions.dll">
+      <Link>OSExtensions.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll">
+      <Link>TraceRelogger.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
+    <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\Dia2Lib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\Dia2Lib.dll">
+      <Link>Dia2Lib.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>False</Visible>
+    </None>
   </ItemGroup>
 </Project>

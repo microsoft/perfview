@@ -30,8 +30,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--******** Signing Support *********-->
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\CsvReader.dll">
+        <Authenticode>Microsoft</Authenticode>
+        <StrongName>StrongName</StrongName>
+    </FilesToSign>
   </ItemGroup>
 
   <ItemGroup>
