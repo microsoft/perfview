@@ -105,7 +105,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
-
   <ItemGroup>
     <None Include="ETWClrProfiler.def" />
     <None Include="ReadMe.txt" />
