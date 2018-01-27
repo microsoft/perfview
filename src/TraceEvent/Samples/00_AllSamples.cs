@@ -36,8 +36,6 @@ namespace TraceEventSamples
             Console.WriteLine();
             Console.WriteLine("Pausing 3 seconds for you to notice the statement above.");
             Thread.Sleep(3000);
-            TraceLogMonitor.Run();
-            return;
 
             Debugger.Break();       // About to run the actual demos. hit F5 to continue  
 
