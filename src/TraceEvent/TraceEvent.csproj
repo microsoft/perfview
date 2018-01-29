@@ -161,6 +161,22 @@
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
+
+  <!-- TODO REMOVE EVENTUALLY: We sign two C++ DLLs here because 
+   I can't get C++ projects to work with the signing.  When we fix this
+   this can be removed.  -->
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)..\..\..\..\EtwClrProfiler\Release\x86\ETWClrProfiler.dll" 
+	Condition="Exists('$(OutDir)..\..\..\..\EtwClrProfiler\Release\x86\ETWClrProfiler.dll')">
+        <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+    <FilesToSign Include="$(OutDir)..\..\..\..\EtwClrProfiler\Release\amd64\ETWClrProfiler.dll" 
+	Condition="Exists('$(OutDir)..\..\..\..\EtwClrProfiler\Release\amd64\ETWClrProfiler.dll')">
+        <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+  </ItemGroup>
+
+
   <!-- .NET Strong Name Signing -->
   <PropertyGroup>
     <DefineConstants Condition="'$(SIGNING_BUILD)'!=''">$(DefineConstants);SIGNING_BUILD</DefineConstants>
