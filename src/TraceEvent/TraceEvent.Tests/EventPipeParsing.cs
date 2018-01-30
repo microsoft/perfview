@@ -96,12 +96,12 @@ namespace TraceEventTests
             using (var eventPipeSource = new EventPipeEventSource(eventPipeFilePath))
             {
                 Assert.Equal(4, eventPipeSource.PointerSize);
-                Assert.Equal(11376, eventPipeSource._processId);
+                Assert.Equal(8004, eventPipeSource._processId);
                 Assert.Equal(4, eventPipeSource.NumberOfProcessors);
                 Assert.Equal(1000000, eventPipeSource._expectedCPUSamplingRate);
 
-                Assert.Equal(636522350205880000, eventPipeSource._syncTimeUTC.Ticks);
-                Assert.Equal(44518740604, eventPipeSource._syncTimeQPC);
+                Assert.Equal(636529370287800000, eventPipeSource._syncTimeUTC.Ticks);
+                Assert.Equal(1822972802566, eventPipeSource._syncTimeQPC);
                 Assert.Equal(2533308, eventPipeSource._QPCFreq);
 
                 Assert.Equal(10, eventPipeSource.CpuSpeedMHz);
