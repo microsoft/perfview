@@ -1884,6 +1884,8 @@ namespace FastSerialization
                         if (nesting < 0)
                             goto done;
                         break;
+                    case Tags.Padding:
+                        break; // just ignore the padding
                     default:
                         throw new SerializationException("Could not find object end tag for object of type " + objectBeingDeserialized.GetType().Name + " at stream offset 0x" + ((int)objectLabel).ToString("x"));
                 }
@@ -2323,6 +2325,8 @@ namespace FastSerialization
         Int64,
         SkipRegion,
         String,
+        Blob,
+        Padding,
         Limit,              // Just past the last valid tag, used for asserts.  
     }
     #endregion
