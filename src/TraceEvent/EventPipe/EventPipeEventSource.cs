@@ -1,4 +1,4 @@
-﻿#define SUPPORT_V1_V2
+#define SUPPORT_V1_V2
 
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
@@ -341,10 +341,9 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 MetaDataId = reader.ReadInt32();
                 ProviderName = reader.ReadNullTerminatedUnicodeString();
+                _eventRecord->EventHeader.ProviderId = GetProviderGuidFromProviderName(ProviderName);
 
-                int metadatPayloadSize = reader.ReadInt32();
-                if (metadatPayloadSize > 0)
-                    ReadEventMetaData(reader, fileFormatVersionNumber);
+                ReadEventMetaData(reader, fileFormatVersionNumber);
             }
 #if SUPPORT_V1_V2
             else
