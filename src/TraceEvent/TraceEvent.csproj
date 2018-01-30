@@ -14,9 +14,9 @@
     <Description>TraceEvent library.</Description>
     <Company>Microsoft</Company>
     <Copyright>Copyright © Microsoft 2010</Copyright>
-    <Version>2.0.2</Version>
-    <FileVersion>2.0.2</FileVersion>
-    <InformationalVersion>2.0.2</InformationalVersion>
+    <Version>$(TraceEventVersion)</Version>
+    <FileVersion>$(TraceEventVersion)</FileVersion>
+    <InformationalVersion>$(TraceEventVersion)</InformationalVersion>
     <NeutralLanguage>en</NeutralLanguage>
 
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Remove="Ctf/CtfTracing.Tests/**/*.*" />
     <Compile Remove="TraceEvent.Tests/**/*.*" />
+    <Compile Remove="Samples/**/*.*" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26918.3
 MinimumVisualStudioVersion = 15.0
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "src\EtwClrProfiler\ETWClrProfilerX86.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX64", "src\EtwClrProfiler\ETWClrProfilerX64.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent", "src\TraceEvent\TraceEvent.csproj", "{B68F4968-A7CF-41CC-AD6E-373DB5E67944}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSVReader", "src\CSVReader\CSVReader.csproj", "{F7D0F851-9B0D-4224-91AB-7FC12477F206}"
@@ -45,10 +49,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Global", "src\PerfViewExten
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization", "src\FastSerialization\FastSerialization.csproj", "{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX86", "src\EtwClrProfiler\ETWClrProfilerX86.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ETWClrProfilerX64", "src\EtwClrProfiler\ETWClrProfilerX64.vcxproj", "{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LinuxTracing.Tests", "src\LinuxEvent.Tests\LinuxTracing.Tests.csproj", "{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CtfTracing.Tests", "src\TraceEvent\Ctf\CtfTracing.Tests\CtfTracing.Tests.csproj", "{B9384E1B-54B5-4A41-85BD-EBAD0577BDCD}"
@@ -64,6 +64,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceParserGen", "src\TraceParserGen\TraceParserGen.csproj", "{034CB9AF-7E9E-4D96-8F71-526999D284BA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfViewCollect", "src\PerfViewCollect\PerfViewCollect.csproj", "{945509BC-A133-493B-9295-43EC708FD57F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEventSamples", "src\TraceEvent\Samples\TraceEventSamples.csproj", "{2D5418E0-6513-4285-8B0D-53A30CBEF242}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -139,6 +141,10 @@ Global
 		{945509BC-A133-493B-9295-43EC708FD57F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{945509BC-A133-493B-9295-43EC708FD57F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{945509BC-A133-493B-9295-43EC708FD57F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D5418E0-6513-4285-8B0D-53A30CBEF242}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D5418E0-6513-4285-8B0D-53A30CBEF242}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D5418E0-6513-4285-8B0D-53A30CBEF242}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D5418E0-6513-4285-8B0D-53A30CBEF242}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -295,6 +295,20 @@ namespace Microsoft.Diagnostics.Tracing
         public bool IsRealTime { get; protected set; }
 
         /// <summary>
+        /// Time based threshold for how long data should be retained 
+        /// by accumulates that are processing this TraceEventSource.
+        /// A value of 0, the default, indicates an infinite accumulation.
+        /// </summary>
+        public double DataLifetimeMsec { get; set; }
+
+        /// <summary>
+        /// Check if a DataLifetime model is enabled
+        /// </summary>
+        /// <returns>True - lifetime tracking is enabled</returns>
+        /// <returns>False - lifetime tracking is not enabled</returns>
+        public bool DataLifetimeEnabled() { return DataLifetimeMsec > 0; }
+
+        /// <summary>
         /// Closes any files and cleans up any resources associated with this TraceEventSource
         /// </summary>
         public void Dispose()
@@ -1747,7 +1761,7 @@ namespace Microsoft.Diagnostics.Tracing
                 size = bytes.Length;
             StringWriter sw = new StringWriter();
             DumpBytes(bytes, size, sw, "");
-            ;
+    
             return sw.ToString();
         }
 

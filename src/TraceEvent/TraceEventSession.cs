@@ -572,8 +572,11 @@ namespace Microsoft.Diagnostics.Tracing.Session
                         throw new ApplicationException("CPU Sampling rate is too high.");
                     var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
                     if (!succeeded && CpuSampleIntervalMSec != 1.0F)
-                        throw new InvalidOperationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
+                       throw new ApplicationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
                 }
+
+                if (IsInMemoryCircular && (flags & KernelTraceEventParser.NonOSKeywords) != 0)
+                    throw new ApplicationException("Using kernel flags that are Incompatible with InMemoryCircularBuffer.");
 
                 var propertiesBuff = stackalloc byte[PropertiesSize];
                 var properties = GetProperties(propertiesBuff);

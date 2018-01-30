@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net45</TargetFrameworks>
+
+    <Company>Microsoft</Company>
+    <Product>TraceEvent Samples</Product>
+    <Description>A set of samples for the Microsoft.Diagnostics.Tracinging.TraceEvent library</Description>
+    <Copyright>Copyright © Microsoft 2018</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reactive.Linq" Version="3.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TraceEvent.csproj" />
+  </ItemGroup>
+
+</Project>
+

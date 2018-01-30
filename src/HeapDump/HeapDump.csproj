@@ -30,6 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageReference Include="PerfView.SupportFiles" Version="$(PerfViewSupportFilesVersion)" PrivateAssets="all" />
   </ItemGroup>
@@ -68,6 +69,14 @@
 
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+
+  <!-- ******************* Signing Support *********************** -->
+  <ItemGroup>
+    <FilesToSign Include="$(TargetPath)">
+        <Authenticode>Microsoft</Authenticode>
+    </FilesToSign>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
 </Project>
