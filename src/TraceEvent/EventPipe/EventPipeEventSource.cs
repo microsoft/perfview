@@ -10,8 +10,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using nint = System.Int32; // as of today the deserializer is limited to 32 bit, in case we change in the future we don't want to miss any cast
-
 // See https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md
 // for details on the file format.  
 namespace Microsoft.Diagnostics.Tracing
@@ -48,9 +46,13 @@ namespace Microsoft.Diagnostics.Tracing
             _deserializer.RegisterFactory("!EventTrace.", delegate { return this; });
             _deserializer.RegisterFactory("!EventBlock.", delegate { return new EventPipeEventBlock(this); });
 
-            var entryObj = (TraceEventSource)_deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
+            var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
 
-            _eventParser = new EventPipeTraceEventParser(entryObj);
+            // Because we told the deserialize to use 'this' when creating a EventPipeFile, we 
+            // expect the entry object to be 'this'.
+            Debug.Assert(entryObj == this);
+
+            _eventParser = new EventPipeTraceEventParser(this);
         }
 
 #region private
@@ -126,23 +128,18 @@ namespace Microsoft.Diagnostics.Tracing
 
         internal TraceEventNativeMethods.EVENT_RECORD* ReadEvent(PinnedStreamReader reader)
         {
-            nint eventSizeGuess =
-                _endOfEventStream != 0 // V3 has no forward reference to the end
-                    ? Math.Min(1000, _endOfEventStream.Sub(reader.Current)) // Guess that the event is < 1000 bytes or whatever is left in the stream.  
-                    : sizeof(EventPipeEventHeader); // the minimum size (we can't use 1000 because it might be more than the file's length)
+            EventPipeEventHeader* eventData = (EventPipeEventHeader*)reader.GetPointer(EventPipeEventHeader.HeaderSize);
+            eventData = (EventPipeEventHeader*)reader.GetPointer(eventData->TotalEventSize); // now we now the real size and get read entire event
 
-            EventPipeEventHeader* eventData = (EventPipeEventHeader*)reader.GetPointer(eventSizeGuess);
-            
             // Basic sanity checks.  Are the timestamps and sizes sane.  
             Debug.Assert(sessionEndTimeQPC <= eventData->TimeStamp);
             Debug.Assert(sessionEndTimeQPC == 0 || eventData->TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
             Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->TotalEventSize);
             Debug.Assert(0 < eventData->TotalEventSize && eventData->TotalEventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
+            Debug.Assert(_fileFormatVersionNumber < 3 || 
+                ((int)EventPipeEventHeader.PayloadBytes(eventData) % 4 == 0 && eventData->TotalEventSize % 4 == 0)); // ensure 4 byte alignment
 
-            nint eventDataEndIncludingAlignmentPadding = (nint)reader.Current + eventData->TotalEventSize;
-
-            if (eventSizeGuess < eventData->TotalEventSize)
-                eventData = (EventPipeEventHeader*)reader.GetPointer(eventData->TotalEventSize);
+            StreamLabel eventDataEnd = reader.Current.Add(eventData->TotalEventSize);
 
             Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->TotalEventSize);
 
@@ -171,7 +168,7 @@ namespace Microsoft.Diagnostics.Tracing
                     Debug.Assert(false, "Warning can't find metaData for ID " + eventData->MetaDataId.ToString("x"));
             }
 
-            reader.Goto((StreamLabel)eventDataEndIncludingAlignmentPadding);
+            reader.Goto(eventDataEnd);
 
             return ret;
         }
@@ -217,7 +214,6 @@ namespace Microsoft.Diagnostics.Tracing
                 deserializer.Read(out _processId);
                 deserializer.Read(out numberOfProcessors);
                 deserializer.Read(out _expectedCPUSamplingRate);
-                // TODO: alig
             }
 #if SUPPORT_V1_V2
             else
@@ -256,17 +252,14 @@ namespace Microsoft.Diagnostics.Tracing
 
         unsafe public void FromStream(Deserializer deserializer)
         {
-            // blockSizeInBytes INCLUDES any padding bytes to insure alignment.  
+            // blockSizeInBytes INCLUDES any padding bytes to ensure alignment.  
             var blockSizeInBytes = deserializer.ReadInt();
             _startEventData = deserializer.Current;
             _endEventData = _startEventData.Add(blockSizeInBytes);
+            Debug.Assert((int)_startEventData % 4 == 0 && (int)_endEventData % 4 == 0); // make sure that the data is aligned
 
             // Dispatch through all the events.  
             PinnedStreamReader deserializerReader = (PinnedStreamReader)deserializer.Reader;
-
-            // Align to a 4 byte boundary
-            byte* ptr = deserializerReader.GetPointer(4);
-            Debug.Assert((nint)ptr % 4 == 0); // make sure that the data is aligned
 
             while (deserializerReader.Current < _endEventData)
             {
@@ -328,10 +321,7 @@ namespace Microsoft.Diagnostics.Tracing
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             ClearMemory(_eventRecord, sizeof(TraceEventNativeMethods.EVENT_RECORD));
 
-            _eventRecord->EventHeader.Flags =
-                pointerSize == 4
-                    ? TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER
-                    : TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+            _eventRecord->EventHeader.Flags = (ushort)(pointerSize * 8);
 
             _eventRecord->EventHeader.ProcessId = processId;
 
@@ -585,7 +575,10 @@ namespace Microsoft.Diagnostics.Tracing
             => *((int*)(&header->Payload[header->PayloadSize]));
 
         static public byte* StackBytes(EventPipeEventHeader* header) 
-            => (byte*)(&header->Payload[header->PayloadSize + 4]);
+            => &header->Payload[header->PayloadSize + 4];
+
+        static public byte* PayloadBytes(EventPipeEventHeader* header)
+            => &header->Payload[0];
     }
 #endregion
 }
