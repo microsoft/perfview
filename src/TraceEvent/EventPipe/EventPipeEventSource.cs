@@ -39,8 +39,8 @@ namespace Microsoft.Diagnostics.Tracing
             // This is only here for V2 and V1.  V3+ should use the name EventTrace, it can be removed when we drop support.
             _deserializer.RegisterFactory("Microsoft.DotNet.Runtime.EventPipeFile", delegate { return this; });
 #endif
-            _deserializer.RegisterFactory("!EventTrace.", delegate { return this; });
-            _deserializer.RegisterFactory("!EventBlock.", delegate { return new EventPipeEventBlock(this); });
+            _deserializer.RegisterFactory("Trace", delegate { return this; });
+            _deserializer.RegisterFactory("EventBlock", delegate { return new EventPipeEventBlock(this); });
 
             var entryObj = _deserializer.GetEntryObject(); // this call invokes FromStream and reads header data
 
@@ -250,6 +250,14 @@ namespace Microsoft.Diagnostics.Tracing
         {
             // blockSizeInBytes INCLUDES any padding bytes to ensure alignment.  
             var blockSizeInBytes = deserializer.ReadInt();
+
+            // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
+            if((int)deserializer.Current % 4 != 0)
+            {
+                var nearestAlignedAddress = deserializer.Current.Add(4 - ((int)deserializer.Current % 4));
+                deserializer.Goto(nearestAlignedAddress);
+            }
+
             _startEventData = deserializer.Current;
             _endEventData = _startEventData.Add(blockSizeInBytes);
             Debug.Assert((int)_startEventData % 4 == 0 && (int)_endEventData % 4 == 0); // make sure that the data is aligned
