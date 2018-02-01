@@ -5,9 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
         xmlns:WPFToolKit="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+        xmlns:converter="clr-namespace:PerfView.StackViewer"
         mc:Ignorable="d" 
         d:DesignHeight="223" d:DesignWidth="600">
     <UserControl.Resources>
+        <converter:ColorValidatorConverter x:Key="converter" />
         <!-- Shared Styles -->
         <Style x:Key="RightAlign">
             <Setter Property="TextBlock.TextAlignment" Value="Right" />
@@ -26,14 +28,8 @@
         </Style>
         <Style x:Key="customDataGridRowStyle" TargetType="{x:Type DataGridRow}">
             <Style.Triggers>
-                <DataTrigger Binding="{Binding State}" Value="1">
-                    <Setter Property="Background" Value="LightSkyBlue"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding State}" Value="2">
-                    <Setter Property="Background" Value="BurlyWood"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding State}" Value="3">
-                    <Setter Property="Background" Value="Coral"/>
+                <DataTrigger Binding="{Binding BackgroundColor, Converter={StaticResource converter}}" Value="true">
+                    <Setter Property="Background" Value="{Binding BackgroundColor}"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>

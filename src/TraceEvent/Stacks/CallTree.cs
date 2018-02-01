@@ -604,11 +604,6 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public CallTree CallTree { get { return m_callTree; } }
 
         /// <summary>
-        /// This sets the background color of the CallTreeNode. For CallTreeNodeBase it should be the default color.
-        /// </summary>
-        public string State { get { return "0"; } }
-
-        /// <summary>
         /// Returns the histogram that groups of samples associated with this node or any of its children by time buckets
         /// </summary>
         public Histogram InclusiveMetricByTime { get { return m_inclusiveMetricByTime; } }

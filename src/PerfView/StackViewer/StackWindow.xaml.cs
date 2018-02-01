@@ -2355,20 +2355,20 @@ namespace PerfView
 
         private void DoSetBrownBackgroundColor(object sender, ExecutedRoutedEventArgs e)
         {
-            DoSetBackgroundColor(sender, e, BackgroundColor.Brown);
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.BurlyWood);
         }
 
         private void DoSetBlueBackgroundColor(object sender, ExecutedRoutedEventArgs e)
         {
-            DoSetBackgroundColor(sender, e, BackgroundColor.Blue);
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.LightSkyBlue);
         }
 
         private void DoSetRedBackgroundColor(object sender, ExecutedRoutedEventArgs e)
         {
-            DoSetBackgroundColor(sender, e, BackgroundColor.Red);
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.Coral);
         }
 
-        private void DoSetBackgroundColor(object sender, ExecutedRoutedEventArgs e, BackgroundColor color)
+        private void DoSetBackgroundColor(object sender, ExecutedRoutedEventArgs e, System.Drawing.Color color)
         {
             CallTreeViewNode selectedNode = null;
             CallTreeView view = null;

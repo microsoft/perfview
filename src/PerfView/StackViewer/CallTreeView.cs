@@ -301,14 +301,6 @@ namespace PerfView
         #endregion
     }
 
-    public enum BackgroundColor
-    {
-        Default = 0,
-        Blue = 1,
-        Brown = 2,
-        Red = 3
-    }
-
     /// <summary>
     /// This is basically a CallTreeNode with extra state (state of expand boxes) associated needed for the viewer 
     /// </summary>
@@ -322,12 +314,12 @@ namespace PerfView
 #endif
         }
 
-        public void SetBackgroundColor(BackgroundColor color)
+        public void SetBackgroundColor(System.Drawing.Color color)
         {
-            State = ((int)color).ToString();
+            BackgroundColor = color.Name;
         }
 
-        public string State { get; set; }
+        public string BackgroundColor { get; set; }
 
         /// <summary>
         /// Is the node expanded or not.  
