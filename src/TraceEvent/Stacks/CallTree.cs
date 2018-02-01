@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;                        // For TextWriter.  
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Microsoft.Diagnostics.Tracing.Stacks
@@ -1243,7 +1244,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         m_exclusiveFoldedCount += callee.m_inclusiveCount;
 
                         // Transfer the samples to the caller 
-                        TransferInclusiveSamplesToList(callee, ref m_samples);
+                        TransferInclusiveSamplesToList(callee, ref m_samples, RecursionGuard.Entry);
                     }
                     else
                     {
@@ -1273,8 +1274,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         }
 
         // Transfer all samples (inclusively from 'fromNode' to 'toList'.  
-        private static void TransferInclusiveSamplesToList(CallTreeNode fromNode, ref GrowableArray<StackSourceSampleIndex> toList)
+        private static void TransferInclusiveSamplesToList(CallTreeNode fromNode, ref GrowableArray<StackSourceSampleIndex> toList, RecursionGuard recursionGuard)
         {
+            if (recursionGuard.RequiresNewThread)
+            {
+                var boxedList = new StrongBox<GrowableArray<StackSourceSampleIndex>>(toList);
+                Task result = Task.Factory.StartNew(
+                    () => TransferInclusiveSamplesToList(fromNode, ref boxedList.Value, recursionGuard.ResetOnNewThread),
+                    TaskCreationOptions.LongRunning);
+
+                result.GetAwaiter().GetResult();
+                toList = boxedList.Value;
+                return;
+            }
+
             // Transfer the exclusive samples.
             for (int i = 0; i < fromNode.m_samples.Count; i++)
                 toList.Add(fromNode.m_samples[i]);
@@ -1283,7 +1296,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             if (fromNode.Callees != null)
             {
                 for (int i = 0; i < fromNode.m_callees.Count; i++)
-                    TransferInclusiveSamplesToList(fromNode.m_callees[i], ref toList);
+                    TransferInclusiveSamplesToList(fromNode.m_callees[i], ref toList, recursionGuard.Recurse);
             }
         }
 
