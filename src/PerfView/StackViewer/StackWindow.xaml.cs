@@ -299,7 +299,7 @@ namespace PerfView
                 if (double.TryParse(filterParams.EndTimeRelativeMSec, out histogramEnd))
                     histogramEnd += .0006;
 
-                if (histogramEnd > histogramStart)
+                if (histogramEnd > histogramStart && asMemoryGraphSource == null)
                     newCallTree.TimeHistogramController = new TimeHistogramController(newCallTree, histogramStart, histogramEnd);
 
                 if (m_stackSource.ScenarioCount > 0)
@@ -383,13 +383,13 @@ namespace PerfView
                         stats = string.Format("{0}  First: {1:n3} Last: {2:n3}  Last-First: {3:n3}  Metric/Interval: {4:n2}  TimeBucket: {5:n1}", stats,
                         CallTree.Root.FirstTimeRelativeMSec, CallTree.Root.LastTimeRelativeMSec, CallTree.Root.DurationMSec,
                         CallTree.Root.InclusiveMetric / CallTree.Root.DurationMSec,
-                        CallTree.TimeHistogramController.BucketDuration);
+                        CallTree.TimeHistogramController?.BucketDuration);
                     }
 
                     if (ExtraTopStats != null)
                         stats = stats + " " + ExtraTopStats;
 
-                    if (ComputeMaxInTopStats)
+                    if (ComputeMaxInTopStats && CallTree.Root.InclusiveMetricByTime != null)
                     {
                         Histogram histogram = CallTree.Root.InclusiveMetricByTime;
                         TimeHistogramController controller = histogram.Controller as TimeHistogramController;
