@@ -27,5 +27,4 @@ cache:
   - packages -> **\packages.config
 artifacts:
 - path: 'src\PerfView\bin\$(configuration)\net45\PerfView.exe'
-- path: 'src\PerfView\bin\$(configuration)\net45\PerfView64.exe'
 - path: 'src\TraceEvent\bin\$(configuration)\*.nupkg'

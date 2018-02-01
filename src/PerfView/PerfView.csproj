@@ -5,7 +5,7 @@
     <TargetFramework>net45</TargetFramework>
     <OutputType>WinExe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Prefer32Bit>True</Prefer32Bit>
+    <Prefer32Bit>False</Prefer32Bit>
     <StartupObject>PerfView.App</StartupObject>
 
     <Description>PerfView</Description>
