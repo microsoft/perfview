@@ -1050,7 +1050,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// The rate at which CPU samples are collected.  By default this is 1 (once a millisecond per CPU).
         /// There is a lower bound on this (typically .125 Msec)
         /// </summary>
-        public float CpuSampleIntervalMSec
+        public double CpuSampleIntervalMSec
         {
             get { return m_CpuSampleIntervalMSec; }
             set
@@ -1991,7 +1991,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         private int m_CircularBufferMB;
         private int m_MultiFileMB;
 
-        private float m_CpuSampleIntervalMSec;
+        private double m_CpuSampleIntervalMSec;
         private bool m_StackCompression;
         private bool m_restarted;
 

@@ -48,7 +48,7 @@ namespace Microsoft.Diagnostics.Tracing
             for (int i = 0; i < m_lastPacketForProcess.Length; i++)
                 m_lastPacketForProcess[i] = new NetworkInfo();
 
-            MiniumReadiedTimeMSec = 0.5F;   // We tend to only care about this if we are being starved.  
+            MiniumReadiedTimeMSec = 0.5;   // We tend to only care about this if we are being starved.  
         }
         /// <summary>
         /// If set we compute thread time using Tasks
@@ -70,7 +70,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// If we spend less then this amount of time waiting for the CPU, don't bother showing it.  
         /// </summary>
-        public float MiniumReadiedTimeMSec;
+        public double MiniumReadiedTimeMSec;
         /// <summary>
         /// LIke the GroupByAspNetRequest but use start-stop activities instead of ASP.NET Requests as the grouping construct. 
         /// </summary>
@@ -104,7 +104,7 @@ namespace Microsoft.Diagnostics.Tracing
                 m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
                 {
                     var sample = m_sample;
-                    sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
+                    sample.Metric = activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec;
                     sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
 
                     // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
@@ -463,7 +463,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Add a sample with the amount of unknown duration.  
             var sample = new StackSourceSample(m_outputStackSource);
-            sample.Metric = (float)delta;
+            sample.Metric = delta;
             sample.TimeRelativeMSec = unknownStartTimeMSec;
 
             StackSourceCallStackIndex stackIndex = m_startStopActivities.GetStartStopActivityStack(m_outputStackSource, startStopActivity, data.Process());
@@ -729,7 +729,7 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var sample = computer.m_sample;
                     sample.TimeRelativeMSec = BlockTimeStartRelativeMSec;
-                    sample.Metric = (float)(timeRelativeMSec - BlockTimeStartRelativeMSec);
+                    sample.Metric = timeRelativeMSec - BlockTimeStartRelativeMSec;
                     var morphedStackIndex = stackIndex;
                     double schedulingDelayMSec = 0;
                     if (ReadyThreadCallStack != CallStackIndex.Invalid)
@@ -740,7 +740,7 @@ namespace Microsoft.Diagnostics.Tracing
                         {
                             // Don't count the scheduling delay as part of blocked time, make a separate call stack for it.   
                             schedulingDelayMSec = delay;    // This triggers adding a sample just for the CPU scheduling delay  
-                            sample.Metric -= (float)delay;
+                            sample.Metric -= delay;
                         }
 
                         // Add the ready thread stacks. 
@@ -801,7 +801,7 @@ namespace Microsoft.Diagnostics.Tracing
                     if (schedulingDelayMSec > 0)
                     {
                         // TODO FIX  NOW this does not handle the case where the thread was ready from the start (preempted).  
-                        sample.Metric = (float)schedulingDelayMSec;
+                        sample.Metric = schedulingDelayMSec;
                         sample.TimeRelativeMSec = ReadyThreadRelativeMSec;
 
                         var morphedStack = stackIndex;
@@ -886,7 +886,7 @@ namespace Microsoft.Diagnostics.Tracing
                 if (LastCPUStackRelativeMSec > 0 && !computer.BlockedTimeOnly)
                 {
                     var sample = computer.m_sample;
-                    sample.Metric = (float)(timeRelativeMSec - LastCPUStackRelativeMSec);
+                    sample.Metric = timeRelativeMSec - LastCPUStackRelativeMSec;
                     if (sample.Metric >= 1.5)
                         Debug.WriteLine("Warning CPU sample Metric " + sample.Metric.ToString("f3") + " > 1.5Msec at " + LastCPUStackRelativeMSec.ToString("f3"));
                     sample.TimeRelativeMSec = LastCPUStackRelativeMSec;

@@ -459,7 +459,7 @@ namespace PerfView
 
                 // Set the time and metric.
                 sample.TimeRelativeMSec = this.BlockTimeStartRelativeMSec;
-                sample.Metric = (float)(data.TimeStampRelativeMSec - this.BlockTimeStartRelativeMSec);
+                sample.Metric = data.TimeStampRelativeMSec - this.BlockTimeStartRelativeMSec;
 
                 /* Generate the stack trace. */
 

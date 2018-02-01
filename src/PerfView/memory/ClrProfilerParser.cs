@@ -16,7 +16,7 @@ namespace ClrProfiler
 	#region Generic Profiling Data Structures that CLRProfilerParser uses
 	public class Sample
 	{
-		public Sample(float metric, StackFrame stack)
+		public Sample(double metric, StackFrame stack)
 		{
 			this.stack = stack;
 			this.metric = metric;
@@ -25,7 +25,7 @@ namespace ClrProfiler
 		{
 			get { return stack; }
 		}
-		public float Metric
+		public double Metric
 		{
 			get { return metric; }
 		}
@@ -36,7 +36,7 @@ namespace ClrProfiler
 
 		#region PrivateFields
 		private StackFrame stack;
-		private float metric;
+		private double metric;
 		#endregion
 	};
 
@@ -48,7 +48,7 @@ namespace ClrProfiler
 			Write
 		}
 
-		public MemoryAccessSample(Address accessAddress, int accessSize, AccessTypeKinds accessType, float accessTimePercent, StackFrame stackTrace)
+		public MemoryAccessSample(Address accessAddress, int accessSize, AccessTypeKinds accessType, double accessTimePercent, StackFrame stackTrace)
 			: base(accessSize, stackTrace)
 		{
 			this.accessAddress = accessAddress;
@@ -68,7 +68,7 @@ namespace ClrProfiler
 		{
 			get { return accessType; }
 		}
-		public float AccessTimePercent
+		public double AccessTimePercent
 		{
 			get { return accessTimePercent; }
 		}
@@ -80,7 +80,7 @@ namespace ClrProfiler
 		#region PrivateFields
 		private Address accessAddress;
 		private AccessTypeKinds accessType;
-		private float accessTimePercent;
+		private double accessTimePercent;
 		#endregion
 	};
 

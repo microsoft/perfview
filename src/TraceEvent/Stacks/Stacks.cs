@@ -168,7 +168,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// source will correspondingly adjust the CountMultiplier, so that the total will look like no sampling
         /// is occuring 
         /// </summary>
-        public virtual float? SamplingRate { get { return null; } set { } }
+        public virtual double? SamplingRate { get { return null; } set { } }
 
         // GraphSource Support (optional)
         /// <summary>
@@ -360,7 +360,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// The metric (cost) associated with the sample 
         /// </summary>
-        public float Metric { get; set; }
+        public double Metric { get; set; }
 
         // The rest of these are optional. 
         /// <summary>
@@ -378,7 +378,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// other constraints (like you do when you are going a sample of heap memory),  you may need to have the
         /// count adjusted to something else.
         /// </summary>
-        public float Count { get; set; }
+        public double Count { get; set; }
         /// <summary>
         /// A scenario is simply a integer that represents some group the sample belongs to. 
         /// </summary>
@@ -783,13 +783,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
         #region private
 
-        internal void ReadAllSamples(StackSource source, StackSourceStacks stackLookup, float scaleFactor)
+        internal void ReadAllSamples(StackSource source, StackSourceStacks stackLookup, double scaleFactor)
         {
             var ctr = 0;
             source.ForEach(delegate (StackSourceSample sample)
             {
                 var sampleCopy = new StackSourceSample(sample);
-                if (scaleFactor != 1.0F)
+                if (scaleFactor != 1.0)
                 {
                     sampleCopy.Metric *= scaleFactor;
                     if (scaleFactor < 0)

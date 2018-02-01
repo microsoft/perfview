@@ -282,7 +282,7 @@ namespace Diagnostics.Tracing.StackSources
                                     else if (reader.Name == "StackID")
                                         sample.StackIndex = (StackSourceCallStackIndex)reader.ReadContentAsInt();
                                     else if (reader.Name == "Metric")
-                                        sample.Metric = float.Parse(reader.ReadContentAsString(), invariantCulture);
+                                        sample.Metric = double.Parse(reader.ReadContentAsString(), invariantCulture);
                                 } while (reader.MoveToNextAttribute());
                             }
                             sample.SampleIndex = (StackSourceSampleIndex)m_curSample;
@@ -399,7 +399,7 @@ namespace Diagnostics.Tracing.StackSources
                                         }
                                         else if (reader.Name == "Metric")
                                         {
-                                            sample.Metric = (float) reader.ReadElementContentAsDouble();
+                                            sample.Metric = reader.ReadElementContentAsDouble();
                                             goto PROCESS_NODE_SAMPLE;
                                         }
                                         else if (reader.Name == "item")

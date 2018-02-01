@@ -634,7 +634,7 @@ namespace PerfView
                 return;
             }
 
-            float total = 0;
+            double total = 0;
             for (int i = start; i < end; i++)
             {
                 if (i < m_buckets.Length)
@@ -919,7 +919,7 @@ namespace PerfView
             StatusBar.StartWork("Scanning Events", delegate ()
             {
                 const int numBuckets = 100;
-                m_buckets = new float[numBuckets];
+                m_buckets = new double[numBuckets];
                 m_bucketTimeMSec = (m_source.EndTimeRelativeMSec - m_source.StartTimeRelativeMSec) / numBuckets;
                 var maxBucketCount = 0.0;
                 var lastBucketNum = -1;
@@ -1333,7 +1333,7 @@ namespace PerfView
         EventSource m_source;
         List<DataGridColumn> m_userDefinedColumns;
 
-        float[] m_buckets;                              // Keep track of the counts of events.  
+        double[] m_buckets;                              // Keep track of the counts of events.  
         double m_bucketTimeMSec;                        // Size for each bucket
         #endregion
     }

@@ -68,17 +68,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             processes.OnProcessStop += OnProcessStop;
         }
 
-        public static void SetSampleIntervalMSec(this TraceProcess process, float sampleIntervalMSec)
+        public static void SetSampleIntervalMSec(this TraceProcess process, double sampleIntervalMSec)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, double>());
+            var map = (Dictionary<ProcessIndex, double>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
             if (!map.ContainsKey(process.ProcessIndex)) map[process.ProcessIndex] = sampleIntervalMSec;
         }
 
-        public static float SampleIntervalMSec(this TraceProcess process)
+        public static double SampleIntervalMSec(this TraceProcess process)
         {
-            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, float>());
-            var map = (Dictionary<ProcessIndex, float>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
+            if (!process.Source.UserData.ContainsKey("Computers/Processes/SampleIntervalMSec")) process.Source.UserData.Add("Computers/Processes/SampleIntervalMSec", new Dictionary<ProcessIndex, double>());
+            var map = (Dictionary<ProcessIndex, double>)process.Source.UserData["Computers/Processes/SampleIntervalMSec"];
             if (map.ContainsKey(process.ProcessIndex)) return map[process.ProcessIndex];
             else return 1; // defualt 1 ms
         }
@@ -558,7 +558,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
         /// <summary>
         /// The amount of CPU time spent in this process based on the kernel CPU sampling events.   
         /// </summary>
-        public float CPUMSec { get; internal set; }
+        public double CPUMSec { get; internal set; }
         /// <summary>
         /// Returns true if the process is a 64 bit process
         /// </summary>

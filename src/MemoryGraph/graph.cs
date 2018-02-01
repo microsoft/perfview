@@ -1572,17 +1572,17 @@ public class SpanningTree
         for (int i = 0; i < m_parent.Length; i++)
             m_parent[i] = NodeIndex.Invalid;
 
-        float[] nodePriorities = new float[m_parent.Length];
+        double[] nodePriorities = new double[m_parent.Length];
         bool scanedForOrphans = false;
         var epsilon = 1E-7F;            // Something that is big enough not to bet lost in roundoff error.  
-        float order = 0;
+        double order = 0;
         for (int i = 0; ; i++)
         {
             if ((i & 0x1FFF) == 0)  // Every 8K
                 System.Threading.Thread.Sleep(0);       // Allow interruption.  
 
             NodeIndex nodeIndex;
-            float nodePriority;
+            double nodePriority;
             if (nodesToVisit.Count == 0)
             {
                 nodePriority = 0;
@@ -1751,11 +1751,11 @@ public class SpanningTree
     private void SetTypePriorities(string priorityPats)
     {
         if (m_typePriorities == null)
-            m_typePriorities = new float[(int)m_graph.NodeTypeIndexLimit];
+            m_typePriorities = new double[(int)m_graph.NodeTypeIndexLimit];
 
         string[] priorityPatArray = priorityPats.Split(';');
         Regex[] priorityRegExArray = new Regex[priorityPatArray.Length];
-        float[] priorityArray = new float[priorityPatArray.Length];
+        double[] priorityArray = new double[priorityPatArray.Length];
         for (int i = 0; i < priorityPatArray.Length; i++)
         {
             var m = Regex.Match(priorityPatArray[i], @"(.*)->(-?\d+.?\d*)");
@@ -1768,7 +1768,7 @@ public class SpanningTree
 
             var dotNetRegEx = ToDotNetRegEx(m.Groups[1].Value.Trim());
             priorityRegExArray[i] = new Regex(dotNetRegEx, RegexOptions.IgnoreCase);
-            priorityArray[i] = float.Parse(m.Groups[2].Value);
+            priorityArray[i] = double.Parse(m.Groups[2].Value);
         }
 
         // Assign every type index a priority in m_typePriorities based on if they match a pattern.  
@@ -1800,7 +1800,7 @@ public class SpanningTree
 
     // We give each type a priority (using the m_priority Regular expressions) which guide the breadth-first scan. 
     string m_priorityRegExs;
-    float[] m_typePriorities;
+    double[] m_typePriorities;
 
     NodeType m_typeStorage;
     Node m_nodeStorage;                 // Only for things that can't be reentrant
@@ -1821,7 +1821,7 @@ class PriorityQueue
         m_heap = new DataItem[initialSize];
     }
     public int Count { get { return m_count; } }
-    public void Enqueue(NodeIndex item, float priority)
+    public void Enqueue(NodeIndex item, double priority)
     {
         var idx = m_count;
         if (idx >= m_heap.Length)
@@ -1850,7 +1850,7 @@ class PriorityQueue
         }
         // CheckInvariant();
     }
-    public NodeIndex Dequeue(out float priority)
+    public NodeIndex Dequeue(out double priority)
     {
         Debug.Assert(Count > 0);
 
@@ -1906,8 +1906,8 @@ class PriorityQueue
 
     private struct DataItem
     {
-        public DataItem(NodeIndex value, float priority) { this.value = value; this.priority = priority; }
-        public float priority;
+        public DataItem(NodeIndex value, double priority) { this.value = value; this.priority = priority; }
+        public double priority;
         public NodeIndex value;
     }
     [Conditional("DEBUG")]
@@ -1947,7 +1947,7 @@ public class GraphSampler
         m_graph = graph;
         m_log = log;
         m_targetNodeCount = targetNodeCount;
-        m_filteringRatio = (float)graph.NodeCount / targetNodeCount;
+        m_filteringRatio = (double)graph.NodeCount / targetNodeCount;
         m_nodeStorage = m_graph.AllocNodeStorage();
         m_childNodeStorage = m_graph.AllocNodeStorage();
         m_nodeTypeStorage = m_graph.AllocTypeNodeStorage();
@@ -2106,19 +2106,19 @@ public class GraphSampler
     /// the returned graph returned by GetSampledGraph.   If the sampled count for that type multiplied
     /// by this scaling factor, you end up with the count for that type of the original unsampled graph.  
     /// </summary>
-    public float[] CountScalingByType
+    public double[] CountScalingByType
     {
         get
         {
-            var ret = new float[m_newGraph.NodeTypeCount];
+            var ret = new double[m_newGraph.NodeTypeCount];
             for (int i = 0; i < m_statsByType.Length; i++)
             {
                 var newTypeIndex = MapTypeIndex((NodeTypeIndex)i);
                 if (newTypeIndex != NodeTypeIndex.Invalid)
                 {
-                    float scale = 1;
+                    double scale = 1;
                     if (m_statsByType[i].SampleMetric != 0)
-                        scale = (float)((double)m_statsByType[i].TotalMetric / m_statsByType[i].SampleMetric);
+                        scale = (double)m_statsByType[i].TotalMetric / m_statsByType[i].SampleMetric;
                     ret[(int)newTypeIndex] = scale;
                 }
             }
@@ -2310,7 +2310,7 @@ public class GraphSampler
             statsCheckByType[(int)node.TypeIndex] = stats;
         }
 
-        float[] scalings = null;
+        double[] scalings = null;
         if (completed)
             scalings = CountScalingByType;
 
@@ -2395,7 +2395,7 @@ public class GraphSampler
     Node m_childNodeStorage;
     NodeType m_nodeTypeStorage;
 
-    float m_filteringRatio;
+    double m_filteringRatio;
     SampleStats[] m_statsByType;
     int m_numDistictTypesWithSamples;
     int m_numDistictTypes;
