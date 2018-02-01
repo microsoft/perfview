@@ -76,6 +76,9 @@ namespace PerfView
             }
 
             int startPos = m_perfGrid.SelectionStartIndex();
+            if (m_flattenedTree.Count <= startPos)
+                return false;
+
             m_curPosition = m_flattenedTree[startPos].Data;
 
             m_perfGrid.Focus();

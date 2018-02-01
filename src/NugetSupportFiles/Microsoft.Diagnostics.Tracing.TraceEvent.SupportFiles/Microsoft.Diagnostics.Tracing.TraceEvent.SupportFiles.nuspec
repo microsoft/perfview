@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <package >
   <metadata minClientVersion="2.5">
     <id>Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles</id>
@@ -9,7 +9,7 @@
     <licenseUrl>https://www.microsoft.com/net/dotnet_library_license.htm</licenseUrl>
     <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
-    <copyright>Copyright © Microsoft Corporation</copyright>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <description> Basically this package contains DLLs that TraceEvent depends on but does not build itself.</description>
     <releaseNotes>This package is a refresh with signing for the 2.0 release of TraceEvent.  It fixes the KernelTraceControl.win61.dll that was not signed properly. </releaseNotes>
     <tags>TraceEvent</tags>

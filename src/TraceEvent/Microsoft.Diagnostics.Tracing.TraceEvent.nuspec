@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <package>
   <metadata minClientVersion="2.5">
     <id>Microsoft.Diagnostics.Tracing.TraceEvent</id>
@@ -6,6 +6,7 @@
     <title>Microsoft TraceEvent Library</title>
     <authors>Microsoft</authors>
     <owners>Microsoft</owners>
+    <projectUrl>https://github.com/Microsoft/perfview</projectUrl>
     <licenseUrl>http://go.microsoft.com/fwlink/?LinkId=329770</licenseUrl>
     <iconUrl>http://go.microsoft.com/fwlink/?LinkID=288859</iconUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
@@ -25,7 +26,7 @@
     </description>
     <summary>TraceEvent is a .NET Framework library for capturing and analyzing ETW events.</summary>
     <releaseNotes>https://github.com/Microsoft/perfview/releases/tag/T$version$</releaseNotes>
-    <copyright>Copyright © Microsoft Corporation</copyright>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
     <tags>TraceEvent EventSource Microsoft ETW Event Tracing for Windows</tags>
   </metadata>
 
