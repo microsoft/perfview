@@ -698,12 +698,30 @@ namespace FastSerialization
         public T Read<T>()
             where T : struct
         {
+#if NET45
             int size = Marshal.SizeOf(typeof(T));
+#else
+            int size = Marshal.SizeOf<T>();
+#endif
             if (_offset + size > _capacity)
                 Resize(size);
 
             T result;
+
+#if NETSTANDARD1_6
+            byte[] rawData = new byte[size];
+            Read(rawData, 0, size);
+            unsafe
+            {
+                fixed (byte* rawDataPtr = rawData)
+                {
+                    result = Marshal.PtrToStructure<T>((IntPtr)rawDataPtr);
+                }
+            }
+#else
             _view.Read(_offset, out result);
+#endif
+
             _offset += size;
             return result;
         }
@@ -769,7 +787,15 @@ namespace FastSerialization
                 int bytesUsed;
                 int charsUsed;
                 bool completed;
+#if NETSTANDARD1_6
+                byte[] bytes = new byte[(int)Math.Min(int.MaxValue - 50, _capacity - _offset)];
+                Marshal.Copy(_viewAddress, bytes, 0, bytes.Length);
+                char[] charArray = new char[charCount];
+                decoder.Convert(bytes, 0, bytes.Length, charArray, 0, charArray.Length, false, out bytesUsed, out charsUsed, out completed);
+                Marshal.Copy(charArray, 0, (IntPtr)chars, charsUsed * sizeof(char));
+#else
                 decoder.Convert((byte*)_viewAddress, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars, charCount, false, out bytesUsed, out charsUsed, out completed);
+#endif
                 _offset += bytesUsed;
 
                 if (!completed)
@@ -779,7 +805,15 @@ namespace FastSerialization
 
                     int finalBytesUsed;
                     int finalCharsUsed;
+#if NETSTANDARD1_6
+                    bytes = new byte[(int)Math.Min(int.MaxValue - 50, _capacity - _offset)];
+                    Marshal.Copy(_viewAddress + bytesUsed, bytes, 0, bytes.Length);
+                    charArray = new char[charCount - charsUsed];
+                    decoder.Convert(bytes, 0, bytes.Length, charArray, 0, charArray.Length, true, out finalBytesUsed, out finalCharsUsed, out completed);
+                    Marshal.Copy(charArray, 0, (IntPtr)(chars + charsUsed), finalCharsUsed * sizeof(char));
+#else
                     decoder.Convert((byte*)_viewAddress + bytesUsed, (int)Math.Min(int.MaxValue - 50, _capacity - _offset), chars + charsUsed, charCount - charsUsed, true, out finalBytesUsed, out finalCharsUsed, out completed);
+#endif
                 }
             }
 
@@ -919,7 +953,12 @@ namespace FastSerialization
             if (_offset + length > _capacity)
                 Resize(length);
 
+#if NETSTANDARD1_6
+            for (int i = 0; i < length; i++)
+                _view.Write(_offset + i, data[offset + i]);
+#else
             _view.WriteArray(_offset, data, offset, length);
+#endif
             _offset += length;
         }
 
@@ -978,7 +1017,9 @@ namespace FastSerialization
                 {
                     byte* pointer = null;
 
+#if !NETSTANDARD1_6
                     RuntimeHelpers.PrepareConstrainedRegions();
+#endif
                     try
                     {
                         _view.SafeMemoryMappedViewHandle.AcquirePointer(ref pointer);
@@ -987,7 +1028,14 @@ namespace FastSerialization
                         int charsUsed;
                         int bytesUsed;
                         bool completed;
+#if NETSTANDARD1_6
+                        char[] charArray = value.ToCharArray();
+                        byte[] bytes = new byte[_capacity - _offset];
+                        encoder.Convert(charArray, 0, charArray.Length, bytes, 0, bytes.Length, false, out charsUsed, out bytesUsed, out completed);
+                        Marshal.Copy(bytes, 0, (IntPtr)pointer, bytesUsed);
+#else
                         encoder.Convert(chars, value.Length, pointer, _capacity - _offset, false, out charsUsed, out bytesUsed, out completed);
+#endif
                         _offset += bytesUsed;
 
                         if (!completed)
@@ -996,7 +1044,13 @@ namespace FastSerialization
 
                             int finalCharsUsed;
                             int finalBytesUsed;
+#if NETSTANDARD1_6
+                            bytes = new byte[_capacity - _offset];
+                            encoder.Convert(charArray, charsUsed, charArray.Length - charsUsed, bytes, 0, bytes.Length, true, out finalCharsUsed, out finalBytesUsed, out completed);
+                            Marshal.Copy(bytes, 0, (IntPtr)(pointer + bytesUsed), finalBytesUsed);
+#else
                             encoder.Convert(chars + charsUsed, value.Length - charsUsed, pointer + bytesUsed, _capacity - _offset, true, out finalCharsUsed, out finalBytesUsed, out completed);
+#endif
                         }
                     }
                     finally

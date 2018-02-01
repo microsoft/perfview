@@ -319,7 +319,7 @@ public class GCHeapDumper
             dataReader.Flush();
         }
 
-        public Architecture GetArchitecture()
+        public Microsoft.Diagnostics.Runtime.Architecture GetArchitecture()
         {
             return dataReader.GetArchitecture();
         }
