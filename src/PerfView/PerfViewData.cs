@@ -6124,9 +6124,9 @@ table {
             {
                 if (hasTplStacks)
                 {
-                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time"));
+                    m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with Tasks)"));
-                    m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
+                    advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
                 }
                 else
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
