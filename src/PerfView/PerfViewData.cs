@@ -678,12 +678,7 @@ namespace PerfView
             // stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
             stackWindow.IsMemoryWindow = true;
             stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
-            var defaultFold = "[];mscorlib!String";
-            if (!walkableObjectView)
-            {
-                stackWindow.FoldRegExTextBox.Text = defaultFold;
-            }
-            stackWindow.FoldRegExTextBox.Items.Insert(0, defaultFold);
+            stackWindow.FoldRegExTextBox.Items.Insert(0, "[];mscorlib!String");
 
             var defaultExclusions = "[not reachable from roots]";
             stackWindow.ExcludeRegExTextBox.Text = defaultExclusions;
@@ -694,10 +689,6 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Insert(0, "[group module entries]  {%}!=>module $1");
 
             var defaultGroup = @"[group Framework] mscorlib!=>LIB;System%!=>LIB;";
-            if (!walkableObjectView)
-            {
-                stackWindow.GroupRegExTextBox.Text = defaultGroup;
-            }
             stackWindow.GroupRegExTextBox.Items.Insert(0, defaultGroup);
 
             stackWindow.PriorityTextBox.Text = Graphs.MemoryGraphStackSource.DefaultPriorities;

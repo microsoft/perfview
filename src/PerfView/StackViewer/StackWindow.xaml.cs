@@ -93,7 +93,7 @@ namespace PerfView
         {
             string defaultFoldPercentage = App.ConfigData["DefaultFoldPercent"];
             if (defaultFoldPercentage == null)
-                defaultFoldPercentage = "1";
+                defaultFoldPercentage = string.Empty;
             return defaultFoldPercentage;
         }
         public string GetDefaultFoldPat()
@@ -109,7 +109,7 @@ namespace PerfView
 
             // By default, it is Just My App.  
             if (defaultGroupPat == null)
-                defaultGroupPat = @"[Just My App]";
+                defaultGroupPat = @"[no grouping]";
             return defaultGroupPat;
         }
         public void RemoveColumn(string columnName)
