@@ -85,19 +85,16 @@ namespace PerfView
             // Determine if we are on a 64 bit system.
             if (Environment.Is64BitOperatingSystem)
             {
-                // TODO FIX NOW.   Find a way of determing which architecture a dump is
-                try
+                bool isDump64 = DumpReader.IsDump64(processDumpFile).GetValueOrDefault();
+                if (isDump64)
                 {
-                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 64 BIT ************");
+                    log.WriteLine("********** OPENING THE DUMP AS 64 BIT ************");
                     DumpGCHeap("/processDump " + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.Amd64);
-                    return; // Yeah! success the first time
                 }
-                catch (ApplicationException)
+                else
                 {
-                    // It might have failed because this was a 32 bit dump, if so try again.  
-                    log.WriteLine("********** TRYING TO OPEN THE DUMP AS 32 BIT ************");
+                    log.WriteLine("********** OPENING THE DUMP AS 32 BIT ************");
                     DumpGCHeap("/processDump" + qualifiers, processDumpFile, outputFile, log, ProcessorArchitecture.X86);
-                    return;
                 }
             }
             else
@@ -198,6 +195,143 @@ namespace PerfView
         private static extern bool IsWow64Process(
              [In] IntPtr processHandle,
              [Out, MarshalAs(UnmanagedType.Bool)] out bool wow64Process);
+
+        /// <summary>
+        /// Knows how to open a process dump and read the headers to determine its bitness
+        /// </summary>
+        private static class DumpReader
+        {
+            /// <summary>
+            /// opens the provided dump and determines its bitness
+            /// </summary>
+            /// <param name="dumpFileName">the file name of the dump</param>
+            /// <returns></returns>
+            public static bool? IsDump64(string dumpFileName)
+            {
+                using (BinaryReader binaryReader = new BinaryReader(File.OpenRead(dumpFileName)))
+                {
+                    binaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                    var dumpHeader = ReadStruct<MINIDUMP_HEADER>(binaryReader);
+
+                    if (dumpHeader.Signature != MINIDUMP_HEADER.MinidumpSignature)
+                        return null;
+
+                    uint directoryOffset = dumpHeader.StreamDirectoryRVA;
+
+                    for (int streamNumber = 0; streamNumber < dumpHeader.NumberOfStreams; streamNumber++)
+                    {
+                        binaryReader.BaseStream.Seek(directoryOffset, SeekOrigin.Begin);
+                        MINIDUMP_DIRECTORY entry = ReadStruct<MINIDUMP_DIRECTORY>(binaryReader);
+                        if (entry.StreamType == MINIDUMP_STREAM_TYPE.SystemInfoStream && entry.DataSize > Marshal.SizeOf(typeof(MINIDUMP_SYSTEM_INFO)))
+                        {
+                            binaryReader.BaseStream.Seek(entry.Rva, SeekOrigin.Begin);
+                            MINIDUMP_SYSTEM_INFO dumpSystemInfo = ReadStruct<MINIDUMP_SYSTEM_INFO>(binaryReader);
+
+                            return dumpSystemInfo.ProcessorArchitecture == ProcessorArchitecture.PROCESSOR_ARCHITECTURE_AMD64 ||
+                                   dumpSystemInfo.ProcessorArchitecture == ProcessorArchitecture.PROCESSOR_ARCHITECTURE_ARM64;
+                        }
+                        directoryOffset += (uint)Marshal.SizeOf(typeof(MINIDUMP_DIRECTORY));
+                    }
+                    return null;
+                }
+            }
+
+            private static T ReadStruct<T>(BinaryReader binaryReader)
+            {
+                int sizeOfStruct = Marshal.SizeOf(typeof(T));
+                byte[] buffer = binaryReader.ReadBytes(sizeOfStruct);
+                GCHandle handle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+                try
+                {
+                    T ret = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+                    return ret;
+                }
+                finally
+                {
+                    handle.Free();
+                }
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct MINIDUMP_HEADER
+            {
+                public UInt32 Signature;
+                public UInt32 Version;
+                public UInt32 NumberOfStreams;
+                public UInt32 StreamDirectoryRVA;
+                public UInt32 CheckSum;
+                public UInt32 Reserved;
+                public UInt64 Flags;
+
+                public const UInt32 MinidumpSignature = 0x504d444d; // 'MDMP'
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct MINIDUMP_DIRECTORY
+            {
+                public MINIDUMP_STREAM_TYPE StreamType;
+                public UInt32 DataSize;
+                public UInt32 Rva;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            private struct MINIDUMP_SYSTEM_INFO
+            {
+                public ProcessorArchitecture ProcessorArchitecture;
+                public UInt16 ProcessorLevel;
+                public UInt16 ProcessorRevision;
+                // There are more fields here, but we don't care about them.
+            }
+
+            private enum ProcessorArchitecture : UInt16
+            {
+                PROCESSOR_ARCHITECTURE_INTEL = 0,
+                PROCESSOR_ARCHITECTURE_ARM = 5,
+                PROCESSOR_ARCHITECTURE_AMD64 = 9,
+                PROCESSOR_ARCHITECTURE_ARM64 = 12,
+            }
+
+            private enum MINIDUMP_STREAM_TYPE : uint
+            {
+                UnusedStream = 0,
+                ReservedStream0 = 1,
+                ReservedStream1 = 2,
+                ThreadListStream = 3,
+                ModuleListStream = 4,
+                MemoryListStream = 5,
+                ExceptionStream = 6,
+                SystemInfoStream = 7,
+                ThreadExListStream = 8,
+                Memory64ListStream = 9,
+                CommentStreamA = 10,
+                CommentStreamW = 11,
+                HandleDataStream = 12,
+                FunctionTableStream = 13,
+                UnloadedModuleListStream = 14,
+                MiscInfoStream = 15,
+                MemoryInfoListStream = 16,
+                ThreadInfoListStream = 17,
+                HandleOperationListStream = 18,
+                TokenStream = 19,
+                JavaScriptDataStream = 20,
+                SystemMemoryInfoStream = 21,
+                ProcessVmCountersStream = 22,
+
+                ceStreamNull = 0x8000,
+                ceStreamSystemInfo = 0x8001,
+                ceStreamException = 0x8002,
+                ceStreamModuleList = 0x8003,
+                ceStreamProcessList = 0x8004,
+                ceStreamThreadList = 0x8005,
+                ceStreamThreadContextList = 0x8006,
+                ceStreamThreadCallStackList = 0x8007,
+                ceStreamMemoryVirtualList = 0x8008,
+                ceStreamMemoryPhysicalList = 0x8009,
+                ceStreamBucketParameters = 0x800A,
+
+                LastReservedStream = 0xffff
+            }
+        }
 
         #endregion
     }
