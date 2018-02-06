@@ -17,6 +17,9 @@ OSExtentions.cs
 *.VC.opendb
 *.VC.db
 
+# VSCode
+.vscode/
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
