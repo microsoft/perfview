@@ -118,11 +118,7 @@
   </ImportGroup>
 
   <!-- ******************* Signing Support *********************** -->
-  <ItemGroup>
-    <FilesToSign Include="$(TargetPath)">
-        <Authenticode>Microsoft</Authenticode>
-    </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
-  </ItemGroup>
+  <!-- See EtwClrProfilerSigning\EtwClrProfilerSigning.csproj 
+       Trying to do it directoy led to a Nuget error               -->
 
 </Project>
