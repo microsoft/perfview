@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
+    <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
@@ -193,14 +194,14 @@
       <Visible>False</Visible>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
-    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net45\x86\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
       <Link>x86\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net45\amd64\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>
