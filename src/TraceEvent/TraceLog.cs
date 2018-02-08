@@ -2851,7 +2851,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             deserializer.RegisterFactory(typeof(ProviderManifest), delegate
             {
-                return new ProviderManifest(null, ManifestEnvelope.ManifestFormats.SimpleXmlFormat, 0, 0);
+                return new ProviderManifest(null, ManifestEnvelope.ManifestFormats.SimpleXmlFormat, 0, 0, "");
             });
             deserializer.RegisterFactory(typeof(DynamicTraceEventData), delegate
             {
@@ -3204,7 +3204,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 68; }
+            get { return 69; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
