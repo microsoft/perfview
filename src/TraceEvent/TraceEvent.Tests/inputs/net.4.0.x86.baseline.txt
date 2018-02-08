@@ -74,7 +74,7 @@ EVENT 116.463: Windows Kernel/Thread/Start PID=4; TID=3884; PName=System; ProceN
 EVENT 133.125: Windows Kernel/Thread/Start PID=3504; TID=3268; PName=PerfView; ProceNum=3; DataLen=72; StackBase=0xfffff88006a1a000; StackLimit=0xfffff88006a14000; UserStackBase=0x620fd20; UserStackLimit=0x620c000; StartAddr=0xf; Win32StartAddr=0x771f5c71; TebBase=0xfffa1000; SubProcessTag=0; ParentThreadID=2,772; ParentProcessID=3,504; 
 EVENT 203.400: Windows Kernel/TcpIp/RecvIPV6 PID=1128; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:29:1010:dd...; dport=34,983; sport=3,389; connid=0x0; seqnum=0; 
 EVENT 203.428: Windows Kernel/TcpIp/RecvIPV6 PID=1128; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:29:1010:dd...; dport=34,983; sport=3,389; connid=0x0; seqnum=0; 
-EVENT 229.529: PerfView/ManifestData PID=3504; TID=3268; PName=PerfView; ProceNum=2; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; 
+EVENT 229.529: PerfView/ManifestData PID=3504; TID=3268; PName=PerfView; ProceNum=2; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; PayloadLength=16163; 
 EVENT 239.544: PerfView/Tracing/Start PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=0; 
 EVENT 254.511: PerfView/SessionParameters PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=90; sessionName=NT Kernel Logger; sessionFileName=PerfViewData.kernel....; bufferSizeMB=64; circularBuffSizeMB=0; 
 EVENT 256.070: PerfView/KernelEnableParameters PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=8; keywords=Process|Thread|Image...; stacks=Process|Thread|Image...; 
@@ -399,7 +399,7 @@ EVENT 3,380.573: Microsoft-Windows-DotNETRuntimePrivate/Binding/DownloadPhaseSta
 EVENT 3,383.596: Microsoft-Windows-DotNETRuntime/StrongNameVerification/Start PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=228; VerificationFlags=-2,147,483,630; ErrorCode=0; FullyQualifiedAssemblyName=Microsoft.Diagnostic...; ClrInstanceID=15; 
 EVENT 3,384.393: Microsoft-Windows-DotNETRuntime/StrongNameVerification/Stop PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=228; VerificationFlags=-2,147,483,630; ErrorCode=0; FullyQualifiedAssemblyName=Microsoft.Diagnostic...; ClrInstanceID=15; 
 EVENT 3,442.471: Provider(8e9f5090-2d75-4d03-8a81-e5afbf85daf1)/EventID(65534) PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=11022; 
-EVENT 3,498.129: PerfView/ManifestData PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; 
+EVENT 3,498.129: PerfView/ManifestData PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; PayloadLength=16163; 
 EVENT 3,516.007: PerfView/CommandLineParameters PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=130; commandLine= /MinSecForTrigger:0...; currentDirectory=C:\temp; version=1.9.0.0; 
 EVENT 3,516.009: PerfView/Tracing/Stop PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=0; 
 EVENT 3,517.041: PerfView/StartAndStopTimes PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=8; startTimeRelativeMSec=0; stopTimeRelativeMSec=0; 
@@ -450,7 +450,7 @@ EVENT 3,795.999: Windows Kernel/Process/DCStop PID=516; TID=-1; PName=wininit; P
 EVENT 3,820.955: Windows Kernel/PerfInfo/CollectionEnd PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=12; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
 EVENT 3,852.779: Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP PID=4; TID=3420; PName=System; ProceNum=2; DataLen=118; SessionGuid=9e814aad-3204-11d2-9...; LoggerMode=129; SessionName=NT Kernel Logger; LogFileName=C:\temp\PerfViewData...; 
 EVENT 3,852.808: Microsoft-Windows-Kernel-EventTracing/ETW_TASK_SESSION/ETW_OPCODE_STOP PID=3412; TID=2024; PName=PerfView; ProceNum=3; DataLen=118; SessionGuid=9e814aad-3204-11d2-9...; LoggerMode=129; SessionName=NT Kernel Logger; LogFileName=C:\temp\PerfViewData...; 
-EVENT 4,105.186: PerfView/ManifestData PID=3412; TID=3452; PName=PerfView; ProceNum=0; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; 
+EVENT 4,105.186: PerfView/ManifestData PID=3412; TID=3452; PName=PerfView; ProceNum=0; DataLen=16163; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; PayloadLength=16163; 
 EVENT 4,128.190: PerfView/Rundown/Start PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=0; 
 EVENT 4,139.986: Microsoft-Windows-DotNETRuntimeRundown/Runtime/Start PID=3412; TID=3452; PName=PerfView; ProceNum=0; DataLen=247; ClrInstanceID=15; Sku=DesktopClr; BclMajorVersion=4; BclMinorVersion=0; BclBuildNumber=0; BclQfeNumber=0; VMMajorVersion=4; VMMinorVersion=0; VMBuildNumber=30,319; VMQfeNumber=1; StartupFlags=CONCURRENT_GC; StartupMode=ManagedExe; CommandLine=PerfView.exe  stop /...; ComObjectGuid=00000000-0000-0000-0...; RuntimeDllPath=C:\Windows\Microsoft...; 
 EVENT 4,139.991: Microsoft-Windows-DotNETRuntimeRundown/Method/DCStopInit PID=3412; TID=3452; PName=PerfView; ProceNum=0; DataLen=2; ClrInstanceID=15; 
