@@ -1701,7 +1701,7 @@ namespace PerfView
                 string selectedFileBase = selectedFilePath.Substring(0, selectedFilePath.Length - 4);
                 foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFilePath), Path.GetFileName(selectedFileBase) + ".*"))
                 {
-                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)");
+                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$");
                     if (m.Success)
                         FileUtilities.ForceMove(relatedFile, Path.ChangeExtension(targetPath, m.Groups[1].Value));
                 }
