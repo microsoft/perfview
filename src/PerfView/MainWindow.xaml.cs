@@ -1698,10 +1698,9 @@ namespace PerfView
             // rename all the other variations of the unmerged file
             if (selectedFileIsEtl && targetPath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
             {
-                string selectedFileBase = selectedFilePath.Substring(0, selectedFilePath.Length - 4);
-                foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFilePath), Path.GetFileName(selectedFileBase) + ".*"))
+                foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFilePath), Path.GetFileNameWithoutExtension(selectedFilePath) + ".*"))
                 {
-                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$");
+                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
                     if (m.Success)
                         FileUtilities.ForceMove(relatedFile, Path.ChangeExtension(targetPath, m.Groups[1].Value));
                 }
