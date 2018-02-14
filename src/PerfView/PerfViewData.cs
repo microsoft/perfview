@@ -4158,66 +4158,56 @@ table {
             {
                 var objectTypeMap = new Dictionary<long, long>(1000);
                 var interopTraceEventParser = new InteropTraceEventParser(eventSource);
-                interopTraceEventParser.AddCallbackForEvent<TaskCCWCreationArgs>(null, args =>
+                Action<double, long, long, int, StackSourceCallStackIndex> handleCWWInfoArgs = (double timestamp, long objectID, long refCount, int metric, StackSourceCallStackIndex stackIndex) =>
                 {
-                    if(!objectTypeMap.ContainsKey(args.objectID))
-                        objectTypeMap.Add(args.objectID, args.targetObjectIDType);
-                });
-                interopTraceEventParser.AddCallbackForEvents<TaskCCWQueryRuntimeClassNameArgs>(args =>
-                {
-                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
-                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+                    sample.Metric = metric;
+                    sample.TimeRelativeMSec = timestamp;
 
-                    var ccwRefKindName = "CCW QueryRuntimeClassName";
+                    var ccwRefKindName = $"CCW RefCount{(metric > 0 ? "Inc" : "Dec")}";
                     var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
                     stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
 
-                    sample.StackIndex = stackIndex;
-                    stackSource.AddSample(sample);
-                });
-                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountIncArgs>(args => {
-                    sample.Metric = 1;
-                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
-                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
-                    
-                    var ccwRefKindName = "CCW RefCountInc";
-                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
-
-                    var objectId = "Object ID " + args.objectID;
+                    var objectId = "Object ID " + objectID;
                     var objectIdIndex = stackSource.Interner.FrameIntern(objectId);
                     stackIndex = stackSource.Interner.CallStackIntern(objectIdIndex, stackIndex);
 
-                    if (objectTypeMap.ContainsKey(args.objectID))
+                    if (objectTypeMap.ContainsKey(objectID))
                     {
-                        var objectType = "Object Type " + objectTypeMap[args.objectID];
+                        var objectType = "Object Type " + objectTypeMap[objectID];
                         var objectTypeIndex = stackSource.Interner.FrameIntern(objectType);
                         stackIndex = stackSource.Interner.CallStackIntern(objectTypeIndex, stackIndex);
                     }
-                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
+                    var ccwRefCount = "CCW NewRefCnt " + refCount;
                     var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
                     stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
 
                     sample.StackIndex = stackIndex;
                     stackSource.AddSample(sample);
-                });
-                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountDecArgs>(args =>
+                };
+                interopTraceEventParser.AddCallbackForEvent<TaskCCWCreationArgs>(null, args =>
                 {
-                    sample.Metric = -1;
-                    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
-                    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
-
-                    var ccwRefKindName = "CCW RefCountDec";
-                    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
-                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
-
-                    var ccwRefCount = "CCW NewRefCnt " + args.refCount;
-                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
-                    stackIndex = stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
-
-                    sample.StackIndex = stackIndex;
-                    stackSource.AddSample(sample);
+                    if(!objectTypeMap.ContainsKey(args.objectID))
+                        objectTypeMap.Add(args.objectID, args.targetObjectIDType);
                 });
+                #region TaskCCWQueryRuntimeClassNameArgs commented for a while. TODO: get type info from pdb
+                //interopTraceEventParser.AddCallbackForEvents<TaskCCWQueryRuntimeClassNameArgs>(args =>
+                //{
+                //    sample.Metric = 0;
+                //    sample.TimeRelativeMSec = args.TimeStampRelativeMSec;
+                //    var stackIndex = stackSource.GetCallStack(args.CallStackIndex(), args);
+
+                //    var ccwRefKindName = "CCW QueryRuntimeClassName " + args.runtimeClassName;
+                //    var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                //    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
+
+                //    sample.StackIndex = stackIndex;
+                //    stackSource.AddSample(sample);
+                //});
+                #endregion
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountIncArgs>(args =>
+                    handleCWWInfoArgs(args.TimeStampRelativeMSec, args.objectID, args.refCount, 1, stackSource.GetCallStack(args.CallStackIndex(), args)));
+                interopTraceEventParser.AddCallbackForEvents<TaskCCWRefCountDecArgs>(args =>
+                    handleCWWInfoArgs(args.TimeStampRelativeMSec, args.objectID, args.refCount, -1, stackSource.GetCallStack(args.CallStackIndex(), args)));
                 eventSource.Process();
             }
             else if (streamName == "Windows Handle Ref Count")
@@ -6257,6 +6247,7 @@ table {
             }
             return ret;
         }
+
 
 
         #region private
