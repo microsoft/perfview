@@ -76,8 +76,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             ProviderManifest prevManifest = null;
             if (state.providers.TryGetValue(providerManifest.Guid, out prevManifest))
             {
-                // The existing version is at least as good, just ignore the new one.  
-                if (providerManifest.Version <= prevManifest.Version)
+                // If the new manifest is not strictly better than the one we already have, ignore it.   
+                if (!providerManifest.BetterThan(prevManifest))
                 {
                     // Trace.WriteLine("Dynamic: existing manifest just as good, returning");
                     return;
@@ -349,7 +349,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
                 Chunks = null;
                 // string str = Encoding.UTF8.GetString(serializedData);
-                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion);
+                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion, 
+                    "Event at " + data.TimeStampRelativeMSec.ToString("f3") + " MSec");
                 provider.ISDynamic = true;
                 return provider;
 
@@ -532,8 +533,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 if (offset == ushort.MaxValue)
                     offset = SkipToField(payloadFetches, index, 0, EventDataLength);
 
-                Debug.Assert(offset < this.EventDataLength);
+                // Fields that are simply not present, (perfectly) we simply return null for.  
+                if (offset == EventDataLength)
+                    return null;
 
+                // If we 
                 return GetPayloadValueAt(ref payloadFetches[index], offset, EventDataLength);
             }
             catch (Exception e)
@@ -545,7 +549,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private object GetPayloadValueAt(ref PayloadFetch payloadFetch, int offset, int payloadLength)
         {
             if (payloadLength <= offset)
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
 
             // Is this a struct field? 
             PayloadFetchClassInfo classInfo = payloadFetch.Class;
@@ -800,7 +804,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
             }
 
-            public bool ContainsKey(string key) {
+            public bool ContainsKey(string key)
+            {
                 object value;
                 return TryGetValue(key, out value);
             }
@@ -953,14 +958,23 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             offset += startOffset;
+            // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
+            if (payloadLength <= offset)
+                return payloadLength;
 
             // TODO it probably does pay to remember the offsets in a particular instance, since otherwise the
             // algorithm is N*N
             while (cur < index)
             {
                 offset = OffsetOfNextField(ref payloadFetches[cur], offset, payloadLength);
+
+                // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
+                if (offset == payloadLength)
+                    return payloadLength;
+
+                // however if we truely go past the end of the buffer, somethign went wrong and we wnat to signal that. 
                 if (payloadLength < offset)
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
                 cur++;
             }
             return offset;
@@ -1531,16 +1545,31 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             : base(action, (int)DynamicTraceEventParser.ManifestEventID, 0xFFFE, "ManifestData", Guid.Empty, 0xFE, "", manifest.Guid, manifest.Name)
         {
             this.manifest = manifest;
-            payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumber" };
+            payloadNames = new string[] { "Format", "MajorVersion", "MinorVersion", "Magic", "TotalChunks", "ChunkNumber", "PayloadLength" };
             payloadFetches = new PayloadFetch[] {
-            new PayloadFetch(0, 1, typeof(byte)),
-            new PayloadFetch(1, 1, typeof(byte)),
-            new PayloadFetch(2, 1, typeof(byte)),
-            new PayloadFetch(3, 1, typeof(byte)),
-            new PayloadFetch(4, 2, typeof(ushort)),
-            new PayloadFetch(6, 2, typeof(ushort)),
-        };
+                new PayloadFetch(0, 1, typeof(byte)),
+                new PayloadFetch(1, 1, typeof(byte)),
+                new PayloadFetch(2, 1, typeof(byte)),
+                new PayloadFetch(3, 1, typeof(byte)),
+                new PayloadFetch(4, 2, typeof(ushort)),
+                new PayloadFetch(6, 2, typeof(ushort)),
+            };
             m_target += action;
+        }
+
+        public override object PayloadValue(int index)
+        {
+            // The length of the manifest chunk is useful, so we expose it as an explict 'field' 
+            if (index == 6)
+                return EventDataLength;
+            return base.PayloadValue(index);
+        }
+
+        public override string PayloadString(int index, IFormatProvider formatProvider = null)
+        {
+            if (index == 6)
+                return PayloadValue(index).ToString();
+            return base.PayloadString(index, formatProvider);
         }
 
         public override StringBuilder ToXml(StringBuilder sb)
@@ -1552,6 +1581,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 StringBuilder baseSb = new StringBuilder();
                 base.ToXml(baseSb);
                 sb.AppendLine(XmlUtilities.OpenXmlElement(baseSb.ToString()));
+                sb.AppendLine();
+                sb.AppendLine();
+                sb.Append("<Warning>*********************************************************************************************************************</Warning>").AppendLine();
+                sb.Append("<Warning>This Manifest Represents the manifest at the event in ManifestId Element.  It may not represent THIS event's payload.</Warning>").AppendLine();
+                sb.Append("<ManifestId>").Append(manifest.Id).Append("</ManifestId>").AppendLine();
+                sb.Append("<Warning>*********************************************************************************************************************</Warning>").AppendLine();
+                sb.AppendLine();
+                sb.AppendLine();
                 sb.Append(manifest.Manifest);
                 sb.Append("</Event>");
                 return sb;
@@ -1612,6 +1649,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public ProviderManifest(Stream manifestStream, int manifestLen = int.MaxValue)
         {
             format = ManifestEnvelope.ManifestFormats.SimpleXmlFormat;
+            id = "Stream";
             int len = Math.Min((int)(manifestStream.Length - manifestStream.Position), manifestLen);
             serializedManifest = new byte[len];
             manifestStream.Read(serializedManifest, 0, len);
@@ -1622,6 +1660,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public ProviderManifest(string manifestFilePath)
         {
             format = ManifestEnvelope.ManifestFormats.SimpleXmlFormat;
+            id = manifestFilePath;
             serializedManifest = File.ReadAllBytes(manifestFilePath);
         }
 
@@ -1705,6 +1744,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 return version;
             }
         }
+        /// <summary>
+        /// This is an arbitrary id given when the Manifest is created that
+        /// identifies where the manifest came from (e.g. a file name or an event etc). 
+        /// </summary>
+        public string Id { get { return id; } }
+
+        /// <summary>
+        /// Returns true if the current manifest is better to use than 'otherManifest'   A manifest is
+        /// better if it has a larger version nubmer OR, they have the same version number and it is
+        /// physically larger (we assume what happend is people added more properties but did not
+        /// update the version field appropriately).  
+        /// </summary>
+        public bool BetterThan(ProviderManifest otherManifest)
+        {
+            int ver = Version;
+            int otherVer = otherManifest.Version;
+
+            if (ver != otherVer)
+                return (ver > otherVer);
+
+            return serializedManifest.Length > otherManifest.serializedManifest.Length;
+        }
+
 
         /// <summary>
         /// Retrieve manifest as one big string.  Mostly for debugging
@@ -1731,12 +1793,13 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// </summary>
         public override string ToString() { return Name + " " + Guid; }
         #region private
-        internal ProviderManifest(byte[] serializedManifest, ManifestEnvelope.ManifestFormats format, byte majorVersion, byte minorVersion)
+        internal ProviderManifest(byte[] serializedManifest, ManifestEnvelope.ManifestFormats format, byte majorVersion, byte minorVersion, string id)
         {
             this.serializedManifest = serializedManifest;
             this.majorVersion = majorVersion;
             this.minorVersion = minorVersion;
             this.format = format;
+            this.id = id;
         }
 
         /// <summary>
@@ -2151,6 +2214,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             serializer.Write(majorVersion);
             serializer.Write(minorVersion);
             serializer.Write((int)format);
+            serializer.Write(id);
             int count = 0;
             if (serializedManifest != null)
                 count = serializedManifest.Length;
@@ -2164,6 +2228,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             deserializer.Read(out majorVersion);
             deserializer.Read(out minorVersion);
             format = (ManifestEnvelope.ManifestFormats)deserializer.ReadInt();
+            deserializer.Read(out id);
             int count = deserializer.ReadInt();
             serializedManifest = new byte[count];
             for (int i = 0; i < count; i++)
@@ -2212,6 +2277,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private byte majorVersion;
         private byte minorVersion;
         ManifestEnvelope.ManifestFormats format;
+        private string id;      // simply identifies where this manifest came from (e.g. a file, or event)
         private Guid guid;
         private string name;
         private int version;

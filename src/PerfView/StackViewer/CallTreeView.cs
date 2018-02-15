@@ -76,6 +76,9 @@ namespace PerfView
             }
 
             int startPos = m_perfGrid.SelectionStartIndex();
+            if (m_flattenedTree.Count <= startPos)
+                return false;
+
             m_curPosition = m_flattenedTree[startPos].Data;
 
             m_perfGrid.Focus();
@@ -313,6 +316,13 @@ namespace PerfView
             m_treeView.Validate();
 #endif
         }
+
+        public void SetBackgroundColor(System.Drawing.Color color)
+        {
+            BackgroundColor = color.Name;
+        }
+
+        public string BackgroundColor { get; set; }
 
         /// <summary>
         /// Is the node expanded or not.  

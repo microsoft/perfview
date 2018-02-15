@@ -102,6 +102,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             if (map[process.ProcessIndex].OnLoaded != null) map[process.ProcessIndex].OnLoaded(runtime);
         }
 
+        internal static void OnDotNetRuntimeUnloaded(this TraceProcess process)
+        {
+            Debug.Assert(process.Source != null);
+            Dictionary<ProcessIndex, DotNetRuntime> map = (Dictionary<ProcessIndex, DotNetRuntime>)process.Source.UserData["Computers/LoadedDotNetRuntimes"];
+            if (map.ContainsKey(process.ProcessIndex))
+            {
+                // remove this runtime, since the process has terminated
+                map.Remove(process.ProcessIndex);
+            }
+        }
+
         private static TraceEventDispatcher m_currentSource; // used to ensure non-concurrent usage
         #endregion
     }
@@ -219,6 +230,32 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     processRuntimes.Add(proc, mang);
                 }
             };
+
+            // if applying lifetime, trim loaded managed runtimes when processes are terminated and are out of lifetime
+            source.AddCallbackOnProcessStop((p) =>
+            {
+                // check if we are applying a lifetime model
+                if (source.DataLifetimeEnabled())
+                {
+                    // iterate through all processes and unload the managed runtime from processes
+                    //  that have exited and are out of lifetime
+                    // immediately removing the runtime for stopped processes is possible, but that
+                    //  breaks the contract of how long data is kept with the lifetime
+                    foreach (var process in source.Processes())
+                    {
+                        // continue if the process has not exited yet
+                        if (!process.ExitStatus.HasValue) continue;
+
+                        if (process.EndTimeRelativeMsec < (p.EndTimeRelativeMsec - source.DataLifetimeMsec))
+                        {
+                            // remove this managed runtime instance
+                            process.OnDotNetRuntimeUnloaded();
+                            // remove from the local cache
+                            if (processRuntimes.ContainsKey(process)) processRuntimes.Remove(process);
+                        }
+                    }
+                }
+            });
 
             source.Clr.All += createManagedProc;
             clrPrivate.All += createManagedProc;
@@ -639,6 +676,20 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                         // fire event
                         if (stats.GCStart != null) stats.GCStart(process, _gc);
+
+                        // check if we should apply a lifetime limit to the GC cache
+                        if (source.DataLifetimeEnabled() && data.TimeStampRelativeMSec >= stats.GC.NextRelativeTimeStampMsec)
+                        {
+                            // note the next time that lifetime should be applied, to avoid cleaningup too frequently
+                            stats.GC.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec/2.0);
+                            // trim the GCs to only include those either incomplete or completed after lifetime
+                            stats.GC.m_gcs = stats.GC.m_gcs.Where(gc => !gc.IsComplete || gc.StartRelativeMSec >= (data.TimeStampRelativeMSec - source.DataLifetimeMsec)).ToList();
+                            // rewrite the index for fast lookup
+                            for (int i = 0; i < stats.GC.m_gcs.Count; i++)
+                            {
+                                stats.GC.m_gcs[i].Index = i;
+                            }
+                        }
                     }
                 };
 
@@ -649,6 +700,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     TraceGC _gc = TraceGarbageCollector.GetCurrentGC(stats);
                     if (_gc != null)
                     {
+                        if (_gc.PinnedObjects == null) _gc.PinnedObjects = new Dictionary<Address, long>();
                         if (!_gc.PinnedObjects.ContainsKey(data.ObjectID))
                         {
                             _gc.PinnedObjects.Add(data.ObjectID, data.ObjectSize);
@@ -671,6 +723,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in 
                         // TraceEvent.
+                        if (_event.PinnedPlugs == null) _event.PinnedPlugs = new List<TraceGC.PinnedPlug>();
                         _event.PinnedPlugs.Add(new TraceGC.PinnedPlug(data.PlugStart, data.PlugEnd));
                     }
                 };
@@ -729,6 +782,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                     {
                         // ObjectID is supposed to be an IntPtr. But "Address" is defined as UInt64 in 
                         // TraceEvent.
+                        if (_gc.PinnedPlugs == null) _gc.PinnedPlugs = new List<TraceGC.PinnedPlug>();
                         _gc.PinnedPlugs.Add(new TraceGC.PinnedPlug(data.PlugStart, data.PlugEnd));
                     }
                 };
@@ -1043,6 +1097,15 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
                     // fire event
                     if (stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
+
+                    // check if we should apply a lifetime limit to the method cache
+                    if (source.DataLifetimeEnabled() && data.TimeStampRelativeMSec >= stats.JIT.NextRelativeTimeStampMsec)
+                    {
+                        // note the next time that lifetime should be applied, to avoid cleaningup too frequently
+                        stats.JIT.NextRelativeTimeStampMsec = data.TimeStampRelativeMSec + (source.DataLifetimeMsec/2.0);
+                        // trim the methods to only include those that were JITT'd after the lifetime timestamp
+                        stats.JIT.m_methods = stats.JIT.m_methods.Where(meth => meth.StartTimeMSec >= (data.TimeStampRelativeMSec - source.DataLifetimeMsec)).ToList();
+                    }
                 };
                 ClrRundownTraceEventParser parser = new ClrRundownTraceEventParser(source);
                 Action<ModuleLoadUnloadTraceData> moduleLoadAction = delegate (ModuleLoadUnloadTraceData data)
@@ -1289,11 +1352,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
             return null;
         }
 
-        private List<TraceGC> m_gcs = new List<TraceGC>();
+        internal List<TraceGC> m_gcs = new List<TraceGC>();
         private GCStats[] m_generations = new GCStats[3];
         internal GCStats m_stats = new GCStats();
         private int m_prvcount = 0;
         private int m_prvCompleted = 0;
+        internal double NextRelativeTimeStampMsec;
 
         private void Calculate()
         {
@@ -1430,7 +1494,8 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
 
         #region private
         internal JITStats m_stats = new JITStats();
-        private List<TraceJittedMethod> m_methods = new List<TraceJittedMethod>();
+        internal List<TraceJittedMethod> m_methods = new List<TraceJittedMethod>();
+        internal double NextRelativeTimeStampMsec;
         #endregion
     }
 
@@ -1630,9 +1695,12 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             if (pinnedObjectSizes == -1)
             {
                 pinnedObjectSizes = 0;
-                foreach (KeyValuePair<ulong, long> item in PinnedObjects)
+                if (PinnedObjects != null)
                 {
-                    pinnedObjectSizes += item.Value;
+                    foreach (KeyValuePair<ulong, long> item in PinnedObjects)
+                    {
+                        pinnedObjectSizes += item.Value;
+                    }
                 }
             }
             return pinnedObjectSizes;
@@ -1649,27 +1717,33 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
                 TotalPinnedPlugSize = 0;
                 TotalUserPinnedPlugSize = 0;
 
-                foreach (KeyValuePair<ulong, long> item in PinnedObjects)
+                if (PinnedObjects != null && PinnedPlugs != null)
                 {
-                    ulong Address = item.Key;
-
-                    for (int i = 0; i < PinnedPlugs.Count; i++)
+                    foreach (KeyValuePair<ulong, long> item in PinnedObjects)
                     {
-                        if ((Address >= PinnedPlugs[i].Start) && (Address < PinnedPlugs[i].End))
+                        ulong Address = item.Key;
+
+                        for (int i = 0; i < PinnedPlugs.Count; i++)
                         {
-                            PinnedPlugs[i].PinnedByUser = true;
-                            break;
+                            if ((Address >= PinnedPlugs[i].Start) && (Address < PinnedPlugs[i].End))
+                            {
+                                PinnedPlugs[i].PinnedByUser = true;
+                                break;
+                            }
                         }
                     }
                 }
 
-                for (int i = 0; i < PinnedPlugs.Count; i++)
+                if (PinnedPlugs != null)
                 {
-                    long Size = (long)(PinnedPlugs[i].End - PinnedPlugs[i].Start);
-                    TotalPinnedPlugSize += Size;
-                    if (PinnedPlugs[i].PinnedByUser)
+                    for (int i = 0; i < PinnedPlugs.Count; i++)
                     {
-                        TotalUserPinnedPlugSize += Size;
+                        long Size = (long)(PinnedPlugs[i].End - PinnedPlugs[i].Start);
+                        TotalPinnedPlugSize += Size;
+                        if (PinnedPlugs[i].PinnedByUser)
+                        {
+                            TotalUserPinnedPlugSize += Size;
+                        }
                     }
                 }
             }
@@ -2112,6 +2186,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             // calculate core gc values
             pinnedObjectSizes = -1;
             TotalPinnedPlugSize = -1;
+            GetPinnedObjectSizes();
             GetPinnedObjectPercentage();
             FreeList = GetFreeListEfficiency(details.GCs, this);
             AllocedSinceLastGCMB = GetAllocedSinceLastGCMB(details.GCs, this);
@@ -2128,6 +2203,10 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             details.m_stats.ProcessDuration = GetProcessDuration(details.m_stats, details.GCs, this);
 
             BlockingGCEnd();
+
+            // clear out large internal data, after the data was used to calculate satistics
+            if (PinnedObjects != null) { PinnedObjects.Clear(); PinnedObjects = null; }
+            if (PinnedPlugs != null) { PinnedPlugs.Clear(); PinnedPlugs = null; }
         }
 
         internal static double GetProcessDuration(GCStats stats, List<TraceGC> GCs, TraceGC gc)
@@ -2478,7 +2557,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
         }
 
         internal bool IsConcurrentGC;
-        internal Dictionary<ulong /*objectid*/, long> PinnedObjects = new Dictionary<ulong, long>();   // list of Pinned objects
+        internal Dictionary<ulong /*objectid*/, long> PinnedObjects;   // list of Pinned objects
         internal int Index;                       // Index into the list of GC events
 
         /// <summary>
@@ -2680,7 +2759,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
             }
         };
 
-        internal List<PinnedPlug> PinnedPlugs = new List<PinnedPlug>();
+        internal List<PinnedPlug> PinnedPlugs;
         private long pinnedObjectSizes;
         internal long duplicatedPinningReports;
 

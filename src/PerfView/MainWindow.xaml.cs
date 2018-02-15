@@ -1678,6 +1678,7 @@ namespace PerfView
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
                 throw new ApplicationException("No file selected.");
+            string selectedFilePath = selectedFile.FilePath;
 
             var targetPath = GetDataFileName("Rename File", false, "", null);
             if (targetPath == null)
@@ -1685,7 +1686,25 @@ namespace PerfView
                 StatusBar.Log("Operation Canceled");
                 return;
             }
-            FileUtilities.ForceMove(selectedFile.FilePath, targetPath);
+
+            // Add a ETL suffix if the source has one.  
+            bool selectedFileIsEtl = selectedFilePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase);
+            if (selectedFileIsEtl && !Path.HasExtension(targetPath))
+                targetPath = Path.ChangeExtension(targetPath, ".etl");
+
+            // Do the move.  
+            FileUtilities.ForceMove(selectedFilePath, targetPath);
+
+            // rename all the other variations of the unmerged file
+            if (selectedFileIsEtl && targetPath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFilePath), Path.GetFileNameWithoutExtension(selectedFilePath) + ".*"))
+                {
+                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
+                    if (m.Success)
+                        FileUtilities.ForceMove(relatedFile, Path.ChangeExtension(targetPath, m.Groups[1].Value));
+                }
+            }
 
             // refresh the directory. 
             RefreshCurrentDirectory();

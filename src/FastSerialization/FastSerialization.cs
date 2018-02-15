@@ -2359,7 +2359,7 @@ namespace FastSerialization
         Int64,
         SkipRegion,
         String,             // Size of string (in bytes) followed by UTF8 bytes.  
-        Blob,               // Size of bytes followed by bytes. 
+        Blob,
         Limit,              // Just past the last valid tag, used for asserts.  
     }
     #endregion

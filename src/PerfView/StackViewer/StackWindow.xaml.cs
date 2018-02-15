@@ -2352,6 +2352,51 @@ namespace PerfView
                            (CallersTab.IsSelected && m_callersView.SelectedNode != null) ||
                            (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
         }
+
+        private void DoSetBrownBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.BurlyWood);
+        }
+
+        private void DoSetBlueBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.LightSkyBlue);
+        }
+
+        private void DoSetRedBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.Coral);
+        }
+
+        private void DoSetBackgroundColor(object sender, ExecutedRoutedEventArgs e, System.Drawing.Color color)
+        {
+            CallTreeViewNode selectedNode = null;
+            CallTreeView view = null;
+            if (CallTreeTab.IsSelected)
+                view = CallTreeView;
+            else if (CallersTab.IsSelected)
+                view = m_callersView;
+            else if (CalleesTab.IsSelected)
+                view = m_calleesView;
+
+            if (view != null)
+            {
+                selectedNode = view.SelectedNode;
+                if (selectedNode != null)
+                {
+                    selectedNode.SetBackgroundColor(color);
+                    view.m_perfGrid.Grid.Items.Refresh();
+                }
+            }
+        }
+
+        private void CanSetBackgroundColor(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = (CallTreeTab.IsSelected && CallTreeView.SelectedNode != null) ||
+                           (CallersTab.IsSelected && m_callersView.SelectedNode != null) ||
+                           (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
+        }
+
         private void DoFoldPercent(object sender, ExecutedRoutedEventArgs e)
         {
             FoldPercentTextBox.Focus();
@@ -2831,6 +2876,9 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.Space) });
         public static RoutedUICommand CollapseCommand = new RoutedUICommand("Collapse", "Collapse", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Space, ModifierKeys.Shift) });
+        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetRedBackgroundColorCommand = new RoutedUICommand("Set Red Background Color", "SetRedBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand FoldPercentCommand = new RoutedUICommand("Fold %", "FoldPercent", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F6) });
         public static RoutedUICommand IncreaseFoldPercentCommand = new RoutedUICommand("Increase Fold %", "Increase FoldPercent", typeof(StackWindow),
