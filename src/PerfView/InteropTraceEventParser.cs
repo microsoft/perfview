@@ -325,7 +325,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
     {
         public long objectID { get { return GetInt64At(0); } }
         public long targetObjectID { get { return GetInt64At(8); } }
-        public long targetObjectIDType { get { return GetInt64At(16); } }
+        public Address targetObjectIDType { get { return (Address) GetInt64At(16); } }
 
         #region Private
         internal TaskCCWCreationArgs(Action<TaskCCWCreationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -572,7 +572,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
     public sealed class TaskCCWRefCountDecArgs : TraceEvent
     {
         public long objectID { get { return GetInt64At(0); } }
-        public long refCount { get { return GetInt64At(8); } }
+        public int refCount { get { return GetInt32At(8); } }
+        public int jupiterRefCount { get { return GetInt32At(12); } }
 
         #region Private
         internal TaskCCWRefCountDecArgs(Action<TaskCCWRefCountDecArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -599,6 +600,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             Prefix(sb);
             XmlAttrib(sb, "objectID", objectID);
             XmlAttrib(sb, "refCount", refCount);
+            XmlAttrib(sb, "jupiterRefCount", jupiterRefCount);
             sb.Append("/>");
             return sb;
         }
@@ -608,7 +610,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "objectID", "refCount" };
+                    payloadNames = new string[] { "objectID", "refCount", "jupiterRefCount" };
                 return payloadNames;
             }
         }
@@ -621,6 +623,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
                     return objectID;
                 case 1:
                     return refCount;
+                case 2:
+                    return jupiterRefCount;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
@@ -633,7 +637,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
     public sealed class TaskCCWRefCountIncArgs : TraceEvent
     {
         public long objectID { get { return GetInt64At(0); } }
-        public long refCount { get { return GetInt64At(8); } }
+        public int refCount { get { return GetInt32At(8); } }
+        public int jupiterRefCount { get { return GetInt32At(12); } }
 
         #region Private
         internal TaskCCWRefCountIncArgs(Action<TaskCCWRefCountIncArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -660,6 +665,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             Prefix(sb);
             XmlAttrib(sb, "objectID", objectID);
             XmlAttrib(sb, "refCount", refCount);
+            XmlAttrib(sb, "jupiterRefCount", jupiterRefCount);
             sb.Append("/>");
             return sb;
         }
@@ -669,7 +675,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "objectID", "refCount" };
+                    payloadNames = new string[] { "objectID", "refCount", "jupiterRefCount" };
                 return payloadNames;
             }
         }
@@ -682,6 +688,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider
                     return objectID;
                 case 1:
                     return refCount;
+                case 2:
+                    return jupiterRefCount;
                 default:
                     Debug.Assert(false, "Bad field index");
                     return null;
