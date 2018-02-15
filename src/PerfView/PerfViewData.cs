@@ -736,7 +736,7 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Clear();
             stackWindow.GroupRegExTextBox.Items.Add(@"[no grouping]");
             if (windows)
-            stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
+                stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group modules]           {%}!->module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group module entries]  {%}!=>module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group full path module entries]  {*}!=>module $1");
@@ -1095,7 +1095,7 @@ table {
 
             Debug.Assert(fileName.EndsWith("TraceInfo.html"));
             if (fileName.EndsWith(".TraceInfo.html"))
-                logPath = fileName.Substring(0, fileName.Length-15) + ".LogFile.txt";
+                logPath = fileName.Substring(0, fileName.Length - 15) + ".LogFile.txt";
             if (logPath != null && File.Exists(logPath))
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
             else
@@ -1317,7 +1317,7 @@ table {
     {
         Dictionary<Guid, IisRequest> m_Requests = new Dictionary<Guid, IisRequest>();
         List<ExceptionDetails> allExceptions = new List<ExceptionDetails>();
-        
+
         public PerfViewIisStats(PerfViewFile dataFile) : base(dataFile, "IIS Stats") { }
 
         protected override void WriteHtmlBody(TraceLog dataFile, TextWriter writer, string fileName, TextWriter log)
@@ -1434,7 +1434,7 @@ table {
                 iisPrebeginModuleEvent.StartThreadId = preBeginEvent.ThreadID;
                 iisPrebeginModuleEvent.ChildRequestRecurseLevel = childRequestRecurseLevel;
                 request.PipelineEvents.Add(iisPrebeginModuleEvent);
-                
+
             };
 
             iis.IISRequestNotificationPreBeginRequestEnd += delegate (IISRequestNotificationPreBeginEnd preBeginEvent)
@@ -1740,7 +1740,7 @@ table {
                 ex.ThreadId = data.ThreadID;
                 ex.ProcessId = data.ProcessID;
                 ex.TimeStampRelativeMSec = data.TimeStampRelativeMSec;
-                allExceptions.Add(ex);               
+                allExceptions.Add(ex);
             };
 
             dispatcher.Process();
@@ -2019,13 +2019,13 @@ table {
                 }
             }
 
-            Dictionary<string,int> exceptionsList = new Dictionary<string, int>();
+            Dictionary<string, int> exceptionsList = new Dictionary<string, int>();
 
-            if (startTimeForPipeLineEvent > 0 && processId != 0 && threadId !=0)
+            if (startTimeForPipeLineEvent > 0 && processId != 0 && threadId != 0)
             {
 
-                foreach (var ex in allExceptions.Where(x => x.TimeStampRelativeMSec > startTimeForPipeLineEvent && x.TimeStampRelativeMSec <= request.FailureDetails.TimeStampRelativeMSec 
-                                                        && processId == x.ProcessId 
+                foreach (var ex in allExceptions.Where(x => x.TimeStampRelativeMSec > startTimeForPipeLineEvent && x.TimeStampRelativeMSec <= request.FailureDetails.TimeStampRelativeMSec
+                                                        && processId == x.ProcessId
                                                         && threadId == x.ThreadId))
                 {
                     exceptionMessage = ex.ExceptionType + ":" + ex.ExceptionMessage;
@@ -2046,7 +2046,7 @@ table {
             {
                 returnString = $"{item.Value}  exceptions [{item.Key.ToString()}] <br/>";
             }
-            
+
             return returnString;
         }
 
@@ -2130,7 +2130,7 @@ table {
                 var activityStacksParams = activityStacksString.Split(';');
 
                 int processID = Convert.ToInt32(activityStacksParams[0]);
-                string relatedActivityId= activityStacksParams[1];
+                string relatedActivityId = activityStacksParams[1];
                 string startTime = activityStacksParams[2];
                 string endTime = activityStacksParams[3];
 
@@ -2145,10 +2145,10 @@ table {
                         ExcludeReadyThread = true
                     };
                     computer.GenerateThreadTimeStacks(startStopSource);
-                    
+
                     etlFile.SetFilterProcess(processID);
                     var stacks = new Stacks(startStopSource, "Thread Time (with StartStop Activities)", etlFile, false);
-                    
+
                     stacks.Filter.StartTimeRelativeMSec = startTime;
                     stacks.Filter.EndTimeRelativeMSec = endTime;
                     stacks.Filter.IncludeRegExs = relatedActivityId;
@@ -4431,38 +4431,70 @@ table {
             }
             else if (streamName == ".NET Native CCW Ref Count")
             {
-                var objectTypeMap = new Dictionary<long, long>(1000);
+                // TODO FIX NOW, investigate the missing events.   All we know is that incs and dec are not
+                // consistant with the RefCount value that is in the events.
+                GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
+                {
+                    MessageBox.Show(GuiApp.MainWindow, 
+                        "Warning: the Interop CCW events on which this data is based seem to be incomplete.\r\n" + 
+                        "There seem to be missing instrumentation, which make the referenct counts unreliable\r\n"
+                        , "Data May be Incorrect");
+                });
+
+                var objectToTypeMap = new Dictionary<long, Address>(1000);
+                var typeToNameMap = new Dictionary<Address, string>(100);
                 var interopTraceEventParser = new InteropTraceEventParser(eventSource);
-                Action<double, long, long, int, StackSourceCallStackIndex> handleCWWInfoArgs = (double timestamp, long objectID, long refCount, int metric, StackSourceCallStackIndex stackIndex) =>
+                Action<double, long, int, int, StackSourceCallStackIndex> handleCWWInfoArgs = (double timestamp, long objectID, int refCount, int metric, StackSourceCallStackIndex stackIndex) =>
                 {
                     sample.Metric = metric;
                     sample.TimeRelativeMSec = timestamp;
 
-                    var ccwRefKindName = $"CCW RefCount{(metric > 0 ? "Inc" : "Dec")}";
+                    var ccwRefKindName = $"CCW {(metric >= 0 ? "AddRef" : "Release")}";
                     var ccwRefKindNameIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
                     stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindNameIndex, stackIndex);
 
-                    var objectId = "Object ID " + objectID;
+                    var objectId = "Object ID 0x" + objectID.ToString("x");
                     var objectIdIndex = stackSource.Interner.FrameIntern(objectId);
                     stackIndex = stackSource.Interner.CallStackIntern(objectIdIndex, stackIndex);
 
-                    if (objectTypeMap.ContainsKey(objectID))
+                    Address typeId;
+                    if (objectToTypeMap.TryGetValue(objectID, out typeId))
                     {
-                        var objectType = "Object Type " + objectTypeMap[objectID];
+                        string objectType = "Object Type ";
+                        string typeName;
+                        if (typeToNameMap.TryGetValue(typeId, out typeName))
+                            objectType += typeName;
+                        else
+                            objectType += "0x" + typeId;
                         var objectTypeIndex = stackSource.Interner.FrameIntern(objectType);
                         stackIndex = stackSource.Interner.CallStackIntern(objectTypeIndex, stackIndex);
                     }
-                    var ccwRefCount = "CCW NewRefCnt " + refCount;
+                    var ccwRefCount = "CCW NewRefCnt " + refCount;     
                     var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
                     stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
 
                     sample.StackIndex = stackIndex;
                     stackSource.AddSample(sample);
                 };
+
+                TypeNameSymbolResolver typeNameSymbolResolver = new TypeNameSymbolResolver(FilePath, log);
+
                 interopTraceEventParser.AddCallbackForEvent<TaskCCWCreationArgs>(null, args =>
                 {
-                    if(!objectTypeMap.ContainsKey(args.objectID))
-                        objectTypeMap.Add(args.objectID, args.targetObjectIDType);
+                    if (!objectToTypeMap.ContainsKey(args.objectID))
+                        objectToTypeMap.Add(args.objectID, args.targetObjectIDType);
+
+                    // Attempt to resolve the type name.
+                    if (!typeToNameMap.ContainsKey(args.targetObjectIDType))
+                    {
+                        TraceLoadedModule module = args.Process().LoadedModules.GetModuleContainingAddress(args.targetObjectIDType, args.TimeStampRelativeMSec);
+                        if (module != null)
+                        {
+                            string typeName = typeNameSymbolResolver.ResolveTypeName((int)(args.targetObjectIDType - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
+                            if (typeName != null)
+                                typeToNameMap.Add(args.targetObjectIDType, typeName);
+                        }
+                    }
                 });
                 #region TaskCCWQueryRuntimeClassNameArgs commented for a while. TODO: get type info from pdb
                 //interopTraceEventParser.AddCallbackForEvents<TaskCCWQueryRuntimeClassNameArgs>(args =>
@@ -4495,8 +4527,8 @@ table {
                     sample.StackIndex = StackSourceCallStackIndex.Invalid;
 
                     sample.Metric = 1;
-                    // Closes use the call stack of the allocation site if possible (since that is more helpful)  
-                    if (data.Opcode == (TraceEventOpcode)33)       // CloseHandle
+            // Closes use the call stack of the allocation site if possible (since that is more helpful)  
+            if (data.Opcode == (TraceEventOpcode)33)       // CloseHandle
                     {
                         sample.Metric = -1;
 
@@ -4504,17 +4536,17 @@ table {
                         StackSourceCallStackIndex stackIndex;
                         if (allocationsStacks.TryGetValue(key, out stackIndex))
                             sample.StackIndex = stackIndex;
-                        // TODO should we keep track of the ref count and remove the entry when it drops past zero?  
-                    }
+                // TODO should we keep track of the ref count and remove the entry when it drops past zero?  
+            }
 
-                    // If this not a close() (Or if we could not find a stack for the close() make up a call stack from the event.  
-                    if (sample.StackIndex == StackSourceCallStackIndex.Invalid)
+            // If this not a close() (Or if we could not find a stack for the close() make up a call stack from the event.  
+            if (sample.StackIndex == StackSourceCallStackIndex.Invalid)
                     {
                         StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
 
-                        // We want all stacks to be int he process where the handle exists.  But this not always the case
-                        // If that happened abandon the stack and make up a pseudo stack that lets you know that happened. 
-                        if (handleProcess != data.ProcessID)
+                // We want all stacks to be int he process where the handle exists.  But this not always the case
+                // If that happened abandon the stack and make up a pseudo stack that lets you know that happened. 
+                if (handleProcess != data.ProcessID)
                         {
                             stackIndex = StackSourceCallStackIndex.Invalid;
                             TraceProcess process = eventLog.Processes.GetProcess(handleProcess, data.TimeStampRelativeMSec);
@@ -4535,11 +4567,11 @@ table {
                         var handleTypeIndex = stackSource.Interner.FrameIntern("Handle Type " + handleTypeName);
                         stackIndex = stackSource.Interner.CallStackIntern(handleTypeIndex, stackIndex);
 
-                        //var objectName = "Object Instance 0x" + objectInstance.ToString("x");
-                        //var objectIndex = stackSource.Interner.FrameIntern(objectName);
-                        //stackIndex = stackSource.Interner.CallStackIntern(objectIndex, stackIndex);
+                //var objectName = "Object Instance 0x" + objectInstance.ToString("x");
+                //var objectIndex = stackSource.Interner.FrameIntern(objectName);
+                //stackIndex = stackSource.Interner.CallStackIntern(objectIndex, stackIndex);
 
-                        sample.StackIndex = stackIndex;
+                sample.StackIndex = stackIndex;
 
                         long key = (((long)handleProcess) << 32) + handleInstance;
                         allocationsStacks[key] = stackIndex;
@@ -4566,38 +4598,38 @@ table {
 
                     // Log a pseudo-event that indicates when the activity dies
                     activityComputer.Stop += delegate (TraceActivity activity, TraceEvent data)
-                    {
+                                    {
                         // TODO This is a clone of the logic below, factor it.  
                         TraceThread thread = data.Thread();
-                        if (thread != null)
-                            return;
+                                        if (thread != null)
+                                            return;
 
-                        StackSourceCallStackIndex stackIndex;
-                        if (isAnyTaskTree)
-                        {
+                                        StackSourceCallStackIndex stackIndex;
+                                        if (isAnyTaskTree)
+                                        {
                             // Compute the stack where frames using an activity Name as a frame name.
                             stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
-                        }
-                        else if (isAnyStartStopTreeNoCallStack)
-                        {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
-                        }
-                        else
-                        {
-                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
-                            if (isAnyWithStartStop)
-                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                                        }
+                                        else if (isAnyStartStopTreeNoCallStack)
+                                        {
+                                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
+                                        }
+                                        else
+                                        {
+                                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
+                                            if (isAnyWithStartStop)
+                                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
-                        }
+                                        }
 
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
-                        sample.StackIndex = stackIndex;
-                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                        sample.Metric = 1;
-                        stackSource.AddSample(sample);
-                    };
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
+                                        sample.StackIndex = stackIndex;
+                                        sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                        sample.Metric = 1;
+                                        stackSource.AddSample(sample);
+                                    };
 
                     if (isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
@@ -4609,210 +4641,210 @@ table {
                 StackSourceFrameIndex sampledProfileFrame = stackSource.Interner.FrameIntern("Event Windows Kernel/PerfInfo/Sample");
 
                 eventSource.AllEvents += delegate (TraceEvent data)
-                {
+                                {
                     // Get most of the stack (we support getting the normal call stack as well as the task stack.  
                     StackSourceCallStackIndex stackIndex;
-                    if (activityComputer != null)
-                    {
-                        TraceThread thread = data.Thread();
-                        if (thread == null)
-                            return;
+                                    if (activityComputer != null)
+                                    {
+                                        TraceThread thread = data.Thread();
+                                        if (thread == null)
+                                            return;
 
-                        if (isAnyTaskTree)
-                        {
+                                        if (isAnyTaskTree)
+                                        {
                             // Compute the stack where frames using an activity Name as a frame name.
                             stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
-                        }
-                        else if (isAnyStartStopTreeNoCallStack)
-                        {
-                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
-                        }
-                        else
-                        {
-                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
-                            if (isAnyWithStartStop)
-                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                                        }
+                                        else if (isAnyStartStopTreeNoCallStack)
+                                        {
+                                            stackIndex = startStopComputer.GetStartStopActivityStack(stackSource, startStopComputer.GetCurrentStartStopActivity(thread, data), thread.Process);
+                                        }
+                                        else
+                                        {
+                                            Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
+                                            if (isAnyWithStartStop)
+                                                topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
-                        }
-                    }
-                    else
-                    {
+                                        }
+                                    }
+                                    else
+                                    {
                         // Normal case, get the calls stack of frame names.  
                         var callStackIdx = data.CallStackIndex();
-                        if (callStackIdx != CallStackIndex.Invalid)
-                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
-                        else
-                            stackIndex = StackSourceCallStackIndex.Invalid;
-                    }
+                                        if (callStackIdx != CallStackIndex.Invalid)
+                                            stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                                        else
+                                            stackIndex = StackSourceCallStackIndex.Invalid;
+                                    }
 
-                    var asCSwitch = data as CSwitchTraceData;
-                    if (asCSwitch != null)
-                    {
-                        if (activityComputer == null)  // Just a plain old any-stacks
+                                    var asCSwitch = data as CSwitchTraceData;
+                                    if (asCSwitch != null)
+                                    {
+                                        if (activityComputer == null)  // Just a plain old any-stacks
                         {
-                            var callStackIdx = asCSwitch.BlockingStack();
-                            if (callStackIdx != CallStackIndex.Invalid)
-                            {
+                                            var callStackIdx = asCSwitch.BlockingStack();
+                                            if (callStackIdx != CallStackIndex.Invalid)
+                                            {
                                 // Make an entry for the blocking stacks as well.  
                                 sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
-                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                sample.Metric = 1;
-                                stackSource.AddSample(sample);
-                            }
-                        }
+                                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                                sample.Metric = 1;
+                                                stackSource.AddSample(sample);
+                                            }
+                                        }
 
-                        if (stackIndex != StackSourceCallStackIndex.Invalid)
-                        {
-                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
-                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
-                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
-                        }
-                        goto ADD_SAMPLE;
-                    }
+                                        if (stackIndex != StackSourceCallStackIndex.Invalid)
+                                        {
+                                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
+                                            stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
+                                            stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
+                                        }
+                                        goto ADD_SAMPLE;
+                                    }
 
-                    if (stackIndex == StackSourceCallStackIndex.Invalid)
-                        return;
+                                    if (stackIndex == StackSourceCallStackIndex.Invalid)
+                                        return;
 
-                    var asSampledProfile = data as SampledProfileTraceData;
-                    if (asSampledProfile != null)
-                    {
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
-                        goto ADD_SAMPLE;
-                    }
+                                    var asSampledProfile = data as SampledProfileTraceData;
+                                    if (asSampledProfile != null)
+                                    {
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Priority " + asSampledProfile.Priority), stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asSampledProfile.ProcessorNumber), stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(sampledProfileFrame, stackIndex);
+                                        goto ADD_SAMPLE;
+                                    }
 
-                    var asReadyThread = data as DispatcherReadyThreadTraceData;
-                    if (asReadyThread != null)
-                    {
-                        var awakenedName = "EventData Readied Thread " + asReadyThread.AwakenedThreadID +
-                            " Proc " + asReadyThread.AwakenedProcessID;
-                        var awakenedIndex = stackSource.Interner.FrameIntern(awakenedName);
-                        stackIndex = stackSource.Interner.CallStackIntern(awakenedIndex, stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(readyThreadEventFrame, stackIndex);
-                        goto ADD_SAMPLE;
-                    }
+                                    var asReadyThread = data as DispatcherReadyThreadTraceData;
+                                    if (asReadyThread != null)
+                                    {
+                                        var awakenedName = "EventData Readied Thread " + asReadyThread.AwakenedThreadID +
+                                            " Proc " + asReadyThread.AwakenedProcessID;
+                                        var awakenedIndex = stackSource.Interner.FrameIntern(awakenedName);
+                                        stackIndex = stackSource.Interner.CallStackIntern(awakenedIndex, stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(readyThreadEventFrame, stackIndex);
+                                        goto ADD_SAMPLE;
+                                    }
 
                     // TODO FIX NOW remove for debugging activity stuff.  
-#if false 
+#if false
                     var activityId = data.ActivityID;
                     if (activityId != Guid.Empty && ActivityComputer.IsActivityPath(activityId))
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityPath " + ActivityComputer.ActivityPathString(activityId)), stackIndex);
 #endif
                     var asObjectAllocated = data as ObjectAllocatedArgs;
-                    if (asObjectAllocated != null)
-                    {
-                        var size = "EventData Size 0x" + asObjectAllocated.Size.ToString("x");
-                        var sizeIndex = stackSource.Interner.FrameIntern(size);
-                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
-                        goto ADD_EVENT_FRAME;
-                    }
+                                    if (asObjectAllocated != null)
+                                    {
+                                        var size = "EventData Size 0x" + asObjectAllocated.Size.ToString("x");
+                                        var sizeIndex = stackSource.Interner.FrameIntern(size);
+                                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
+                                        goto ADD_EVENT_FRAME;
+                                    }
 
-                    var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
-                    if (asSampleObjectAllocated != null)
-                    {
-                        var size = "EventData Size 0x" + asSampleObjectAllocated.TotalSizeForTypeSample.ToString("x");
-                        var sizeIndex = stackSource.Interner.FrameIntern(size);
-                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
-                        goto ADD_EVENT_FRAME;
-                    }
+                                    var asSampleObjectAllocated = data as GCSampledObjectAllocationTraceData;
+                                    if (asSampleObjectAllocated != null)
+                                    {
+                                        var size = "EventData Size 0x" + asSampleObjectAllocated.TotalSizeForTypeSample.ToString("x");
+                                        var sizeIndex = stackSource.Interner.FrameIntern(size);
+                                        stackIndex = stackSource.Interner.CallStackIntern(sizeIndex, stackIndex);
+                                        goto ADD_EVENT_FRAME;
+                                    }
 
-                    var asSetGCHandle = data as SetGCHandleTraceData;
-                    if (asSetGCHandle != null)
-                    {
-                        var handleName = "EventData GCHandleKind " + asSetGCHandle.Kind.ToString();
-                        var handleIndex = stackSource.Interner.FrameIntern(handleName);
-                        stackIndex = stackSource.Interner.CallStackIntern(handleIndex, stackIndex);
-                        goto ADD_EVENT_FRAME;
-                    }
+                                    var asSetGCHandle = data as SetGCHandleTraceData;
+                                    if (asSetGCHandle != null)
+                                    {
+                                        var handleName = "EventData GCHandleKind " + asSetGCHandle.Kind.ToString();
+                                        var handleIndex = stackSource.Interner.FrameIntern(handleName);
+                                        stackIndex = stackSource.Interner.CallStackIntern(handleIndex, stackIndex);
+                                        goto ADD_EVENT_FRAME;
+                                    }
 
-                    var asPageAccess = data as MemoryPageAccessTraceData;
-                    if (asPageAccess != null)
-                    {
-                        sample.Metric = 4;      // Convenience since these are 4K pages 
+                                    var asPageAccess = data as MemoryPageAccessTraceData;
+                                    if (asPageAccess != null)
+                                    {
+                                        sample.Metric = 4;      // Convenience since these are 4K pages 
 
                         // EMit the kind, which may have a file name argument.  
                         var pageKind = asPageAccess.PageKind;
-                        string fileName = asPageAccess.FileName;
-                        if (fileName == null)
-                            fileName = "";
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
+                                        string fileName = asPageAccess.FileName;
+                                        if (fileName == null)
+                                            fileName = "";
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
 
                         // If it is the range of a module, log that as well, as well as it bucket.  
                         var address = asPageAccess.VirtualAddress;
-                        var process = data.Process();
-                        if (process != null)
-                        {
-                            var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
-                            if (module != null)
-                            {
-                                if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
-                                {
+                                        var process = data.Process();
+                                        if (process != null)
+                                        {
+                                            var module = process.LoadedModules.GetModuleContainingAddress(address, asPageAccess.TimeStampRelativeMSec);
+                                            if (module != null)
+                                            {
+                                                if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
+                                                {
                                     // Create a node that indicates where in the file (in buckets) the access was from 
                                     double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
-                                    if (0 <= normalizeDistance && normalizeDistance < 1)
-                                    {
-                                        const int numBuckets = 20;
-                                        int bucket = (int)(normalizeDistance * numBuckets);
-                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
-                                        string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
-                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
+                                                    if (0 <= normalizeDistance && normalizeDistance < 1)
+                                                    {
+                                                        const int numBuckets = 20;
+                                                        int bucket = (int)(normalizeDistance * numBuckets);
+                                                        int bucketSizeInPages = module.ModuleFile.ImageSize / (numBuckets * 4096);
+                                                        string bucketName = "Image Bucket " + bucket + " Size " + bucketSizeInPages + " Pages";
+                                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(bucketName), stackIndex);
+                                                    }
+                                                }
+                                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
+                                            }
+                                        }
+                                        goto ADD_EVENT_FRAME;
                                     }
-                                }
-                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Image  " + module.ModuleFile.FilePath), stackIndex);
-                            }
-                        }
-                        goto ADD_EVENT_FRAME;
-                    }
 
-                    var asPMCCounter = data as PMCCounterProfTraceData;
-                    if (asPMCCounter != null)
-                    {
-                        var source = "EventData ProfileSourceID " + asPMCCounter.ProfileSource;
-                        var sourceIndex = stackSource.Interner.FrameIntern(source);
-                        stackIndex = stackSource.Interner.CallStackIntern(sourceIndex, stackIndex);
-                        goto ADD_EVENT_FRAME;
-                    }
+                                    var asPMCCounter = data as PMCCounterProfTraceData;
+                                    if (asPMCCounter != null)
+                                    {
+                                        var source = "EventData ProfileSourceID " + asPMCCounter.ProfileSource;
+                                        var sourceIndex = stackSource.Interner.FrameIntern(source);
+                                        stackIndex = stackSource.Interner.CallStackIntern(sourceIndex, stackIndex);
+                                        goto ADD_EVENT_FRAME;
+                                    }
 
-                    var asFileCreate = data as FileIOCreateTraceData;
-                    if (asFileCreate != null)
-                    {
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateOptions: " + asFileCreate.CreateOptions), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileAttributes: " + asFileCreate.FileAttributes), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
+                                    var asFileCreate = data as FileIOCreateTraceData;
+                                    if (asFileCreate != null)
+                                    {
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateOptions: " + asFileCreate.CreateOptions), stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileAttributes: " + asFileCreate.FileAttributes), stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
                         // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
-                        goto ADD_EVENT_FRAME;
-                    }
+                                        goto ADD_EVENT_FRAME;
+                                    }
 
                     // Tack on additional info about the event. 
                     var fieldNames = data.PayloadNames;
-                    for (int i = 0; i < fieldNames.Length; i++)
-                    {
-                        var fieldName = fieldNames[i];
-                        if (0 <= fieldName.IndexOf("Name", StringComparison.OrdinalIgnoreCase) ||
-                            fieldName == "OpenPath" || fieldName == "Url" || fieldName == "Uri" || fieldName == "ConnectionId" ||
-                            fieldName == "ExceptionType" || 0 <= fieldName.IndexOf("Message", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var value = data.PayloadString(i);
-                            var fieldNodeName = "EventData " + fieldName + " " + value;
-                            var fieldNodeIndex = stackSource.Interner.FrameIntern(fieldNodeName);
-                            stackIndex = stackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
-                        }
-                    }
+                                    for (int i = 0; i < fieldNames.Length; i++)
+                                    {
+                                        var fieldName = fieldNames[i];
+                                        if (0 <= fieldName.IndexOf("Name", StringComparison.OrdinalIgnoreCase) ||
+                                            fieldName == "OpenPath" || fieldName == "Url" || fieldName == "Uri" || fieldName == "ConnectionId" ||
+                                            fieldName == "ExceptionType" || 0 <= fieldName.IndexOf("Message", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            var value = data.PayloadString(i);
+                                            var fieldNodeName = "EventData " + fieldName + " " + value;
+                                            var fieldNodeIndex = stackSource.Interner.FrameIntern(fieldNodeName);
+                                            stackIndex = stackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
+                                        }
+                                    }
 
-                    ADD_EVENT_FRAME:
+                                    ADD_EVENT_FRAME:
                     // Tack on event name 
                     var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
-                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                    ADD_SAMPLE:
-                    sample.StackIndex = stackIndex;
-                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    sample.Metric = 1;
-                    stackSource.AddSample(sample);
-                };
+                                    stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
+                                    ADD_SAMPLE:
+                                    sample.StackIndex = stackIndex;
+                                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                    sample.Metric = 1;
+                                    stackSource.AddSample(sample);
+                                };
                 eventSource.Process();
             }
             else if (streamName == "Managed Load")
@@ -4837,9 +4869,9 @@ table {
                 var lastDiskEndMSec = new GrowableArray<double>(4);
 
                 eventSource.Kernel.AddCallbackForEvents<DiskIOInitTraceData>(delegate (DiskIOInitTraceData data)
-                {
-                    diskStartStack[data.Irp] = stackSource.GetCallStack(data.CallStackIndex(), data);
-                });
+                                {
+                                    diskStartStack[data.Irp] = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                });
 
                 eventSource.Kernel.AddCallbackForEvents<DiskIOTraceData>(delegate (DiskIOTraceData data)
                 {
@@ -4968,9 +5000,9 @@ table {
                 var loadedImages = new Dictionary<Address, StackSourceCallStackIndex>(100);
                 Action<ImageLoadTraceData> imageLoadUnload = delegate (ImageLoadTraceData data)
                 {
-                    // TODO this is not really correct, it assumes process IDs < 64K and images bases don't use lower bits
-                    // but it is true 
-                    Address imageKey = data.ImageBase + (Address)data.ProcessID;
+    // TODO this is not really correct, it assumes process IDs < 64K and images bases don't use lower bits
+    // but it is true 
+    Address imageKey = data.ImageBase + (Address)data.ProcessID;
 
                     sample.Metric = data.ImageSize;
                     if (data.Opcode == TraceEventOpcode.Stop)
@@ -4983,8 +5015,8 @@ table {
                     }
                     else
                     {
-                        // Create a call stack that ends with 'Load <fileName> (<fileDirectory>)'
-                        var fileName = data.FileName;
+        // Create a call stack that ends with 'Load <fileName> (<fileDirectory>)'
+        var fileName = data.FileName;
                         var nodeName = "Image Load " + GetFileName(fileName) + " (" + GetDirectoryName(fileName) + ")";
                         var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
                         sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
@@ -5002,65 +5034,65 @@ table {
                 var droppedEvents = 0;
                 var memStates = new MemState[eventLog.Processes.Count];
                 eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
-                {
-                    bool isAlloc = false;
-                    if ((data.Flags & (
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT |
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
-                    {
+                                {
+                                    bool isAlloc = false;
+                                    if ((data.Flags & (
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT |
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
+                                    {
                         // Can't use data.Process() because some of the virtual allocs occur in the process that started the
                         // process and occur before the process start event, which is what Process() uses to find it. 
                         // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
                         var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
-                        if (processWhereMemoryAllocated == null)
-                        {
-                            droppedEvents++;
-                            return;
-                        }
+                                        if (processWhereMemoryAllocated == null)
+                                        {
+                                            droppedEvents++;
+                                            return;
+                                        }
 
-                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
-                        var memState = memStates[(int)processIndex];
-                        if (memState == null)
-                            memState = memStates[(int)processIndex] = new MemState();
+                                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
+                                        var memState = memStates[(int)processIndex];
+                                        if (memState == null)
+                                            memState = memStates[(int)processIndex] = new MemState();
 
                         // Commit and decommit not both on together.  
                         Debug.Assert((data.Flags &
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
 
-                        var stackIndex = StackSourceCallStackIndex.Invalid;
-                        if ((data.Flags & VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT) != 0)
-                        {
-                            isAlloc = true;
+                                        var stackIndex = StackSourceCallStackIndex.Invalid;
+                                        if ((data.Flags & VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT) != 0)
+                                        {
+                                            isAlloc = true;
                             // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
                             // But do count them.  
                             var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
                             var thread = data.Thread();
-                            if (thread != null)
-                                processIDAllocatingMemory = thread.Process.ProcessID;
+                                            if (thread != null)
+                                                processIDAllocatingMemory = thread.Process.ProcessID;
 
-                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
-                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
-                            else
-                            {
-                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
-                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
-                            }
-                        }
-                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
-                            delegate (long metric, StackSourceCallStackIndex allocStack)
-                            {
-                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
-                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
+                                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
+                                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                            else
+                                            {
+                                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
+                                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
+                                            }
+                                        }
+                                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
+                                            delegate (long metric, StackSourceCallStackIndex allocStack)
+                                            {
+                                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
+                                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
                                 sample.Metric = metric;
-                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                sample.StackIndex = allocStack;
-                                stackSource.AddSample(sample);
+                                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                                sample.StackIndex = allocStack;
+                                                stackSource.AddSample(sample);
                                 // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
                             });
-                    }
-                });
+                                    }
+                                });
                 eventSource.Process();
                 if (droppedEvents != 0)
                     log.WriteLine("WARNING: {0} events were dropped because their process could not be determined.", droppedEvents);
@@ -5072,8 +5104,8 @@ table {
                 Action<MapFileTraceData> mapUnmapFile = delegate (MapFileTraceData data)
                 {
                     sample.Metric = data.ViewSize;
-                    // If it is a UnMapFile or MapFileDCStop event
-                    if (data.Opcode == (TraceEventOpcode)38)
+    // If it is a UnMapFile or MapFileDCStop event
+    if (data.Opcode == (TraceEventOpcode)38)
                     {
                         Debug.Assert(data.OpcodeName == "UnmapFile");
                         sample.StackIndex = StackSourceCallStackIndex.Invalid;
@@ -5088,8 +5120,8 @@ table {
                     else
                     {
                         Debug.Assert(data.OpcodeName == "MapFile" || data.OpcodeName == "MapFileDCStart");
-                        // Create a call stack that ends with 'MapFile <fileName> (<fileDirectory>)'
-                        var nodeName = "MapFile";
+        // Create a call stack that ends with 'MapFile <fileName> (<fileDirectory>)'
+        var nodeName = "MapFile";
                         var fileName = data.FileName;
                         if (fileName.Length > 0)
                             nodeName = nodeName + " " + GetFileName(fileName) + " (" + GetDirectoryName(fileName) + ")";
@@ -5109,72 +5141,72 @@ table {
                 var memStates = new MemState[eventLog.Processes.Count];
                 var virtualReserverFrame = stackSource.Interner.FrameIntern("VirtualReserve");
                 eventSource.Kernel.AddCallbackForEvents<VirtualAllocTraceData>(delegate (VirtualAllocTraceData data)
-                {
-                    bool isAlloc = false;
-                    if ((data.Flags & (
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE |
-                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
-                    {
+                                {
+                                    bool isAlloc = false;
+                                    if ((data.Flags & (
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT |
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE |
+                                        VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
+                                    {
                         // Can't use data.Process() because some of the virtual allocs occur in the process that started the
                         // process and occur before the process start event, which is what Process() uses to find it. 
                         // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
                         var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
-                        if (processWhereMemoryAllocated == null)
-                        {
-                            droppedEvents++;
-                            return;
-                        }
+                                        if (processWhereMemoryAllocated == null)
+                                        {
+                                            droppedEvents++;
+                                            return;
+                                        }
 
-                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
-                        var memState = memStates[(int)processIndex];
-                        if (memState == null)
-                            memState = memStates[(int)processIndex] = new MemState();
+                                        var processIndex = processWhereMemoryAllocated.ProcessIndex;
+                                        var memState = memStates[(int)processIndex];
+                                        if (memState == null)
+                                            memState = memStates[(int)processIndex] = new MemState();
 
                         // Commit and decommit not both on together.  
                         Debug.Assert((data.Flags &
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
+                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
                         // Reserve and release not both on together.
                         Debug.Assert((data.Flags &
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
-                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
+                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
+                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
 
                         // You allocate by committing or reserving.  We have already filtered out decommits which have no effect on reservation.  
                         // Thus the only memRelease is the only one that frees.  
                         var stackIndex = StackSourceCallStackIndex.Invalid;
-                        if ((data.Flags & (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE)) != 0)
-                        {
-                            isAlloc = true;
+                                        if ((data.Flags & (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE)) != 0)
+                                        {
+                                            isAlloc = true;
                             // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
                             // But do count them.  
                             var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
                             var thread = data.Thread();
-                            if (thread != null)
-                                processIDAllocatingMemory = thread.Process.ProcessID;
+                                            if (thread != null)
+                                                processIDAllocatingMemory = thread.Process.ProcessID;
 
-                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
-                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
-                            else
-                            {
-                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
-                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
-                            }
-                            stackIndex = stackSource.Interner.CallStackIntern(virtualReserverFrame, stackIndex);
-                        }
-                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
-                            delegate (long metric, StackSourceCallStackIndex allocStack)
-                            {
-                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
-                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
+                                            if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
+                                                stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                            else
+                                            {
+                                                stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
+                                                stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Allocated In Parent Process"), stackIndex);
+                                            }
+                                            stackIndex = stackSource.Interner.CallStackIntern(virtualReserverFrame, stackIndex);
+                                        }
+                                        memState.Update(data.BaseAddr, data.Length, isAlloc, stackIndex,
+                                            delegate (long metric, StackSourceCallStackIndex allocStack)
+                                            {
+                                                Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
+                                                Debug.Assert(metric != 0);                                                  // They should trim this already.  
                                 sample.Metric = metric;
-                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                                sample.StackIndex = allocStack;
-                                stackSource.AddSample(sample);
+                                                sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                                sample.StackIndex = allocStack;
+                                                stackSource.AddSample(sample);
                                 // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
                             });
-                    }
-                });
+                                    }
+                                });
                 eventSource.Process();
                 if (droppedEvents != 0)
                     log.WriteLine("WARNING: {0} events were dropped because their process could not be determined.", droppedEvents);
@@ -5196,27 +5228,27 @@ table {
                 int cumCount = 0;
 
                 heapParser.HeapTraceAlloc += delegate (HeapAllocTraceData data)
-                {
-                    var allocs = lastHeapAllocs;
-                    if (data.HeapHandle != lastHeapHandle)
-                        allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+                                {
+                                    var allocs = lastHeapAllocs;
+                                    if (data.HeapHandle != lastHeapHandle)
+                                        allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
 
-                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
-                    sample.Metric = data.AllocSize;
-                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
-                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
-                    var addedSample = stackSource.AddSample(sample);
-                    allocs[data.AllocAddress] = addedSample;
+                                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                                    sample.Metric = data.AllocSize;
+                                    var nodeIndex = stackSource.Interner.FrameIntern(GetAllocName((uint)data.AllocSize));
+                                    sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
+                                    var addedSample = stackSource.AddSample(sample);
+                                    allocs[data.AllocAddress] = addedSample;
 
-                    cumMetric += sample.Metric;
-                    if (cumMetric > peakMetric)
-                    {
-                        peakMetric = cumMetric;
-                        peakSample = addedSample;
-                    }
-                    sumCumMetric += cumMetric;
-                    cumCount++;
-                };
+                                    cumMetric += sample.Metric;
+                                    if (cumMetric > peakMetric)
+                                    {
+                                        peakMetric = cumMetric;
+                                        peakSample = addedSample;
+                                    }
+                                    sumCumMetric += cumMetric;
+                                    cumCount++;
+                                };
 
                 heapParser.HeapTraceFree += delegate (HeapFreeTraceData data)
                 {
@@ -5802,9 +5834,9 @@ table {
             }
 
             const int MaxChainLength = 8;           // We don't want chain lengths bigger than this.  
-            // The state of memory is represented as a (sorted) linked list of addresses (with a stack), 
-            // Some of the regions are free (marked by FreeStackIndex)  They only have a start address so by 
-            // construction they can't overlap.  
+                                                    // The state of memory is represented as a (sorted) linked list of addresses (with a stack), 
+                                                    // Some of the regions are free (marked by FreeStackIndex)  They only have a start address so by 
+                                                    // construction they can't overlap.  
             class Region
             {
                 // The special value that represents a free region.  
@@ -5951,7 +5983,7 @@ table {
                 stackWindow.RemoveColumn("ExcPercentColumn");
             }
 
-            if (stackSourceName == "CCW Ref Count")
+            if (stackSourceName.Contains("CCW Ref Count"))
             {
                 string defaultFoldPattern = "CCW NewRefCnt;CCW AddRef;CCW Release";
                 stackWindow.FoldRegExTextBox.Text = defaultFoldPattern;
@@ -6219,7 +6251,7 @@ table {
             {
                 memory.Children.Add(new PerfViewStackSource(this, "GC Heap Net Mem"));
                 memory.Children.Add(new PerfViewStackSource(this, "GC Heap Alloc Ignore Free"));
-                memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths")); 
+                memory.Children.Add(new PerfViewStackSource(this, "Gen 2 Object Deaths"));
             }
 
             if (hasDllStacks)
@@ -6638,8 +6670,8 @@ table {
             {
                 if (reader.Name == "StackWindowGuiState")
                     m_guiState = m_guiState.ReadFromXml(reader);
-                // These are only here for backward compatibility
-                else if (reader.Name == "FilterXml")
+            // These are only here for backward compatibility
+            else if (reader.Name == "FilterXml")
                     m_guiState.FilterGuiState.ReadFromXml(reader);
                 else if (reader.Name == "Log")
                     m_guiState.Log = reader.ReadElementContentAsString().Trim();
@@ -7108,8 +7140,8 @@ table {
             }
             return delegate (Action doAfter)
             {
-                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
-                m_singletonStackSource = new PerfViewStackSource(this, "");
+            // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
+            m_singletonStackSource = new PerfViewStackSource(this, "");
                 m_singletonStackSource.Open(parentWindow, worker);
                 doAfter?.Invoke();
             };
@@ -7556,11 +7588,11 @@ table {
                             if (callStackIdx != CallStackIndex.Invalid)
                             {
                                 StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(callStackIdx, data);
-                                // Tack on event name
-                                var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
+                            // Tack on event name
+                            var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                                // Add sample
-                                sample.StackIndex = stackIndex;
+                            // Add sample
+                            sample.StackIndex = stackIndex;
                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                 sample.Metric = 1;
                                 stackSource.AddSample(sample);
