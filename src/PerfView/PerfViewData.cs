@@ -4431,7 +4431,7 @@ table {
             }
             else if (streamName == ".NET Native CCW Ref Count")
             {
-                // TODO FIX NOW, investigate the missing events.   All we know is that incs and dec are not
+                // TODO FIX NOW, investigate the missing events.  All we know is that incs and dec are not
                 // consistant with the RefCount value that is in the events.
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
