@@ -6,11 +6,16 @@
     <RootNamespace>OSExtensions</RootNamespace>
     <AssemblyName>OSExtensions</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
 
     <Company>Microsoft</Company>
     <Description>Operating System Extensions for profiling</Description>
     <Copyright>Copyright © Microsoft 2010</Copyright>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="OSExtensions.cs" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'"> 
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.4.0" /> 
