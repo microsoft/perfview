@@ -250,7 +250,7 @@ namespace ETWManifest
                                     // Remember enuough to resolve opcodes nested inside this task.  
                                     curTask = value;
                                     curTaskDepth = reader.Depth;
-                                    reader.Skip();
+                                    reader.Read();
                                 } break;
                             case "opcode":
                                 {
