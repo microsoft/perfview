@@ -1,5 +1,6 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Parsers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -134,6 +135,41 @@ namespace TraceEventTests
 
                 Assert.NotEqual(0, dynamicAllInvocationCount);
                 Assert.Equal(0, unhandledEvents);
+            }
+        }
+
+        [Fact]
+        public void GuidsInMetadataAreSupported()
+        {
+            PrepareTestData();
+
+            const string eventPipeFileName = "eventpipe-dotnetcore2.1-linux-x64-objver3.netperf";
+            Guid ExpectedActivityId = new Guid("10000000-0000-0000-0000-000000000001");
+
+            string eventPipeFilePath = Path.Combine(UnZippedDataDir, eventPipeFileName);
+
+            bool activityIdHasBeenSet = false;
+            using (var traceSource = new TraceLog(TraceLog.CreateFromEventPipeDataFile(eventPipeFilePath)).Events.GetSource())
+            {
+                traceSource.AllEvents += (TraceEvent @event) =>
+                {
+                    // before the activity Id is set, it's empty
+                    // after the activity Id is set, all the events should have it (here we had only 1 thread)
+                    Assert.Equal(activityIdHasBeenSet ? ExpectedActivityId : Guid.Empty, @event.ActivityID);
+
+                    // the EVENTID for SetActivityId is 25 https://github.com/dotnet/coreclr/blob/c67c29d6e226e4cca1f1efb4d57b7f498d58b534/src/mscorlib/src/System/Threading/Tasks/TPLETWProvider.cs#L524
+                    if (@event.ProviderName != TplEtwProviderTraceEventParser.ProviderName || @event.ID != (TraceEventID)25)
+                        return;
+
+                    Assert.False(activityIdHasBeenSet); // make sure the event comes only once
+
+                    if (@event.PayloadByName("NewId").Equals(ExpectedActivityId))
+                        activityIdHasBeenSet = true;
+                };
+
+                traceSource.Process();
+
+                Assert.True(activityIdHasBeenSet);
             }
         }
 

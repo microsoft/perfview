@@ -54,9 +54,9 @@
     <file src="$OutDir$netstandard1.6\Microsoft.Diagnostics.FastSerialization.pdb" target="lib\netstandard1.6" />
 
     <!-- Support Dlls -->
-    <file src="$OutDir$net45\Dia2Lib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$net45\TraceReloggerLib.dll" target="lib\netstandard1.6" />
-    <file src="$OutDir$net45\OSExtensions.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\Dia2Lib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\TraceReloggerLib.dll" target="lib\netstandard1.6" />
+    <file src="$OutDir$netstandard1.6\OSExtensions.dll" target="lib\netstandard1.6" />
 
     <!-- NET 4.5 Framework -->
 

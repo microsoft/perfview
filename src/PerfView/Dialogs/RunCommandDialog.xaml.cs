@@ -139,7 +139,8 @@ namespace PerfView
                 NetCaptureCheckBox.IsChecked = true;
             if (args.NetMonCapture)
                 NetMonCheckBox.IsChecked = true;
-
+            if (args.CCWRefCount)
+                CCWRefCountCheckBox.IsChecked = true;
             if (args.DumpHeap)
                 HeapSnapshotCheckBox.IsChecked = true;
 
@@ -531,6 +532,7 @@ namespace PerfView
                     providers += "ClrPrivate";
                 }
 
+                m_args.CCWRefCount = CCWRefCountCheckBox.IsChecked ?? false;
                 m_args.DumpHeap = HeapSnapshotCheckBox.IsChecked ?? false;
 
                 if (providers.Length > 0)

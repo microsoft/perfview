@@ -238,7 +238,7 @@
                     <CheckBox Grid.Column="7" Name="NetMonCheckBox" VerticalAlignment="Center" Margin="0,2" />
 
                     <TextBlock Grid.Row="0" Grid.Column="8" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,2,5,2" 
-                               ToolTip="Capture the full payload of all network packets that enter or leave the machine." >
+                               ToolTip="Capture the full payload of all network packets that enter or leave the machine." Grid.ColumnSpan="2">
                     <Hyperlink Command="Help" CommandParameter="NetCaptureCheckBox">Net Capture:</Hyperlink>
                     </TextBlock>
                     <CheckBox Grid.Column="10" Name="NetCaptureCheckBox" VerticalAlignment="Center" Margin="0,2" />
@@ -301,8 +301,12 @@
                     <Hyperlink Command="Help" CommandParameter="JITInliningCheckBox">JIT Inlining:</Hyperlink>
                     </TextBlock>
                     <CheckBox Grid.Row="0" Grid.Column="9" Name="JITInliningCheckBox" VerticalAlignment="Center" />
-                    
-                    <CheckBox Grid.Row="0" Grid.Column="11" Name="Unused1" Visibility="Hidden"  VerticalAlignment="Center"/>
+
+                    <TextBlock Grid.Row="0" Grid.Column="10" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,2,5,2" 
+                                ToolTip="Log information about .NET Native CCW Ref Counting.">
+                     <Hyperlink Command="Help" CommandParameter="CCWRefCountCheckBox"> .NET Native CCW:</Hyperlink>
+                    </TextBlock>                    
+                    <CheckBox Grid.Row="0" Grid.Column="11" Name="CCWRefCountCheckBox" VerticalAlignment="Center"/>
 
                     <CheckBox Grid.Row="0" Grid.Column="13" Name="Unused2" Visibility="Hidden" VerticalAlignment="Center"/>
                 </Grid>
