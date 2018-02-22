@@ -407,7 +407,7 @@ namespace Microsoft.Diagnostics.Tracing
                         // first event (real time case).   This is really a problem, as we need that information, but we will go ahead and
                         // try to initialize as best we can. 
 
-                        m_source.pointerSize = (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64) ? 8 : 4;
+                        m_source.pointerSize = IntPtr.Size;
                         m_source.numberOfProcessors = Environment.ProcessorCount;
                         m_source._QPCFreq = Stopwatch.Frequency;
                         m_source._syncTimeUTC = DateTime.UtcNow;
