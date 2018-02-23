@@ -324,8 +324,8 @@ namespace PerfView
             UseThreadContext = 1,
             UseActivityID = 2,
         }
-        static Guid httpServiceProviderGuid = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
-        static Guid systemDataProviderGuid = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
+        static readonly Guid httpServiceProviderGuid = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
+        static readonly Guid systemDataProviderGuid = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
 
         private unsafe Guid GetCoorelationIDForEvent(TraceEvent data, CorelationOptions options)
         {
