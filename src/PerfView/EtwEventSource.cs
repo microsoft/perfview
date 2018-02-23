@@ -210,6 +210,22 @@ namespace PerfView
                             opcode = TraceEventOpcode.Stop;
                     }
 
+                    if (data.ProviderGuid == systemDataProviderGuid)
+                    {
+                        corelationOptions = CorelationOptions.UseActivityID;
+                        if ((int)data.ID == 1)          // BeginExecute
+                        {
+                            task = (TraceEventTask)0xFFFE;      // unique task but used for both BeginExecute and EndExecute. 
+                            opcode = TraceEventOpcode.Start;
+
+                        }
+                        else if ((int)data.ID == 2)    // EndExecute
+                        {
+                            task = (TraceEventTask)0xFFFE;      // unique task but used for both BeginExecute and EndExecute. 
+                            opcode = TraceEventOpcode.Stop;
+                        }
+                    }
+
                     if (opcode == TraceEventOpcode.Start || opcode == TraceEventOpcode.Stop)
                     {
                         // Figure out what we use as a correlater between the start and stop.  
@@ -309,6 +325,7 @@ namespace PerfView
             UseActivityID = 2,
         }
         static Guid httpServiceProviderGuid = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
+        static Guid systemDataProviderGuid = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
 
         private unsafe Guid GetCoorelationIDForEvent(TraceEvent data, CorelationOptions options)
         {
