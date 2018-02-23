@@ -928,9 +928,9 @@ namespace Microsoft.Diagnostics.Tracing
                         string dataSource = data.PayloadValue(1).ToString();
                         string commandText = data.PayloadValue(3).ToString();
                         extraStartInfo = "DS=" + dataSource;
+                        // The SQL command often important, if it is not too long.  
                         if (!string.IsNullOrEmpty(commandText))
                         {
-                            // Don't make it too long
                             if (50 < commandText.Length)
                                 commandText = commandText.Substring(0, 50-3) + "...";
                             extraStartInfo = extraStartInfo + ",CMD=" + commandText;
