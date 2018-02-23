@@ -920,8 +920,23 @@ namespace Microsoft.Diagnostics.Tracing
                         return;
                     StartStopActivity creator = GetCurrentStartStopActivity(thread, data);
 
-                    Debug.Assert(data.payloadNames[1] == "dataSource");
-                    var extraStartInfo = data.PayloadValue(1) as string;
+                    string extraStartInfo = null;
+                    if (3 < data.payloadNames.Length)
+                    {
+                        Debug.Assert(data.payloadNames[1] == "dataSource");
+                        Debug.Assert(data.payloadNames[3] == "commandText");
+                        string dataSource = data.PayloadValue(1).ToString();
+                        string commandText = data.PayloadValue(3).ToString();
+                        extraStartInfo = "DS=" + dataSource;
+                        if (!string.IsNullOrEmpty(commandText))
+                        {
+                            // Don't make it too long
+                            if (50 < commandText.Length)
+                                commandText = commandText.Substring(0, 50-3) + "...";
+                            extraStartInfo = extraStartInfo + ",CMD=" + commandText;
+                        }
+                    }
+
                     OnStart(data, extraStartInfo, &startStopId, thread, creator, "SQLCommand");
                     return;
                 }
