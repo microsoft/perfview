@@ -33,7 +33,7 @@
       <Visible>False</Visible>
     </None>
     <None Condition="Exists('$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll')" Include="$(MSBuildThisFileDirectory)..\lib\netstandard1.6\TraceReloggerLib.dll">
-      <Link>TraceRelogger.dll</Link>
+      <Link>TraceReloggerLib.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>False</Visible>
     </None>
