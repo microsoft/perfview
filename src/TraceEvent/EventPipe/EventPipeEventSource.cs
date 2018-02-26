@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tracing
             _eventParser = new EventPipeTraceEventParser(this);
         }
 
-#region private
+        #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.  
         public override int EventsLost => 0;
 
@@ -132,14 +132,14 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(sessionEndTimeQPC == 0 || eventData->TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
             Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->TotalEventSize);
             Debug.Assert(0 < eventData->TotalEventSize && eventData->TotalEventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
-            Debug.Assert(_fileFormatVersionNumber < 3 || 
+            Debug.Assert(_fileFormatVersionNumber < 3 ||
                 ((int)EventPipeEventHeader.PayloadBytes(eventData) % 4 == 0 && eventData->TotalEventSize % 4 == 0)); // ensure 4 byte alignment
 
             StreamLabel eventDataEnd = reader.Current.Add(eventData->TotalEventSize);
 
             Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->TotalEventSize);
 
-            TraceEventNativeMethods.EVENT_RECORD* ret = null;;
+            TraceEventNativeMethods.EVENT_RECORD* ret = null;
             if (eventData->IsMetadata())
             {
                 int totalEventSize = eventData->TotalEventSize;
@@ -154,7 +154,7 @@ namespace Microsoft.Diagnostics.Tracing
                 _eventParser.AddTemplate(metaData); // if we don't add the templates to this parse, we are going to have unhadled events (see https://github.com/Microsoft/perfview/issues/461)
 
                 int stackBytes = reader.ReadInt32();
-                Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");  
+                Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");
             }
             else
             {
@@ -231,10 +231,10 @@ namespace Microsoft.Diagnostics.Tracing
         string _processName;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
-#endregion
+        #endregion
     }
 
-#region private classes
+    #region private classes
 
     /// <summary>
     /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
@@ -252,7 +252,7 @@ namespace Microsoft.Diagnostics.Tracing
             var blockSizeInBytes = deserializer.ReadInt();
 
             // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
-            if((int)deserializer.Current % 4 != 0)
+            if ((int)deserializer.Current % 4 != 0)
             {
                 var nearestAlignedAddress = deserializer.Current.Add(4 - ((int)deserializer.Current % 4));
                 deserializer.Goto(nearestAlignedAddress);
@@ -459,7 +459,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Fetch the parameter information
             int parameterCount = reader.ReadInt32();
-            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000); 
+            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000);
             if (0 < parameterCount)
             {
                 ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
@@ -575,17 +575,17 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         static public int HeaderSize => sizeof(EventPipeEventHeader) - 4;
 
-        static public EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr) 
+        static public EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr)
             => (EventPipeEventHeader*)(payloadPtr - HeaderSize);
 
-        static public int StackBytesSize(EventPipeEventHeader* header) 
+        static public int StackBytesSize(EventPipeEventHeader* header)
             => *((int*)(&header->Payload[header->PayloadSize]));
 
-        static public byte* StackBytes(EventPipeEventHeader* header) 
+        static public byte* StackBytes(EventPipeEventHeader* header)
             => &header->Payload[header->PayloadSize + 4];
 
         static public byte* PayloadBytes(EventPipeEventHeader* header)
             => &header->Payload[0];
     }
-#endregion
+    #endregion
 }
