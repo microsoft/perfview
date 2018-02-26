@@ -1526,6 +1526,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var process = Processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 var thread = Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 thread.cpuSamples++;
+
+                // This is for robustness.   If we logged a user mode stack fragment on every kernel->user transition than 
+                // this woudl not be necessary.  However sometimes these get lost.  If we notice we did a CPU sample and 
+                // we are outside the kernel, then give up on attaching a user mode fragment (since we missed the transition).  
+                if (thread.lastEntryIntoKernel != null && IsKernelAddress(data.InstructionPointer, data.PointerSize))
+                    EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, TraceCallStacks.GetRootForThread(thread.ThreadIndex), null);
             };
 
             // We assume that the sampling interval is uniform over the trace.   We pick the start if it 
