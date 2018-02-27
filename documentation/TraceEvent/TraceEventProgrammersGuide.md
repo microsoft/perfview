@@ -801,6 +801,9 @@ If you have built your own `EventSource` so far the only way you have of accessi
 
 In fact most of the parsers included in the TraceEvent library were generated using the **TraceParserGen** tool.
 
+The **TraceParserGen** tool is one of the things that is built when you build the PerfView repository.  
+It ends up in the src\TraceParserGen\bin\Debug\net40 directory and you can run it from there.  
+
 ### Getting the XML Manifest
 
 There are two main cases for ETW files that you may want `TraceEventParser` parsers for:
