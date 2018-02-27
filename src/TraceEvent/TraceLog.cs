@@ -1528,7 +1528,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 thread.cpuSamples++;
 
                 // This is for robustness.   If we logged a user mode stack fragment on every kernel->user transition than 
-                // this woudl not be necessary.  However sometimes these get lost.  If we notice we did a CPU sample and 
+                // this would not be necessary.  However sometimes these get lost.  If we notice we did a CPU sample and 
                 // we are outside the kernel, then give up on attaching a user mode fragment (since we missed the transition).  
                 if (thread.lastEntryIntoKernel != null && IsKernelAddress(data.InstructionPointer, data.PointerSize))
                     EmitStackOnExitFromKernel(ref thread.lastEntryIntoKernel, TraceCallStacks.GetRootForThread(thread.ThreadIndex), null);
@@ -4881,7 +4881,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// Sets the 'Parent' field for the process (based on the ParentID).   
         /// 
         /// sentinel is internal to the implementation, external callers should always pass null. 
-        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it woudl form
+        /// TraceProcesses that have a parent==sentinel considered 'illegal' since it would form
         /// a loop in the parent chain, which we definately don't want.  
         /// </summary>
         internal void SetParentForProcess(TraceProcess sentinel = null)
