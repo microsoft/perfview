@@ -38,7 +38,7 @@ namespace PerfView
 
                     drawingContext.DrawRectangle(
                         brush, 
-                        null,  // if we provide any Pen the drawing process becomes very slow for large data sets
+                        null,  // this is crucial for performance
                         new System.Windows.Rect(box.X, box.Y, box.Width, box.Height));
                 }
 
@@ -61,12 +61,19 @@ namespace PerfView
         }
 
         private static Brush[] GenerateBrushes(Random random)
-            => Enumerable.Range(0, 100)
+        {
+            var brushes = Enumerable.Range(0, 100)
                     .Select(_ => (Brush)new SolidColorBrush(
                         Color.FromRgb(
                             (byte)(205.0 + 50.0 * random.NextDouble()),
                             (byte)(230.0 * random.NextDouble()),
                             (byte)(55.0 * random.NextDouble()))))
                     .ToArray();
+
+            foreach (var brush in brushes)
+                brush.Freeze(); // this is crucial for performance
+
+            return brushes;
+        }
     }
 }
