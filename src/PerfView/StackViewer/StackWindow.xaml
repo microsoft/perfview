@@ -481,13 +481,13 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <Canvas Name="FlameGraphCanvas" Background="Transparent" SizeChanged="FlameGraphCanvas_SizeChanged" MouseMove="FlameGraphCanvas_MouseMove">
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" MouseMove="FlameGraphCanvas_MouseMove" >
                         <Canvas.ContextMenu>
                             <ContextMenu Name="noContextMenu" Visibility="Visible">
                                 <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
                             </ContextMenu>
                         </Canvas.ContextMenu>
-                    </Canvas>
+                    </src:FlameGraphDrawingCanvas>
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">
