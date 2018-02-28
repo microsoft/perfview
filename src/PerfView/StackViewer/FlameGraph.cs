@@ -11,8 +11,6 @@ namespace PerfView
 {
     public static class FlameGraph
     {
-        private static readonly FontFamily FontFamily = new FontFamily("Consolas");
-
         /// <summary>
         /// (X=0, Y=0) is the left bottom corner of the canvas
         /// </summary>

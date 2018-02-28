@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,6 +10,8 @@ namespace PerfView
 {
     public class FlameGraphDrawingCanvas : Canvas
     {
+        private static readonly Typeface Typeface = new Typeface("Consolas");
+
         private static readonly Brush[] Brushes = GenerateBrushes(new Random(12345));
 
         private List<Visual> visuals = new List<Visual>();
@@ -40,6 +43,22 @@ namespace PerfView
                         brush, 
                         null,  // this is crucial for performance
                         new System.Windows.Rect(box.X, box.Y, box.Width, box.Height));
+
+                    if (box.Width > 50 && box.Height >= 6) // we draw the text only if humans can see something
+                    {
+                        var text = new FormattedText(
+                                box.Node.DisplayName,
+                                CultureInfo.InvariantCulture,
+                                System.Windows.FlowDirection.LeftToRight,
+                                Typeface,
+                                Math.Min(box.Height, 20),
+                                System.Windows.Media.Brushes.Black);
+
+                        text.MaxTextWidth = box.Width;
+                        text.MaxTextHeight = box.Height;
+
+                        drawingContext.DrawText(text, new System.Windows.Point(box.X, box.Y));
+                    }
                 }
 
                 AddVisual(visual);
