@@ -12,7 +12,7 @@ namespace PerfView
     public static class FlameGraph
     {
         /// <summary>
-        /// (X=0, Y=0) is the left bottom corner of the canvas
+        /// (X=0, Y=0) is the left upper corner of the canvas
         /// </summary>
         public struct FlameBox
         {
@@ -47,7 +47,7 @@ namespace PerfView
             double boxHeight = maxHeight / maxDepth;
             double pixelsPerIncusiveSample = maxWidth / callTree.Root.InclusiveMetric;
 
-            var rootBox = new FlameBox(callTree.Root, maxWidth, boxHeight, 0, 0);
+            var rootBox = new FlameBox(callTree.Root, maxWidth, boxHeight, 0, maxHeight - boxHeight);
             yield return rootBox;
 
             var nodesToVisit = new Queue<FlamePair>();
@@ -65,7 +65,7 @@ namespace PerfView
                 {
                     double childBoxWidth = child.InclusiveMetric * pixelsPerIncusiveSample;
 
-                    var childBox = new FlameBox(child, childBoxWidth, boxHeight, parentBox.X + nextBoxX, parentBox.Y + boxHeight);
+                    var childBox = new FlameBox(child, childBoxWidth, boxHeight, parentBox.X + nextBoxX, parentBox.Y - boxHeight);
                     nextBoxX += childBoxWidth;
 
                     if (child.Callees != null)
