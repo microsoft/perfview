@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public CtfEnvironment Environment { get; private set; }
         public CtfStream[] Streams { get; private set; }
         public ICollection<CtfClock> Clocks { get { return _clocks.Values; } }
-        
+
         public CtfMetadata(CtfMetadataParser parser)
         {
             Load(parser);
@@ -26,7 +26,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public void Load(CtfMetadataParser parser)
         {
             Dictionary<string, CtfMetadataType> typeAlias = new Dictionary<string, CtfMetadataType>();
-            List<CtfStream> streams = new List<CtfStream>();
+            List<CtfStream> streams = Streams?.ToList() ?? new List<CtfStream>();
 
             foreach (CtfMetadataDeclaration entry in parser.Parse())
             {
@@ -223,7 +223,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         bool? _isPacked;
         int _size = SizeUninitialized;
-        
+
         public bool IsFixedSize { get { return Size != SizeIndeterminate; } }
 
         public int Size

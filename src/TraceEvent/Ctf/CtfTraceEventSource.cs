@@ -1,88 +1,48 @@
-﻿using Microsoft.Diagnostics.Tracing.Ctf;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
+﻿using System;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using Microsoft.Diagnostics.Tracing.Ctf;
+using Microsoft.Diagnostics.Tracing.Ctf.Contract;
+using Microsoft.Diagnostics.Tracing.Ctf.ZippedEvent;
 
 #pragma warning disable 1591
 
 namespace Microsoft.Diagnostics.Tracing
 {
-    public sealed class CtfTraceEventSource : TraceEventDispatcher, IDisposable
+    public sealed class CtfTraceEventSource : TraceEventDispatcher
     {
-        private string _filename;
-        private ZipArchive _zip;
-        private List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
         private readonly CtfEventConverter _ctfEventsConverter;
         private readonly Dictionary<int, string> _processNames = new Dictionary<int, string>();
+        private readonly ICtfTraceProvider _provider;
+        private readonly Dictionary<int, CtfMetadata> _traceIdToMetadata;
+        private bool _isDisposed;
 
 #if DEBUG
         private StreamWriter _debugOut;
 #endif
 
         public CtfTraceEventSource(string fileName)
+            : this(new ZippedCtfTraceProvider(fileName))
         {
-            _filename = fileName;
-            _zip = ZipFile.Open(fileName, ZipArchiveMode.Read);
-            bool success = false;
-            try
-            {
-
-                _channels = new List<Tuple<ZipArchiveEntry, CtfMetadata>>();
-                foreach (ZipArchiveEntry metadataArchive in _zip.Entries.Where(p => Path.GetFileName(p.FullName) == "metadata"))
-                {
-                    var parser = new CtfMetadataLegacyParser(metadataArchive.Open());
-                    var metadata = new CtfMetadata(parser);
-
-                    var path = Path.GetDirectoryName(metadataArchive.FullName);
-                    _channels.AddRange(from entry in _zip.Entries
-                                       where Path.GetDirectoryName(entry.FullName) == path && Path.GetFileName(entry.FullName).StartsWith("channel")
-                                       select new Tuple<ZipArchiveEntry, CtfMetadata>(entry, metadata));
-
-                    pointerSize = Path.GetDirectoryName(metadataArchive.FullName).EndsWith("64-bit") ? 8 : 4;
-                }
-
-                _ctfEventsConverter = new CtfEventConverter();
-
-                int processors = (from entry in _channels
-                                  let filename = entry.Item1.FullName
-                                  let i = filename.LastIndexOf('_')
-                                  let processor = filename.Substring(i + 1)
-                                  select int.Parse(processor)
-                                 ).Max() + 1;
-
-                numberOfProcessors = processors;
-
-                // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
-                CtfClock clock = _channels.First().Item2.Clocks.First();
-
-                var firstChannel = (new ChannelList(_channels)).FirstOrDefault();
-                if (firstChannel == null)
-                    throw new EndOfStreamException("No CTF Information found in ZIP file.");
-                long firstEventTimestamp = (long)firstChannel.Current.Timestamp;
-
-                _QPCFreq = (long)clock.Frequency;
-                sessionStartTimeQPC = firstEventTimestamp;
-                _syncTimeQPC = firstEventTimestamp;
-                _syncTimeUTC = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
-
-                success = true;
-#if DEBUG
-            //// Uncomment for debug output.
-            //_debugOut = File.CreateText("debug.txt");
-            //_debugOut.AutoFlush = true;
-#endif
-            }
-            finally
-            {
-                if (!success)
-                    Dispose();      // This closes the ZIP file we opened.  We don't want to leave it dangling.  
-            }
         }
 
+        public CtfTraceEventSource(ICtfTraceProvider provider)
+        {
+            _isDisposed = false;
+            _traceIdToMetadata = new Dictionary<int, CtfMetadata>();
+            _provider = provider;
+            _ctfEventsConverter = new CtfEventConverter(_provider.PointerSize);
+            _provider.NewCtfMetadata += OnNewMetadata;
+            _provider.NewCtfEventTraces += OnNewCtfTraces;
+
+#if DEBUG
+//// Uncomment for debug output.
+//_debugOut = File.CreateText("debug.txt");
+//_debugOut.AutoFlush = true;
+#endif
+        }
 
         ~CtfTraceEventSource()
         {
@@ -91,60 +51,12 @@ namespace Microsoft.Diagnostics.Tracing
 
         public override int EventsLost => 0;
 
-        public override unsafe bool Process()
+        public override void StopProcessing()
         {
-            ulong lastTimestamp = 0;
-            int events = 0;
-            ChannelList list = new ChannelList(_channels);
-            foreach (ChannelEntry entry in list)
-            {
-                if (stopProcessing)
-                    break;
-
-                CtfEventHeader header = entry.Current;
-                CtfEvent evt = header.Event;
-                lastTimestamp = header.Timestamp;
-
-                entry.Reader.ReadEventIntoBuffer(evt);
-                events++;
-
-#if DEBUG
-                if (_debugOut != null)
-                {
-                    _debugOut.WriteLine($"[{evt.Name}]");
-                    _debugOut.WriteLine($"    Process: {header.ProcessName}");
-                    _debugOut.WriteLine($"    File: {entry.FileName}");
-                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
-                    _debugOut.WriteLine($"    Event #{events}: {evt.Name}");
-                }
-#endif
-                TraceEventNativeMethods.EVENT_RECORD* eventRecord = _ctfEventsConverter.ToEventRecord(header, entry.Reader, pointerSize);
-                if (eventRecord == null)
-                    continue;
-
-                if (!string.IsNullOrWhiteSpace(header.ProcessName))
-                    _processNames[header.Pid] = header.ProcessName;
-
-                TraceEvent traceEvent = Lookup(eventRecord);
-                traceEvent.eventRecord = eventRecord;
-                traceEvent.userData = entry.Reader.BufferPtr;
-                traceEvent.EventTypeUserData = evt;
-
-                traceEvent.DebugValidate();
-                Dispatch(traceEvent);
-            }
-
-            sessionEndTimeQPC = (long)lastTimestamp;
-
-            return true;
-        }
-
-        internal override string ProcessName(int processID, long timeQPC)
-        {
-            if (_processNames.TryGetValue(processID, out var result))
-                return result;
-
-            return base.ProcessName(processID, timeQPC);
+            _provider.StopProcessing();
+            _provider.NewCtfEventTraces -= OnNewCtfTraces;
+            _provider.NewCtfMetadata -= OnNewMetadata;
+            base.StopProcessing();
         }
 
         public void ParseMetadata()
@@ -165,30 +77,160 @@ namespace Microsoft.Diagnostics.Tracing
             */
         }
 
+        public override bool Process()
+        {
+            _provider.Process();
+
+            return true;
+        }
+
+        internal override string ProcessName(int processID, long timeQPC)
+        {
+            if (_processNames.TryGetValue(processID, out var result))
+                return result;
+
+            return base.ProcessName(processID, timeQPC);
+        }
+
         protected override void Dispose(bool disposing)
         {
+            if (_isDisposed)
+                return;
+
+            _isDisposed = true;
+
             if (disposing)
             {
-                if (_zip != null)
-                {
-                    _zip.Dispose();
-                    _zip = null;
-                }
+                _provider.Dispose();
+                _provider.NewCtfEventTraces -= OnNewCtfTraces;
+                _provider.NewCtfMetadata -= OnNewMetadata;
+                _ctfEventsConverter.Dispose();
             }
 
-            _ctfEventsConverter.Dispose();
             base.Dispose(disposing);
+        }
+
+        private void OnNewMetadata(ICtfMetadata metadata)
+        {
+            var parser = new CtfMetadataLegacyParser(metadata.CreateReadOnlyStream());
+            if (_traceIdToMetadata.TryGetValue(metadata.TraceId, out var parsedMetadata))
+            {
+                parsedMetadata.Load(parser);
+            }
+            else
+            {
+                parsedMetadata = new CtfMetadata(parser);
+                _traceIdToMetadata[metadata.TraceId] = parsedMetadata;
+            }
+        }
+
+        private unsafe void OnNewCtfTraces(IEnumerable<ICtfEventTrace> ctfTraces)
+        {
+            ulong lastTimestamp = 0;
+#if DEBUG
+            int events = 0;
+#endif
+            var channelEntries = BuildChannelEntriesFromTraces(ctfTraces);
+            foreach (var entry in channelEntries)
+            {
+                if (stopProcessing)
+                    break;
+
+                var header = entry.Current;
+                var evt = header.Event;
+                if (IsFirstEvent()) Initialize(entry, header);
+
+                lastTimestamp = header.Timestamp;
+
+                entry.Reader.ReadEventIntoBuffer(evt);
+
+#if DEBUG
+                events++;
+                if (_debugOut != null)
+                {
+                    _debugOut.WriteLine($"[{evt.Name}]");
+                    _debugOut.WriteLine($"    Process: {header.ProcessName}");
+                    _debugOut.WriteLine($"    File Offset: {entry.Channel.FileOffset}");
+                    _debugOut.WriteLine($"    Event #{events}: {evt.Name}");
+                }
+#endif
+
+                var eventRecord = _ctfEventsConverter.ToEventRecord(header, entry.Reader);
+                if (eventRecord == null)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(header.ProcessName))
+                    _processNames[header.Pid] = header.ProcessName;
+
+                var traceEvent = Lookup(eventRecord);
+                traceEvent.eventRecord = eventRecord;
+                traceEvent.userData = entry.Reader.BufferPtr;
+                traceEvent.EventTypeUserData = evt;
+
+                traceEvent.DebugValidate();
+                Dispatch(traceEvent);
+            }
+
+            sessionEndTimeQPC = (long)lastTimestamp;
+        }
+
+        private ChannelList BuildChannelEntriesFromTraces(IEnumerable<ICtfEventTrace> ctfTraces)
+        {
+            var list = new List<ChannelEntry>();
+            foreach (var ctfEventTrace in ctfTraces)
+            {
+                if (!_traceIdToMetadata.TryGetValue(ctfEventTrace.TraceId, out var currentMetadata))
+                    throw new Exception($"Metadata for trace {ctfEventTrace.TraceId} does not exist");
+
+                list.AddRange(ctfEventTrace.EventPackets.Select(s => new ChannelEntry(s, currentMetadata)));
+            }
+
+            return new ChannelList(list);
+        }
+
+        private void Initialize(ChannelEntry entry, CtfEventHeader header)
+        {
+            var currentMetadata = entry.Metadata;
+            // TODO: Need to cleanly separate clocks, but in practice there's only the one clock.
+            var clock = currentMetadata.Clocks.First();
+            var time = ConvertEventTimestampToDateTime(header, clock);
+
+            var firstEventTimestamp = (long)header.Timestamp;
+
+            sessionStartTimeQPC = firstEventTimestamp;
+            sessionEndTimeQPC = long.MaxValue;
+            _syncTimeQPC = firstEventTimestamp;
+            _syncTimeUTC = time;
+            _QPCFreq = (long)clock.Frequency;
+
+            pointerSize = _provider.PointerSize;
+            numberOfProcessors = _provider.ProcessorCount;
+        }
+
+        private bool IsFirstEvent()
+        {
+            return _syncTimeQPC == 0;
+        }
+
+        private static DateTime ConvertEventTimestampToDateTime(CtfEventHeader header, CtfClock clock)
+        {
+            var offset =
+                new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).AddSeconds((clock.Offset - 1) / clock.Frequency);
+            var ticks = (long)(header.Timestamp * 10000000.0 / clock.Frequency);
+
+            return new DateTime(offset.Ticks + ticks, DateTimeKind.Utc);
         }
 
         // Each file has streams which have sets of events.  These classes help merge those channels
         // into one chronological stream of events.
+
         #region Enumeration Helper
 
-        class ChannelList : IEnumerable<ChannelEntry>
+        private class ChannelList : IEnumerable<ChannelEntry>
         {
-            List<Tuple<ZipArchiveEntry, CtfMetadata>> _channels;
+            private readonly IEnumerable<ChannelEntry> _channels;
 
-            public ChannelList(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
+            public ChannelList(IEnumerable<ChannelEntry> channels)
             {
                 _channels = channels;
             }
@@ -198,42 +240,25 @@ namespace Microsoft.Diagnostics.Tracing
                 return new ChannelListEnumerator(_channels);
             }
 
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+            IEnumerator IEnumerable.GetEnumerator()
             {
                 return new ChannelListEnumerator(_channels);
             }
         }
 
-        class ChannelListEnumerator : IEnumerator<ChannelEntry>
+        private class ChannelListEnumerator : IEnumerator<ChannelEntry>
         {
-            bool _first = true;
-            List<ChannelEntry> _channels;
-            int _current;
+            private List<ChannelEntry> _channels;
+            private int _current;
+            private bool _first = true;
 
-            public ChannelListEnumerator(List<Tuple<ZipArchiveEntry, CtfMetadata>> channels)
+            public ChannelListEnumerator(IEnumerable<ChannelEntry> channels)
             {
-                _channels = new List<ChannelEntry>(channels.Select(tuple => new ChannelEntry(tuple.Item1, tuple.Item2)).Where(channel => channel.MoveNext()));
+                _channels = channels.Where(channel => channel.MoveNext()).ToList();
                 _current = GetCurrent();
             }
 
-            private int GetCurrent()
-            {
-                if (_channels.Count == 0)
-                    return -1;
-
-                int min = 0;
-
-                for (int i = 1; i < _channels.Count; i++)
-                    if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
-                        min = i;
-
-                return min;
-            }
-
-            public ChannelEntry Current
-            {
-                get { return _current != -1 ? _channels[_current] : null; }
-            }
+            public ChannelEntry Current => _current != -1 ? _channels[_current] : null;
 
             public void Dispose()
             {
@@ -243,10 +268,7 @@ namespace Microsoft.Diagnostics.Tracing
                 _channels = null;
             }
 
-            object System.Collections.IEnumerator.Current
-            {
-                get { return Current; }
-            }
+            object IEnumerator.Current => Current;
 
             public bool MoveNext()
             {
@@ -259,7 +281,7 @@ namespace Microsoft.Diagnostics.Tracing
                     return _channels.Count > 0;
                 }
 
-                bool hasMore = _channels[_current].MoveNext();
+                var hasMore = _channels[_current].MoveNext();
                 if (!hasMore)
                 {
                     _channels[_current].Dispose();
@@ -274,34 +296,45 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 throw new NotImplementedException();
             }
+
+            private int GetCurrent()
+            {
+                if (_channels.Count == 0)
+                    return -1;
+
+                var min = 0;
+
+                for (var i = 1; i < _channels.Count; i++)
+                    if (_channels[i].Current.Timestamp < _channels[min].Current.Timestamp)
+                        min = i;
+
+                return min;
+            }
         }
 
-        class ChannelEntry : IDisposable
+        private class ChannelEntry : IDisposable
         {
-            public string FileName { get; private set; }
-            public CtfChannel Channel { get; private set; }
-            public CtfReader Reader { get; private set; }
-            public CtfEventHeader Current { get { return _events.Current; } }
+            private readonly IEnumerator<CtfEventHeader> _events;
 
-            private Stream _stream;
-            private IEnumerator<CtfEventHeader> _events;
-
-            public ChannelEntry(ZipArchiveEntry zip, CtfMetadata metadata)
+            public ChannelEntry(ICtfEventPacket ctfEventPacket, CtfMetadata metadata)
             {
-                FileName = zip.FullName;
-                _stream = zip.Open();
-                Channel = new CtfChannel(_stream, metadata);
+                Channel = new CtfChannel(ctfEventPacket.CreateReadOnlyStream(), metadata);
                 Reader = new CtfReader(Channel, metadata, Channel.CtfStream);
                 _events = Reader.EnumerateEventHeaders().GetEnumerator();
+                Metadata = metadata;
             }
+
+            public CtfChannel Channel { get; }
+            public CtfReader Reader { get; }
+            public CtfEventHeader Current => _events.Current;
+            public CtfMetadata Metadata { get; }
 
             public void Dispose()
             {
                 Reader.Dispose();
                 Channel.Dispose();
-                _stream.Dispose();
 
-                IDisposable enumerator = _events as IDisposable;
+                var enumerator = _events;
                 if (enumerator != null)
                     enumerator.Dispose();
             }
@@ -311,6 +344,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return _events.MoveNext();
             }
         }
+
         #endregion
     }
 }

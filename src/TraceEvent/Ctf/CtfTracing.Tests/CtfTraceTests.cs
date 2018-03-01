@@ -1,4 +1,5 @@
-﻿using Microsoft.Diagnostics.Tracing;
+﻿using System;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.IO;
 using Xunit;
@@ -13,7 +14,7 @@ namespace Tests
         public void LTTng_GCAllocationTick()
         {
             int allocTicks = 0, allocTicksFromAll = 0;
-
+            DateTime? current = null;
             var path = Path.Combine(TestDataDirectory, "auto-20170728-130015.trace.zip");
             using (var ctfSource = new CtfTraceEventSource(path))
             {
@@ -21,6 +22,12 @@ namespace Tests
                 {
                     if (obj is GCAllocationTickTraceData)
                         allocTicksFromAll++;
+                    if (!current.HasValue)
+                    {
+                        current = obj.TimeStamp;
+                    }
+                    Assert.True(current.Value <= obj.TimeStamp);
+                    current = obj.TimeStamp;
                 };
 
                 ctfSource.Clr.GCAllocationTick += delegate (GCAllocationTickTraceData o) { allocTicks++; };
@@ -37,6 +44,7 @@ namespace Tests
             var path = Path.Combine(TestDataDirectory, "auto-20170728-131434.trace.zip");
             int startEvents = 0, startEventsFromAll = 0;
             int stopEvents = 0, stopEventsFromAll = 0;
+            DateTime? current = null;
 
             using (var ctfSource = new CtfTraceEventSource(path))
             {
@@ -46,6 +54,13 @@ namespace Tests
                         startEventsFromAll++;
                     if (obj is GCEndTraceData)
                         stopEventsFromAll++;
+
+                    if (!current.HasValue)
+                    {
+                        current = obj.TimeStamp;
+                    }
+                    Assert.True(current.Value <= obj.TimeStamp);
+                    current = obj.TimeStamp;
                 };
 
                 ctfSource.Clr.GCStart += delegate (GCStartTraceData obj)

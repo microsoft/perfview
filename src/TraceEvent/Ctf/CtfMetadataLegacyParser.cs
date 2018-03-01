@@ -52,10 +52,13 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             int open = metadata.IndexOf('{', index);
             if (open == -1)
                 return null;
-
+           
             int start = metadata.Substring(0, open).LastIndexOf('\n') + 1;
             if (start == 0)
-                return null;
+            {
+                if (index != 0)
+                    return null;
+            }
 
             CtfDeclarationTypes directive = CtfDeclarationTypes.Unknown;
             string[] directiveElements = metadata.Substring(start, open - start).Trim().Split(' ');

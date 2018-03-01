@@ -8,23 +8,30 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     internal unsafe class CtfEventConverter : IDisposable
     {
         private readonly Dictionary<string, ETWMapping> _evenMapping;
+        private readonly int _pointerSize;
         private TraceEventNativeMethods.EVENT_RECORD* _header;
 
-        public CtfEventConverter()
+        public CtfEventConverter(int pointerSize)
         {
             _evenMapping = InitEventMap();
 
             var mem = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
             *mem = default(TraceEventNativeMethods.EVENT_RECORD);
             _header = mem;
+            _pointerSize = pointerSize;
         }
 
-        public TraceEventNativeMethods.EVENT_RECORD* ToEventRecord(CtfEventHeader header, CtfReader stream, int pointerSize)
+        ~CtfEventConverter()
+        {
+            ReleaseUnmanagedResources();
+        }
+
+        public TraceEventNativeMethods.EVENT_RECORD* ToEventRecord(CtfEventHeader header, CtfReader stream)
         {
             var etw = GetETWMapping(header.Event);
             if (etw.IsNull)
                 return null;
-            return InitEventRecord(header, stream, etw, pointerSize);
+            return InitEventRecord(header, stream, etw);
         }
 
         public void Dispose()
@@ -405,11 +412,11 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             return result;
         }
 
-        private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw, int pointerSize)
+        private TraceEventNativeMethods.EVENT_RECORD* InitEventRecord(CtfEventHeader header, CtfReader stream, ETWMapping etw)
         {
             _header->EventHeader.Size = (ushort)sizeof(TraceEventNativeMethods.EVENT_TRACE_HEADER);
             _header->EventHeader.Flags = 0;
-            if (pointerSize == 8)
+            if (_pointerSize == 8)
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
             else
                 _header->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
@@ -433,11 +440,6 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _header->EventHeader.UserTime = 0;
 
             return _header;
-        }
-
-        ~CtfEventConverter()
-        {
-            ReleaseUnmanagedResources();
         }
 
         private void ReleaseUnmanagedResources()
