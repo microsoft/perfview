@@ -2581,7 +2581,7 @@ namespace PerfView
 
         private void FlameGraphTab_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (FlameGraphCanvas.Children.Count == 0 || m_RedrawFlameGraphWhenItBecomesVisible)
+            if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
                 RedrawFlameGraph();
         }
 
@@ -2597,24 +2597,20 @@ namespace PerfView
 
         private void RedrawFlameGraph()
         {
-            FlameGraph.Draw(
+            FlameGraphCanvas.Draw(
                   CallTree.Root.HasChildren
                       ? FlameGraph.Calculate(CallTree, FlameGraphCanvas.ActualWidth, FlameGraphCanvas.ActualHeight)
-                      : Enumerable.Empty<FlameGraph.FlameBox>(),
-                  FlameGraphCanvas);
+                      : Enumerable.Empty<FlameGraph.FlameBox>());
 
             m_RedrawFlameGraphWhenItBecomesVisible = false;
         }
 
-        private void FlameGraphCanvas_MouseMove(object sender, MouseEventArgs e)
+        private void FlameGraphCanvas_CurrentFlameBoxChanged(object sender, string toolTipText)
         {
-            if (StatusBar.LoggedError || FlameGraphCanvas.Children.Count == 0)
+            if (StatusBar.LoggedError)
                 return;
 
-            var pointed = FlameGraphCanvas.Children.OfType<FrameworkElement>().FirstOrDefault(box => box.IsMouseOver);
-            var toolTip = pointed?.ToolTip as ToolTip;
-            if (toolTip != null)
-                StatusBar.Status = toolTip.Content as string;
+            StatusBar.Status = toolTipText;
         }
 
         private void DoSaveFlameGraph(object sender, RoutedEventArgs e)
