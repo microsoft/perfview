@@ -18,10 +18,12 @@ namespace PerfView
         {
             public readonly double Width, Height, X, Y;
             public readonly CallTreeNode Node;
+            public string TooltipText;
 
             public FlameBox(CallTreeNode node, double width, double height, double x, double y)
             {
                 Node = node;
+                TooltipText = $"Method: {node.DisplayName} ({node.InclusiveCount} inclusive samples, {node.InclusiveMetricPercent:F}%)";
                 Width = width;
                 Height = height;
                 X = x;

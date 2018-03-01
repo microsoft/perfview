@@ -2605,15 +2605,12 @@ namespace PerfView
             m_RedrawFlameGraphWhenItBecomesVisible = false;
         }
 
-        private void FlameGraphCanvas_MouseMove(object sender, MouseEventArgs e)
+        private void FlameGraphCanvas_CurrentFlameBoxChanged(object sender, string toolTipText)
         {
-            //if (StatusBar.LoggedError || FlameGraphCanvas.Children.Count == 0)
-            //    return;
+            if (StatusBar.LoggedError)
+                return;
 
-            //var pointed = FlameGraphCanvas.Children.OfType<FrameworkElement>().FirstOrDefault(box => box.IsMouseOver);
-            //var toolTip = pointed?.ToolTip as ToolTip;
-            //if (toolTip != null)
-            //    StatusBar.Status = toolTip.Content as string;
+            StatusBar.Status = toolTipText;
         }
 
         private void DoSaveFlameGraph(object sender, RoutedEventArgs e)
