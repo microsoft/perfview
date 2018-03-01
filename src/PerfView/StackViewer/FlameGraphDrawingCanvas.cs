@@ -43,6 +43,8 @@ namespace PerfView
             using (DrawingContext drawingContext = visual.RenderOpen())
             {
                 int index = 0;
+                System.Drawing.Font forSize = null; 
+
                 foreach (var box in boxes)
                 {
                     var brush = Brushes[index++ % Brushes.Length];
@@ -54,12 +56,15 @@ namespace PerfView
 
                     if (box.Width > 50 && box.Height >= 6) // we draw the text only if humans can see something
                     {
+                        if (forSize == null)
+                            forSize = new System.Drawing.Font("Consolas", (float)box.Height, System.Drawing.GraphicsUnit.Pixel);
+
                         var text = new FormattedText(
                                 box.Node.DisplayName,
                                 CultureInfo.InvariantCulture,
                                 FlowDirection.LeftToRight,
                                 Typeface,
-                                Math.Min(box.Height, 20),
+                                Math.Min(forSize.SizeInPoints, 20),
                                 System.Windows.Media.Brushes.Black);
 
                         text.MaxTextWidth = box.Width;
