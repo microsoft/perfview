@@ -611,19 +611,7 @@ class TraceParserGen
         output.WriteLine("    {");
 
         foreach (var keyValue in enumeration.Values)
-        {
-            string numericString = Convert.ToString(keyValue.Key, 16);
-            Int64 targetNumber = Convert.ToInt64(numericString, 16);
-
-            if (targetNumber >= Int32.MaxValue)
-            {
-                output.WriteLine("        {0} = unchecked((int)  0x{1:x}),", keyValue.Value, keyValue.Key);
-            }
-            else
-            {
-                output.WriteLine("        {0} = 0x{1:x},", keyValue.Value, keyValue.Key);
-            }
-        }
+            output.WriteLine("        {0} = 0x{1:x},", keyValue.Value, keyValue.Key);
         output.WriteLine("    }");
     }
 
