@@ -389,6 +389,8 @@ namespace ETWManifest
             AddOpcode(GlobalScope, 7, "Resume", "win:Resume");
             AddOpcode(GlobalScope, 8, "Suspend", "win:Suspend");
             AddOpcode(GlobalScope, 9, "Send", "win:Send");
+            AddOpcode(GlobalScope, 10, "DCStart", "win:DCStart");
+            AddOpcode(GlobalScope, 11, "DCStop", "win:DCStop");
             AddOpcode(GlobalScope, 240, "Receive", "win:Receive");
         }
 
