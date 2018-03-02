@@ -21,8 +21,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PerfViewVersion>2.0.5</PerfViewVersion>
-    <TraceEventVersion>2.0.6</TraceEventVersion>
+    <PerfViewVersion>2.0.7</PerfViewVersion>
+    <TraceEventVersion>2.0.7</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->

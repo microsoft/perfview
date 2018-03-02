@@ -100,7 +100,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
 
 ### Information for build troubleshooting.  
 
-  * One of the unusual things about PerfView is that it incorporates its support DLL into the EXE itself, and these get 
+  * One of the unusual things about PerfView is that it incorporates its support DLLs into the EXE itself, and these get 
   unpacked on first launch.  This means that there are tricky dependencies in the build that are not typical.    You will 
   see errors that certain DLLs can't be found if there were build problems earlier in the build.   Typically you can fix 
   this simply by doing a normal (non-clean) build, since the missing file will be present from the last compilation.
@@ -119,7 +119,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   This includes exactly what you tried, and what the error messages were.
   
   * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
-  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that hte Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
+  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that the Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
   
 ### Running Tests
 

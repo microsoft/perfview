@@ -1,5 +1,6 @@
-# PerfView Overview
+# Downloading PerfView 
 
+PerfView is a free profiling tool from Microsoft.   This page tells you how to get a copy of it for yourself.  
 See the [PerfView Overview](https://github.com/Microsoft/perfview#perfview-overview) for general information
 about PerfView.   
 
