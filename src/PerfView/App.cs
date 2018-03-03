@@ -1,4 +1,4 @@
-// #define PUBLIC_ONLY
+// #define PUBLIC_BUILD
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -586,7 +586,10 @@ namespace PerfView
                     // Since the default goes off machine, if we are outside of Microsoft, we have to ask
                     // the user for permission. 
                     if (AppLog.InternalUser)
+                    {
+                        symPath.Add("SRV*http://symweb.corp.microsoft.com");
                         symPath.Add(Microsoft.Diagnostics.Symbols.SymbolPath.MicrosoftSymbolServerPath);
+                    }
                     else if (symPath.Elements.Count == 0)
                     {
                         if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm || App.CommandLineArgs.NoGui)
@@ -1003,7 +1006,7 @@ namespace PerfView
         {
             get
             {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
                 return false;
 #else
                 if (!s_CanSendFeedback.HasValue)
@@ -1045,7 +1048,7 @@ namespace PerfView
         {
             get
             {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
                 return false;
 #else
                 if (!s_InternalUser.HasValue)
@@ -1060,7 +1063,7 @@ namespace PerfView
         /// </summary>
         public static void LogUsage(string eventName, string arg1 = "", string arg2 = "")
         {
-#if !PUBLIC_ONLY
+#if !PUBLIC_BUILD
             if (!CanSendFeedback)
                 return;
             try
@@ -1094,7 +1097,7 @@ namespace PerfView
         /// </summary>
         public static bool SendFeedback(string message, bool crash)
         {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
             return false;
 #else
             if (!CanSendFeedback)
@@ -1165,7 +1168,7 @@ namespace PerfView
 
         private static DateTime s_startTime;    // used as a unique ID for the launch of the program (for SQM style logging)    
         internal static bool s_IsUnderTest; // set from tests: indicates we're in a test
-#if !PUBLIC_ONLY
+#if !PUBLIC_BUILD
         private static DateTime s_ProbedForFeedbackAt;
         private static bool? s_CanSendFeedback;
         private static bool? s_InternalUser;

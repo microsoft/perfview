@@ -70,10 +70,6 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 if (s_MicrosoftSymbolServerPath == null)
                 {
-#if !PUBLIC_ONLY
-                    if (ComputerNameExists("symweb.corp.microsoft.com"))
-                        s_MicrosoftSymbolServerPath = "SRV*http://symweb.corp.microsoft.com";  // Internal Microsoft location.  
-#endif
                     s_MicrosoftSymbolServerPath = s_MicrosoftSymbolServerPath +
                         ";" + @"SRV*http://msdl.microsoft.com/download/symbols" +     // Operatig system Symbols
                         ";" + @"SRV*https://nuget.smbsrc.net" +                       // Nuget symbols

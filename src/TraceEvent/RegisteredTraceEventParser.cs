@@ -229,7 +229,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                         {
                             string opcodeId;
                             if (eventInfo->EventDescriptor.Opcode < 10)       // It is a reserved opcode.  
-                                opcodeId = "win:" + opcodeName;
+                            {
+                                // For some reason opcodeName does not have the underscore, which we need. 
+                                if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStart)
+                                    opcodeId = "win:DC_Start";
+                                else if (eventInfo->EventDescriptor.Opcode == (byte)TraceEventOpcode.DataCollectionStop)
+                                    opcodeId = "win:DC_Stop";
+                                else 
+                                    opcodeId = "win:" + opcodeName;
+                            }
                             else
                             {
                                 opcodeId = opcodeName;

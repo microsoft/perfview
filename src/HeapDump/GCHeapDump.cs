@@ -8,9 +8,8 @@ using Address = System.UInt64;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Diagnostics.Utilities;
-#if PERFVIEW
 using System.Xml;
-#endif
+
 
 /// <summary>
 /// Represents a .GCDump file.  You can open it for reading with the construtor
@@ -374,19 +373,19 @@ public class GCHeapDump : IFastSerializable, IFastSerializableVersion
 
     MemoryGraph m_graph;
     InteropInfo m_interop;
-    #endregion
+#endregion
 }
 
 public class JSHeapInfo : IFastSerializable
 {
-    #region private
+#region private
     void IFastSerializable.ToStream(Serializer serializer)
     {
     }
     void IFastSerializable.FromStream(Deserializer deserializer)
     {
     }
-    #endregion
+#endregion
 }
 
 public class InteropInfo : IFastSerializable
@@ -656,7 +655,6 @@ public class InteropInfo : IFastSerializable
     }
 }
 
-#if PERFVIEW
 /// <summary>
 /// Reads the format as an XML file.   It it is a very simple format  Here is an example. 
 /// <graph>
@@ -984,9 +982,8 @@ class XmlGcHeapDump
         return ret;
     }
 
-    #endregion
+#endregion
 
 
 }
-#endif
 
