@@ -46,7 +46,7 @@
             <CommandBinding Command="{x:Static src:StackWindow.FindCommand}" Executed="DoFind"/>
             <CommandBinding Command="{x:Static src:StackWindow.FindNextCommand}" Executed="DoFindNext"/>
 
-            <CommandBinding Command="{x:Static src:StackWindow.FindInByNameCommand}" Executed="DoFindInByName"/>
+            <CommandBinding Command="{x:Static src:StackWindow.FindInByNameCommand}" Executed="DoFindInByName" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee"/>
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers"/>
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees"/>
@@ -119,7 +119,7 @@
                 </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.NewWindowCommand}" />
                 <MenuItem Header="Goto">
-                    <MenuItem Command="{x:Static src:StackWindow.FindInByNameCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.FindInByNameCommand}"/>
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCallersCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.ViewInCalleesCommand}" />

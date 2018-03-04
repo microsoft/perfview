@@ -641,33 +641,6 @@ namespace PerfView
         {
             return FindNext(FindTextBox.Text);
         }
-        /// <summary>
-        /// Finds oin the ByName view.
-        /// </summary>
-        /// <param name="name"></param>
-        public void FindByName(string name)
-        {
-            for (int i = 0; i < m_byNameView.Count; i++)
-            {
-                var item = m_byNameView[i];
-                if (name == item.DisplayName)
-                {
-                    ByNameDataGrid.Grid.SelectedIndex = i;
-                    // Hack!  Wait for items to be populated
-                    try
-                    {
-                        ByNameDataGrid.Grid.ScrollIntoView(item);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.WriteLine("Caught Exception while scrolling " + e.ToString());
-                    }
-                    ByNameTab.IsSelected = true;
-                    return;
-                }
-            }
-            StatusBar.LogError("Name '" + name + "' not found");
-        }
 
         /// <summary>
         /// If we save this view as a file, this is its name (may be null) 
@@ -1194,14 +1167,34 @@ namespace PerfView
         {
             FindTextBox.Focus();
         }
+
+        private void SingleNodeIsSelected(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = GetSelectedNodes().Count == 1;
+
         private void DoFindInByName(object sender, ExecutedRoutedEventArgs e)
         {
-            string str = SelectedCellStringValue();
-            if (str != null)
-                FindByName(str);
-            else
-                StatusBar.LogError("No selected cells found.");
+            var displayName = GetSelectedNodes().Single().DisplayName;
+
+            for (int i = 0; i < m_byNameView.Count; i++)
+            {
+                var item = m_byNameView[i];
+                if (displayName == item.DisplayName)
+                {
+                    ByNameDataGrid.Grid.SelectedIndex = i;
+                    // Hack!  Wait for items to be populated
+                    try
+                    {
+                        ByNameDataGrid.Grid.ScrollIntoView(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Caught Exception while scrolling " + ex.ToString());
+                    }
+                    ByNameTab.IsSelected = true;
+                    return;
+                }
+            }
         }
+
         private void DoFindInCallTreeName(object sender, ExecutedRoutedEventArgs e)
         {
             string str = SelectedCellStringValue();
