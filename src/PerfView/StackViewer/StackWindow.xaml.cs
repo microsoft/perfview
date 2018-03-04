@@ -953,62 +953,24 @@ namespace PerfView
             StatusBar.Status = "No Pad On Copy is now " + PerfDataGrid.NoPadOnCopyToClipboard;
         }
 
-        private bool GetSamplesForSelection(out bool[] sampleSet, out string name)
+        private bool GetSamplesForSelection(bool exclusiveSamples, out bool[] sampleSet, out string name)
         {
             name = "";
             sampleSet = null;
-
-            var cells = SelectedCells();
-            if (cells == null || cells.Count <= 0)
-            {
-                StatusBar.LogError("No cells selected.");
-                return false;
-            }
-
-            // TODO FIX NOW make this work. 
-            if (CallerCalleeTab.IsSelected)
-            {
-                StatusBar.LogError("Sorry, Drill Into and other operations that select samples is not implemented in the caller-callee view.  " +
-                    "Often you can get what you need from the ByName view.");
-                return false;
-            }
 
             var addedDots = false;
             Debug.Assert(CallTree.StackSource.BaseStackSource == m_stackSource);
             var localSampleSet = new bool[m_stackSource.SampleIndexLimit];
 
             // TODO do I need to do this off the GUI thread?  
-            foreach (var cell in cells)
+            var selectedNodes = GetSelectedNodes();
+            foreach (var asCallTreeNodeBase in selectedNodes)
             {
-                bool exclusiveSamples = false;
-                var colName = ((TextBlock)cell.Column.Header).Name;
-                if (colName.StartsWith("Exc"))
-                    exclusiveSamples = true;
-                if (colName.StartsWith("Fold"))
-                {
-                    StatusBar.LogError("Cannot drill into folded samples.  Use Exc instead.");
-                    return false;
-                }
-
-                var item = cell.Item;
-                var asCallTreeNodeBase = item as CallTreeNodeBase;
-                if (asCallTreeNodeBase == null)
-                {
-                    var asCallTreeViewNode = item as CallTreeViewNode;
-                    if (asCallTreeViewNode != null)
-                        asCallTreeNodeBase = asCallTreeViewNode.Data;
-                    else
-                    {
-                        StatusBar.LogError("Could not find data item.");
-                        return false;
-                    }
-                }
-
                 asCallTreeNodeBase.GetSamples(exclusiveSamples, delegate (StackSourceSampleIndex sampleIdx)
                 {
                     // We should only count a sample once unless we are combining different cells. 
                     Debug.Assert((int)sampleIdx < localSampleSet.Length);
-                    Debug.Assert(!localSampleSet[(int)sampleIdx] || cells.Count > 1);
+                    Debug.Assert(!localSampleSet[(int)sampleIdx] || selectedNodes.Count > 1);
                     localSampleSet[(int)sampleIdx] = true;
                     return true;
                 });
@@ -1024,20 +986,19 @@ namespace PerfView
             return true;
         }
 
+        private void CanExecuteMemoryOperation(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = m_stackSource is MemoryGraphStackSource;
+
         private void DoDumpObject(object sender, ExecutedRoutedEventArgs e)
         {
-            var asMemoryStackSource = m_stackSource as MemoryGraphStackSource;
-            if (asMemoryStackSource == null)
-            {
-                StatusBar.LogError("DumpObject only works when operating on Memory views");
-                return;
-            }
+            bool exclusiveSamples = (bool)e.Parameter;
 
             bool[] sampleSet;
             string sampleSetName;
-            if (GetSamplesForSelection(out sampleSet, out sampleSetName))
+
+            if (GetSamplesForSelection(exclusiveSamples, out sampleSet, out sampleSetName)) // TODO: VERIFY that the condition is correct (no ! )
                 return;
 
+            var asMemoryStackSource = (MemoryGraphStackSource)m_stackSource;
             int count = 0;
             List<NodeIndex> nodeIdxs = new List<NodeIndex>();
             for (int i = 0; i < sampleSet.Length; i++)
@@ -1100,21 +1061,19 @@ namespace PerfView
 
         private void DoViewObjects(object sender, ExecutedRoutedEventArgs e)
         {
-            var asMemoryStackSource = m_stackSource as MemoryGraphStackSource;
-            if (asMemoryStackSource == null)
-            {
-                StatusBar.LogError("View Objects only works when operating on Memory views");
-                return;
-            }
+            bool exclusiveSamples = (e.Parameter != null && (bool)e.Parameter)
+                || e.Command == ViewObjectsExclusiveCommand; // for shortcuts there is no parameter, so we check the command
+
+            var asMemoryStackSource = (MemoryGraphStackSource)m_stackSource;
 
             List<NodeIndex> nodeIdxs = null;
             int nodeCount = 0;
-            var cells = SelectedCells();
+            var cells = GetSelectedNodes();
             if (cells != null && 0 < cells.Count)
             {
                 bool[] sampleSet;
                 string sampleSetName;
-                if (!GetSamplesForSelection(out sampleSet, out sampleSetName))
+                if (!GetSamplesForSelection(exclusiveSamples, out sampleSet, out sampleSetName))
                     return;
 
                 nodeIdxs = new List<NodeIndex>();
@@ -1131,12 +1090,17 @@ namespace PerfView
             objectViewer.Show();
         }
 
-        // Context Menu ETWCommands
+        private void CanExecuteSamplesBasedOperation(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = !CallerCalleeTab.IsSelected /* TODO FIX NOW make this work. */ && GetSelectedNodes().Any();
+
         private void DoDrillInto(object sender, ExecutedRoutedEventArgs e)
         {
+            bool exclusiveSamples = (e.Parameter != null && (bool)e.Parameter) 
+                || e.Command == DrillIntoExclusiveCommand; // for shortcuts there is no parameter, so we check the command
+
             bool[] sampleSet;
             string sampleSetName;
-            if (!GetSamplesForSelection(out sampleSet, out sampleSetName))
+            if (!GetSamplesForSelection(exclusiveSamples, out sampleSet, out sampleSetName))
                 return;
 
             var drillIntoSamples = new CopyStackSource(m_stackSource);
@@ -1154,8 +1118,10 @@ namespace PerfView
 
         private void DoFlatten(object sender, ExecutedRoutedEventArgs e)
         {
+            bool exclusiveSamples = (bool)e.Parameter;
+
             var origStackSource = new FilterStackSource(Filter, m_stackSource, ScalingPolicy);
-            var stackSource = Flatten(origStackSource, GetSelectedSamples());
+            var stackSource = Flatten(origStackSource, GetSelectedSamples(exclusiveSamples));
             var newStackWindow = new StackWindow(this, this);
             newStackWindow.ExcludeRegExTextBox.Text = "";
             newStackWindow.IncludeRegExTextBox.Text = "";
@@ -1166,11 +1132,11 @@ namespace PerfView
             newStackWindow.SetStackSource(stackSource);
         }
 
-        private IEnumerable<StackSourceSample> GetSelectedSamples()
+        private IEnumerable<StackSourceSample> GetSelectedSamples(bool exclusiveSamples)
         {
             bool[] sampleSet;
             string sampleSetName;
-            if (GetSamplesForSelection(out sampleSet, out sampleSetName))
+            if (GetSamplesForSelection(exclusiveSamples, out sampleSet, out sampleSetName))
             {
                 for (int i = 0; i < sampleSet.Length; i++)
                 {
@@ -2776,9 +2742,13 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.F5) });
         public static RoutedUICommand NewWindowCommand = new RoutedUICommand("New Window", "NewWindow", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.N, ModifierKeys.Control) });
-        public static RoutedUICommand DrillIntoCommand = new RoutedUICommand("Drill Into", "DrillInto", typeof(StackWindow),
+        public static RoutedUICommand DrillIntoInclusiveCommand = new RoutedUICommand("Drill Into Inclusive Samples", "DrillIntoInclusive", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.D, ModifierKeys.Control) });
+        public static RoutedUICommand DrillIntoExclusiveCommand = new RoutedUICommand("Drill Into Exclusive Samples", "DrillIntoExclusive", typeof(StackWindow),
+            new InputGestureCollection() { new KeyGesture(Key.D, ModifierKeys.Control | ModifierKeys.Shift) });
+
         public static RoutedUICommand FlattenCommand = new RoutedUICommand("Flatten", "Flatten", typeof(StackWindow));
+
         public static RoutedUICommand FindCommand = new RoutedUICommand("Find", "Find", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F, ModifierKeys.Control) });
         public static RoutedUICommand FindNextCommand = new RoutedUICommand("Find Next", "FindNext", typeof(StackWindow),
@@ -2854,8 +2824,10 @@ namespace PerfView
         public static RoutedUICommand ToggleNoPadOnCopyCommand = new RoutedUICommand("Toggle No Pad On Copy", "ToggleNoPadOnCopy", typeof(StackWindow));
 
         // memory
-        public static RoutedUICommand ViewObjectsCommand = new RoutedUICommand("View Objects", "ViewObjects", typeof(StackWindow),
+        public static RoutedUICommand ViewObjectsInclusiveCommand = new RoutedUICommand("View Objects Inclusive Samples", "ViewObjectsInclusive", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.O, ModifierKeys.Alt) });
+        public static RoutedUICommand ViewObjectsExclusiveCommand = new RoutedUICommand("View Objects Exclusive Samples", "ViewObjectsExclusive", typeof(StackWindow),
+            new InputGestureCollection() { new KeyGesture(Key.O, ModifierKeys.Alt | ModifierKeys.Shift) });
         public static RoutedUICommand DumpObjectCommand = new RoutedUICommand("Dump Object", "DumpObject", typeof(StackWindow));
 
 
@@ -2872,8 +2844,8 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.Space) });
         public static RoutedUICommand CollapseCommand = new RoutedUICommand("Collapse", "Collapse", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Space, ModifierKeys.Shift) });
-        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow)); 
-        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow));
+        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand SetRedBackgroundColorCommand = new RoutedUICommand("Set Red Background Color", "SetRedBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand FoldPercentCommand = new RoutedUICommand("Fold %", "FoldPercent", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F6) });
@@ -3294,6 +3266,7 @@ namespace PerfView
             ret = Regex.Replace(ret, @"^[ |+]*", "");               // Remove spaces or | (for tree view) at the start).  
             return ret;
         }
+
         private IList<DataGridCellInfo> SelectedCells()
         {
             var dataGrid = GetDataGrid();
@@ -3301,7 +3274,29 @@ namespace PerfView
                 return null;
             return dataGrid.SelectedCells;
         }
-        internal DataGrid GetDataGrid()
+
+        private IReadOnlyList<CallTreeNodeBase> GetSelectedNodes()
+        {
+            if (FlameGraphTab.IsSelected)
+                return FlameGraphCanvas.GetSelectedNode();
+
+            var dataGrid = GetDataGrid();
+            if (dataGrid != null)
+            {
+                var nodes = new List<CallTreeNodeBase>(dataGrid.SelectedCells.Count);
+                foreach (var cell in dataGrid.SelectedCells)
+                    if (cell.Item is CallTreeNodeBase nodeBase) // ByName, Caller-Callee
+                        nodes.Add(nodeBase);
+                    else if (cell.Item is CallTreeViewNode callTreeNode) // all tree-like views
+                        nodes.Add(callTreeNode.Data);
+
+                return nodes;
+            }
+
+            return new CallTreeNodeBase[0]; // should be Array.Empty (but we target .NET 4.5)
+        }
+
+        private DataGrid GetDataGrid()
         {
             if (ByNameTab.IsSelected)
             {

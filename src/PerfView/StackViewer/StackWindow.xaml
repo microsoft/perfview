@@ -5,6 +5,7 @@
     xmlns:src="clr-namespace:PerfView"
     xmlns:src1="clr-namespace:PerfView"
     xmlns:controls="clr-namespace:Controls"
+    xmlns:s="clr-namespace:System;assembly=mscorlib"
     Title="PerfView Stacks"
     Width="919" Height="605"
     >
@@ -26,6 +27,8 @@
             <Setter Property="TextBlock.Background" Value="Transparent" />
             <Setter Property="TextBlock.Margin" Value="0,10,0,0" />
         </Style>
+        <s:Boolean x:Key="True">True</s:Boolean>
+        <s:Boolean x:Key="False">False</s:Boolean>
     </Window.Resources>
 
     <!-- DataContext for this window is the StackWindow itself -->
@@ -37,8 +40,9 @@
             <CommandBinding Command="BrowseForward" Executed="DoForward" CanExecute="CanDoForward" />
 
             <CommandBinding Command="{x:Static src:StackWindow.NewWindowCommand}" Executed="DoNewWindow" />
-            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoCommand}" Executed="DoDrillInto" />
-            <CommandBinding Command="{x:Static src:StackWindow.FlattenCommand}" Executed="DoFlatten" />
+            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoInclusiveCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoDrillInto" />
+            <CommandBinding Command="{x:Static src:StackWindow.DrillIntoExclusiveCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoDrillInto" />
+            <CommandBinding Command="{x:Static src:StackWindow.FlattenCommand}" CanExecute="CanExecuteSamplesBasedOperation" Executed="DoFlatten" />
             <CommandBinding Command="{x:Static src:StackWindow.FindCommand}" Executed="DoFind"/>
             <CommandBinding Command="{x:Static src:StackWindow.FindNextCommand}" Executed="DoFindNext"/>
 
@@ -80,8 +84,9 @@
             <CommandBinding Command="{x:Static src:StackWindow.ExcludeItemCommand}" Executed="DoExcludeItem" />
 
             <CommandBinding Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" Executed="DoToggleNotesPane" />
-            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsCommand}" Executed="DoViewObjects" />
-            <CommandBinding Command="{x:Static src:StackWindow.DumpObjectCommand}" Executed="DoDumpObject" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsInclusiveCommand}" Executed="DoViewObjects" CanExecute="CanExecuteMemoryOperation" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsExclusiveCommand}" Executed="DoViewObjects" CanExecute="CanExecuteMemoryOperation" />
+            <CommandBinding Command="{x:Static src:StackWindow.DumpObjectCommand}" Executed="DoDumpObject" CanExecute="CanExecuteMemoryOperation" />
 
             <CommandBinding Command="{x:Static src:StackWindow.ExpandCommand}" Executed="DoExpand" CanExecute="CanExpand"/>
             <CommandBinding Command="{x:Static src:StackWindow.CollapseCommand}" Executed="DoCollapse" CanExecute="CanExpand"/>
@@ -104,8 +109,14 @@
         </DockPanel.CommandBindings>
         <DockPanel.ContextMenu>
             <ContextMenu>
-                <MenuItem Command="{x:Static src:StackWindow.DrillIntoCommand}" />
-                <MenuItem Command="{x:Static src:StackWindow.FlattenCommand}" />
+                <MenuItem Header="Drill Into">
+                    <MenuItem Command="{x:Static src:StackWindow.DrillIntoInclusiveCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Command="{x:Static src:StackWindow.DrillIntoExclusiveCommand}" CommandParameter="{StaticResource True}" />
+                </MenuItem>
+                <MenuItem Header="Flatten">
+                    <MenuItem Header="Flatten Inclusive Samples" Command="{x:Static src:StackWindow.FlattenCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Header="Flatten Exclusive Samples" Command="{x:Static src:StackWindow.FlattenCommand}" CommandParameter="{StaticResource True}" />
+                </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.NewWindowCommand}" />
                 <MenuItem Header="Goto">
                     <MenuItem Command="{x:Static src:StackWindow.FindInByNameCommand}" />
@@ -178,8 +189,10 @@
                     <MenuItem Command="{x:Static src:StackWindow.ToggleNoPadOnCopyCommand}" />
                 </MenuItem>
                 <MenuItem Header="Memory">
-                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsCommand}" />
-                    <MenuItem Command="{x:Static src:StackWindow.DumpObjectCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsInclusiveCommand}" />
+                    <MenuItem Command="{x:Static src:StackWindow.ViewObjectsExclusiveCommand}" />
+                    <MenuItem Header="Dump Object Inclusive Samples" Command="{x:Static src:StackWindow.DumpObjectCommand}" CommandParameter="{StaticResource False}" />
+                    <MenuItem Header="Dump Object Exclusive Samples" Command="{x:Static src:StackWindow.DumpObjectCommand}" CommandParameter="{StaticResource True}" />
                 </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" />
             </ContextMenu>
