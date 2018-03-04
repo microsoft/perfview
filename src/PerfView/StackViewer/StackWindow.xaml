@@ -50,7 +50,7 @@
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee"/>
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers"/>
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees"/>
-            <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName"/>
+            <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName" CanExecute="SingleNodeIsSelected" />
 
             <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" />
             <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" />

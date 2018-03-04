@@ -1197,16 +1197,13 @@ namespace PerfView
 
         private void DoFindInCallTreeName(object sender, ExecutedRoutedEventArgs e)
         {
-            string str = SelectedCellStringValue();
-            if (str != null)
-            {
-                CallTreeTab.IsSelected = true;
-                // TODO support some sort of escape sequence 
-                Find(Regex.Escape(str));
-            }
-            else
-                StatusBar.LogError("No selected cells found.");
+            var displayName = Regex.Escape(GetSelectedNodes().Single().DisplayName);
+
+            CallTreeTab.IsSelected = true; 
+            FindTextBox.Text = displayName; // F3 support
+            CallTreeView.Find(displayName); // find the first match
         }
+
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
             if (SetFocusNodeToSelection())
