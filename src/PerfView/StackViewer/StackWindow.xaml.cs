@@ -369,7 +369,7 @@ namespace PerfView
                     }
 
                     // SignalPropertyChange the Caller-Callee Tab
-                    SetFocus(null);
+                    SetFocus(m_callTree.Root);
 
                     ByNameDataGrid.Focus();
 
@@ -580,6 +580,28 @@ namespace PerfView
         }
 
         public string FocusName { get { return CallerCalleeView.FocusName; } }
+
+        public bool SetFocus(CallTreeNodeBase node)
+        {
+            CallerCalleeView.SetFocus(node.Name, m_callTree);
+
+            m_calleesView.SetRoot(AggregateCallTreeNode.CalleeTree(node));
+            if (IsMemoryWindow)
+                CalleesTitle.Text = "Objects that are referred to by " + node.Name;
+            else
+                CalleesTitle.Text = "Methods that are called by " + node.Name;
+
+            m_callersView.SetRoot(AggregateCallTreeNode.CallerTree(node));
+
+            if (IsMemoryWindow)
+                CallersTitle.Text = "Objects that refer to " + node.Name;
+            else
+                CallersTitle.Text = "Methods that call " + node.Name;
+            DataContext = node;
+
+            return true;
+        }
+
         public bool SetFocus(string name)
         {
             if (name == null)
@@ -1206,18 +1228,18 @@ namespace PerfView
 
         private void DoViewInCallerCallee(object sender, RoutedEventArgs e)
         {
-            if (SetFocusNodeToSelection())
-                CallerCalleeTab.IsSelected = true;
+            SetFocus(GetSelectedNodes().Single());
+            CallerCalleeTab.IsSelected = true;
         }
         private void DoViewInCallers(object sender, ExecutedRoutedEventArgs e)
         {
-            if (SetFocusNodeToSelection())
-                CallersTab.IsSelected = true;
+            SetFocus(GetSelectedNodes().Single());
+            CallersTab.IsSelected = true;
         }
         private void DoViewInCallees(object sender, ExecutedRoutedEventArgs e)
         {
-            if (SetFocusNodeToSelection())
-                CalleesTab.IsSelected = true;
+            SetFocus(GetSelectedNodes().Single());
+            CalleesTab.IsSelected = true;
         }
 
         private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e)

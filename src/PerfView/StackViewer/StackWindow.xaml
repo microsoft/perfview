@@ -47,9 +47,9 @@
             <CommandBinding Command="{x:Static src:StackWindow.FindNextCommand}" Executed="DoFindNext"/>
 
             <CommandBinding Command="{x:Static src:StackWindow.FindInByNameCommand}" Executed="DoFindInByName" CanExecute="SingleNodeIsSelected" />
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers"/>
-            <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees"/>
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallerCalleeCommand}" Executed="DoViewInCallerCallee" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCallersCommand}" Executed="DoViewInCallers" CanExecute="SingleNodeIsSelected" />
+            <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName" CanExecute="SingleNodeIsSelected" />
 
             <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" />
