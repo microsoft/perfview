@@ -194,7 +194,7 @@ namespace TraceEventTests
             }
 
             outputFile.Close();
-            if (mismatchCount > 0)
+            if (mismatchCount > 0 || histogramMismatch)
             {
                 Output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
 
