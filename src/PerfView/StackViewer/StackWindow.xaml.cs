@@ -1483,8 +1483,8 @@ namespace PerfView
         private void DoFoldItem(object sender, ExecutedRoutedEventArgs e)
         {
             var str = FoldRegExTextBox.Text;
-            foreach (string cellStr in SelectedCellsStringValue())
-                str = AddSet(str, FilterParams.EscapeRegEx(cellStr));        // TODO need a good anchor
+            foreach (var node in GetSelectedNodes())
+                str = AddSet(str, FilterParams.EscapeRegEx(node.DisplayName));        // TODO need a good anchor
             FoldRegExTextBox.Text = str;
             Update();
         }
@@ -2368,24 +2368,25 @@ namespace PerfView
                            (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
         }
 
-        private void DoFoldPercent(object sender, ExecutedRoutedEventArgs e)
-        {
-            FoldPercentTextBox.Focus();
-        }
+        private void DoFoldPercent(object sender, ExecutedRoutedEventArgs e) => FoldPercentTextBox.Focus();
+
         private void DoIncreaseFoldPercent(object sender, ExecutedRoutedEventArgs e)
         {
-            float newVal;
-            if (float.TryParse(FoldPercentTextBox.Text, out newVal))
+            if (float.TryParse(FoldPercentTextBox.Text, out float newVal))
+            {
                 FoldPercentTextBox.Text = (newVal * 1.6).ToString("f2");
-            Update();
+                Update();
+            }
         }
         private void DoDecreaseFoldPercent(object sender, ExecutedRoutedEventArgs e)
         {
-            float newVal;
-            if (float.TryParse(FoldPercentTextBox.Text, out newVal))
+            if (float.TryParse(FoldPercentTextBox.Text, out float newVal))
+            {
                 FoldPercentTextBox.Text = (newVal / 1.6).ToString("f2");
-            Update();
+                Update();
+            }
         }
+
         // turns off menus for options that only make sence in the callTree view.  
         private void InCallTree(object sender, CanExecuteRoutedEventArgs e)
         {
@@ -3107,21 +3108,21 @@ namespace PerfView
         {
             // TODO see if we can use this in as many places as possible. 
             var badStrs = "";
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
-                Match m = Regex.Match(cellStr, @"([ \w.-]+)!");
+                Match m = Regex.Match(node.DisplayName, @"([ \w.-]+)!");
                 if (m.Success)
                     moduleAction(m.Groups[1].Value);
                 else
                 {
-                    m = Regex.Match(cellStr, @"^module ([ \w.-]+)");
+                    m = Regex.Match(node.DisplayName, @"^module ([ \w.-]+)");
                     if (m.Success)
                         moduleAction(m.Groups[1].Value);
                     else
                     {
                         if (badStrs.Length > 0)
                             badStrs += " ";
-                        badStrs += cellStr;
+                        badStrs += node.DisplayName;
                     }
                 }
             }

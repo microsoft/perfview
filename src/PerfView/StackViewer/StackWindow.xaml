@@ -56,8 +56,8 @@
             <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.UngroupCommand}" Executed="DoUngroup" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.UngroupModuleCommand}" Executed="DoUngroupModule" CanExecute="HasNonEmptySelection" />
-            <CommandBinding Command="{x:Static src:StackWindow.FoldModuleCommand}" Executed="DoFoldModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" />
+            <CommandBinding Command="{x:Static src:StackWindow.FoldModuleCommand}" Executed="DoFoldModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.RemoveAllFoldingCommand}" Executed="DoRemoveAllFolding" />
 
             <CommandBinding Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" Executed="DoRaiseItemPriority" CanExecute="CanChangePriority" />
