@@ -1090,7 +1090,7 @@ namespace PerfView
 
         private void DoDrillInto(object sender, ExecutedRoutedEventArgs e)
         {
-            bool exclusiveSamples = (e.Parameter != null && (bool)e.Parameter) 
+            bool exclusiveSamples = (e.Parameter != null && (bool)e.Parameter)
                 || e.Command == DrillIntoExclusiveCommand; // for shortcuts there is no parameter, so we check the command
 
             bool[] sampleSet;
@@ -1221,7 +1221,7 @@ namespace PerfView
         {
             var displayName = Regex.Escape(GetSelectedNodes().Single().DisplayName);
 
-            CallTreeTab.IsSelected = true; 
+            CallTreeTab.IsSelected = true;
             FindTextBox.Text = displayName; // F3 support
             CallTreeView.Find(displayName); // find the first match
         }
@@ -1244,7 +1244,7 @@ namespace PerfView
 
         private void HasNonEmptySelection(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = GetSelectedNodes().Any();
 
-        private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e) =>  DoGroupModuleHelper("=>");
+        private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e) => DoGroupModuleHelper("=>");
 
         private void DoGroupModule(object sender, ExecutedRoutedEventArgs e) => DoGroupModuleHelper("->");
 
@@ -1498,55 +1498,25 @@ namespace PerfView
         {
             Clipboard.SetText(StartTextBox.Text + " " + EndTextBox.Text);
         }
-        private void CanDoOpenEvents(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = false;
-            var asETLData = DataSource.DataFile as ETLPerfViewData;
-            if (asETLData != null)
-                e.CanExecute = true;
-        }
+        private void CanDoOpenEvents(object sender, CanExecuteRoutedEventArgs e) 
+            => e.CanExecute = DataSource.DataFile is ETLPerfViewData && DataSource.DataFile.Children.OfType<PerfViewEventSource>().Any() && GetSelectedNodes().Any();
+
         private void DoOpenEvents(object sender, ExecutedRoutedEventArgs e)
         {
-            var cells = SelectedCells();
-            if (cells != null && (cells.Count == 1 || cells.Count == 2))
+            var selectedNodes = GetSelectedNodes();
+            var start = selectedNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
+            var end = selectedNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
+
+            var eventSource = DataSource.DataFile.Children.OfType<PerfViewEventSource>().First();
+
+            eventSource.Open(ParentWindow, StatusBar, delegate
             {
-                var start = GetCellStringValue(cells[0]);
-                var end = start;
-                if (cells.Count == 2)
-                    end = GetCellStringValue(cells[1]);
-
-                double dummy;
-                if (!double.TryParse(start, out dummy) || !double.TryParse(end, out dummy))
-                {
-                    StatusBar.LogError("Could not parse cells as a time range.");
-                    return;
-                }
-
-                PerfViewEventSource eventSource = null;
-                foreach (var child in DataSource.DataFile.Children)
-                {
-                    eventSource = child as PerfViewEventSource;
-                    if (eventSource != null)
-                        break;
-                }
-                if (eventSource == null)
-                {
-                    StatusBar.Log("This data file does not support the Events view");
-                    return;
-                }
-
-                eventSource.Open(ParentWindow, StatusBar, delegate
-                {
-                    var viewer = eventSource.Viewer;
-                    viewer.StartTextBox.Text = start;
-                    viewer.EndTextBox.Text = end;
-                    viewer.EventTypes.SelectAll();
-                    viewer.Update();
-                });
-
-            }
-            else
-                StatusBar.LogError("You must select one or two cells to act as the focus region.");
+                var viewer = eventSource.Viewer;
+                viewer.StartTextBox.Text = start;
+                viewer.EndTextBox.Text = end;
+                viewer.EventTypes.SelectAll();
+                viewer.Update();
+            });
         }
 
         private void CanSetTimeRange(object sender, CanExecuteRoutedEventArgs e)
