@@ -208,6 +208,7 @@
                 </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
+                <MenuItem Name="PresetMenu" Header="_Preset"/>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Stack Viewer" Command="Help" CommandParameter="StackViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:StackWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>

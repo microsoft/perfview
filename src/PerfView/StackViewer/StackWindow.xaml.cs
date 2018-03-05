@@ -2926,6 +2926,11 @@ namespace PerfView
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
 
+            // Finalize the Preset menu (add default commands)
+            var presets = App.ConfigData["Presets"];
+            m_presets = Preset.ParseCollection(presets);
+            FinishPresetMenu();
+
             StackWindows.Add(this);
 
             // TODO really should simply update Diff Menu lazily
@@ -3430,6 +3435,119 @@ namespace PerfView
             helpMenuItem.Click += delegate (object sender, RoutedEventArgs e) { MainWindow.DisplayUsersGuide(diffName); };
             diffMenuItem.Items.Add(helpMenuItem);
         }
+
+        private void FinishPresetMenu()
+        {
+            foreach (var preset in m_presets)
+            {
+                var presetMenuItem = new MenuItem();
+                presetMenuItem.Header = preset.Name;
+                presetMenuItem.Tag = preset.Name;
+                presetMenuItem.Click += DoSelectPreset;
+                PresetMenu.Items.Add(presetMenuItem);
+            }
+
+            PresetMenu.Items.Add(new Separator());
+
+            var newPresetMenuItem = new MenuItem();
+            newPresetMenuItem.Header = "Save As Preset";
+            newPresetMenuItem.Click += DoSaveAsPreset;
+            PresetMenu.Items.Add(newPresetMenuItem);
+
+            var managePresetsMenuItem = new MenuItem();
+            managePresetsMenuItem.Header = "Manage Presets";
+            managePresetsMenuItem.Click += DoManagePresets;
+            PresetMenu.Items.Add(managePresetsMenuItem);
+
+            var helpMenuItem = new MenuItem();
+            helpMenuItem.Header = "Help for Preset";
+            helpMenuItem.Click += delegate { MainWindow.DisplayUsersGuide("Preset"); };
+            PresetMenu.Items.Add(helpMenuItem);
+        }
+
+        private void DoUpdatePresetMenu()
+        {
+            // Clean existing preset items
+            while (!(PresetMenu.Items[0] is Separator))
+            {
+                PresetMenu.Items.RemoveAt(0);
+            }
+            // Sort in reverse order since menu items are created from last to first.
+            m_presets.Sort((x, y) => Comparer<string>.Default.Compare(y.Name, x.Name));
+            foreach (var preset in m_presets)
+            {
+                var presetMenuItem = new MenuItem();
+                presetMenuItem.Header = preset.Name;
+                presetMenuItem.Tag = preset.Name;
+                presetMenuItem.Click += DoSelectPreset;
+                PresetMenu.Items.Insert(0, presetMenuItem);
+            }
+        }
+
+        private void DoSaveAsPreset(object sender, RoutedEventArgs e)
+        {
+            string groupPat = this.GroupRegExTextBox.Text.Trim();
+            string nameCandidate = "Preset " + (m_presets.Count + 1).ToString();
+            // Try to extract pattern name as a [Name] prefix
+            if (groupPat[0] == '[')
+            {
+                int closingBracketIndex = groupPat.IndexOf(']');
+                if (closingBracketIndex > 0)
+                {
+                    nameCandidate = groupPat.Substring(1, closingBracketIndex - 1);
+                    groupPat = groupPat.Substring(closingBracketIndex + 1).Trim();
+                }
+            }
+            
+            var newPresetDialog = new NewPresetDialog(nameCandidate, m_presets.Select(x => x.Name).ToList());
+            newPresetDialog.Owner = this;
+            if (!(newPresetDialog.ShowDialog() ?? false))
+            {
+                return;
+            }
+
+            Preset preset = m_presets.FirstOrDefault(x => x.Name == newPresetDialog.PresetName) ?? new Preset();
+            preset.Name = newPresetDialog.PresetName;
+            preset.GroupPat = groupPat;
+            preset.FoldPercentage = this.FoldPercentTextBox.Text;
+            preset.FoldPat = this.FoldRegExTextBox.Text;
+            preset.ExcPat = this.ExcludeRegExTextBox.Text;
+            preset.IncPat = this.IncludeRegExTextBox.Text;
+
+            if (m_presets.FindIndex(x => x.Name == newPresetDialog.PresetName) == -1)
+            {
+                m_presets.Insert(0, preset);
+                m_presets.Sort((x, y) => Comparer<string>.Default.Compare(x.Name, y.Name));
+            }
+            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+
+            DoUpdatePresetMenu();
+        }
+
+        private void DoManagePresets(object sender, RoutedEventArgs e)
+        {
+            var managePresetsDialog = new ManagePresetsDialog(m_presets);
+            managePresetsDialog.Owner = this;
+            managePresetsDialog.ShowDialog();
+            m_presets = managePresetsDialog.Presets;
+            App.ConfigData["Presets"] = Preset.Serialize(m_presets);
+            DoUpdatePresetMenu();
+        }
+
+        private void DoSelectPreset(object sender, RoutedEventArgs e)
+        {
+            var menuItem = sender as MenuItem;
+            string presetName = menuItem.Tag as string;
+
+            var preset = m_presets.Find(x => x.Name == presetName);
+            this.GroupRegExTextBox.AddToHistory($"[{preset.Name}] {preset.GroupPat}");
+            this.FoldPercentTextBox.AddToHistory(preset.FoldPercentage);
+            this.FoldRegExTextBox.AddToHistory(preset.FoldPat);
+            this.ExcludeRegExTextBox.AddToHistory(preset.ExcPat);
+            this.IncludeRegExTextBox.AddToHistory(preset.IncPat);
+            Update();
+        }
+
         private void CopyTo(ItemCollection toCollection, IEnumerable fromCollection)
         {
             toCollection.Clear();
@@ -3609,6 +3727,9 @@ namespace PerfView
 
         // What fileName to save as
         string m_fileName;
+
+        // List of presets loaded from configuration (and then maybe adjusted later)
+        List<Preset> m_presets;
 
         #endregion
     }

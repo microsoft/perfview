@@ -60,6 +60,7 @@ namespace Controls
 
             RemoveFromHistory(value);
             Items.Insert(0, value);
+            Text = value;
 
             // Keep the number of entries under control
             while (Items.Count > HistoryLength)
