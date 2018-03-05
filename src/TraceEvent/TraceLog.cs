@@ -487,9 +487,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeSource = new TraceLogEventSource(this.events, ownsItsTraceLog: true);   // Dispose
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
-
-            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
-                this.pointerSize = 8;
+            this.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             //double lastTime = 0;
 
