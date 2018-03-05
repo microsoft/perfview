@@ -193,6 +193,7 @@
                     <MenuItem Header="Dump Object Exclusive Samples" Command="{x:Static src:StackWindow.DumpObjectCommand}" CommandParameter="{StaticResource True}" />
                 </MenuItem>
                 <MenuItem Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" />
+                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
             </ContextMenu>
         </DockPanel.ContextMenu>
         <!-- This is the menu bar -->
@@ -492,13 +493,7 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
-                        <Canvas.ContextMenu>
-                            <ContextMenu Name="noContextMenu" Visibility="Visible">
-                                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
-                            </ContextMenu>
-                        </Canvas.ContextMenu>
-                    </src:FlameGraphDrawingCanvas>
+                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged" />
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">

@@ -2423,7 +2423,12 @@ namespace PerfView
 
             var result = saveDialog.ShowDialog();
             if (result == true)
+            {
+                if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
+                    RedrawFlameGraph();
+
                 FlameGraph.Export(FlameGraphCanvas, saveDialog.FileName);
+            }
         }
 
         private TabItem SelectedTab
@@ -3080,10 +3085,17 @@ namespace PerfView
             return ret;
         }
 
+        private readonly static CallTreeNodeBase[] _emptyNodes = new CallTreeNodeBase[0];
+
         private IReadOnlyList<CallTreeNodeBase> GetSelectedNodes()
         {
             if (FlameGraphTab.IsSelected)
-                return FlameGraphCanvas.GetSelectedNode();
+            {
+                if (FlameGraphCanvas.SelectedNode != null)
+                    return new[] { FlameGraphCanvas.SelectedNode };
+
+                return _emptyNodes;
+            }
 
             var dataGrid = GetDataGrid();
             if (dataGrid != null)
@@ -3095,10 +3107,10 @@ namespace PerfView
                     else if (cell.Item is CallTreeViewNode callTreeNode) // all tree-like views
                         nodes.Add(callTreeNode.Data);
 
-                return nodes;
+                return nodes.Distinct().ToArray();
             }
 
-            return new CallTreeNodeBase[0]; // should be Array.Empty (but we target .NET 4.5)
+            return _emptyNodes;
         }
 
         private DataGrid GetDataGrid()

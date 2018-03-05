@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.Diagnostics.Tracing.Stacks;
 using static PerfView.FlameGraph;
 
 namespace PerfView
@@ -21,14 +22,18 @@ namespace PerfView
         private List<Visual> visuals = new List<Visual>();
         private FlameBoxesMap flameBoxesMap = new FlameBoxesMap();
         private ToolTip tooltip = new ToolTip();
+        private CallTreeNode selectedNode;
 
         public FlameGraphDrawingCanvas()
         {
             MouseMove += OnMouseMove;
             MouseLeave += (s, e) => HideTooltip();
+            ContextMenuOpening += (s, e) => selectedNode = flameBoxesMap.Find(Mouse.GetPosition(this)).Node;
         }
 
         public bool IsEmpty => visuals.Count == 0;
+
+        public CallTreeNodeBase SelectedNode => selectedNode;
 
         protected override int VisualChildrenCount => visuals.Count;
 
@@ -90,7 +95,7 @@ namespace PerfView
             if (!IsEmpty)
             {
                 var position = Mouse.GetPosition(this);
-                var tooltipText = flameBoxesMap.Find(position);
+                var tooltipText = flameBoxesMap.Find(position).TooltipText;
                 if (tooltipText != null)
                 {
                     ShowTooltip(tooltipText);
@@ -179,7 +184,7 @@ namespace PerfView
                     row.Sort(CompareByX); // sort the boxes from left to the right
             }
 
-            internal string Find(Point point)
+            internal FlameBox Find(Point point)
             {
                 foreach (var rowData in boxesMap)
                     if (rowData.Key.Contains(point.Y))
@@ -199,12 +204,12 @@ namespace PerfView
                         }
 
                         if (rowData.Value[mid].X <= point.X && point.X <= (rowData.Value[mid].X + rowData.Value[mid].Width))
-                            return rowData.Value[mid].TooltipText;
+                            return rowData.Value[mid];
 
-                        return null;
+                        return default(FlameBox);
                     }
 
-                return null;
+                return default(FlameBox);
             }
 
             private static int CompareByX(FlameBox left, FlameBox right) => left.X.CompareTo(right.X);
