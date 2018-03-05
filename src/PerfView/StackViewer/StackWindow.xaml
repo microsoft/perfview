@@ -65,8 +65,8 @@
             <CommandBinding Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" Executed="DoRaiseModulePriority" CanExecute="CanChangePriority" />
             <CommandBinding Command="{x:Static src:StackWindow.LowerModulePriorityCommand}" Executed="DoLowerModulePriority" CanExecute="CanChangePriority" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" />
-            <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" />
+            <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource"/>
             <CommandBinding Command="{x:Static src:StackWindow.OpenEventsCommand}" Executed="DoOpenEvents" CanExecute="CanDoOpenEvents"/>
 
