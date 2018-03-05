@@ -1549,57 +1549,52 @@ namespace PerfView
                 StatusBar.LogError("You must select one or two cells to act as the focus region.");
         }
 
-        private void DoSetTimeRange(object sender, ExecutedRoutedEventArgs e)
+        private void CanSetTimeRange(object sender, CanExecuteRoutedEventArgs e)
+            => e.CanExecute = GetSelectedNodes().Any() || TextBoxHasFocusAndNonEmptySelection(out var _);
+
+        private bool TextBoxHasFocusAndNonEmptySelection(out TextBox focusTextBox)
         {
-            var focusTextBox = Keyboard.FocusedElement as TextBox;
+            focusTextBox = Keyboard.FocusedElement as TextBox;
             if (focusTextBox == null && PerfDataGrid.EditingBox != null && PerfDataGrid.EditingBox.IsFocused)
                 focusTextBox = PerfDataGrid.EditingBox;
 
-            if (focusTextBox != null)
+            return focusTextBox != null && focusTextBox.SelectionLength != 0;
+        }
+
+        private void DoSetTimeRange(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (TextBoxHasFocusAndNonEmptySelection(out var focusTextBox))
             {
-                if (focusTextBox.SelectionLength != 0)
+                var selectionStartIndex = focusTextBox.SelectionStart;
+                var selectionLen = focusTextBox.SelectionLength;
+                var text = focusTextBox.Text;
+
+                // If you accidently select the space before the selection, skip it
+                if (0 <= selectionStartIndex && selectionStartIndex < text.Length && text[selectionStartIndex] == ' ')
+                    selectionStartIndex++;
+
+                // grab the last 32 bytes of the string.  
+                var histStart = text.Length - CallTree.TimeHistogramController.BucketCount;
+                if (histStart >= 0)
                 {
-                    var selectionStartIndex = focusTextBox.SelectionStart;
-                    var selectionLen = focusTextBox.SelectionLength;
-                    var text = focusTextBox.Text;
-
-                    // If you accidently select the space before the selection, skip it
-                    if (0 <= selectionStartIndex && selectionStartIndex < text.Length && text[selectionStartIndex] == ' ')
-                        selectionStartIndex++;
-
-                    // grab the last 32 bytes of the string.  
-                    var histStart = text.Length - CallTree.TimeHistogramController.BucketCount;
-                    if (histStart >= 0)
+                    var histStr = text.Substring(histStart);
+                    if (Regex.IsMatch(histStr, @"^[_*\w.]") && selectionStartIndex >= histStart)
                     {
-                        var histStr = text.Substring(histStart);
-                        if (Regex.IsMatch(histStr, @"^[_*\w.]") && selectionStartIndex >= histStart)
-                        {
-                            var bucketStartIndex = (HistogramCharacterIndex)(selectionStartIndex - histStart);
-                            var bucketEndIndex = (HistogramCharacterIndex)(bucketStartIndex + selectionLen);
+                        var bucketStartIndex = (HistogramCharacterIndex)(selectionStartIndex - histStart);
+                        var bucketEndIndex = (HistogramCharacterIndex)(bucketStartIndex + selectionLen);
 
-                            StartTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketStartIndex).ToString("n3");
-                            EndTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketEndIndex).ToString("n3");
-                            Update();
-                        }
+                        StartTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketStartIndex).ToString("n3");
+                        EndTextBox.Text = CallTree.TimeHistogramController.GetStartTimeForBucket(bucketEndIndex).ToString("n3");
+                        Update();
                     }
-                    return;
                 }
+                return;
             }
 
-            var cells = SelectedCells();
-            if (cells != null)
-            {
-                var callTreeNodes = cells.Select(cell => cell.Item).OfType<CallTreeNodeBase>();
-
-                if (callTreeNodes.Any())
-                {
-                    StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
-                    EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
-                    Update();
-                }
-                else
-                    StatusBar.LogError("Could not set time range.");
-            }
+            var callTreeNodes = GetSelectedNodes();
+            StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
+            EndTextBox.Text = callTreeNodes.Max(node => node.LastTimeRelativeMSec).ToString("n3");
+            Update();
         }
 
         // Scenario-related stuff

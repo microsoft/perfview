@@ -70,7 +70,7 @@
             <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.OpenEventsCommand}" Executed="DoOpenEvents" CanExecute="CanDoOpenEvents"/>
 
-            <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange"/>
+            <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange" CanExecute="CanSetTimeRange" />
             <CommandBinding Command="{x:Static src:StackWindow.CopyTimeRangeCommand}" Executed="DoCopyTimeRange" />
             
             <CommandBinding Command="{x:Static src:StackWindow.SetScenarioListCommand}" Executed="DoSetScenarioList" CanExecute="CanSetScenarioList" />
