@@ -1242,45 +1242,47 @@ namespace PerfView
             CalleesTab.IsSelected = true;
         }
 
-        private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e)
-        {
-            DoGroupModuleHelper("=>");
-        }
-        private void DoGroupModule(object sender, ExecutedRoutedEventArgs e)
-        {
-            DoGroupModuleHelper("->");
-        }
+        private void HasNonEmptySelection(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = GetSelectedNodes().Any();
+
+        private void DoEntryGroupModule(object sender, ExecutedRoutedEventArgs e) =>  DoGroupModuleHelper("=>");
+
+        private void DoGroupModule(object sender, ExecutedRoutedEventArgs e) => DoGroupModuleHelper("->");
+
         private void DoGroupModuleHelper(string op)
         {
             var str = GroupRegExTextBox.Text;
             var badStrs = "";
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
-                Match m = Regex.Match(cellStr, @"\b([\w.]*?)!");
-                if (m.Success)
+                Match moduleNameMatch = Regex.Match(node.DisplayName, @"\b([\w.]*?)!");
+                if (moduleNameMatch.Success)
                 {
-                    var groupPat = FilterParams.EscapeRegEx(m.Groups[1].Value) + "!" + op + m.Groups[1].Value;
+                    var groupPat = FilterParams.EscapeRegEx(moduleNameMatch.Groups[1].Value) + "!" + op + moduleNameMatch.Groups[1].Value;
                     str = AddSet(groupPat, str);
                 }
                 else
                 {
                     if (badStrs.Length > 0)
                         badStrs += " ";
-                    badStrs += cellStr;
+                    badStrs += node.DisplayName;
                 }
             }
             if (badStrs.Length > 0)
                 StatusBar.LogError("Could not find a module pattern in text " + badStrs + ".");
-            GroupRegExTextBox.Text = str;
-            Update();
+
+            if (GroupRegExTextBox.Text != str)
+            {
+                GroupRegExTextBox.Text = str;
+                Update();
+            }
         }
         private void DoUngroup(object sender, ExecutedRoutedEventArgs e)
         {
             bool matchedSomething = false;
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
                 // Is it an entry point group? 
-                var match = Regex.Match(cellStr, "<<(.*)>>");
+                var match = Regex.Match(node.DisplayName, "<<(.*)>>");
                 if (match.Success)
                 {
                     var ungroupPat = match.Groups[1].Value;
@@ -1314,7 +1316,7 @@ namespace PerfView
                                 var group = match.Groups[3].Value;
                                 // (?<V1>.*) is .NET syntax that names the group V1
                                 var groupPat = Regex.Replace(group, @"\$(\d)", "(?<V$1>.*)");
-                                match = Regex.Match(cellStr, groupPat);
+                                match = Regex.Match(node.DisplayName, groupPat);
                                 if (match.Success)
                                 {
                                     matchedSomething = true;
@@ -1447,15 +1449,15 @@ namespace PerfView
         private void DoUngroupModule(object sender, ExecutedRoutedEventArgs e)
         {
             bool matchedSomething = false;
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
                 string module = null;
-                var match = Regex.Match(cellStr, @"([\w.]+)!");
+                var match = Regex.Match(node.DisplayName, @"([\w.]+)!");
                 if (match.Success)
                     module = match.Groups[1].Value;
                 else
                 {
-                    match = Regex.Match(cellStr, @"module (\S+)");
+                    match = Regex.Match(node.DisplayName, @"module (\S+)");
                     if (match.Success)
                         module = match.Groups[1].Value;
                 }

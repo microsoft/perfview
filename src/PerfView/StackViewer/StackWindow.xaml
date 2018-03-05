@@ -52,10 +52,10 @@
             <CommandBinding Command="{x:Static src:StackWindow.ViewInCalleesCommand}" Executed="DoViewInCallees" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.FindInCallTreeCommand}" Executed="DoFindInCallTreeName" CanExecute="SingleNodeIsSelected" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" />
-            <CommandBinding Command="{x:Static src:StackWindow.UngroupCommand}" Executed="DoUngroup" />
-            <CommandBinding Command="{x:Static src:StackWindow.UngroupModuleCommand}" Executed="DoUngroupModule" />
+            <CommandBinding Command="{x:Static src:StackWindow.GroupModuleCommand}" Executed="DoGroupModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.EntryGroupModuleCommand}" Executed="DoEntryGroupModule" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.UngroupCommand}" Executed="DoUngroup" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.UngroupModuleCommand}" Executed="DoUngroupModule" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.FoldModuleCommand}" Executed="DoFoldModule" />
             <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" />
             <CommandBinding Command="{x:Static src:StackWindow.RemoveAllFoldingCommand}" Executed="DoRemoveAllFolding" />
