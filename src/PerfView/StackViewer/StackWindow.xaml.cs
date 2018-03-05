@@ -1736,12 +1736,12 @@ namespace PerfView
         {
             // Add a | operator between all the values 
             var incPat = "";
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
                 if (incPat.Length != 0)
                     incPat += "|";
 
-                var pat = cellStr;
+                var pat = node.DisplayName;
                 if (pat.IndexOf('!') < 0)
                     pat = "^" + pat;
                 incPat += FilterParams.EscapeRegEx(pat);
@@ -1753,9 +1753,9 @@ namespace PerfView
         private void DoExcludeItem(object sender, ExecutedRoutedEventArgs e)
         {
             var str = ExcludeRegExTextBox.Text;
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
-                var pat = cellStr;
+                var pat = node.DisplayName;
                 if (pat.IndexOf('!') < 0)
                     pat = "^" + pat;
                 str = AddSet(str, FilterParams.EscapeRegEx(pat));

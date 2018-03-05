@@ -79,9 +79,9 @@
             <CommandBinding Command="{x:Static src:StackWindow.SortScenariosByDefaultCommand}" Executed="DoSortScenariosByDefault" CanExecute="CanDoScenario" />
             <CommandBinding Command="{x:Static src:StackWindow.SortScenariosByRootNodeCommand}" Executed="DoSortScenariosByRootNode" CanExecute="CanDoScenario" />
             <CommandBinding Command="{x:Static src:StackWindow.SortScenariosByThisNodeCommand}" Executed="DoSortScenariosByThisNode" CanExecute="CanSortScenariosByNode" />
-            
-            <CommandBinding Command="{x:Static src:StackWindow.IncludeItemCommand}" Executed="DoIncludeItem" />
-            <CommandBinding Command="{x:Static src:StackWindow.ExcludeItemCommand}" Executed="DoExcludeItem" />
+
+            <CommandBinding Command="{x:Static src:StackWindow.IncludeItemCommand}" Executed="DoIncludeItem" CanExecute="HasNonEmptySelection" />
+            <CommandBinding Command="{x:Static src:StackWindow.ExcludeItemCommand}" Executed="DoExcludeItem" CanExecute="HasNonEmptySelection" />
 
             <CommandBinding Command="{x:Static src:StackWindow.ToggleNotesPaneCommand}" Executed="DoToggleNotesPane" />
             <CommandBinding Command="{x:Static src:StackWindow.ViewObjectsInclusiveCommand}" Executed="DoViewObjects" CanExecute="CanExecuteMemoryOperation" />
