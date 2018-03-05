@@ -551,7 +551,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return qpcTime._GetUTCTimeAsQPC(utcTime);
             }
 
-#region private
+            #region private
             long _GetUTCTimeAsQPC(DateTime utcTime)
             {
                 // Convert to seconds from the baseline
@@ -568,7 +568,7 @@ namespace Microsoft.Diagnostics.Tracing
                 // correct synchronization.  
                 DateTime start = DateTime.UtcNow;
                 long lastQPC = Stopwatch.GetTimestamp();
-                for (;;)
+                for (; ; )
                 {
                     var next = DateTime.UtcNow;
                     m_timeAsQPC = Stopwatch.GetTimestamp();
@@ -586,7 +586,7 @@ namespace Microsoft.Diagnostics.Tracing
             DateTime m_timeAsDateTimeUTC;
             long m_timeAsQPC;
 
-#endregion
+            #endregion
         }
 
         internal static List<string> GetMergeAllLogFiles(string fileName)
@@ -810,7 +810,7 @@ namespace Microsoft.Diagnostics.Tracing
                 ret = "";
             return ret;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
