@@ -307,7 +307,7 @@ namespace PerfView
     /// <summary>
     /// This is basically a CallTreeNode with extra state (state of expand boxes) associated needed for the viewer 
     /// </summary>
-    public class CallTreeViewNode
+    public class CallTreeViewNode : INotifyPropertyChanged
     {
         [Conditional("DEBUG")]
         public void ValidateTree()
@@ -317,12 +317,18 @@ namespace PerfView
 #endif
         }
 
-        public void SetBackgroundColor(System.Drawing.Color color)
+        public string BackgroundColor
         {
-            BackgroundColor = color.Name;
+            get => _backgroundColor;
+            set
+            {
+                if(_backgroundColor != value)
+                {
+                    _backgroundColor = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BackgroundColor)));
+                }
+            }
         }
-
-        public string BackgroundColor { get; set; }
 
         /// <summary>
         /// Is the node expanded or not.  
@@ -642,6 +648,9 @@ namespace PerfView
         internal bool m_isExpanded;                     // Is this node expanded.  
         int m_indexGuess;                               // Where we think we are in the flattened tree, may not be accurate but wortch checking  
         internal int m_depth;                           // My nesting level from root.   (root == 0);
+        private string _backgroundColor;
+
+        public event PropertyChangedEventHandler PropertyChanged;
         #endregion
     }
 
