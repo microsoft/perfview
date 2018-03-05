@@ -1959,19 +1959,9 @@ namespace PerfView
         }
         private void DoGotoSource(object sender, ExecutedRoutedEventArgs e)
         {
-            var cells = SelectedCells();
-            if (cells == null || cells.Count == 0)
-            {
-                StatusBar.LogError("No cells selected.");
-                return;
-            }
-            if (cells.Count != 1)
-            {
-                StatusBar.LogError("More than one cell selected.");
-                return;
-            }
-            var cell = cells[0];
-            var cellText = GetCellStringValue(cell);
+            var asCallTreeNodeBase = GetSelectedNodes().Single();
+            var cellText = asCallTreeNodeBase.DisplayName;
+
             if (cellText.EndsWith("!?"))
             {
                 StatusBar.LogError("You must lookup symbols before looking up source.");
@@ -1981,19 +1971,6 @@ namespace PerfView
             {
                 StatusBar.LogError("Source lookup only works on cells of the form dll!method.");
                 return;
-            }
-            var item = cell.Item;
-            var asCallTreeNodeBase = item as CallTreeNodeBase;
-            if (asCallTreeNodeBase == null)
-            {
-                var asCallTreeViewNode = item as CallTreeViewNode;
-                if (asCallTreeViewNode != null)
-                    asCallTreeNodeBase = asCallTreeViewNode.Data;
-                else
-                {
-                    StatusBar.LogError("Could not find data item.");
-                    return;
-                }
             }
 
             StatusBar.StartWork("Fetching Source code for " + cellText, delegate ()

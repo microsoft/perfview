@@ -67,7 +67,7 @@
 
             <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" CanExecute="HasNonEmptySelection" />
             <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" CanExecute="HasNonEmptySelection" />
-            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource"/>
+            <CommandBinding Command="{x:Static src:StackWindow.GotoSourceCommand}" Executed="DoGotoSource" CanExecute="SingleNodeIsSelected" />
             <CommandBinding Command="{x:Static src:StackWindow.OpenEventsCommand}" Executed="DoOpenEvents" CanExecute="CanDoOpenEvents"/>
 
             <CommandBinding Command="{x:Static src:StackWindow.SetTimeRangeCommand}" Executed="DoSetTimeRange"/>
