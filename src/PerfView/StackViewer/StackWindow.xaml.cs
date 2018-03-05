@@ -2223,78 +2223,42 @@ namespace PerfView
             }
         }
 
-        private void DoExpandAll(object sender, ExecutedRoutedEventArgs e)
-        {
-            CallTreeViewNode selectedNode = null;
-            if (CallTreeTab.IsSelected)
-                selectedNode = CallTreeView.SelectedNode;
-            else if (CallersTab.IsSelected)
-                selectedNode = m_callersView.SelectedNode;
-            else if (CalleesTab.IsSelected)
-                selectedNode = m_calleesView.SelectedNode;
+        private void CanExpand(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = GetSelectedCallTreeNode() != null;
 
-            if (selectedNode != null)
-                selectedNode.ExpandToDepth(int.MaxValue, selectExpandedNode: false); // we don't want to select every node while expanding, it takes too much time
+        private CallTreeViewNode GetSelectedCallTreeNode()
+        {
+            if (CallTreeTab.IsSelected)
+                return CallTreeView.SelectedNode;
+            else if (CallersTab.IsSelected)
+                return m_callersView.SelectedNode;
+            else if (CalleesTab.IsSelected)
+                return m_calleesView.SelectedNode;
+
+            return null;
         }
+
+        private void DoExpandAll(object sender, ExecutedRoutedEventArgs e)
+            => GetSelectedCallTreeNode().ExpandToDepth(int.MaxValue, selectExpandedNode: false); // we don't want to select every node while expanding, it takes too much time
 
         private void DoExpand(object sender, ExecutedRoutedEventArgs e)
         {
-            CallTreeViewNode selectedNode = null;
-            CallTreeView view = null;
-            if (CallTreeTab.IsSelected)
-                view = CallTreeView;
-            else if (CallersTab.IsSelected)
-                view = m_callersView;
-            else if (CalleesTab.IsSelected)
-                view = m_calleesView;
-
-            if (view != null)
+            CallTreeViewNode selectedNode = GetSelectedCallTreeNode();
+            for (; ; )
             {
-                selectedNode = view.SelectedNode;
-                if (selectedNode != null)
+                if (!selectedNode.IsExpanded)
                 {
-                    for (; ; )
-                    {
-                        if (!selectedNode.IsExpanded)
-                        {
-                            selectedNode.IsExpanded = true;
-                            break;
-                        }
-
-                        var children = selectedNode.VisibleChildren;
-                        if (children.Count < 1)
-                            break;
-                        selectedNode = children[0];
-                    }
+                    selectedNode.IsExpanded = true;
+                    break;
                 }
+
+                var children = selectedNode.VisibleChildren;
+                if (children.Count < 1)
+                    break;
+                selectedNode = children[0];
             }
         }
 
-        private void DoCollapse(object sender, ExecutedRoutedEventArgs e)
-        {
-            CallTreeViewNode selectedNode = null;
-            CallTreeView view = null;
-            if (CallTreeTab.IsSelected)
-                view = CallTreeView;
-            else if (CallersTab.IsSelected)
-                view = m_callersView;
-            else if (CalleesTab.IsSelected)
-                view = m_calleesView;
-
-            if (view != null)
-            {
-                selectedNode = view.SelectedNode;
-                if (selectedNode != null)
-                    selectedNode.IsExpanded = false;
-            }
-        }
-
-        private void CanExpand(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = (CallTreeTab.IsSelected && CallTreeView.SelectedNode != null) ||
-                           (CallersTab.IsSelected && m_callersView.SelectedNode != null) ||
-                           (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
-        }
+        private void DoCollapse(object sender, ExecutedRoutedEventArgs e) => GetSelectedCallTreeNode().IsExpanded = false;
 
         private void DoSetBrownBackgroundColor(object sender, ExecutedRoutedEventArgs e)
         {
