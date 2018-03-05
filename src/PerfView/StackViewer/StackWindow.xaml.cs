@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -15,7 +14,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Xml;
 using Controls;
-using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Graphs;
 using PerfView.Dialogs;
@@ -26,7 +24,6 @@ using Diagnostics.Tracing.StackSources;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Utilities;
 using System.Threading;
-using PerfView.GuiUtilities;
 using Utilities;
 using Path = System.IO.Path;
 
@@ -220,10 +217,8 @@ namespace PerfView
         public PerfViewStackSource DataSource { get; private set; }
 
         // TODO resolve the redundancy with DataSource.  
-        public StackSource StackSource
-        {
-            get { return m_stackSource; }
-        }
+        public StackSource StackSource => m_stackSource;
+
         /// <summary>
         /// This sets the window to to the given stack source, this DOES triggers an update of the gridViews.  
         /// </summary>
@@ -464,7 +459,6 @@ namespace PerfView
                 GroupRegExTextBox.Text = justMyApp;
             }
 
-
             // If we have a JustMyApp, add it to list of Group Pattern possibilities 
             if (justMyApp != null)
                 GroupRegExTextBox.Items.Insert(0, justMyApp);
@@ -479,11 +473,9 @@ namespace PerfView
                 SetStackSource(m_stackSource);  //  This forces a recomputation of the calltree.  
         }
 
-        public CallTree CallTree
-        {
-            get { return m_callTree; }
-        }
-        public CallTreeView CallTreeView { get { return m_callTreeView; } }
+        public CallTree CallTree => m_callTree;
+
+        public CallTreeView CallTreeView => m_callTreeView;
 
         /// <summary>
         /// Note that setting the filter does NOT trigger an update of the gridViews.  You have to call Update()
@@ -659,10 +651,8 @@ namespace PerfView
             FindNext(null);         // Restart the find operation. 
             return FindNext(pat);
         }
-        public bool FindNext()
-        {
-            return FindNext(FindTextBox.Text);
-        }
+
+        public bool FindNext() => FindNext(FindTextBox.Text);
 
         /// <summary>
         /// If we save this view as a file, this is its name (may be null) 
@@ -714,10 +704,9 @@ namespace PerfView
             if (m_historyPos + 1 < m_history.Count)
                 e.CanExecute = true;
         }
-        private void DoClose(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
+
+        private void DoClose(object sender, RoutedEventArgs e) => Close();
+
         private void DoOpenParent(object sender, RoutedEventArgs e)
         {
             for (; ; )
@@ -750,10 +739,8 @@ namespace PerfView
                 }
             }
         }
-        private void DoSetSymbolPath(object sender, RoutedEventArgs e)
-        {
-            GuiApp.MainWindow.DoSetSymbolPath(sender, e);
-        }
+        private void DoSetSymbolPath(object sender, RoutedEventArgs e) => GuiApp.MainWindow.DoSetSymbolPath(sender, e);
+
         private void DoSetSourcePath(object sender, RoutedEventArgs e)
         {
             var symPathDialog = new SymbolPathDialog(App.SourcePath, "Source", delegate (string newPath)
@@ -925,23 +912,15 @@ namespace PerfView
                 });
             });
         }
-        internal void DoUpdate(object sender, RoutedEventArgs e)
-        {
-            Update();
-        }
-        private void DoFindNext(object sender, RoutedEventArgs e)
-        {
-            FindNext();
-        }
-        private void DoFindEnter(object sender, RoutedEventArgs e)
-        {
-            Find(FindTextBox.Text);
-        }
 
-        private void DoCancel(object sender, ExecutedRoutedEventArgs e)
-        {
-            StatusBar.AbortWork();
-        }
+        private void DoUpdate(object sender, RoutedEventArgs e) => Update();
+
+        private void DoFindNext(object sender, RoutedEventArgs e) => FindNext();
+
+        private void DoFindEnter(object sender, RoutedEventArgs e) => Find(FindTextBox.Text);
+
+        private void DoCancel(object sender, ExecutedRoutedEventArgs e) => StatusBar.AbortWork();
+
         private void DoToggleNoPadOnCopy(object sender, ExecutedRoutedEventArgs e)
         {
             PerfDataGrid.NoPadOnCopyToClipboard = !PerfDataGrid.NoPadOnCopyToClipboard;
@@ -1869,7 +1848,6 @@ namespace PerfView
                     log.WriteLine("Error looking up " + moduleToLookup + "\r\n    " + ex.Message);
                 }
             }
-
         }
 
         private void DoLookupSymbols(object sender, ExecutedRoutedEventArgs e)
@@ -1895,7 +1873,6 @@ namespace PerfView
                 StatusBar.LogError("Symbol lookup for Diff not supported.  You must look up symbols before doing the diff.");
                 return;
             }
-
 
             // Look them up.
             StatusBar.StartWork("Symbol Lookup", delegate ()
@@ -2257,11 +2234,6 @@ namespace PerfView
             }
         }
 
-        // turns off menus for options that only make sence in the callTree view.  
-        private void InCallTree(object sender, CanExecuteRoutedEventArgs e)
-        {
-            e.CanExecute = CallTreeTab.IsSelected;
-        }
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
         {
             var param = e.Parameter as string;
@@ -2304,30 +2276,6 @@ namespace PerfView
 
             StatusBar.Log("Displaying Users Guide in Web Browser.");
             MainWindow.DisplayUsersGuide(param);
-        }
-
-        /// <summary>
-        /// Sets the focus node to the currently selected cell, returns true if successful.  
-        /// </summary>
-        /// <returns></returns>
-        private bool SetFocusNodeToSelection()
-        {
-            var str = SelectedCellStringValue();
-            if (str != null)
-            {
-                // if it looks like a number, don't event try, just ignore 
-                if (Regex.IsMatch(str, @"^[_\d,.]*$"))
-                    return false;
-
-                if (!SetFocus(str))
-                    return true;
-                return true;
-            }
-            else
-            {
-                StatusBar.LogError("No selected cells found.");
-                return true;
-            }
         }
 
         private void ByName_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -3006,7 +2954,6 @@ namespace PerfView
         /// This is and ugly routine that scrapes the data to find the full path (without the .exe extension) of the
         /// exe in the program.   It may fail (return nulls).   
         /// </summary>
-
         private static string FindExeName(string incPat)
         {
             string procName = null;
@@ -3133,22 +3080,6 @@ namespace PerfView
             return ret;
         }
 
-        internal static string GetCellStringValue(DataGridCellInfo cell)
-        {
-            string ret = PerfDataGrid.GetCellStringValue(cell);
-            ret = Regex.Replace(ret, @"\s*\{.*?\}\s*$", "");        // Remove {} stuff at the end.  
-            ret = Regex.Replace(ret, @"^[ |+]*", "");               // Remove spaces or | (for tree view) at the start).  
-            return ret;
-        }
-
-        private IList<DataGridCellInfo> SelectedCells()
-        {
-            var dataGrid = GetDataGrid();
-            if (dataGrid == null)
-                return null;
-            return dataGrid.SelectedCells;
-        }
-
         private IReadOnlyList<CallTreeNodeBase> GetSelectedNodes()
         {
             if (FlameGraphTab.IsSelected)
@@ -3173,9 +3104,7 @@ namespace PerfView
         private DataGrid GetDataGrid()
         {
             if (ByNameTab.IsSelected)
-            {
                 return ByNameDataGrid.Grid;
-            }
             else if (CallerCalleeTab.IsSelected)
             {
                 // Find the focus
@@ -3193,78 +3122,15 @@ namespace PerfView
                 return null;
             }
             else if (CallTreeTab.IsSelected)
-            {
                 return CallTreeDataGrid.Grid;
-            }
             else if (CallersTab.IsSelected)
-            {
                 return CallersDataGrid.Grid;
-            }
             else if (CalleesTab.IsSelected)
-            {
                 return CalleesDataGrid.Grid;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        private IEnumerable<string> SelectedCellsStringValue()
-        {
-            var dataGrid = GetDataGrid();
-            if (dataGrid == null)
-                yield break;
-            var cells = dataGrid.SelectedCells;
-            if (cells == null)
-                yield break;
 
-            for (int i = 0; i < cells.Count; i++)
-            {
-                DataGridCellInfo cell = cells[i];
-                var str = GetCellStringValue(cell);
-                if (str.Length != 0)
-                    yield return str;
+            return null;
+        }
 
-                if (StartsFullRow(cells, i, dataGrid.Columns.Count))
-                    i += dataGrid.Columns.Count - 1;
-            }
-        }
-        /// <summary>
-        /// Returns true if the cells starting at 'startIndex' begin a complete full row.  
-        /// </summary>
-        private static bool StartsFullRow(IList<DataGridCellInfo> cells, int startIdx, int numColumns)
-        {
-            if (startIdx + numColumns > cells.Count)
-                return false;
-
-            for (int i = 0; i < numColumns; i++)
-                if (cells[i + startIdx].Column.DisplayIndex != i)
-                    return false;
-            return true;
-        }
-        /// <summary>
-        /// Returns the string value for a single selected cell.  Will return null on error 
-        /// </summary>
-        private string SelectedCellStringValue()
-        {
-            var dataGrid = GetDataGrid();
-            if (dataGrid == null)
-                return null;
-            var cells = dataGrid.SelectedCells;
-            if (cells == null)
-                return null;
-            if (cells.Count == 0)
-                return null;
-            if (cells.Count > 1)
-            {
-                int numCols = dataGrid.Columns.Count;
-                // fail unless we have selected a whole row
-                // TODO should we bother?
-                if (cells.Count != numCols || !StartsFullRow(cells, 0, numCols))
-                    return null;
-            }
-            return GetCellStringValue(cells[0]);
-        }
         // We keep a list of stack windows for use with the 'Diff' feature.  
         public static List<StackWindow> StackWindows = new List<StackWindow>();
 
@@ -3299,18 +3165,7 @@ namespace PerfView
             helpMenuItem.Click += delegate (object sender, RoutedEventArgs e) { MainWindow.DisplayUsersGuide(diffName); };
             diffMenuItem.Items.Add(helpMenuItem);
         }
-        private void CopyTo(ItemCollection toCollection, IEnumerable fromCollection)
-        {
-            toCollection.Clear();
-            foreach (var item in fromCollection)
-                toCollection.Add(item);
-        }
-        private double GetDouble(string value, double defaultValue)
-        {
-            if (value.Length == 0)
-                return defaultValue;
-            return double.Parse(value);
-        }
+
         private static string AddSet(string target, string addend)
         {
             if (target.Length == 0)
@@ -3401,8 +3256,10 @@ namespace PerfView
             else if (cells.Count == 1 && !StatusBar.LoggedError)
             {
                 // We have only one cell copy its contents to the status box
-                string cellStr = StackWindow.GetCellStringValue(cells[0]);
-                string cellContentsToPrint = cellStr;
+                string cellStr = PerfDataGrid.GetCellStringValue(cells[0]);
+                string cellContentsToPrint = Regex.Replace(cellStr, @"\s*\{.*?\}\s*$", ""); // Remove {} stuff at the end.  
+                cellContentsToPrint = Regex.Replace(cellContentsToPrint, @"^[ |+]*", ""); // Remove spaces or | (for tree view) at the start).  
+
                 if (cellStr.Length != 0)
                 {
                     double asNum;
