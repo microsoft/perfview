@@ -674,7 +674,7 @@ class TraceParserGen
     private static string GetTemplateNameForEvent(Event evnt, string eventName)
     {
         var ret = "EmptyTraceData";
-        if (evnt.Fields != null)
+        if (evnt.Fields != null && evnt.Fields.Count > 0)
         {
             ret = TraceParserGen.ToCSharpName(evnt.TemplateName);
             if (ret == null || ret.StartsWith("tid_"))
