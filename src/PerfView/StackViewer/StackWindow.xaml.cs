@@ -1359,39 +1359,30 @@ namespace PerfView
                 StatusBar.LogError("Cell does not have the pattern that can be ungrouped.");
         }
 
-        private void DoRaiseItemPriority(object sender, ExecutedRoutedEventArgs e)
-        {
-            ChangePriority(1, false);
-        }
-        private void DoLowerItemPriority(object sender, ExecutedRoutedEventArgs e)
-        {
-            ChangePriority(-1, false);
-        }
-        private void DoRaiseModulePriority(object sender, ExecutedRoutedEventArgs e)
-        {
-            ChangePriority(1, true);
-        }
-        private void DoLowerModulePriority(object sender, ExecutedRoutedEventArgs e)
-        {
-            ChangePriority(-1, true);
-        }
+        private void CanChangePriority(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = PriorityTextBox.IsVisible && GetSelectedNodes().Any();
+
+        private void DoRaiseItemPriority(object sender, ExecutedRoutedEventArgs e) => ChangePriority(1, module: false);
+        private void DoLowerItemPriority(object sender, ExecutedRoutedEventArgs e) => ChangePriority(-1, module: false);
+        private void DoRaiseModulePriority(object sender, ExecutedRoutedEventArgs e) => ChangePriority(1, module: true);
+        private void DoLowerModulePriority(object sender, ExecutedRoutedEventArgs e) => ChangePriority(-1, module: true);
+
         private void ChangePriority(int delta, bool module)
         {
             var priorities = PriorityTextBox.Text;
             var badStrs = "";
-            foreach (string cellStr in SelectedCellsStringValue())
+            foreach (var node in GetSelectedNodes())
             {
-                string str = Regex.Replace(cellStr, @"\s+\[\w.*?\]\s*$", "");   // Remove any [] at the end 
+                string str = Regex.Replace(node.DisplayName, @"\s+\[\w.*?\]\s*$", "");   // Remove any [] at the end 
                 if (module)
                 {
-                    Match m = Regex.Match(cellStr, @"\b([\w.]*?)!");
+                    Match m = Regex.Match(node.DisplayName, @"\b([\w.]*?)!");
                     if (m.Success)
                         str = m.Groups[1].Value + "!";
                     else
                     {
                         if (badStrs.Length > 0)
                             badStrs += " ";
-                        badStrs += cellStr;
+                        badStrs += node.DisplayName;
                     }
                 }
 

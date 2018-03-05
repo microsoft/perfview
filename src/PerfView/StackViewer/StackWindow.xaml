@@ -60,10 +60,10 @@
             <CommandBinding Command="{x:Static src:StackWindow.FoldItemCommand}" Executed="DoFoldItem" />
             <CommandBinding Command="{x:Static src:StackWindow.RemoveAllFoldingCommand}" Executed="DoRemoveAllFolding" />
 
-            <CommandBinding Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" Executed="DoRaiseItemPriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" Executed="DoLowerItemPriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" Executed="DoRaiseModulePriority" />
-            <CommandBinding Command="{x:Static src:StackWindow.LowerModulePriorityCommand}" Executed="DoLowerModulePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" Executed="DoRaiseItemPriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" Executed="DoLowerItemPriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" Executed="DoRaiseModulePriority" CanExecute="CanChangePriority" />
+            <CommandBinding Command="{x:Static src:StackWindow.LowerModulePriorityCommand}" Executed="DoLowerModulePriority" CanExecute="CanChangePriority" />
 
             <CommandBinding Command="{x:Static src:StackWindow.LookupSymbolsCommand}" Executed="DoLookupSymbols" />
             <CommandBinding Command="{x:Static src:StackWindow.LookupWarmSymbolsCommand}" Executed="DoLookupWarmSymbols" />
@@ -135,7 +135,7 @@
                     <MenuItem Command="{x:Static src:StackWindow.UngroupCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.UngroupModuleCommand}" />
                 </MenuItem>
-                <MenuItem Header="Priority">
+                <MenuItem Header="Priority" ToolTip="Specifies the priority of types when converting a graph to a tree" >
                     <MenuItem Command="{x:Static src:StackWindow.RaiseItemPriorityCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.LowerItemPriorityCommand}" />
                     <MenuItem Command="{x:Static src:StackWindow.RaiseModulePriorityCommand}" />
