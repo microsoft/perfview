@@ -167,9 +167,11 @@ namespace Microsoft.Diagnostics.Tracing
                     return;
                 }
 
-                // OK so now we only have EventSources with start and stop opcodes. There are a few that don't follow
-                // conventions completely, and then we handle the 'normal' case 
-                if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                // OK so now we only have EventSources with start and stop opcodes.
+                // There are a few that don't follow conventions completely, and then we handle the 'normal' case 
+                if (data.ProviderGuid == MicrosoftApplicationInsightsDataProvider)
+                    FixAndProcessAppInsightsEvents(data);
+                else if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
                     FixAndProcessFrameworkEvents(data);
                 else if (data.ProviderGuid == MicrosoftWindowsASPNetProvider)
                     FixAndProcessWindowsASP(data, threadToLastAspNetGuids);
@@ -656,7 +658,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 uint nibble = (uint)(*bytePtr >> 4);
                 bool secondNibble = false;              // are we reading the second nibble (low order bits) of the byte.
-            NextNibble:
+                NextNibble:
                 if (nibble == (uint)NumberListCodes.End)
                     break;
                 if (nibble <= (uint)NumberListCodes.LastImmediateValue)
@@ -733,6 +735,10 @@ namespace Microsoft.Diagnostics.Tracing
         private static readonly Guid AdoNetProvider = new Guid("6a4dfe53-eb50-5332-8473-7b7e10a94fd1");
         private static readonly Guid MicrosoftWindowsHttpService = new Guid("dd5ef90a-6398-47a4-ad34-4dcecdef795f");
         private static readonly Guid MicrosoftDiagnosticsDiagnosticSourceProvider = new Guid("ADB401E1-5296-51F8-C125-5FDA75826144");
+
+        // EventSourceName: Microsoft-ApplicationInsights-Data
+        // Reference for definition: https://raw.githubusercontent.com/Microsoft/ApplicationInsights-dotnet/e8f047f6e48abae0e88a9c77bf65df858c442940/src/Microsoft.ApplicationInsights/Extensibility/Implementation/RichPayloadEventSource.cs
+        private static readonly Guid MicrosoftApplicationInsightsDataProvider = new Guid("a62adddb-6b4b-519d-7ba1-f983d81623e0");
 
         // The main start and stop logic.  
         unsafe private StartStopActivity OnStart(TraceEvent data, string extraStartInfo = null, Guid* activityId = null, TraceThread thread = null, StartStopActivity creator = null, string taskName = null, bool useCurrentActivityForCreatorAsFallback = true)
@@ -932,7 +938,7 @@ namespace Microsoft.Diagnostics.Tracing
                         if (!string.IsNullOrEmpty(commandText))
                         {
                             if (50 < commandText.Length)
-                                commandText = commandText.Substring(0, 50-3) + "...";
+                                commandText = commandText.Substring(0, 50 - 3) + "...";
                             extraStartInfo = extraStartInfo + ",CMD=" + commandText;
                         }
                     }
@@ -962,6 +968,7 @@ namespace Microsoft.Diagnostics.Tracing
                 string taskName = data.PayloadByName("EventName") as string;
                 if (taskName == null)
                     return false;
+
                 string extraInfo = null;
 
                 // In the converter from 'DiagnosticSource' to ETW, we have some default configurations.
@@ -970,11 +977,9 @@ namespace Microsoft.Diagnostics.Tracing
                 // The following code is used to make the call stack looks better (converting 'Activity2Start' to 'SQLCommand')
                 // and showing the SQL command.
                 // Details:
-                //https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
+                // https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/System/Diagnostics/DiagnosticSourceEventSource.cs
 
-                
-                var args = data.PayloadByName("Arguments") as DynamicTraceEventData.StructValue[];
-                if (args != null)
+                if (data.PayloadByName("Arguments") is DynamicTraceEventData.StructValue[] args)
                 {
                     var sb = Utilities.StringBuilderCache.Acquire(64);
                     bool first = true;
@@ -1004,6 +1009,54 @@ namespace Microsoft.Diagnostics.Tracing
                 Trace.WriteLine("Threw exception while processing DiagnosticSource start events: " + ex.Message);
             }
             return false;
+        }
+
+        void FixAndProcessAppInsightsEvents(TraceEvent data)
+        {
+            Debug.Assert(data.ProviderGuid == MicrosoftApplicationInsightsDataProvider);
+            Debug.Assert(data.Opcode == TraceEventOpcode.Start || data.Opcode == TraceEventOpcode.Stop);
+
+            if (data.TaskName.Equals("Request", StringComparison.Ordinal))
+            {
+                if (data.Opcode == TraceEventOpcode.Start)
+                {
+                    // If we have a related activity ID, then this start event
+                    // is already being tracked by an outer activity (e.g. an
+                    // ASP.Net request). Do not process it.
+                    if (!IsTrivialActivityId(data.RelatedActivityID))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        var extraInfo = (string)data.PayloadByName("Name") ?? (string)data.PayloadByName("Id");
+                        OnStart(data, extraInfo);
+                    }
+                }
+                else
+                {
+                    Debug.Assert(data.Opcode == TraceEventOpcode.Stop);
+                    OnStop(data);
+                }
+            }
+            else if (data.TaskName.Equals("Operation", StringComparison.Ordinal))
+            {
+                // TODO: [BinDu] AppInsights SDK has an issue that can create unexpected nested activity for Operation task. 
+                // Ignore the events for now until the issue is fixed in AppInsights SDK 2.4.
+                // https://github.com/Microsoft/ApplicationInsights-dotnet-server/issues/540 
+                return;
+            }
+            else
+            {
+                Debug.Assert(false, $"{data.TaskName} is not recognized");
+                return;
+            }
+        }
+
+        private static readonly Guid GUID_ONE = new Guid("00000001-0000-0000-0000-000000000000");
+        static bool IsTrivialActivityId(Guid g)
+        {
+            return g == Guid.Empty || g == GUID_ONE;
         }
 
         void FixAndProcessFrameworkEvents(TraceEvent data)

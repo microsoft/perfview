@@ -12,7 +12,6 @@ using System.Threading;
 
 namespace Microsoft.Diagnostics.Symbols { } // avoids compile errors in .NET Core build
 
-
 namespace Microsoft.Diagnostics.Tracing
 {
 #if !NOT_WINDOWS 
@@ -210,7 +209,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public bool DeleteInputFile { get; set; }
 
-            #region private
+        #region private
         private List<string> PrepForWrite()
         {
             // If the user did not specify a place to put log messages, make one for them.  
@@ -354,17 +353,17 @@ namespace Microsoft.Diagnostics.Tracing
 
         List<Tuple<string, string>> m_additionalFiles;
         string m_etlFilePath;
-            #endregion // private
+        #endregion // private
     }
 #endif
 
-            /// <summary>
-            /// ZippedETLReader is a helper class that unpacks the ZIP files generated
-            /// by the ZippedETLWriter class.    It can be smart about placing the 
-            /// symbolic information in these files on the SymbolReader's path so that
-            /// symbolic lookup 'just works'.  
-            /// </summary>
-        public class ZippedETLReader
+    /// <summary>
+    /// ZippedETLReader is a helper class that unpacks the ZIP files generated
+    /// by the ZippedETLWriter class.    It can be smart about placing the 
+    /// symbolic information in these files on the SymbolReader's path so that
+    /// symbolic lookup 'just works'.  
+    /// </summary>
+    public class ZippedETLReader
     {
         /// <summary>
         /// Declares the intent to unzip an .ETL.ZIP file that contain an compressed ETL file 
