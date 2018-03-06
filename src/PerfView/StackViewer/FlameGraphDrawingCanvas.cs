@@ -28,7 +28,7 @@ namespace PerfView
         {
             MouseMove += OnMouseMove;
             MouseLeave += (s, e) => HideTooltip();
-            ContextMenuOpening += (s, e) => selectedNode = flameBoxesMap.Find(Mouse.GetPosition(this)).Node;
+            MouseRightButtonDown += (s, e) => selectedNode = flameBoxesMap.Find(e.MouseDevice.GetPosition(this)).Node;
         }
 
         public bool IsEmpty => visuals.Count == 0;
