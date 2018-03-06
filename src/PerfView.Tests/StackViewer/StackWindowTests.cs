@@ -133,6 +133,33 @@ namespace PerfViewTests.StackViewer
             return RunUITestAsync(setupAsync, testDriverAsync, cleanupAsync);
         }
 
+        private static T FindChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null)
+            {
+                return default(T);
+            }
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                // Try child itself
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T)
+                {
+                    return (T)child;
+                }
+
+                // If not - try grandchild
+                var result = FindChild<T>(child);
+                if (result != null)
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+            
         private static async Task<PerfDataGrid> SelectTabAsync(StackWindow stackWindow, KnownDataGrid grid, CancellationToken cancellationToken)
         {
             Assert.Same(stackWindow.Dispatcher.Thread, Thread.CurrentThread);
@@ -198,7 +225,12 @@ namespace PerfViewTests.StackViewer
                     var cellToDoubleClick = (DataGridCell)gridToDoubleClick.DisplayNameColumn.GetCellContent(itemToDoubleClick).Parent;
 
                     var border = (Border)VisualTreeHelper.GetChild(cellToDoubleClick, 0);
-                    var textBlock = (TextBlock)VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(border, 0), 0), 0);
+                    var scrollViewer = (ScrollViewer)VisualTreeHelper.GetChild(
+                        VisualTreeHelper.GetChild(VisualTreeHelper.GetChild(border, 0), 0), 0);
+                    var cellGrid = FindChild<Grid>(scrollViewer);
+                    var scrollContentPresenter = FindChild<ScrollContentPresenter>(cellGrid);
+                    var internalGrid = FindChild<Grid>(scrollContentPresenter);
+                    var textBlock = (TextBlock)internalGrid.Children.Cast<UIElement>().First(i => Grid.GetRow(i) == 0);
                     Point controlCenter = new Point(textBlock.ActualWidth / 2, textBlock.ActualHeight / 2);
                     Point controlCenterOnView = textBlock.TranslatePoint(controlCenter, (UIElement)Helpers.RootVisual(textBlock));
                     Point controlCenterOnDevice = PresentationSource.FromDependencyObject(Helpers.RootVisual(textBlock)).CompositionTarget.TransformToDevice.Transform(controlCenterOnView);
