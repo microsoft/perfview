@@ -424,7 +424,10 @@ namespace Microsoft.Diagnostics.Tracing
         public int MetaDataId { get; private set; }
         public string ProviderName { get; private set; }
         public string EventName { get; private set; }
+#if SUPPORT_V1_V2
         public Tuple<TypeCode, string>[] ParameterDefinitions { get; private set; }
+#endif
+        public DynamicTraceEventData Template { get; private set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } }
         public int Version { get { return _eventRecord->EventHeader.Version; } }
@@ -458,19 +461,214 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(_eventRecord->EventHeader.Level <= 5);
 
             // Fetch the parameter information
-            int parameterCount = reader.ReadInt32();
-            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000);
-            if (0 < parameterCount)
+            Template = ReadMetadataAndBuildTemplate(reader);
+        }
+
+        private DynamicTraceEventData ReadMetadataAndBuildTemplate(PinnedStreamReader reader)
+        {
+            int opcode;
+            string opcodeName;
+
+            EventPipeTraceEventParser.GetOpcodeFromEventName(EventName, out opcode, out opcodeName);
+
+            DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
+            DynamicTraceEventData template = new DynamicTraceEventData(null, EventId, 0, EventName, Guid.Empty, opcode, opcodeName, ProviderId, ProviderName);
+
+            // Read the count of event payload fields.
+            int fieldCount = reader.ReadInt32();
+            Debug.Assert(0 <= fieldCount && fieldCount < 0x4000);
+
+            if (fieldCount > 0)
             {
-                ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    var type = (TypeCode)reader.ReadInt32();
-                    Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
-                    var name = reader.ReadNullTerminatedUnicodeString();
-                    ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
-                }
+                // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
+                classInfo = ParseFields(reader, fieldCount);
             }
+            else
+            {
+                classInfo = new DynamicTraceEventData.PayloadFetchClassInfo()
+                {
+                    FieldNames = new string[0],
+                    FieldFetches = new DynamicTraceEventData.PayloadFetch[0]
+                };
+            }
+
+            template.payloadNames = classInfo.FieldNames;
+            template.payloadFetches = classInfo.FieldFetches;
+
+            return template;
+        }
+
+        private DynamicTraceEventData.PayloadFetchClassInfo ParseFields(PinnedStreamReader reader, int numFields)
+        {
+            string[] fieldNames = new string[numFields];
+            DynamicTraceEventData.PayloadFetch[] fieldFetches = new DynamicTraceEventData.PayloadFetch[numFields];
+
+            ushort offset = 0;
+            for (int fieldIndex = 0; fieldIndex < numFields; fieldIndex++)
+            {
+                DynamicTraceEventData.PayloadFetch payloadFetch = new DynamicTraceEventData.PayloadFetch();
+
+                // Read the TypeCode for the current field.
+                TypeCode typeCode = (TypeCode)reader.ReadInt32();
+
+                // Fill out the payload fetch object based on the TypeCode.
+                switch (typeCode)
+                {
+                    case TypeCode.Boolean:
+                        {
+                            payloadFetch.Type = typeof(bool);
+                            payloadFetch.Size = 4; // We follow windows conventions and use 4 bytes for bool.
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Char:
+                        {
+                            payloadFetch.Type = typeof(char);
+                            payloadFetch.Size = sizeof(char);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.SByte:
+                        {
+                            payloadFetch.Type = typeof(SByte);
+                            payloadFetch.Size = sizeof(SByte);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Byte:
+                        {
+                            payloadFetch.Type = typeof(byte);
+                            payloadFetch.Size = sizeof(byte);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Int16:
+                        {
+                            payloadFetch.Type = typeof(Int16);
+                            payloadFetch.Size = sizeof(Int16);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.UInt16:
+                        {
+                            payloadFetch.Type = typeof(UInt16);
+                            payloadFetch.Size = sizeof(UInt16);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Int32:
+                        {
+                            payloadFetch.Type = typeof(Int32);
+                            payloadFetch.Size = sizeof(Int32);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.UInt32:
+                        {
+                            payloadFetch.Type = typeof(UInt32);
+                            payloadFetch.Size = sizeof(UInt32);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Int64:
+                        {
+                            payloadFetch.Type = typeof(Int64);
+                            payloadFetch.Size = sizeof(Int64);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.UInt64:
+                        {
+                            payloadFetch.Type = typeof(UInt64);
+                            payloadFetch.Size = sizeof(UInt64);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Single:
+                        {
+                            payloadFetch.Type = typeof(Single);
+                            payloadFetch.Size = sizeof(Single);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Double:
+                        {
+                            payloadFetch.Type = typeof(Double);
+                            payloadFetch.Size = sizeof(Double);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Decimal:
+                        {
+                            payloadFetch.Type = typeof(Decimal);
+                            payloadFetch.Size = sizeof(Decimal);
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.DateTime:
+                        {
+                            payloadFetch.Type = typeof(DateTime);
+                            payloadFetch.Size = 8;
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case EventPipeTraceEventParser.GuidTypeCode:
+                        {
+                            payloadFetch.Type = typeof(Guid);
+                            payloadFetch.Size = 16;
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.String:
+                        {
+                            payloadFetch.Type = typeof(String);
+                            payloadFetch.Size = DynamicTraceEventData.NULL_TERMINATED;
+                            payloadFetch.Offset = offset;
+                            break;
+                        }
+                    case TypeCode.Object:
+                        {
+                            // TypeCode.Object represents an embedded struct.
+
+                            // Read the number of fields in the struct.  Each of these fields could be an embedded struct,
+                            // but these embedded structs are still counted as single fields.  They will be expanded when they are handled.
+                            int structFieldCount = reader.ReadInt32();
+                            DynamicTraceEventData.PayloadFetchClassInfo embeddedStructClassInfo = ParseFields(reader, structFieldCount);
+                            if (embeddedStructClassInfo == null)
+                            {
+                                throw new Exception("Unable to parse metadata for embedded struct.");
+                            }
+                            payloadFetch = DynamicTraceEventData.PayloadFetch.StructPayloadFetch(offset, embeddedStructClassInfo);
+                            break;
+                        }
+                    default:
+                        {
+                            throw new NotSupportedException($"{typeCode} is not supported.");
+                        }
+                }
+
+                // Read the string name of the event payload field.
+                fieldNames[fieldIndex] = reader.ReadNullTerminatedUnicodeString();
+
+                // Update the offset into the event for the next payload fetch.
+                if (payloadFetch.Size >= DynamicTraceEventData.SPECIAL_SIZES || offset == ushort.MaxValue)
+                {
+                    offset = ushort.MaxValue;           // Indicate that the offset must be computed at run time.
+                }
+                else
+                {
+                    offset += payloadFetch.Size;
+                }
+
+                // Save the current payload fetch.
+                fieldFetches[fieldIndex] = payloadFetch;
+            }
+
+            return new DynamicTraceEventData.PayloadFetchClassInfo()
+            {
+                FieldNames = fieldNames,
+                FieldFetches = fieldFetches
+            };
         }
 
 #if SUPPORT_V1_V2

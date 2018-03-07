@@ -1,3 +1,4 @@
+#define SUPPORT_V1_V2
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -19,7 +20,13 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             var key = Tuple.Create(eventMetadata.ProviderId, (TraceEventID)eventMetadata.EventId);
             if (!_templates.ContainsKey(key))
             {
-                var template = NewTemplate(eventMetadata.ProviderId, eventMetadata.ProviderName, (uint) eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
+                var template = eventMetadata.Template;
+#if SUPPORT_V1_V2
+                if (template == null)
+                {
+                    template = NewTemplate(eventMetadata.ProviderId, eventMetadata.ProviderName, (uint)eventMetadata.EventId, eventMetadata.EventName, eventMetadata.ParameterDefinitions);
+                }
+#endif
                 _templates.Add(key, template);
                 OnNewEventDefintion(template, mayHaveExistedBefore: false);
             }
@@ -33,9 +40,10 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             DynamicTraceEventData template;
             return _templates.TryGetValue(Tuple.Create(unknownEvent.ProviderGuid, unknownEvent.ID), out template) ? template: null;
         }
-        #endregion 
+        #endregion
 
-        #region Private
+#region Private
+#if SUPPORT_V1_V2
         private DynamicTraceEventData NewTemplate(Guid providerId, string providerName, uint eventId, string eventName, Tuple<TypeCode, string>[] parameterDefinitions)
         {
             int opcode;
@@ -192,8 +200,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
             return template;
         }
+#endif
 
-        private void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName)
+        internal static void GetOpcodeFromEventName(string eventName, out int opcode, out string opcodeName)
         {
             opcode = 0;
             opcodeName = null;
@@ -215,9 +224,9 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
 
         // Guid is not part of TypeCode (yet), we decided to use 17 to represent it, as it's the "free slot" 
         // see https://github.com/dotnet/coreclr/issues/16105#issuecomment-361749750 for more
-        private const TypeCode GuidTypeCode = (TypeCode)17;
+        internal const TypeCode GuidTypeCode = (TypeCode)17;
 
         Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData> _templates = new Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData>();
-        #endregion
+#endregion
     }
 }
