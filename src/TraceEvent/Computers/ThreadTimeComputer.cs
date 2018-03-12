@@ -290,6 +290,10 @@ namespace Microsoft.Diagnostics.Tracing
                 if (data.ID == (TraceEventID)0xFFFE)
                     return;
 
+                // Avoid weird CPU TIME node with no determined call stack location.
+                if (data.CallStack() == null)
+                    return;
+
                 TraceThread thread = data.Thread();
                 if (thread == null)
                     return;

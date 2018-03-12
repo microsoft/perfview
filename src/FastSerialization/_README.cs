@@ -15,7 +15,7 @@
 // 
 // * file:FastSerialization.cs - holds defintions for code:FastSerialization.Serializer and
 //     code:FastSerialization.Deserializer which are general purpose, very fast and efficient ways of dumping
-//     an object graph to a stream (typically a file). It is used as a very convinient, versionable,
+//     an object graph to a stream (typically a file). It is used as a very convenient, versionable,
 //     efficient and extensible file format.
 // 
 // * file:StreamReaderWriter.cs - holds concreate subclasses of

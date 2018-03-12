@@ -270,7 +270,6 @@ namespace Microsoft.Diagnostics.Symbols
 
         #region private
         private List<SymbolPathElement> m_elements;
-
         /// <summary>
         /// This is the backing field for the lazily-computed <see cref="MicrosoftSymbolServerPath"/> property.
         /// </summary>

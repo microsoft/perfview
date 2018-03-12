@@ -8125,7 +8125,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public string NativePdbBuildPath { get { if (Version >= 2) return GetUnicodeStringAt(GetNativePdbSigStart + 20); return ""; } }
 
         /// <summary>
-        /// This is simply the file name part of the ModuleILPath.  It is a convinience method. 
+        /// This is simply the file name part of the ModuleILPath.  It is a convenience method. 
         /// </summary>
         public string ModuleILFileName { get { return System.IO.Path.GetFileName(ModuleILPath); } }
         #region Private
