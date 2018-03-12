@@ -55,6 +55,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         public bool UseTasks;
         /// <summary>
+        /// Track additional info on like EventName or so.
+        /// Default to true to keep backward compatibility.
+        /// </summary>
+        public bool TrackAdditionalInfo = true;
+        /// <summary>
         /// If set we compute blocked time 
         /// </summary>
         [Obsolete("Use Thread Time instead")]
@@ -300,17 +305,20 @@ namespace Microsoft.Diagnostics.Tracing
 
                 StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
 
-                // Tack on additional info about the event. 
-                var fieldNames = data.PayloadNames;
-                for (int i = 0; i < fieldNames.Length; i++)
+                // Tack on additional info about the event.
+                if (TrackAdditionalInfo)
                 {
-                    var fieldName = fieldNames[i];
-                    var value = data.PayloadString(i);
-                    var fieldNodeName = "EventData: " + fieldName + "=" + value;
-                    var fieldNodeIndex = m_outputStackSource.Interner.FrameIntern(fieldNodeName);
-                    stackIndex = m_outputStackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
+                    var fieldNames = data.PayloadNames;
+                    for (int i = 0; i < fieldNames.Length; i++)
+                    {
+                        var fieldName = fieldNames[i];
+                        var value = data.PayloadString(i);
+                        var fieldNodeName = "EventData: " + fieldName + "=" + value;
+                        var fieldNodeIndex = m_outputStackSource.Interner.FrameIntern(fieldNodeName);
+                        stackIndex = m_outputStackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
+                    }
+                    stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("EventName: " + data.ProviderName + "/" + data.EventName), stackIndex);
                 }
-                stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("EventName: " + data.ProviderName + "/" + data.EventName), stackIndex);
 
                 m_threadState[(int)thread.ThreadIndex].LogCPUStack(data.TimeStampRelativeMSec, stackIndex, thread, this, false);
             };

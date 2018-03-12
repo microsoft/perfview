@@ -107,24 +107,27 @@ namespace Microsoft.Diagnostics.Symbols
                 ret = ret.Substring(0, dollarIdx);
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
-            var mergedAssembliesMap = GetMergedAssembliesMap();
-            if (mergedAssembliesMap != null)
+            if (LookupAssemblyNameForCompiledNative)
             {
-                bool prefixMatchFound = false;
-                Regex prefixMatch = new Regex(@"\$(\d+)_");
-                ret = prefixMatch.Replace(ret, delegate (Match m)
+                var mergedAssembliesMap = GetMergedAssembliesMap();
+                if (mergedAssembliesMap != null)
                 {
-                    prefixMatchFound = true;
-                    var original = m.Groups[1].Value;
-                    var moduleIndex = int.Parse(original);
-                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
-                });
+                    bool prefixMatchFound = false;
+                    Regex prefixMatch = new Regex(@"\$(\d+)_");
+                    ret = prefixMatch.Replace(ret, delegate (Match m)
+                    {
+                        prefixMatchFound = true;
+                        var original = m.Groups[1].Value;
+                        var moduleIndex = int.Parse(original);
+                        return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
+                    });
 
-                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
-                // the assembly containing System.Object - the implicit module number is int.MaxValue
+                    // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                    // the assembly containing System.Object - the implicit module number is int.MaxValue
 
-                if (!prefixMatchFound)
-                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
+                    if (!prefixMatchFound)
+                        ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
+                }
             }
             return ret;
         }
@@ -954,6 +957,13 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 return m_managedPdb;
             }
         }
+
+        /// <summary>
+        /// Decide if we try to get a Project N map that maps $_NN to a pre-merged assembly name.
+        /// This is an exprimental code. Default to true because we don't have this switch when the
+        /// code is initially introduced. Deprecate this when the code is mature enough.
+        /// </summary>
+        internal bool LookupAssemblyNameForCompiledNative { get; set; } = true;
 
         /// <summary>
         /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
