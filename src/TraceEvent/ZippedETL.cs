@@ -508,7 +508,7 @@ namespace Microsoft.Diagnostics.Tracing
 
         #region private
         // Extract to a temp file and move so we get atomic update.   Otherwise if things are
-        // interrupted half way through we confuse algorthms that do nothing if a file is 
+        // interrupted half way through we confuse algorithms that do nothing if a file is 
         // already present.  
         private static void AtomicExtract(ZipArchiveEntry zipEntry, string targetPath)
         {
