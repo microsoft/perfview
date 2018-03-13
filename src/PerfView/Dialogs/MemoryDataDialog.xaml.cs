@@ -128,7 +128,7 @@ namespace PerfView.Dialogs
             m_args.DataFile = dataFile;
             m_args.Freeze = FreezeCheckBox.IsChecked ?? false;
             m_args.SaveETL = SaveETLCheckBox.IsChecked ?? false;
-            m_args.DumpData = false;  // TODO FIX NOW acutlaly use
+            m_args.DumpData = false;  // TODO FIX NOW actually use
             if (!int.TryParse(MaxDumpTextBox.Text, out m_args.MaxDumpCountK))
             {
                 StatusBar.LogError("Could not parse MaxDump " + MaxDumpTextBox.Text);
