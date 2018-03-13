@@ -117,24 +117,31 @@ namespace Microsoft.Diagnostics.Symbols
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
-                    string fullAssemblyName;
-                    if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
-                    {
-                        try
-                        {
-                            var assemblyName = new AssemblyName(fullAssemblyName);
-                            return assemblyName.Name + "!";
-                        }
-                        catch (Exception) { } // Catch all AssemlyName fails with ' in the name.   
-                    }
-                    return original;
+                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
                 });
 
-                // corefx.dll does not have a tag.  TODO this feels like a hack!
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // the assembly containing System.Object - the implicit module number is int.MaxValue
+
                 if (!prefixMatchFound)
-                    ret = "mscorlib!" + ret;
+                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
             }
             return ret;
+        }
+
+        private static string GetAssemblyNameFromModuleIndex(Dictionary<int, string> mergedAssembliesMap, int moduleIndex, string defaultValue)
+        {
+            string fullAssemblyName;
+            if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
+            {
+                try
+                {
+                    var assemblyName = new AssemblyName(fullAssemblyName);
+                    return assemblyName.Name + "!";
+                }
+                catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
+            }
+            return defaultValue;
         }
 
         /// <summary>
