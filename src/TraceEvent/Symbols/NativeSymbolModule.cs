@@ -117,19 +117,19 @@ namespace Microsoft.Diagnostics.Symbols
                     prefixMatchFound = true;
                     var original = m.Groups[1].Value;
                     var moduleIndex = int.Parse(original);
-                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex) ?? original;
+                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
                 });
 
                 // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
                 // the assembly containing System.Object - the implicit module number is int.MaxValue
 
                 if (!prefixMatchFound)
-                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue) + ret;
+                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
             }
             return ret;
         }
 
-        private static string GetAssemblyNameFromModuleIndex(Dictionary<int, string> mergedAssembliesMap, int moduleIndex)
+        private static string GetAssemblyNameFromModuleIndex(Dictionary<int, string> mergedAssembliesMap, int moduleIndex, string defaultValue)
         {
             string fullAssemblyName;
             if (mergedAssembliesMap.TryGetValue(moduleIndex, out fullAssemblyName))
@@ -141,7 +141,7 @@ namespace Microsoft.Diagnostics.Symbols
                 }
                 catch (Exception) { } // Catch all AssemblyName fails with ' in the name.   
             }
-            return null;
+            return defaultValue;
         }
 
         /// <summary>
