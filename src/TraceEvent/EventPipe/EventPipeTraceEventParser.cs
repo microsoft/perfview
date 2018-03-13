@@ -1,4 +1,3 @@
-#define SUPPORT_V1_V2
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing.Parsers;

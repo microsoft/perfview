@@ -1,5 +1,3 @@
-#define SUPPORT_V1_V2
-
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
