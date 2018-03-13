@@ -289,7 +289,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 int valueBucket = (int)(metric / scale * 10);       // TODO should we round?
                 if (metric > 0)
                 {
-                    // Scale the metric acording to the wishes of the client
+                    // Scale the metric according to the wishes of the client
                     if (valueBucket < 10)
                     {
                         val = (char)('0' + valueBucket);
