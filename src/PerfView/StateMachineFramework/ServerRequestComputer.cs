@@ -357,7 +357,7 @@ namespace PerfView
             {
                 // IF we call a WCF call directly from ASP, then the call above will fail because there is
                 // no WCF request.   In this case the WCF activity ID also happens to be the ASP.NET
-                // context id.  Thus we can go ahead and make a WCF activty for it out of nothing.  
+                // context id.  Thus we can go ahead and make a WCF activity for it out of nothing.  
                 if (m_aspNetServerRequests.ContainsKey(requestKey))
                     clientRequest = GetOrCreateWCFClientRequest(requestKey, thread, data.ActivityID);
                 if (clientRequest == null)
