@@ -761,7 +761,7 @@ using System.Collections.Generic;
 // Add PDBThreashold to collection dialog.   Explain it in the help.  
 
 // Fix the ASP.NET THread pool average to take the last value if there has been no adjustment.  
-// add a File->Open menu item (just for discoverabilty)
+// add a File->Open menu item (just for discoverability)
 // Put ThreadPoolCount on the ASP.NET stats.  
 // Bug: Truncated process name selection (truncates to 10) in Event Viewer.  
 // Add a 'View stack in allStackView' option in event viewer.  
