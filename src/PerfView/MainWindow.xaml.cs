@@ -768,7 +768,7 @@ using System.Collections.Generic;
 // From Karl Burtram
 // * Allow navigation to the stack for an event in the AllStacks view.  
 // * Page fault view. 
-// Symbol lookup before writing an XML file (since you loose the abilty to do it later).  
+// Symbol lookup before writing an XML file (since you loose the ability to do it later).  
 // Save all views.  
 // Allow command line spec to have more details on what to open (CPU view etc).  
 // exposing Ready Thread in an interesting way.    
