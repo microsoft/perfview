@@ -2031,7 +2031,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// AggregateCallTreeNode can represent either a 'callers' tree or a 'callees' tree.   For 
         /// the 'callers' tree case the node represented by the aggregate does NOT have same ID as
-        /// the tree in the m_trees list.   Instead the aggreegate is some node 'up the chain' toward 
+        /// the tree in the m_trees list.   Instead the aggregate is some node 'up the chain' toward 
         /// the caller.  m_callerOffset keeps track of this (it is the same number for all elements 
         /// in m_trees).   
         /// 
