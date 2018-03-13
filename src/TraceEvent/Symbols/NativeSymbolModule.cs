@@ -130,9 +130,11 @@ namespace Microsoft.Diagnostics.Symbols
                     return original;
                 });
 
-                // corefx.dll does not have a tag.  TODO this feels like a hack!
+		// By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+		// the assembly containing System.Object - most of the time, it should be System.Private.CoreLib.dll
+
                 if (!prefixMatchFound)
-                    ret = "mscorlib!" + ret;
+                    ret = "System.Private.CoreLib!" + ret;
             }
             return ret;
         }
