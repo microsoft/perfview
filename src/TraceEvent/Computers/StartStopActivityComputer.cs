@@ -709,7 +709,7 @@ namespace Microsoft.Diagnostics.Tracing
                 uint value = 0;
                 if (!secondNibble)
                     value = (uint)(*bytePtr & 0xF);
-                bytePtr++;       // Adance to the value bytes
+                bytePtr++;       // Advance to the value bytes
 
                 numBytes++;     // Now numBytes is 1-4 and represents the number of bytes to read.  
                 if (endPtr < bytePtr + numBytes)
