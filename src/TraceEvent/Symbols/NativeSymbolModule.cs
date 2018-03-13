@@ -130,8 +130,8 @@ namespace Microsoft.Diagnostics.Symbols
                     return original;
                 });
 
-		// By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
-		// the assembly containing System.Object - most of the time, it should be System.Private.CoreLib.dll
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // the assembly containing System.Object - most of the time, it should be System.Private.CoreLib.dll
 
                 if (!prefixMatchFound)
                     ret = "System.Private.CoreLib!" + ret;
