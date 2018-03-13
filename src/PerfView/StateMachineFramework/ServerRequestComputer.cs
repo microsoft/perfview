@@ -555,7 +555,7 @@ namespace PerfView
         /// <summary>
         /// Remove the WCF server request with id 'requestKey'  Since there an be several requests
         /// with this same ID, also supply the ASP.NET Request context.   Note that it will remove
-        /// all requests until it finds 'aspNetRequest' (so if events were missing, the alogrithm is
+        /// all requests until it finds 'aspNetRequest' (so if events were missing, the algorithm is
         /// robust (it cleans up).  If 'thread' is non-null, then update that thread to 
         /// </summary>
         private void RemoveWCFServerRequest(RequestKey requestKey, ASPNetServerRequest aspNetRequest)
