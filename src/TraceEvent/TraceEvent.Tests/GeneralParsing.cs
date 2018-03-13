@@ -94,7 +94,7 @@ namespace TraceEventTests
                     if (data.EventName != "SystemConfig/Platform" && data.EventName != "Image/KernelBase")
                         return;
                 }
-                // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too agressive about 
+                // In theory we have the same problem with any event that the OS supplies the parsing.   I dont want to be too aggressive about 
                 // turning them off, however becasuse I want those code paths tested
 
 
