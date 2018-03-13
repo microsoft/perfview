@@ -1247,7 +1247,7 @@ namespace ClrProfiler
 
 			// morph Dictionary`2[[T1,M1],[T2,M2]] => Dictionary<T1,T2>
 
-			// First change [] to {} just to avoid ambiguitites
+			// First change [] to {} just to avoid ambiguities
 			name = Regex.Replace(name, @"\[(,*)\]", "{$1}");
 			for (;;)
 			{
