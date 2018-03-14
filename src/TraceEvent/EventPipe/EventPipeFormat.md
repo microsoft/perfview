@@ -138,7 +138,7 @@ of the event.   This meta-data is given an small integer numeric ID
 
 One of the fields for an event is this Meta-data ID.   An event with 
 a Meta-data ID of 0 is expected to be a Meta-data event itself.  
-See the constructor of EventPipeEventMetaData for details of the 
+See the constructor of EventPipeEventMetaDataHeader for details of the 
 format of this event.
 
 ## Ending the stream: The NullReference Tag
