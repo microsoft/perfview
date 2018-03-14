@@ -1,5 +1,3 @@
-#define SUPPORT_V1_V2
-
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -148,10 +146,17 @@ namespace Microsoft.Diagnostics.Tracing
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
                 reader.Skip(EventPipeEventHeader.HeaderSize);
 
+                StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
                 var metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
                 _eventMetadataDictionary.Add(metaData.MetaDataId, metaData);
 
-                _eventParser.AddTemplate(metaData); // if we don't add the templates to this parse, we are going to have unhadled events (see https://github.com/Microsoft/perfview/issues/461)
+                // If we don't add the templates to this parser, we are going to have unhandled events (see https://github.com/Microsoft/perfview/issues/461)
+                if (!_eventParser.AddTemplate(reader, metaData))
+                {
+                    // If the template already existed then skip the rest of the metadata.
+                    reader.Goto(metaDataEnd);
+                }
+                Debug.Assert(reader.Current == metaDataEnd);
 
                 int stackBytes = reader.ReadInt32();
                 Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");
@@ -332,8 +337,10 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.ProcessId = processId;
 
+            // Calculate the position of the end of the metadata blob.
+            StreamLabel metadataEndLabel = reader.Current.Add(length);
+
             // Read the metaData
-            StreamLabel eventDataEnd = reader.Current.Add(length);
             if (3 <= fileFormatVersionNumber)
             {
                 MetaDataId = reader.ReadInt32();
@@ -347,7 +354,11 @@ namespace Microsoft.Diagnostics.Tracing
                 ReadObsoleteEventMetaData(reader, fileFormatVersionNumber);
 #endif
 
-            Debug.Assert(reader.Current == eventDataEnd);
+            // Check for parameter metadata so that it can be consumed by the parser.
+            if (reader.Current < metadataEndLabel)
+            {
+                ContainsParameterMetadata = true;
+            }
         }
 
         ~EventPipeEventMetaData()
@@ -422,9 +433,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// It is what is matched up with EventPipeEventHeader.MetaDataId
         /// </summary>
         public int MetaDataId { get; private set; }
+        public bool ContainsParameterMetadata { get; private set; }
         public string ProviderName { get; private set; }
         public string EventName { get; private set; }
-        public Tuple<TypeCode, string>[] ParameterDefinitions { get; private set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } }
         public int Version { get { return _eventRecord->EventHeader.Version; } }
@@ -456,21 +467,6 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
             Debug.Assert(_eventRecord->EventHeader.Level <= 5);
-
-            // Fetch the parameter information
-            int parameterCount = reader.ReadInt32();
-            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000);
-            if (0 < parameterCount)
-            {
-                ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    var type = (TypeCode)reader.ReadInt32();
-                    Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
-                    var name = reader.ReadNullTerminatedUnicodeString();
-                    ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
-                }
-            }
         }
 
 #if SUPPORT_V1_V2

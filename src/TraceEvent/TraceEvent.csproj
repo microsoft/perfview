@@ -32,7 +32,7 @@
   </Target>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMMAND_PUBLIC;PEFILE_PUBLIC;PERFVIEW;SUPPORT_V1_V2</DefineConstants>
     <NoWarn>$(NoWarn),0649,0618</NoWarn>
   </PropertyGroup>
 
