@@ -26,13 +26,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         {
             // Convert the EventPipe data into a DynamicTraceEventData, which is how TraceEvent does dynamic event parsing.  
             DynamicTraceEventData template = ReadEventParametersAndBuildTemplate(eventMetaDataHeader, readerForParameters);
-
-            var key = Tuple.Create(eventMetaDataHeader.ProviderId, (TraceEventID)eventMetaDataHeader.EventId);
-            if (!_templates.ContainsKey(key))
-            {
-                _templates.Add(key, template);
-                OnNewEventDefintion(template, mayHaveExistedBefore: false);
-            }
+            OnNewEventDefintion(template, mayHaveExistedBefore: true);
         }
 
         #region Override ExternalTraceEventParser
@@ -41,7 +35,8 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             if (unknownEvent.IsClassicProvider) return null;
 
             DynamicTraceEventData template;
-            return _templates.TryGetValue(Tuple.Create(unknownEvent.ProviderGuid, unknownEvent.ID), out template) ? template : null;
+            m_state.m_templates.TryGetValue(unknownEvent, out template);
+            return template;
         }
         #endregion
 
@@ -290,8 +285,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         // Guid is not part of TypeCode (yet), we decided to use 17 to represent it, as it's the "free slot" 
         // see https://github.com/dotnet/coreclr/issues/16105#issuecomment-361749750 for more
         internal const TypeCode GuidTypeCode = (TypeCode)17;
-
-        Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData> _templates = new Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData>();
         #endregion
     }
 }
