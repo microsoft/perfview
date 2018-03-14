@@ -16,18 +16,23 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         {
         }
 
-        internal bool AddTemplate(PinnedStreamReader reader, EventPipeEventMetaData eventMetadata)
+        /// <summary>
+        /// Give meta-data for an event, passed as a EventPipeEventMetaDataHeader and readerForParameters
+        /// which is a StreamReader that points at serialized parameter information, decode the meta-data
+        /// and register the meta-data with the TraceEventParser infrastruture.   The readerForParameters
+        /// is advanced beyond its parameters.  
+        /// </summary>
+        internal void OnNewEventPipeEventDefinition(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters)
         {
-            var key = Tuple.Create(eventMetadata.ProviderId, (TraceEventID)eventMetadata.EventId);
-            bool createTemplate = !_templates.ContainsKey(key);
-            if (createTemplate)
+            // Convert the EventPipe data into a DynamicTraceEventData, which is how TraceEvent does dynamic event parsing.  
+            DynamicTraceEventData template = ReadEventParametersAndBuildTemplate(eventMetaDataHeader, readerForParameters);
+
+            var key = Tuple.Create(eventMetaDataHeader.ProviderId, (TraceEventID)eventMetaDataHeader.EventId);
+            if (!_templates.ContainsKey(key))
             {
-                var template = ReadEventParametersAndBuildTemplate(reader, eventMetadata);
                 _templates.Add(key, template);
                 OnNewEventDefintion(template, mayHaveExistedBefore: false);
             }
-
-            return createTemplate;
         }
 
         #region Override ExternalTraceEventParser
@@ -36,39 +41,43 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
             if (unknownEvent.IsClassicProvider) return null;
 
             DynamicTraceEventData template;
-            return _templates.TryGetValue(Tuple.Create(unknownEvent.ProviderGuid, unknownEvent.ID), out template) ? template: null;
+            return _templates.TryGetValue(Tuple.Create(unknownEvent.ProviderGuid, unknownEvent.ID), out template) ? template : null;
         }
         #endregion
 
-#region Private
+        #region Private
 
-        private DynamicTraceEventData ReadEventParametersAndBuildTemplate(PinnedStreamReader reader, EventPipeEventMetaData metaData)
+        /// <summary>
+        /// Given the EventPIpe metaData header and a stream pointing at the serialized meta-data for the parameters for the
+        /// event, create a new  DynamicTraceEventData that knows how to parse that event.  
+        /// ReaderForParameters.Current is advanced past the parameter information.  
+        /// </summary>
+        private DynamicTraceEventData ReadEventParametersAndBuildTemplate(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters)
         {
             int opcode;
             string opcodeName;
 
-            EventPipeTraceEventParser.GetOpcodeFromEventName(metaData.EventName, out opcode, out opcodeName);
+            EventPipeTraceEventParser.GetOpcodeFromEventName(eventMetaDataHeader.EventName, out opcode, out opcodeName);
 
             DynamicTraceEventData.PayloadFetchClassInfo classInfo = null;
-            DynamicTraceEventData template = new DynamicTraceEventData(null, metaData.EventId, 0, metaData.EventName, Guid.Empty, opcode, opcodeName, metaData.ProviderId, metaData.ProviderName);
+            DynamicTraceEventData template = new DynamicTraceEventData(null, eventMetaDataHeader.EventId, 0, eventMetaDataHeader.EventName, Guid.Empty, opcode, opcodeName, eventMetaDataHeader.ProviderId, eventMetaDataHeader.ProviderName);
 
             // If the metadata contains no parameter metadata, don't attempt to read it.
-            if (!metaData.ContainsParameterMetadata)
+            if (!eventMetaDataHeader.ContainsParameterMetadata)
             {
                 template.payloadNames = new string[0];
                 template.payloadFetches = new DynamicTraceEventData.PayloadFetch[0];
-
                 return template;
             }
 
             // Read the count of event payload fields.
-            int fieldCount = reader.ReadInt32();
+            int fieldCount = readerForParameters.ReadInt32();
             Debug.Assert(0 <= fieldCount && fieldCount < 0x4000);
 
             if (fieldCount > 0)
             {
                 // Recursively parse the metadata, building up a list of payload names and payload field fetch objects.
-                classInfo = ParseFields(reader, fieldCount);
+                classInfo = ParseFields(readerForParameters, fieldCount);
             }
             else
             {
@@ -283,6 +292,6 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         internal const TypeCode GuidTypeCode = (TypeCode)17;
 
         Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData> _templates = new Dictionary<Tuple<Guid, TraceEventID>, DynamicTraceEventData>();
-#endregion
+        #endregion
     }
 }

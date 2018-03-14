@@ -147,16 +147,14 @@ namespace Microsoft.Diagnostics.Tracing
                 reader.Skip(EventPipeEventHeader.HeaderSize);
 
                 StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
-                var metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
-                _eventMetadataDictionary.Add(metaData.MetaDataId, metaData);
 
-                // If we don't add the templates to this parser, we are going to have unhandled events (see https://github.com/Microsoft/perfview/issues/461)
-                if (!_eventParser.AddTemplate(reader, metaData))
-                {
-                    // If the template already existed then skip the rest of the metadata.
-                    reader.Goto(metaDataEnd);
-                }
-                Debug.Assert(reader.Current == metaDataEnd);
+                // Read in the header (The header does not inlcude payload parameter information)
+                var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
+                _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
+
+                // Tell the parser about this new event
+                _eventParser.OnNewEventPipeEventDefinition(metaDataHeader, reader);
+                Debug.Assert(reader.Current == metaDataEnd);    // We should have read all the meta-data.  
 
                 int stackBytes = reader.ReadInt32();
                 Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");
@@ -230,7 +228,7 @@ namespace Microsoft.Diagnostics.Tracing
         StreamLabel _endOfEventStream;
 #endif
         int _fileFormatVersionNumber;
-        Dictionary<int, EventPipeEventMetaData> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaData>();
+        Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
         Deserializer _deserializer;
         EventPipeTraceEventParser _eventParser; // TODO does this belong here?
         string _processName;
@@ -300,19 +298,20 @@ namespace Microsoft.Diagnostics.Tracing
     /// Private utility class.
     /// 
     /// An EventPipeEventMetaData holds the information that can be shared among all
-    /// instances of an EventPIpe event from a particular provider.   Thus it contains
-    /// things like the event name, provider, as well as well as data on how many
-    /// user defined fields and their names and types.   
+    /// instances of an EventPipe event from a particular provider.   Thus it contains
+    /// things like the event name, provider, It however does NOT contain the data 
+    /// about the event parameters (the names of the fields and their types), That is
+    /// why this is a meta-data header and not all the meta-data.   
     /// 
     /// This class has two main functions
     ///    1. The constructor takes a PinnedStreamReader and decodes the serialized metadata
-    ///       so you can access the data conviniently.
+    ///       so you can access the data conviniently (but it does not decode the parameter info)
     ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data)
     ///       and has a function GetEventRecordForEventData which converts from a 
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
     ///       is what TraceEvent needs to look up the event an pass it up the stack.  
     /// </summary>
-    unsafe class EventPipeEventMetaData
+    unsafe class EventPipeEventMetaDataHeader
     {
         /// <summary>
         /// Creates a new MetaData instance from the serialized data at the current position of 'reader'
@@ -321,10 +320,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// (since that affects the parsing of this data) and 'processID' is the process ID for the 
         /// whole stream (since it needs to be put into the EVENT_RECORD.
         /// 
-        /// When this constructor returns the reader has read all data given to it (thus it has
-        /// move the read pointer by 'length')
+        /// When this constructor returns the reader has read up to the serialized information about
+        /// the parameters.  We do this because this code does not know the best represenation for
+        /// this parameter information and so it just lets other code handle it.  
         /// </summary>
-        public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
+        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
         {
             // Get the event record and fill in fields that we can without deserializing anything.  
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -361,7 +361,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
         }
 
-        ~EventPipeEventMetaData()
+        ~EventPipeEventMetaDataHeader()
         {
             if (_eventRecord != null)
             {
