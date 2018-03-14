@@ -3685,7 +3685,7 @@ table {
         private static bool WarnAboutBrokenStacks(Window parentWindow, float brokenPercent, bool is64Bit, TextWriter log)
         {
             if (brokenPercent > 1)
-                log.WriteLine("Finished Agregating stacks.  (" + brokenPercent.ToString("f1") + "% Broken Stacks)");
+                log.WriteLine("Finished aggregating stacks.  (" + brokenPercent.ToString("f1") + "% Broken Stacks)");
             if (brokenPercent > 10)
             {
                 if (is64Bit)

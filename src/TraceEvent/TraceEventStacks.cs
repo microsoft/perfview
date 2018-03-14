@@ -76,7 +76,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public TraceLog TraceLog { get { return m_log; } }
         /// <summary>
         /// Normally addresses without symbolic names are listed as ?, however sometimes it is useful 
-        /// to see the actuall address as a hexidecimal number.  Setting this will do that.  
+        /// to see the actual address as a hexidecimal number.  Setting this will do that.  
         /// </summary>
         public bool ShowUnknownAddresses { get; set; }
         /// <summary>

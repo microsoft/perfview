@@ -329,7 +329,7 @@ class TraceParserGen
             // We have to accumulate all the information needed to fetch a field, across all the versions of the event
             // Only then can we emit the code that will work for all fields simultaneously.  
             var fieldVersions = new SortedDictionary<string, List<FieldInfo>>();
-            // allFields is the accumluation of all the values in 'fieldsVersions'
+            // allFields is the accumulation of all the values in 'fieldsVersions'
             List<FieldInfo> allFields = new List<FieldInfo>();
             string lengthAssert = "";       // Ultimately it is a expression which is true about the payload length
             GetFieldInfoByField(versionsForEvent, fieldVersions, allFields, ref lengthAssert);

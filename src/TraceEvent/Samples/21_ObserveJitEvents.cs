@@ -161,7 +161,7 @@ namespace TraceEventSamples
                              })
                          select accum;
 
-            // For each accumlation in the stream, compute map it to the statistics for that accumulation.  
+            // For each accumulation in the stream, compute map it to the statistics for that accumulation.  
             var stats = from accum in accums
                         select new MyStatistics
                         {

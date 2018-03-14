@@ -1498,7 +1498,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// If 'data' is null, then it indicates that no data should be stored and the registry entry
         /// is removed.
         /// 
-        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
+        /// If 'allSesions' is true it means that you want 'old style' data filtering that affects all ETW sessions
         /// This is present only used for compatibilty 
         /// </summary>
         /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>

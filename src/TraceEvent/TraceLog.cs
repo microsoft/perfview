@@ -7890,7 +7890,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// Conceptually a TraceCodeAddress represents a particular point of execution within a particular 
     /// line of code in some source code.    As a practical matter, they are represented two ways
     /// depending on whether the code is managed or not.
-    /// <para>* For native code (or NGened code), it is represented as a virtual addresis along with the loaded native
+    /// <para>* For native code (or NGened code), it is represented as a virtual address along with the loaded native
     /// module that includes that address along with its load address.  A code address does NOT 
     /// know its process because they can be shared among all processes that load a particular module
     /// at a particular location.   These code addresses will not have methods associated with them

@@ -3292,7 +3292,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.GC
     }
 }
 
-// Agregate analysis.  
+// Aggregate analysis.  
 
 namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
 {

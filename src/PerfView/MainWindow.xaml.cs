@@ -761,14 +761,14 @@ using System.Collections.Generic;
 // Add PDBThreashold to collection dialog.   Explain it in the help.  
 
 // Fix the ASP.NET THread pool average to take the last value if there has been no adjustment.  
-// add a File->Open menu item (just for discoverabilty)
+// add a File->Open menu item (just for discoverability)
 // Put ThreadPoolCount on the ASP.NET stats.  
 // Bug: Truncated process name selection (truncates to 10) in Event Viewer.  
 // Add a 'View stack in allStackView' option in event viewer.  
 // From Karl Burtram
 // * Allow navigation to the stack for an event in the AllStacks view.  
 // * Page fault view. 
-// Symbol lookup before writing an XML file (since you loose the abilty to do it later).  
+// Symbol lookup before writing an XML file (since you loose the ability to do it later).  
 // Save all views.  
 // Allow command line spec to have more details on what to open (CPU view etc).  
 // exposing Ready Thread in an interesting way.    
