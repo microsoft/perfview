@@ -4435,8 +4435,8 @@ table {
                 // consistant with the RefCount value that is in the events.
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
                 {
-                    MessageBox.Show(GuiApp.MainWindow, 
-                        "Warning: the Interop CCW events on which this data is based seem to be incomplete.\r\n" + 
+                    MessageBox.Show(GuiApp.MainWindow,
+                        "Warning: the Interop CCW events on which this data is based seem to be incomplete.\r\n" +
                         "There seem to be missing instrumentation, which make the referenct counts unreliable\r\n"
                         , "Data May be Incorrect");
                 });
@@ -4469,7 +4469,7 @@ table {
                         var objectTypeIndex = stackSource.Interner.FrameIntern(objectType);
                         stackIndex = stackSource.Interner.CallStackIntern(objectTypeIndex, stackIndex);
                     }
-                    var ccwRefCount = "CCW NewRefCnt " + refCount;     
+                    var ccwRefCount = "CCW NewRefCnt " + refCount;
                     var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCount.ToString());
                     stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
 
@@ -4527,8 +4527,8 @@ table {
                     sample.StackIndex = StackSourceCallStackIndex.Invalid;
 
                     sample.Metric = 1;
-            // Closes use the call stack of the allocation site if possible (since that is more helpful)  
-            if (data.Opcode == (TraceEventOpcode)33)       // CloseHandle
+                    // Closes use the call stack of the allocation site if possible (since that is more helpful)  
+                    if (data.Opcode == (TraceEventOpcode)33)       // CloseHandle
                     {
                         sample.Metric = -1;
 
@@ -4536,17 +4536,17 @@ table {
                         StackSourceCallStackIndex stackIndex;
                         if (allocationsStacks.TryGetValue(key, out stackIndex))
                             sample.StackIndex = stackIndex;
-                // TODO should we keep track of the ref count and remove the entry when it drops past zero?  
-            }
+                        // TODO should we keep track of the ref count and remove the entry when it drops past zero?  
+                    }
 
-            // If this not a close() (Or if we could not find a stack for the close() make up a call stack from the event.  
-            if (sample.StackIndex == StackSourceCallStackIndex.Invalid)
+                    // If this not a close() (Or if we could not find a stack for the close() make up a call stack from the event.  
+                    if (sample.StackIndex == StackSourceCallStackIndex.Invalid)
                     {
                         StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
 
-                // We want all stacks to be int he process where the handle exists.  But this not always the case
-                // If that happened abandon the stack and make up a pseudo stack that lets you know that happened. 
-                if (handleProcess != data.ProcessID)
+                        // We want all stacks to be int he process where the handle exists.  But this not always the case
+                        // If that happened abandon the stack and make up a pseudo stack that lets you know that happened. 
+                        if (handleProcess != data.ProcessID)
                         {
                             stackIndex = StackSourceCallStackIndex.Invalid;
                             TraceProcess process = eventLog.Processes.GetProcess(handleProcess, data.TimeStampRelativeMSec);
@@ -4567,11 +4567,11 @@ table {
                         var handleTypeIndex = stackSource.Interner.FrameIntern("Handle Type " + handleTypeName);
                         stackIndex = stackSource.Interner.CallStackIntern(handleTypeIndex, stackIndex);
 
-                //var objectName = "Object Instance 0x" + objectInstance.ToString("x");
-                //var objectIndex = stackSource.Interner.FrameIntern(objectName);
-                //stackIndex = stackSource.Interner.CallStackIntern(objectIndex, stackIndex);
+                        //var objectName = "Object Instance 0x" + objectInstance.ToString("x");
+                        //var objectIndex = stackSource.Interner.FrameIntern(objectName);
+                        //stackIndex = stackSource.Interner.CallStackIntern(objectIndex, stackIndex);
 
-                sample.StackIndex = stackIndex;
+                        sample.StackIndex = stackIndex;
 
                         long key = (((long)handleProcess) << 32) + handleInstance;
                         allocationsStacks[key] = stackIndex;
@@ -4599,16 +4599,16 @@ table {
                     // Log a pseudo-event that indicates when the activity dies
                     activityComputer.Stop += delegate (TraceActivity activity, TraceEvent data)
                                     {
-                        // TODO This is a clone of the logic below, factor it.  
-                        TraceThread thread = data.Thread();
+                                        // TODO This is a clone of the logic below, factor it.  
+                                        TraceThread thread = data.Thread();
                                         if (thread != null)
                                             return;
 
                                         StackSourceCallStackIndex stackIndex;
                                         if (isAnyTaskTree)
                                         {
-                            // Compute the stack where frames using an activity Name as a frame name.
-                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
+                                            // Compute the stack where frames using an activity Name as a frame name.
+                                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
                                         }
                                         else if (isAnyStartStopTreeNoCallStack)
                                         {
@@ -4620,8 +4620,8 @@ table {
                                             if (isAnyWithStartStop)
                                                 topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
-                            // Use the call stack 
-                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
+                                            // Use the call stack 
+                                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
                                         }
 
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityStop " + activity.ToString()), stackIndex);
@@ -4642,8 +4642,8 @@ table {
 
                 eventSource.AllEvents += delegate (TraceEvent data)
                                 {
-                    // Get most of the stack (we support getting the normal call stack as well as the task stack.  
-                    StackSourceCallStackIndex stackIndex;
+                                    // Get most of the stack (we support getting the normal call stack as well as the task stack.  
+                                    StackSourceCallStackIndex stackIndex;
                                     if (activityComputer != null)
                                     {
                                         TraceThread thread = data.Thread();
@@ -4652,8 +4652,8 @@ table {
 
                                         if (isAnyTaskTree)
                                         {
-                            // Compute the stack where frames using an activity Name as a frame name.
-                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
+                                            // Compute the stack where frames using an activity Name as a frame name.
+                                            stackIndex = activityComputer.GetActivityStack(stackSource, activityComputer.GetCurrentActivity(thread));
                                         }
                                         else if (isAnyStartStopTreeNoCallStack)
                                         {
@@ -4665,14 +4665,14 @@ table {
                                             if (isAnyWithStartStop)
                                                 topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
 
-                            // Use the call stack 
-                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
+                                            // Use the call stack 
+                                            stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
                                         }
                                     }
                                     else
                                     {
-                        // Normal case, get the calls stack of frame names.  
-                        var callStackIdx = data.CallStackIndex();
+                                        // Normal case, get the calls stack of frame names.  
+                                        var callStackIdx = data.CallStackIndex();
                                         if (callStackIdx != CallStackIndex.Invalid)
                                             stackIndex = stackSource.GetCallStack(callStackIdx, data);
                                         else
@@ -4683,12 +4683,12 @@ table {
                                     if (asCSwitch != null)
                                     {
                                         if (activityComputer == null)  // Just a plain old any-stacks
-                        {
+                                        {
                                             var callStackIdx = asCSwitch.BlockingStack();
                                             if (callStackIdx != CallStackIndex.Invalid)
                                             {
-                                // Make an entry for the blocking stacks as well.  
-                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
+                                                // Make an entry for the blocking stacks as well.  
+                                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
                                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                                 sample.Metric = 1;
                                                 stackSource.AddSample(sample);
@@ -4727,13 +4727,13 @@ table {
                                         goto ADD_SAMPLE;
                                     }
 
-                    // TODO FIX NOW remove for debugging activity stuff.  
+                                    // TODO FIX NOW remove for debugging activity stuff.  
 #if false
                     var activityId = data.ActivityID;
                     if (activityId != Guid.Empty && ActivityComputer.IsActivityPath(activityId))
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ActivityPath " + ActivityComputer.ActivityPathString(activityId)), stackIndex);
 #endif
-                    var asObjectAllocated = data as ObjectAllocatedArgs;
+                                    var asObjectAllocated = data as ObjectAllocatedArgs;
                                     if (asObjectAllocated != null)
                                     {
                                         var size = "EventData Size 0x" + asObjectAllocated.Size.ToString("x");
@@ -4765,15 +4765,15 @@ table {
                                     {
                                         sample.Metric = 4;      // Convenience since these are 4K pages 
 
-                        // EMit the kind, which may have a file name argument.  
-                        var pageKind = asPageAccess.PageKind;
+                                        // EMit the kind, which may have a file name argument.  
+                                        var pageKind = asPageAccess.PageKind;
                                         string fileName = asPageAccess.FileName;
                                         if (fileName == null)
                                             fileName = "";
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
 
-                        // If it is the range of a module, log that as well, as well as it bucket.  
-                        var address = asPageAccess.VirtualAddress;
+                                        // If it is the range of a module, log that as well, as well as it bucket.  
+                                        var address = asPageAccess.VirtualAddress;
                                         var process = data.Process();
                                         if (process != null)
                                         {
@@ -4782,8 +4782,8 @@ table {
                                             {
                                                 if (module.ModuleFile != null && module.ModuleFile.ImageSize != 0)
                                                 {
-                                    // Create a node that indicates where in the file (in buckets) the access was from 
-                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
+                                                    // Create a node that indicates where in the file (in buckets) the access was from 
+                                                    double normalizeDistance = (address - module.ImageBase) / ((double)module.ModuleFile.ImageSize);
                                                     if (0 <= normalizeDistance && normalizeDistance < 1)
                                                     {
                                                         const int numBuckets = 20;
@@ -4814,13 +4814,13 @@ table {
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateOptions: " + asFileCreate.CreateOptions), stackIndex);
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileAttributes: " + asFileCreate.FileAttributes), stackIndex);
                                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("ShareAccess: " + asFileCreate.ShareAccess), stackIndex);
-                        // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
-                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
+                                        // stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("CreateDispostion: " + asFileCreate.CreateDispostion), stackIndex);
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("FileName: " + asFileCreate.FileName), stackIndex);
                                         goto ADD_EVENT_FRAME;
                                     }
 
-                    // Tack on additional info about the event. 
-                    var fieldNames = data.PayloadNames;
+                                    // Tack on additional info about the event. 
+                                    var fieldNames = data.PayloadNames;
                                     for (int i = 0; i < fieldNames.Length; i++)
                                     {
                                         var fieldName = fieldNames[i];
@@ -4836,8 +4836,8 @@ table {
                                     }
 
                                     ADD_EVENT_FRAME:
-                    // Tack on event name 
-                    var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
+                                    // Tack on event name 
+                                    var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                     stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
                                     ADD_SAMPLE:
                                     sample.StackIndex = stackIndex;
@@ -5000,9 +5000,9 @@ table {
                 var loadedImages = new Dictionary<Address, StackSourceCallStackIndex>(100);
                 Action<ImageLoadTraceData> imageLoadUnload = delegate (ImageLoadTraceData data)
                 {
-    // TODO this is not really correct, it assumes process IDs < 64K and images bases don't use lower bits
-    // but it is true 
-    Address imageKey = data.ImageBase + (Address)data.ProcessID;
+                    // TODO this is not really correct, it assumes process IDs < 64K and images bases don't use lower bits
+                    // but it is true 
+                    Address imageKey = data.ImageBase + (Address)data.ProcessID;
 
                     sample.Metric = data.ImageSize;
                     if (data.Opcode == TraceEventOpcode.Stop)
@@ -5015,8 +5015,8 @@ table {
                     }
                     else
                     {
-        // Create a call stack that ends with 'Load <fileName> (<fileDirectory>)'
-        var fileName = data.FileName;
+                        // Create a call stack that ends with 'Load <fileName> (<fileDirectory>)'
+                        var fileName = data.FileName;
                         var nodeName = "Image Load " + GetFileName(fileName) + " (" + GetDirectoryName(fileName) + ")";
                         var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
                         sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
@@ -5041,10 +5041,10 @@ table {
                                         VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT |
                                         VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
                                     {
-                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
-                        // process and occur before the process start event, which is what Process() uses to find it. 
-                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
-                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
+                                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
+                                        // process and occur before the process start event, which is what Process() uses to find it. 
+                                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
+                                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
                                         if (processWhereMemoryAllocated == null)
                                         {
                                             droppedEvents++;
@@ -5056,19 +5056,19 @@ table {
                                         if (memState == null)
                                             memState = memStates[(int)processIndex] = new MemState();
 
-                        // Commit and decommit not both on together.  
-                        Debug.Assert((data.Flags &
-                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
-                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
+                                        // Commit and decommit not both on together.  
+                                        Debug.Assert((data.Flags &
+                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
+                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
 
                                         var stackIndex = StackSourceCallStackIndex.Invalid;
                                         if ((data.Flags & VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT) != 0)
                                         {
                                             isAlloc = true;
-                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
-                            // But do count them.  
-                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
-                            var thread = data.Thread();
+                                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
+                                            // But do count them.  
+                                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
+                                            var thread = data.Thread();
                                             if (thread != null)
                                                 processIDAllocatingMemory = thread.Process.ProcessID;
 
@@ -5085,12 +5085,12 @@ table {
                                             {
                                                 Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
                                                 Debug.Assert(metric != 0);                                                  // They should trim this already.  
-                                sample.Metric = metric;
+                                                sample.Metric = metric;
                                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                                 sample.StackIndex = allocStack;
                                                 stackSource.AddSample(sample);
-                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
-                            });
+                                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
+                                            });
                                     }
                                 });
                 eventSource.Process();
@@ -5104,8 +5104,8 @@ table {
                 Action<MapFileTraceData> mapUnmapFile = delegate (MapFileTraceData data)
                 {
                     sample.Metric = data.ViewSize;
-    // If it is a UnMapFile or MapFileDCStop event
-    if (data.Opcode == (TraceEventOpcode)38)
+                    // If it is a UnMapFile or MapFileDCStop event
+                    if (data.Opcode == (TraceEventOpcode)38)
                     {
                         Debug.Assert(data.OpcodeName == "UnmapFile");
                         sample.StackIndex = StackSourceCallStackIndex.Invalid;
@@ -5120,8 +5120,8 @@ table {
                     else
                     {
                         Debug.Assert(data.OpcodeName == "MapFile" || data.OpcodeName == "MapFileDCStart");
-        // Create a call stack that ends with 'MapFile <fileName> (<fileDirectory>)'
-        var nodeName = "MapFile";
+                        // Create a call stack that ends with 'MapFile <fileName> (<fileDirectory>)'
+                        var nodeName = "MapFile";
                         var fileName = data.FileName;
                         if (fileName.Length > 0)
                             nodeName = nodeName + " " + GetFileName(fileName) + " (" + GetDirectoryName(fileName) + ")";
@@ -5148,10 +5148,10 @@ table {
                                         VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE |
                                         VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) != 0)
                                     {
-                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
-                        // process and occur before the process start event, which is what Process() uses to find it. 
-                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
-                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
+                                        // Can't use data.Process() because some of the virtual allocs occur in the process that started the
+                                        // process and occur before the process start event, which is what Process() uses to find it. 
+                                        // TODO this code assumes that process launch is within 1 second and process IDs are not aggressively reused. 
+                                        var processWhereMemoryAllocated = data.Log().Processes.GetProcess(data.ProcessID, data.TimeStampRelativeMSec + 1000);
                                         if (processWhereMemoryAllocated == null)
                                         {
                                             droppedEvents++;
@@ -5163,25 +5163,25 @@ table {
                                         if (memState == null)
                                             memState = memStates[(int)processIndex] = new MemState();
 
-                        // Commit and decommit not both on together.  
-                        Debug.Assert((data.Flags &
-                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
-                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
-                        // Reserve and release not both on together.
-                        Debug.Assert((data.Flags &
-                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
-                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
+                                        // Commit and decommit not both on together.  
+                                        Debug.Assert((data.Flags &
+                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT)) !=
+                                                                    (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_DECOMMIT));
+                                        // Reserve and release not both on together.
+                                        Debug.Assert((data.Flags &
+                                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE)) !=
+                                                            (VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE | VirtualAllocTraceData.VirtualAllocFlags.MEM_RELEASE));
 
-                        // You allocate by committing or reserving.  We have already filtered out decommits which have no effect on reservation.  
-                        // Thus the only memRelease is the only one that frees.  
-                        var stackIndex = StackSourceCallStackIndex.Invalid;
+                                        // You allocate by committing or reserving.  We have already filtered out decommits which have no effect on reservation.  
+                                        // Thus the only memRelease is the only one that frees.  
+                                        var stackIndex = StackSourceCallStackIndex.Invalid;
                                         if ((data.Flags & (VirtualAllocTraceData.VirtualAllocFlags.MEM_COMMIT | VirtualAllocTraceData.VirtualAllocFlags.MEM_RESERVE)) != 0)
                                         {
                                             isAlloc = true;
-                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
-                            // But do count them.  
-                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
-                            var thread = data.Thread();
+                                            // Some of the early allocations are actually by the process that starts this process.  Don't use their stacks 
+                                            // But do count them.  
+                                            var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
+                                            var thread = data.Thread();
                                             if (thread != null)
                                                 processIDAllocatingMemory = thread.Process.ProcessID;
 
@@ -5199,12 +5199,12 @@ table {
                                             {
                                                 Debug.Assert(allocStack != StackSourceCallStackIndex.Invalid);
                                                 Debug.Assert(metric != 0);                                                  // They should trim this already.  
-                                sample.Metric = metric;
+                                                sample.Metric = metric;
                                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                                 sample.StackIndex = allocStack;
                                                 stackSource.AddSample(sample);
-                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
-                            });
+                                                // Debug.WriteLine("Sample Proc {0,12} Time {1,8:f3} Length 0x{2:x} Metric 0x{3:x} Stack {4,8} Cum {5,8}", process.Name, sample.TimeRelativeMSec, data.Length, (int) sample.Metric, (int)sample.StackIndex, memState.TotalMem);
+                                            });
                                     }
                                 });
                 eventSource.Process();
@@ -6670,8 +6670,8 @@ table {
             {
                 if (reader.Name == "StackWindowGuiState")
                     m_guiState = m_guiState.ReadFromXml(reader);
-            // These are only here for backward compatibility
-            else if (reader.Name == "FilterXml")
+                // These are only here for backward compatibility
+                else if (reader.Name == "FilterXml")
                     m_guiState.FilterGuiState.ReadFromXml(reader);
                 else if (reader.Name == "Log")
                     m_guiState.Log = reader.ReadElementContentAsString().Trim();
@@ -7140,8 +7140,8 @@ table {
             }
             return delegate (Action doAfter)
             {
-            // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
-            m_singletonStackSource = new PerfViewStackSource(this, "");
+                // By default we have a singleton source (which we dont show on the GUI) and we immediately open it
+                m_singletonStackSource = new PerfViewStackSource(this, "");
                 m_singletonStackSource.Open(parentWindow, worker);
                 doAfter?.Invoke();
             };
@@ -7588,11 +7588,11 @@ table {
                             if (callStackIdx != CallStackIndex.Invalid)
                             {
                                 StackSourceCallStackIndex stackIndex = stackSource.GetCallStack(callStackIdx, data);
-                            // Tack on event name
-                            var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
+                                // Tack on event name
+                                var eventNodeName = "Event " + data.ProviderName + "/" + data.EventName;
                                 stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(eventNodeName), stackIndex);
-                            // Add sample
-                            sample.StackIndex = stackIndex;
+                                // Add sample
+                                sample.StackIndex = stackIndex;
                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                 sample.Metric = 1;
                                 stackSource.AddSample(sample);
@@ -7671,6 +7671,7 @@ table {
 
             // Generate the etlx file path / name.
             string etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
+            bool isCachedEtlx = false;
             if (!File.Exists(etlxFile) || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
             {
                 FileUtilities.ForceDelete(etlxFile);
@@ -7689,14 +7690,33 @@ table {
                     return m_traceLog;
                 }
             }
+            else
+            {
+                isCachedEtlx = true;
+            }
 
             var dataFileSize = "Unknown";
             if (File.Exists(dataFileName))
                 dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
             log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
 
-            // Open the ETLX file.  
-            m_traceLog = new TraceLog(etlxFile);
+            // Open the ETLX file. 
+            try
+            {
+                m_traceLog = new TraceLog(etlxFile);
+            }
+            catch (Exception)
+            {
+                if (isCachedEtlx)
+                {
+                    //  Delete the file and try again.
+                    FileUtilities.ForceDelete(etlxFile);
+                    if (!File.Exists(etlxFile))
+                        return GetTraceLog(log);
+                }
+                throw;
+            }
+
             m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
             if (App.CommandLineArgs.UnsafePDBMatch)
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
