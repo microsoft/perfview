@@ -7671,8 +7671,8 @@ table {
 
             // Generate the etlx file path / name.
             string etlxFile = CacheFiles.FindFile(dataFileName, ".etlx");
-            bool isCachedEtlx = File.Exists(etlxFile);
-            if (!isCachedEtlx || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
+            bool isCachedEtlx = false;
+            if (!File.Exists(etlxFile) || File.GetLastWriteTimeUtc(etlxFile) < File.GetLastWriteTimeUtc(dataFileName))
             {
                 FileUtilities.ForceDelete(etlxFile);
                 log.WriteLine("Creating ETLX file {0} from {1}", etlxFile, dataFileName);
@@ -7689,6 +7689,10 @@ table {
                     m_noTraceLogInfo = true;
                     return m_traceLog;
                 }
+            }
+            else
+            {
+                isCachedEtlx = true;
             }
 
             var dataFileSize = "Unknown";
