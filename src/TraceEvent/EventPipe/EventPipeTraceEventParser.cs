@@ -20,7 +20,7 @@ namespace Microsoft.Diagnostics.Tracing.EventPipe
         /// Give meta-data for an event, passed as a EventPipeEventMetaDataHeader and readerForParameters
         /// which is a StreamReader that points at serialized parameter information, decode the meta-data
         /// and register the meta-data with the TraceEventParser infrastruture.   The readerForParameters
-        /// is advanced beyond its parameters.  
+        /// is advanced beyond the event parameters information.  
         /// </summary>
         internal void OnNewEventPipeEventDefinition(EventPipeEventMetaDataHeader eventMetaDataHeader, PinnedStreamReader readerForParameters)
         {
