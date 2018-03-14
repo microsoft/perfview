@@ -297,7 +297,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// <summary>
     /// Private utility class.
     /// 
-    /// An EventPipeEventMetaData holds the information that can be shared among all
+    /// An EventPipeEventMetaDataHeader holds the information that can be shared among all
     /// instances of an EventPipe event from a particular provider.   Thus it contains
     /// things like the event name, provider, It however does NOT contain the data 
     /// about the event parameters (the names of the fields and their types), That is
