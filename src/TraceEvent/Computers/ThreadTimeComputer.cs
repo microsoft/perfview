@@ -271,7 +271,6 @@ namespace Microsoft.Diagnostics.Tracing
                 };
             }
 
-            // Tack on additional info about the event.
             if (IncludeEventSourceEvents)
             {
                 eventSource.Dynamic.All += delegate (TraceEvent data)
@@ -307,6 +306,7 @@ namespace Microsoft.Diagnostics.Tracing
 
                     StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
 
+                    // Tack on additional info about the event.
                     var fieldNames = data.PayloadNames;
                     for (int i = 0; i < fieldNames.Length; i++)
                     {

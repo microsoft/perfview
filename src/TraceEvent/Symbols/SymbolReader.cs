@@ -286,8 +286,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
         public ManagedSymbolModule OpenSymbolFile(string pdbFilePath)
         {
-            ManagedSymbolModule ret;
-            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ret))
+            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ManagedSymbolModule ret))
             {
                 Stream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 byte[] firstBytes = new byte[4];
@@ -301,7 +300,7 @@ namespace Microsoft.Diagnostics.Symbols
                 else
                 {
                     stream.Dispose();
-                    ret = new NativeSymbolModule(this, pdbFilePath) { LookupAssemblyNameForCompiledNative = this.LookupAssemblyNameForCompiledNative };
+                    ret = new NativeSymbolModule(this, pdbFilePath);
                 }
                 m_symbolModuleCache.Add(pdbFilePath, ret);
             }
@@ -402,12 +401,6 @@ namespace Microsoft.Diagnostics.Symbols
         /// A place to log additional messages 
         /// </summary>
         public TextWriter Log { get { return m_log; } }
-
-        /// <summary>
-        /// Sets whether try to look for assembly name for compiled to native assemblies.
-        /// Default to because the code was introduced without this flag.
-        /// </summary>
-        public bool LookupAssemblyNameForCompiledNative { get; set; } = true;
 
         /// <summary>
         /// Given a full filename path to an NGEN image, insure that there is an NGEN image for it

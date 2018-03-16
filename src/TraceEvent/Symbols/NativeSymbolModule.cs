@@ -107,27 +107,24 @@ namespace Microsoft.Diagnostics.Symbols
                 ret = ret.Substring(0, dollarIdx);
 
             // See if we have a Project N map that maps $_NN to a pre-merged assembly name 
-            if (LookupAssemblyNameForCompiledNative)
+            var mergedAssembliesMap = GetMergedAssembliesMap();
+            if (mergedAssembliesMap != null)
             {
-                var mergedAssembliesMap = GetMergedAssembliesMap();
-                if (mergedAssembliesMap != null)
+                bool prefixMatchFound = false;
+                Regex prefixMatch = new Regex(@"\$(\d+)_");
+                ret = prefixMatch.Replace(ret, delegate (Match m)
                 {
-                    bool prefixMatchFound = false;
-                    Regex prefixMatch = new Regex(@"\$(\d+)_");
-                    ret = prefixMatch.Replace(ret, delegate (Match m)
-                    {
-                        prefixMatchFound = true;
-                        var original = m.Groups[1].Value;
-                        var moduleIndex = int.Parse(original);
-                        return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
-                    });
+                    prefixMatchFound = true;
+                    var original = m.Groups[1].Value;
+                    var moduleIndex = int.Parse(original);
+                    return GetAssemblyNameFromModuleIndex(mergedAssembliesMap, moduleIndex, original);
+                });
 
-                    // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
-                    // the assembly containing System.Object - the implicit module number is int.MaxValue
+                // By default - .NET native compilers do not generate a $#_ prefix for the methods coming from 
+                // the assembly containing System.Object - the implicit module number is int.MaxValue
 
-                    if (!prefixMatchFound)
-                        ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
-                }
+                if (!prefixMatchFound)
+                    ret = GetAssemblyNameFromModuleIndex(mergedAssembliesMap, int.MaxValue, String.Empty) + ret;
             }
             return ret;
         }
@@ -959,18 +956,16 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         }
 
         /// <summary>
-        /// Decide if we try to get a Project N map that maps $_NN to a pre-merged assembly name.
-        /// This is an exprimental code. Default to true because we don't have this switch when the
-        /// code is initially introduced. Deprecate this when the code is mature enough.
-        /// </summary>
-        internal bool LookupAssemblyNameForCompiledNative { get; set; } = true;
-
-        /// <summary>
         /// For Project N modules it returns the list of pre merged IL assemblies and the corresponding mapping.
         /// </summary>
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, string> GetMergedAssembliesMap()
         {
+#if NETSTANDARD1_6
+            _log.WriteLine($"WARNING: {nameof(GetMergedAssembliesMap)} is not supported in .NETStandard 1.6.");
+            return null;
+#else
+            // TODO: Verify if Dia can be loaded when TraceEvent targets .NET Standard 2.0.
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
@@ -987,6 +982,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                 m_checkedForMergedAssemblies = true;
             }
             return m_mergedAssemblies;
+#endif
         }
 
         /// <summary>
