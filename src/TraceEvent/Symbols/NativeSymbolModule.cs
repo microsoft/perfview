@@ -961,8 +961,12 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
         [Obsolete("This is experimental, you should not use it yet for non-experimental purposes.")]
         public Dictionary<int, string> GetMergedAssembliesMap()
         {
+            // TODO: Verify if Dia can be loaded when TraceEvent targets .NET Standard 2.0.
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
+#if NETSTANDARD1_6
+                _log.WriteLine($"WARNING: {nameof(GetMergedAssembliesMap)} is not supported in .NETStandard 1.6.");
+#else
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
                 foreach (IDiaInputAssemblyFile inputAssembly in diaMergedAssemblyRecords)
@@ -974,6 +978,7 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
                         m_mergedAssemblies = new Dictionary<int, string>();
                     m_mergedAssemblies.Add(index, assemblyName);
                 }
+#endif
                 m_checkedForMergedAssemblies = true;
             }
             return m_mergedAssemblies;

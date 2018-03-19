@@ -286,8 +286,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
         public ManagedSymbolModule OpenSymbolFile(string pdbFilePath)
         {
-            ManagedSymbolModule ret;
-            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ret))
+            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ManagedSymbolModule ret))
             {
                 Stream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 byte[] firstBytes = new byte[4];
@@ -1382,7 +1381,7 @@ namespace Microsoft.Diagnostics.Symbols
         private Cache<PdbSignature, string> m_pdbPathCache;
         private string m_symbolPath;
 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1430,7 +1429,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         protected virtual string GetSourceLinkJson() { return null; }
 
-#region private 
+        #region private 
 
         protected ManagedSymbolModule(SymbolReader reader, string path) { _pdbPath = path; _reader = reader; }
 
@@ -1513,7 +1512,7 @@ namespace Microsoft.Diagnostics.Symbols
         SymbolReader _reader;
         List<Tuple<string, string>> _sourceLinkMapping;      // Used by SourceLink to map build paths to URLs (see GetUrlForFilePath)
         bool _sourceLinkMappingInited;                       // Lazy init flag. 
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1530,7 +1529,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>
         public int LineNumber { get; private set; }
 
-#region private
+        #region private
         internal SourceLocation(SourceFile sourceFile, int lineNumber)
         {
             // The library seems to see FEEFEE for the 'unknown' line number.  0 seems more intuitive
@@ -1540,7 +1539,7 @@ namespace Microsoft.Diagnostics.Symbols
             SourceFile = sourceFile;
             LineNumber = lineNumber;
         }
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -1662,7 +1661,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// </summary>; 
         public bool ChecksumMatches { get { return _checksumMatches; } }
 
-#region private 
+        #region private 
         protected SourceFile(ManagedSymbolModule symbolModule) { _symbolModule = symbolModule; }
 
         protected TextWriter _log { get { return _symbolModule._log; } }
@@ -1783,7 +1782,7 @@ namespace Microsoft.Diagnostics.Symbols
         protected string _filePath;
         bool _getSourceCalled;
         bool _checksumMatches;
-#endregion
+        #endregion
     }
 }
 

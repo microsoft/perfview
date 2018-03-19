@@ -1140,7 +1140,8 @@ namespace Microsoft.Diagnostics.Tracing
                 if (creator == null)        // If we don't have a creator for the ASP.NET event, make one since WCF and others are children of it and we want to see that 
                 {
                     // We create another 
-                    creator = OnStart(data, extraStartInfo, &relatedActivityId, thread, null, "RecHttp", useCurrentActivityForCreatorAsFallback: false);
+                    // It is closer to Start Event than the Send Event, uses &activityID.
+                    creator = OnStart(data, extraStartInfo, &activityID, thread, null, "RecHttp", useCurrentActivityForCreatorAsFallback: false);
                     Debug.Assert(creator.Creator == null);  // will try to use the relatedActivityId field but we know that that was empty
                     creator.killIfChildDies = true;         // Mark that we should clean up
                 }
