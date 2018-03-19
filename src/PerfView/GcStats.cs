@@ -123,7 +123,7 @@ namespace Stats
             for (int genNum = 0; genNum < runtime.GC.Generations().Length; genNum++)
             {
                 GCStats gen = (runtime.GC.Generations()[genNum] != null) ? runtime.GC.Generations()[genNum] : new GCStats();
-                writer.WriteLine("<TR>" +
+                writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(genNum) + ">" +
                                  "<TD Align=\"Center\">{0}</TD>" +
                                  "<TD Align=\"Center\">{1}</TD>" +
                                  "<TD Align=\"Center\">{2:n1}</TD>" +
@@ -310,7 +310,7 @@ namespace Stats
         public static void PerGenerationCsv(string filePath, TraceLoadedDotNetRuntime runtime)
         {
             // Sadly, streamWriter does not have a way of setting the IFormatProvider property
-            // So we have to do it in this ugly, global variable way.  
+            // So we have to do it in this ugly, global variable way.
             string listSeparator = Thread.CurrentThread.CurrentCulture.TextInfo.ListSeparator;
             using (var writer = File.CreateText(filePath))
             {
@@ -452,7 +452,7 @@ namespace Stats
                 foreach (var perHeapHistory in gc.PerHeapHistories)
                 {
                     writer.Write("      <PerHeapHistory");
-#if false // TODO FIX NOW 
+#if false // TODO FIX NOW
                     writer.Write(" MemoryPressure=\"{0:n0}\"", gc.perHeapHistory.MemoryPressure);
                     writer.Write(" MechanismHeapExpand=\"{0}\"", gc.perHeapHistory.MechanismHeapExpand);
                     writer.Write(" MechanismHeapCompact=\"{0}\"", gc.perHeapHistory.MechanismHeapCompact);
@@ -660,16 +660,16 @@ namespace Stats
 
                     var allocGen0MB = _event.UserAllocated[(int)Gens.Gen0];
 
-                    writer.WriteLine("<TR>" +
+                    writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
                                     "<TD Align=\"right\">{0}</TD>" +      // GC index
                                     "<TD Align=\"right\">{1:n3}</TD>" +   // Pause start
                                     "<TD Align=\"right\">{2}</TD>" +      // Reason
                                     "<TD Align=\"right\">{3}</TD>" +      // Gen
                                     "<TD Align=\"right\">{4:n3}</TD>" +   // Suspension time
-                                    "<TD Align=\"right\">{5:n3}</TD>" +   // Pause duration 
+                                    "<TD Align=\"right\">{5:n3}</TD>" +   // Pause duration
                                     "<TD Align=\"right\">{6:n1}</TD>" +   // % pause time since last GC
                                     "<TD Align=\"right\">{7:n1}</TD>" +   // % time in GC
-                                    "<TD Align=\"right\">{8:n3}</TD>" +   // Amount Allocated in gen0 
+                                    "<TD Align=\"right\">{8:n3}</TD>" +   // Amount Allocated in gen0
                                     "<TD Align=\"right\">{9:n2}</TD>" +   // Gen0 AllocRate
                                     "<TD Align=\"right\">{10:n3}</TD>" +   // Size at the beginning of this GC
                                     "<TD Align=\"right\">{11:n3}</TD>" +   // Size at the end of this GC
@@ -693,7 +693,7 @@ namespace Stats
                                     (ShowPinnedInformation(runtime.GC.Stats()) ?
                                     "<TD Align=\"right\">{28:n0}</TD>" +  // size of pinned object this GC saw
                                     "<TD Align=\"right\">{29:n0}</TD>" + // percent of pinned object this GC saw
-                                    "<TD Align=\"right\">{30:n0}</TD>" + // size of pinned plugs 
+                                    "<TD Align=\"right\">{30:n0}</TD>" + // size of pinned plugs
                                     "<TD Align=\"right\">{31:n0}</TD>"  // size of pinned plugs by GC
                                     : string.Empty) +
 
@@ -805,7 +805,8 @@ namespace Stats
                         continue;
                     }
 
-                    writer.WriteLine("<TR><TD Align=\"center\">{0}</TD>{1}",
+                    writer.WriteLine("<TR " + GetGenerationBackgroundColorAttribute(_event.Generation) + ">" +
+                                     "<TD Align=\"center\">{0}</TD>{1}",
                                      _event.Number,
                                      PrintCondemnedReasonsToHtml(_event));
                 }
@@ -911,7 +912,7 @@ namespace Stats
             if (gc.PerHeapCondemnedReasons.Length != 1)
             {
                 // Only need to print out the heap index for server GC - when we are displaying this
-                // in the GCStats Html page we only display the first heap we find that caused us to 
+                // in the GCStats Html page we only display the first heap we find that caused us to
                 // collect the generation we collect.
                 HeapIndexHighestGen = gc.FindFirstHighestCondemnedHeap();
 
@@ -950,10 +951,14 @@ namespace Stats
                 {
                     if (i == CondemnedReasonGroup.Induced)
                     {
-                        sb.Append((InducedType)perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                        var val = (InducedType)perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i];
+                        if (val != 0) sb.Append(val);
                     }
                     else
-                        sb.Append(perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i]);
+                    {
+                        var val = perHeapCondemnedReasons[HeapIndexHighestGen].CondemnedReasonGroups[(int)i];
+                        if (val != 0) sb.Append(val);
+                    }
                 }
                 sb.Append("</TD>");
             }
@@ -982,6 +987,23 @@ namespace Stats
             new string[] {"Ephemeral<BR/>Before<BR/>BGC", "Ephemeral GC before a background GC starts"},
             new string[] {"Internal<BR/>Tuning", "Internal tuning"}
         };
+
+        // Change background color according to generation
+        //          gen0 = robin egg blue
+        //          gen1 = light sky blue
+        //          gen2 = iceberg
+        private static string GetGenerationBackgroundColorAttribute(int gen)
+        {
+            switch (gen)
+            {
+                case 2:
+                    return "bgcolor=#56A5EC";
+                case 1:
+                    return "bgcolor=#82CAFF";
+                default:
+                    return "bgcolor=#BDEDFF";
+            }
+        }
         #endregion
     }
 
@@ -1240,8 +1262,8 @@ namespace Stats
                     heap.GcJoins[currentJoinEventIndex].AbsoluteTimestampMsc,
                     heap.GcJoins[currentJoinEventIndex].Heap,
                     currentJoinEventIndex,
-                    heap.GcJoins[currentJoinEventIndex].Type, 
-                    heap.GcJoins[currentJoinEventIndex].Time, 
+                    heap.GcJoins[currentJoinEventIndex].Type,
+                    heap.GcJoins[currentJoinEventIndex].Time,
                     state);
             }
         }
