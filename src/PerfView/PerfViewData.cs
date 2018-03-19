@@ -3848,8 +3848,9 @@ table {
                 else
                     return eventLog.ThreadTimeAspNetStacks();
             }
-            else if (streamName == "Thread Time (with StartStop Activities)")
+            else if (streamName.StartsWith("Thread Time (with StartStop Activities)"))
             {
+                // Handles the normal and (CPU ONLY) case
                 var startStopSource = new MutableTraceEventStackSource(eventLog);
 
                 var computer = new ThreadTimeStackComputer(eventLog, App.GetSymbolReader(eventLog.FilePath));
@@ -6225,6 +6226,8 @@ table {
                 if (hasReadyThreadStacks)
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
             }
+            else if (hasCPUStacks && hasTplStacks)
+                m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities) (CPU ONLY)"));
 
             if (hasDiskStacks)
                 advanced.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
