@@ -442,7 +442,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         internal CtfNamedRange GetValue(string name)
         {
-            return Values.Where(p => p.Name == name).Single();
+            return Values.Single(p => p.Name == name);
         }
 
         public override object Read(byte[] buffer)
@@ -570,7 +570,26 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
         internal CtfField GetVariant(string name)
         {
-            return Union.Where(f => f.Name == name).Single();
+            // PERF: this method is on the critical path.
+            // Prefer inlining Single code to benefit from array/foreach optim and avoid
+            // allocating enumerator.
+            CtfField currentField = null;
+            int nbFields = 0;
+            foreach (var ctfField in Union)
+            {
+                if (ctfField.Name == name)
+                {
+                    currentField = ctfField;
+                    nbFields++;
+                }
+            }
+
+            if (nbFields == 0)
+                throw new InvalidOperationException($"No field was found for the name {name}");
+
+            if (nbFields > 1)
+                throw new InvalidOperationException($"more than one CtfField was found for the name {name}");
+            return currentField;
         }
 
         public override int GetSize()
