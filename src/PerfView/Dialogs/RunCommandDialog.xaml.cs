@@ -649,7 +649,7 @@ namespace PerfView
             var cpuCounters = TraceEventProfileSources.GetInfo();
             foreach (var cpuCounter in cpuCounters.Values)
             {
-                var defaultCount = Math.Max(100000, cpuCounter.MinInterval);
+                var defaultCount = Math.Max(1000000, cpuCounter.MinInterval);
                 if (cpuCounter.Name == "Timer")
                     defaultCount = 10000;
                 var cpuCounterSpec = cpuCounter.Name + ":" + defaultCount.ToString();

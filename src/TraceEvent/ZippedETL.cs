@@ -128,21 +128,21 @@ namespace Microsoft.Diagnostics.Tracing
                         Log.WriteLine("ZIP output file {0}", ZipArchivePath);
                         Log.WriteLine("Time: {0}", DateTime.Now);
                         Log.Flush();
+                    }
 
-                        if (m_additionalFiles != null)
+                    if (m_additionalFiles != null)
+                    {
+                        foreach (Tuple<string, string> additionalFile in m_additionalFiles)
                         {
-                            foreach (Tuple<string, string> additionalFile in m_additionalFiles)
+                            // We dont use CreatEntryFromFile because it will not open files thar are open for writting.  
+                            // Since a typical use of this is to write the log file, which will be open for writing, we 
+                            // use File.Open and allow this case explicitly. 
+                            using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                             {
-                                // We dont use CreatEntryFromFile because it will not open files thar are open for writting.  
-                                // Since a typical use of this is to write the log file, which will be open for writing, we 
-                                // use File.Open and allow this case explicitly. 
-                                using (Stream fs = File.Open(additionalFile.Item1, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                                {
-                                    // Item2 tells you the path in the archive.  
-                                    var entry = zipArchive.CreateEntry(additionalFile.Item2, compressionLevel);
-                                    using (Stream es = entry.Open())
-                                        fs.CopyTo(es);
-                                }
+                                // Item2 tells you the path in the archive.  
+                                var entry = zipArchive.CreateEntry(additionalFile.Item2, compressionLevel);
+                                using (Stream es = entry.Open())
+                                    fs.CopyTo(es);
                             }
                         }
                     }

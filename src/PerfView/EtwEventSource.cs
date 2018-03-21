@@ -417,6 +417,7 @@ namespace PerfView
             columnsForSelectedEvents["ActivityInfo"] = "ActivityInfo";
             columnsForSelectedEvents["StartStopActivity"] = "StartStopActivity";
             columnsForSelectedEvents["ThreadID"] = "ThreadID";
+            columnsForSelectedEvents["ProcessorNumber"] = "ProcessorNumber";
             columnsForSelectedEvents["ActivityID"] = "ActivityID";
             columnsForSelectedEvents["RelatedActivityID"] = "RelatedActivityID";
             columnsForSelectedEvents["HasStack"] = "HasStack";
@@ -482,6 +483,7 @@ namespace PerfView
                     AddField("HasBlockingStack", (asCSwitch.BlockingStack() != CallStackIndex.Invalid).ToString(), columnOrder, restString);
 
                 AddField("ThreadID", data.ThreadID.ToString("n0"), columnOrder, restString);
+                AddField("ProcessorNumber", data.ProcessorNumber.ToString(), columnOrder, restString);
 
                if (0 < durationMSec)
                     AddField("DURATION_MSEC", durationMSec.ToString("n3"), columnOrder, restString);

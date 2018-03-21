@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// These are the kernel events that are not allowed in containers.  Can be subtracted out.  
             /// </summary>
-            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch), 
+            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch),
 
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
@@ -2380,6 +2380,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new ISRTraceData(value, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 67, "ISR", ProviderGuid, ProviderName, State));
+                source.RegisterEventTemplate(new ISRTraceData(value, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 50, "ISR", ProviderGuid, ProviderName, State));
             }
             remove
             {
@@ -2865,7 +2866,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[192];
+                var templates = new TraceEvent[193];
                 templates[0] = new EventTraceHeaderTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 0, "Header", ProviderGuid, ProviderName, null);
                 templates[1] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 5, "Extension", ProviderGuid, ProviderName, null);
                 templates[2] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 32, "EndExtension", ProviderGuid, ProviderName, null);
@@ -3063,7 +3064,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[189] = new ObjectDuplicateHandleTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 34, "DuplicateHandle", ProviderGuid, ProviderName, null);
                 templates[190] = new ObjectTypeNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null);
                 templates[191] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
-
+                templates[192] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 50, "ISR", ProviderGuid, ProviderName, null);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -9327,6 +9328,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public int ReturnValue { get { return GetByteAt(HostOffset(12, 1)); } }
         public int Vector { get { return GetByteAt(HostOffset(13, 1)); } }
         // Skipping Reserved
+        public int Message
+        {
+            get
+            {
+                if (24 <= HostOffset(20, 1))
+                    return GetInt32At(HostOffset(16, 1));
+                else
+                    return 0;
+            }
+        }
 
         #region Private
         internal ISRTraceData(Action<ISRTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, KernelTraceEventParserState state)
@@ -9353,6 +9364,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             XmlAttribHex(sb, "Routine", Routine);
             XmlAttrib(sb, "ReturnValue", ReturnValue);
             XmlAttrib(sb, "Vector", Vector);
+            XmlAttrib(sb, "Message", Message);
             sb.Append("/>");
             return sb;
         }
@@ -9362,7 +9374,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ReturnValue", "Vector", "ProcessorNumber" };
+                    payloadNames = new string[] { "ElapsedTimeMSec", "Routine", "ReturnValue", "Vector", "Message", "ProcessorNumber" };
                 return payloadNames;
             }
         }
@@ -9380,6 +9392,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 3:
                     return Vector;
                 case 4:
+                    return Message;
+                case 5:
                     return ProcessorNumber;
                 default:
                     Debug.Assert(false, "Bad field index");

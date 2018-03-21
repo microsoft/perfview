@@ -2492,6 +2492,8 @@ namespace Microsoft.Diagnostics.Tracing
                     continue;
                 if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
                     continue;
+                if (eventName == "PerfInfoISR")                     // One event has two templates.  
+                    continue;
 
                 // The IIs parser uses Cap _ instead of PascalCase, normalize
                 if (GetType().Name == "IisTraceEventParser")
@@ -2514,6 +2516,8 @@ namespace Microsoft.Diagnostics.Tracing
                 if (eventName == "MemoryPageAccess" || eventName == "MemoryProcessMemInfo")  // One event has two templates.  
                     return;
                 if (eventName == "GCSampledObjectAllocation")       // One event has two templates. 
+                    return;
+                if (eventName == "PerfInfoISR")                     // One event has two templates. 
                     return;
                 if (eventName == "FileIO")
                     eventName = "FileIOName";       // They use opcode 0 which gets truncated.  
