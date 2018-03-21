@@ -35,9 +35,6 @@ namespace PerfView
         // [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static int Main(string[] args)
         {
-            string s = DateTime.Now.ToString("MM-dd-yy-HH:mm:ss");
-            Trace.Write(s);
-
             CommandProcessor = new CommandProcessor();
 
             StreamWriter writerToCleanup = null;   // If we create a log file, we need to clean it up.  
