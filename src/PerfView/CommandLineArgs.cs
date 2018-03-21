@@ -133,6 +133,7 @@ namespace PerfView
 
         // Stop options.  
         public bool NoRundown;
+       public bool NoNGenPdbs;
         public bool NoNGenRundown;
         public bool NoClrRundown;
         public bool NoV2Rundown;
@@ -320,7 +321,8 @@ namespace PerfView
                 "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " + 
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
-            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't request CLR Rundown events.");
+            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
+            parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
             parser.DefineOptionalQualifier("NoNGenRundown", ref NoNGenRundown,
                 "Don't do rundown of symbolic information in NGEN images (only needed pre V4.5).");
             parser.DefineOptionalQualifier("NoClrRundown", ref NoClrRundown,
