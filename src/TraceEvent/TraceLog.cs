@@ -1069,6 +1069,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             DbgIDRSDSTraceData lastDbgData = null;
             ImageIDTraceData lastImageIDData = null;
             FileVersionTraceData lastFileVersionData = null;
+            TraceModuleFile lastTraceModuleFile = null;
+            long lastTraceModuleFileQPC = 0;
 
             kernelParser.ImageGroup += delegate (ImageLoadTraceData data)
             {
@@ -1106,13 +1108,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     moduleFile.productName = lastFileVersionData.ProductName;
                 }
 
-                /* allow these to remain in the trace.  Otherwise you can't just look at the events view and look up DLL info
-                 * which is pretty convenient.   If we have a good image view that we can remove these. 
-                if (data.Opcode == TraceEventOpcode.DataCollectionStart)
-                    bookKeepingEvent = true;
-                else if (data.Opcode == TraceEventOpcode.DataCollectionStop)
-                    bookKeepingEvent = true;
-                 ***/
+                // Remember this ModuleFile because there can be Image* events after this with 
+                // the same timestamp that have information that we need to put  into it 
+                // (the logic above handles the case when those other events are first).  
+                lastTraceModuleFile = moduleFile;
+                lastTraceModuleFileQPC = data.TimeStampQPC;
             };
             var symbolParser = new SymbolTraceEventParser(rawEvents);
 
@@ -1124,18 +1124,43 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             symbolParser.ImageIDDbgID_RSDS += delegate (DbgIDRSDSTraceData data)
             {
                 hasPdbInfo = true;
-                lastDbgData = (DbgIDRSDSTraceData)data.Clone();
                 noStack = true;
+                // The ImageIDDbgID_RSDS may be after the ImageLoad
+                if (lastTraceModuleFile != null &&  lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.pdbName = data.PdbFileName;
+                    lastTraceModuleFile.pdbSignature = data.GuidSig;
+                    lastTraceModuleFile.pdbAge = data.Age;
+                    lastDbgData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastDbgData = (DbgIDRSDSTraceData)data.Clone();
             };
             symbolParser.ImageID += delegate (ImageIDTraceData data)
             {
-                lastImageIDData = (ImageIDTraceData)data.Clone();
                 noStack = true;
+                // The ImageID may be after the ImageLoad
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.timeDateStamp = data.TimeDateStamp;
+                    lastImageIDData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastImageIDData = (ImageIDTraceData)data.Clone();
             };
             symbolParser.ImageIDFileVersion += delegate (FileVersionTraceData data)
             {
-                lastFileVersionData = (FileVersionTraceData)data.Clone();
                 noStack = true;
+                // The ImageIDFileVersion may be after the ImageLoad
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.fileVersion = data.FileVersion;
+                    lastTraceModuleFile.productVersion = data.ProductVersion;
+                    lastTraceModuleFile.productName = data.ProductName;
+                    lastFileVersionData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastFileVersionData = (FileVersionTraceData)data.Clone();
             };
             symbolParser.ImageIDOpcode37 += delegate
             {
