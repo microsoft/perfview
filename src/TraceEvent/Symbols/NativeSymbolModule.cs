@@ -964,8 +964,8 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             // TODO: Verify if Dia can be loaded when TraceEvent targets .NET Standard 2.0.
             if (m_mergedAssemblies == null && !m_checkedForMergedAssemblies)
             {
-#if NETSTANDARD1_6
-                _log.WriteLine($"WARNING: {nameof(GetMergedAssembliesMap)} is not supported in .NETStandard 1.6.");
+#if NETSTANDARD1_6 || NETSTANDARD2_0
+                _log.WriteLine($"WARNING: {nameof(GetMergedAssembliesMap)} is not supported in .NETStandard.");
 #else
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
