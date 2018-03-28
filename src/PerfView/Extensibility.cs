@@ -494,6 +494,7 @@ namespace PerfViewExtensibility
                         if (App.CommandLineArgs.KeepAllEvents)
                             options.KeepAllEvents = true;
                         options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+                        options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
                         options.SkipMSec = App.CommandLineArgs.SkipMSec;
                         options.OnLostEvents = onLostEvents;
                         options.LocalSymbolsOnly = false;

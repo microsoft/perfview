@@ -2378,6 +2378,8 @@ namespace PerfView
                 cmdLineArgs += " /UnsafePdbMatch";
             if (parsedArgs.ShowUnknownAddresses)
                 cmdLineArgs += " /ShowUnknownAddresses";
+            if (parsedArgs.ContinueOnError)
+                cmdLineArgs += " /ContinueOnError";
             if (parsedArgs.MaxEventCount != 0)
                 cmdLineArgs += " /MaxEventCount:" + parsedArgs.MaxEventCount.ToString();
             if (parsedArgs.SkipMSec != 0)

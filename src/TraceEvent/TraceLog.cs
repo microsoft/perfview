@@ -496,7 +496,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 // we need to guard our data structures from concurrent access.  TraceLog data 
                 // is modified by this code as well as code in FlushRealTimeEvents.  
-                lock (realTimeQueue)    
+                lock (realTimeQueue)
                 {
                     // we delay things so we have a chance to match up stacks.  
 
@@ -577,7 +577,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
             GC.SuppressFinalize(toSend);    // Tell the finalizer you don't need it because I will do the cleanup
             // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.  
-            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);   
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
         }
 
         /// <summary>
@@ -1536,12 +1536,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             kernelParser.PerfInfoCollectionStart += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 startSeen = true;
                 sampleProfileInterval100ns = data.NewInterval;
             };
 
             kernelParser.PerfInfoSetInterval += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 setSeen = true;
                 if (!startSeen)
                     sampleProfileInterval100ns = data.OldInterval;
@@ -1549,6 +1555,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             kernelParser.PerfInfoSetInterval += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 if (!setSeen && !startSeen)
                     sampleProfileInterval100ns = data.OldInterval;
             };
@@ -1745,7 +1754,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (rawEtwEvents != null)
                 rawEtwEvents.DisallowEventIndexAccess = true;
 #endif
-            rawEvents.Process();                  // Run over the data. 
+            try
+            {
+                rawEvents.Process();                  // Run over the data. 
+            }
+            catch (Exception e)
+            {
+                options.ConversionLog.WriteLine("[ERROR: processing events ****]");
+                if (options.ContinueOnError)
+                {
+                    options.ConversionLog.WriteLine("***** The following Exception was thrown during processing *****");
+                    options.ConversionLog.WriteLine(e.ToString());
+                    options.ConversionLog.WriteLine("***** However ContinueOnError is set, so we continue processing  what we have *****");
+                    options.ConversionLog.WriteLine("Continuing Processing...");
+                }
+                else
+                {
+                    options.ConversionLog.WriteLine("***** Consider using /ContinueOnError to ignore the bad part of the trace.  *****");
+                    throw;
+                }
+            }
 #if DEBUG
             if (rawEtwEvents != null)
                 rawEtwEvents.DisallowEventIndexAccess = false;
@@ -9097,6 +9125,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         ///  starts.  
         /// </summary>
         public string ExplicitManifestDir;
+        /// <summary>
+        /// If errors occur during conversion, just assume the traced ended at that point and continue. 
+        /// </summary>
+        public bool ContinueOnError;
         #region private
         private TextWriter m_ConversionLog;
         #endregion
