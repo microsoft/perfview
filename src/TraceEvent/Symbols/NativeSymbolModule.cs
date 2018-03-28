@@ -964,10 +964,14 @@ sd.exe -p minkerneldepot.sys-ntgroup.ntdev.microsoft.com:2020 print -o "C:\Users
             {
                 IDiaEnumInputAssemblyFiles diaMergedAssemblyRecords;
                 m_session.findInputAssemblyFiles(out diaMergedAssemblyRecords);
-                int count = diaMergedAssemblyRecords.count;
-                for (uint i = 0; i < count; i++)
+                for (; ;)
                 {
-                    IDiaInputAssemblyFile inputAssembly = diaMergedAssemblyRecords.Item(i);
+                    IDiaInputAssemblyFile inputAssembly;
+                    uint fetchCount;
+                    diaMergedAssemblyRecords.Next(1, out inputAssembly, out fetchCount);
+                    if (fetchCount != 1)
+                        break;
+
                     int index = (int)inputAssembly.index;
                     string assemblyName = inputAssembly.fileName;
 
