@@ -4687,8 +4687,10 @@ table {
                                             var callStackIdx = asCSwitch.BlockingStack();
                                             if (callStackIdx != CallStackIndex.Invalid)
                                             {
+                                                StackSourceCallStackIndex blockingStackIndex = stackSource.GetCallStack(callStackIdx, data);
                                                 // Make an entry for the blocking stacks as well.  
-                                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, stackSource.GetCallStack(callStackIdx, data));
+                                                blockingStackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldThreadState " + asCSwitch.OldThreadState), blockingStackIndex);
+                                                sample.StackIndex = stackSource.Interner.CallStackIntern(blockingFrame, blockingStackIndex);
                                                 sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                                 sample.Metric = 1;
                                                 stackSource.AddSample(sample);
@@ -4699,8 +4701,10 @@ table {
                                         {
                                             stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData NewProcessName " + asCSwitch.NewProcessName), stackIndex);
                                             stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData OldProcessName " + asCSwitch.OldProcessName), stackIndex);
+
                                             stackIndex = stackSource.Interner.CallStackIntern(cswitchEventFrame, stackIndex);
                                         }
+
                                         goto ADD_SAMPLE;
                                     }
 
@@ -6385,6 +6389,7 @@ table {
             if (App.CommandLineArgs.KeepAllEvents)
                 options.KeepAllEvents = true;
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
@@ -7438,6 +7443,7 @@ table {
             if (App.CommandLineArgs.KeepAllEvents)
                 options.KeepAllEvents = true;
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             //options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;
@@ -7664,6 +7670,7 @@ table {
             if (App.CommandLineArgs.KeepAllEvents)
                 options.KeepAllEvents = true;
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             //options.OnLostEvents = onLostEvents;
             options.LocalSymbolsOnly = false;

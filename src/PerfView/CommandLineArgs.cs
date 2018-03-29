@@ -181,6 +181,7 @@ namespace PerfView
         public float CpuSampleMSec = 1.0F;
         public bool KeepAllEvents;
         public int MaxEventCount;
+        public bool ContinueOnError;
         public double SkipMSec;
         public bool ForceNgenRundown;
         public bool DumpHeap;
@@ -337,6 +338,7 @@ namespace PerfView
                 "Useful for trimming large ETL files. 1M typically yields 300-400 Meg of data considered.");
             parser.DefineOptionalQualifier("SkipMSec", ref SkipMSec, "Skips the first N MSec of the trace.  " +
                 "Useful for trimming large ETL files in conjunction with the /MaxEventCount qualifier.");
+            parser.DefineOptionalQualifier("ContinueOnError", ref ContinueOnError, "Processes bad traces as best it can.");
 
             parser.DefineOptionalQualifier("CpuCounters", ref CpuCounters,
                 "A comma separated list of hardware CPU counters specifications NAME:COUNT to turn on.  " +

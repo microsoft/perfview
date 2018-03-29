@@ -51,6 +51,7 @@ namespace PerfViewExtensibility
             if (App.CommandLineArgs.KeepAllEvents)
                 options.KeepAllEvents = true;
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
@@ -83,6 +84,7 @@ namespace PerfViewExtensibility
             if (App.CommandLineArgs.KeepAllEvents)
                 options.KeepAllEvents = true;
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
+            options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
             options.LocalSymbolsOnly = false;
             options.ShouldResolveSymbols = delegate (string moduleFilePath) { return false; };       // Don't resolve any symbols
