@@ -59,14 +59,22 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tool you need to build PerfView is Visual Studio 2017.   The [Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/)
-can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you
+The only tools you need to build PerfView are Visual Studio 2017 and the .NET Core SDK.   The
+[Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
+along with the .NET Core SDK, has everything you need to fetch PerfView from GitHub, build and test it. We expect you
 to download Visual Studio 2017 Community Edition if you don't already have Visual Studio 2017.
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
-(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
+(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
+If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
 but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
 to do this and everything should 'just work'.    
+
+You may need to install some VS optional components, such as the Windows 8.1 SDK and the "Windows Universal CRT SDK"
+(*not* the "Windows Universal C Runtime").
+
+The .NET Core SDK is unfortunately not currently an optional component of the Visual Studio Installer, but can be
+installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
