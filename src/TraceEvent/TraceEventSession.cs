@@ -566,10 +566,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if ((flags & (KernelTraceEventParser.Keywords.Profile | KernelTraceEventParser.Keywords.PMCProfile)) != 0)
                 {
                     TraceEventNativeMethods.SetPrivilege(TraceEventNativeMethods.SE_SYSTEM_PROFILE_PRIVILEGE);
-                    var cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
+                    double cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
                     // The API seems to have an upper bound of 1 second.  
                     if (cpu100ns >= int.MaxValue || ((int)cpu100ns) > 10000000)
-                        throw new ApplicationException("CPU Sampling rate is too high.");
+                        throw new ApplicationException("CPU Sampling interval is too large.");
                     var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
                     if (!succeeded && CpuSampleIntervalMSec != 1.0F)
                        throw new ApplicationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");

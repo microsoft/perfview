@@ -7860,6 +7860,19 @@
             </a> for more on grouping.
         </li>
         <li>
+            <strong>All the CPU time is the Process Node</strong>.   By default PerfView
+            sets the Fold% textbox to 1, which means that any node in the tree that uses 
+            less than 1% of the total CPU time is 'inlined' into its parent.   This normally
+            works well, but for servers that have 100s of threads, then no thread may use
+            more than 1% of the ime (since it is split among 100s).  The result is that 
+            you lose all the detail and just see the Process node, which is not useful.
+            To fix this simply set Fold% to 0.   You may also wish to fold away the thread
+            nodes (put ^Thread in the Fold Pats Text box).  This basically says I don't care
+            what thread CPU is used on, combine them all as if they were one thread.   Once
+            you do this you can actually turn Fold% back to 1 because now you don't have 
+            100s of threads any mnore (they are treated as one). 
+        </li>
+        <li>
             <strong>&#39;BROKEN&#39; Stack Frame in Trace-</strong> During data collection when
             an event fires, a stack trace is taken.&nbsp; When this trace is incomplete it is
             called a broken stack, and can happen for a variety of reasons.&nbsp; See <a href="#BrokenStacks">Broken stacks</a>
