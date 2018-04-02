@@ -349,7 +349,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 }
                 Chunks = null;
                 // string str = Encoding.UTF8.GetString(serializedData);
-                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion, 
+                provider = new ProviderManifest(serializedData, format, majorVersion, minorVersion,
                     "Event at " + data.TimeStampRelativeMSec.ToString("f3") + " MSec");
                 provider.ISDynamic = true;
                 return provider;
@@ -941,43 +941,73 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             });
         }
         #endregion
+
         #region private
-        private int SkipToField(PayloadFetch[] payloadFetches, int index, int startOffset, int payloadLength)
+        private int SkipToField(PayloadFetch[] payloadFetches, int targetFieldIdx, int startOffset, int payloadLength)
         {
-            // search backwards for the the first field that has a fixed offset. 
-            int offset = 0;
-            int cur = index;
-            while (0 < cur)
+            int fieldOffset;
+            int fieldIdx;
+
+            // First find a valid fieldIdx, fieldOffset pair
+            if (cachedEventId == this.EventIndex && cachedFieldIdx <= targetFieldIdx && startOffset == 0)
             {
-                --cur;
-                if (payloadFetches[cur].Offset != ushort.MaxValue)
+                // We fetched a previous field, great, start from there.  
+                fieldOffset = cachedFieldOffset;
+                fieldIdx = cachedFieldIdx;
+            }
+            else
+            {
+                // no cached value, search backwards for the the first field that has a fixed offset. 
+                fieldOffset = 0;
+                fieldIdx = targetFieldIdx;
+                while (0 < fieldIdx)
                 {
-                    offset = payloadFetches[cur].Offset;
-                    break;
+                    --fieldIdx;
+                    if (payloadFetches[fieldIdx].Offset != ushort.MaxValue)
+                    {
+                        fieldOffset = payloadFetches[fieldIdx].Offset;
+                        break;
+                    }
                 }
+                fieldOffset += startOffset;
             }
 
-            offset += startOffset;
             // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
-            if (payloadLength <= offset)
+            if (payloadLength <= fieldOffset)
                 return payloadLength;
 
-            // TODO it probably does pay to remember the offsets in a particular instance, since otherwise the
-            // algorithm is N*N
-            while (cur < index)
+            // This can be N*N but because of our cache, it is not in the common case when you fetch
+            // fields in order.   
+            while (fieldIdx < targetFieldIdx)
             {
-                offset = OffsetOfNextField(ref payloadFetches[cur], offset, payloadLength);
+                fieldOffset = OffsetOfNextField(ref payloadFetches[fieldIdx], fieldOffset, payloadLength);
 
-                // If we try to skip t fields that are not present, we simply stop at the end of the buffer.  
-                if (offset == payloadLength)
+                // If we try to skip to fields that are not present, we simply stop at the end of the buffer.  
+                if (fieldOffset == payloadLength)
                     return payloadLength;
 
                 // however if we truely go past the end of the buffer, somethign went wrong and we wnat to signal that. 
-                if (payloadLength < offset)
+                if (payloadLength < fieldOffset)
                     throw new ArgumentOutOfRangeException("Payload size exceeds buffer size.");
-                cur++;
+                fieldIdx++;
             }
-            return offset;
+
+            // Remember our answer since can start there for the next field efficiently.  
+            if (startOffset == 0)
+            {
+#if DEBUG
+                // If we computed the result using the cache,  compute it again without the cache and we should get the same answer.  
+                if (cachedEventId == this.EventIndex)
+                {
+                    cachedEventId = EventIndex.Invalid;
+                    Debug.Assert(fieldOffset == SkipToField(payloadFetches, targetFieldIdx, startOffset, payloadLength));
+                }
+#endif
+                cachedFieldOffset = fieldOffset;
+                cachedFieldIdx = targetFieldIdx;
+                cachedEventId = this.EventIndex;
+            }
+            return fieldOffset;
         }
 
         /// <summary>
@@ -1335,7 +1365,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
             }
 
-            #region private
+#region private
             public override string ToString()
             {
                 StringWriter sw = new StringWriter();
@@ -1459,7 +1489,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
 
             private object info;        // different things for enums, structs, or arrays.  
-            #endregion
+#endregion
         };
 
         // Supports nested structural types
@@ -1533,7 +1563,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal PayloadFetch[] payloadFetches;
         internal string MessageFormat; // This is in ETW conventions (%N)
         internal bool registeredWithTraceEventSource;
-        #endregion
+
+        // These are used to improve the performance of SkipToField.  
+        EventIndex cachedEventId;
+        int cachedFieldIdx;
+        int cachedFieldOffset;
+#endregion
     }
 
     /// <summary>
@@ -1596,9 +1631,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             else
                 return base.ToXml(sb);
         }
-        #region private
+#region private
         ProviderManifest manifest;
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -1610,7 +1645,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     {
         public DynamicTraceEventParserState() { providers = new Dictionary<Guid, ProviderManifest>(); }
 
-        #region IFastSerializable Members
+#region IFastSerializable Members
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -1631,11 +1666,11 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        #endregion
+#endregion
 
         internal Dictionary<Guid, ProviderManifest> providers;
     }
-    #endregion
+#endregion
 
     /// <summary>
     /// A ProviderManifest represents the XML manifest associated with the provider.    
@@ -1792,7 +1827,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         /// For debugging
         /// </summary>
         public override string ToString() { return Name + " " + Guid; }
-        #region private
+#region private
         internal ProviderManifest(byte[] serializedManifest, ManifestEnvelope.ManifestFormats format, byte majorVersion, byte minorVersion, string id)
         {
             this.serializedManifest = serializedManifest;
@@ -2207,7 +2242,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             }
         }
 
-        #region IFastSerializable Members
+#region IFastSerializable Members
 
         void IFastSerializable.ToStream(Serializer serializer)
         {
@@ -2271,7 +2306,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             inited = true;
         }
 
-        #endregion
+#endregion
         private XmlReader reader;
         private byte[] serializedManifest;
         private byte majorVersion;
@@ -2285,6 +2320,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         private bool inited;
         private Exception error;
 
-        #endregion
+#endregion
     }
 }
