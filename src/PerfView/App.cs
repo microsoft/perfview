@@ -162,6 +162,7 @@ namespace PerfView
                 CommandLineArgs.DataFile.IndexOf('.') < 0 && CommandLineArgs.DataFile.IndexOf('\\') < 0)
                 throw new ApplicationException("Error " + CommandLineArgs.DataFile + " not a perfView command.");
 
+#if !PERFVIEW_COLLECT
             // Check for error where you have a TraceEvent dll in the wrong place.
             var traceEventDllPath = typeof(TraceEvent).Assembly.ManifestModule.FullyQualifiedName;
             if (!traceEventDllPath.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
@@ -175,6 +176,7 @@ namespace PerfView
                             "   You cannot place a version of Microsoft.Diagnostics.Tracing.TraceEvent.dll next to PerfView.exe.");
                 }
             }
+#endif
 
             // The 64 bit version of some of the native DLLs we use are built against the new Win10 libraries and will 
             // fail to bind if they are loaded on an older OS (it would probably work for Win8 but do we care?) 
@@ -217,7 +219,7 @@ namespace PerfView
                         CommandProcessor.LogFile.WriteLine("Trying to view {0}", CommandLineArgs.DataFile);
                     else
                         CommandProcessor.LogFile.WriteLine("No command given, Trying to open viewer.");
-#endif 
+#endif
                     CommandProcessor.LogFile.WriteLine("Use 'PerfView collect' or 'PerfView HeapSnapshot' to collect data.");
                     return -4;
                 }
@@ -750,7 +752,7 @@ namespace PerfView
             return ret;
         }
 
-        #region private
+#region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -898,7 +900,7 @@ namespace PerfView
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-        #region CreateConsole
+#region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         static extern int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -982,7 +984,7 @@ namespace PerfView
             });
 
             return true;
-#endif 
+#endif
         }
 
 #if !DOTNET_CORE
