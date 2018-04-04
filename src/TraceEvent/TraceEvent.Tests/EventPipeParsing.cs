@@ -163,7 +163,9 @@ namespace TraceEventTests
 
                     Assert.False(activityIdHasBeenSet); // make sure the event comes only once
 
-                    if (@event.PayloadByName("NewId").Equals(ExpectedActivityId))
+                    // Sneak in a test of the DLR support here (casting to 'dynamic'
+                    // instead of using PayloadByName("NewId")):
+                    if (((dynamic) @event).NewId.Equals(ExpectedActivityId))
                         activityIdHasBeenSet = true;
                 };
 

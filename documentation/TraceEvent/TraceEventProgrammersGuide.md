@@ -328,7 +328,31 @@ source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(MyFirstEventTraceDat
 });
 ```
 
-Where we have an event-specific type that with a `MyName` and `MyId` property. Thus even though `DynamicTraceEventParser` is sufficient to parse events from an `EventSource` with full fidelity, if you are doing more than just printing the event, it is a good idea to create a static (compile time) parser that is tailored for your `EventSource` and thus can return compile time types tailored for your event payloads. This is what the **TraceParserGen** tool is designed to do, which we will cover later.
+Where we have an event-specific type that with a `MyName` and `MyId` property. There are two options for doing that:
+
+1. You can create a static (compile time) parser that is tailored for your `EventSource` and thus can return compile time types tailored for your event payloads. This is what the **TraceParserGen** tool is designed to do, which we will cover later.
+
+1. You can take advantage of built-in DLR integration. In C#, you do this by casting to 'dynamic':
+
+   ```csharp
+   source.Dynamic.AddCallbackForEvent("MyFirstEvent", delegate(TraceEvent data) {
+     var asDynamic = (dynamic) data;
+     Console.WriteLine("GOT MyFirstEvent MyName={0} MyId={1}", asDynamic.MyName, asDynamic.MyId);
+   });
+   ```
+   Note that unlike the **TraceParserGen** approach, this still has the downside of not having compile-time validation (if you misspell a property name, you won't know at compile time). Also note that the perf implications of casting to dynamic have not been measured, but it cannot be better than the `PayloadByName` approach (because that's what happens internally).
+
+   Other languages may have built-in DLR integration, such as PowerShell:
+
+   ```powershell
+   # Get the set of all MyName values
+   $myProc.EventsInProcess | `
+        where ProviderName -eq MyProvider | `
+        %{ $PSItem.MyName } | `
+        Select -Unique
+   ```
+
+While the performance of using the DLR integration might not be as good as the **TraceParserGen** approach, it can be very convenient for prototyping, or just poking around in an interactive shell like PowerShell.
 
 ## Lifetime constraints on `TraceEvent` objects
 
