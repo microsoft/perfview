@@ -25,6 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		documentation\MakingSupportFilesNugetPackages.md = documentation\MakingSupportFilesNugetPackages.md
 		documentation\OpenSourceGitWorkflow.md = documentation\OpenSourceGitWorkflow.md
 		documentation\SettingUpRepoInVS.md = documentation\SettingUpRepoInVS.md
+		documentation\Downloading.md = documentation\Downloading.md
 		documentation\SimpleGitWorkflow.md = documentation\SimpleGitWorkflow.md
 		documentation\TraceEvent\TraceEventLibrary.md = documentation\TraceEvent\TraceEventLibrary.md
 		documentation\TraceEvent\TraceEventProgrammersGuide.md = documentation\TraceEvent\TraceEventProgrammersGuide.md
