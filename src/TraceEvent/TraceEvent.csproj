@@ -64,6 +64,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
+    <PackageReference Include="System.Buffers" Version="4.5.0" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -33,7 +34,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     sealed class CtfReader : IDisposable
     {
         private Stream _stream;
-        private byte[] _buffer = new byte[1024];
+        private byte[] _buffer;
         private CtfMetadata _metadata;
         private CtfStream _streamDefinition;
         CtfEventHeader _header = new CtfEventHeader();
@@ -42,14 +43,15 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         private GCHandle _handle;
         private int _bitOffset;
         private int _bufferLength;
+        private const int OriginalBufferSize = 4096;
         private bool _readHeader;
 
         public int BufferLength { get { return _bufferLength; } }
-        public byte[] Buffer { get { return _buffer; } }
         public IntPtr BufferPtr { get { return _handle.AddrOfPinnedObject(); } }
         
         public CtfReader(Stream stream, CtfMetadata metadata, CtfStream ctfStream)
         {
+            _buffer = ArrayPool<byte>.Shared.Rent(OriginalBufferSize);
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
             _stream = stream;
             _metadata = metadata;
@@ -71,7 +73,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             size = IntHelpers.AlignUp(size, 8);
 
             byte[] old = _buffer;
-            _buffer = new byte[size];
+
+            _buffer = ArrayPool<byte>.Shared.Rent(size);
 
             _handle.Free();
             _handle = GCHandle.Alloc(_buffer, GCHandleType.Pinned);
@@ -348,22 +351,15 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     }
 
                     int bufferLen = (_bitOffset >> 3) - startOffset;
-
-                    Encoding encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
-                    
-                    byte[] newArr = Encoding.Convert(encoding, Encoding.Unicode, _buffer, startOffset, bufferLen);
                     ((CtfString)type).Length = bufferLen;
 
-                    if (_buffer.Length < _bufferLength + newArr.Length)
-                    {
-                        byte[] buffer = ReallocateBuffer(_bufferLength + newArr.Length);
-                        System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
-                    }
+                    var encoding = ascii ? Encoding.ASCII : Encoding.UTF8;
 
-                    System.Buffer.BlockCopy(newArr, 0, _buffer, startOffset, newArr.Length);
-                    _bufferLength = startOffset + newArr.Length;
+                    var destByteCount = EncodeStringInUnicode(encoding, startOffset, bufferLen);
+
+                    _bufferLength = startOffset + destByteCount;
                     _bitOffset = _bufferLength * 8;
-                    
+
                     break;
 
 
@@ -388,7 +384,33 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                     throw new InvalidOperationException();
             }
         }
-        
+        private int EncodeStringInUnicode(Encoding orginalEncoding, int startOffset, int bufferLen)
+        {
+            var originalCount = orginalEncoding.GetCharCount(_buffer, startOffset, bufferLen);
+
+            var encodingBuffer = ArrayPool<char>.Shared.Rent(originalCount);
+            try
+            {
+                orginalEncoding.GetChars(_buffer, startOffset, bufferLen, encodingBuffer, 0);
+
+                var destByteCount = Encoding.Unicode.GetByteCount(encodingBuffer, 0, originalCount);
+
+                if (_buffer.Length < _bufferLength + destByteCount)
+                {
+                    byte[] buffer = ReallocateBuffer(_bufferLength + destByteCount);
+                    System.Buffer.BlockCopy(buffer, 0, _buffer, 0, _bufferLength);
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+
+                System.Buffer.BlockCopy(encodingBuffer, 0, _buffer, startOffset, destByteCount);
+                return destByteCount;
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(encodingBuffer);
+            }
+        }
+
         #region IDisposable
         public void Dispose()
         {
@@ -399,7 +421,10 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _stream.Dispose();
+                ArrayPool<byte>.Shared.Return(_buffer);
+            }
 
             if (_handle.IsAllocated)
                 _handle.Free();
@@ -449,6 +474,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             {
                 byte[] buffer = ReallocateBuffer((int)((offset + count) * 1.5));
                 System.Buffer.BlockCopy(buffer, 0, _buffer, 0, offset);
+                ArrayPool<byte>.Shared.Return(buffer);
             }
 
 
