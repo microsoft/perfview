@@ -418,6 +418,7 @@ namespace PerfView
 
                     // TODO this is a bit of a hack, as it might replace other instances of the string.  
                     Title = Regex.Replace(Title, @" Stacks(\([^)]*\))? ", " Stacks(" + CallTree.Root.InclusiveMetric.ToString("n0") + " metric) ");
+                    UpdateDiffMenus(StackWindows);
                     onComplete?.Invoke();
                 });
             });
@@ -1618,8 +1619,7 @@ namespace PerfView
             var cells = SelectedCells();
             if (cells != null)
             {
-                var callTreeNodes = cells.Select(cell => cell.Item).OfType<CallTreeNodeBase>();
-
+                var callTreeNodes = cells.Select(cell => ToCallTreeNodeBase(cell.Item)).Where(cell => cell != null);
                 if (callTreeNodes.Any())
                 {
                     StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
@@ -1629,6 +1629,16 @@ namespace PerfView
                 else
                     StatusBar.LogError("Could not set time range.");
             }
+        }
+
+        // Given a CallTreeViewNode or a CallTreeNodeBase (this is what might be in the 'Item' list of a view)
+        // return a CallTreeNodeBase or null if it is none of those things.   
+        private CallTreeNodeBase ToCallTreeNodeBase(object viewOrDataObject)
+        {
+            var asViewNode = viewOrDataObject as CallTreeViewNode;
+            if (asViewNode != null)
+                return asViewNode.Data;
+            return viewOrDataObject as CallTreeNodeBase;
         }
 
         // Scenario-related stuff
