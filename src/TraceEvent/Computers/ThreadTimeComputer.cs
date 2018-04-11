@@ -98,7 +98,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (GroupByStartStopActivity)
                 UseTasks = true;
 
-            if (UseTasks)
+            // We don't do AWAIT_TIME if we don't have blocked time (that is we are CPU ONLY) because it is confusing
+            // since we have SOME blocked time but not all of it.   
+            if (UseTasks && m_traceHasCSwitches)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
                 m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
