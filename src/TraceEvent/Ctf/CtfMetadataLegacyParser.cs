@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Diagnostics.Tracing.Ctf.CtfMetadataTypes;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {

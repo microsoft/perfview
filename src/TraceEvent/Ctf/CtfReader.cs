@@ -3,9 +3,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Diagnostics.Tracing.Ctf.CtfMetadataTypes;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
