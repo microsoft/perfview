@@ -54,6 +54,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     value.ForEach(AddSample);
                 else
                     value.ParallelForEach(AddSample);
+
+                // Initialize the inclusive metrics
+                InitializeInclusiveMetrics();
+
                 // And the basis for forming the % is total metric of stackSource.  
                 PercentageBasis = Math.Abs(Root.InclusiveMetric);       // People get confused if this swaps. 
 
@@ -311,6 +315,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             return retNode;
         }
 
+        /// <summary>
+        /// ⚠ This method does not initialize inclusive counts. Call <see cref="InitializeInclusiveMetrics"/> to
+        /// complete the initialization of the tree.
+        /// </summary>
         private void AddSample(StackSourceSample sample)
         {
             var callTreeNode = FindTreeNode(sample.StackIndex);
@@ -322,6 +330,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 AddSampleToTreeNode(callTreeNode, sample);
         }
 
+        /// <summary>
+        /// ⚠ This method does not initialize inclusive counts. Call <see cref="InitializeInclusiveMetrics"/> to
+        /// complete the initialization of the tree.
+        /// </summary>
         private void AddSampleToTreeNode(CallTreeNode treeNode, StackSourceSample sample)
         {
             // Add the sample to treeNode.
@@ -357,6 +369,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // And update all the inclusive times up the tree to the root (including this node)
             while (treeNode != null)
             {
+                if (treeNode.m_inclusiveCount == 0)
+                {
+                    // This node is not yet initialized; will be handled in a post-processing pass
+                    break;
+                }
+
                 treeNode.m_inclusiveCount += sample.Count;
                 treeNode.m_inclusiveMetric += sample.Metric;
 
@@ -374,6 +392,107 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 Debug.Assert(treeNode.m_firstTimeRelativeMSec <= treeNode.m_lastTimeRelativeMSec);
 
                 treeNode = treeNode.Caller;
+            }
+        }
+
+        /// <summary>
+        /// Initializes the <see cref="CallTreeNodeBase.m_inclusiveCount"/> and related fields following calls to
+        /// <see cref="AddSample(StackSourceSample)"/> that populate the tree.
+        /// </summary>
+        private void InitializeInclusiveMetrics()
+        {
+            if (m_root.m_inclusiveCount != 0)
+                return;
+
+            var parentWorkSet = new HashSet<CallTreeNode>();
+            Action<StackSourceSample> action = sample =>
+            {
+                var node = FindTreeNode(sample.StackIndex);
+                node.m_inclusiveCount = node.m_exclusiveCount;
+                node.m_inclusiveMetric = node.m_exclusiveMetric;
+                node.m_firstTimeRelativeMSec = Math.Min(node.m_firstTimeRelativeMSec, sample.TimeRelativeMSec);
+
+                var sampleEndTime = sample.TimeRelativeMSec;
+                if (ScalingPolicy == ScalingPolicyKind.TimeMetric)
+                {
+                    // The sample ends at the end of its metric, however we trucate at the end of the range.  
+
+                    // The Math.Abs is a bit of a hack.  The problem is that that sample does not
+                    // represent time for a DIFF (because we negated it) but I rely on the fact 
+                    // that we only negate it so I can undo it 
+                    sampleEndTime += Math.Abs(sample.Metric);
+                    if (TimeHistogramController != null && sampleEndTime > TimeHistogramController.End)
+                        sampleEndTime = TimeHistogramController.End;
+                }
+
+                node.m_lastTimeRelativeMSec = Math.Max(node.m_lastTimeRelativeMSec, sampleEndTime);
+
+                node.InclusiveMetricByTime?.AddSample(sample);
+                node.InclusiveMetricByScenario?.AddSample(sample);
+
+                parentWorkSet.Add(node);
+            };
+
+            m_SampleInfo.ForEach(action);
+
+            while (parentWorkSet.Count > 0)
+            {
+                var nextParentWorkSet = new HashSet<CallTreeNode>();
+                foreach (var node in parentWorkSet)
+                {
+                    var caller = node.Caller;
+                    if (caller == null)
+                        continue;
+
+                    for (var current = caller; current != null; current = current.Caller)
+                    {
+                        if (current.m_inclusiveCount == 0)
+                        {
+                            if (current != caller)
+                            {
+                                break;
+                            }
+
+                            current.m_inclusiveCount = current.m_exclusiveCount;
+                            current.m_inclusiveMetric = current.m_exclusiveMetric;
+
+                            // Only add the caller when it's initialized
+                            nextParentWorkSet.Add(caller);
+                        }
+
+                        if (current.InclusiveMetricByTime != null)
+                        {
+                            int index = 0;
+                            foreach (var sample in node.InclusiveMetricByTime)
+                            {
+                                current.InclusiveMetricByTime.AddMetric(sample, index);
+                                index++;
+                            }
+                        }
+
+                        if (current.InclusiveMetricByScenario != null)
+                        {
+                            int index = 0;
+                            foreach (var sample in node.InclusiveMetricByScenario)
+                            {
+                                current.InclusiveMetricByScenario.AddMetric(sample, index);
+                                index++;
+                            }
+                        }
+
+                        current.m_inclusiveCount += node.m_inclusiveCount;
+                        current.m_inclusiveMetric += node.m_inclusiveMetric;
+                        current.m_firstTimeRelativeMSec = Math.Min(current.m_firstTimeRelativeMSec, node.m_firstTimeRelativeMSec);
+                        current.m_lastTimeRelativeMSec = Math.Max(current.m_lastTimeRelativeMSec, node.m_lastTimeRelativeMSec);
+
+                        if (nextParentWorkSet.Contains(current))
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                parentWorkSet = nextParentWorkSet;
             }
         }
 
