@@ -317,6 +317,13 @@ namespace PerfView
 #endif
         }
 
+        public void SetBackgroundColor(System.Drawing.Color color)
+        {
+            BackgroundColor = color.Name;
+        }
+
+        public string BackgroundColor { get; set; }
+
         /// <summary>
         /// Is the node expanded or not.  
         /// </summary>

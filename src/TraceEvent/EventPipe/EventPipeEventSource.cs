@@ -1,5 +1,3 @@
-#define SUPPORT_V1_V2
-
 using FastSerialization;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -51,7 +49,7 @@ namespace Microsoft.Diagnostics.Tracing
             _eventParser = new EventPipeTraceEventParser(this);
         }
 
-#region private
+        #region private
         // I put these in the private section because they are overrides, and thus don't ADD to the API.  
         public override int EventsLost => 0;
 
@@ -132,14 +130,14 @@ namespace Microsoft.Diagnostics.Tracing
             Debug.Assert(sessionEndTimeQPC == 0 || eventData->TimeStamp - sessionEndTimeQPC < _QPCFreq * 24 * 3600);
             Debug.Assert(0 <= eventData->PayloadSize && eventData->PayloadSize <= eventData->TotalEventSize);
             Debug.Assert(0 < eventData->TotalEventSize && eventData->TotalEventSize < 0x20000);  // TODO really should be 64K but BulkSurvivingObjectRanges needs fixing.
-            Debug.Assert(_fileFormatVersionNumber < 3 || 
+            Debug.Assert(_fileFormatVersionNumber < 3 ||
                 ((int)EventPipeEventHeader.PayloadBytes(eventData) % 4 == 0 && eventData->TotalEventSize % 4 == 0)); // ensure 4 byte alignment
 
             StreamLabel eventDataEnd = reader.Current.Add(eventData->TotalEventSize);
 
             Debug.Assert(0 <= EventPipeEventHeader.StackBytesSize(eventData) && EventPipeEventHeader.StackBytesSize(eventData) <= eventData->TotalEventSize);
 
-            TraceEventNativeMethods.EVENT_RECORD* ret = null;;
+            TraceEventNativeMethods.EVENT_RECORD* ret = null;
             if (eventData->IsMetadata())
             {
                 int totalEventSize = eventData->TotalEventSize;
@@ -148,13 +146,18 @@ namespace Microsoft.Diagnostics.Tracing
                 // Note that this skip invalidates the eventData pointer, so it is important to pull any fields out we need first.  
                 reader.Skip(EventPipeEventHeader.HeaderSize);
 
-                var metaData = new EventPipeEventMetaData(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
-                _eventMetadataDictionary.Add(metaData.MetaDataId, metaData);
+                StreamLabel metaDataEnd = reader.Current.Add(payloadSize);
 
-                _eventParser.AddTemplate(metaData); // if we don't add the templates to this parse, we are going to have unhadled events (see https://github.com/Microsoft/perfview/issues/461)
+                // Read in the header (The header does not inlcude payload parameter information)
+                var metaDataHeader = new EventPipeEventMetaDataHeader(reader, payloadSize, _fileFormatVersionNumber, PointerSize, _processId);
+                _eventMetadataDictionary.Add(metaDataHeader.MetaDataId, metaDataHeader);
+
+                // Tell the parser about this new event
+                _eventParser.OnNewEventPipeEventDefinition(metaDataHeader, reader);
+                Debug.Assert(reader.Current == metaDataEnd);    // We should have read all the meta-data.  
 
                 int stackBytes = reader.ReadInt32();
-                Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");  
+                Debug.Assert(stackBytes == 0, "Meta-data events should always have a empty stack");
             }
             else
             {
@@ -225,16 +228,16 @@ namespace Microsoft.Diagnostics.Tracing
         StreamLabel _endOfEventStream;
 #endif
         int _fileFormatVersionNumber;
-        Dictionary<int, EventPipeEventMetaData> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaData>();
+        Dictionary<int, EventPipeEventMetaDataHeader> _eventMetadataDictionary = new Dictionary<int, EventPipeEventMetaDataHeader>();
         Deserializer _deserializer;
         EventPipeTraceEventParser _eventParser; // TODO does this belong here?
         string _processName;
         internal int _processId;
         internal int _expectedCPUSamplingRate;
-#endregion
+        #endregion
     }
 
-#region private classes
+    #region private classes
 
     /// <summary>
     /// An EVentPipeEventBlock represents a block of events.   It basicaly only has
@@ -252,7 +255,7 @@ namespace Microsoft.Diagnostics.Tracing
             var blockSizeInBytes = deserializer.ReadInt();
 
             // after the block size comes eventual padding, we just need to skip it by jumping to the nearest aligned address
-            if((int)deserializer.Current % 4 != 0)
+            if ((int)deserializer.Current % 4 != 0)
             {
                 var nearestAlignedAddress = deserializer.Current.Add(4 - ((int)deserializer.Current % 4));
                 deserializer.Goto(nearestAlignedAddress);
@@ -294,20 +297,21 @@ namespace Microsoft.Diagnostics.Tracing
     /// <summary>
     /// Private utility class.
     /// 
-    /// An EventPipeEventMetaData holds the information that can be shared among all
-    /// instances of an EventPIpe event from a particular provider.   Thus it contains
-    /// things like the event name, provider, as well as well as data on how many
-    /// user defined fields and their names and types.   
+    /// An EventPipeEventMetaDataHeader holds the information that can be shared among all
+    /// instances of an EventPipe event from a particular provider.   Thus it contains
+    /// things like the event name, provider, It however does NOT contain the data 
+    /// about the event parameters (the names of the fields and their types), That is
+    /// why this is a meta-data header and not all the meta-data.   
     /// 
     /// This class has two main functions
     ///    1. The constructor takes a PinnedStreamReader and decodes the serialized metadata
-    ///       so you can access the data conviniently.
+    ///       so you can access the data conviniently (but it does not decode the parameter info)
     ///    2. It remembers a EVENT_RECORD structure (from ETW) that contains this data)
     ///       and has a function GetEventRecordForEventData which converts from a 
     ///       EventPipeEventHeader (the raw serialized data) to a EVENT_RECORD (which
     ///       is what TraceEvent needs to look up the event an pass it up the stack.  
     /// </summary>
-    unsafe class EventPipeEventMetaData
+    unsafe class EventPipeEventMetaDataHeader
     {
         /// <summary>
         /// Creates a new MetaData instance from the serialized data at the current position of 'reader'
@@ -316,10 +320,11 @@ namespace Microsoft.Diagnostics.Tracing
         /// (since that affects the parsing of this data) and 'processID' is the process ID for the 
         /// whole stream (since it needs to be put into the EVENT_RECORD.
         /// 
-        /// When this constructor returns the reader has read all data given to it (thus it has
-        /// move the read pointer by 'length')
+        /// When this constructor returns the reader has read up to the serialized information about
+        /// the parameters.  We do this because this code does not know the best represenation for
+        /// this parameter information and so it just lets other code handle it.  
         /// </summary>
-        public EventPipeEventMetaData(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
+        public EventPipeEventMetaDataHeader(PinnedStreamReader reader, int length, int fileFormatVersionNumber, int pointerSize, int processId)
         {
             // Get the event record and fill in fields that we can without deserializing anything.  
             _eventRecord = (TraceEventNativeMethods.EVENT_RECORD*)Marshal.AllocHGlobal(sizeof(TraceEventNativeMethods.EVENT_RECORD));
@@ -332,8 +337,10 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.ProcessId = processId;
 
+            // Calculate the position of the end of the metadata blob.
+            StreamLabel metadataEndLabel = reader.Current.Add(length);
+
             // Read the metaData
-            StreamLabel eventDataEnd = reader.Current.Add(length);
             if (3 <= fileFormatVersionNumber)
             {
                 MetaDataId = reader.ReadInt32();
@@ -347,10 +354,14 @@ namespace Microsoft.Diagnostics.Tracing
                 ReadObsoleteEventMetaData(reader, fileFormatVersionNumber);
 #endif
 
-            Debug.Assert(reader.Current == eventDataEnd);
+            // Check for parameter metadata so that it can be consumed by the parser.
+            if (reader.Current < metadataEndLabel)
+            {
+                ContainsParameterMetadata = true;
+            }
         }
 
-        ~EventPipeEventMetaData()
+        ~EventPipeEventMetaDataHeader()
         {
             if (_eventRecord != null)
             {
@@ -422,9 +433,9 @@ namespace Microsoft.Diagnostics.Tracing
         /// It is what is matched up with EventPipeEventHeader.MetaDataId
         /// </summary>
         public int MetaDataId { get; private set; }
+        public bool ContainsParameterMetadata { get; private set; }
         public string ProviderName { get; private set; }
         public string EventName { get; private set; }
-        public Tuple<TypeCode, string>[] ParameterDefinitions { get; private set; }
         public Guid ProviderId { get { return _eventRecord->EventHeader.ProviderId; } }
         public int EventId { get { return _eventRecord->EventHeader.Id; } }
         public int Version { get { return _eventRecord->EventHeader.Version; } }
@@ -456,21 +467,6 @@ namespace Microsoft.Diagnostics.Tracing
 
             _eventRecord->EventHeader.Level = (byte)reader.ReadInt32();
             Debug.Assert(_eventRecord->EventHeader.Level <= 5);
-
-            // Fetch the parameter information
-            int parameterCount = reader.ReadInt32();
-            Debug.Assert(0 <= parameterCount && parameterCount < 0x4000); 
-            if (0 < parameterCount)
-            {
-                ParameterDefinitions = new Tuple<TypeCode, string>[parameterCount];
-                for (int i = 0; i < parameterCount; i++)
-                {
-                    var type = (TypeCode)reader.ReadInt32();
-                    Debug.Assert((uint)type < 24);      // There only a handful of type codes. 
-                    var name = reader.ReadNullTerminatedUnicodeString();
-                    ParameterDefinitions[i] = new Tuple<TypeCode, string>(type, name);
-                }
-            }
         }
 
 #if SUPPORT_V1_V2
@@ -575,17 +571,17 @@ namespace Microsoft.Diagnostics.Tracing
         /// </summary>
         static public int HeaderSize => sizeof(EventPipeEventHeader) - 4;
 
-        static public EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr) 
+        static public EventPipeEventHeader* HeaderFromPayloadPointer(byte* payloadPtr)
             => (EventPipeEventHeader*)(payloadPtr - HeaderSize);
 
-        static public int StackBytesSize(EventPipeEventHeader* header) 
+        static public int StackBytesSize(EventPipeEventHeader* header)
             => *((int*)(&header->Payload[header->PayloadSize]));
 
-        static public byte* StackBytes(EventPipeEventHeader* header) 
+        static public byte* StackBytes(EventPipeEventHeader* header)
             => &header->Payload[header->PayloadSize + 4];
 
         static public byte* PayloadBytes(EventPipeEventHeader* header)
             => &header->Payload[0];
     }
-#endregion
+    #endregion
 }

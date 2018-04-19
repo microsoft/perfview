@@ -286,8 +286,7 @@ namespace Microsoft.Diagnostics.Symbols
         /// <returns>The SymbolReaderModule that represents the information in the symbol file (PDB)</returns>
         public ManagedSymbolModule OpenSymbolFile(string pdbFilePath)
         {
-            ManagedSymbolModule ret;
-            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ret))
+            if (!m_symbolModuleCache.TryGet(pdbFilePath, out ManagedSymbolModule ret))
             {
                 Stream stream = File.Open(pdbFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 byte[] firstBytes = new byte[4];
@@ -888,6 +887,11 @@ namespace Microsoft.Diagnostics.Symbols
                             m_log.WriteLine("FindSymbolFilePath: In task, sending HTTP request {0}", fullUri);
 
                             var req = (System.Net.HttpWebRequest)System.Net.HttpWebRequest.Create(fullUri);
+#if !NETSTANDARD1_6
+                            // Some symbol servers want a user agent and simply fail if they don't have one (see https://github.com/Microsoft/perfview/issues/571)
+                            // So set it (this is what the symsrv code on Windows sets).   On NetStandard1.6 we give up since we dont' have this API available.  
+                            req.UserAgent = "Microsoft-Symbol-Server/6.13.0009.1140";
+#endif
                             var responseTask = req.GetResponseAsync();
                             responseTask.Wait();
                             var response = responseTask.Result;

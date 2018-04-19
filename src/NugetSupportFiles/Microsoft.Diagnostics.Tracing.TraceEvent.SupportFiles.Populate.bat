@@ -3,7 +3,11 @@ REM
 REM *** This is mostly a template for doing the copy.      ****  
 REM *** Most likey you want this to be the current version ****
 REM *** PLEASE MODIFY THE VERSION NUMBER TO BE CURRENT!    ****
-xcopy /s %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.12\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
+xcopy /s /Y %HOMEDRIVE%%HOMEPATH%\.nuget\packages\Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\1.0.12\*.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles
+
+REM Overwrite OSExtensions.dll with the latest built versions.
+xcopy /s /Y ..\OSExtensions\bin\Release\net45\OSExtensions.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\lib\net45
+xcopy /s /Y ..\OSExtensions\bin\Release\netstandard1.6\OSExtensions.dll Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles\lib\netstandard1.6
 
 @REM These are the binary files we need from somewhere to for the support package
 @REM lib\native\amd64\KernelTraceControl.dll

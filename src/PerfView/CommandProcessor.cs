@@ -806,6 +806,8 @@ namespace PerfView
 
                         LogFile.WriteLine("netsh trace command succeeded.");
                     }
+                    if (parsedArgs.CCWRefCount)
+                        EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
 
                     LogFile.WriteLine("Enabling Providers specified by the user.");
                     if (parsedArgs.Providers != null)
@@ -1001,6 +1003,20 @@ namespace PerfView
             PerfViewLogger.Log.StopTracing();
             PerfViewLogger.StopTime = DateTime.UtcNow;
             PerfViewLogger.Log.StartAndStopTimes();
+
+            // Also log the CPU Counters mapping.
+            var osVersion = Environment.OSVersion.Version.Major + Environment.OSVersion.Version.Minor / 10.0;
+            if (6.2 <= osVersion)        // CPU Counters only supported on Windows 8 and above
+            {
+                var cpuCounters = TraceEventProfileSources.GetInfo();
+                foreach (var cpuCounter in cpuCounters.Values)
+                {
+                    if (string.CompareOrdinal(cpuCounter.Name, "Timer") == 0)
+                        continue;
+                    PerfViewLogger.Log.CpuCountersConfigured(cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                    // LogFile.WriteLine("Cpu Counter Config {0} ID {1} Interval {2}", cpuCounter.Name, cpuCounter.Interval, cpuCounter.ID);
+                }
+            }
 
             // Try to stop the kernel session
             try
@@ -1216,7 +1232,7 @@ namespace PerfView
             ZippedETLWriter etlWriter = new ZippedETLWriter(parsedArgs.DataFile, LogFile);
             if (parsedArgs.LowPriority)
                 etlWriter.LowPriority = true;
-            if (parsedArgs.NoRundown)
+            if (parsedArgs.NoRundown || parsedArgs.NoNGenPdbs)
                 etlWriter.NGenSymbolFiles = false;
             etlWriter.SymbolReader = App.GetSymbolReader(parsedArgs.DataFile);
             if (!parsedArgs.ShouldZip)
@@ -1719,12 +1735,11 @@ namespace PerfView
                 else if (sourceInfo.MaxInterval < count)
                     throw new ApplicationException("Cpu Counter " + name + " has a count that is above the maximum of " + sourceInfo.MaxInterval);
 
-                LogFile.WriteLine("Configuring Cpu Counter {0} ID: {1} to Interval {2}", name, sourceInfo.ID, count);
-                PerfViewLogger.Log.CpuCountersConfigured(name, count);
+                LogFile.WriteLine("Configuring Cpu Counter (ProfileSource) {0} ID: {1} to Interval {2}", name, sourceInfo.ID, count);
+                // Can't log to PerfViewLogger because it is not on yet (kernel session turns on first).  
                 sourceIDs[i] = sourceInfo.ID;
                 sourceIntervals[i] = count;
             }
-            LogFile.WriteLine("Setting Cpu Counter.");
             TraceEventProfileSources.Set(sourceIDs, sourceIntervals);
         }
 
@@ -2363,6 +2378,8 @@ namespace PerfView
                 cmdLineArgs += " /UnsafePdbMatch";
             if (parsedArgs.ShowUnknownAddresses)
                 cmdLineArgs += " /ShowUnknownAddresses";
+            if (parsedArgs.ContinueOnError)
+                cmdLineArgs += " /ContinueOnError";
             if (parsedArgs.MaxEventCount != 0)
                 cmdLineArgs += " /MaxEventCount:" + parsedArgs.MaxEventCount.ToString();
             if (parsedArgs.SkipMSec != 0)
@@ -2377,6 +2394,8 @@ namespace PerfView
                 cmdLineArgs += " /LogFile:" + Command.Quote(parsedArgs.LogFile);
             if (parsedArgs.NoRundown)
                 cmdLineArgs += " /NoRundown";
+            if (parsedArgs.NoNGenPdbs)
+                cmdLineArgs += " /NoNGenPdbs";
             if (parsedArgs.NoNGenRundown)
                 cmdLineArgs += " /NoNGenRundown";
             if (parsedArgs.ForceNgenRundown)
@@ -2428,6 +2447,8 @@ namespace PerfView
                 cmdLineArgs += " /MaxDumpCountK=" + parsedArgs.MaxDumpCountK;
             if (parsedArgs.MaxNodeCountK != 0)
                 cmdLineArgs += " /MaxNodeCountK=" + parsedArgs.MaxNodeCountK;
+            if (parsedArgs.CCWRefCount)
+                cmdLineArgs += " /CCWRefCount";
 
             // TODO FIX NOW this is sort ugly fix is so that commands are an enum 
             if (command == null)

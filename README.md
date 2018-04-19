@@ -59,14 +59,22 @@ you can do that by following the rest of these instructions.
 
 ### Tools Needed to Build PerfView
 
-The only tool you need to build PerfView is Visual Studio 2017.   The [Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/)
-can be downloaded *for free* and has everything you need to fetch PerfView from GitHub, build and test it. We expect you
+The only tools you need to build PerfView are Visual Studio 2017 and the .NET Core SDK.   The
+[Visual Studio 2017 Community Edition](https://www.visualstudio.com/vs/community/) can be downloaded *for free* and,
+along with the .NET Core SDK, has everything you need to fetch PerfView from GitHub, build and test it. We expect you
 to download Visual Studio 2017 Community Edition if you don't already have Visual Studio 2017.
 
 PerfView is mostly C# code, however there is a small amount of C++ code to implement some advanced features of PerfView 
-(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
+(The ETWCLrProfiler dlls that allow PerfView to intercept the .NET Method calls; see .NET Call in the Collect dialog).  
+If you downloaded the Visual Studio 2017 Community Edition, it does not install the C++ compilation tools by default,
 but VS should detect that the solution needs C++ and ask you to install those tools when you open the solution. Allow it
 to do this and everything should 'just work'.    
+
+You may need to install some VS optional components, such as the Windows 8.1 SDK and the "Windows Universal CRT SDK"
+(*not* the "Windows Universal C Runtime").
+
+The .NET Core SDK is unfortunately not currently an optional component of the Visual Studio Installer, but can be
+installed easily from [here](https://www.microsoft.com/net/download/windows).
 
 ### Cloning the PerfView GitHub Repository. 
 
@@ -100,7 +108,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
 
 ### Information for build troubleshooting.  
 
-  * One of the unusual things about PerfView is that it incorporates its support DLL into the EXE itself, and these get 
+  * One of the unusual things about PerfView is that it incorporates its support DLLs into the EXE itself, and these get 
   unpacked on first launch.  This means that there are tricky dependencies in the build that are not typical.    You will 
   see errors that certain DLLs can't be found if there were build problems earlier in the build.   Typically you can fix 
   this simply by doing a normal (non-clean) build, since the missing file will be present from the last compilation.
@@ -119,7 +127,7 @@ among other things a PerfView.exe.   This one file is all you need to deploy.   
   This includes exactly what you tried, and what the error messages were.
   
   * If you get an error "MSB8036: The Windows SDK version 8.1 was not found", go to your Control panel -> Programs and Features, 
-  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that hte Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
+  and right click on your VS2017 and select 'Modify'.   Then look under the C++ Desktop Development and check that the Windows SDK 8.1     option is selected.  If not select it and have the setup install this.  
   
 ### Running Tests
 
@@ -181,6 +189,5 @@ These docs are for specialized scenarios
 does not build itself.   We created two nuget packages to hold these.  This document tells you how to update this
 nuget package when these files need to be updated.  Very few people should care about these instructions.  
 
-  * [PerfView Mirror](https://devdiv.visualstudio.com/DefaultCollection/DevDiv/_git/perfview) this is a private version of
-the perfView repository that is used for Microsoft-internal purposes.   The link is likely to not work for most people.
-
+  * [Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmaster) This is documentation that is only 
+  useful for internal Microsoft users.  By design the link will not work for most people.

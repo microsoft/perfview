@@ -25,7 +25,7 @@ using System.Globalization;
 // - marshal minidump data-structures into the proper managed types (System.String,
 // System.DateTime, System.Version, System.OperatingSystem, etc)
 // 
-// This does not validate aganst corrupted dumps. 
+// This does not validate against corrupted dumps. 
 // 
 // ** This is not a complete set of wrappers. 
 // Other potentially interesting things to expose from the dump file:
@@ -1500,7 +1500,7 @@ namespace Microsoft.Samples.Debugging.Native
 
                     // This case leaves us with two chunks to request still.
                     // 'left' or lower addresses is still the destinationBuffer
-                    // 'right' or higher addresss needs a new offset into the buffer
+                    // 'right' or higher address needs a new offset into the buffer
                     IntPtr rightPieceBegin = new IntPtr(destinationBuffer.ToInt64() + indexDestination + size);
 
                     return size + // count for current chunk

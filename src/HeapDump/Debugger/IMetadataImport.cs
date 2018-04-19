@@ -1278,7 +1278,7 @@ namespace Microsoft.Samples.Debugging.CorMetadata.NativeApi
         
         //         STDMETHOD(GetPEKind)(                   // S_OK or error.
         //         DWORD* pdwPEKind,                   // [OUT] The kind of PE (0 - not a PE)
-        //         DWORD* pdwMAchine) PURE;            // [OUT] Machine as defined in NT header
+        //         DWORD* pdwMachine) PURE;            // [OUT] Machine as defined in NT header
         void GetPEKind_();
 
         //         STDMETHOD(GetVersionString)(            // S_OK or error.

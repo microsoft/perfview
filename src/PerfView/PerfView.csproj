@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -21,8 +21,12 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DefineConstants>$(DefineConstants);PERFVIEW;STANDALONE_EXE</DefineConstants>
+    <DefineConstants>$(DefineConstants);PERFVIEW</DefineConstants>
     <NoWarn>$(NoWarn),0436,0618</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PUBLIC_BUILD)' == 'true'">
+    <DefineConstants>$(DefineConstants);PUBLIC_BUILD</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -47,6 +51,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSVReader\CSVReader.csproj" />
+    <ProjectReference Include="..\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj" />
     <ProjectReference Include="..\FastSerialization\FastSerialization.csproj" />
     <ProjectReference Include="..\HeapDumpInterface\HeapDumpInterface.csproj" />
     <ProjectReference Include="..\traceEvent\TraceEvent.csproj" />
@@ -193,14 +198,14 @@
       <Visible>False</Visible>
     </EmbeddedResource>
     <!-- For Forcing GC and per-object allocation stats -->
-    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\x86\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net45\x86\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\x86\EtwClrProfiler.dll</LogicalName>
       <Link>x86\EtwClrProfiler.dll</Link>
       <Visible>False</Visible>
     </EmbeddedResource>
-    <EmbeddedResource Include="..\EtwClrProfiler\$(Configuration)\amd64\EtwClrProfiler.dll">
+    <EmbeddedResource Include="..\EtwClrProfilerSigning\bin\$(Configuration)\net45\amd64\EtwClrProfiler.dll">
       <Type>Non-Resx</Type>
       <WithCulture>false</WithCulture>
       <LogicalName>.\amd64\EtwClrProfiler.dll</LogicalName>

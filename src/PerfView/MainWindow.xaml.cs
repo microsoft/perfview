@@ -761,14 +761,14 @@ using System.Collections.Generic;
 // Add PDBThreashold to collection dialog.   Explain it in the help.  
 
 // Fix the ASP.NET THread pool average to take the last value if there has been no adjustment.  
-// add a File->Open menu item (just for discoverabilty)
+// add a File->Open menu item (just for discoverability)
 // Put ThreadPoolCount on the ASP.NET stats.  
 // Bug: Truncated process name selection (truncates to 10) in Event Viewer.  
 // Add a 'View stack in allStackView' option in event viewer.  
 // From Karl Burtram
 // * Allow navigation to the stack for an event in the AllStacks view.  
 // * Page fault view. 
-// Symbol lookup before writing an XML file (since you loose the abilty to do it later).  
+// Symbol lookup before writing an XML file (since you loose the ability to do it later).  
 // Save all views.  
 // Allow command line spec to have more details on what to open (CPU view etc).  
 // exposing Ready Thread in an interesting way.    
@@ -1678,6 +1678,7 @@ namespace PerfView
             var selectedFile = TreeView.SelectedItem as PerfViewFile;
             if (selectedFile == null)
                 throw new ApplicationException("No file selected.");
+            string selectedFilePath = selectedFile.FilePath;
 
             var targetPath = GetDataFileName("Rename File", false, "", null);
             if (targetPath == null)
@@ -1685,7 +1686,25 @@ namespace PerfView
                 StatusBar.Log("Operation Canceled");
                 return;
             }
-            FileUtilities.ForceMove(selectedFile.FilePath, targetPath);
+
+            // Add a ETL suffix if the source has one.  
+            bool selectedFileIsEtl = selectedFilePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase);
+            if (selectedFileIsEtl && !Path.HasExtension(targetPath))
+                targetPath = Path.ChangeExtension(targetPath, ".etl");
+
+            // Do the move.  
+            FileUtilities.ForceMove(selectedFilePath, targetPath);
+
+            // rename all the other variations of the unmerged file
+            if (selectedFileIsEtl && targetPath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFilePath), Path.GetFileNameWithoutExtension(selectedFilePath) + ".*"))
+                {
+                    Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
+                    if (m.Success)
+                        FileUtilities.ForceMove(relatedFile, Path.ChangeExtension(targetPath, m.Groups[1].Value));
+                }
+            }
 
             // refresh the directory. 
             RefreshCurrentDirectory();

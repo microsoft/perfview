@@ -1,4 +1,4 @@
-// #define PUBLIC_ONLY
+// #define PUBLIC_BUILD
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -162,6 +162,7 @@ namespace PerfView
                 CommandLineArgs.DataFile.IndexOf('.') < 0 && CommandLineArgs.DataFile.IndexOf('\\') < 0)
                 throw new ApplicationException("Error " + CommandLineArgs.DataFile + " not a perfView command.");
 
+#if !PERFVIEW_COLLECT
             // Check for error where you have a TraceEvent dll in the wrong place.
             var traceEventDllPath = typeof(TraceEvent).Assembly.ManifestModule.FullyQualifiedName;
             if (!traceEventDllPath.StartsWith(SupportFiles.SupportFileDir, StringComparison.OrdinalIgnoreCase))
@@ -175,6 +176,7 @@ namespace PerfView
                             "   You cannot place a version of Microsoft.Diagnostics.Tracing.TraceEvent.dll next to PerfView.exe.");
                 }
             }
+#endif
 
             // The 64 bit version of some of the native DLLs we use are built against the new Win10 libraries and will 
             // fail to bind if they are loaded on an older OS (it would probably work for Win8 but do we care?) 
@@ -217,7 +219,7 @@ namespace PerfView
                         CommandProcessor.LogFile.WriteLine("Trying to view {0}", CommandLineArgs.DataFile);
                     else
                         CommandProcessor.LogFile.WriteLine("No command given, Trying to open viewer.");
-#endif 
+#endif
                     CommandProcessor.LogFile.WriteLine("Use 'PerfView collect' or 'PerfView HeapSnapshot' to collect data.");
                     return -4;
                 }
@@ -586,7 +588,10 @@ namespace PerfView
                     // Since the default goes off machine, if we are outside of Microsoft, we have to ask
                     // the user for permission. 
                     if (AppLog.InternalUser)
+                    {
+                        symPath.Add("SRV*http://symweb.corp.microsoft.com");
                         symPath.Add(Microsoft.Diagnostics.Symbols.SymbolPath.MicrosoftSymbolServerPath);
+                    }
                     else if (symPath.Elements.Count == 0)
                     {
                         if (SupportFiles.ProcessArch == ProcessorArchitecture.Arm || App.CommandLineArgs.NoGui)
@@ -747,7 +752,7 @@ namespace PerfView
             return ret;
         }
 
-        #region private
+#region private
         /// <summary>
         /// This routine gets called every time we find a PDB.  We copy any PDBs to 'localPdbDir' if it is not
         /// already there.  That way every PDB that is needed is locally available, which is a nice feature.  
@@ -895,7 +900,7 @@ namespace PerfView
         private static string m_SymbolPath;
         private static string m_SourcePath;
 
-        #region CreateConsole
+#region CreateConsole
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
         static extern int AllocConsole();
         [System.Runtime.InteropServices.DllImport("kernel32", SetLastError = true)]
@@ -979,7 +984,7 @@ namespace PerfView
             });
 
             return true;
-#endif 
+#endif
         }
 
 #if !DOTNET_CORE
@@ -1003,7 +1008,7 @@ namespace PerfView
         {
             get
             {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
                 return false;
 #else
                 if (!s_CanSendFeedback.HasValue)
@@ -1045,7 +1050,7 @@ namespace PerfView
         {
             get
             {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
                 return false;
 #else
                 if (!s_InternalUser.HasValue)
@@ -1060,7 +1065,7 @@ namespace PerfView
         /// </summary>
         public static void LogUsage(string eventName, string arg1 = "", string arg2 = "")
         {
-#if !PUBLIC_ONLY
+#if !PUBLIC_BUILD
             if (!CanSendFeedback)
                 return;
             try
@@ -1094,7 +1099,7 @@ namespace PerfView
         /// </summary>
         public static bool SendFeedback(string message, bool crash)
         {
-#if PUBLIC_ONLY
+#if PUBLIC_BUILD
             return false;
 #else
             if (!CanSendFeedback)
@@ -1165,7 +1170,7 @@ namespace PerfView
 
         private static DateTime s_startTime;    // used as a unique ID for the launch of the program (for SQM style logging)    
         internal static bool s_IsUnderTest; // set from tests: indicates we're in a test
-#if !PUBLIC_ONLY
+#if !PUBLIC_BUILD
         private static DateTime s_ProbedForFeedbackAt;
         private static bool? s_CanSendFeedback;
         private static bool? s_InternalUser;

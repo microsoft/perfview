@@ -45,28 +45,29 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent.SupportFiles" Version="$(MicrosoftDiagnosticsTracingTraceEventSupportFilesVersion)" />
   </ItemGroup>
 
+  <!-- Ensure that the native components of TraceEvent are restored into the target and publish directories so that TraceEvent can pinvoke into them. -->
+  <Target Name="CopyTraceEventNativeFilesToTarget" AfterTargets="Build">
+    <ItemGroup>
+      <TraceEventNativeFiles
+        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(TraceEventNativeFiles)"
+      DestinationFiles="@(TraceEventNativeFiles->'$(TargetDir)%(RecursiveDir)%(FileName)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="CopyTraceEventNativeFilesToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <TraceEventNativeFiles
+        Include="$(TraceEventSupportFilesBase)native\**\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(TraceEventNativeFiles)"
+      DestinationFiles="@(TraceEventNativeFiles->'$(PublishDir)%(RecursiveDir)%(FileName)%(Extension)')"
+      SkipUnchangedFiles="true" />
+  </Target>
+
   <ItemGroup>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\x86\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\x86\KernelTraceControl.dll</LogicalName>
-      <Link>x86\KernelTraceControl.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\arm\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\arm\KernelTraceControl.dll</LogicalName>
-      <Link>arm\KernelTraceControl.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)native\amd64\KernelTraceControl.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\amd64\KernelTraceControl.dll</LogicalName>
-      <Link>amd64\KernelTraceControl.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
 
 <!-- TODO: These are needed for Heap dump and fine grained .NET allocation and call profiling but 
      I have pruned these out for now so we can at least get ETW working.   Bring them back eventually.
@@ -107,29 +108,6 @@
       <Visible>False</Visible>
     </EmbeddedResource>
 -->
-
-    <EmbeddedResource Include="..\TraceEvent\bin\$(ConfigurationName)\netstandard1.6\Microsoft.Diagnostics.Tracing.TraceEvent.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Microsoft.Diagnostics.Tracing.TraceEvent.dll</LogicalName>
-      <Link>Microsoft.Diagnostics.Tracing.TraceEvent.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\FastSerialization\bin\$(ConfigurationName)\netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\Microsoft.Diagnostics.FastSerialization.dll</LogicalName>
-      <Link>Microsoft.Diagnostics.FastSerialization.dll</Link>
-      <Visible>False</Visible>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(TraceEventSupportFilesBase)\netstandard1.6\OSExtensions.dll">
-      <Type>Non-Resx</Type>
-      <WithCulture>false</WithCulture>
-      <LogicalName>.\OSExtensions.dll</LogicalName>
-      <Link>OSExtensions.dll</Link>
-      <Visible>False</Visible>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </EmbeddedResource>
 
     <EmbeddedResource Include="..\PerfView\SupportFiles\Eula.rtf">
       <Type>Non-Resx</Type>

@@ -566,10 +566,10 @@ namespace Microsoft.Diagnostics.Tracing.Session
                 if ((flags & (KernelTraceEventParser.Keywords.Profile | KernelTraceEventParser.Keywords.PMCProfile)) != 0)
                 {
                     TraceEventNativeMethods.SetPrivilege(TraceEventNativeMethods.SE_SYSTEM_PROFILE_PRIVILEGE);
-                    var cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
+                    double cpu100ns = (CpuSampleIntervalMSec * 10000.0 + .5);
                     // The API seems to have an upper bound of 1 second.  
                     if (cpu100ns >= int.MaxValue || ((int)cpu100ns) > 10000000)
-                        throw new ApplicationException("CPU Sampling rate is too high.");
+                        throw new ApplicationException("CPU Sampling interval is too large.");
                     var succeeded = ETWControl.SetCpuSamplingRate((int)cpu100ns);       // Always try to set, since it may not be the default
                     if (!succeeded && CpuSampleIntervalMSec != 1.0F)
                        throw new ApplicationException("Can't set CPU sampling to " + CpuSampleIntervalMSec.ToString("f3") + "MSec.");
@@ -1498,7 +1498,7 @@ namespace Microsoft.Diagnostics.Tracing.Session
         /// If 'data' is null, then it indicates that no data should be stored and the registry entry
         /// is removed.
         /// 
-        /// If 'allSesions' is true it means that you want 'old style' data filtering that affaects all ETW sessions
+        /// If 'allSesions' is true it means that you want 'old style' data filtering that affects all ETW sessions
         /// This is present only used for compatibilty 
         /// </summary>
         /// <returns>the session index that will be used for this session.  Returns -1 if an entry could not be found </returns>

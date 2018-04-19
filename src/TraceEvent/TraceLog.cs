@@ -487,9 +487,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.realTimeSource = new TraceLogEventSource(this.events, ownsItsTraceLog: true);   // Dispose
             this.realTimeQueue = new Queue<QueueEntry>();
             this.realTimeFlushTimer = new Timer(FlushRealTimeEvents, null, 1000, 1000);
-
-            if (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
-                this.pointerSize = 8;
+            this.pointerSize = ETWTraceEventSource.GetOSPointerSize();
 
             //double lastTime = 0;
 
@@ -498,7 +496,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 // we need to guard our data structures from concurrent access.  TraceLog data 
                 // is modified by this code as well as code in FlushRealTimeEvents.  
-                lock (realTimeQueue)    
+                lock (realTimeQueue)
                 {
                     // we delay things so we have a chance to match up stacks.  
 
@@ -579,7 +577,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             Debug.Assert(toSend.myBuffer != IntPtr.Zero);
             GC.SuppressFinalize(toSend);    // Tell the finalizer you don't need it because I will do the cleanup
             // Do the cleanup, but also keep toSend alive during the dispatch and until finalization was suppressed.  
-            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);   
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(toSend.myBuffer);
         }
 
         /// <summary>
@@ -1071,6 +1069,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             DbgIDRSDSTraceData lastDbgData = null;
             ImageIDTraceData lastImageIDData = null;
             FileVersionTraceData lastFileVersionData = null;
+            TraceModuleFile lastTraceModuleFile = null;
+            long lastTraceModuleFileQPC = 0;
 
             kernelParser.ImageGroup += delegate (ImageLoadTraceData data)
             {
@@ -1108,13 +1108,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     moduleFile.productName = lastFileVersionData.ProductName;
                 }
 
-                /* allow these to remain in the trace.  Otherwise you can't just look at the events view and look up DLL info
-                 * which is pretty convenient.   If we have a good image view that we can remove these. 
-                if (data.Opcode == TraceEventOpcode.DataCollectionStart)
-                    bookKeepingEvent = true;
-                else if (data.Opcode == TraceEventOpcode.DataCollectionStop)
-                    bookKeepingEvent = true;
-                 ***/
+                // Remember this ModuleFile because there can be Image* events after this with 
+                // the same timestamp that have information that we need to put  into it 
+                // (the logic above handles the case when those other events are first).  
+                lastTraceModuleFile = moduleFile;
+                lastTraceModuleFileQPC = data.TimeStampQPC;
             };
             var symbolParser = new SymbolTraceEventParser(rawEvents);
 
@@ -1126,18 +1124,43 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             symbolParser.ImageIDDbgID_RSDS += delegate (DbgIDRSDSTraceData data)
             {
                 hasPdbInfo = true;
-                lastDbgData = (DbgIDRSDSTraceData)data.Clone();
                 noStack = true;
+                // The ImageIDDbgID_RSDS may be after the ImageLoad
+                if (lastTraceModuleFile != null &&  lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.pdbName = data.PdbFileName;
+                    lastTraceModuleFile.pdbSignature = data.GuidSig;
+                    lastTraceModuleFile.pdbAge = data.Age;
+                    lastDbgData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastDbgData = (DbgIDRSDSTraceData)data.Clone();
             };
             symbolParser.ImageID += delegate (ImageIDTraceData data)
             {
-                lastImageIDData = (ImageIDTraceData)data.Clone();
                 noStack = true;
+                // The ImageID may be after the ImageLoad
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.timeDateStamp = data.TimeDateStamp;
+                    lastImageIDData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastImageIDData = (ImageIDTraceData)data.Clone();
             };
             symbolParser.ImageIDFileVersion += delegate (FileVersionTraceData data)
             {
-                lastFileVersionData = (FileVersionTraceData)data.Clone();
                 noStack = true;
+                // The ImageIDFileVersion may be after the ImageLoad
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                {
+                    lastTraceModuleFile.fileVersion = data.FileVersion;
+                    lastTraceModuleFile.productVersion = data.ProductVersion;
+                    lastTraceModuleFile.productName = data.ProductName;
+                    lastFileVersionData = null;
+                }
+                else  // Or before (it is handled in ImageGroup callback above)
+                    lastFileVersionData = (FileVersionTraceData)data.Clone();
             };
             symbolParser.ImageIDOpcode37 += delegate
             {
@@ -1538,12 +1561,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             kernelParser.PerfInfoCollectionStart += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 startSeen = true;
                 sampleProfileInterval100ns = data.NewInterval;
             };
 
             kernelParser.PerfInfoSetInterval += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 setSeen = true;
                 if (!startSeen)
                     sampleProfileInterval100ns = data.OldInterval;
@@ -1551,6 +1580,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             kernelParser.PerfInfoSetInterval += delegate (SampledProfileIntervalTraceData data)
             {
+                if (data.SampleSource != 0)     // 0 is the CPU sampling interval 
+                    return;
+
                 if (!setSeen && !startSeen)
                     sampleProfileInterval100ns = data.OldInterval;
             };
@@ -1747,7 +1779,26 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             if (rawEtwEvents != null)
                 rawEtwEvents.DisallowEventIndexAccess = true;
 #endif
-            rawEvents.Process();                  // Run over the data. 
+            try
+            {
+                rawEvents.Process();                  // Run over the data. 
+            }
+            catch (Exception e)
+            {
+                options.ConversionLog.WriteLine("[ERROR: processing events ****]");
+                if (options.ContinueOnError)
+                {
+                    options.ConversionLog.WriteLine("***** The following Exception was thrown during processing *****");
+                    options.ConversionLog.WriteLine(e.ToString());
+                    options.ConversionLog.WriteLine("***** However ContinueOnError is set, so we continue processing  what we have *****");
+                    options.ConversionLog.WriteLine("Continuing Processing...");
+                }
+                else
+                {
+                    options.ConversionLog.WriteLine("***** Consider using /ContinueOnError to ignore the bad part of the trace.  *****");
+                    throw;
+                }
+            }
 #if DEBUG
             if (rawEtwEvents != null)
                 rawEtwEvents.DisallowEventIndexAccess = false;
@@ -2851,7 +2902,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             deserializer.RegisterFactory(typeof(ProviderManifest), delegate
             {
-                return new ProviderManifest(null, ManifestEnvelope.ManifestFormats.SimpleXmlFormat, 0, 0);
+                return new ProviderManifest(null, ManifestEnvelope.ManifestFormats.SimpleXmlFormat, 0, 0, "");
             });
             deserializer.RegisterFactory(typeof(DynamicTraceEventData), delegate
             {
@@ -3204,7 +3255,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         }
         int IFastSerializableVersion.Version
         {
-            get { return 68; }
+            get { return 69; }
         }
         int IFastSerializableVersion.MinimumVersionCanRead
         {
@@ -7892,7 +7943,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
     /// Conceptually a TraceCodeAddress represents a particular point of execution within a particular 
     /// line of code in some source code.    As a practical matter, they are represented two ways
     /// depending on whether the code is managed or not.
-    /// <para>* For native code (or NGened code), it is represented as a virtual addresis along with the loaded native
+    /// <para>* For native code (or NGened code), it is represented as a virtual address along with the loaded native
     /// module that includes that address along with its load address.  A code address does NOT 
     /// know its process because they can be shared among all processes that load a particular module
     /// at a particular location.   These code addresses will not have methods associated with them
@@ -9099,6 +9150,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         ///  starts.  
         /// </summary>
         public string ExplicitManifestDir;
+        /// <summary>
+        /// If errors occur during conversion, just assume the traced ended at that point and continue. 
+        /// </summary>
+        public bool ContinueOnError;
         #region private
         private TextWriter m_ConversionLog;
         #endregion

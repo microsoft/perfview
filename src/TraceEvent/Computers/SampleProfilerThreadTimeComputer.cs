@@ -41,6 +41,13 @@ namespace Microsoft.Diagnostics.Tracing
         /// If set we compute thread time using Tasks
         /// </summary>
         public bool UseTasks;
+
+        /// <summary>
+        /// Track additional info on like EventName or so.
+        /// Default to true to keep backward compatibility.
+        /// </summary>
+        public bool IncludeEventSourceEvents = true;
+
         /// <summary>
         /// Use start-stop activities as the grouping construct. 
         /// </summary>
@@ -172,50 +179,52 @@ namespace Microsoft.Diagnostics.Tracing
             var eventPipeTraceEventPraser = new SampleProfilerTraceEventParser(eventSource);
             eventPipeTraceEventPraser.ThreadSample += OnSampledProfile;
 
-            // TODO FIX NOW Experimental : Include all 
-            eventSource.Dynamic.All += delegate (TraceEvent data)
+            if (IncludeEventSourceEvents)
             {
-                // TODO decide what the correct heuristic is.  
-                // Currently I only do this for things that might be an EventSoruce (uses the name->Guid hashing)
-                // Most importantly, it excludes the high volume CLR providers.   
-                if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
-                    return;
-
-                //  We don't want most of the FrameworkEventSource events either.  
-                if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                eventSource.Dynamic.All += delegate (TraceEvent data)
                 {
-                    if (!((TraceEventID)140 <= data.ID && data.ID <= (TraceEventID)143))    // These are the GetResponce and GetResestStream events  
+                    // TODO decide what the correct heuristic is.  
+                    // Currently I only do this for things that might be an EventSoruce (uses the name->Guid hashing)
+                    // Most importantly, it excludes the high volume CLR providers.   
+                    if (!TraceEventProviders.MaybeAnEventSource(data.ProviderGuid))
                         return;
-                }
 
-                // We don't care about the TPL provider.  Too many events.  
-                if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
-                    return;
+                    //  We don't want most of the FrameworkEventSource events either.  
+                    if (data.ProviderGuid == FrameworkEventSourceTraceEventParser.ProviderGuid)
+                    {
+                        if (!((TraceEventID)140 <= data.ID && data.ID <= (TraceEventID)143))    // These are the GetResponce and GetResestStream events  
+                            return;
+                    }
 
-                // We don't care about ManifestData events.  
-                if (data.ID == (TraceEventID)0xFFFE)
-                    return;
+                    // We don't care about the TPL provider.  Too many events.  
+                    if (data.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
+                        return;
 
-                TraceThread thread = data.Thread();
-                if (thread == null)
-                    return;
+                    // We don't care about ManifestData events.  
+                    if (data.ID == (TraceEventID)0xFFFE)
+                        return;
 
-                StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
+                    TraceThread thread = data.Thread();
+                    if (thread == null)
+                        return;
 
-                // Tack on additional info about the event. 
-                var fieldNames = data.PayloadNames;
-                for (int i = 0; i < fieldNames.Length; i++)
-                {
-                    var fieldName = fieldNames[i];
-                    var value = data.PayloadString(i);
-                    var fieldNodeName = "EventData: " + fieldName + "=" + value;
-                    var fieldNodeIndex = m_outputStackSource.Interner.FrameIntern(fieldNodeName);
-                    stackIndex = m_outputStackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
-                }
-                stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("EventName: " + data.ProviderName + "/" + data.EventName), stackIndex);
+                    StackSourceCallStackIndex stackIndex = GetCallStack(data, thread);
 
-                m_threadState[(int)thread.ThreadIndex].LogThreadStack(data.TimeStampRelativeMSec, stackIndex, thread, this, false);
-            };
+                    // Tack on additional info about the event.
+                    var fieldNames = data.PayloadNames;
+                    for (int i = 0; i < fieldNames.Length; i++)
+                    {
+                        var fieldName = fieldNames[i];
+                        var value = data.PayloadString(i);
+                        var fieldNodeName = "EventData: " + fieldName + "=" + value;
+                        var fieldNodeIndex = m_outputStackSource.Interner.FrameIntern(fieldNodeName);
+                        stackIndex = m_outputStackSource.Interner.CallStackIntern(fieldNodeIndex, stackIndex);
+                    }
+                    stackIndex = m_outputStackSource.Interner.CallStackIntern(m_outputStackSource.Interner.FrameIntern("EventName: " + data.ProviderName + "/" + data.EventName), stackIndex);
+
+                    m_threadState[(int)thread.ThreadIndex].LogThreadStack(data.TimeStampRelativeMSec, stackIndex, thread, this, false);
+                };
+            }
 
             eventSource.Process();
 

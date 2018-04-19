@@ -138,7 +138,7 @@ of the event.   This meta-data is given an small integer numeric ID
 
 One of the fields for an event is this Meta-data ID.   An event with 
 a Meta-data ID of 0 is expected to be a Meta-data event itself.  
-See the constructor of EventPipeEventMetaData for details of the 
+See the constructor of EventPipeEventMetaDataHeader for details of the 
 format of this event.
 
 ## Ending the stream: The NullReference Tag
@@ -183,11 +183,11 @@ There are however several ways to do this.  The simplest way is to
 
 Every object has a begin tag, a type, data objects, and an end tag.
 One feature of the FastSerialiable library is that it has a tag 
-for all the different data types (bool, byte, short, int, long, string blob).
+for all the different data types (bool, byte, short, int, long, string, blob).
 It also has logic that after parsing the data area it 'looks' for 
 the end tag (so we know the data is partially sane at least).  However
 during this search if it finds other tags, it knows how to skip them.
-Thus if after the 'Know Version 0' data objects, you place tagged
+Thus if after the 'Known Version 0' data objects, you place tagged
 data, ANY reader will know how to skip it (it skips all tagged things
 until it finds an endObject tag).  
 
@@ -202,7 +202,7 @@ The format is basically a list of objects, but there is no requirement
 that there are only very loose requirements on the order or number of these
 Thus you can create a new object type and insert that object in the
 stream (that object must have only tagged fields however but a tagged
-blob can do almost anything).  This allows whole new objects to be 
+blob can represent almost anything).  This allows whole new objects to be 
 added to the file format without breaking existing readers.  
 
 #### Version Numbers and forward compatibility.

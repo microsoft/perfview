@@ -1,7 +1,0 @@
-{
-  "profiles": {
-    "PerfView": {
-      "executablePath": "$(TargetDir)$(AssemblyName)$(TargetExt)"
-    }
-  }
-}

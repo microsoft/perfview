@@ -418,6 +418,7 @@ namespace PerfView
 
                     // TODO this is a bit of a hack, as it might replace other instances of the string.  
                     Title = Regex.Replace(Title, @" Stacks(\([^)]*\))? ", " Stacks(" + CallTree.Root.InclusiveMetric.ToString("n0") + " metric) ");
+                    UpdateDiffMenus(StackWindows);
                     onComplete?.Invoke();
                 });
             });
@@ -1618,8 +1619,7 @@ namespace PerfView
             var cells = SelectedCells();
             if (cells != null)
             {
-                var callTreeNodes = cells.Select(cell => cell.Item).OfType<CallTreeNodeBase>();
-
+                var callTreeNodes = cells.Select(cell => ToCallTreeNodeBase(cell.Item)).Where(cell => cell != null);
                 if (callTreeNodes.Any())
                 {
                     StartTextBox.Text = callTreeNodes.Min(node => node.FirstTimeRelativeMSec).ToString("n3");
@@ -1629,6 +1629,16 @@ namespace PerfView
                 else
                     StatusBar.LogError("Could not set time range.");
             }
+        }
+
+        // Given a CallTreeViewNode or a CallTreeNodeBase (this is what might be in the 'Item' list of a view)
+        // return a CallTreeNodeBase or null if it is none of those things.   
+        private CallTreeNodeBase ToCallTreeNodeBase(object viewOrDataObject)
+        {
+            var asViewNode = viewOrDataObject as CallTreeViewNode;
+            if (asViewNode != null)
+                return asViewNode.Data;
+            return viewOrDataObject as CallTreeNodeBase;
         }
 
         // Scenario-related stuff
@@ -2352,6 +2362,51 @@ namespace PerfView
                            (CallersTab.IsSelected && m_callersView.SelectedNode != null) ||
                            (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
         }
+
+        private void DoSetBrownBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.BurlyWood);
+        }
+
+        private void DoSetBlueBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.LightSkyBlue);
+        }
+
+        private void DoSetRedBackgroundColor(object sender, ExecutedRoutedEventArgs e)
+        {
+            DoSetBackgroundColor(sender, e, System.Drawing.Color.Coral);
+        }
+
+        private void DoSetBackgroundColor(object sender, ExecutedRoutedEventArgs e, System.Drawing.Color color)
+        {
+            CallTreeViewNode selectedNode = null;
+            CallTreeView view = null;
+            if (CallTreeTab.IsSelected)
+                view = CallTreeView;
+            else if (CallersTab.IsSelected)
+                view = m_callersView;
+            else if (CalleesTab.IsSelected)
+                view = m_calleesView;
+
+            if (view != null)
+            {
+                selectedNode = view.SelectedNode;
+                if (selectedNode != null)
+                {
+                    selectedNode.SetBackgroundColor(color);
+                    view.m_perfGrid.Grid.Items.Refresh();
+                }
+            }
+        }
+
+        private void CanSetBackgroundColor(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = (CallTreeTab.IsSelected && CallTreeView.SelectedNode != null) ||
+                           (CallersTab.IsSelected && m_callersView.SelectedNode != null) ||
+                           (CalleesTab.IsSelected && m_calleesView.SelectedNode != null);
+        }
+
         private void DoFoldPercent(object sender, ExecutedRoutedEventArgs e)
         {
             FoldPercentTextBox.Focus();
@@ -2536,7 +2591,7 @@ namespace PerfView
 
         private void FlameGraphTab_GotFocus(object sender, RoutedEventArgs e)
         {
-            if (FlameGraphCanvas.Children.Count == 0 || m_RedrawFlameGraphWhenItBecomesVisible)
+            if (FlameGraphCanvas.IsEmpty || m_RedrawFlameGraphWhenItBecomesVisible)
                 RedrawFlameGraph();
         }
 
@@ -2552,24 +2607,20 @@ namespace PerfView
 
         private void RedrawFlameGraph()
         {
-            FlameGraph.Draw(
+            FlameGraphCanvas.Draw(
                   CallTree.Root.HasChildren
                       ? FlameGraph.Calculate(CallTree, FlameGraphCanvas.ActualWidth, FlameGraphCanvas.ActualHeight)
-                      : Enumerable.Empty<FlameGraph.FlameBox>(),
-                  FlameGraphCanvas);
+                      : Enumerable.Empty<FlameGraph.FlameBox>());
 
             m_RedrawFlameGraphWhenItBecomesVisible = false;
         }
 
-        private void FlameGraphCanvas_MouseMove(object sender, MouseEventArgs e)
+        private void FlameGraphCanvas_CurrentFlameBoxChanged(object sender, string toolTipText)
         {
-            if (StatusBar.LoggedError || FlameGraphCanvas.Children.Count == 0)
+            if (StatusBar.LoggedError)
                 return;
 
-            var pointed = FlameGraphCanvas.Children.OfType<FrameworkElement>().FirstOrDefault(box => box.IsMouseOver);
-            var toolTip = pointed?.ToolTip as ToolTip;
-            if (toolTip != null)
-                StatusBar.Status = toolTip.Content as string;
+            StatusBar.Status = toolTipText;
         }
 
         private void DoSaveFlameGraph(object sender, RoutedEventArgs e)
@@ -2831,6 +2882,9 @@ namespace PerfView
             new InputGestureCollection() { new KeyGesture(Key.Space) });
         public static RoutedUICommand CollapseCommand = new RoutedUICommand("Collapse", "Collapse", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.Space, ModifierKeys.Shift) });
+        public static RoutedUICommand SetBrownBackgroundColorCommand = new RoutedUICommand("Set Brown Background Color", "SetBrownBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetBlueBackgroundColorCommand = new RoutedUICommand("Set Blue Background Color", "SetBlueBackgroundColor", typeof(StackWindow)); 
+        public static RoutedUICommand SetRedBackgroundColorCommand = new RoutedUICommand("Set Red Background Color", "SetRedBackgroundColor", typeof(StackWindow));
         public static RoutedUICommand FoldPercentCommand = new RoutedUICommand("Fold %", "FoldPercent", typeof(StackWindow),
             new InputGestureCollection() { new KeyGesture(Key.F6) });
         public static RoutedUICommand IncreaseFoldPercentCommand = new RoutedUICommand("Increase Fold %", "Increase FoldPercent", typeof(StackWindow),

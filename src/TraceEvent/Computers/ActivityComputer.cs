@@ -1146,7 +1146,11 @@ namespace Microsoft.Diagnostics.Tracing
                 }
             }
             if (!foundThreadingAPIs)
-                throw new ApplicationException("Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
+            {
+                // It can happen but it's not a critical failure. Log the issue instead of throwing.
+                // TODO: Looking for better ways to inform the users when this happens.
+                m_symbolReader.Log.WriteLine("Error: Could not resolve symbols for Task library (mscorlib), task stacks will not work.");
+            }
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 ﻿#define DEPENDENT_HANDLE
 using ClrMemory;
-#if STANDALONE_EXE
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -9,7 +8,6 @@ using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Session;
 using System.Threading.Tasks;
-#endif
 using FastSerialization;
 using Graphs;
 using Microsoft.Diagnostics.Runtime;
@@ -113,10 +111,8 @@ public class GCHeapDumper
         // There are assumptions that JavaScript is first (CCW nodes, and aggregate stats)
         bool hasDotNet = false;
         bool hasJScript = false;
-#if STANDALONE_EXE
         bool hasCoreClr = false;
         bool hasSilverlight = false;
-#endif
         bool hasClrDll = false;
         bool hasMrt = false;
 
@@ -138,11 +134,9 @@ public class GCHeapDumper
                 }
                 else if (fileName.EndsWith("\\coreclr.dll", StringComparison.OrdinalIgnoreCase))
                 {
-#if STANDALONE_EXE
                     if (0 <= fileName.IndexOf("Microsoft Silverlight", StringComparison.OrdinalIgnoreCase))
                         hasSilverlight = true;
                     hasCoreClr = true;
-#endif
                     hasDotNet = true;
                 }
                 else if (fileName.EndsWith("\\mscorwks.dll", StringComparison.OrdinalIgnoreCase))
@@ -164,7 +158,6 @@ public class GCHeapDumper
 
         m_log.WriteLine("Process Has DotNet: {0} Has JScript: {1} Has ClrDll: {2} HasMrt {3}", hasDotNet, hasJScript, hasClrDll, hasMrt);
 
-#if STANDALONE_EXE
         if (hasClrDll && hasJScript)
         {
             m_log.WriteLine("[Detected both a JScript and .NET heap, forcing a GC before doing a heap dump.]");
@@ -181,12 +174,10 @@ public class GCHeapDumper
 
         if (hasJScript)
             TryGetJavaScriptDump(processID);
-#endif
 
         IList<string> configurationDirectories = null;
         bool is64bitSource = false;
 
-#if STANDALONE_EXE
         if (hasMrt || (hasCoreClr && !hasSilverlight) || (hasDotNet && UseETW))
         {
             if (hasMrt)
@@ -198,7 +189,6 @@ public class GCHeapDumper
                 throw new ApplicationException("Could not get .NET Heap Dump.");
         }
         else
-#endif
             if (hasDotNet)
         {
             if (!TryGetDotNetDump(processID))
@@ -427,7 +417,6 @@ public class GCHeapDumper
                     runtime = currRuntime.CreateRuntime(dacLocation);
                     break;
                 }
-#if STANDALONE_EXE
                 else
                 {
                     var dacInfo = currRuntime.DacInfo;
@@ -464,7 +453,6 @@ public class GCHeapDumper
                     runtime = currRuntime.CreateRuntime(dacFilePath);
                     break;
                 }
-#endif
             }
             catch (ClrDiagnosticsException clrDiagEx)
             {
@@ -527,7 +515,6 @@ public class GCHeapDumper
     /// </summary>
     public ulong PromotedBytesThreshold;
 
-#if STANDALONE_EXE
     /// <summary>
     /// Force a .NET GC on a particular process. 
     /// </summary>
@@ -777,7 +764,6 @@ public class GCHeapDumper
         };
 
     }
-#endif
 
     // output properties
     /// <summary>
@@ -900,7 +886,6 @@ public class GCHeapDumper
         }
     }
 
-#if STANDALONE_EXE
     /// <summary>
     /// Loads the ETWClrProfiler into the process 'processID'.   
     /// </summary>
@@ -1047,7 +1032,6 @@ public class GCHeapDumper
         }
         return m_gotDotNetData;
     }
-#endif
 
     private bool TryGetDotNetDump(int processID)
     {

@@ -10,6 +10,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent", "src\TraceEven
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSVReader", "src\CSVReader\CSVReader.csproj", "{F7D0F851-9B0D-4224-91AB-7FC12477F206}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EtwClrProfilerSigning", "src\EtwClrProfilerSigning\EtwClrProfilerSigning.csproj", "{F3973FE4-DF1B-44C4-8D9C-2DE4B159CA69}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfView", "src\PerfView\PerfView.csproj", "{6BAC7496-6953-41B8-9042-AAE45405A095}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8} = {E9980619-4016-4A4A-B7CC-F8B0E483BDB8}
@@ -23,8 +25,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentat
 		documentation\MakingSupportFilesNugetPackages.md = documentation\MakingSupportFilesNugetPackages.md
 		documentation\OpenSourceGitWorkflow.md = documentation\OpenSourceGitWorkflow.md
 		documentation\SettingUpRepoInVS.md = documentation\SettingUpRepoInVS.md
+		documentation\Downloading.md = documentation\Downloading.md
 		documentation\SimpleGitWorkflow.md = documentation\SimpleGitWorkflow.md
-		documentation\TraceEventProgrammersGuide.md = documentation\TraceEventProgrammersGuide.md
+		documentation\TraceEvent\TraceEventLibrary.md = documentation\TraceEvent\TraceEventLibrary.md
+		documentation\TraceEvent\TraceEventProgrammersGuide.md = documentation\TraceEvent\TraceEventProgrammersGuide.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4068F9B-607A-4531-98A8-DE9B392C2D2C}"
@@ -63,7 +67,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceParserGen", "src\Trace
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfViewCollect", "src\PerfViewCollect\PerfViewCollect.csproj", "{945509BC-A133-493B-9295-43EC708FD57F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TraceEventSamples", "src\TraceEvent\Samples\TraceEventSamples.csproj", "{2D5418E0-6513-4285-8B0D-53A30CBEF242}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEventSamples", "src\TraceEvent\Samples\TraceEventSamples.csproj", "{2D5418E0-6513-4285-8B0D-53A30CBEF242}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FastSerialization.Tests", "src\FastSerialization.Tests\FastSerialization.Tests.csproj", "{ECAD6A7A-9302-4D5B-8DC6-18A9418EEDDF}"
 EndProject
@@ -73,6 +77,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Debug|Any CPU.Build.0 = Debug|Win32
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Release|Any CPU.ActiveCfg = Release|Win32
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Release|Any CPU.Build.0 = Release|Win32
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Debug|Any CPU.Build.0 = Debug|x64
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|Any CPU.ActiveCfg = Release|x64
+		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|Any CPU.Build.0 = Release|x64
 		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B68F4968-A7CF-41CC-AD6E-373DB5E67944}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -81,6 +93,10 @@ Global
 		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7D0F851-9B0D-4224-91AB-7FC12477F206}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3973FE4-DF1B-44C4-8D9C-2DE4B159CA69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3973FE4-DF1B-44C4-8D9C-2DE4B159CA69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3973FE4-DF1B-44C4-8D9C-2DE4B159CA69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3973FE4-DF1B-44C4-8D9C-2DE4B159CA69}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6BAC7496-6953-41B8-9042-AAE45405A095}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6BAC7496-6953-41B8-9042-AAE45405A095}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BAC7496-6953-41B8-9042-AAE45405A095}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -101,14 +117,6 @@ Global
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6EACF92-F22D-47DC-8EEB-9BBC4DF1E4D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Debug|Any CPU.Build.0 = Debug|Win32
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Release|Any CPU.ActiveCfg = Release|Win32
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB8}.Release|Any CPU.Build.0 = Release|Win32
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Debug|Any CPU.Build.0 = Debug|x64
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|Any CPU.ActiveCfg = Release|x64
-		{E9980619-4016-4A4A-B7CC-F8B0E483BDB9}.Release|Any CPU.Build.0 = Release|x64
 		{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C42873F2-D4A5-4AC7-9ADB-9CD8E1856A9B}.Release|Any CPU.ActiveCfg = Release|Any CPU

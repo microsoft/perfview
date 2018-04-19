@@ -49,7 +49,7 @@ namespace Diagnostics.Tracing.StackSources
                         var sample = new StackSourceSample(this);
                         string callTree = reader.GetAttribute("call_tree");
 
-                        // Case for allcoation stacks 
+                        // Case for allocation stacks 
                         string sizeStr = reader.GetAttribute("size");
                         if (sizeStr != null)
                         {

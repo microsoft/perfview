@@ -125,6 +125,7 @@ namespace PerfView
 
         public bool NetworkCapture;         // Capture the full packets of every incoming and outgoing  packet
         public bool NetMonCapture;          // Capture a NetMon-only trace as well as a standard ETW trace (implies NetworkCapture)  
+        public bool CCWRefCount;            // Capture CCW references count increasing and decreasing
 
         public bool Wpr;                    // Collect like WPR (no zip, puts NGEN pdbs in a .ngenpdbs directory).  
 
@@ -132,6 +133,7 @@ namespace PerfView
 
         // Stop options.  
         public bool NoRundown;
+       public bool NoNGenPdbs;
         public bool NoNGenRundown;
         public bool NoClrRundown;
         public bool NoV2Rundown;
@@ -179,6 +181,7 @@ namespace PerfView
         public double CpuSampleMSec = 1.0;
         public bool KeepAllEvents;
         public int MaxEventCount;
+        public bool ContinueOnError;
         public double SkipMSec;
         public bool ForceNgenRundown;
         public bool DumpHeap;
@@ -319,7 +322,8 @@ namespace PerfView
                 "This also enables threadTime as well as user mode providers WPR would normally collect by default.   This option can also be used " + 
                 "On the unzip command.   See 'Working with WPA' in the help for more.");
             parser.DefineOptionalQualifier("LowPriority", ref LowPriority, "Do merging and ZIPing at low priority to minimize impact to system.");
-            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't request CLR Rundown events.");
+            parser.DefineOptionalQualifier("NoRundown", ref NoRundown, "Don't collect rundown events.  Use only if you know the process of interest has exited.");
+            parser.DefineOptionalQualifier("NoNGenPdbs", ref NoNGenPdbs, "Don't generate NGEN Pdbs");
             parser.DefineOptionalQualifier("NoNGenRundown", ref NoNGenRundown,
                 "Don't do rundown of symbolic information in NGEN images (only needed pre V4.5).");
             parser.DefineOptionalQualifier("NoClrRundown", ref NoClrRundown,
@@ -334,6 +338,7 @@ namespace PerfView
                 "Useful for trimming large ETL files. 1M typically yields 300-400 Meg of data considered.");
             parser.DefineOptionalQualifier("SkipMSec", ref SkipMSec, "Skips the first N MSec of the trace.  " +
                 "Useful for trimming large ETL files in conjunction with the /MaxEventCount qualifier.");
+            parser.DefineOptionalQualifier("ContinueOnError", ref ContinueOnError, "Processes bad traces as best it can.");
 
             parser.DefineOptionalQualifier("CpuCounters", ref CpuCounters,
                 "A comma separated list of hardware CPU counters specifications NAME:COUNT to turn on.  " +
@@ -442,7 +447,7 @@ namespace PerfView
             parser.DefineOptionalQualifier("DotNetCalls", ref DotNetCalls, "Turns on per-call .NET profiling.");
             parser.DefineOptionalQualifier("DotNetCallsSampled", ref DotNetCallsSampled, "Turns on per-call .NET profiling, sampling types in a smart way to keep overhead low.");
             parser.DefineOptionalQualifier("JITInlining", ref JITInlining, "Turns on logging of successful and failed JIT inlining attempts.");
-
+            parser.DefineOptionalQualifier("CCWRefCount", ref CCWRefCount, "Turns on logging of information about .NET Native CCW reference counting.");
             parser.DefineOptionalQualifier("OSHeapProcess", ref OSHeapProcess, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given process ID.");
             parser.DefineOptionalQualifier("OSHeapExe", ref OSHeapExe, "Turn on per-allocation profiling of allocation from the OS heap for the process with the given EXE (only filename WITH extension).");
 

@@ -1576,7 +1576,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             m_calleesByName = new Dictionary<string, CallTreeNodeBase>();
             m_callees = new List<CallTreeNodeBase>();
 
-            var accumulated = AccumlateSamplesForNode(callTree.Root, 0);
+            var accumulated = AccumulateSamplesForNode(callTree.Root, 0);
             CallTreeNodeBase weightedSummary = accumulated.WeightedSummary;
             double weightedSummaryScale = accumulated.WeightedSummaryScale;
             bool isUniform = accumulated.IsUniform;
@@ -1692,7 +1692,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// This node has a caller and callee list, and these nodes (as well as the CallerCalleNode itself) represent the aggregation
         /// over the entire tree.
         /// 
-        /// AccumlateSamplesForNode is the routine that takes a part of a aggregated call tree (represented by 'treeNode' and adds
+        /// AccumulateSamplesForNode is the routine that takes a part of a aggregated call tree (represented by 'treeNode' and adds
         /// in the statistics for that call tree into the CallerCalleeNode aggregations (and its caller and callee lists).  
         /// 
         /// 'recursionsCount' is the number of times the focus node name has occurred in the path from 'treeNode' to the root.   In 
@@ -1712,12 +1712,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// isUniformRet is set to false if anyplace in 'treeNode' does not have the scaling factor weightedSummaryScaleRet.  This
         /// means the the caller cannot simply scale 'treeNode' by a weight to get weightedSummaryRet.  
         /// </summary>
-        private AccumulateSamplesResult AccumlateSamplesForNode(CallTreeNode treeNode, int recursionCount, RecursionGuard recursionGuard = default(RecursionGuard))
+        private AccumulateSamplesResult AccumulateSamplesForNode(CallTreeNode treeNode, int recursionCount, RecursionGuard recursionGuard = default(RecursionGuard))
         {
             if (recursionGuard.RequiresNewThread)
             {
                 Task<AccumulateSamplesResult> result = Task.Factory.StartNew(
-                    () => AccumlateSamplesForNode(treeNode, recursionCount, recursionGuard.ResetOnNewThread),
+                    () => AccumulateSamplesForNode(treeNode, recursionCount, recursionGuard.ResetOnNewThread),
                     TaskCreationOptions.LongRunning);
 
                 return result.GetAwaiter().GetResult();
@@ -1753,7 +1753,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     CallTreeNode treeNodeCallee = treeNode.m_callees[i];
 
                     // Get the correct weighted summary for the children.  
-                    var nestedResult = AccumlateSamplesForNode(treeNodeCallee, recursionCount, recursionGuard.Recurse);
+                    var nestedResult = AccumulateSamplesForNode(treeNodeCallee, recursionCount, recursionGuard.Recurse);
                     CallTreeNodeBase calleeWeightedSummary = nestedResult.WeightedSummary;
                     double calleeWeightedSummaryScale = nestedResult.WeightedSummaryScale;
                     bool isUniform = nestedResult.IsUniform;
@@ -2161,7 +2161,7 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         /// <summary>
         /// AggregateCallTreeNode can represent either a 'callers' tree or a 'callees' tree.   For 
         /// the 'callers' tree case the node represented by the aggregate does NOT have same ID as
-        /// the tree in the m_trees list.   Instead the aggreegate is some node 'up the chain' toward 
+        /// the tree in the m_trees list.   Instead the aggregate is some node 'up the chain' toward 
         /// the caller.  m_callerOffset keeps track of this (it is the same number for all elements 
         /// in m_trees).   
         /// 

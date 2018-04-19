@@ -879,7 +879,7 @@ namespace ClrProfiler
 		// Routines for manipulating ProfilerAllocID
 		// As a concession to efficiency, the APIs above don't return allocation objects but rather a
 		// ProfilerAllocID to represent an allocation. This ID represents an opaque handle for accessing the
-		// Allocation information. Use the routines below to acesss them. 
+		// Allocation information. Use the routines below to access them. 
 		/// <summary>
 		/// Returns the ID that is one larger than the last valid Alloc ID.   Note that this is valid only AFTER a completed ReadFile() call
 		/// </summary>
@@ -911,7 +911,7 @@ namespace ClrProfiler
 
 		// As a concession to efficiency, the APIs above don't return stack objects but rather a
 		// ProfilerStackTraceID to represent a stack. This ID represents an opaque handle for accessing the
-		// stack trace. Use the routines below to acesss it. Effectively, a stack trace is a linked list of
+		// stack trace. Use the routines below to access it. Effectively, a stack trace is a linked list of
 		// ProfilerMethod structures. The idea is you use 'Method' API to get the ProfielrMethod, and
 		// 'NextFrame' API to find the parent. ProfilerStackTraceID.Null terminates the list. see
 		// code:#SampleProgram for an example use.
@@ -1247,7 +1247,7 @@ namespace ClrProfiler
 
 			// morph Dictionary`2[[T1,M1],[T2,M2]] => Dictionary<T1,T2>
 
-			// First change [] to {} just to avoid ambiguitites
+			// First change [] to {} just to avoid ambiguities
 			name = Regex.Replace(name, @"\[(,*)\]", "{$1}");
 			for (;;)
 			{
