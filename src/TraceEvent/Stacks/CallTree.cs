@@ -378,17 +378,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 treeNode.m_inclusiveCount += sample.Count;
                 treeNode.m_inclusiveMetric += sample.Metric;
 
-                if (treeNode.InclusiveMetricByTime != null)
-                    treeNode.InclusiveMetricByTime.AddSample(sample);
-
-                if (treeNode.InclusiveMetricByScenario != null)
-                    treeNode.InclusiveMetricByScenario.AddSample(sample);
+                treeNode.InclusiveMetricByTime?.AddSample(sample);
+                treeNode.InclusiveMetricByScenario?.AddSample(sample);
 
                 if (sample.TimeRelativeMSec < treeNode.m_firstTimeRelativeMSec)
                     treeNode.m_firstTimeRelativeMSec = sample.TimeRelativeMSec;
 
                 if (sampleEndTime > treeNode.m_lastTimeRelativeMSec)
                     treeNode.m_lastTimeRelativeMSec = sampleEndTime;
+
                 Debug.Assert(treeNode.m_firstTimeRelativeMSec <= treeNode.m_lastTimeRelativeMSec);
 
                 treeNode = treeNode.Caller;
@@ -1352,8 +1350,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     var callee = m_callees[from];
                     // We don't fold away Broken stacks ever.  
-                    if (Math.Abs(callee.InclusiveMetric) < minInclusiveMetric && callee.m_id != StackSourceFrameIndex.Broken &&
-                    (sumByID == null || callee.IsFoldable(minInclusiveMetric, sumByID)))
+                    if (Math.Abs(callee.InclusiveMetric) < minInclusiveMetric
+                        && callee.m_id != StackSourceFrameIndex.Broken
+                        && (sumByID == null || callee.IsFoldable(minInclusiveMetric, sumByID)))
                     {
                         // TODO the samples are no longer in time order, do we care?
                         nodesFolded++;
