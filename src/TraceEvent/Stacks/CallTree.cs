@@ -435,9 +435,12 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
 
             while (parentWorkSet.Count > 0)
             {
+                var processedInCurrentSet = new HashSet<CallTreeNode>();
                 var nextParentWorkSet = new HashSet<CallTreeNode>();
                 foreach (var node in parentWorkSet)
                 {
+                    processedInCurrentSet.Add(node);
+
                     var caller = node.Caller;
                     if (caller == null)
                         continue;
@@ -483,7 +486,8 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         current.m_firstTimeRelativeMSec = Math.Min(current.m_firstTimeRelativeMSec, node.m_firstTimeRelativeMSec);
                         current.m_lastTimeRelativeMSec = Math.Max(current.m_lastTimeRelativeMSec, node.m_lastTimeRelativeMSec);
 
-                        if (nextParentWorkSet.Contains(current))
+                        if (nextParentWorkSet.Contains(current)
+                            || (parentWorkSet.Contains(current) && !processedInCurrentSet.Contains(current)))
                         {
                             break;
                         }
