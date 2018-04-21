@@ -1190,6 +1190,7 @@ namespace Microsoft.Diagnostics.Tracing
             XmlAttrib(sb, "Version", Version);
             XmlAttribHex(sb, "Keywords", (ulong)Keywords);
             XmlAttrib(sb, "TimeStampQPC", TimeStampQPC);
+            sb.Append(" QPC=\"").Append((1000000.0 / Source.QPCFreq).ToString("f3")).Append("us\"");
             sb.AppendLine().Append(" ");
 
             XmlAttrib(sb, "Level", Level);

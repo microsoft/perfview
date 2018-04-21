@@ -1089,18 +1089,18 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 var moduleFile = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
-                // TODO FIX NOW review:  is using the timestamp the best way to make the association
+                // TODO review:  is using the timestamp the best way to make the association
                 if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
                 {
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
                     moduleFile.pdbAge = lastDbgData.Age;
+                    Debug.Assert(Path.GetFileNameWithoutExtension(moduleFile.fileName) == Path.GetFileNameWithoutExtension(moduleFile.pdbName));
                 }
                 if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                 {
                     moduleFile.timeDateStamp = lastImageIDData.TimeDateStamp;
                 }
-
                 if (lastFileVersionData != null && data.TimeStampQPC == lastFileVersionData.TimeStampQPC)
                 {
                     moduleFile.fileVersion = lastFileVersionData.FileVersion;
@@ -1125,12 +1125,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 hasPdbInfo = true;
                 noStack = true;
+
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
-                if (lastTraceModuleFile != null &&  lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
                 {
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
                     lastTraceModuleFile.pdbAge = data.Age;
+                    Debug.Assert(Path.GetFileNameWithoutExtension(lastTraceModuleFile.fileName) == Path.GetFileNameWithoutExtension(lastTraceModuleFile.pdbName));
                     lastDbgData = null;
                 }
                 else  // Or before (it is handled in ImageGroup callback above)
@@ -1140,7 +1142,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 noStack = true;
                 // The ImageID may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.timeDateStamp == 0)
                 {
                     lastTraceModuleFile.timeDateStamp = data.TimeDateStamp;
                     lastImageIDData = null;
@@ -1152,7 +1154,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 noStack = true;
                 // The ImageIDFileVersion may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.fileVersion == null)
                 {
                     lastTraceModuleFile.fileVersion = data.FileVersion;
                     lastTraceModuleFile.productVersion = data.ProductVersion;
@@ -1542,7 +1544,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Attribute CPU samples to processes.
             kernelParser.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
-                if (data.ThreadID == 0 && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle)
+                if (data.ThreadID == 0 && !data.NonProcess && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle) unless they are executing DPCs or ISRs.  
                 {
                     removeFromStream = true;
                     return;
