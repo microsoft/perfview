@@ -1125,7 +1125,7 @@ namespace Microsoft.Diagnostics.Symbols
             {
                 bool ret = contentType.EndsWith("octet-stream");
                 if (!ret)
-                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got {0} (are you redirected to a login page?)", contentType);
+                    m_log.WriteLine("FindSymbolFilePath: expecting 'octet-stream' (Binary) data, got '{0}' (are you redirected to a login page?)", contentType);
                 return ret;
             };
 
