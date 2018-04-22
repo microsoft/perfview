@@ -1089,18 +1089,20 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
 
                 var moduleFile = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC).LoadedModules.ImageLoadOrUnload(data, isLoad, fileName);
-                // TODO FIX NOW review:  is using the timestamp the best way to make the association
+                // TODO review:  is using the timestamp the best way to make the association
                 if (lastDbgData != null && data.TimeStampQPC == lastDbgData.TimeStampQPC)
                 {
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
                     moduleFile.pdbAge = lastDbgData.Age;
+                    // There is no guarentee that the names of the DLL and PDB match, but they do 99% of the time
+                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    Debug.Assert(RoughDllPdbMatch(moduleFile.fileName, moduleFile.pdbName));
                 }
                 if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                 {
                     moduleFile.timeDateStamp = lastImageIDData.TimeDateStamp;
                 }
-
                 if (lastFileVersionData != null && data.TimeStampQPC == lastFileVersionData.TimeStampQPC)
                 {
                     moduleFile.fileVersion = lastFileVersionData.FileVersion;
@@ -1125,12 +1127,17 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 hasPdbInfo = true;
                 noStack = true;
+
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
-                if (lastTraceModuleFile != null &&  lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
                 {
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
                     lastTraceModuleFile.pdbAge = data.Age;
+                    // There is no guarentee that the names of the DLL and PDB match, but they do 99% of the time
+                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    Debug.Assert(RoughDllPdbMatch(lastTraceModuleFile.fileName, lastTraceModuleFile.pdbName));
                     lastDbgData = null;
                 }
                 else  // Or before (it is handled in ImageGroup callback above)
@@ -1140,7 +1147,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 noStack = true;
                 // The ImageID may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.timeDateStamp == 0)
                 {
                     lastTraceModuleFile.timeDateStamp = data.TimeDateStamp;
                     lastImageIDData = null;
@@ -1152,7 +1159,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 noStack = true;
                 // The ImageIDFileVersion may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.fileVersion == null)
                 {
                     lastTraceModuleFile.fileVersion = data.FileVersion;
                     lastTraceModuleFile.productVersion = data.ProductVersion;
@@ -1542,7 +1549,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // Attribute CPU samples to processes.
             kernelParser.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
-                if (data.ThreadID == 0 && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle)
+                if (data.ThreadID == 0 && !data.NonProcess && !(options != null && options.KeepAllEvents))    // Don't count process 0 (idle) unless they are executing DPCs or ISRs.  
                 {
                     removeFromStream = true;
                     return;
@@ -1949,6 +1956,34 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             this.options.ConversionLog.WriteLine("[Conversion complete {0:n0} events.  Conversion took {1:n0} sec.]",
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
         }
+
+#if DEBUG
+        // Pdbs and DLLs often 'match'.   Use this to insure we have hooked
+        // up the PDB to the DLL correctly.    This is heurisitc and only used
+        // in testing.  
+        static bool RoughDllPdbMatch(string dllPath, string pdbPath)
+        {
+            string dllName = Path.GetFileNameWithoutExtension(dllPath);
+            string pdbName = Path.GetFileNameWithoutExtension(pdbPath);
+
+            // Exceptions to the rule below 
+            if (0 <= dllName.IndexOf("krnl", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (0 <= dllName.IndexOf("vshost", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (0 <= dllName.IndexOf("flash", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // People often rename things but the keep the prefix in the PDB name. 
+            if (dllName.Length > 5)
+                dllName = dllName.Substring(0, 5);
+
+            if (0 <= pdbName.IndexOf(dllName, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return false;
+        }
+#endif 
 
         /// <summary>
         /// This is a helper routine that adds the address 'address' in the event 'data' to the map from events
