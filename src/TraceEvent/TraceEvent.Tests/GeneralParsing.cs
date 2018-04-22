@@ -174,7 +174,7 @@ namespace TraceEventTests
                 var histogramLine = "COUNT " + keyValue.Key + ":" + keyValue.Value;
 
                 outputFile.WriteLine(histogramLine);
-                var expectedistogramLine = baselineFile.ReadLine();
+                var expectedistogramLine = baselineFile.ReadLine().Trim();
                 lineNum++;
 
                 if (!histogramMismatch && expectedistogramLine != histogramLine)
