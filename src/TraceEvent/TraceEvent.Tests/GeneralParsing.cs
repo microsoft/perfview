@@ -181,8 +181,8 @@ namespace TraceEventTests
                 {
                     histogramMismatch = true;
                     Output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
-                    Output.WriteLine(string.Format("   Expected: {0}", histogramLine));
-                    Output.WriteLine(string.Format("   Actual  : {0}", expectedistogramLine));
+                    Output.WriteLine(string.Format("   Expected: {0}", expectedistogramLine));
+                    Output.WriteLine(string.Format("   Actual  : {0}", histogramLine));
 
                     Output.WriteLine("To Compare output and baseline (baseline is SECOND)");
                     Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
