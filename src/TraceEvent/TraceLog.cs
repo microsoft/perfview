@@ -1957,12 +1957,12 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
         }
 
-#if DEBUG
         // Pdbs and DLLs often 'match'.   Use this to insure we have hooked
         // up the PDB to the DLL correctly.    This is heurisitc and only used
         // in testing.  
         static bool RoughDllPdbMatch(string dllPath, string pdbPath)
         {
+#if DEBUG
             string dllName = Path.GetFileNameWithoutExtension(dllPath);
             string pdbName = Path.GetFileNameWithoutExtension(pdbPath);
 
@@ -1980,10 +1980,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
             if (0 <= pdbName.IndexOf(dllName, StringComparison.OrdinalIgnoreCase))
                 return true;
-
+#endif 
             return false;
         }
-#endif 
 
         /// <summary>
         /// This is a helper routine that adds the address 'address' in the event 'data' to the map from events
