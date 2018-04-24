@@ -181,6 +181,8 @@ namespace TraceEventTests
                 // Need to figure out why, but for now it is tracked by issue https://github.com/Microsoft/perfview/issues/643
                 if (keyValue.Key.Contains("GC/AllocationTick") || keyValue.Key.Contains("Kernel/DiskIO/Read"))
                     continue;
+                if (etlFileName.Contains("net.4.0") && (keyValue.Key.Contains("HeapStats") || keyValue.Key.Contains("Kernel/PerfInfo/Sample")))
+                    continue;
 
                 if (!histogramMismatch && expectedistogramLine != histogramLine)
                 {
