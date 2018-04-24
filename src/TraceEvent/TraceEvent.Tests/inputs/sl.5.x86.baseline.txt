@@ -113,6 +113,7 @@ EVENT 172.146: Microsoft-Windows-DNS-Client/DnsNoServerConfigV6 PID=356; TID=553
 EVENT 174.340: System.Diagnostics.Eventing.FrameworkEventSource/ManifestData PID=11636; TID=17332; PName=PerfView; ProceNum=0; DataLen=23708; Format=1; MajorVersion=1; MinorVersion=0; Magic=91; TotalChunks=1; ChunkNumber=0; PayloadLength=23708; 
 EVENT 175.924: PerfView/ClrEnableParameters PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=16; keywords=0x4c14fccbd; level=Verbose; 
 EVENT 176.056: Microsoft-Windows-DotNETRuntime/Method/JittingStarted PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=264; MethodID=16,612,424; ModuleID=16,596,924; MethodToken=100,665,128; MethodILSize=1,986; MethodNamespace=PerfView.CommandProc...; MethodName=ParsedArgsAsString; MethodSignature=class System.String ...; ClrInstanceID=10; 
+EVENT 178.460: Windows Kernel/DiskIO/Read PID=6416; TID=18968; PName=iexplore; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=28,672; ByteOffset=49,797,137,408; Irp=0xffffe000ce16bb40; ElapsedTimeMSec=7.679; DiskServiceTimeMSec=7.679; FileKey=0xffffc00199c3c9d0; FileName=C:\Windows\SysWOW64\...; 
 EVENT 178.510: Windows Kernel/Memory/HardFault PID=6416; TID=18968; PName=iexplore; ProceNum=0; DataLen=40; ElapsedTimeMSec=7.758; ReadOffset=2,229,248; VirtualAddress=0x6ef639b8; FileKey=0xffffc00199c3c9d0; ByteCount=28,672; FileName=C:\Windows\SysWOW64\...; 
 EVENT 178.541: KernelTraceControl/MetaData/EventMapInfo PID=6416; TID=18968; PName=iexplore; ProceNum=0; DataLen=408; 
 EVENT 178.541: Microsoft-JScript/MethodRundown/MethodDCStart PID=6416; TID=18968; PName=iexplore; ProceNum=0; DataLen=94; ScriptContextID=0xf709980; MethodStartAddress=0xc8a0fc7; MethodSize=8; MethodID=9,100; MethodFlags=0; MethodAddressRangeID=Interpreted; SourceID=37; Line=276; Column=30; MethodName=Silverlight.createOb...; 
@@ -132,6 +133,7 @@ EVENT 178.581: Microsoft-JScript/MethodRundown/DCEndComplete PID=6416; TID=18968
 EVENT 178.594: Microsoft-Windows-DotNETRuntimePrivate/GC/Settings PID=6416; TID=18968; PName=iexplore; ProceNum=0; DataLen=22; SegmentSize=16,777,216; LargeObjectSegmentSize=16,777,216; ServerGC=False; ClrInstanceID=101; 
 EVENT 178.663: Microsoft-Windows-DotNETRuntime/Method/JittingStarted PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=160; MethodID=89,894,928; ModuleID=16,615,016; MethodToken=100,663,481; MethodILSize=46; MethodNamespace=Utilities.Command; MethodName=Quote; MethodSignature=class System.String ...; ClrInstanceID=10; 
 EVENT 178.760: KernelTraceControl/MetaData/EventMapInfo PID=6416; TID=21828; PName=iexplore; ProceNum=0; DataLen=124; 
+EVENT 178.760: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=6416; TID=21828; PName=iexplore; ProceNum=0; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=101; AllocationAmount64=0; TypeID=0x0; TypeName=; HeapIndex=0; Address=0x0; 
 EVENT 178.812: Microsoft-Windows-DotNETRuntime/Method/LoadVerbose PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=172; MethodID=89,894,928; ModuleID=16,615,016; MethodStartAddress=0x5a22d58; MethodSize=67; MethodToken=100,663,481; MethodFlags=Jitted; MethodNamespace=Utilities.Command; MethodName=Quote; MethodSignature=class System.String ...; ClrInstanceID=10; ReJITID=0; 
 EVENT 179.437: Microsoft-Windows-DotNETRuntime/Method/JittingStarted PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=142; MethodID=89,877,400; ModuleID=16,596,924; MethodToken=100,666,501; MethodILSize=34; MethodNamespace=PerfView.AppLog; MethodName=get_VersionNumber; MethodSignature=class System.String ...; ClrInstanceID=10; 
 EVENT 179.632: Microsoft-Windows-DotNETRuntime/Method/LoadVerbose PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=154; MethodID=89,877,400; ModuleID=16,596,924; MethodStartAddress=0x5a22db0; MethodSize=84; MethodToken=100,666,501; MethodFlags=Jitted; MethodNamespace=PerfView.AppLog; MethodName=get_VersionNumber; MethodSignature=class System.String ...; ClrInstanceID=10; ReJITID=0; 
@@ -153,15 +155,23 @@ EVENT 180.277: Microsoft-Windows-DotNETRuntime/GC/Stop PID=6416; TID=21828; PNam
 EVENT 180.279: Microsoft-Windows-DotNETRuntime/GC/HeapStats PID=6416; TID=21828; PName=iexplore; ProceNum=0; DataLen=94; TotalHeapSize=4,137,452; TotalPromoted=18,152; Depth=1; GenerationSize0=12; TotalPromotedSize0=10,688; GenerationSize1=10,700; TotalPromotedSize1=7,464; GenerationSize2=3,179,564; TotalPromotedSize2=0; GenerationSize3=947,176; TotalPromotedSize3=0; FinalizationPromotedSize=0; FinalizationPromotedCount=0; PinnedObjectCount=0; SinkBlockCount=0; GCHandleCount=0; ClrInstanceID=101; 
 EVENT 180.280: Microsoft-Windows-DotNETRuntime/GC/RestartEEStart PID=6416; TID=21828; PName=iexplore; ProceNum=0; DataLen=2; ClrInstanceID=101; 
 EVENT 180.288: Microsoft-Windows-DotNETRuntime/GC/RestartEEStop PID=6416; TID=21828; PName=iexplore; ProceNum=0; DataLen=2; ClrInstanceID=101; 
+EVENT 180.679: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=6416; TID=11624; PName=iexplore; ProceNum=0; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=101; AllocationAmount64=0; TypeID=0x0; TypeName=; HeapIndex=0; Address=0x0; 
 EVENT 180.688: Microsoft-Windows-DotNETRuntime/Method/LoadVerbose PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=310; MethodID=89,886,128; ModuleID=89,881,896; MethodStartAddress=0x5a22e40; MethodSize=317; MethodToken=100,663,472; MethodFlags=Jitted; MethodNamespace=Microsoft.Diagnostic...; MethodName=WriteEvent; MethodSignature=instance void  (int3...; ClrInstanceID=10; ReJITID=0; 
 EVENT 180.716: PerfView/CommandLineParameters PID=11636; TID=19564; PName=PerfView; ProceNum=3; DataLen=190; commandLine= "/DataFile:PerfView...; currentDirectory=C:\temp; version=1.9.0.0; 
+EVENT 181.301: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=6416; TID=11624; PName=iexplore; ProceNum=0; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=101; AllocationAmount64=0; TypeID=0x0; TypeName=; HeapIndex=0; Address=0x0; 
+EVENT 181.948: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=6416; TID=11624; PName=iexplore; ProceNum=3; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=101; AllocationAmount64=0; TypeID=0x0; TypeName=; HeapIndex=0; Address=0x0; 
 EVENT 182.075: Windows Kernel/DiskIO/ReadInit PID=2192; TID=3140; PName=MsMpEng; ProceNum=0; DataLen=12; Irp=0xffffe000d6d6b010; 
 EVENT 182.268: Windows Kernel/DiskIO/ReadInit PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=1; DataLen=12; Irp=0xffffe000d3fc4010; 
+EVENT 182.473: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=6416; TID=19976; PName=iexplore; ProceNum=0; DataLen=10; AllocationAmount=106,496; AllocationKind=Small; ClrInstanceID=101; AllocationAmount64=0; TypeID=0x0; TypeName=; HeapIndex=0; Address=0x0; 
+EVENT 182.739: Windows Kernel/DiskIO/Read PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=65,536; ByteOffset=8,622,645,248; Irp=0xffffe000d3fc4010; ElapsedTimeMSec=0.471; DiskServiceTimeMSec=0.471; FileKey=0xffffe000d0280970; FileName=C:\pagefile.sys; 
 EVENT 182.993: Windows Kernel/Memory/HardFault PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=1; DataLen=40; ElapsedTimeMSec=0.741; ReadOffset=206,282,752; VirtualAddress=0x1fb89f0dd70; FileKey=0xffffe000d0280970; ByteCount=65,536; FileName=C:\pagefile.sys; 
 EVENT 183.293: Windows Kernel/DiskIO/ReadInit PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=3; DataLen=12; Irp=0xffffe000d1bb5180; 
+EVENT 183.468: Windows Kernel/DiskIO/Read PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=65,536; ByteOffset=8,865,628,160; Irp=0xffffe000d1bb5180; ElapsedTimeMSec=0.176; DiskServiceTimeMSec=0.176; FileKey=0xffffe000d0280970; FileName=C:\pagefile.sys; 
 EVENT 183.999: Windows Kernel/Memory/HardFault PID=1556; TID=12364; PName=SettingSyncHost; ProceNum=2; DataLen=40; ElapsedTimeMSec=0.714; ReadOffset=449,265,664; VirtualAddress=0x1fb85111a20; FileKey=0xffffe000d0280970; ByteCount=65,536; FileName=C:\pagefile.sys; 
+EVENT 188.458: Windows Kernel/DiskIO/Read PID=2192; TID=3140; PName=MsMpEng; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=16,384; ByteOffset=4,633,165,824; Irp=0xffffe000d6d6b010; ElapsedTimeMSec=6.383; DiskServiceTimeMSec=6.383; FileKey=0xffffc0019a8de150; FileName=C:\temp\start.txt; 
 EVENT 188.514: Windows Kernel/Memory/HardFault PID=2192; TID=3140; PName=MsMpEng; ProceNum=1; DataLen=40; ElapsedTimeMSec=6.466; ReadOffset=0; VirtualAddress=0x20a32d30ff0; FileKey=0xffffc0019a8de150; ByteCount=16,384; FileName=C:\temp\start.txt; 
 EVENT 188.593: Windows Kernel/DiskIO/ReadInit PID=2192; TID=3140; PName=MsMpEng; ProceNum=1; DataLen=12; Irp=0xffffe000d3fc4010; 
+EVENT 197.670: Windows Kernel/DiskIO/Read PID=2192; TID=3140; PName=MsMpEng; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=16,384; ByteOffset=62,111,541,248; Irp=0xffffe000d3fc4010; ElapsedTimeMSec=9.076; DiskServiceTimeMSec=9.076; FileKey=0xffffc00197ea2c00; FileName=C:\ProgramData\Micro...; 
 EVENT 197.698: Windows Kernel/Memory/HardFault PID=2192; TID=3140; PName=MsMpEng; ProceNum=1; DataLen=40; ElapsedTimeMSec=9.127; ReadOffset=9,938,944; VirtualAddress=0x7fff4dbace20; FileKey=0xffffc00197ea2c00; ByteCount=16,384; FileName=C:\ProgramData\Micro...; 
 EVENT 216.929: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart PID=6416; TID=19976; PName=iexplore; ProceNum=1; DataLen=10; Reason=SuspendForGC; Count=259; ClrInstanceID=101; 
 EVENT 217.255: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop PID=6416; TID=19976; PName=iexplore; ProceNum=2; DataLen=2; ClrInstanceID=101; 
@@ -592,6 +602,7 @@ COUNT Microsoft-Windows-DNS-Client/EventID(3018):2
 COUNT Microsoft-Windows-DNS-Client/EventID(3019):2
 COUNT Microsoft-Windows-DNS-Client/EventID(3020):2
 COUNT Microsoft-Windows-DotNETRuntime/AppDomainResourceManagement/ThreadCreated:4
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:11438
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:2
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizeObject:22
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:3
@@ -674,6 +685,7 @@ COUNT PerfView/WaitForIdle:1
 COUNT System.Diagnostics.Eventing.FrameworkEventSource/ManifestData:5
 COUNT Windows Kernel/DiskIO/FlushBuffers:11
 COUNT Windows Kernel/DiskIO/FlushInit:11
+COUNT Windows Kernel/DiskIO/Read:70
 COUNT Windows Kernel/DiskIO/ReadInit:70
 COUNT Windows Kernel/DiskIO/Write:320
 COUNT Windows Kernel/DiskIO/WriteInit:322

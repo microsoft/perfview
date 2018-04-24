@@ -47,6 +47,7 @@ EVENT 24.515: Windows Kernel/PerfInfo/Sample PID=2848; TID=3372; PName=PerfView;
 EVENT 25.599: KernelTraceControl/ImageID/None PID=896; TID=3372; PName=MsMpEng; ProceNum=3; DataLen=12; 
 EVENT 27.609: KernelTraceControl/ImageID/None PID=1004; TID=3372; PName=svchost; ProceNum=3; DataLen=12; 
 EVENT 27.627: KernelTraceControl/ImageID/None PID=1004; TID=3372; PName=svchost; ProceNum=3; DataLen=12; 
+EVENT 31.295: Windows Kernel/DiskIO/Read PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=12,077,072,384; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=7.352; DiskServiceTimeMSec=7.352; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 31.387: Windows Kernel/DiskIO/WriteInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e871c0; 
 EVENT 31.809: Windows Kernel/DiskIO/Write PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=60,015,247,360; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=0.421; DiskServiceTimeMSec=0.421; FileKey=0xfffff8a0093a3c70; FileName=C:\System Volume Inf...; 
 EVENT 31.847: Windows Kernel/DiskIO/WriteInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa830479e220; 
@@ -54,9 +55,12 @@ EVENT 32.626: Windows Kernel/DiskIO/Write PID=4; TID=3652; PName=System; ProceNu
 EVENT 32.670: Windows Kernel/DiskIO/WriteInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa83034e7b80; 
 EVENT 33.563: Windows Kernel/DiskIO/Write PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=Nocache, Write, Defe...; Priority=Normal; TransferSize=65,536; ByteOffset=12,077,072,384; Irp=0xfffffa83034e7b80; ElapsedTimeMSec=0.893; DiskServiceTimeMSec=0.893; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 34.051: Windows Kernel/DiskIO/ReadInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e871c0; 
+EVENT 35.286: Windows Kernel/DiskIO/Read PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=12,077,137,920; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=1.234; DiskServiceTimeMSec=1.234; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 35.534: KernelTraceControl/ImageID/None PID=1176; TID=3372; PName=svchost; ProceNum=3; DataLen=12; 
 EVENT 37.045: Windows Kernel/DiskIO/ReadInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e871c0; 
+EVENT 37.935: Windows Kernel/DiskIO/Read PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=12,077,203,456; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=0.889; DiskServiceTimeMSec=0.889; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 40.370: Windows Kernel/DiskIO/ReadInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e871c0; 
+EVENT 52.529: Windows Kernel/DiskIO/Read PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=12,077,268,992; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=12.158; DiskServiceTimeMSec=12.158; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 54.981: Windows Kernel/DiskIO/ReadInit PID=4; TID=3652; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e871c0; 
 EVENT 57.586: KernelTraceControl/ImageID/Opcode37 PID=2848; TID=3372; PName=PerfView; ProceNum=3; DataLen=148; 
 EVENT 57.602: KernelTraceControl/ImageID/Opcode37 PID=2848; TID=3372; PName=PerfView; ProceNum=3; DataLen=149; 
@@ -64,6 +68,7 @@ EVENT 57.616: KernelTraceControl/ImageID/Opcode37 PID=2848; TID=3372; PName=Perf
 EVENT 57.632: KernelTraceControl/ImageID/Opcode37 PID=2848; TID=3372; PName=PerfView; ProceNum=3; DataLen=48; 
 EVENT 57.647: KernelTraceControl/ImageID/Opcode37 PID=2848; TID=3372; PName=PerfView; ProceNum=3; DataLen=47; 
 EVENT 58.421: Windows Kernel/PerfInfo/CollectionStart PID=2848; TID=3372; PName=PerfView; ProceNum=3; DataLen=12; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
+EVENT 60.634: Windows Kernel/DiskIO/Read PID=4; TID=3652; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=16,384; ByteOffset=15,623,127,040; Irp=0xfffffa8302e871c0; ElapsedTimeMSec=5.653; DiskServiceTimeMSec=5.653; FileKey=0xfffff8a0037e5c70; FileName=C:\temp\PerfViewData...; 
 EVENT 67.945: Windows Kernel/UdpIp/Recv PID=4; TID=-1; PName=System; ProceNum=0; DataLen=32; context=0x3200000004; saddr=10.199.28.114; sport=137; size=50; daddr=10.199.29.255; dport=137; dsize=0; 
 EVENT 102.341: Windows Kernel/Thread/Start PID=4; TID=4028; PName=System; ProceNum=3; DataLen=72; StackBase=0xfffff880066b0000; StackLimit=0xfffff880066aa000; UserStackBase=0x0; UserStackLimit=0x0; StartAddr=0xf; Win32StartAddr=0xfffff800029a4614; TebBase=0x0; SubProcessTag=0; ParentThreadID=3,372; ParentProcessID=2,848; 
 EVENT 109.853: Windows Kernel/Memory/HardFault PID=896; TID=2124; PName=MsMpEng; ProceNum=1; DataLen=40; ElapsedTimeMSec=25.267; ReadOffset=10,348,544; VirtualAddress=0x7feeeaa1a20; FileKey=0xfffff8a00c2bdc70; ByteCount=12,288; FileName=C:\ProgramData\Micro...; 
@@ -105,6 +110,7 @@ EVENT 282.689: Windows Kernel/Memory/HardFault PID=896; TID=3540; PName=MsMpEng;
 EVENT 286.297: Microsoft-Windows-DotNETRuntime/Method/LoadVerbose PID=2848; TID=3372; PName=PerfView; ProceNum=1; DataLen=276; MethodID=14,242,972; ModuleID=14,234,084; MethodStartAddress=0x116be70; MethodSize=2,520; MethodToken=100,665,128; MethodFlags=Jitted; MethodNamespace=PerfView.CommandProc...; MethodName=ParsedArgsAsString; MethodSignature=class System.String ...; ClrInstanceID=13; ReJITID=0; 
 EVENT 286.633: Microsoft-Windows-DotNETRuntime/Method/JittingStarted PID=2848; TID=3372; PName=PerfView; ProceNum=1; DataLen=160; MethodID=17,547,228; ModuleID=14,249,816; MethodToken=100,663,481; MethodILSize=46; MethodNamespace=Utilities.Command; MethodName=Quote; MethodSignature=class System.String ...; ClrInstanceID=13; 
 EVENT 292.076: Microsoft-Windows-DotNETRuntime/Method/LoadVerbose PID=2848; TID=3372; PName=PerfView; ProceNum=1; DataLen=172; MethodID=17,547,228; ModuleID=14,249,816; MethodStartAddress=0x116c858; MethodSize=67; MethodToken=100,663,481; MethodFlags=Jitted; MethodNamespace=Utilities.Command; MethodName=Quote; MethodSignature=class System.String ...; ClrInstanceID=13; ReJITID=0; 
+EVENT 293.348: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=2848; TID=3372; PName=PerfView; ProceNum=1; DataLen=54; AllocationAmount=108,832; AllocationKind=Small; ClrInstanceID=13; AllocationAmount64=108,832; TypeID=0x711ad244; TypeName=System.Byte[]; HeapIndex=0; Address=0x0; 
 EVENT 293.623: Windows Kernel/TcpIp/RecvIPV6 PID=1176; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:e0:9a:25e3...; dport=31,055; sport=3,389; connid=0x0; seqnum=0; 
 EVENT 293.651: Windows Kernel/TcpIp/RecvIPV6 PID=1176; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:e0:9a:25e3...; dport=31,055; sport=3,389; connid=0x0; seqnum=0; 
 EVENT 294.316: Microsoft-Windows-DotNETRuntime/Method/JittingStarted PID=2848; TID=3372; PName=PerfView; ProceNum=1; DataLen=142; MethodID=17,528,860; ModuleID=14,234,084; MethodToken=100,666,501; MethodILSize=34; MethodNamespace=PerfView.AppLog; MethodName=get_VersionNumber; MethodSignature=class System.String ...; ClrInstanceID=13; 
@@ -210,6 +216,10 @@ EVENT 886.548: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderDeliverEvent
 EVENT 887.390: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderPhaseStart PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=38; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=NULL; ClrInstanceID=11; 
 EVENT 892.494: Microsoft-Windows-DotNETRuntimePrivate/Binding/LoaderPhaseStop PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=46; AppDomainID=1; LoadContextID=4; FromLoaderCache=0; DynamicLoad=0; AssemblyCodebase=NULL; AssemblyName=mscorlib; ClrInstanceID=11; 
 EVENT 918.960: Windows Kernel/UdpIp/RecvIPV6 PID=1476; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=505; dport=1,900; sport=1,900; seqnum=0; connid=0x0; 
+EVENT 967.058: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=58; AllocationAmount=108,296; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=108,296; TypeID=0x7feec56f058; TypeName=System.Byte[]; HeapIndex=0; Address=0x0; 
+EVENT 967.836: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=58; AllocationAmount=104,960; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=104,960; TypeID=0x7feec56f058; TypeName=System.Byte[]; HeapIndex=0; Address=0x0; 
+EVENT 967.962: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=58; AllocationAmount=104,560; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=104,560; TypeID=0x7feec56f058; TypeName=System.Byte[]; HeapIndex=0; Address=0x0; 
+EVENT 968.078: Microsoft-Windows-DotNETRuntime/GC/AllocationTick PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=58; AllocationAmount=105,208; AllocationKind=Small; ClrInstanceID=11; AllocationAmount64=105,208; TypeID=0x7feec56f058; TypeName=System.Byte[]; HeapIndex=0; Address=0x0; 
 EVENT 986.915: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStart PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=10; Reason=SuspendForGC; Count=0; ClrInstanceID=11; 
 EVENT 986.945: Microsoft-Windows-DotNETRuntime/GC/SuspendEEStop PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=2; ClrInstanceID=11; 
 EVENT 986.981: Microsoft-Windows-DotNETRuntime/GC/Start PID=2812; TID=3768; PName=test; ProceNum=1; DataLen=18; Count=1; Reason=AllocSmall; Depth=0; Type=NonConcurrentGC; ClrInstanceID=11; ClientSequenceNumber=0; 
@@ -496,6 +506,7 @@ COUNT MSNT_SystemTrace/Image/KernelBase:1
 COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-Windows-DNS-Client/EventID(1001):3
 COUNT Microsoft-Windows-DNS-Client/EventID(1019):1
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:53307
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:4
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:72
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStop:72
@@ -569,6 +580,7 @@ COUNT PerfView/WaitForIdle:1
 COUNT System.Diagnostics.Eventing.FrameworkEventSource/ManifestData:2
 COUNT Windows Kernel/DiskIO/FlushBuffers:6
 COUNT Windows Kernel/DiskIO/FlushInit:6
+COUNT Windows Kernel/DiskIO/Read:366
 COUNT Windows Kernel/DiskIO/ReadInit:366
 COUNT Windows Kernel/DiskIO/Write:839
 COUNT Windows Kernel/DiskIO/WriteInit:840

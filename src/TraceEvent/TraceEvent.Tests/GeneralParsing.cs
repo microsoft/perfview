@@ -102,13 +102,6 @@ namespace TraceEventTests
                 // We are hacking it here so we don't turn off the test completely.  
                 if (eventName == "DotNet/CLR.SKUOrVersion")
                     return;
-                // GC/AllocationTick seems to vary from system to system since the manifest changed for it over time.  Exclude it.  
-                if (data.EventName == "GC/AllocationTick")
-                    return;
-                // This one also seems to vary from system to system.   Don't understand why.   For now supress it. 
-                // Ideally we review this and figure it out (but it is a pain when it only repros on a CI machine).  
-                if (data.EventName == "DiskIO/Read")
-                    return;
 
                 int count = IncCount(histogram, eventName);
 

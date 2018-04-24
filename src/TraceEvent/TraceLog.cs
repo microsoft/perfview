@@ -1095,7 +1095,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     moduleFile.pdbName = lastDbgData.PdbFileName;
                     moduleFile.pdbSignature = lastDbgData.GuidSig;
                     moduleFile.pdbAge = lastDbgData.Age;
-                    // There is no guarentee that the names of the DLL and PDB match, but they do 99% of the time
+                    // There is no guaratee that the names of the DLL and PDB match, but they do 99% of the time
                     // We tolerate the exceptions, because it is a useful check most of the time 
                     Debug.Assert(RoughDllPdbMatch(moduleFile.fileName, moduleFile.pdbName));
                 }
@@ -1134,8 +1134,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
                     lastTraceModuleFile.pdbAge = data.Age;
-                    // There is no guarentee that the names of the DLL and PDB match, but they do 99% of the time
-                    // We tolerate the exceptions, because it is a useful check most of the time 
+                    // There is no guaratee that the names of the DLL and PDB match, but they do 99% of the time
                     // We tolerate the exceptions, because it is a useful check most of the time 
                     Debug.Assert(RoughDllPdbMatch(lastTraceModuleFile.fileName, lastTraceModuleFile.pdbName));
                     lastDbgData = null;
@@ -1898,7 +1897,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             }
 
 #if DEBUG
-            // Confirm that there are no infinite chains (we guarentee this for sanity).  
+            // Confirm that there are no infinite chains (we guaratee this for sanity).  
             foreach (var process in Processes)
                 Debug.Assert(process.ParentDepth() < Processes.Count);
 #endif
@@ -1957,7 +1956,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 eventCount, (DateTime.Now - startTime).TotalSeconds);
         }
 
-        // Pdbs and DLLs often 'match'.   Use this to insure we have hooked
+        // Pdbs and DLLs often 'match'.   Use this to ensure we have hooked
         // up the PDB to the DLL correctly.    This is heurisitc and only used
         // in testing.  
         static bool RoughDllPdbMatch(string dllPath, string pdbPath)
