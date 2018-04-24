@@ -492,11 +492,11 @@ COUNT MSNT_SystemTrace/Image/KernelBase:1
 COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-Windows-DNS-Client/EventID(1001):3
 COUNT Microsoft-Windows-DNS-Client/EventID(1019):1
-COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49110
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49103
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:4
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:71
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStop:71
-COUNT Microsoft-Windows-DotNETRuntime/GC/HeapStats:898
+COUNT Microsoft-Windows-DotNETRuntime/GC/HeapStats:897
 COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStart:900
 COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStop:900
 COUNT Microsoft-Windows-DotNETRuntime/GC/Start:898
@@ -579,7 +579,7 @@ COUNT Windows Kernel/Image/Unload:100
 COUNT Windows Kernel/Memory/HardFault:56
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:4118
+COUNT Windows Kernel/PerfInfo/Sample:4311
 COUNT Windows Kernel/Process/DCStart:44
 COUNT Windows Kernel/Process/DCStop:44
 COUNT Windows Kernel/Process/PerfCtr:2

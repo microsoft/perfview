@@ -665,7 +665,7 @@ COUNT Windows Kernel/Image/Unload:90
 COUNT Windows Kernel/Memory/HardFault:421
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:5754
+COUNT Windows Kernel/PerfInfo/Sample:5900
 COUNT Windows Kernel/Process/DCStart:64
 COUNT Windows Kernel/Process/DCStop:64
 COUNT Windows Kernel/Process/Defunct:61

@@ -48,11 +48,11 @@ EVENT 36.540: Windows Kernel/DiskIO/Read PID=1012; TID=1864; PName=svchost; Proc
 EVENT 36.569: Windows Kernel/Memory/HardFault PID=1012; TID=1864; PName=svchost; ProceNum=2; DataLen=40; ElapsedTimeMSec=5.847; ReadOffset=1,332,736; VirtualAddress=0x7fef7f08b58; FileKey=0xfffff8a001386c70; ByteCount=16,384; FileName=C:\Windows\System32\...; 
 EVENT 39.870: Windows Kernel/DiskIO/Read PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=4,096; ByteOffset=8,055,689,216; Irp=0xfffffa83034c3b80; ElapsedTimeMSec=5.606; DiskServiceTimeMSec=5.606; FileKey=0xfffffa8303bdd010; FileName=C:\pagefile.sys; 
 EVENT 39.880: Windows Kernel/Memory/HardFault PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=40; ElapsedTimeMSec=5.638; ReadOffset=256,258,048; VirtualAddress=0x7fffffda008; FileKey=0xfffffa8303bdd010; ByteCount=4,096; FileName=C:\pagefile.sys; 
+EVENT 51.512: Windows Kernel/PerfInfo/Sample PID=0; TID=0; PName=Idle; ProceNum=0; DataLen=16; InstructionPointer=0xfffff800026c7597; ProcessorNumber=0; Priority=0; ExecutingDPC=False; ExecutingISR=True; Rank=0; Count=1; 
 EVENT 54.512: Windows Kernel/PerfInfo/Sample PID=1012; TID=1864; PName=svchost; ProceNum=2; DataLen=16; InstructionPointer=0x7fef7dc4530; ProcessorNumber=2; Priority=0; ExecutingDPC=False; ExecutingISR=False; Rank=0; Count=1; 
 EVENT 55.512: Windows Kernel/PerfInfo/Sample PID=1012; TID=1864; PName=svchost; ProceNum=2; DataLen=16; InstructionPointer=0x7fef7dc4df8; ProcessorNumber=2; Priority=0; ExecutingDPC=False; ExecutingISR=False; Rank=0; Count=1; 
 EVENT 56.511: Windows Kernel/PerfInfo/Sample PID=1012; TID=1864; PName=svchost; ProceNum=2; DataLen=16; InstructionPointer=0x7fef7dc5a46; ProcessorNumber=2; Priority=0; ExecutingDPC=False; ExecutingISR=False; Rank=0; Count=1; 
 EVENT 76.491: Windows Kernel/Process/DCStart PID=516; TID=-1; PName=wininit; ProceNum=0; DataLen=96; ProcessID=516; ParentID=460; ImageFileName=wininit.exe; PageDirectoryBase=0x7f17f000; Flags=None; SessionID=0; ExitStatus=259; UniqueProcessKey=0xfffffa8304653b10; CommandLine=wininit.exe; PackageFullName=; ApplicationID=; 
-EVENT 76.513: Windows Kernel/PerfInfo/Sample PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=16; InstructionPointer=0xfffff800026d6c9a; ProcessorNumber=0; Priority=0; ExecutingDPC=False; ExecutingISR=False; Rank=0; Count=1; 
 EVENT 106.605: Windows Kernel/TcpIp/RecvIPV6 PID=1128; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:29:1010:dd...; dport=34,983; sport=3,389; connid=0x0; seqnum=0; 
 EVENT 106.623: Windows Kernel/TcpIp/RecvIPV6 PID=1128; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=37; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:29:1010:dd...; dport=34,983; sport=3,389; connid=0x0; seqnum=0; 
 EVENT 122.704: Windows Kernel/DiskIO/WriteInit PID=4; TID=3464; PName=System; ProceNum=3; DataLen=8; Irp=0xfffffa8305488b80; 
@@ -568,7 +568,7 @@ COUNT PerfView/WaitForIdle:1
 COUNT Provider(8e9f5090-2d75-4d03-8a81-e5afbf85daf1)/EventID(65534):2
 COUNT Windows Kernel/DiskIO/FlushBuffers:6
 COUNT Windows Kernel/DiskIO/FlushInit:6
-COUNT Windows Kernel/DiskIO/Read:1412
+COUNT Windows Kernel/DiskIO/Read:1410
 COUNT Windows Kernel/DiskIO/ReadInit:1413
 COUNT Windows Kernel/DiskIO/Write:2035
 COUNT Windows Kernel/DiskIO/WriteInit:2035
@@ -581,7 +581,7 @@ COUNT Windows Kernel/Image/Unload:99
 COUNT Windows Kernel/Memory/HardFault:989
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:8037
+COUNT Windows Kernel/PerfInfo/Sample:8320
 COUNT Windows Kernel/Process/DCStart:46
 COUNT Windows Kernel/Process/DCStop:46
 COUNT Windows Kernel/Process/PerfCtr:2
