@@ -3414,7 +3414,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     pastEventInfo[curPastEventInfo].EventIndex < eventIndex);
                 pastEventInfo[curPastEventInfo].ThreadID = threadID;
                 pastEventInfo[curPastEventInfo].ProcessorNumber = (ushort)data.ProcessorNumber;
-                Debug.Assert(pastEventInfo[curPastEventInfo].ProcessorNumber == data.ProcessorNumber); do data truncation. 
+                Debug.Assert(pastEventInfo[curPastEventInfo].ProcessorNumber == data.ProcessorNumber);
                 pastEventInfo[curPastEventInfo].QPCTime = data.TimeStampQPC;
                 pastEventInfo[curPastEventInfo].EventIndex = eventIndex;
                 pastEventInfo[curPastEventInfo].CountForEvent = countForEvent;
