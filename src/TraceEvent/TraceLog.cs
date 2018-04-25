@@ -3680,7 +3680,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
-                                                                   // The can ONLY be accessed by the thread calling RealTimeEventSource.Process();
+        
+        // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
         #endregion
@@ -5915,8 +5916,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 var suffixPos = ilModulePath.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
                 if (0 < suffixPos)
                 {
-                    nativeModulePath = ilModulePath;                    // We treat the image as the native path
-                                                                        // and make up a dummy IL path.  
+                    // We treat the image as the native path
+                    nativeModulePath = ilModulePath;                    
+                    // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }
             }
@@ -6660,10 +6662,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         // This is only used when converting maps.  Maps a call stack index to a list of call stack indexes that
         // were callees of it.    This is the list you need to search when interning.  There is also 'threads'
         // which is the list of call stack indexes where stack crawling stopped. 
-        private GrowableArray<List<CallStackIndex>> callees;                // For each callstack, these are all the call stacks that it calls. 
-        private GrowableArray<List<CallStackIndex>> threads;                 // callees for threads of stacks, one for each thread
-                                                                             // a field on CallStackInfo
-        private GrowableArray<CallStackInfo> callStacks;
+        private GrowableArray<List<CallStackIndex>> callees;    // For each callstack, these are all the call stacks that it calls. 
+        private GrowableArray<List<CallStackIndex>> threads;    // callees for threads of stacks, one for each thread
+        private GrowableArray<CallStackInfo> callStacks;        // a field on CallStackInfo
         private DeferedRegion lazyCallStacks;
         private TraceCodeAddresses codeAddresses;
         private TraceLog log;
@@ -7231,8 +7232,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 startIdx++;
 
             bool removeAddressAfterCallback = (process.ProcessID != 0);      // We remove entries unless it is the kernel (process 0) after calling back
-                                                                             // since the DLL will be unloaded in that process. Kernel DLLS stay loaded. 
-                                                                             // Call back for ever code address >= start than that, and then remove any code addresses we called back on.  
+
+            // since the DLL will be unloaded in that process. Kernel DLLS stay loaded. 
+            // Call back for ever code address >= start than that, and then remove any code addresses we called back on.  
             Address end = start + (ulong)length;
             int curIdx = startIdx;
             while (curIdx < process.unresolvedCodeAddresses.Count)
@@ -8865,11 +8867,16 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             // AutoComplete codes. 
             /// <summary>
             /// An activity that allows correlation between the antecedent and continuation 
+            /// if have bit 5 set it means you auto-compete
             /// </summary>
-            TaskWait = 32,          // if have bit 5 set it means you auto-compete
-                                    /// <summary>Same as TaskWait, hwoever it auto-completes</summary>
+            TaskWait = 32,
+            /// <summary>
+            /// Same as TaskWait, hwoever it auto-completes
+            /// </summary>
             TaskWaitSynchronous = 64 + 33,
-            /// <summary>Managed timer workitem</summary>
+            /// <summary>
+            /// Managed timer workitem
+            /// </summary>
             FxTimer = 34, // FxTransfer + kind(1)
         }
 
