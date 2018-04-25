@@ -27,7 +27,15 @@ namespace PerfView
             MouseMove += OnMouseMove;
             MouseLeave += (s, e) => HideTooltip();
         }
-
+        float zoomLevel = 1;
+        public float ZoomLevel {
+            get {
+                return zoomLevel;
+            }
+            set {
+                zoomLevel = value;
+            }
+        }
         public bool IsEmpty => visuals.Count == 0;
 
         protected override int VisualChildrenCount => visuals.Count;
@@ -39,7 +47,7 @@ namespace PerfView
             Clear();
 
             var visual = new DrawingVisual(); // we have only one visual to provide best possible perf
-
+            visual.Transform = new ScaleTransform(ZoomLevel, ZoomLevel);
             using (DrawingContext drawingContext = visual.RenderOpen())
             {
                 int index = 0;

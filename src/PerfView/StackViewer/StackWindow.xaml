@@ -481,13 +481,15 @@
                             Flame Graph <Hyperlink Command="Help" CommandParameter="FlameGraphView">?</Hyperlink>
                         </TextBlock>
                     </TabItem.Header>
-                    <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
-                        <Canvas.ContextMenu>
-                            <ContextMenu Name="noContextMenu" Visibility="Visible">
-                                <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
-                            </ContextMenu>
-                        </Canvas.ContextMenu>
-                    </src:FlameGraphDrawingCanvas>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" x:Name="FrameGrapthScrollViewer" PreviewMouseWheel="FrameGrapthScrollViewerPreviewMouseWheel">
+                        <src:FlameGraphDrawingCanvas x:Name="FlameGraphCanvas" Background="White" ClipToBounds="True" SizeChanged="FlameGraphCanvas_SizeChanged" CurrentFlameBoxChanged="FlameGraphCanvas_CurrentFlameBoxChanged">
+                            <Canvas.ContextMenu>
+                                <ContextMenu Name="noContextMenu" Visibility="Visible">
+                                    <MenuItem Header="Save Flame Graph" Command="{x:Static src:StackWindow.SaveFlameGraphCommand}" />
+                                </ContextMenu>
+                            </Canvas.ContextMenu>
+                        </src:FlameGraphDrawingCanvas>
+                    </ScrollViewer>
                 </TabItem>
                 <!-- NotesTab -->
                 <TabItem Name="NotesTab" GotFocus="NotesTab_GotFocus" LostFocus="NotesTab_LostFocus">

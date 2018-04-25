@@ -88,7 +88,7 @@ namespace PerfView
                 if (!templateColumnNames.Contains(colName))
                     RemoveColumn(colName);
             }
-        }
+        }    
         public string GetDefaultFoldPercentage()
         {
             string defaultFoldPercentage = App.ConfigData["DefaultFoldPercent"];
@@ -1630,7 +1630,12 @@ namespace PerfView
                     StatusBar.LogError("Could not set time range.");
             }
         }
-
+        protected void FrameGrapthScrollViewerPreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            FlameGraphCanvas.ZoomLevel += e.Delta > 0 ? 0.05f : -0.05f;
+            FlameGraphCanvas.Width = FrameGrapthScrollViewer.ActualWidth * FlameGraphCanvas.ZoomLevel;
+            FlameGraphCanvas.Height = FrameGrapthScrollViewer.ActualHeight* FlameGraphCanvas.ZoomLevel;
+        }
         // Given a CallTreeViewNode or a CallTreeNodeBase (this is what might be in the 'Item' list of a view)
         // return a CallTreeNodeBase or null if it is none of those things.   
         private CallTreeNodeBase ToCallTreeNodeBase(object viewOrDataObject)
