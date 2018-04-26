@@ -463,6 +463,11 @@ namespace PerfView
             return Path.Combine(dirName, fileName);
         }
 
+        public void Open(Action doAfter = null)
+        {
+            this.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
             if (!m_opened)
@@ -494,6 +499,38 @@ namespace PerfView
                     m_singletonStackSource.Viewer.Focus();
             }
         }
+
+        public void OpenOnExistingWorker(Action doAfter = null)
+        {
+            this.OpenOnExistingWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
+        }
+
+        public void OpenOnExistingWorker(Window parentWindow, StatusBar worker, Action doAfter = null)
+        {
+            if (!m_opened)
+            {
+                Action<Action> continuation = OpenImpl(parentWindow, worker);
+
+                m_opened = true;
+                FirePropertyChanged("Children");
+
+                IsExpanded = true;
+                var defaultSource = GetStackSource();
+                if (defaultSource != null)
+                    defaultSource.IsSelected = true;
+
+                if (continuation != null)
+                    continuation(doAfter);
+                else
+                    doAfter?.Invoke();
+            }
+            else
+            {
+                if (m_singletonStackSource != null && m_singletonStackSource.Viewer != null)
+                    m_singletonStackSource.Viewer.Focus();
+            }
+        }
+
         public override void Close()
         {
             if (m_opened)
@@ -6374,6 +6411,8 @@ table {
         }
         // public override string DefaultStackSourceName { get { return "CPU"; } }
 
+
+
         public TraceLog GetTraceLog(TextWriter log, Action<bool, int, int> onLostEvents = null)
         {
             if (m_traceLog != null)
@@ -8180,7 +8219,7 @@ table {
                 });
 
                 // Get all ETL files
-                AddEtlResourcesAsChildren(worker, dhPackage);
+                AddEtlResourcesAsChildren(parentWindow, worker, dhPackage);
             }
 
             return null;
@@ -8237,10 +8276,12 @@ table {
         /// <summary>
         /// Adds child files from ETL resources in the DhPackage
         /// </summary>
-        private void AddEtlResourcesAsChildren(StatusBar worker, DhPackage dhPackage)
+        private void AddEtlResourcesAsChildren(Window window, StatusBar worker, DhPackage dhPackage)
         {
             ResourceInfo[] resources;
             dhPackage.GetResourceInformationByType("DiagnosticsHub.Resource.EtlFile", out resources);
+
+            var firstEtlHasBeenProcessed = false;
 
             foreach (var resource in CreateEtlResources(dhPackage, resources))
             {
