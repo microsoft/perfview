@@ -98,32 +98,37 @@ namespace Microsoft.Diagnostics.Tracing
             if (GroupByStartStopActivity)
                 UseTasks = true;
 
-            // We don't do AWAIT_TIME if we don't have blocked time (that is we are CPU ONLY) because it is confusing
-            // since we have SOME blocked time but not all of it.   
-            if (UseTasks && m_traceHasCSwitches)
+
+            if (UseTasks)
             {
                 m_activityComputer = new ActivityComputer(eventSource, m_symbolReader);
-                m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
+
+                // We don't do AWAIT_TIME if we don't have blocked time (that is we are CPU ONLY) because it is confusing
+                // since we have SOME blocked time but not all of it.   
+                if (m_traceHasCSwitches)
                 {
-                    var sample = m_sample;
-                    sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
-                    sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
+                    m_activityComputer.AwaitUnblocks += delegate (TraceActivity activity, TraceEvent data)
+                    {
+                        var sample = m_sample;
+                        sample.Metric = (float)(activity.StartTimeRelativeMSec - activity.CreationTimeRelativeMSec);
+                        sample.TimeRelativeMSec = activity.CreationTimeRelativeMSec;
 
-                    // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
-                    sample.StackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread(), true));
+                        // The stack at the Unblock, is the stack at the time the task was created (when blocking started).  
+                        sample.StackIndex = m_activityComputer.GetCallStackForActivity(m_outputStackSource, activity, GetTopFramesForActivityComputerCase(data, data.Thread(), true));
 
-                    //Trace.WriteLine(string.Format("Tpl Proc {0} Thread {1} Start {2:f3}", data.ProcessName, data.ThreadID, data.TimeStampRelativeMSec));
-                    //Trace.WriteLine(string.Format("activity Proc {0} Thread {1} Start {2:f3} End {3:f3}", activity.Thread.Process.Name, activity.Thread.ThreadID,
-                    //    activity.StartTimeRelativeMSec, activity.EndTimeRelativeMSec));
+                        //Trace.WriteLine(string.Format("Tpl Proc {0} Thread {1} Start {2:f3}", data.ProcessName, data.ThreadID, data.TimeStampRelativeMSec));
+                        //Trace.WriteLine(string.Format("activity Proc {0} Thread {1} Start {2:f3} End {3:f3}", activity.Thread.Process.Name, activity.Thread.ThreadID,
+                        //    activity.StartTimeRelativeMSec, activity.EndTimeRelativeMSec));
 
-                    StackSourceFrameIndex awaitFrame = m_outputStackSource.Interner.FrameIntern("AWAIT_TIME");
-                    sample.StackIndex = m_outputStackSource.Interner.CallStackIntern(awaitFrame, sample.StackIndex);
+                        StackSourceFrameIndex awaitFrame = m_outputStackSource.Interner.FrameIntern("AWAIT_TIME");
+                        sample.StackIndex = m_outputStackSource.Interner.CallStackIntern(awaitFrame, sample.StackIndex);
 
-                    m_outputStackSource.AddSample(sample);
+                        m_outputStackSource.AddSample(sample);
 
-                    if (m_threadToStartStopActivity != null)
-                        UpdateStartStopActivityOnAwaitComplete(activity, data);
-                };
+                        if (m_threadToStartStopActivity != null)
+                            UpdateStartStopActivityOnAwaitComplete(activity, data);
+                    };
+                }
 
                 // We can provide a bit of extra value (and it is useful for debugging) if we immediately log a CPU 
                 // sample when we schedule or start a task.  That we we get the very instant it starts.  
