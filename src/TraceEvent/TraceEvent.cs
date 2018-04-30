@@ -1198,7 +1198,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (ProviderGuid != Guid.Empty && !ProviderName.Contains(ProviderGuid.ToString()))
                 XmlAttrib(sb, "ProviderGuid", ProviderGuid);
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
-            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber);
+            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber); 
             sb.AppendLine().Append(" ");
 
 #if !DOTNET_V35
