@@ -16,7 +16,7 @@ namespace PerfView.Dialogs
     {
         public List<Preset> Presets { get; private set; }
 
-        public ManagePresetsDialog(List<Preset> presets, string basePath)
+        public ManagePresetsDialog(List<Preset> presets, string basePath, StatusBar log)
         {
             InitializeComponent();
             Title = "Manage Presets";
@@ -31,6 +31,7 @@ namespace PerfView.Dialogs
             }
 
             m_basePath = basePath;
+            m_log = log;
         }
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
         {
@@ -123,7 +124,7 @@ namespace PerfView.Dialogs
                 }
                 writer.WriteEndElement();
             }
-            App.CommandProcessor.LogFile.WriteLine($"Presets exported to {fileName}.");
+            m_log.LogWriter.WriteLine($"[Presets exported to {fileName}.]");
         }
         private void ImportPresets(object sender, RoutedEventArgs e)
         {
@@ -166,14 +167,15 @@ namespace PerfView.Dialogs
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine("Error during reading presets file.");
-                    App.CommandProcessor.LogFile.WriteLine("Error during reading presets file: " + ex);
+                    m_log.LogWriter.WriteLine($"[Import of presets from {fileName} has failed.]");
+                    m_log.LogWriter.WriteLine("Error during reading presets file: " + ex);
                 }
             }
 
             // Now we have current presets in Presets collection and new presets in presetsFromFile collection.
             // Existing identical presets are ignored.
             // Existing presets that differ are ignored too, but warning is written into logs.
+            int imported = 0, ignored = 0;
             foreach (var preset in presetsFromFile)
             {
                 var existingPreset = Presets.FirstOrDefault(x => x.Name == preset.Name);
@@ -181,17 +183,20 @@ namespace PerfView.Dialogs
                 {
                     Presets.Add(preset);
                     PresetListBox.Items.Add(preset.Name);
+                    imported++;
                     continue;
                 }
 
                 if (existingPreset.Equals(preset))
                 {
+                    imported++;
                     continue;
                 }
 
-                App.CommandProcessor.LogFile.WriteLine($"WARN: Preset '{preset.Name}' was ignored during import because there already exist a preset with the same name.");
+                m_log.LogWriter.WriteLine($"WARN: Preset '{preset.Name}' was ignored during import because there already exist a preset with the same name.");
+                ignored++;
             }
-            App.CommandProcessor.LogFile.WriteLine($"Presets import completed.");
+            m_log.LogWriter.WriteLine($"[Import of presets completed: {imported} imported, {ignored} ignored.]");
         }
         private void DoPresetSelected(object sender, SelectionChangedEventArgs e)
         {
@@ -219,5 +224,6 @@ namespace PerfView.Dialogs
 
         private string m_currentPreset;
         private string m_basePath;
+        private StatusBar m_log;
     }
 }

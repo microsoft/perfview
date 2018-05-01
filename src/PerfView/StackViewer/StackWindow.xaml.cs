@@ -3534,7 +3534,7 @@ namespace PerfView
 
         private void DoManagePresets(object sender, RoutedEventArgs e)
         {
-            var managePresetsDialog = new ManagePresetsDialog(m_presets, Path.GetDirectoryName(DataSource.FilePath));
+            var managePresetsDialog = new ManagePresetsDialog(m_presets, Path.GetDirectoryName(DataSource.FilePath), StatusBar);
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;
