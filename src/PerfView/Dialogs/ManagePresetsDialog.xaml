@@ -138,12 +138,14 @@
             <StackPanel Orientation="Horizontal" FlowDirection="RightToLeft" Margin="0,20,10,0">
                 <Button Width="80" Content="Delete" Click="DeleteClicked" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                 <Button Width="80" Content="Save" Click="SaveClicked" HorizontalAlignment="Right" />
-            </StackPanel>
+      </StackPanel>
         </StackPanel>
 
         <!-- Bottom (OK) -->
         <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="10,10,10,10" FlowDirection="RightToLeft">
-            <Button Width="80" Content="OK" Click="OKClicked"/>
+            <Button Width="80" Content="OK" Click="OKClicked" Margin="0,0,30,0"/>
+            <Button Width="80" Content="Import" Click="ImportPresets" Margin="0,0,10,0"/>
+            <Button Width="80" Content="Export" Click="ExportPresets"/>
         </StackPanel>
     </Grid>
 </Window>

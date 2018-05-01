@@ -23,7 +23,7 @@ namespace PerfView.Dialogs
         }
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
         {
-            MainWindow.DisplayUsersGuide(e.Parameter as string);
+            MainWindow.DisplayUsersGuide("Preset");
         }
         private void OKClicked(object sender, RoutedEventArgs e)
         {

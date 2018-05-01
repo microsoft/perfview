@@ -767,7 +767,7 @@ namespace PerfView
             });
             symPathDialog.Show();
         }
-        private void DoSetDefaultGroupingFolding(object sender, RoutedEventArgs e)
+        private void DoSetStartupPreset(object sender, RoutedEventArgs e)
         {
             App.ConfigData["DefaultFoldPercent"] = FoldPercentTextBox.Text;
             App.ConfigData["DefaultFoldPat"] = FoldRegExTextBox.Text;
@@ -2926,10 +2926,8 @@ namespace PerfView
             // Make up a trivial call tree (so that the rest of the code works).  
             m_callTree = new CallTree(ScalingPolicy);
 
-            // Finalize the Preset menu (add default commands)
-            var presets = App.ConfigData["Presets"];
-            m_presets = Preset.ParseCollection(presets);
-            FinishPresetMenu();
+            // Configure the Preset menu (add standard commands and known presets)
+            ConfigurePresetMenu();
 
             StackWindows.Add(this);
 
@@ -3436,8 +3434,11 @@ namespace PerfView
             diffMenuItem.Items.Add(helpMenuItem);
         }
 
-        private void FinishPresetMenu()
+        private void ConfigurePresetMenu()
         {
+            var presets = App.ConfigData["Presets"];
+            m_presets = Preset.ParseCollection(presets);
+
             foreach (var preset in m_presets)
             {
                 var presetMenuItem = new MenuItem();
@@ -3449,18 +3450,25 @@ namespace PerfView
 
             PresetMenu.Items.Add(new Separator());
 
+            var setDefaultPresetMenuItem = new MenuItem();
+            setDefaultPresetMenuItem.Header = "S_et Startup Preset";
+            setDefaultPresetMenuItem.Click += DoSetStartupPreset;
+            setDefaultPresetMenuItem.ToolTip =
+                "Sets the default values of Group Patterns and Fold Patterns and % to the current values.";
+            PresetMenu.Items.Add(setDefaultPresetMenuItem);
+
             var newPresetMenuItem = new MenuItem();
-            newPresetMenuItem.Header = "Save As Preset";
+            newPresetMenuItem.Header = "_Save As Preset";
             newPresetMenuItem.Click += DoSaveAsPreset;
             PresetMenu.Items.Add(newPresetMenuItem);
 
             var managePresetsMenuItem = new MenuItem();
-            managePresetsMenuItem.Header = "Manage Presets";
+            managePresetsMenuItem.Header = "_Manage Presets";
             managePresetsMenuItem.Click += DoManagePresets;
             PresetMenu.Items.Add(managePresetsMenuItem);
 
             var helpMenuItem = new MenuItem();
-            helpMenuItem.Header = "Help for Preset";
+            helpMenuItem.Header = "_Help for Preset";
             helpMenuItem.Click += delegate { MainWindow.DisplayUsersGuide("Preset"); };
             PresetMenu.Items.Add(helpMenuItem);
         }
@@ -3526,7 +3534,7 @@ namespace PerfView
 
         private void DoManagePresets(object sender, RoutedEventArgs e)
         {
-            var managePresetsDialog = new ManagePresetsDialog(m_presets);
+            var managePresetsDialog = new ManagePresetsDialog(m_presets, Path.GetDirectoryName(DataSource.FilePath));
             managePresetsDialog.Owner = this;
             managePresetsDialog.ShowDialog();
             m_presets = managePresetsDialog.Presets;

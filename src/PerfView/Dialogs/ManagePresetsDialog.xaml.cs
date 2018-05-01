@@ -1,8 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
+using System.Xml;
 
 namespace PerfView.Dialogs
 {
@@ -13,7 +16,7 @@ namespace PerfView.Dialogs
     {
         public List<Preset> Presets { get; private set; }
 
-        public ManagePresetsDialog(List<Preset> presets)
+        public ManagePresetsDialog(List<Preset> presets, string basePath)
         {
             InitializeComponent();
             Title = "Manage Presets";
@@ -26,10 +29,17 @@ namespace PerfView.Dialogs
                 }
                 PresetListBox.SelectedItem = Presets[0].Name;
             }
+
+            m_basePath = basePath;
         }
         private void DoHyperlinkHelp(object sender, ExecutedRoutedEventArgs e)
         {
-            MainWindow.DisplayUsersGuide(e.Parameter as string);
+            string helpTerm = e.Parameter as string;
+            if (helpTerm == "PresetList")
+            {
+                helpTerm = "Preset";
+            }
+            MainWindow.DisplayUsersGuide(helpTerm);
         }
         private void OKClicked(object sender, RoutedEventArgs e)
         {
@@ -77,12 +87,111 @@ namespace PerfView.Dialogs
             PresetListBox.Items.Remove(m_currentPreset);
             if (Presets.Count > 0)
             {
-                PresetListBox.SelectedItem = Presets[0];
+                PresetListBox.SelectedItem = Presets[0].Name;
             }
             else
             {
                 PresetListBox.UnselectAll();
             }
+        }
+        private void ExportPresets(object sender, RoutedEventArgs e)
+        {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog();
+            saveDialog.FileName = "PerfViewPresets.xml";
+            saveDialog.InitialDirectory = m_basePath;
+            saveDialog.Title = "File to export presets to";
+            saveDialog.DefaultExt = ".xml";
+            saveDialog.Filter = "PerfView presets|*.xml|All Files|*.*";
+            saveDialog.AddExtension = true;
+            saveDialog.OverwritePrompt = true;
+
+            bool? result = saveDialog.ShowDialog();
+            if (!(result == true))
+            {
+                return;
+            }
+            string fileName = saveDialog.FileName;
+
+            using (XmlWriter writer = XmlWriter.Create(
+                fileName,
+                new XmlWriterSettings() { Indent = true, NewLineOnAttributes = true }))
+            {
+                writer.WriteStartElement("Presets");
+                foreach (Preset preset in Presets)
+                {
+                    writer.WriteElementString("Preset", Preset.Serialize(preset));
+                }
+                writer.WriteEndElement();
+            }
+            App.CommandProcessor.LogFile.WriteLine($"Presets exported to {fileName}.");
+        }
+        private void ImportPresets(object sender, RoutedEventArgs e)
+        {
+            var openDialog = new Microsoft.Win32.OpenFileDialog();
+            openDialog.InitialDirectory = m_basePath;
+            openDialog.Title = "File to read presets from";
+            openDialog.DefaultExt = "xml";
+            openDialog.Filter = "PerfView presets|*.xml|All Files|*.*";
+            openDialog.AddExtension = true;
+            openDialog.CheckFileExists = true;
+
+            // Show open file dialog box
+            bool? result = openDialog.ShowDialog();
+            if (!(result == true))
+            {
+                return;
+            }
+
+            string fileName = openDialog.FileName;
+
+            List<Preset> presetsFromFile = new List<Preset>();
+            XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace=true, IgnoreComments=true };
+            using (XmlReader reader = XmlTextReader.Create(fileName, settings))
+            {
+                int entryDepth = reader.Depth;
+                try
+                {
+                    reader.Read();
+                    while (true)
+                    {
+                        if (reader.NodeType == XmlNodeType.Element && reader.Depth > entryDepth)
+                        {
+                            string value = reader.ReadElementContentAsString();
+                            presetsFromFile.Add(Preset.ParsePreset(value));
+                            continue;
+                        }
+
+                        if (!reader.Read()) break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine("Error during reading presets file.");
+                    App.CommandProcessor.LogFile.WriteLine("Error during reading presets file: " + ex);
+                }
+            }
+
+            // Now we have current presets in Presets collection and new presets in presetsFromFile collection.
+            // Existing identical presets are ignored.
+            // Existing presets that differ are ignored too, but warning is written into logs.
+            foreach (var preset in presetsFromFile)
+            {
+                var existingPreset = Presets.FirstOrDefault(x => x.Name == preset.Name);
+                if (existingPreset == null)
+                {
+                    Presets.Add(preset);
+                    PresetListBox.Items.Add(preset.Name);
+                    continue;
+                }
+
+                if (existingPreset.Equals(preset))
+                {
+                    continue;
+                }
+
+                App.CommandProcessor.LogFile.WriteLine($"WARN: Preset '{preset.Name}' was ignored during import because there already exist a preset with the same name.");
+            }
+            App.CommandProcessor.LogFile.WriteLine($"Presets import completed.");
         }
         private void DoPresetSelected(object sender, SelectionChangedEventArgs e)
         {
@@ -109,5 +218,6 @@ namespace PerfView.Dialogs
         }
 
         private string m_currentPreset;
+        private string m_basePath;
     }
 }
