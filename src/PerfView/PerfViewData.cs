@@ -6227,7 +6227,7 @@ table {
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
             }
             else if (hasCPUStacks && hasTplStacks)
-                m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities) (CPU ONLY)"));
+                advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities) (CPU ONLY)"));
 
             if (hasDiskStacks)
                 advanced.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
