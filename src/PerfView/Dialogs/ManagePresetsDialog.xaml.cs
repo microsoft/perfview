@@ -49,7 +49,7 @@ namespace PerfView.Dialogs
         }
         private void SaveClicked(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(m_currentPreset))
+            if (string.IsNullOrEmpty(m_currentPreset) || PresetListBox.SelectedIndex < 0)
             {
                 return;
             }
@@ -69,17 +69,20 @@ namespace PerfView.Dialogs
             }
 
             var preset = Presets.Find(x => x.Name == m_currentPreset);
-            PresetListBox.SelectedItem = PresetName.Text;
+            int presetPosition = PresetListBox.Items.IndexOf(m_currentPreset);
             preset.Name = PresetName.Text;
             preset.GroupPat = GroupPatsTextBox.Text;
             preset.FoldPercentage = FoldPercentTextBox.Text;
             preset.FoldPat = FoldRegExTextBox.Text;
             preset.IncPat = IncludeRegExTextBox.Text;
             preset.ExcPat = ExcludeRegExTextBox.Text;
+            PresetListBox.UnselectAll();
+            PresetListBox.Items[presetPosition] = preset.Name;
+            PresetListBox.SelectedItem = preset.Name;
         }
         private void DeleteClicked(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(m_currentPreset))
+            if (string.IsNullOrEmpty(m_currentPreset) || PresetListBox.SelectedIndex < 0)
             {
                 return;
             }
