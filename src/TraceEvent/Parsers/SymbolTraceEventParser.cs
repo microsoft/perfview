@@ -102,43 +102,42 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, DBGID_LOG_TYPE_NONE, ImageIDTaskGuid);
             }
         }
-        // I don't know much about these events, they are injected by KTC
-        public event Action<EmptyTraceData> ImageIDOpcode37
+
+        public event Action<DbgIDILRSDSTraceData> ImageIDDbgID_ILRSDS
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 37, "Opcode37", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new DbgIDILRSDSTraceData(value, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_ILRSDS, "DbgID_ILRSDS", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 37, ImageIdTaskGuid);
+                source.UnregisterEventTemplate(value, DBGID_LOG_TYPE_ILRSDS, ImageIDTaskGuid);
+            }
+        }
+        public event Action<DbgPPDBTraceData> ImageIDDbgPPDB
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new DbgPPDBTraceData(value, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_PPDB, "DbgPPDB", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, DBGID_LOG_TYPE_PPDB, ImageIDTaskGuid);
             }
         }
 
-        public event Action<EmptyTraceData> ImageIDOpcode38
+        public event Action<DbgDetermTraceData> ImageIDDbgDeterm
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 38, "Opcode38", ProviderGuid, ProviderName));
+                source.RegisterEventTemplate(new DbgDetermTraceData(value, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_DETERM, "DbgDeterm", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 37, ImageIdTaskGuid);
-            }
-        }
-
-        public event Action<EmptyTraceData> ImageIDOpcode40
-        {
-            add
-            {
-                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 40, "Opcode40", ProviderGuid, ProviderName));
-            }
-            remove
-            {
-                source.UnregisterEventTemplate(value, 37, ImageIdTaskGuid);
+                source.UnregisterEventTemplate(value, DBGID_LOG_TYPE_DETERM, ImageIDTaskGuid);
             }
         }
 
@@ -228,9 +227,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                     new ImageIDTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_IMAGEID, "Info", ProviderGuid, ProviderName),
                     new FileVersionTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_FILEVERSION, "FileVersion", ProviderGuid, ProviderName),
                     new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_NONE, "None", ProviderGuid, ProviderName),
-                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 37, "Opcode37", ProviderGuid, ProviderName),
-                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 38, "Opcode38", ProviderGuid, ProviderName),
-                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 40, "Opcode40", ProviderGuid, ProviderName),
+                    new DbgIDILRSDSTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_ILRSDS, "DbgID_ILRSDS", ProviderGuid, ProviderName),
+                    new DbgPPDBTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_PPDB, "DbgPPDB", ProviderGuid, ProviderName),
+                    new DbgDetermTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_DETERM, "DbgDeterm", ProviderGuid, ProviderName),
                     new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 33, "WinSPR", ProviderGuid, ProviderName),
                     new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 35, "Metrics", ProviderGuid, ProviderName),
                     new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 37, "SystemConfig", ProviderGuid, ProviderName),
@@ -247,6 +246,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         public const int DBGID_LOG_TYPE_IMAGEID = 0x00;
         public const int DBGID_LOG_TYPE_NONE = 0x20;
         public const int DBGID_LOG_TYPE_RSDS = 0x24;
+        public const int DBGID_LOG_TYPE_ILRSDS = 0x25;
+        public const int DBGID_LOG_TYPE_PPDB = 0x26;
+        public const int DBGID_LOG_TYPE_DETERM = 0x28;
         public const int DBGID_LOG_TYPE_FILEVERSION = 0x40;
 
         // Used to log meta-data about crimson events into the log.  
@@ -254,7 +256,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         internal static readonly Guid WinSatTaskGuid = new Guid(unchecked((int)0xed54dff8), unchecked((short)0xc409), 0x4cf6, 0xbf, 0x83, 0x05, 0xe1, 0xe6, 0x1a, 0x09, 0xc4);
         internal static readonly Guid MetaDataTaskGuid = new Guid(unchecked((int)0xbbccf6c1), 0x6cd1, 0x48c4, 0x80, 0xff, 0x83, 0x94, 0x82, 0xe3, 0x76, 0x71);
         internal static readonly Guid PerfTrackMetaDataTaskGuid = new Guid(unchecked((int)0xbf6ef1cb), unchecked((short)0x89b5), 0x490, 0x80, 0xac, 0xb1, 0x80, 0xcf, 0xbc, 0xff, 0x0f);
-        internal static readonly Guid ImageIdTaskGuid = new Guid(unchecked((int)0xb3e675d7), 0x2554, 0x4f18, 0x83, 0x0b, 0x27, 0x62, 0x73, 0x25, 0x60, 0xde);
         #endregion
     }
 }
@@ -518,6 +519,228 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
         }
 
         private event Action<ImageIDTraceData> Action;
+        #endregion
+    }
+
+    public sealed class DbgIDILRSDSTraceData : TraceEvent
+    {
+        public Address ImageBase { get { return GetAddressAt(0); } }
+
+        // This seems to be redundant with the ProcessID in the event header
+        //public int ProcessID { get { return GetInt32At(HostOffset(4, 1)); } }
+        public Guid GuidSig { get { return GetGuidAt(HostOffset(8, 1)); } }
+        public int Age { get { return GetInt32At(HostOffset(24, 1)); } }
+        public string PdbFileName { get { return GetUTF8StringAt(HostOffset(28, 1)); } }
+
+        #region Private
+        internal DbgIDILRSDSTraceData(Action<DbgIDILRSDSTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
+            base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<DbgIDILRSDSTraceData>)value; }
+        }
+
+        protected internal override void Validate()
+        {
+            Debug.Assert(EventDataLength == SkipUTF8String(HostOffset(32, 1)));
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ImageBase", "GuidSig", "Age", "PDBFileName" };
+                }
+                return payloadNames;
+
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ImageBase;
+                case 1:
+                    return GuidSig;
+                case 2:
+                    return Age;
+                case 3:
+                    return PdbFileName;
+                default:
+                    Debug.Assert(false, "invalid index");
+                    return null;
+            }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "ImageBase", ImageBase);
+            XmlAttrib(sb, "GuidSig", GuidSig);
+            XmlAttrib(sb, "Age", Age);
+            XmlAttrib(sb, "PdbFileName", PdbFileName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        private event Action<DbgIDILRSDSTraceData> Action;
+
+        #endregion
+    }
+
+    public sealed class DbgPPDBTraceData : TraceEvent
+    {
+        public Address ImageBase { get { return GetAddressAt(0); } }
+
+        // This seems to be redundant with the ProcessID in the event header
+        //public int ProcessID { get { return GetInt32At(HostOffset(4, 1)); } }
+
+        public int TimeDateStamp { get { return GetInt32At(HostOffset(8, 1)); } }
+
+        public int MajorVersion { get { return GetByteAt(HostOffset(12, 1)); } }
+
+        public int MinorVersion { get { return GetByteAt(HostOffset(14, 1)); } }
+
+        #region Private
+        internal DbgPPDBTraceData(Action<DbgPPDBTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
+    base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<DbgPPDBTraceData>)value; }
+        }
+
+        protected internal override void Validate()
+        {
+            Debug.Assert(EventDataLength == HostOffset(16, 1));
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ImageBase", "TimeDateStamp", "MajorVersion", "MinorVersion" };
+                }
+                return payloadNames;
+
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ImageBase;
+                case 1:
+                    return TimeDateStamp;
+                case 2:
+                    return MajorVersion;
+                case 3:
+                    return MinorVersion;
+                default:
+                    Debug.Assert(false, "bad index value");
+                    return null;
+            }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "ImageBase", ImageBase);
+            XmlAttribHex(sb, "TimeDateStamp", TimeDateStamp);
+            XmlAttrib(sb, "MajorVersion", MajorVersion);
+            XmlAttrib(sb, "MinorVersion", MinorVersion);
+            sb.Append("/>");
+            return sb;
+        }
+
+        private event Action<DbgPPDBTraceData> Action;
+        #endregion
+    }
+
+    public sealed class DbgDetermTraceData : TraceEvent
+    {
+        public Address ImageBase { get { return GetAddressAt(0); } }
+
+        // This seems to be redundant with the ProcessID in the event header
+        //public int ProcessID { get { return GetInt32At(HostOffset(4, 1)); } }
+
+        #region Private
+        internal DbgDetermTraceData(Action<DbgDetermTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opCode, string opCodeName, Guid providerGuid, string providerName) :
+            base(eventID, task, taskName, taskGuid, opCode, opCodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<DbgDetermTraceData>)value; }
+        }
+
+        protected internal override void Validate()
+        {
+            Debug.Assert(EventDataLength == HostOffset(8, 1));
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                {
+                    payloadNames = new string[] { "ImageBase" };
+                }
+                return payloadNames;
+
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ImageBase;
+                default:
+                    Debug.Assert(false, "bad index value");
+                    return null;
+            }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttribHex(sb, "ImageBase", ImageBase);
+            sb.Append("/>");
+            return sb;
+        }
+
+        private event Action<DbgDetermTraceData> Action;
+
         #endregion
     }
 
