@@ -1668,7 +1668,22 @@ namespace PerfView
 
             // TODO does not work with the unmerged files
             if (response == MessageBoxResult.OK)
-                FileUtilities.ForceDelete(selectedFile.FilePath);
+            {
+                string selectedFilePath = selectedFile.FilePath;
+                // Delete the file.  
+                FileUtilities.ForceDelete(selectedFilePath);
+
+                // If it is an ETL file, remove all the other components of an unmerged ETL file.  
+                if (selectedFilePath.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (string relatedFile in System.IO.Directory.GetFiles(Path.GetDirectoryName(selectedFile.FilePath), Path.GetFileNameWithoutExtension(selectedFilePath) + ".*"))
+                    {
+                        Match m = Regex.Match(relatedFile, @"\.((clr.*)|(user.*)|(kernel.*)\.etl)$", RegexOptions.IgnoreCase);
+                        if (m.Success)
+                            FileUtilities.ForceDelete(relatedFile);
+                    }
+                }
+            }
 
             // refresh the directory. 
             RefreshCurrentDirectory();
