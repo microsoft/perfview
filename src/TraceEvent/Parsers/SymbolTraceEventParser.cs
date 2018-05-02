@@ -102,13 +102,39 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, DBGID_LOG_TYPE_NONE, ImageIDTaskGuid);
             }
         }
-        // I don't know much about this event at all...
+        // I don't know much about these events, they are injected by KTC
         public event Action<EmptyTraceData> ImageIDOpcode37
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
                 source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 37, "Opcode37", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 37, ImageIdTaskGuid);
+            }
+        }
+
+        public event Action<EmptyTraceData> ImageIDOpcode38
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 38, "Opcode38", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 37, ImageIdTaskGuid);
+            }
+        }
+
+        public event Action<EmptyTraceData> ImageIDOpcode40
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new EmptyTraceData(value, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 40, "Opcode40", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -196,18 +222,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[10];
-                templates[0] = new DbgIDRSDSTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_RSDS, "DbgID_RSDS", ProviderGuid, ProviderName);
-                templates[1] = new ImageIDTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_IMAGEID, "Info", ProviderGuid, ProviderName);
-                templates[2] = new FileVersionTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_FILEVERSION, "FileVersion", ProviderGuid, ProviderName);
-                templates[3] = new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_NONE, "None", ProviderGuid, ProviderName);
-                templates[4] = new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 37, "Opcode37", ProviderGuid, ProviderName);
-                templates[5] = new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 33, "WinSPR", ProviderGuid, ProviderName);
-                templates[6] = new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 35, "Metrics", ProviderGuid, ProviderName);
-                templates[7] = new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 37, "SystemConfig", ProviderGuid, ProviderName);
-                templates[8] = new EmptyTraceData(null, 0xFFFF, 0, "MetaData", MetaDataTaskGuid, 32, "EventInfo", ProviderGuid, ProviderName);
-                templates[9] = new EmptyTraceData(null, 0xFFFF, 0, "MetaData", MetaDataTaskGuid, 33, "EventMapInfo", ProviderGuid, ProviderName);
-                s_templates = templates;
+                s_templates = new TraceEvent[]
+                {
+                    new DbgIDRSDSTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_RSDS, "DbgID_RSDS", ProviderGuid, ProviderName),
+                    new ImageIDTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_IMAGEID, "Info", ProviderGuid, ProviderName),
+                    new FileVersionTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_FILEVERSION, "FileVersion", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIDTaskGuid, DBGID_LOG_TYPE_NONE, "None", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 37, "Opcode37", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 38, "Opcode38", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "ImageID", ImageIdTaskGuid, 40, "Opcode40", ProviderGuid, ProviderName),
+                    new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 33, "WinSPR", ProviderGuid, ProviderName),
+                    new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 35, "Metrics", ProviderGuid, ProviderName),
+                    new WinSatXmlTraceData(null, 0xFFFF, 0, "WinSat", WinSatTaskGuid, 37, "SystemConfig", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "MetaData", MetaDataTaskGuid, 32, "EventInfo", ProviderGuid, ProviderName),
+                    new EmptyTraceData(null, 0xFFFF, 0, "MetaData", MetaDataTaskGuid, 33, "EventMapInfo", ProviderGuid, ProviderName)
+                };
             }
             foreach (var template in s_templates)
                 if (eventsToObserve == null || eventsToObserve(template.ProviderName, template.EventName) == EventFilterResponse.AcceptEvent)

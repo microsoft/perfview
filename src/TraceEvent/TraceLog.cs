@@ -1172,6 +1172,14 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 noStack = true;
             };
+            symbolParser.ImageIDOpcode38 += delegate
+            {
+                noStack = true;
+            };
+            symbolParser.ImageIDOpcode40 += delegate
+            {
+                noStack = true;
+            };
 
             kernelParser.AddCallbackForEvents<FileIONameTraceData>(delegate (FileIONameTraceData data)
                 {
