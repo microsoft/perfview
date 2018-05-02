@@ -1967,13 +1967,13 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 #if DEBUG
             string dllName = Path.GetFileNameWithoutExtension(dllPath);
             string pdbName = Path.GetFileNameWithoutExtension(pdbPath);
+            
+            // Give up on things outside the kernel or visual Studio.  There is just too much variability out there.  
+            if (!dllName.StartsWith(@"C:\Windows", StringComparison.OrdinalIgnoreCase) || 0 <= dllName.IndexOf("Visual Studio", StringComparison.OrdinalIgnoreCase))
+                return true;
 
             // Exceptions to the rule below 
             if (0 <= dllName.IndexOf("krnl", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (0 <= dllName.IndexOf("vshost", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (0 <= dllName.IndexOf("flash", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             // People often rename things but the keep the prefix in the PDB name. 
