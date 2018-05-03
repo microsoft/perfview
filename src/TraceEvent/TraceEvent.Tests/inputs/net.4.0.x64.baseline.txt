@@ -1,4 +1,4 @@
-EVENT 0.000: Windows Kernel/EventTrace PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=332; BufferSize=65,536; Version=83,951,878; ProviderVersion=7,601; NumberOfProcessors=4; EndTime=16/05/26 20:16:54.91...; TimerResolution=156,250; MaxFileSize=0; LogFileMode=65,537; BuffersWritten=1,694; StartBuffers=1; PointerSize=8; EventsLost=0; CPUSpeed=2,993; BootTime=16/05/25 21:41:46.12...; PerfFreq=10,000,000; StartTime=16/05/26 20:16:48.68...; ReservedFlags=1; BuffersLost=0; SessionName=Relogger; LogFileName=[multiple files]; UtcOffsetMinutes=480; 
+﻿EVENT 0.000: Windows Kernel/EventTrace PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=332; BufferSize=65,536; Version=83,951,878; ProviderVersion=7,601; NumberOfProcessors=4; EndTime=16/05/26 20:16:54.91...; TimerResolution=156,250; MaxFileSize=0; LogFileMode=65,537; BuffersWritten=1,694; StartBuffers=1; PointerSize=8; EventsLost=0; CPUSpeed=2,993; BootTime=16/05/25 21:41:46.12...; PerfFreq=10,000,000; StartTime=16/05/26 20:16:48.68...; ReservedFlags=1; BuffersLost=0; SessionName=Relogger; LogFileName=[multiple files]; UtcOffsetMinutes=480; 
 EVENT 0.000: Windows Kernel/EventTrace/Extension PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=36; GroupMask1=0; GroupMask2=0; GroupMask3=0; GroupMask4=0; GroupMask5=0; GroupMask6=0; GroupMask7=0; GroupMask8=0; KernelEventVersion=27; 
 EVENT 0.000: Windows Kernel/SysConfig/SystemPaths PID=0; TID=0; PName=Idle; ProceNum=0; DataLen=64; SystemDirectory=C:\Windows\system32; SystemWindowsDirectory=C:\Windows\; 
 EVENT 0.000: Windows Kernel/SysConfig/VolumeMapping PID=0; TID=0; PName=Idle; ProceNum=0; DataLen=12; NtPath=\??\; DosPath=; 
@@ -74,11 +74,11 @@ EVENT 331.057: KernelTraceControl/ImageID/None PID=960; TID=3872; PName=svchost;
 EVENT 564.271: KernelTraceControl/ImageID/None PID=1128; TID=3872; PName=svchost; ProceNum=0; DataLen=12; 
 EVENT 596.692: KernelTraceControl/ImageID/None PID=1364; TID=3872; PName=spoolsv; ProceNum=0; DataLen=12; 
 EVENT 691.347: Windows Kernel/TcpIp/RecvIPV6 PID=1128; TID=-1; PName=svchost; ProceNum=0; DataLen=56; size=85; daddr=2001:4898:e0:2018:91...; saddr=2001:4898:29:1010:dd...; dport=34,983; sport=3,389; connid=0x0; seqnum=0; 
-EVENT 752.097: KernelTraceControl/ImageID/Opcode37 PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=148; 
-EVENT 752.106: KernelTraceControl/ImageID/Opcode37 PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=149; 
-EVENT 752.133: KernelTraceControl/ImageID/Opcode37 PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=142; 
-EVENT 752.143: KernelTraceControl/ImageID/Opcode37 PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=48; 
-EVENT 752.151: KernelTraceControl/ImageID/Opcode37 PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=47; 
+EVENT 752.097: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=148; ImageBase=0xb20000; GuidSig=b3af247c-db0d-49ff-a...; Age=1; PDBFileName=C:\Users\vancem\Sour...; 
+EVENT 752.106: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=149; ImageBase=0xb60000; GuidSig=c5ce39de-77bc-481a-a...; Age=1; PDBFileName=c:\Users\vancem\Docu...; 
+EVENT 752.133: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=142; ImageBase=0x5c30000; GuidSig=ea5b71d9-238b-460b-b...; Age=1; PDBFileName=C:\Users\vancem\Sour...; 
+EVENT 752.143: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=48; ImageBase=0x701d0000; GuidSig=01209527-36eb-4019-8...; Age=1; PDBFileName=System.Core.pdb; 
+EVENT 752.151: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=47; ImageBase=0x70890000; GuidSig=88e72260-0543-4081-a...; Age=1; PDBFileName=System.Xml.pdb; 
 EVENT 752.632: Windows Kernel/PerfInfo/CollectionStart PID=3904; TID=3872; PName=PerfView; ProceNum=0; DataLen=12; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
 EVENT 802.610: Windows Kernel/Thread/Start PID=4; TID=2636; PName=System; ProceNum=0; DataLen=72; StackBase=0xfffff88006690000; StackLimit=0xfffff8800668a000; UserStackBase=0x0; UserStackLimit=0x0; StartAddr=0xf; Win32StartAddr=0xfffff800029ec614; TebBase=0x0; SubProcessTag=0; ParentThreadID=3,872; ParentProcessID=3,904; 
 EVENT 820.745: Windows Kernel/Thread/Start PID=3904; TID=3408; PName=PerfView; ProceNum=0; DataLen=72; StackBase=0xfffff88006697000; StackLimit=0xfffff88006691000; UserStackBase=0x604fd20; UserStackLimit=0x604c000; StartAddr=0xf; Win32StartAddr=0x771f5c71; TebBase=0xfffa1000; SubProcessTag=0; ParentThreadID=3,872; ParentProcessID=3,904; 
@@ -482,10 +482,10 @@ EVENT 9,984.435: PerfView/StartAndStopTimes PID=3776; TID=4036; PName=PerfView; 
 EVENT 9,984.437: PerfView/Rundown/Stop PID=3776; TID=4036; PName=PerfView; ProceNum=2; DataLen=0; 
 EVENT 9,984.437: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=2; DataLen=138; InstallDate=70/01/01 00:00:00.00...; BuildLab=7601.19160.amd64fre....; ProductName=Windows 7 Enterprise; 
 COUNT KernelTraceControl/ImageID:5572
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:44
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:5526
 COUNT KernelTraceControl/ImageID/FileVersion:726
 COUNT KernelTraceControl/ImageID/None:24
-COUNT KernelTraceControl/ImageID/Opcode37:44
 COUNT KernelTraceControl/MetaData/EventInfo:6
 COUNT KernelTraceControl/MetaData/EventMapInfo:1
 COUNT MSNT_SystemTrace/Image/KernelBase:1
@@ -568,7 +568,7 @@ COUNT PerfView/WaitForIdle:1
 COUNT Provider(8e9f5090-2d75-4d03-8a81-e5afbf85daf1)/EventID(65534):2
 COUNT Windows Kernel/DiskIO/FlushBuffers:6
 COUNT Windows Kernel/DiskIO/FlushInit:6
-COUNT Windows Kernel/DiskIO/Read:1410
+COUNT Windows Kernel/DiskIO/Read:1412
 COUNT Windows Kernel/DiskIO/ReadInit:1413
 COUNT Windows Kernel/DiskIO/Write:2035
 COUNT Windows Kernel/DiskIO/WriteInit:2035
@@ -581,7 +581,7 @@ COUNT Windows Kernel/Image/Unload:99
 COUNT Windows Kernel/Memory/HardFault:989
 COUNT Windows Kernel/PerfInfo/CollectionEnd:1
 COUNT Windows Kernel/PerfInfo/CollectionStart:1
-COUNT Windows Kernel/PerfInfo/Sample:8320
+COUNT Windows Kernel/PerfInfo/Sample:8323
 COUNT Windows Kernel/Process/DCStart:46
 COUNT Windows Kernel/Process/DCStop:46
 COUNT Windows Kernel/Process/PerfCtr:2
