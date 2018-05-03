@@ -1118,15 +1118,11 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             var symbolParser = new SymbolTraceEventParser(rawEvents);
 
-            symbolParser.ImageIDNone += delegate (EmptyTraceData data)
-            {
-                // If I don't have this, the code ends up not attaching the stack to the image load which has the same timestamp. 
-                noStack = true;
-            };
+            // Symbol parser events never have a stack (but will have a QPC associated with the imageLoad) so we want them ignored
+            symbolParser.All += delegate (TraceEvent data) { noStack = true; };
             symbolParser.ImageIDDbgID_RSDS += delegate (DbgIDRSDSTraceData data)
             {
                 hasPdbInfo = true;
-                noStack = true;
 
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
                 if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
@@ -1144,7 +1140,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             symbolParser.ImageID += delegate (ImageIDTraceData data)
             {
-                noStack = true;
                 // The ImageID may be after the ImageLoad
                 if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.timeDateStamp == 0)
                 {
@@ -1156,7 +1151,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             };
             symbolParser.ImageIDFileVersion += delegate (FileVersionTraceData data)
             {
-                noStack = true;
                 // The ImageIDFileVersion may be after the ImageLoad
                 if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.fileVersion == null)
                 {
@@ -1167,10 +1161,6 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
                 else  // Or before (it is handled in ImageGroup callback above)
                     lastFileVersionData = (FileVersionTraceData)data.Clone();
-            };
-            symbolParser.ImageIDOpcode37 += delegate
-            {
-                noStack = true;
             };
 
             kernelParser.AddCallbackForEvents<FileIONameTraceData>(delegate (FileIONameTraceData data)
