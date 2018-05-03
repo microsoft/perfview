@@ -74,8 +74,7 @@ namespace PerfView.Dialogs
             preset.GroupPat = GroupPatsTextBox.Text;
             preset.FoldPercentage = FoldPercentTextBox.Text;
             preset.FoldPat = FoldRegExTextBox.Text;
-            preset.IncPat = IncludeRegExTextBox.Text;
-            preset.ExcPat = ExcludeRegExTextBox.Text;
+            preset.Comment = CommentTextBox.Text;
             PresetListBox.UnselectAll();
             PresetListBox.Items[presetPosition] = preset.Name;
             PresetListBox.SelectedItem = preset.Name;
@@ -210,8 +209,7 @@ namespace PerfView.Dialogs
                 GroupPatsTextBox.Text = string.Empty;
                 FoldPercentTextBox.Text = string.Empty;
                 FoldRegExTextBox.Text = string.Empty;
-                IncludeRegExTextBox.Text = string.Empty;
-                ExcludeRegExTextBox.Text = string.Empty;
+                CommentTextBox.Text = string.Empty;
                 return;
             }
 
@@ -221,8 +219,7 @@ namespace PerfView.Dialogs
             GroupPatsTextBox.Text = preset.GroupPat;
             FoldPercentTextBox.Text = preset.FoldPercentage;
             FoldRegExTextBox.Text = preset.FoldPat;
-            IncludeRegExTextBox.Text = preset.IncPat;
-            ExcludeRegExTextBox.Text = preset.ExcPat;
+            CommentTextBox.Text = preset.Comment;
         }
 
         private string m_currentPreset;

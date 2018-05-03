@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 
 namespace PerfView
 {
     /// <summary>
     /// Stack viewer preset that includes information about grouping and folding patterns,
-    /// folding percentage and inclusion/exclusion patterns.
+    /// folding percentage.
     /// </summary>
     public class Preset : IEquatable<Preset>
     {
@@ -14,8 +15,7 @@ namespace PerfView
         public string GroupPat { get; set; }
         public string FoldPercentage { get; set; }
         public string FoldPat { get; set; }
-        public string IncPat { get; set; }
-        public string ExcPat { get; set; }
+        public string Comment { get; set; }
 
         /// <summary>Indicates whether the current object is equal to another object of the same type.</summary>
         /// <returns>true if the current object is equal to the <paramref name="other" /> parameter; otherwise, false.</returns>
@@ -29,8 +29,7 @@ namespace PerfView
                    string.Equals(GroupPat, other.GroupPat) &&
                    string.Equals(FoldPercentage, other.FoldPercentage) &&
                    string.Equals(FoldPat, other.FoldPat) &&
-                   string.Equals(IncPat, other.IncPat) &&
-                   string.Equals(ExcPat, other.ExcPat);
+                   string.Equals(Comment, other.Comment);
         }
 
         /// <summary>
@@ -78,11 +77,8 @@ namespace PerfView
                     case "FoldPat":
                         preset.FoldPat = partValue;
                         break;
-                    case "IncPat":
-                        preset.IncPat = partValue;
-                        break;
-                    case "ExcPat":
-                        preset.ExcPat = partValue;
+                    case "Comment":
+                        preset.Comment = XmlConvert.DecodeName(partValue);
                         break;
                 }
             }
@@ -121,8 +117,7 @@ namespace PerfView
             result.Append("GroupPat=" + preset.GroupPat + PartSeparator);
             result.Append("FoldPercentage=" + preset.FoldPercentage + PartSeparator);
             result.Append("FoldPat=" + preset.FoldPat + PartSeparator);
-            result.Append("IncPat=" + preset.IncPat + PartSeparator);
-            result.Append("ExcPat=" + preset.ExcPat);
+            result.Append("Comment=" + XmlConvert.EncodeName(preset.Comment));
             return result.ToString();
         }
 
