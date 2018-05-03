@@ -583,6 +583,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Symbol
                     return null;
             }
         }
+
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
