@@ -361,465 +361,78 @@ namespace PerfView
             CollectingData = true;
             // Create the sessions
 
+            // Start usermode session first
+            var stacksEnabled = new TraceEventProviderOptions() { StacksEnabled = true };
             if (parsedArgs.InMemoryCircularBuffer)
-                kernelFileName = null;              // In memory buffers dont have a file name  
+                userFileName = null;                    // In memory buffers don't have a file name 
             else
-                LogFile.WriteLine("[Kernel Log: {0}]", Path.GetFullPath(kernelFileName));
-            using (TraceEventSession kernelModeSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, kernelFileName))
+                LogFile.WriteLine("[User mode Log: {0}]", Path.GetFullPath(userFileName));
+            
+            // TODO: Need some kind of randomization of user mode session name to enable multiple parallel sessions.
+            using (TraceEventSession userModeSession = new TraceEventSession(s_UserModeSessionName, userFileName))
             {
-                if (parsedArgs.CpuCounters != null)
+                userModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
+                // DotNetAlloc needs a large buffer size too.  
+                if (parsedArgs.DotNetAlloc || parsedArgs.DotNetCalls)
+                    userModeSession.BufferSizeMB = Math.Max(512, parsedArgs.BufferSizeMB * 2);
+                // Note that you don't need the rundown 300Meg if you are V4.0.   
+                if (parsedArgs.CircularMB != 0)
                 {
-                    SetCpuCounters(parsedArgs.CpuCounters);
-                    parsedArgs.KernelEvents |= KernelTraceEventParser.Keywords.PMCProfile;
-                }
-                else
-                {
-                    if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.PMCProfile) != 0)
-                        throw new ApplicationException("The PMCProfile should not be set explicitly.  Simply set the CpuCounters.");
+                    // Typically you only need less than 1/5 the space + rundown 
+                    // TODO: Can we skip +300 Mb if parsedArgs.No*Rundown are true?
+                    userModeSession.CircularBufferMB = Math.Min(parsedArgs.CircularMB, parsedArgs.CircularMB / 5 + 300);
+                    // TODO: For kernelmode session it was like that:
+                    // kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
+                    // Need to decide what is the correct size - full one or divided by 5.
                 }
 
-                LogFile.WriteLine("Kernel keywords enabled: {0}", parsedArgs.KernelEvents);
-                if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
+                // Start kernel mode session as part of user mode one (or create separate if running on old Windows)
+                StartKernelModeSession(userModeSession, parsedArgs, kernelFileName);
+                
+                // Turn on PerfViewLogger
+                EnableUserProvider(userModeSession, "PerfViewLogger", PerfViewLogger.Log.Guid,
+                    TraceEventLevel.Verbose, ulong.MaxValue);
+
+                Thread.Sleep(100);  // Give it at least some time to start, it is not synchronous. 
+
+                PerfViewLogger.Log.StartTracing();
+                PerfViewLogger.StartTime = DateTime.UtcNow;
+
+                PerfViewLogger.Log.SessionParameters(s_UserModeSessionName, userFileName ?? "",
+                    userModeSession.BufferSizeMB, userModeSession.CircularBufferMB);
+
+                // If you turn on allocation sampling, then you also need the types and names and deaths.  
+                if ((parsedArgs.ClrEvents & (ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh | ClrTraceEventParser.Keywords.GCSampledObjectAllocationLow)) != 0)
+                    parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement;
+
+                EnableUserModeSessionProviders(userModeSession, parsedArgs, profilerKeywords, stacksEnabled);
+
+                // Start network monitoring capture if needed
+                if (parsedArgs.NetMonCapture)
+                    parsedArgs.NetworkCapture = true;
+                if (parsedArgs.NetworkCapture)
                 {
-                    if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad)) == 0 &&
-                        (parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Profile | KernelTraceEventParser.Keywords.ContextSwitch)) != 0)
-                    {
-                        LogFile.WriteLine("Kernel process and image thread events not present, adding them");
-                        parsedArgs.KernelEvents |= (
-                            KernelTraceEventParser.Keywords.Process |
-                            KernelTraceEventParser.Keywords.ImageLoad |
-                            KernelTraceEventParser.Keywords.Thread);
-                    }
-
-                    // If these are on, turn on Virtual Allocs as well.  
-                    if (parsedArgs.OSHeapProcess != 0 || parsedArgs.OSHeapExe != null || parsedArgs.DotNetAlloc || parsedArgs.DotNetAllocSampled)
-                        parsedArgs.KernelEvents |= KernelTraceEventParser.Keywords.VirtualAlloc;
-
-                    kernelModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
-                    kernelModeSession.StackCompression = parsedArgs.StackCompression;
-                    kernelModeSession.CpuSampleIntervalMSec = parsedArgs.CpuSampleMSec;
-                    if (parsedArgs.CircularMB != 0)
-                        kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
-                    kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+                    EnableNetworkCapture(userModeSession, parsedArgs, stacksEnabled);
                 }
+                if (parsedArgs.CCWRefCount)
+                    EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                LogFile.WriteLine("Enabling Providers specified by the user.");
+                if (parsedArgs.Providers != null)
+                    EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine);
 
                 // Turn on the OS Heap stuff if anyone asked for it.  
-                TraceEventSession heapSession = null;
                 if (parsedArgs.OSHeapProcess != 0 || parsedArgs.OSHeapExe != null)
                 {
-                    if (parsedArgs.OSHeapProcess != 0 && parsedArgs.OSHeapExe != null)
-                        throw new ApplicationException("OSHeapProcess and OSHeapExe cannot both be specified simultaneously.");
-
-                    heapSession = new TraceEventSession(s_HeapSessionName, heapFileName);
-                    // Default is 256Meg and twice whatever the others are
-                    heapSession.BufferSizeMB = Math.Max(256, parsedArgs.BufferSizeMB * 2);
-
-                    if (parsedArgs.CircularMB != 0)
-                        LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering.]");
-
-                    if (parsedArgs.OSHeapProcess != 0)
+                    using (var heapSession = CreateHeapSession(parsedArgs, heapFileName))
                     {
-                        heapSession.EnableWindowsHeapProvider(parsedArgs.OSHeapProcess);
-                        LogFile.WriteLine("[Enabling heap logging for process {0} to : {1}]", parsedArgs.OSHeapProcess, Path.GetFullPath(heapFileName));
-                    }
-                    else
-                    {
-                        parsedArgs.OSHeapExe = Path.ChangeExtension(parsedArgs.OSHeapExe, ".exe");
-                        heapSession.EnableWindowsHeapProvider(parsedArgs.OSHeapExe);
-                        LogFile.WriteLine("[Enabling heap logging for process with EXE {0} to : {1}]", parsedArgs.OSHeapExe, Path.GetFullPath(heapFileName));
-                    }
-                }
-
-                var stacksEnabled = new TraceEventProviderOptions() { StacksEnabled = true };
-                if (parsedArgs.InMemoryCircularBuffer)
-                    userFileName = null;                    // In memory buffers don't have a file name 
-                else
-                    LogFile.WriteLine("[User mode Log: {0}]", Path.GetFullPath(userFileName));
-                using (TraceEventSession userModeSession = new TraceEventSession(s_UserModeSessionName, userFileName))
-                {
-                    userModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
-                    // DotNetAlloc needs a large buffer size too.  
-                    if (parsedArgs.DotNetAlloc || parsedArgs.DotNetCalls)
-                        userModeSession.BufferSizeMB = Math.Max(512, parsedArgs.BufferSizeMB * 2);
-                    // Note that you don't need the rundown 300Meg if you are V4.0.   
-                    if (parsedArgs.CircularMB != 0)
-                    {
-                        // Typically you only need less than 1/5 the space + rundown 
-                        userModeSession.CircularBufferMB = Math.Min(parsedArgs.CircularMB, parsedArgs.CircularMB / 5 + 300);
-                    }
-
-                    // Turn on PerfViewLogger
-                    EnableUserProvider(userModeSession, "PerfViewLogger", PerfViewLogger.Log.Guid,
-                        TraceEventLevel.Verbose, ulong.MaxValue);
-
-                    Thread.Sleep(100);  // Give it at least some time to start, it is not synchronous. 
-
-                    PerfViewLogger.Log.StartTracing();
-                    PerfViewLogger.StartTime = DateTime.UtcNow;
-
-                    PerfViewLogger.Log.SessionParameters(KernelTraceEventParser.KernelSessionName, kernelFileName ?? "",
-                        kernelModeSession.BufferSizeMB, kernelModeSession.CircularBufferMB);
-                    PerfViewLogger.Log.KernelEnableParameters(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
-                    PerfViewLogger.Log.SessionParameters(s_UserModeSessionName, userFileName ?? "",
-                        userModeSession.BufferSizeMB, userModeSession.CircularBufferMB);
-
-                    // If you turn on allocation sampling, then you also need the types and names and deaths.  
-                    if ((parsedArgs.ClrEvents & (ClrTraceEventParser.Keywords.GCSampledObjectAllocationHigh | ClrTraceEventParser.Keywords.GCSampledObjectAllocationLow)) != 0)
-                        parsedArgs.ClrEvents |= ClrTraceEventParser.Keywords.Type | ClrTraceEventParser.Keywords.GCHeapSurvivalAndMovement;
-
-                    if (parsedArgs.Wpr)
-                        SetWPRProviders(userModeSession);
-                    else if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
-                    {
-
-                        // If we don't change the core set then we should assume the user wants more stuff.  
-                        var coreClrEvents = ClrTraceEventParser.Keywords.Default &
-                            ~ClrTraceEventParser.Keywords.NGen & ~ClrTraceEventParser.Keywords.SupressNGen;
-
-                        if ((parsedArgs.ClrEvents & coreClrEvents) == coreClrEvents)
-                        {
-                            LogFile.WriteLine("Turning on more CLR GC, JScript and ASP.NET Events.");
-
-                            // Turn on DotNet Telemetry
-                            EnableUserProvider(userModeSession, "DotNet",
-                                new Guid("319dc449-ada5-50f7-428e-957db6791668"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
-
-                            // Turn on ETW logging about etw logging (so we get lost event info) ... (Really need a separate session to get the lost event Info properly). 
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-EventTracing",
-                                new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
-
-                            // Turn on File Create (open) logging as it is useful for investigations and lightweight. 
-                            // Don't bother if the Kernel FileIOInit evens are on because they are strictly better
-                            // and you end up with annoying redundancy.  
-                            if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.FileIOInit) == 0)
-                            {
-                                // 0x10 =  Process  
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
-                                    new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
-                            }
-
-                            // Turn on the user-mode Process start events.  This allows you to get the stack of create-process calls
-                            // 0x10 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
-                                new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
-
-                            // Default CLR events also means ASP.NET and private events. 
-                            // Turn on ASP.NET at informational by default.
-                            EnableUserProvider(userModeSession, "ASP.NET", AspNetTraceEventParser.ProviderGuid,
-                                parsedArgs.ClrEventLevel, ulong.MaxValue - 0x2); // the - 0x2 will turn off Module level logging, which is very verbose
-                            CheckAndWarnAboutAspNet(AspNetTraceEventParser.ProviderGuid);
-
-                            // Turn on the new V4.5.1 ASP.Net  EventSource (TODO Not clear we should do this, and how much to turn on).  
-                            // TODO turned on stacks for debugging probably should turn off in the long run.  
-                            EnableUserProvider(userModeSession, "*Microsoft-Windows-ASPNET",
-                                 new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
-
-                            // Turn on just minimum (start and stop) for IIS)
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-IIS",
-                                new Guid("DE4649C9-15E8-4FEA-9D85-1CDDA520C334"), TraceEventLevel.Critical, 0);
-
-                            // These let you see IE in and have few events. 
-                            EnableUserProvider(userModeSession, "Microsoft-PerfTrack-IEFRAME",
-                                new Guid("B2A40F1F-A05A-4DFD-886A-4C4F18C4334C"), TraceEventLevel.Verbose, ulong.MaxValue);
-
-                            EnableUserProvider(userModeSession, "Microsoft-PerfTrack-MSHTML",
-                                new Guid("FFDB9886-80F3-4540-AA8B-B85192217DDF"), TraceEventLevel.Verbose, ulong.MaxValue);
-
-                            // Set you see the URLs that IE is processing. 
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
-                                new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, 2);
-
-                            // Turn on WCF.  This can be very verbose.  We need to figure out a balance  
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Application Server-Applications",
-                                ApplicationServerTraceEventParser.ProviderGuid, TraceEventLevel.Informational, ulong.MaxValue);
-
-                            EnableUserProvider(userModeSession, "Microsoft-IE",
-                                new Guid("9E3B3947-CA5D-4614-91A2-7B624E0E7244"), TraceEventLevel.Informational, 0x1300);
-
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-DNS-Client",
-                                new Guid("1C95126E-7EEA-49A9-A3FE-A378B03DDB4D"), TraceEventLevel.Informational, ulong.MaxValue);
-
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-DirectComposition",
-                                new Guid("C44219D0-F344-11DF-A5E2-B307DFD72085"), TraceEventLevel.Verbose, 0x4);
-
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-Immersive-Shell",
-                                new Guid("315A8872-923E-4EA2-9889-33CD4754BF64"), TraceEventLevel.Informational, ulong.MaxValue);
-
-                            EnableUserProvider(userModeSession, "Microsoft-Windows-XAML",
-                                new Guid("531A35AB-63CE-4BCF-AA98-F88C7A89E455"), TraceEventLevel.Informational, ulong.MaxValue);
-
-                            // Turn on JScript events too
-                            EnableUserProvider(userModeSession, "Microsoft-JScript", JScriptTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Verbose, ulong.MaxValue);
-
-                            EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Informational,
-                                (ulong)(
-                                    ClrPrivateTraceEventParser.Keywords.GC |
-                                    ClrPrivateTraceEventParser.Keywords.Binding |
-                                    ClrPrivateTraceEventParser.Keywords.Fusion |
-                                    ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
-                                                                                         // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
-                                                                                         //  ClrPrivateTraceEventParser.Keywords.Startup 
-                                    ClrPrivateTraceEventParser.Keywords.Stack
-                                ));
-
-                            if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
-                            {
-                                // Used to determine what is going on with tasks.
-                                var netTaskStacks = stacksEnabled;
-                                if (TraceEventProviderOptions.FilteringSupported)
-                                {
-                                    // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
-                                    netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
-                                }
-                                EnableUserProvider(userModeSession, ".NETTasks",
-                                    TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
-                                    (ulong)parsedArgs.TplEvents,
-                                    netTaskStacks);
-                            }
-
-                            EnableUserProvider(userModeSession, ".NETFramework",
-                                FrameworkEventSourceTraceEventParser.ProviderGuid,
-                                 parsedArgs.ClrEventLevel,
-                                (ulong)(
-                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
-                                    FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
-                                    FrameworkEventSourceTraceEventParser.Keywords.NetClient),
-                                stacksEnabled);
-
-                            // Turn on the Nuget package provider that tracks activity IDs. 
-                            EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80);
-
-                            // Turn on new SQL client logging 
-                            EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
-                                TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"),
-                                TraceEventLevel.Informational,
-                                1, // This enables just the client events.  
-                                stacksEnabled);
-
-                            EnableUserProvider(userModeSession, "ETWCLrProfiler Diagnostics",
-                                new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
-                                TraceEventLevel.Verbose, ulong.MaxValue);
-
-                            // TODO should we have stacks on for everything?
-                            var diagSourceOptions = new TraceEventProviderOptions() { StacksEnabled = true };
-                            // The removal of IgnoreShortCutKeywords turns on HTTP incomming and SQL events
-                            // The spec below turns on outgoing Http requests.  
-                            string filterSpec =
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
-                                "Request.RequestUri" +
-                                "\n" +
-                                "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
-                                "Response.StatusCode";
-                            diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
-                            const ulong IgnoreShortCutKeywords = 0x0800;
-                            EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
-                                new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
-                                TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
-
-                            // TODO should stacks be enabled?
-                            EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
-                                new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
-                                TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
-
-                            // Turn on Power stuff
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
-                            EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
-                            EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
-
-                            // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
-                            // It does not increase the volume in a significant way and they can be pretty useful.     
-                            if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
-                                == (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
-                            {
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService",
-                                    new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"),
-                                    parsedArgs.ClrEventLevel, ulong.MaxValue, stacksEnabled);
-
-                                // TODO this can be expensive.   turned it down (not clear what we lose).  
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-TCPIP",
-                                    new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
-
-                                // This actually will not cause any events to fire unless you first also enable
-                                // the kernel in a special way.  Basically doing
-                                // netsh trace start scenario=InternetClient capture=yes correlation=no report=disabled maxSize=250 traceFile=NetMonTrace.net.etl
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
-                                    new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"),
-                                    TraceEventLevel.Informational, ulong.MaxValue);
-
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
-                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue);
-
-                                // This provider is verbose in high volume networking scnearios and its value is dubious.  
-                                //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
-                                //    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
-                                //    parsedArgs.ClrEventLevel, ulong.MaxValue);
-
-                                // This is probably too verbose, but we will see 
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
-                                    new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue);
-
-                                // This is probably too verbose, but we will see 
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WinHttp",
-                                    new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue);
-
-                                // This has proven to be too expensive.  Wait until we need it.  
-                                // EnableUserProvider(userModeSession, "Microsoft-Windows-Networking-Correlation",
-                                //     new Guid("83ED54F0-4D48-4E45-B16E-726FFD1FA4AF"), (TraceEventLevel)255, 0);
-
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
-                                    new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0);
-
-                                // TODO FIX NOW how verbose is this?
-                                EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
-                                    new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, 0xFFFFFFFF);
-
-                                // This is what WPA turns on in its 'GENERAL' setting  
-                                //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
-                                //Microsoft-Windows-Kernel-Power: 0x0000000000000004: 0xff
-                                //Microsoft-Windows-Win32k: 0x0000000000402000: 0xff
-                                //Microsoft-Windows-WLAN-AutoConfig: 0x0000000000000200: 0xff
-                                //.NET Common Language Runtime: 0x0000000000000098: 0x05
-                                //Microsoft-JScript: 0x0000000000000001: 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: 0x0000000000002000: 0xff
-                                //MUI Resource Trace: : 0xff
-                                //Microsoft-Windows-COMRuntime: 0x0000000000000003: 0xff
-                                //Microsoft-Windows-Networking-Correlation: : 0xff
-                                //Microsoft-Windows-RPCSS: : 0x04
-                                //Microsoft-Windows-RPC: : 0x04 a669021c-c450-4609-a035-5af59af4df18: : 0x00
-                                //Microsoft-Windows-Kernel-Processor-Power: : 0xff
-                                //Microsoft-Windows-Kernel-StoreMgr: : 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: : 0xff
-                                //Microsoft-Windows-UserModePowerService: : 0xff
-                                //Microsoft-Windows-Win32k: : 0xff
-                                //Microsoft-Windows-ReadyBoostDriver: : 0xff
-
-#if false            // TODO FIX NOW remove 
-                    var networkProviders = new List<string>();
-                    networkProviders.Add("Microsoft-Windows-WebIO:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinINet:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-TCPIP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NCSI:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WFP:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-Iphlpsvc-Trace:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-WinHttp:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS-PacketCapture");
-                    networkProviders.Add("Microsoft-Windows-NWiFi:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NlaSvc:*:5:stack");
-                    networkProviders.Add("Microsoft-Windows-NDIS:*:5:stack");
-
-                    EnableAdditionalProviders(userModeSession, networkProviders.ToArray());
-#endif
-                            }
-                        }
-                        else if ((parsedArgs.ClrEvents & ClrTraceEventParser.Keywords.GC) != 0)
-                        {
-                            LogFile.WriteLine("Turned on additional CLR GC events");
-                            EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
-                                TraceEventLevel.Informational, (ulong)ClrPrivateTraceEventParser.Keywords.GC);
-                        }
-
-                        if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.ReferenceSet) != 0)
-                        {
-                            // ALso get heap ranges if ReferenceSet is on.  
-                            EnableUserProvider(userModeSession, "Win32HeapRanges", HeapTraceProviderTraceEventParser.HeapRangeProviderGuid,
-                                TraceEventLevel.Verbose, 0);
-                        }
-
-                        if (profilerKeywords != 0)
-                        {
-                            // Turn on allocation profiling if the user asked for it.   
-                            EnableUserProvider(userModeSession, "ETWClrProfiler",
-                                ETWClrProfilerTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
-                                (ulong)profilerKeywords,
-                                stacksEnabled);
-                        }
-
-                        LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
-                        EnableUserProvider(userModeSession, "MeasurementBlock",
-                            new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue);
-                        EnableUserProvider(userModeSession, "CodeMarkers",
-                            new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue);
-
-                        // Turn off NGEN if they asked for it.  
-                        if (parsedArgs.NoNGenRundown)
-                            parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.NGen;
-
-                        // Force NGEN rundown if they asked for it. 
-                        if (parsedArgs.ForceNgenRundown)
-                            parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.SupressNGen;
-
-                        LogFile.WriteLine("Enabling CLR Events: {0}", parsedArgs.ClrEvents);
-                        EnableUserProvider(userModeSession, "CLR", ClrTraceEventParser.ProviderGuid,
-                            parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents);
-                    }
-
-                    // Start network monitoring capture if needed
-                    if (parsedArgs.NetMonCapture)
-                        parsedArgs.NetworkCapture = true;
-                    if (parsedArgs.NetworkCapture)
-                    {
-                        string maxSize = "maxSize=1";
-                        string correlation = "correlation=no";
-                        string report = "report=disabled";
-                        string scenario = "InternetClient";
-                        string perfMerge = "perfMerge=no";
-                        string traceFile = CacheFiles.FindFile(parsedArgs.DataFile, ".netmon.etl");
-
-                        var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                        if (parsedArgs.NetMonCapture || osVer < 62)
-                        {
-                            traceFile = Path.GetFileNameWithoutExtension(parsedArgs.DataFile) + "_netmon.etl";  // We use the _ to avoid conventions about merging.  
-                            maxSize = "";
-                            correlation = "";
-                            perfMerge = "";
-                            report = "";
-                        }
-                        FileUtilities.ForceDelete(traceFile);
-
-                        EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
-                            new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"), TraceEventLevel.Informational, ulong.MaxValue);
-                        EnableUserProvider(userModeSession, "Microsoft-Windows-TCPIP",
-                            new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
-
-                        string commandLine = string.Format("netsh trace start scenario={0} capture=yes {1} {2} {3} {4} \"traceFile={5}\"",
-                            scenario, correlation, report, maxSize, perfMerge, traceFile);
-
-                        LogFile.WriteLine("Turning on network packet monitoring");
-                        LogFile.WriteLine("Can turn off running 'netsh trace stop' or rebooting.");
-
-                        LogFile.WriteLine("Executing the command: {0}", commandLine);
-
-                        // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
-                        var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
-                        if (!File.Exists(cmdExe))
-                            cmdExe = cmdExe.Replace("SysNative", "System32");
-
-                        commandLine = cmdExe + " /c " + commandLine;
-                        var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
-
-                        string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
-                        File.WriteAllText(netMonFile, "");      // mark that Network monitoring is potentially active 
-
-                        if (command.ExitCode != 0)
-                            throw new ApplicationException("Could not turn on network packet monitoring with the 'netsh trace' command.");
-
-                        LogFile.WriteLine("netsh trace command succeeded.");
-                    }
-                    if (parsedArgs.CCWRefCount)
-                        EnableUserProvider(userModeSession, "InteropEventProvider", new Guid("c4ac552a-e1eb-4fa2-a651-b200efd7aa91"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
-
-                    LogFile.WriteLine("Enabling Providers specified by the user.");
-                    if (parsedArgs.Providers != null)
-                        EnableAdditionalProviders(userModeSession, parsedArgs.Providers, parsedArgs.CommandLine);
-
-                    // OK at this point, we want to leave both sessions for an indefinite period of time (even past process exit)
-                    kernelModeSession.StopOnDispose = false;
-                    userModeSession.StopOnDispose = false;
-                    if (heapSession != null)
                         heapSession.StopOnDispose = false;
-                    PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
+                    }
                 }
+
+                // OK at this point, we want to leave sessions for an indefinite period of time (even past process exit)
+                userModeSession.StopOnDispose = false;
+                PerfViewLogger.Log.CommandLineParameters(ParsedArgsAsString(null, parsedArgs), Environment.CurrentDirectory, AppLog.VersionNumber);
             }
         }
 
@@ -1018,35 +631,38 @@ namespace PerfView
                 }
             }
 
-            // Try to stop the kernel session
-            try
+            // Try to stop the kernel session (will not exist on Win8+)
+            if (osVersion < 6.2)
             {
-                using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
+                try
                 {
-                    if (parsedArgs.InMemoryCircularBuffer)
+                    using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
                     {
-                        kernelSession.SetFileName(Path.ChangeExtension(parsedArgs.DataFile, ".kernel.etl")); // Flush the file 
-
-                        // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
-                        // Ideally this is done by the SetFileName API so we can avoid merging.  
-                        var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
-
-                        // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
-                        // until the events are logged before shutting down the session.   However we only need the DCEnd events and
-                        // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
-                        // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
-                        // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
-                        using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
+                        if (parsedArgs.InMemoryCircularBuffer)
                         {
-                            kernelRundownSession.BufferSizeMB = 256;    // Try to avoid lost events.  
-                            kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
+                            kernelSession.SetFileName(Path.ChangeExtension(parsedArgs.DataFile, ".kernel.etl")); // Flush the file 
+
+                            // We need to manually do a kernel rundown to get the list of running processes and images loaded into memory
+                            // Ideally this is done by the SetFileName API so we can avoid merging.  
+                            var rundownFile = Path.ChangeExtension(parsedArgs.DataFile, ".kernelRundown.etl");
+
+                            // Note that enabling providers is async, and thus there is a concern that we would lose events if we don't wait 
+                            // until the events are logged before shutting down the session.   However we only need the DCEnd events and
+                            // those are PART of kernel session stop, which is synchronous (the session will not die until it is complete)
+                            // so we don't have to wait after enabling the kernel session.    It is somewhat unfortunate that we have both
+                            // the DCStart and the DCStop events, but there does not seem to be a way of asking for just one set.  
+                            using (var kernelRundownSession = new TraceEventSession(s_UserModeSessionName + "Rundown", rundownFile))
+                            {
+                                kernelRundownSession.BufferSizeMB = 256;    // Try to avoid lost events.  
+                                kernelRundownSession.EnableKernelProvider(KernelTraceEventParser.Keywords.Process | KernelTraceEventParser.Keywords.ImageLoad);
+                            }
                         }
+                        kernelSession.Stop();
                     }
-                    kernelSession.Stop();
                 }
+                catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
+                catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Kernel session: " + e.Message); throw; }
             }
-            catch (FileNotFoundException) { LogFile.WriteLine("No Kernel events were active for this trace."); }
-            catch (Exception e) { if (!(e is ThreadInterruptedException)) LogFile.WriteLine("Error stopping Kernel session: " + e.Message); throw; }
 
             string dataFile = null;
             try
@@ -1131,12 +747,16 @@ namespace PerfView
                 s_abortInProgress = true;
                 m_logFile.WriteLine("Aborting tracing for sessions '" +
                     KernelTraceEventParser.KernelSessionName + "' and '" + s_UserModeSessionName + "'.");
-                try
+                var osVersion = Environment.OSVersion.Version.Major + Environment.OSVersion.Version.Minor / 10.0;
+                if (osVersion < 6.2)
                 {
-                    using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
-                        kernelSession.Stop(true);
+                    try
+                    {
+                        using (var kernelSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, TraceEventSessionOptions.Attach))
+                            kernelSession.Stop(true);
+                    }
+                    catch (Exception) { }
                 }
-                catch (Exception) { }
 
                 try
                 {
@@ -2490,6 +2110,458 @@ namespace PerfView
                 Environment.Exit(0);
 
             throw new UnauthorizedAccessException("Launching PerfView as an elevated app. Consider closing this instance.");
+        }
+
+        private TraceEventSession CreateHeapSession(
+            CommandLineArgs parsedArgs,
+            string heapFileName)
+        {
+            if (parsedArgs.OSHeapProcess != 0 && parsedArgs.OSHeapExe != null)
+                throw new ApplicationException("OSHeapProcess and OSHeapExe cannot both be specified simultaneously.");
+
+            var heapSession = new TraceEventSession(s_HeapSessionName, heapFileName);
+            // Default is 256Meg and twice whatever the others are
+            heapSession.BufferSizeMB = Math.Max(256, parsedArgs.BufferSizeMB * 2);
+
+            if (parsedArgs.CircularMB != 0)
+                LogFile.WriteLine("[Warning: OS Heap provider does not use Circular buffering.]");
+
+            if (parsedArgs.OSHeapProcess != 0)
+            {
+                heapSession.EnableWindowsHeapProvider(parsedArgs.OSHeapProcess);
+                LogFile.WriteLine("[Enabling heap logging for process {0} to : {1}]", parsedArgs.OSHeapProcess, Path.GetFullPath(heapFileName));
+            }
+            else
+            {
+                parsedArgs.OSHeapExe = Path.ChangeExtension(parsedArgs.OSHeapExe, ".exe");
+                heapSession.EnableWindowsHeapProvider(parsedArgs.OSHeapExe);
+                LogFile.WriteLine("[Enabling heap logging for process with EXE {0} to : {1}]", parsedArgs.OSHeapExe, Path.GetFullPath(heapFileName));
+            }
+
+            return heapSession;
+        }
+
+        private void StartKernelModeSession(
+            TraceEventSession userModeSession,
+            CommandLineArgs parsedArgs,
+            string kernelFileName)
+        {
+            if (parsedArgs.CpuCounters != null)
+            {
+                SetCpuCounters(parsedArgs.CpuCounters);
+                parsedArgs.KernelEvents |= KernelTraceEventParser.Keywords.PMCProfile;
+            }
+            else
+            {
+                if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.PMCProfile) != 0)
+                    throw new ApplicationException("The PMCProfile should not be set explicitly.  Simply set the CpuCounters.");
+            }
+
+            LogFile.WriteLine("Kernel keywords enabled: {0}", parsedArgs.KernelEvents);
+            if (parsedArgs.KernelEvents != KernelTraceEventParser.Keywords.None)
+            {
+                if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Process |
+                                                KernelTraceEventParser.Keywords.ImageLoad)) == 0 &&
+                    (parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Profile |
+                                                KernelTraceEventParser.Keywords.ContextSwitch)) != 0)
+                {
+                    LogFile.WriteLine("Kernel process and image thread events not present, adding them");
+                    parsedArgs.KernelEvents |= (
+                        KernelTraceEventParser.Keywords.Process |
+                        KernelTraceEventParser.Keywords.ImageLoad |
+                        KernelTraceEventParser.Keywords.Thread);
+                }
+
+                // If these are on, turn on Virtual Allocs as well.  
+                if (parsedArgs.OSHeapProcess != 0 || parsedArgs.OSHeapExe != null ||
+                    parsedArgs.DotNetAlloc || parsedArgs.DotNetAllocSampled)
+                    parsedArgs.KernelEvents |= KernelTraceEventParser.Keywords.VirtualAlloc;
+
+
+                var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+                // Only Win8+ support kernel events in usermode session.
+                // Earlier versions require separate session.
+                if (osVer < 62)
+                {
+                    if (parsedArgs.InMemoryCircularBuffer)
+                        kernelFileName = null;              // In memory buffers dont have a file name  
+                    else
+                        LogFile.WriteLine("[Kernel Log: {0}]", Path.GetFullPath(kernelFileName));
+
+                    using (var kernelModeSession = new TraceEventSession(KernelTraceEventParser.KernelSessionName, kernelFileName))
+                    {
+                        kernelModeSession.BufferSizeMB = parsedArgs.BufferSizeMB;
+                        kernelModeSession.StackCompression = parsedArgs.StackCompression;
+                        kernelModeSession.CpuSampleIntervalMSec = parsedArgs.CpuSampleMSec;
+                        if (parsedArgs.CircularMB != 0)
+                            kernelModeSession.CircularBufferMB = parsedArgs.CircularMB;
+                        kernelModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+                        PerfViewLogger.Log.SessionParameters(KernelTraceEventParser.KernelSessionName, kernelFileName ?? "",
+                            kernelModeSession.BufferSizeMB, kernelModeSession.CircularBufferMB);
+
+                        // Keep kernel session running until explicit Stop is called.
+                        // TODO: Is it OK to mark it like that already here before all other usermode providers are enabled?
+                        // I assume it is not, but then it'll be necessary to expose this kernelModeSession to Start() method.
+                        kernelModeSession.StopOnDispose = false;
+                    }
+                }
+                else
+                {
+                    // Otherwise just enable kernel providers
+                    userModeSession.EnableKernelProvider(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+                    LogFile.WriteLine("Kernel mode events enabled for user mode session.");
+                }
+            }
+            
+            PerfViewLogger.Log.KernelEnableParameters(parsedArgs.KernelEvents, parsedArgs.KernelEvents);
+        }
+
+        private void EnableNetworkCapture(
+            TraceEventSession userModeSession,
+            CommandLineArgs parsedArgs,
+            TraceEventProviderOptions stacksEnabled)
+        {
+            string maxSize = "maxSize=1";
+            string correlation = "correlation=no";
+            string report = "report=disabled";
+            string scenario = "InternetClient";
+            string perfMerge = "perfMerge=no";
+            string traceFile = CacheFiles.FindFile(parsedArgs.DataFile, ".netmon.etl");
+
+            var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
+            if (parsedArgs.NetMonCapture || osVer < 62)
+            {
+                traceFile = Path.GetFileNameWithoutExtension(parsedArgs.DataFile) + "_netmon.etl";  // We use the _ to avoid conventions about merging.  
+                maxSize = "";
+                correlation = "";
+                perfMerge = "";
+                report = "";
+            }
+            FileUtilities.ForceDelete(traceFile);
+
+            EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
+                new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"), TraceEventLevel.Informational, ulong.MaxValue);
+            EnableUserProvider(userModeSession, "Microsoft-Windows-TCPIP",
+                new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
+
+            string commandLine = string.Format("netsh trace start scenario={0} capture=yes {1} {2} {3} {4} \"traceFile={5}\"",
+                scenario, correlation, report, maxSize, perfMerge, traceFile);
+
+            LogFile.WriteLine("Turning on network packet monitoring");
+            LogFile.WriteLine("Can turn off running 'netsh trace stop' or rebooting.");
+
+            LogFile.WriteLine("Executing the command: {0}", commandLine);
+
+            // Make sure that if we are on a 64 bit machine we run the 64 bit version of netsh.  
+            var cmdExe = Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), "SysNative", "cmd.exe");
+            if (!File.Exists(cmdExe))
+                cmdExe = cmdExe.Replace("SysNative", "System32");
+
+            commandLine = cmdExe + " /c " + commandLine;
+            var command = Command.Run(commandLine, new CommandOptions().AddNoThrow().AddOutputStream(LogFile));
+
+            string netMonFile = Path.Combine(CacheFiles.CacheDir, "NetMonActive.txt");
+            File.WriteAllText(netMonFile, "");      // mark that Network monitoring is potentially active 
+
+            if (command.ExitCode != 0)
+                throw new ApplicationException("Could not turn on network packet monitoring with the 'netsh trace' command.");
+
+            LogFile.WriteLine("netsh trace command succeeded.");
+        }
+
+        private void EnableUserModeSessionProviders(
+            TraceEventSession userModeSession,
+            CommandLineArgs parsedArgs,
+            ETWClrProfilerTraceEventParser.Keywords profilerKeywords,
+            TraceEventProviderOptions stacksEnabled)
+        {
+            if (parsedArgs.Wpr)
+                SetWPRProviders(userModeSession);
+            else if (parsedArgs.ClrEvents != ClrTraceEventParser.Keywords.None)
+            {
+
+                // If we don't change the core set then we should assume the user wants more stuff.  
+                var coreClrEvents = ClrTraceEventParser.Keywords.Default &
+                    ~ClrTraceEventParser.Keywords.NGen & ~ClrTraceEventParser.Keywords.SupressNGen;
+
+                if ((parsedArgs.ClrEvents & coreClrEvents) == coreClrEvents)
+                {
+                    LogFile.WriteLine("Turning on more CLR GC, JScript and ASP.NET Events.");
+
+                    // Turn on DotNet Telemetry
+                    EnableUserProvider(userModeSession, "DotNet",
+                        new Guid("319dc449-ada5-50f7-428e-957db6791668"), TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                    // Turn on ETW logging about etw logging (so we get lost event info) ... (Really need a separate session to get the lost event Info properly). 
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-EventTracing",
+                        new Guid("B675EC37-BDB6-4648-BC92-F3FDC74D3CA2"), TraceEventLevel.Verbose, 0x70, stacksEnabled);
+
+                    // Turn on File Create (open) logging as it is useful for investigations and lightweight. 
+                    // Don't bother if the Kernel FileIOInit evens are on because they are strictly better
+                    // and you end up with annoying redundancy.  
+                    if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.FileIOInit) == 0)
+                    {
+                        // 0x10 =  Process  
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-Process",
+                            new Guid("22FB2CD6-0E7B-422B-A0C7-2FAD1FD0E716"), TraceEventLevel.Informational, 0x10, stacksEnabled);
+                    }
+
+                    // Turn on the user-mode Process start events.  This allows you to get the stack of create-process calls
+                    // 0x10 = CREATE_FILE (which is any open, including GetFileAttributes etc.   
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-Kernel-File",
+                        new Guid("EDD08927-9CC4-4E65-B970-C2560FB5C289"), TraceEventLevel.Verbose, 0x80, stacksEnabled);
+
+                    // Default CLR events also means ASP.NET and private events. 
+                    // Turn on ASP.NET at informational by default.
+                    EnableUserProvider(userModeSession, "ASP.NET", AspNetTraceEventParser.ProviderGuid,
+                        parsedArgs.ClrEventLevel, ulong.MaxValue - 0x2); // the - 0x2 will turn off Module level logging, which is very verbose
+                    CheckAndWarnAboutAspNet(AspNetTraceEventParser.ProviderGuid);
+
+                    // Turn on the new V4.5.1 ASP.Net  EventSource (TODO Not clear we should do this, and how much to turn on).  
+                    // TODO turned on stacks for debugging probably should turn off in the long run.  
+                    EnableUserProvider(userModeSession, "*Microsoft-Windows-ASPNET",
+                            new Guid("ee799f41-cfa5-550b-bf2c-344747c1c668"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
+
+                    // Turn on just minimum (start and stop) for IIS)
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-IIS",
+                        new Guid("DE4649C9-15E8-4FEA-9D85-1CDDA520C334"), TraceEventLevel.Critical, 0);
+
+                    // These let you see IE in and have few events. 
+                    EnableUserProvider(userModeSession, "Microsoft-PerfTrack-IEFRAME",
+                        new Guid("B2A40F1F-A05A-4DFD-886A-4C4F18C4334C"), TraceEventLevel.Verbose, ulong.MaxValue);
+
+                    EnableUserProvider(userModeSession, "Microsoft-PerfTrack-MSHTML",
+                        new Guid("FFDB9886-80F3-4540-AA8B-B85192217DDF"), TraceEventLevel.Verbose, ulong.MaxValue);
+
+                    // Set you see the URLs that IE is processing. 
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
+                        new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, 2);
+
+                    // Turn on WCF.  This can be very verbose.  We need to figure out a balance  
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-Application Server-Applications",
+                        ApplicationServerTraceEventParser.ProviderGuid, TraceEventLevel.Informational, ulong.MaxValue);
+
+                    EnableUserProvider(userModeSession, "Microsoft-IE",
+                        new Guid("9E3B3947-CA5D-4614-91A2-7B624E0E7244"), TraceEventLevel.Informational, 0x1300);
+
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-DNS-Client",
+                        new Guid("1C95126E-7EEA-49A9-A3FE-A378B03DDB4D"), TraceEventLevel.Informational, ulong.MaxValue);
+
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-DirectComposition",
+                        new Guid("C44219D0-F344-11DF-A5E2-B307DFD72085"), TraceEventLevel.Verbose, 0x4);
+
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-Immersive-Shell",
+                        new Guid("315A8872-923E-4EA2-9889-33CD4754BF64"), TraceEventLevel.Informational, ulong.MaxValue);
+
+                    EnableUserProvider(userModeSession, "Microsoft-Windows-XAML",
+                        new Guid("531A35AB-63CE-4BCF-AA98-F88C7A89E455"), TraceEventLevel.Informational, ulong.MaxValue);
+
+                    // Turn on JScript events too
+                    EnableUserProvider(userModeSession, "Microsoft-JScript", JScriptTraceEventParser.ProviderGuid,
+                        TraceEventLevel.Verbose, ulong.MaxValue);
+
+                    EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
+                        TraceEventLevel.Informational,
+                        (ulong)(
+                            ClrPrivateTraceEventParser.Keywords.GC |
+                            ClrPrivateTraceEventParser.Keywords.Binding |
+                            ClrPrivateTraceEventParser.Keywords.Fusion |
+                            ClrPrivateTraceEventParser.Keywords.MulticoreJit |   /* only works on verbose */
+                                                                                    // ClrPrivateTraceEventParser.Keywords.LoaderHeap |     /* only verbose */
+                                                                                    //  ClrPrivateTraceEventParser.Keywords.Startup 
+                            ClrPrivateTraceEventParser.Keywords.Stack
+                        ));
+
+                    if (parsedArgs.TplEvents != TplEtwProviderTraceEventParser.Keywords.None)
+                    {
+                        // Used to determine what is going on with tasks.
+                        var netTaskStacks = stacksEnabled;
+                        if (TraceEventProviderOptions.FilteringSupported)
+                        {
+                            // This turns on stacks only for TaskScheduled (7) TaskWaitSend (10) and AwaitTaskContinuationScheduled (12)
+                            netTaskStacks = new TraceEventProviderOptions() { EventIDStacksToEnable = new List<int>() { 7, 10, 12 } };
+                        }
+                        EnableUserProvider(userModeSession, ".NETTasks",
+                            TplEtwProviderTraceEventParser.ProviderGuid, parsedArgs.ClrEventLevel,
+                            (ulong)parsedArgs.TplEvents,
+                            netTaskStacks);
+                    }
+
+                    EnableUserProvider(userModeSession, ".NETFramework",
+                        FrameworkEventSourceTraceEventParser.ProviderGuid,
+                            parsedArgs.ClrEventLevel,
+                        (ulong)(
+                            FrameworkEventSourceTraceEventParser.Keywords.ThreadPool |
+                            FrameworkEventSourceTraceEventParser.Keywords.ThreadTransfer |
+                            FrameworkEventSourceTraceEventParser.Keywords.NetClient),
+                        stacksEnabled);
+
+                    // Turn on the Nuget package provider that tracks activity IDs. 
+                    EnableUserProvider(userModeSession, "Microsoft.Tasks.Nuget", TraceEventProviders.GetEventSourceGuidFromName("Microsoft.Tasks.Nuget"), TraceEventLevel.Informational, 0x80);
+
+                    // Turn on new SQL client logging 
+                    EnableUserProvider(userModeSession, "Microsoft-AdoNet-SystemData",
+                        TraceEventProviders.GetEventSourceGuidFromName("Microsoft-AdoNet-SystemData"),
+                        TraceEventLevel.Informational,
+                        1, // This enables just the client events.  
+                        stacksEnabled);
+
+                    EnableUserProvider(userModeSession, "ETWCLrProfiler Diagnostics",
+                        new Guid(unchecked((int)0x6652970f), unchecked((short)0x1756), unchecked((short)0x5d8d), 0x08, 0x05, 0xe9, 0xaa, 0xd1, 0x52, 0xaa, 0x79),
+                        TraceEventLevel.Verbose, ulong.MaxValue);
+
+                    // TODO should we have stacks on for everything?
+                    var diagSourceOptions = new TraceEventProviderOptions() { StacksEnabled = true };
+                    // The removal of IgnoreShortCutKeywords turns on HTTP incomming and SQL events
+                    // The spec below turns on outgoing Http requests.  
+                    string filterSpec =
+                        "HttpHandlerDiagnosticListener/System.Net.Http.Request@Activity2Start:" +
+                        "Request.RequestUri" +
+                        "\n" +
+                        "HttpHandlerDiagnosticListener/System.Net.Http.Response@Activity2Stop:" +
+                        "Response.StatusCode";
+                    diagSourceOptions.AddArgument("FilterAndPayloadSpecs", filterSpec);
+                    const ulong IgnoreShortCutKeywords = 0x0800;
+                    EnableUserProvider(userModeSession, "Microsoft-Diagnostics-DiagnosticSource",
+                        new Guid("adb401e1-5296-51f8-c125-5fda75826144"),
+                        TraceEventLevel.Informational, ulong.MaxValue - IgnoreShortCutKeywords, diagSourceOptions);
+
+                    // TODO should stacks be enabled?
+                    EnableUserProvider(userModeSession, "Microsoft-ApplicationInsights-Core",
+                        new Guid("74af9f20-af6a-5582-9382-f21f674fb271"),
+                        TraceEventLevel.Verbose, ulong.MaxValue, stacksEnabled);
+
+                    // Turn on Power stuff
+                    EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Power", 0xFFB);
+                    EnableProvider(userModeSession, "Microsoft-Windows-Kernel-Processor-Power", 0xE5D);
+                    EnableProvider(userModeSession, "Microsoft-Windows-PowerCpl", ulong.MaxValue);
+                    EnableProvider(userModeSession, "Microsoft-Windows-PowerCfg", ulong.MaxValue);
+
+                    // If we have turned on CSwitch and ReadyThread events, go ahead and turn on networking stuff too.  
+                    // It does not increase the volume in a significant way and they can be pretty useful.     
+                    if ((parsedArgs.KernelEvents & (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
+                        == (KernelTraceEventParser.Keywords.Dispatcher | KernelTraceEventParser.Keywords.ContextSwitch))
+                    {
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-HttpService",
+                            new Guid("DD5EF90A-6398-47A4-AD34-4DCECDEF795F"),
+                            parsedArgs.ClrEventLevel, ulong.MaxValue, stacksEnabled);
+
+                        // TODO this can be expensive.   turned it down (not clear what we lose).  
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-TCPIP",
+                            new Guid("2F07E2EE-15DB-40F1-90EF-9D7BA282188A"), TraceEventLevel.Informational, ulong.MaxValue, stacksEnabled);
+
+                        // This actually will not cause any events to fire unless you first also enable
+                        // the kernel in a special way.  Basically doing
+                        // netsh trace start scenario=InternetClient capture=yes correlation=no report=disabled maxSize=250 traceFile=NetMonTrace.net.etl
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-NDIS-PacketCapture",
+                            new Guid("2ED6006E-4729-4609-B423-3EE7BCD678EF"),
+                            TraceEventLevel.Informational, ulong.MaxValue);
+
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
+                            new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, ulong.MaxValue);
+
+                        // This provider is verbose in high volume networking scnearios and its value is dubious.  
+                        //EnableUserProvider(userModeSession, "Microsoft-Windows-Winsock-AFD",
+                        //    new Guid("E53C6823-7BB8-44BB-90DC-3F86090D48A6"),
+                        //    parsedArgs.ClrEventLevel, ulong.MaxValue);
+
+                        // This is probably too verbose, but we will see 
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-WinINet",
+                            new Guid("43D1A55C-76D6-4F7E-995C-64C711E5CAFE"), TraceEventLevel.Verbose, ulong.MaxValue);
+
+                        // This is probably too verbose, but we will see 
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-WinHttp",
+                            new Guid("7D44233D-3055-4B9C-BA64-0D47CA40A232"), TraceEventLevel.Verbose, ulong.MaxValue);
+
+                        // This has proven to be too expensive.  Wait until we need it.  
+                        // EnableUserProvider(userModeSession, "Microsoft-Windows-Networking-Correlation",
+                        //     new Guid("83ED54F0-4D48-4E45-B16E-726FFD1FA4AF"), (TraceEventLevel)255, 0);
+
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-RPC",
+                            new Guid("6AD52B32-D609-4BE9-AE07-CE8DAE937E39"), TraceEventLevel.Informational, 0);
+
+                        // TODO FIX NOW how verbose is this?
+                        EnableUserProvider(userModeSession, "Microsoft-Windows-WebIO",
+                            new Guid("50B3E73C-9370-461D-BB9F-26F32D68887D"), TraceEventLevel.Informational, 0xFFFFFFFF);
+
+                        // This is what WPA turns on in its 'GENERAL' setting  
+                        //Microsoft-Windows-Immersive-Shell: 0x0000000000100000: 0x04
+                        //Microsoft-Windows-Kernel-Power: 0x0000000000000004: 0xff
+                        //Microsoft-Windows-Win32k: 0x0000000000402000: 0xff
+                        //Microsoft-Windows-WLAN-AutoConfig: 0x0000000000000200: 0xff
+                        //.NET Common Language Runtime: 0x0000000000000098: 0x05
+                        //Microsoft-JScript: 0x0000000000000001: 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: 0x0000000000002000: 0xff
+                        //MUI Resource Trace: : 0xff
+                        //Microsoft-Windows-COMRuntime: 0x0000000000000003: 0xff
+                        //Microsoft-Windows-Networking-Correlation: : 0xff
+                        //Microsoft-Windows-RPCSS: : 0x04
+                        //Microsoft-Windows-RPC: : 0x04 a669021c-c450-4609-a035-5af59af4df18: : 0x00
+                        //Microsoft-Windows-Kernel-Processor-Power: : 0xff
+                        //Microsoft-Windows-Kernel-StoreMgr: : 0xff e7ef96be-969f-414f-97d7-3ddb7b558ccc: : 0xff
+                        //Microsoft-Windows-UserModePowerService: : 0xff
+                        //Microsoft-Windows-Win32k: : 0xff
+                        //Microsoft-Windows-ReadyBoostDriver: : 0xff
+
+#if false            // TODO FIX NOW remove 
+            var networkProviders = new List<string>();
+            networkProviders.Add("Microsoft-Windows-WebIO:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-WinINet:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-TCPIP:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-NCSI:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-WFP:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-Iphlpsvc-Trace:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-WinHttp:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-NDIS-PacketCapture");
+            networkProviders.Add("Microsoft-Windows-NWiFi:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-NlaSvc:*:5:stack");
+            networkProviders.Add("Microsoft-Windows-NDIS:*:5:stack");
+
+            EnableAdditionalProviders(userModeSession, networkProviders.ToArray());
+#endif
+                    }
+                }
+                else if ((parsedArgs.ClrEvents & ClrTraceEventParser.Keywords.GC) != 0)
+                {
+                    LogFile.WriteLine("Turned on additional CLR GC events");
+                    EnableUserProvider(userModeSession, "CLRPrivate", ClrPrivateTraceEventParser.ProviderGuid,
+                        TraceEventLevel.Informational, (ulong)ClrPrivateTraceEventParser.Keywords.GC);
+                }
+
+                if ((parsedArgs.KernelEvents & KernelTraceEventParser.Keywords.ReferenceSet) != 0)
+                {
+                    // ALso get heap ranges if ReferenceSet is on.  
+                    EnableUserProvider(userModeSession, "Win32HeapRanges", HeapTraceProviderTraceEventParser.HeapRangeProviderGuid,
+                        TraceEventLevel.Verbose, 0);
+                }
+
+                if (profilerKeywords != 0)
+                {
+                    // Turn on allocation profiling if the user asked for it.   
+                    EnableUserProvider(userModeSession, "ETWClrProfiler",
+                        ETWClrProfilerTraceEventParser.ProviderGuid, TraceEventLevel.Verbose,
+                        (ulong)profilerKeywords,
+                        stacksEnabled);
+                }
+
+                LogFile.WriteLine("Turning on VS CodeMarkers and MeasurementBlock Providers.");
+                EnableUserProvider(userModeSession, "MeasurementBlock",
+                    new Guid("143A31DB-0372-40B6-B8F1-B4B16ADB5F54"), TraceEventLevel.Verbose, ulong.MaxValue);
+                EnableUserProvider(userModeSession, "CodeMarkers",
+                    new Guid("641D7F6C-481C-42E8-AB7E-D18DC5E5CB9E"), TraceEventLevel.Verbose, ulong.MaxValue);
+
+                // Turn off NGEN if they asked for it.  
+                if (parsedArgs.NoNGenRundown)
+                    parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.NGen;
+
+                // Force NGEN rundown if they asked for it. 
+                if (parsedArgs.ForceNgenRundown)
+                    parsedArgs.ClrEvents &= ~ClrTraceEventParser.Keywords.SupressNGen;
+
+                LogFile.WriteLine("Enabling CLR Events: {0}", parsedArgs.ClrEvents);
+                EnableUserProvider(userModeSession, "CLR", ClrTraceEventParser.ProviderGuid,
+                    parsedArgs.ClrEventLevel, (ulong)parsedArgs.ClrEvents);
+            }
+
         }
 
         /// <summary>
