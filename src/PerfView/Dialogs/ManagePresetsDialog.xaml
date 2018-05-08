@@ -54,7 +54,7 @@
                 <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="Preset" KeyboardNavigation.IsTabStop="False">Name:</Hyperlink>
                 </TextBlock>
-                <TextBox Grid.Row="0" Grid.Column="1" Name="PresetName" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
+                <TextBox Grid.Row="0" Grid.Column="1" Name="PresetName" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
                         <ToolTip StaysOpen="True">
                             <TextBlock>
@@ -67,7 +67,7 @@
                 <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                     <Hyperlink Command="Help" CommandParameter="GroupPatsTextBox" KeyboardNavigation.IsTabStop="False">GroupPats:</Hyperlink>
                 </TextBlock>
-                <TextBox Grid.Row="1" Grid.Column="1" Name="GroupPatsTextBox" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
+                <TextBox Grid.Row="1" Grid.Column="1" Name="GroupPatsTextBox" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
                         <ToolTip StaysOpen="True">
                             <TextBlock>
@@ -84,7 +84,7 @@
                 <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="FoldPercentTextBox" KeyboardNavigation.IsTabStop="False">Fold%:</Hyperlink>
                 </TextBlock>
-                <TextBox Name="FoldPercentTextBox" Grid.Row="2" Grid.Column="1" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
+                <TextBox Name="FoldPercentTextBox" Grid.Row="2" Grid.Column="1" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
                         <ToolTip StaysOpen="True">
                             <TextBlock> Nodes that have less than this % Inclusive metric will be removed and their
@@ -95,7 +95,7 @@
                 <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
                 <Hyperlink Command="Help" CommandParameter="FoldPatsTextBox" KeyboardNavigation.IsTabStop="False">FoldPats:</Hyperlink>
                 </TextBlock>
-                <TextBox Name="FoldRegExTextBox" Grid.Row="3" Grid.Column="1" MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
+                <TextBox Name="FoldRegExTextBox" Grid.Row="3" Grid.Column="1" MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden">
                     <TextBox.ToolTip>
                         <ToolTip StaysOpen="True">
                             <TextBlock> 
@@ -105,30 +105,16 @@
                         </ToolTip>
                     </TextBox.ToolTip>
                 </TextBox>
-                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="IncPatsTextBox" KeyboardNavigation.IsTabStop="False">IncPats:</Hyperlink>
+                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Top" Margin="5,0,1,0">
+                <Hyperlink Command="Help" CommandParameter="Preset" KeyboardNavigation.IsTabStop="False">Comment:</Hyperlink>
                 </TextBlock>
-                <TextBox Name="IncludeRegExTextBox" Grid.Row="4" Grid.Column="1"  MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
+                <TextBox Name="CommentTextBox" Grid.Row="4" Grid.Column="1"  MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Hidden" TextWrapping="Wrap" AcceptsReturn="True" Height="72">
                     <TextBox.ToolTip>
                         <ToolTip StaysOpen="True">
                             <TextBlock> 
                             A semicolon list of string patterns (* = any, % = anyAlphaNumeric, ^ = begin)<LineBreak/>
                             Only stacks that have at least on fram that matches this pattern<LineBreak/>
                             will be included in the trace.
-                            </TextBlock>
-                        </ToolTip>
-                    </TextBox.ToolTip>
-                </TextBox>
-                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Margin="5,0,1,0">
-                <Hyperlink Command="Help" CommandParameter="ExcPatsTextBox" KeyboardNavigation.IsTabStop="False">ExcPats:</Hyperlink>
-                </TextBlock>
-                <TextBox x:Name="ExcludeRegExTextBox" Grid.Row="5" Grid.Column="1" MinWidth="80" Margin="10,2,10,2" HorizontalScrollBarVisibility="Disabled">
-                    <TextBox.ToolTip>
-                        <ToolTip StaysOpen="True">
-                            <TextBlock> 
-                            A semicolon list of string patterns (* = any, % = anyAlphaNumeric, ^ = begin)<LineBreak/>
-                            Any nodes matching this patter will be removed (as well as their children)<LineBreak/>
-                            will be removed completely from the trace.
                             </TextBlock>
                         </ToolTip>
                     </TextBox.ToolTip>

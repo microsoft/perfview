@@ -3529,8 +3529,6 @@ namespace PerfView
             preset.GroupPat = groupPat;
             preset.FoldPercentage = this.FoldPercentTextBox.Text;
             preset.FoldPat = this.FoldRegExTextBox.Text;
-            preset.ExcPat = this.ExcludeRegExTextBox.Text;
-            preset.IncPat = this.IncludeRegExTextBox.Text;
 
             if (m_presets.FindIndex(x => x.Name == newPresetDialog.PresetName) == -1)
             {
@@ -3561,8 +3559,6 @@ namespace PerfView
             this.GroupRegExTextBox.AddToHistory($"[{preset.Name}] {preset.GroupPat}");
             this.FoldPercentTextBox.AddToHistory(preset.FoldPercentage);
             this.FoldRegExTextBox.AddToHistory(preset.FoldPat);
-            this.ExcludeRegExTextBox.AddToHistory(preset.ExcPat);
-            this.IncludeRegExTextBox.AddToHistory(preset.IncPat);
             Update();
         }
 
