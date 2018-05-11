@@ -156,6 +156,15 @@
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
+
+    <FilesToSign Include="$(ProjectDir)$(PackageOutputPath)\$(PackageId).$(PackageVersion).nupkg">
+        <Authenticode>Nuget</Authenticode>
+    </FilesToSign>
+
+    <FilesToSign Include="$(ProjectDir)$(PackageOutputPath)\$(PackageId).$(PackageVersion).symbols.nupkg">
+        <Authenticode>Nuget</Authenticode>
+    </FilesToSign>
+
     <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
