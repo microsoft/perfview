@@ -1296,6 +1296,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         Inlinee = data.InlinerNamespace + "." + data.InlineeName
                     });
                 };
+                source.Clr.MethodInliningFailedAnsi += delegate (MethodJitInliningFailedAnsiTraceData data)
+                {
+                    var stats = currentManagedProcess(data);
+                    stats.JIT.m_stats.InliningFailures.Add(new InliningFailureResult
+                    {
+                        MethodBeingCompiled = data.MethodBeingCompiledNamespace + "." + data.MethodBeingCompiledName,
+                        Inliner = data.InlinerNamespace + "." + data.InlinerName,
+                        Inlinee = data.InlineeNamespace + "." + data.InlineeName,
+                        Reason = data.FailReason
+                    });
+                };
                 source.Clr.MethodInliningFailed += delegate (MethodJitInliningFailedTraceData data)
                 {
                     var stats = currentManagedProcess(data);

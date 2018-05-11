@@ -1595,7 +1595,20 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitInliningFailedTraceData(value, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitInliningFailedTraceData(value, 192, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 192, ProviderGuid);
+                source.UnregisterEventTemplate(value, 84, MethodTaskGuid);
+            }
+        }
+        public event Action<MethodJitInliningFailedAnsiTraceData> MethodInliningFailedAnsi
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new MethodJitInliningFailedAnsiTraceData(value, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -1629,16 +1642,29 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 85, MethodTaskGuid);
             }
         }
+        public event Action<MethodJitTailCallFailedAnsiTraceData> MethodTailCallFailedAnsi
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new MethodJitTailCallFailedAnsiTraceData(value, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 189, ProviderGuid);
+                source.UnregisterEventTemplate(value, 86, MethodTaskGuid);
+            }
+        }
         public event Action<MethodJitTailCallFailedTraceData> MethodTailCallFailed
         {
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitTailCallFailedTraceData(value, 192, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
             }
             remove
             {
-                source.UnregisterEventTemplate(value, 189, ProviderGuid);
+                source.UnregisterEventTemplate(value, 192, ProviderGuid);
                 source.UnregisterEventTemplate(value, 86, MethodTaskGuid);
             }
         }
@@ -1684,7 +1710,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[114];
+                var templates = new TraceEvent[116];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1771,7 +1797,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[83] = new AuthenticodeVerificationTraceData(null, 183, 13, "AuthenticodeVerification", AuthenticodeVerificationTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[84] = new AuthenticodeVerificationTraceData(null, 184, 13, "AuthenticodeVerification", AuthenticodeVerificationTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[85] = new MethodJitInliningSucceededTraceData(null, 185, 9, "Method", MethodTaskGuid, 83, "InliningSucceeded", ProviderGuid, ProviderName);
-                templates[86] = new MethodJitInliningFailedTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName);
+                templates[86] = new MethodJitInliningFailedTraceData(null, 192, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName);
                 templates[87] = new RuntimeInformationTraceData(null, 187, 19, "Runtime", RuntimeTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[88] = new MethodJitTailCallSucceededTraceData(null, 188, 9, "Method", MethodTaskGuid, 85, "TailCallSucceeded", ProviderGuid, ProviderName);
                 templates[89] = new MethodJitTailCallFailedTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName);
@@ -1803,6 +1829,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[111] = new ThreadPoolIOWorkEnqueueTraceData(null, 63, 23, "ThreadPool", ThreadPoolTaskGuid, 13, "IOEnqueue", ProviderGuid, ProviderName);
                 templates[112] = new ThreadPoolIOWorkTraceData(null, 64, 23, "ThreadPool", ThreadPoolTaskGuid, 14, "IODequeue", ProviderGuid, ProviderName);
                 templates[113] = new ThreadPoolIOWorkTraceData(null, 65, 23, "ThreadPool", ThreadPoolTaskGuid, 15, "IOPack", ProviderGuid, ProviderName);
+                templates[114] = new MethodJitInliningFailedAnsiTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName);
+                templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName);
 
                 s_templates = templates;
             }
@@ -8694,7 +8722,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<MethodJitInliningSucceededTraceData> Action;
         #endregion
     }
-    public sealed class MethodJitInliningFailedTraceData : TraceEvent
+    public sealed class MethodJitInliningFailedAnsiTraceData : TraceEvent
     {
         public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
         public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
@@ -8708,6 +8736,108 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool FailAlways { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
         public string FailReason { get { return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
         public int ClrInstanceID { get { return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
+
+        #region Private
+        internal MethodJitInliningFailedAnsiTraceData(Action<MethodJitInliningFailedAnsiTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodJitInliningFailedAnsiTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodBeingCompiledNamespace", MethodBeingCompiledNamespace);
+            XmlAttrib(sb, "MethodBeingCompiledName", MethodBeingCompiledName);
+            XmlAttrib(sb, "MethodBeingCompiledNameSignature", MethodBeingCompiledNameSignature);
+            XmlAttrib(sb, "InlinerNamespace", InlinerNamespace);
+            XmlAttrib(sb, "InlinerName", InlinerName);
+            XmlAttrib(sb, "InlinerNameSignature", InlinerNameSignature);
+            XmlAttrib(sb, "InlineeNamespace", InlineeNamespace);
+            XmlAttrib(sb, "InlineeName", InlineeName);
+            XmlAttrib(sb, "InlineeNameSignature", InlineeNameSignature);
+            XmlAttrib(sb, "FailAlways", FailAlways);
+            XmlAttrib(sb, "FailReason", FailReason);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "InlinerNamespace", "InlinerName", "InlinerNameSignature", "InlineeNamespace", "InlineeName", "InlineeNameSignature", "FailAlways", "FailReason", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodBeingCompiledNamespace;
+                case 1:
+                    return MethodBeingCompiledName;
+                case 2:
+                    return MethodBeingCompiledNameSignature;
+                case 3:
+                    return InlinerNamespace;
+                case 4:
+                    return InlinerName;
+                case 5:
+                    return InlinerNameSignature;
+                case 6:
+                    return InlineeNamespace;
+                case 7:
+                    return InlineeName;
+                case 8:
+                    return InlineeNameSignature;
+                case 9:
+                    return FailAlways;
+                case 10:
+                    return FailReason;
+                case 11:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<MethodJitInliningFailedAnsiTraceData> Action;
+        #endregion
+    }
+
+    public sealed class MethodJitInliningFailedTraceData : TraceEvent
+    {
+        public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
+        public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
+        public string MethodBeingCompiledNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
+        public string InlinerNamespace { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
+        public string InlinerName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))); } }
+        public string InlinerNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))); } }
+        public string InlineeNamespace { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))); } }
+        public string InlineeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))); } }
+        public string InlineeNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))); } }
+        public bool FailAlways { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
+        public string FailReason { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
 
         #region Private
         internal MethodJitInliningFailedTraceData(Action<MethodJitInliningFailedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -8795,6 +8925,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<MethodJitInliningFailedTraceData> Action;
         #endregion
     }
+
     public sealed class RuntimeInformationTraceData : TraceEvent
     {
         public int ClrInstanceID { get { return GetInt16At(0); } }
@@ -9009,7 +9140,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<MethodJitTailCallSucceededTraceData> Action;
         #endregion
     }
-    public sealed class MethodJitTailCallFailedTraceData : TraceEvent
+
+    public sealed class MethodJitTailCallFailedAnsiTraceData : TraceEvent
     {
         public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
         public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
@@ -9023,6 +9155,108 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         public bool TailPrefix { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
         public string FailReason { get { return GetUTF8StringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
         public int ClrInstanceID { get { return GetInt16At(SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
+
+        #region Private
+        internal MethodJitTailCallFailedAnsiTraceData(Action<MethodJitTailCallFailedAnsiTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.Action = action;
+        }
+        protected internal override void Dispatch()
+        {
+            Action(this);
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<MethodJitTailCallFailedAnsiTraceData>)value; }
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "MethodBeingCompiledNamespace", MethodBeingCompiledNamespace);
+            XmlAttrib(sb, "MethodBeingCompiledName", MethodBeingCompiledName);
+            XmlAttrib(sb, "MethodBeingCompiledNameSignature", MethodBeingCompiledNameSignature);
+            XmlAttrib(sb, "CallerNamespace", CallerNamespace);
+            XmlAttrib(sb, "CallerName", CallerName);
+            XmlAttrib(sb, "CallerNameSignature", CallerNameSignature);
+            XmlAttrib(sb, "CalleeNamespace", CalleeNamespace);
+            XmlAttrib(sb, "CalleeName", CalleeName);
+            XmlAttrib(sb, "CalleeNameSignature", CalleeNameSignature);
+            XmlAttrib(sb, "TailPrefix", TailPrefix);
+            XmlAttrib(sb, "FailReason", FailReason);
+            XmlAttrib(sb, "ClrInstanceID", ClrInstanceID);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "MethodBeingCompiledNamespace", "MethodBeingCompiledName", "MethodBeingCompiledNameSignature", "CallerNamespace", "CallerName", "CallerNameSignature", "CalleeNamespace", "CalleeName", "CalleeNameSignature", "TailPrefix", "FailReason", "ClrInstanceID" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return MethodBeingCompiledNamespace;
+                case 1:
+                    return MethodBeingCompiledName;
+                case 2:
+                    return MethodBeingCompiledNameSignature;
+                case 3:
+                    return CallerNamespace;
+                case 4:
+                    return CallerName;
+                case 5:
+                    return CallerNameSignature;
+                case 6:
+                    return CalleeNamespace;
+                case 7:
+                    return CalleeName;
+                case 8:
+                    return CalleeNameSignature;
+                case 9:
+                    return TailPrefix;
+                case 10:
+                    return FailReason;
+                case 11:
+                    return ClrInstanceID;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<MethodJitTailCallFailedAnsiTraceData> Action;
+        #endregion
+    }
+
+    public sealed class MethodJitTailCallFailedTraceData : TraceEvent
+    {
+        public string MethodBeingCompiledNamespace { get { return GetUnicodeStringAt(0); } }
+        public string MethodBeingCompiledName { get { return GetUnicodeStringAt(SkipUnicodeString(0)); } }
+        public string MethodBeingCompiledNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(0))); } }
+        public string CallerNamespace { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))); } }
+        public string CallerName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))); } }
+        public string CallerNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))); } }
+        public string CalleeNamespace { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))); } }
+        public string CalleeName { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))); } }
+        public string CalleeNameSignature { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))); } }
+        public bool TailPrefix { get { return GetInt32At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0)))))))))) != 0; } }
+        public string FailReason { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4); } }
+        public int ClrInstanceID { get { return GetInt16At(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4)); } }
 
         #region Private
         internal MethodJitTailCallFailedTraceData(Action<MethodJitTailCallFailedTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
@@ -9041,8 +9275,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 0 && EventDataLength != SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
-            Debug.Assert(!(Version > 0 && EventDataLength < SkipUTF8String(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(0))))))))) + 4) + 2));
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
