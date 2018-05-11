@@ -152,7 +152,7 @@
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+    <PackageReference Include="MicroBuild.Core" Version="0.3.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageSpec)'==''">
@@ -171,10 +171,7 @@
   </PropertyGroup>
 
   <!-- Nuget Package Signing -->
-
-  <Target Name="SignPackagesWorker" 
-          DependsOnTargets="GetPackagesToSign;SignFiles">
-  </Target> 
+  <Target Name="SignPackagesWorker" DependsOnTargets="GetPackagesToSign;SignFiles"/>
 
   <Target Name="GetPackagesToSign"> 
     <ItemGroup Condition="'$(PackageSpec)'!=''">
@@ -187,12 +184,7 @@
 
   <!-- Because we already sign a file (the DLL) we can't use the SignFiles target again
        in the same build.  Thus we invoke MSBuild again to do the package signing -->
-
-  <!--
-   -->
- <Target Name="SignPackages" 
-    Condition="'$(SIGNING_BUILD)'!=''" 
-    AfterTargets="Pack">
-    <Exec Command='"$(MSBuildToolsPath)\MSBuild.exe" "$(ProjectDir)TraceEvent.csproj" /t:SignPackagesWorker /p:OutDir=$(OutputPath) /p:PackageSpec=*.nupkg' />
+ <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'!=''" AfterTargets="Pack">
+    <Exec Command='"$(MSBuildToolsPath)\MSBuild.exe" "$(ProjectDir)TraceEvent.csproj" /t:SignPackagesWorker /p:SIGNING_BUILD=true /p:OutDir=$(OutputPath)  /p:PackageSpec=*.nupkg' />
   </Target>
 </Project>
