@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk"> 
+
+  <!-- The SignPackage.targets is meant to sign a particular package using the microbuild infrastruture.  
+       You must call it targeting defining the properties 'OutDir' (where the package lives) It includes the trailing \
+       and PackageSpec (a wildcard spec for the of the packages to sign within OutDir).  For example
+
+	 msbuild SignPackages.targets /t:SignPackages /p:OutDir=bin\Debug\ /p:PackageSpec=*.nupkg 
+
+   -->
+
+  <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <Target Name="SignPackages" 
+          DependsOnTargets="GetPackagesToSign;SignFiles">
+  </Target> 
+
+  <Target Name="GetPackagesToSign"> 
+    <ItemGroup> 
+      <FilesToSign Include="$(OutDir)$(PackageSpec)">
+        <Authenticode>Nuget</Authenticode>
+      </FilesToSign>
+    </ItemGroup> 
+    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" /> 
+  </Target> 
+
+</Project>
+
