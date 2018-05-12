@@ -171,7 +171,7 @@
   </PropertyGroup>
 
   <!-- Nuget Package Signing -->
-  <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'==''" AfterTargets="Pack">
+  <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'!=''" AfterTargets="Pack">
     <ItemGroup>
       <PackagesToSign Include="$(OutputPath)*.nupkg">
         <Authenticode>NuGet</Authenticode>
