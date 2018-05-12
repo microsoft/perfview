@@ -171,20 +171,15 @@
   </PropertyGroup>
 
   <!-- Nuget Package Signing -->
-  <Target Name="SignPackagesWorker" DependsOnTargets="GetPackagesToSign;SignFiles"/>
-
-  <Target Name="GetPackagesToSign"> 
-    <ItemGroup Condition="'$(PackageSpec)'!=''">
-      <FilesToSign Include="$(OutDir)$(PackageSpec)">
-        <Authenticode>Nuget</Authenticode>
-      </FilesToSign>
+  <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'==''" AfterTargets="Pack">
+    <ItemGroup>
+      <PackagesToSign Include="$(OutputPath)*.nupkg">
+        <Authenticode>NuGet</Authenticode>
+      </PackagesToSign>
     </ItemGroup> 
-    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" /> 
-  </Target> 
 
-  <!-- Because we already sign a file (the DLL) we can't use the SignFiles target again
-       in the same build.  Thus we invoke MSBuild again to do the package signing -->
- <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'!=''" AfterTargets="Pack">
-    <Exec Command='"$(MSBuildToolsPath)\MSBuild.exe" "$(ProjectDir)TraceEvent.csproj" /t:SignPackagesWorker /p:SIGNING_BUILD=true /p:OutDir=$(OutputPath)  /p:PackageSpec=*.nupkg' />
+    <Message Importance="High" Text="Attempting to sign package '%(PackagesToSign.Identity)'" /> 
+    <SignFiles Files="@(PackagesToSign)" Type="$(SignType)" BinariesDirectory="$(OutputPath)" IntermediatesDirectory="$(IntermediateOutputPath)" ESRPSigning="$(ESRPSigning)" UseBearerToken="$(UseBearerToken)"
+               Condition=" '@(PackagesToSign)' != '' " />
   </Target>
 </Project>
