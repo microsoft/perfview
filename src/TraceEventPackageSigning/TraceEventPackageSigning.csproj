@@ -4,7 +4,7 @@
        In theory this could be rold into the TraceEvent.csproj project, but after several attempts  (the last
        of which were that the fact that we build for several frameworks, makes it so that it can't seem to load
        the microbuild package from the PackageReference element propertly.   If we care we can make another
-       attempt, but this should get us unblocked.  
+       attempt, but this should get us unblocked.   See issue https://github.com/Microsoft/perfview/issues/673 for more. 
     -->
 
   <PropertyGroup>
