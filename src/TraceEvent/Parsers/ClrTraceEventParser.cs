@@ -1600,7 +1600,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 192, ProviderGuid);
-                source.UnregisterEventTemplate(value, 84, MethodTaskGuid);
             }
         }
         public event Action<MethodJitInliningFailedAnsiTraceData> MethodInliningFailedAnsi
@@ -1608,7 +1607,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitInliningFailedAnsiTraceData(value, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitInliningFailedAnsiTraceData(value, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailedAnsi", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -1647,7 +1646,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new MethodJitTailCallFailedAnsiTraceData(value, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName));
+                RegisterTemplate(new MethodJitTailCallFailedAnsiTraceData(value, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailedAnsi", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -1665,7 +1664,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 192, ProviderGuid);
-                source.UnregisterEventTemplate(value, 86, MethodTaskGuid);
             }
         }
 
@@ -1829,8 +1827,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[111] = new ThreadPoolIOWorkEnqueueTraceData(null, 63, 23, "ThreadPool", ThreadPoolTaskGuid, 13, "IOEnqueue", ProviderGuid, ProviderName);
                 templates[112] = new ThreadPoolIOWorkTraceData(null, 64, 23, "ThreadPool", ThreadPoolTaskGuid, 14, "IODequeue", ProviderGuid, ProviderName);
                 templates[113] = new ThreadPoolIOWorkTraceData(null, 65, 23, "ThreadPool", ThreadPoolTaskGuid, 15, "IOPack", ProviderGuid, ProviderName);
-                templates[114] = new MethodJitInliningFailedAnsiTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailed", ProviderGuid, ProviderName);
-                templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailed", ProviderGuid, ProviderName);
+                templates[114] = new MethodJitInliningFailedAnsiTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailedAnsi", ProviderGuid, ProviderName);
+                templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailedAnsi", ProviderGuid, ProviderName);
 
                 s_templates = templates;
             }

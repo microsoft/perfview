@@ -1402,7 +1402,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             add
             {
                 // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-                RegisterTemplate(new CCWRefCountChangeAnsiTraceData(value, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName));
+                RegisterTemplate(new CCWRefCountChangeAnsiTraceData(value, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChangeAnsi", ProviderGuid, ProviderName));
             }
             remove
             {
@@ -1420,7 +1420,6 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             remove
             {
                 source.UnregisterEventTemplate(value, 200, ProviderGuid);
-                source.UnregisterEventTemplate(value, 40, GCTaskGuid);
             }
         }
         public event Action<SetGCHandleTraceData> GCSetGCHandle
@@ -2012,7 +2011,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[100] = new NgenBindEventTraceData(null, 188, 13, "NgenBinder", NgenBinderTaskGuid, 69, "NgenBind", ProviderGuid, ProviderName);
                 templates[101] = new FailFastTraceData(null, 191, 2, "FailFast", FailFastTaskGuid, 52, "", ProviderGuid, ProviderName);
                 templates[102] = new FinalizeObjectTraceData(null, 192, 1, "GC", GCTaskGuid, 39, "FinalizeObject", ProviderGuid, ProviderName);
-                templates[103] = new CCWRefCountChangeAnsiTraceData(null, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChange", ProviderGuid, ProviderName);
+                templates[103] = new CCWRefCountChangeAnsiTraceData(null, 193, 1, "GC", GCTaskGuid, 40, "CCWRefCountChangeAnsi", ProviderGuid, ProviderName);
                 templates[104] = new SetGCHandleTraceData(null, 194, 1, "GC", GCTaskGuid, 42, "SetGCHandle", ProviderGuid, ProviderName);
                 templates[105] = new DestroyGCHandleTraceData(null, 195, 1, "GC", GCTaskGuid, 43, "DestroyGCHandle", ProviderGuid, ProviderName);
                 templates[106] = new FusionMessageTraceData(null, 196, 10, "Binding", BindingTaskGuid, 70, "FusionMessage", ProviderGuid, ProviderName);
