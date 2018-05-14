@@ -529,7 +529,7 @@ namespace PerfView
         public static bool NeedsEulaConfirmation(CommandLineArgs commandLineArgs)
         {
             var acceptedVersion = App.ConfigData["EULA_Accepted"];
-            if (acceptedVersion != null && acceptedVersion == EulaVersion)
+            if (acceptedVersion == EulaVersion)
                 return false;
 
             // Did the accept the EULA by command line argument?

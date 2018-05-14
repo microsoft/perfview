@@ -3320,10 +3320,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private TraceCodeAddresses codeAddresses;
         private TraceEventStats stats;
 
-        private DeferedRegion lazyRawEvents;
-        private DeferedRegion lazyEventsToStacks;
-        private DeferedRegion lazyEventsToCodeAddresses;
-        private DeferedRegion lazyCswitchBlockingEventsToStacks;
+        private DeferredRegion lazyRawEvents;
+        private DeferredRegion lazyEventsToStacks;
+        private DeferredRegion lazyEventsToCodeAddresses;
+        private DeferredRegion lazyCswitchBlockingEventsToStacks;
         private TraceEvents events;
         private GrowableArray<EventPageEntry> eventPages;   // The offset offset of a page
         private int eventCount;                             // Total number of events
@@ -6655,7 +6655,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private GrowableArray<List<CallStackIndex>> callees;    // For each callstack, these are all the call stacks that it calls. 
         private GrowableArray<List<CallStackIndex>> threads;    // callees for threads of stacks, one for each thread
         private GrowableArray<CallStackInfo> callStacks;        // a field on CallStackInfo
-        private DeferedRegion lazyCallStacks;
+        private DeferredRegion lazyCallStacks;
         private TraceCodeAddresses codeAddresses;
         private TraceLog log;
         #endregion
@@ -7969,7 +7969,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         private TraceLog log;
         private TraceModuleFiles moduleFiles;
         private TraceMethods methods;
-        private DeferedRegion lazyCodeAddresses;
+        private DeferredRegion lazyCodeAddresses;
         internal GrowableArray<CodeAddressInfo> codeAddresses;
 
         #endregion
@@ -8328,7 +8328,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             internal int methodDefOrRva;               // For managed code, this is the token, (positive) for unmanaged it is -rva (rvas have to be < 2Gig).  
         }
 
-        private DeferedRegion lazyMethods;
+        private DeferredRegion lazyMethods;
         private GrowableArray<MethodInfo> methods;
         private TraceMethod[] methodObjects;
         internal TraceCodeAddresses codeAddresses;

@@ -495,7 +495,7 @@ namespace Graphs
                 // which is a problem if we want to add new fields.  We could have had a worker object but another way of doing
                 // it is create a deferred (lazy region).   The key is that ALL readers know how to skip this region, which allows
                 // you to add new fields 'at the end' of the region (just like for sealed objects).  
-                DeferedRegion expansion = new DeferedRegion();
+                DeferredRegion expansion = new DeferredRegion();
                 expansion.Write(serializer, delegate()
                 {
                     // I don't need to use Tagged types for my 'first' version of this new region 
@@ -552,7 +552,7 @@ namespace Graphs
                 // which is a problem if we want to add new fields.  We could have had a worker object but another way of doing
                 // it is create a deferred (lazy region).   The key is that ALL readers know how to skip this region, which allows
                 // you to add new fields 'at the end' of the region (just like for sealed objects).  
-                DeferedRegion expansion = new DeferedRegion();
+                DeferredRegion expansion = new DeferredRegion();
                 expansion.Read(deserializer, delegate()
                 {
                     // I don't need to use Tagged types for my 'first' version of this new region 

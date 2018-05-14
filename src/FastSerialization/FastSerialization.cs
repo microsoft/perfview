@@ -213,7 +213,7 @@ namespace FastSerialization
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
-    static class IStreamWriterExentions
+    static class IStreamWriterExtentions
     {
         /// <summary>
         /// Writes a Guid to stream 'writer' as sequence of 8 bytes
@@ -2007,7 +2007,7 @@ namespace FastSerialization
 #if FASTSERIALIZATION_PUBLIC
     public
 #endif
-    struct DeferedRegion
+    struct DeferredRegion
     {
         /// <summary>
         /// see #DeferedRegionOverview.  

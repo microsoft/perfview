@@ -10030,7 +10030,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
             });
         }
 
-        private DeferedRegion lazyTypeIDToName;
+        private DeferredRegion lazyTypeIDToName;
         HistoryDictionary<string> _typeIDToName;
         #endregion // private 
     }

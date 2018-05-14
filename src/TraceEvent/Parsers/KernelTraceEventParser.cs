@@ -3357,8 +3357,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         }
 
 
-        private DeferedRegion lazyFileIDToName;
-        internal DeferedRegion lazyDiskEventTimeStamp;
+        private DeferredRegion lazyFileIDToName;
+        internal DeferredRegion lazyDiskEventTimeStamp;
 
         internal struct DiskIOTime
         {
