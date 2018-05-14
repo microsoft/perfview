@@ -4429,6 +4429,35 @@ table {
                     sample.StackIndex = stackIndex;
                     stackSource.AddSample(sample);
                 }
+                foreach (var data in events.ByEventType<CCWRefCountChangeAnsiTraceData>())
+                {
+                    sample.Metric = 1;
+                    sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
+                    var stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+
+                    var operation = data.Operation;
+                    if (operation.StartsWith("Release", StringComparison.OrdinalIgnoreCase))
+                        sample.Metric = -1;
+
+                    var ccwRefKindName = "CCW " + operation;
+                    var ccwRefKindIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
+                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefKindIndex, stackIndex);
+
+                    var ccwRefCountName = "CCW NewRefCnt " + data.NewRefCount.ToString();
+                    var ccwRefCountIndex = stackSource.Interner.FrameIntern(ccwRefCountName);
+                    stackIndex = stackSource.Interner.CallStackIntern(ccwRefCountIndex, stackIndex);
+
+                    var ccwInstanceName = "CCW Instance 0x" + data.COMInterfacePointer.ToString("x");
+                    var ccwInstanceIndex = stackSource.Interner.FrameIntern(ccwInstanceName);
+                    stackIndex = stackSource.Interner.CallStackIntern(ccwInstanceIndex, stackIndex);
+
+                    var ccwTypeName = "CCW Type " + data.NameSpace + "." + data.ClassName;
+                    var ccwTypeIndex = stackSource.Interner.FrameIntern(ccwTypeName);
+                    stackIndex = stackSource.Interner.CallStackIntern(ccwTypeIndex, stackIndex);
+
+                    sample.StackIndex = stackIndex;
+                    stackSource.AddSample(sample);
+                }
             }
             else if (streamName == ".NET Native CCW Ref Count")
             {
