@@ -55,11 +55,11 @@ EVENT 30.877: Windows Kernel/DiskIO/Write PID=4; TID=4628; PName=System; ProceNu
 EVENT 30.963: Windows Kernel/DiskIO/WriteInit PID=4; TID=4628; PName=System; ProceNum=0; DataLen=12; Irp=0xffffe000d7503140; 
 EVENT 31.743: Windows Kernel/DiskIO/Write PID=4; TID=4628; PName=System; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, Write, Defe...; Priority=Normal; TransferSize=65,536; ByteOffset=5,065,834,496; Irp=0xffffe000d7503140; ElapsedTimeMSec=0.779; DiskServiceTimeMSec=0.779; FileKey=0xffffc00198046150; FileName=C:\temp\PerfViewData...; 
 EVENT 34.846: KernelTraceControl/ImageID/None PID=1820; TID=-1; PName=spoolsv; ProceNum=3; DataLen=12; 
-EVENT 36.522: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=168; 
-EVENT 36.533: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; 
-EVENT 36.545: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; 
-EVENT 36.555: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; 
-EVENT 36.575: KernelTraceControl/ImageID/Opcode37 PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=57; 
+EVENT 36.522: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=168; ImageBase=0xc50000; GuidSig=9557c59f-ba57-4511-b...; Age=1; PDBFileName=f:\binaries\Intermed...; 
+EVENT 36.533: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=58; ImageBase=0xc60000; GuidSig=ea17b53c-1b4c-49a4-9...; Age=1; PDBFileName=System.ServiceProces...; 
+EVENT 36.545: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=50; ImageBase=0x198a0000; GuidSig=5274cf64-bdc5-4eae-a...; Age=1; PDBFileName=SMDiagnostics.pdb; 
+EVENT 36.555: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=66; ImageBase=0x19900000; GuidSig=5dda8dd7-f6d0-4d59-a...; Age=1; PDBFileName=System.ServiceModel....; 
+EVENT 36.575: KernelTraceControl/ImageID/DbgID_ILRSDS PID=1712; TID=-1; PName=Aegis.WindowsService; ProceNum=3; DataLen=57; ImageBase=0x199d0000; GuidSig=870cb491-dac3-444a-a...; Age=1; PDBFileName=System.Configuration...; 
 EVENT 37.149: Windows Kernel/DiskIO/Read PID=-1; TID=21144; PName=; ProceNum=0; DataLen=52; DiskNumber=0; IrpFlags=Nocache, MountComple...; Priority=Normal; TransferSize=16,384; ByteOffset=62,111,852,544; Irp=0xffffe000d1b41010; ElapsedTimeMSec=9.783; DiskServiceTimeMSec=9.783; FileKey=0xffffc00197ea2c00; FileName=C:\ProgramData\Micro...; 
 EVENT 37.364: Windows Kernel/Memory/HardFault PID=2192; TID=21144; PName=MsMpEng; ProceNum=2; DataLen=40; ElapsedTimeMSec=10.020; ReadOffset=10,250,240; VirtualAddress=0x7fff4dbf81b0; FileKey=0xffffc00197ea2c00; ByteCount=16,384; FileName=C:\ProgramData\Micro...; 
 EVENT 37.444: Windows Kernel/DiskIO/ReadInit PID=2192; TID=21144; PName=MsMpEng; ProceNum=2; DataLen=12; Irp=0xffffe000d1b41010; 
@@ -554,10 +554,10 @@ EVENT 8,698.881: PerfView/Rundown/Stop PID=7184; TID=19132; PName=PerfView; Proc
 EVENT 8,698.881: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=3; DataLen=146; InstallDate=70/01/01 00:00:00.00...; BuildLab=10586.306.amd64fre.t...; ProductName=Windows 10 Enterpris...; 
 EVENT 8,698.881: Windows Kernel/SysConfig/Opcode(37) PID=0; TID=0; PName=Idle; ProceNum=3; DataLen=16; 
 COUNT KernelTraceControl/ImageID:8890
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:356
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:8582
 COUNT KernelTraceControl/ImageID/FileVersion:1296
 COUNT KernelTraceControl/ImageID/None:60
-COUNT KernelTraceControl/ImageID/Opcode37:356
 COUNT KernelTraceControl/MetaData/EventInfo:54
 COUNT KernelTraceControl/MetaData/EventMapInfo:24
 COUNT MSNT_SystemTrace/Image/KernelBase:1

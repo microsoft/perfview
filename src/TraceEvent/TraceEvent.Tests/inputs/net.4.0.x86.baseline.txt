@@ -58,11 +58,11 @@ EVENT 53.820: Windows Kernel/DiskIO/Read PID=4; TID=3420; PName=System; ProceNum
 EVENT 55.650: Windows Kernel/DiskIO/ReadInit PID=4; TID=3420; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e46b80; 
 EVENT 56.544: Windows Kernel/DiskIO/Read PID=4; TID=3420; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=16,384; ByteOffset=15,726,739,456; Irp=0xfffffa8302e46b80; ElapsedTimeMSec=0.894; DiskServiceTimeMSec=0.894; FileKey=0xfffff8a001b7e140; FileName=C:\temp\PerfViewData...; 
 EVENT 59.660: Windows Kernel/DiskIO/ReadInit PID=4; TID=3420; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e46b80; 
-EVENT 68.858: KernelTraceControl/ImageID/Opcode37 PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=148; 
-EVENT 68.873: KernelTraceControl/ImageID/Opcode37 PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=149; 
-EVENT 68.903: KernelTraceControl/ImageID/Opcode37 PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=142; 
-EVENT 68.917: KernelTraceControl/ImageID/Opcode37 PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=48; 
-EVENT 68.931: KernelTraceControl/ImageID/Opcode37 PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=47; 
+EVENT 68.858: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=148; ImageBase=0x640000; GuidSig=b3af247c-db0d-49ff-a...; Age=1; PDBFileName=C:\Users\vancem\Sour...; 
+EVENT 68.873: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=149; ImageBase=0x8e0000; GuidSig=c5ce39de-77bc-481a-a...; Age=1; PDBFileName=c:\Users\vancem\Docu...; 
+EVENT 68.903: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=142; ImageBase=0x5bf0000; GuidSig=ea5b71d9-238b-460b-b...; Age=1; PDBFileName=C:\Users\vancem\Sour...; 
+EVENT 68.917: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=48; ImageBase=0x701d0000; GuidSig=01209527-36eb-4019-8...; Age=1; PDBFileName=System.Core.pdb; 
+EVENT 68.931: KernelTraceControl/ImageID/DbgID_ILRSDS PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=47; ImageBase=0x70890000; GuidSig=88e72260-0543-4081-a...; Age=1; PDBFileName=System.Xml.pdb; 
 EVENT 69.816: Windows Kernel/PerfInfo/CollectionStart PID=3504; TID=2772; PName=PerfView; ProceNum=3; DataLen=12; SampleSource=0; NewInterval=10,000; OldInterval=10,000; 
 EVENT 69.988: Windows Kernel/DiskIO/Read PID=4; TID=3420; PName=System; ProceNum=0; DataLen=48; DiskNumber=0; IrpFlags=None; Priority=Normal; TransferSize=65,536; ByteOffset=15,726,755,840; Irp=0xfffffa8302e46b80; ElapsedTimeMSec=10.326; DiskServiceTimeMSec=10.326; FileKey=0xfffff8a001b7e140; FileName=C:\temp\PerfViewData...; 
 EVENT 71.342: Windows Kernel/DiskIO/ReadInit PID=4; TID=3420; PName=System; ProceNum=0; DataLen=8; Irp=0xfffffa8302e46b80; 
@@ -482,21 +482,21 @@ EVENT 7,667.651: PerfView/StartAndStopTimes PID=3412; TID=2024; PName=PerfView; 
 EVENT 7,667.653: PerfView/Rundown/Stop PID=3412; TID=2024; PName=PerfView; ProceNum=1; DataLen=0; 
 EVENT 7,667.653: Windows Kernel/SysConfig/BuildInfo PID=0; TID=0; PName=Idle; ProceNum=1; DataLen=138; InstallDate=70/01/01 00:00:00.00...; BuildLab=7601.19160.amd64fre....; ProductName=Windows 7 Enterprise; 
 COUNT KernelTraceControl/ImageID:5421
+COUNT KernelTraceControl/ImageID/DbgID_ILRSDS:44
 COUNT KernelTraceControl/ImageID/DbgID_RSDS:5374
 COUNT KernelTraceControl/ImageID/FileVersion:723
 COUNT KernelTraceControl/ImageID/None:25
-COUNT KernelTraceControl/ImageID/Opcode37:44
 COUNT KernelTraceControl/MetaData/EventInfo:6
 COUNT KernelTraceControl/MetaData/EventMapInfo:1
 COUNT MSNT_SystemTrace/Image/KernelBase:1
 COUNT MSNT_SystemTrace/SystemConfig/Platform:1
 COUNT Microsoft-Windows-DNS-Client/EventID(1001):3
 COUNT Microsoft-Windows-DNS-Client/EventID(1019):1
-COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49103
+COUNT Microsoft-Windows-DotNETRuntime/GC/AllocationTick:49110
 COUNT Microsoft-Windows-DotNETRuntime/GC/CreateSegment:4
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStart:71
 COUNT Microsoft-Windows-DotNETRuntime/GC/FinalizersStop:71
-COUNT Microsoft-Windows-DotNETRuntime/GC/HeapStats:897
+COUNT Microsoft-Windows-DotNETRuntime/GC/HeapStats:898
 COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStart:900
 COUNT Microsoft-Windows-DotNETRuntime/GC/RestartEEStop:900
 COUNT Microsoft-Windows-DotNETRuntime/GC/Start:898

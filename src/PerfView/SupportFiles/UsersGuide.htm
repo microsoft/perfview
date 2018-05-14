@@ -2130,418 +2130,424 @@
             machine.&nbsp;&nbsp; If you intend to copy the data, you must use the Right Click
             -&gt; Merge (or better Right click -&gt; Zip) operation before transferring it.&nbsp;
             See <a href="#merging">merging</a> for more.&nbsp;&nbsp;
-            <ul>
-                <li>
-                    <strong><a id="PerfViewTraceInfo">TraceInfo View</a></strong> - The TraceInfo view
-                    displays &#39;top level&#39; data that does not vary with time.&nbsp; This includes
-                    things like when the dat was collected, the machine on which it was collected, how
-                    many processors and how much memory the machine&nbsp; had etc.
-                </li>
-                <li>
-                    <strong><a id="PerfViewProcesses">Process View</a></strong> - This View shows information
-                    about each process that was active at some point during the trace.&nbsp;&nbsp; It
-                    gives the command line, the start and stop time, the amount of CPU, and other &#39;coarse&#39;
-                    information about the processes.
-                </li>
+                <ul>
+                    <li>
+                        <strong><a id="PerfViewTraceInfo">TraceInfo View</a></strong> - The TraceInfo view
+                        displays &#39;top level&#39; data that does not vary with time.&nbsp; This includes
+                        things like when the dat was collected, the machine on which it was collected, how
+                        many processors and how much memory the machine&nbsp; had etc.
+                    </li>
+                    <li>
+                        <strong><a id="PerfViewProcesses">Process View</a></strong> - This View shows information
+                        about each process that was active at some point during the trace.&nbsp;&nbsp; It
+                        gives the command line, the start and stop time, the amount of CPU, and other &#39;coarse&#39;
+                        information about the processes.
+                    </li>
 
-                ""
-                <li>
-                    <strong><a id="Processes/Files/RegistryStacks">Processes / Files / Registry Stacks</a></strong> -
-                    This is a high level view howing the processes in the system.  In this view if on process
-                    spawns another it will be a child of the parent process.   All DLL load and file opens
-                    are also shown.   If the Registry events are turned on, you will see those as well.
-                </li>
-                <li>
-                    <strong><a id="ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a></strong>
-                    - This is like <a href="#ThreadTime(withTasks)Stacks">Thread Time Stacks</a> in that it shows
-                    what every thread is doing (consuming CPU, Disk, Network) at any instant of time, and
-                    it tracks the causality of System.Threading.Tasks.Tasks so that costs incurred by the task
-                    is 'charged' to the creator of the task.    However in addition to all this, it looks for
-                    'Start-Stop' EventSource events as well as HTTP, ASP.NET WCF events and creates 'activities'
-                    for each of these.  These Activies are place 'at the top (near the process node) of the stack
-                    so it nicely separates all costs associated with a paritgcular starts-stop activity (e.g. a
-                    web request).   It is very valuable for doing server investigations.
-                    You will only get this view if you collected data with the
-                    <a href="#ThreadTimeCheckbox">Thread Time</a> events.
-                    See <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a>
-                    and <a href="#BlockedTimeInvestigation">Blocked time investigation</a>
-                    for more details.
-                </li>
-                <li>
-                    <!-- START OF GROUPS -->
-                    <strong><a id="MemoryGroup">The Memory Group</a></strong> - This folder contains
-                    all the views associated with memory investigations, whether the be native C++ heap,
-                    raw Virtual Alloc, or .NET GC heap.
-                    <ul>
-                        <li>
-                            <strong><a id="PerfViewGCStats">GCStats View </a></strong>- The GCStats view shows
-                            the activity of the .NET GC over time.&nbsp; A report is generated for each process
-                            that used the .NET GC, and for each such process, important statistics about each
-                            GC is displayed.&nbsp;&nbsp;&nbsp;
-                        </li>
+                    ""
+                    <li>
+                        <strong><a id="Processes/Files/RegistryStacks">Processes / Files / Registry Stacks</a></strong> -
+                        This is a high level view howing the processes in the system.  In this view if on process
+                        spawns another it will be a child of the parent process.   All DLL load and file opens
+                        are also shown.   If the Registry events are turned on, you will see those as well.
+                    </li>
+                    <li>
+                        <strong><a id="ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a></strong>
+                        - This is like <a href="#ThreadTime(withTasks)Stacks">Thread Time Stacks</a> in that it shows
+                        what every thread is doing (consuming CPU, Disk, Network) at any instant of time, and
+                        it tracks the causality of System.Threading.Tasks.Tasks so that costs incurred by the task
+                        is 'charged' to the creator of the task.    However in addition to all this, it looks for
+                        'Start-Stop' EventSource events as well as HTTP, ASP.NET WCF events and creates 'activities'
+                        for each of these.  These Activies are place 'at the top (near the process node) of the stack
+                        so it nicely separates all costs associated with a paritgcular starts-stop activity (e.g. a
+                        web request).   It is very valuable for doing server investigations.
+                        You will only get this view if you collected data with the
+                        <a href="#ThreadTimeCheckbox">Thread Time</a> events.
+                        See <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a>
+                        and <a href="#BlockedTimeInvestigation">Blocked time investigation</a>
+                        for more details.
+                    </li>
+                    <li>
+                        <strong><a id="ThreadTime(withStartStopActivities)(CPUONLY)Stacks">Thread Time (With StartStop Activities) (CPU ONLY) Stacks</a></strong>
+                        - This trace is basically the <a href="#ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a> view,
+                        however because the trace was not collected with the /threadTime option, the view cannot show blocked time.   The result is that 
+                        you can see CPU time, grouped by the Start-stop activity, but no blocked time.
+                    </li>
+                    <li>
+                        <!-- START OF GROUPS -->
+                        <strong><a id="MemoryGroup">The Memory Group</a></strong> - This folder contains
+                        all the views associated with memory investigations, whether the be native C++ heap,
+                        raw Virtual Alloc, or .NET GC heap.
+                        <ul>
+                            <li>
+                                <strong><a id="PerfViewGCStats">GCStats View </a></strong>- The GCStats view shows
+                                the activity of the .NET GC over time.&nbsp; A report is generated for each process
+                                that used the .NET GC, and for each such process, important statistics about each
+                                GC is displayed.&nbsp;&nbsp;&nbsp;
+                            </li>
 
-                        <li>
-                            <strong><a id="GCHeapAllocStacks">GC Heap Alloc Stacks</a></strong> - The .NET Runtime
-                            logs an event very time 100K bytes of GC heap memory is allocated.&nbsp; This view
-                            shows this broken down by call stack where the metric is the number of bytes allocated.=&nbsp;
-                            Note that much of this memory quickly becomes trash and thus does not contribute
-                            greatly to the GC heap size, however, high allocation rates DO consume CPU time
-                            and thus this view is useful for tracking down the high allocation call sites to
-                            reduce CPU.&nbsp;&nbsp; Keep in mind that this is a sample (only the allocation
-                            that &#39;trips&#39; the 100K sample &#39;interval&#39; is logged, however for high
-                            volume sites, this sampling will still be accurate.&nbsp;&nbsp;
-                            See the <a href="#GCHeapAlloc">GC Heap Alloc Section</a> for more on this view.
-                        </li>
+                            <li>
+                                <strong><a id="GCHeapAllocStacks">GC Heap Alloc Stacks</a></strong> - The .NET Runtime
+                                logs an event very time 100K bytes of GC heap memory is allocated.&nbsp; This view
+                                shows this broken down by call stack where the metric is the number of bytes allocated.=&nbsp;
+                                Note that much of this memory quickly becomes trash and thus does not contribute
+                                greatly to the GC heap size, however, high allocation rates DO consume CPU time
+                                and thus this view is useful for tracking down the high allocation call sites to
+                                reduce CPU.&nbsp;&nbsp; Keep in mind that this is a sample (only the allocation
+                                that &#39;trips&#39; the 100K sample &#39;interval&#39; is logged, however for high
+                                volume sites, this sampling will still be accurate.&nbsp;&nbsp;
+                                See the <a href="#GCHeapAlloc">GC Heap Alloc Section</a> for more on this view.
+                            </li>
 
-                        <li>
-                            <a id="Gen2ObjectDeaths(CoarseSampling)Stacks" />
-                            <strong><a id="Gen2ObjectDeathsStacks">Gen 2 Object Deaths</a></strong> - When the
-                            DotNetAlloc or DotNetAllocSamp events are turned on the runtime will log the
-                            stack of allocations as well as when GCs happen and what objects are collected.
-                            In this view we show you the allocation stack of objects that DIED in Gen 2.
-                            If your Gen 2 GCs are expensive, then reducing these objects are the most important
-                            way of bring the cost of those Gen 2 GCs down.  There is a (Coarse Sampling) version
-                            of this based on the sampling that happens by default every 100KB of allocation.
-                        </li>
-                        <li>
-                            <strong><a id="ServerGCStacks">Server GC Stacks</a></strong> - This
-                            is a specialized view that shows you the CPU time that is consumed by the server GC threads.
-                            This information is also available by filtering appropriately with the CPU views.
-                        </li>
+                            <li>
+                                <a id="Gen2ObjectDeaths(CoarseSampling)Stacks" />
+                                <strong><a id="Gen2ObjectDeathsStacks">Gen 2 Object Deaths</a></strong> - When the
+                                DotNetAlloc or DotNetAllocSamp events are turned on the runtime will log the
+                                stack of allocations as well as when GCs happen and what objects are collected.
+                                In this view we show you the allocation stack of objects that DIED in Gen 2.
+                                If your Gen 2 GCs are expensive, then reducing these objects are the most important
+                                way of bring the cost of those Gen 2 GCs down.  There is a (Coarse Sampling) version
+                                of this based on the sampling that happens by default every 100KB of allocation.
+                            </li>
+                            <li>
+                                <strong><a id="ServerGCStacks">Server GC Stacks</a></strong> - This
+                                is a specialized view that shows you the CPU time that is consumed by the server GC threads.
+                                This information is also available by filtering appropriately with the CPU views.
+                            </li>
 
-                        <li>
-                            <strong><a id="NetVirtualAllocStacks">Net Virtual Alloc Stacks</a></strong> - The stacks
-                            at which memory was allocated using VirtualAlloc.&nbsp;&nbsp; The metric is the
-                            number of COMMITTED bytes and the metric is negative when memory is freed. You will
-                            only get this view if you collected data with the <a href="#VirtualAllocCheckBox">
-                                Virtual
-                                Alloc
-                            </a> events.&nbsp; See <a href="#UnmanagedMemoryAnalysis">Unmanaged Memory Analysis</a> for more.
-                        </li>
-                        <li>
-                            <strong><a id="NetVirtualReserveStacks">Net Virtual Reserve Stacks</a></strong> - The stacks
-                            at which virtual address space was allocated using VirtualAlloc.&nbsp;&nbsp; The metric is the
-                            number of RESERVED bytes and the metric is negative when memory is RELEASED. You will
-                            only get this view if you collected data with the <a href="#VirtualAllocCheckBox">
-                                Virtual
-                                Alloc
-                            </a> events.&nbsp;  This view is only useful if you are running out of ADDRESS space
-                            not memory.  Thus it is typically only useful for large 32 bit processes that throw out of memory
-                            exceptions because there simply is no more address space to allocated memory into.
-                        </li>
-                        <li>
-                            <strong><a id="NetOSHeapAllocStacks">Net OS Heap Alloc Stacks</a></strong> - The stacks at which
-                            memory was allocated using HeapAlloc (used by malloc, and C++ new operators) .&nbsp;&nbsp;
-                            The metric is the number of bytes allocated and&nbsp; the metric is negative if
-                            the memory is freed.&nbsp; Currently you must use XPERF to collect an ETL trace
-                            with these events.
-                        </li>
-                        <li>
-                            <strong><a id="GCHeapAllocIgnoreFree">GC Heap Alloc Ignore Free</a></strong> -
-                            This view shows you the stack of allocations weighted by the size of the allocation but does
-                            not take into account object death (GCs).   It is like the GC Heap Alloc view, however
-                            unlike that view it uses the finer grained events available when the .NET Alloc and
-                            .NET Samp Alloc events are turned on.   This view is useful when you are trying to
-                            carefully audit all allocations (Because for example you want to minimize GC pauses) and
-                            you want more detail than the GC Heap Alloc events give you (which is only every 100K).
-                        </li>
-                        <li>
-                            <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
-                            is present if PerFView detects any GC heap snapshots in the ETL file.   These
-                            may be either JavaScript or .NET heap snapshots.
-                        </li>
-                        <li>
-                            <strong><a id="JSHeapShnapshot">JS Heap Snapshot</a></strong> -  This node
-                            represents a single snapshot of just a JavaScript heap.   It will bring up a
-                            'GC Heap Dump' view of the heap if opened.
-                        </li>
-                        <li>
-                            <strong><a id="GCHeapAnalyzer">GC Heap Analyzer</a></strong> -  This node opens
-                            a viewer designed to help with GC heap analysis.  It contains much of the
-                            same information as the <a href="#GCStats">GC Stats</a> view but is more graphical
-                            and interactive.
-                        </li>
-                    </ul>
-                </li> <!-- END OF MEMORY GROUP -->
-                <li>
-                    <strong><a id="AdvancedGroup">The Advanced Group</a></strong> - This folder contains
-                    views that are more specialize investigations that are rarer than the common CPU,
-                    wall clock time, and memory investigations.
-                    <ul>
-                        <li>
-                            <strong><a id="ThreadTimeStacks">Thread Time Stacks</a></strong> - Shows what every
-                            thread is doing whether it is consuming CPU, disk, network or blocked on something
-                            else.  It does not include the 'ReadyThread' information.
-                            You will only get this view if you collected data with the
-                            <a href="#BlockingTimeBox">Thread Time</a> events.
-                            See <a href="#BlockedTimeInvestigation">Blocked time investigation</a> on more details
-                            on wall clock / blocked time investigations.
-                        </li>
-                        <li>
-                            <strong><a id="ThreadTime(withTasks)Stacks">Thread Time (With Tasks) Stacks</a></strong>
-                            - This is like <a href="#ThreadTimeStacks">Thread Time Stacks</a> in that it shows
-                            what every thread is doing (consuming CPU, Disk, Network) at any instant of time.
-                            But in addition it attributes any costs that a .NET System.Threading.Tasks.Task
-                            is doing to the thread (Task) that created the work item. This is especially useful
-                            for programs that use the C# 'async' feature.
-                            You will only get this view if you collected data with the
-                            <a href="#ThreadTimeCheckbox">Thread Time</a> events.
-                            If you investigating a HTTP service or have Start-stop events in your code, it is generalll
-                            better to use the
-                            <a href="#ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a>
-                            view instead.
-                            See <a href="#BlockedTimeInvestigation">Blocked time investigation</a>,
-                            <a href="#UnderstandingPerfDataThreadTimeWithTasks">Understading Thread Time With Tasks</a>
-                            and <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a>
-                            for more details.
-                        </li>
-                        <li>
-                            <strong>
-                                <a id="ThreadTime(withReadyThread)Stacks">
-                                    Thread Time (with ReadyThread)
-                                    Stacks
-                                </a>
-                            </strong> - Normally <a href="#ThreadTimeStacks">Thread Time Stacks</a>
-                            do not show you the thread that unblocked a thread if it is available
-                            (ReadyThread events), because it tends to be confusing for the first level of analysis.
-                            However once important regions of blocked time are identified, it is critical to
-                            understand what UNBLOCKED that activity (after all if something blocked a long time
-                            it is the thing that unblocked it that was 'late'.    At every stack that blocks, if
-                            there is information about the thread that unblocked it this is appended to the bottom
-                            of the stack with a 'READIED_BY' suffix.   This allows you to 'unwind' the causality
-                            (what thread caused the unblock).
-                            You will only get this view if you collected data with the
-                            <a href="#ThreadTimeCheckbox">Thread Time</a> events.
-                            See <a href="#BlockedTimeInvestigation">
-                                Blocked time investigation
-                            </a> for more details
-                            on blocked time investigations.
-                        </li>
-                        <li>
-                            <strong><a id="ExceptionsStacks">Exceptions Stacks</a></strong> - The stack of the
-                            location where every exception was thrown.&nbsp;&nbsp; If you have high exception
-                            rates, this view allows you to quickly locate the offending code.&nbsp;
-                        </li>
-                        <li>
-                            <strong><a id="ImageLoadStacks">Image Load Stacks</a></strong> - The stacks at which
-                            any file was mapped into memory (DLL load).&nbsp; The metric is the number of bytes
-                            in file loaded, and the metric is negative when the image is unloaded.&nbsp;
-                        </li>
-                        <li>
-                            <strong><a id="ManagedLoadStacks">Managed Load Stacks</a></strong> - The stacks
-                            which caused the load of any managed assembly.&nbsp;&nbsp; The metric is the size
-                            of the assembly loaded.&nbsp;
-                        </li>
-                        <li>
-                            <strong><a id="PinningAtGCTimeStacks">Pinning at GC Time Stacks</a></strong> - This
-                            view is designed to track down issues with unreasonable memory growth in the .NET
-                            garbage collector because of excessive pinning of GC objects (which make it hard
-                            for the GC to do its job).   By default this view shows you how many objects are pinned
-                            at each GC.  However if you turn on the 'clrPrivate' provider, it will give additional
-                            information on the exact stack where the pinning took place for each such pinned object.
-                        </li>
-                        <li>
-                            <strong><a id="DiskI/OStacks">Disk I/O Stacks</a></strong> - The stacks at which
-                            disk I/O happens.&nbsp; The metric is the amount of time it took to service the
-                            disk operation (it does not include the time waiting for the disk to become available).&nbsp;
-                        </li>
-                        <li>
-                            <strong><a id="FileI/OStacks">File I/O Stacks</a></strong> - The stacks at which
-                            File I/O happens.&nbsp; The metric is the number of bytes read or written.&nbsp;&nbsp;
-                            Note that this metric is independent of whether the File operation caused disk activity
-                            (it might have been serviced from the file system cache). You will only get this
-                            view if you collected data with the <a href="#FileIOCheckBox">File I/O</a> events.
-                        </li>
+                            <li>
+                                <strong><a id="NetVirtualAllocStacks">Net Virtual Alloc Stacks</a></strong> - The stacks
+                                at which memory was allocated using VirtualAlloc.&nbsp;&nbsp; The metric is the
+                                number of COMMITTED bytes and the metric is negative when memory is freed. You will
+                                only get this view if you collected data with the <a href="#VirtualAllocCheckBox">
+                                    Virtual
+                                    Alloc
+                                </a> events.&nbsp; See <a href="#UnmanagedMemoryAnalysis">Unmanaged Memory Analysis</a> for more.
+                            </li>
+                            <li>
+                                <strong><a id="NetVirtualReserveStacks">Net Virtual Reserve Stacks</a></strong> - The stacks
+                                at which virtual address space was allocated using VirtualAlloc.&nbsp;&nbsp; The metric is the
+                                number of RESERVED bytes and the metric is negative when memory is RELEASED. You will
+                                only get this view if you collected data with the <a href="#VirtualAllocCheckBox">
+                                    Virtual
+                                    Alloc
+                                </a> events.&nbsp;  This view is only useful if you are running out of ADDRESS space
+                                not memory.  Thus it is typically only useful for large 32 bit processes that throw out of memory
+                                exceptions because there simply is no more address space to allocated memory into.
+                            </li>
+                            <li>
+                                <strong><a id="NetOSHeapAllocStacks">Net OS Heap Alloc Stacks</a></strong> - The stacks at which
+                                memory was allocated using HeapAlloc (used by malloc, and C++ new operators) .&nbsp;&nbsp;
+                                The metric is the number of bytes allocated and&nbsp; the metric is negative if
+                                the memory is freed.&nbsp; Currently you must use XPERF to collect an ETL trace
+                                with these events.
+                            </li>
+                            <li>
+                                <strong><a id="GCHeapAllocIgnoreFree">GC Heap Alloc Ignore Free</a></strong> -
+                                This view shows you the stack of allocations weighted by the size of the allocation but does
+                                not take into account object death (GCs).   It is like the GC Heap Alloc view, however
+                                unlike that view it uses the finer grained events available when the .NET Alloc and
+                                .NET Samp Alloc events are turned on.   This view is useful when you are trying to
+                                carefully audit all allocations (Because for example you want to minimize GC pauses) and
+                                you want more detail than the GC Heap Alloc events give you (which is only every 100K).
+                            </li>
+                            <li>
+                                <strong><a id="PerfViewHeapSnapshots">GC Heap Snapshots</a></strong> -  This node
+                                is present if PerFView detects any GC heap snapshots in the ETL file.   These
+                                may be either JavaScript or .NET heap snapshots.
+                            </li>
+                            <li>
+                                <strong><a id="JSHeapShnapshot">JS Heap Snapshot</a></strong> -  This node
+                                represents a single snapshot of just a JavaScript heap.   It will bring up a
+                                'GC Heap Dump' view of the heap if opened.
+                            </li>
+                            <li>
+                                <strong><a id="GCHeapAnalyzer">GC Heap Analyzer</a></strong> -  This node opens
+                                a viewer designed to help with GC heap analysis.  It contains much of the
+                                same information as the <a href="#GCStats">GC Stats</a> view but is more graphical
+                                and interactive.
+                            </li>
+                        </ul>
+                    </li> <!-- END OF MEMORY GROUP -->
+                    <li>
+                        <strong><a id="AdvancedGroup">The Advanced Group</a></strong> - This folder contains
+                        views that are more specialize investigations that are rarer than the common CPU,
+                        wall clock time, and memory investigations.
+                        <ul>
+                            <li>
+                                <strong><a id="ThreadTimeStacks">Thread Time Stacks</a></strong> - Shows what every
+                                thread is doing whether it is consuming CPU, disk, network or blocked on something
+                                else.  It does not include the 'ReadyThread' information.
+                                You will only get this view if you collected data with the
+                                <a href="#BlockingTimeBox">Thread Time</a> events.
+                                See <a href="#BlockedTimeInvestigation">Blocked time investigation</a> on more details
+                                on wall clock / blocked time investigations.
+                            </li>
+                            <li>
+                                <strong><a id="ThreadTime(withTasks)Stacks">Thread Time (With Tasks) Stacks</a></strong>
+                                - This is like <a href="#ThreadTimeStacks">Thread Time Stacks</a> in that it shows
+                                what every thread is doing (consuming CPU, Disk, Network) at any instant of time.
+                                But in addition it attributes any costs that a .NET System.Threading.Tasks.Task
+                                is doing to the thread (Task) that created the work item. This is especially useful
+                                for programs that use the C# 'async' feature.
+                                You will only get this view if you collected data with the
+                                <a href="#ThreadTimeCheckbox">Thread Time</a> events.
+                                If you investigating a HTTP service or have Start-stop events in your code, it is generalll
+                                better to use the
+                                <a href="#ThreadTime(withStartStopActivities)Stacks">Thread Time (With StartStop Activities) Stacks</a>
+                                view instead.
+                                See <a href="#BlockedTimeInvestigation">Blocked time investigation</a>,
+                                <a href="#UnderstandingPerfDataThreadTimeWithTasks">Understading Thread Time With Tasks</a>
+                                and <a href="#MakingServerInvestigationEasy">Making Server Investigation Easy</a>
+                                for more details.
+                            </li>
+                            <li>
+                                <strong>
+                                    <a id="ThreadTime(withReadyThread)Stacks">
+                                        Thread Time (with ReadyThread)
+                                        Stacks
+                                    </a>
+                                </strong> - Normally <a href="#ThreadTimeStacks">Thread Time Stacks</a>
+                                do not show you the thread that unblocked a thread if it is available
+                                (ReadyThread events), because it tends to be confusing for the first level of analysis.
+                                However once important regions of blocked time are identified, it is critical to
+                                understand what UNBLOCKED that activity (after all if something blocked a long time
+                                it is the thing that unblocked it that was 'late'.    At every stack that blocks, if
+                                there is information about the thread that unblocked it this is appended to the bottom
+                                of the stack with a 'READIED_BY' suffix.   This allows you to 'unwind' the causality
+                                (what thread caused the unblock).
+                                You will only get this view if you collected data with the
+                                <a href="#ThreadTimeCheckbox">Thread Time</a> events.
+                                See <a href="#BlockedTimeInvestigation">
+                                    Blocked time investigation
+                                </a> for more details
+                                on blocked time investigations.
+                            </li>
+                            <li>
+                                <strong><a id="ExceptionsStacks">Exceptions Stacks</a></strong> - The stack of the
+                                location where every exception was thrown.&nbsp;&nbsp; If you have high exception
+                                rates, this view allows you to quickly locate the offending code.&nbsp;
+                            </li>
+                            <li>
+                                <strong><a id="ImageLoadStacks">Image Load Stacks</a></strong> - The stacks at which
+                                any file was mapped into memory (DLL load).&nbsp; The metric is the number of bytes
+                                in file loaded, and the metric is negative when the image is unloaded.&nbsp;
+                            </li>
+                            <li>
+                                <strong><a id="ManagedLoadStacks">Managed Load Stacks</a></strong> - The stacks
+                                which caused the load of any managed assembly.&nbsp;&nbsp; The metric is the size
+                                of the assembly loaded.&nbsp;
+                            </li>
+                            <li>
+                                <strong><a id="PinningAtGCTimeStacks">Pinning at GC Time Stacks</a></strong> - This
+                                view is designed to track down issues with unreasonable memory growth in the .NET
+                                garbage collector because of excessive pinning of GC objects (which make it hard
+                                for the GC to do its job).   By default this view shows you how many objects are pinned
+                                at each GC.  However if you turn on the 'clrPrivate' provider, it will give additional
+                                information on the exact stack where the pinning took place for each such pinned object.
+                            </li>
+                            <li>
+                                <strong><a id="DiskI/OStacks">Disk I/O Stacks</a></strong> - The stacks at which
+                                disk I/O happens.&nbsp; The metric is the amount of time it took to service the
+                                disk operation (it does not include the time waiting for the disk to become available).&nbsp;
+                            </li>
+                            <li>
+                                <strong><a id="FileI/OStacks">File I/O Stacks</a></strong> - The stacks at which
+                                File I/O happens.&nbsp; The metric is the number of bytes read or written.&nbsp;&nbsp;
+                                Note that this metric is independent of whether the File operation caused disk activity
+                                (it might have been serviced from the file system cache). You will only get this
+                                view if you collected data with the <a href="#FileIOCheckBox">File I/O</a> events.
+                            </li>
 
-                        <li>
-                            <strong><a id="CCWRefCountStacks">CCW Ref Count Stacks</a></strong> - Show the stacks
-                            where any .NET COM Callable Wrapper (CCW), has its COM reference count changed.
-                            If you have a WinRT or COM object that is not being removed, it is because this
-                            reference counter is not going to zero.  This view shows everywhere the count changed
-                            which allows you to debug the problem.   In order for this view to be shown you need
-                            to collect the trace with the ClrPrivate provider (thus /Providers=ClrPrivate or placing
-                            ClrPrivate in the 'Additional Providers' textbox).
-                        </li>
-                        <li>
-                            <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
-                            Show the stacks where any Windows OS Handle were created, duplicated or closed.  When handles are created
-                            or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
-                            a close() on a handle occurs and PerfView has seen a 'create' or 'dumplicate' event for it
-                            it will use that stack for the close (this is very much like what is done for memory allocation
-                            views).  Thus balenced creation and closing will cancel out if both are in the time intveral
-                            of interest.   There are a few handles that are allocated in a process but are closed by
-                            system processes, so may be some imbalences, but generally there are only a handful of these
-                            Thus it is relative easy to spot 'leaks' since they will show up as an imbalence.
-                            In order for this view to be shown you need to collect with the <a href="#HandleCheckBox">'Handle'</a> kernel events.
-                        </li>
-                        <li>
-                            <strong><a id="HeapSnapshotPinningStacks">Heap Snapshot Pinning Stacks</a></strong> -
-                            This view is used when a heap snapshot is taken along with the ETW events for where
-                            pinning happens (Providers include ClrPrivate).   This view shows for every object
-                            in the heap snapshot that is pinned, the stacks at which is was pinned.  This includes
-                            objects pinned because they are pointed to by a async pinned handle at the time of
-                            the heap snapshot.
-                        </li>
-                        <li>
-                            <strong><a id="HeapSnapshotPinnedObjectAllocationStacks">Heap Snapshot Pinned Object Allocation Stacks</a></strong> -
-                            This view is used when a heap snapshot is taken along with the ETW events for where
-                            pinning happens (Providers include ClrPrivate).   This view shows for every object
-                            in the heap snapshot that is pinned, the stacks at which is was allocated.  This includes
-                            objects pinned because they are pointed to by a async pinned handle at the time of
-                            the heap snapshot.
-                        </li>
-                        <li>
-                            <strong><a id="AnyStacks">Any Stacks</a></strong> - This view shows
-                            every event that has a stack.&nbsp; It is useful when none of the more specialized
-                            stack views are available.&nbsp;&nbsp;
-                        </li>
-                        <li>
-                            <strong><a id="AnyTaskTreeStacks">Any TaskTree</a></strong> - This view is designed to
-                            so you the 'task view' of any event in the trace.  It is useful when looking at asynchronous
-                            or parallel operations.    When using the System.Threading.Tasks library you can think
-                            of all execution as being run in a particular task which we call an activity.   Threads
-                            are one kind of activity (denoted a 'Thread Activity') and any task started from the
-                            task library is also an activity.   All activities besides Thread Activities have a parent
-                            which started them.  Thus you can form a tree of 'parent' activities that ultimately will
-                            end with a Thread-activity.  This is with the Any TaskTree will show.   This view is
-                            available whenever there are events from the System.Threading.Tasks.TplEventSource event
-                            source.
-                        </li>
-                        <li>
-                            <strong><a id="AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a></strong> - This view
-                            is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have
-                            call stacks associated with them.  The only difference is at the top of the each stack (between the
-                            process and thread frames) is a list of Start-Stop tasks (that is  an activity See
-                            <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
-                                EventSource Activities
-                            </a> on how to define your own).
-                        </li>
-                        <li>
-                            <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
-                            is a simplification of the <a href="#AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a> view.
-                            Like that view, it shows every event in the context of the start-stop activities that are currently
-                            active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
-                            and is useful when you don't want the extra detail.
-                        </li>
+                            <li>
+                                <strong><a id="CCWRefCountStacks">CCW Ref Count Stacks</a></strong> - Show the stacks
+                                where any .NET COM Callable Wrapper (CCW), has its COM reference count changed.
+                                If you have a WinRT or COM object that is not being removed, it is because this
+                                reference counter is not going to zero.  This view shows everywhere the count changed
+                                which allows you to debug the problem.   In order for this view to be shown you need
+                                to collect the trace with the ClrPrivate provider (thus /Providers=ClrPrivate or placing
+                                ClrPrivate in the 'Additional Providers' textbox).
+                            </li>
+                            <li>
+                                <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
+                                Show the stacks where any Windows OS Handle were created, duplicated or closed.  When handles are created
+                                or duplicated a +1 is used as the metric and when they are closed a -1 is used.  Also when
+                                a close() on a handle occurs and PerfView has seen a 'create' or 'dumplicate' event for it
+                                it will use that stack for the close (this is very much like what is done for memory allocation
+                                views).  Thus balenced creation and closing will cancel out if both are in the time intveral
+                                of interest.   There are a few handles that are allocated in a process but are closed by
+                                system processes, so may be some imbalences, but generally there are only a handful of these
+                                Thus it is relative easy to spot 'leaks' since they will show up as an imbalence.
+                                In order for this view to be shown you need to collect with the <a href="#HandleCheckBox">'Handle'</a> kernel events.
+                            </li>
+                            <li>
+                                <strong><a id="HeapSnapshotPinningStacks">Heap Snapshot Pinning Stacks</a></strong> -
+                                This view is used when a heap snapshot is taken along with the ETW events for where
+                                pinning happens (Providers include ClrPrivate).   This view shows for every object
+                                in the heap snapshot that is pinned, the stacks at which is was pinned.  This includes
+                                objects pinned because they are pointed to by a async pinned handle at the time of
+                                the heap snapshot.
+                            </li>
+                            <li>
+                                <strong><a id="HeapSnapshotPinnedObjectAllocationStacks">Heap Snapshot Pinned Object Allocation Stacks</a></strong> -
+                                This view is used when a heap snapshot is taken along with the ETW events for where
+                                pinning happens (Providers include ClrPrivate).   This view shows for every object
+                                in the heap snapshot that is pinned, the stacks at which is was allocated.  This includes
+                                objects pinned because they are pointed to by a async pinned handle at the time of
+                                the heap snapshot.
+                            </li>
+                            <li>
+                                <strong><a id="AnyStacks">Any Stacks</a></strong> - This view shows
+                                every event that has a stack.&nbsp; It is useful when none of the more specialized
+                                stack views are available.&nbsp;&nbsp;
+                            </li>
+                            <li>
+                                <strong><a id="AnyTaskTreeStacks">Any TaskTree</a></strong> - This view is designed to
+                                so you the 'task view' of any event in the trace.  It is useful when looking at asynchronous
+                                or parallel operations.    When using the System.Threading.Tasks library you can think
+                                of all execution as being run in a particular task which we call an activity.   Threads
+                                are one kind of activity (denoted a 'Thread Activity') and any task started from the
+                                task library is also an activity.   All activities besides Thread Activities have a parent
+                                which started them.  Thus you can form a tree of 'parent' activities that ultimately will
+                                end with a Thread-activity.  This is with the Any TaskTree will show.   This view is
+                                available whenever there are events from the System.Threading.Tasks.TplEventSource event
+                                source.
+                            </li>
+                            <li>
+                                <strong><a id="AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a></strong> - This view
+                                is very much like the <a href="#AnyStacks">Any Stacks</a> view in that it shows all events that have
+                                call stacks associated with them.  The only difference is at the top of the each stack (between the
+                                process and thread frames) is a list of Start-Stop tasks (that is  an activity See
+                                <a href="http://blogs.msdn.com/b/vancem/archive/2015/09/14/exploring-eventsource-activity-correlation-and-causation-features.aspx">
+                                    EventSource Activities
+                                </a> on how to define your own).
+                            </li>
+                            <li>
+                                <strong><a id="AnyStartStopTreeStacks">Any StartStopTree</a></strong> - This view
+                                is a simplification of the <a href="#AnyStacks(withStartStopActivities)Stacks">Any Stacks (with StartStop Activities)</a> view.
+                                Like that view, it shows every event in the context of the start-stop activities that are currently
+                                active, however it does NOT show call stacks.  Thus this works on any traces with minimal events
+                                and is useful when you don't want the extra detail.
+                            </li>
 
-                        <li>
-                            <strong><a id="PerfViewJitStats">JitStats View</a></strong> - The JitStats view show the
-                            activity of the .NET Just in time (JIT) compiler.&nbsp; It shows exactly which methods were
-                            JIT compiled, how big the are (both before and after JIT compilation) as well as the amount
-                            of time it took to JIT compile the methods.&nbsp;&nbsp;&nbsp; This allows you to quickly
-                            determine how much time can be saved by NGening various DLLs. This view also contains information
-                            about the &#39;Background JIT&#39; feature of V4.5 of the runtime (as exposed by
-                            System.Runtime.ProfileOptimization class) that speeds up startup of applications that
-                            were not NGENed by JIT compiling on multiple processors.&nbsp; If background JIT is enabled,
-                            this view will add two additional columns that track background JIT specific information.&nbsp;
-                            The first is called DistanceAhead, and specifies in milliseconds how early the method was compiled
-                            relative to when it was called.&nbsp; The second is called BlockedReason, and specifies why a method was not
-                            background compiled.&nbsp; The most common reasons are that a module dependency has not yet
-                            been loaded, or that playback aborted because of an unsatisfied module dependency triggering a
-                            timeout.&nbsp; If a module dependency has not been satisfied, the name of the module appears
-                            in this column.&nbsp; If a timeout is triggered, then the text &quot;Playback Aborted&quot; appears here.
-                        </li>
-                        <li>
-                            <strong><a id="PerfViewEventStats">EventStats View</a></strong> - The EventStats
-                            view shows the count roll-up of every event type that was collected in the trace.&nbsp;&nbsp;
-                            It also shows which events have stack traces associated with them.&nbsp;&nbsp; This
-                            view is mostly for PerfView diagnostic purposes when other views are not working
-                            properly.&nbsp; It lets you quickly determine what is in the ETL file so you can
-                            determine if it is a problem with data collection (the needed events are not present),
-                            or presentation.&nbsp;&nbsp;&nbsp;
-                        </li>
-                    </ul>  <!-- END OF ADVANCED GROUP -->
-                </li>
-                <li>
-                    <strong><a id="OldGroup">The Old Group</a></strong> - This folder contains
-                    views whose funtionality has likely been superceded by another (typically more
-                    general purpose view).   These are likely to go away in the future after confirming
-                    that all the functionality in them can be achieved using other views.
-                    <ul>
-                        <li>
-                            <strong><a id="ServerRequestCPUStacks">Server Request CPU Stacks</a></strong> -
-                            Shows CPU time (in milliseconds) rolled up by request.&nbsp; This view supports ASP.NET
-                            and ASP.NET hosted WCF services.
-                        </li>
-                        <li>
-                            <strong><a id="ServerRequestThreadTimeStacks">Server Request Thread Time Stacks</a></strong> -
-                            Shows wall clock time rolled up by request.&nbsp; Wall clock time is comprised of CPU
-                            time and blocked time and represents the amount of time that was spent on the request
-                            regardless of how many threads were used.&nbsp; Any asynchronous operations are not rolled
-                            up under the request, as they do not contribute to the wall clock time.&nbsp; This view supports
-                            ASP.NET and ASP.NET hosted WCF services.
-                        </li>
-                        <li>
-                            <strong><a id="ServerRequestManagedAllocationStacks">Server Request Managed Allocation Stacks</a></strong> -
-                            This view performs the same task as the <a href="#GCHeapAllocStacks">GC Heap Alloc Stacks</a>
-                            view, with the exception that results are rolled up by request. This view supports ASP.NET and
-                            ASP.NET hosted WCF services.
-                        </li>
-                        <li>
-                            <strong><a id="ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a></strong> -
-                            The <a href="#PerfViewAspNetStats">ASP.NET Stats view</a> gives you a high level, aggregated view
-                            of what is going on with ASP.NET requests over time.   The ASP.NEt Thread Time Stacks view
-                            lets you drill into more detail.   In particular this view works like the
-                            <a href="#ThreadTimeStacks">Thread Time Stacks</a> view in that it shows you what every thread
-                            is doing with is REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
-                            of threads that are actually doing work on behalf of an particular request together.  Thus when
-                            a request takes a long time (whether it be because of CPU or blocking on a database), that time
-                            will show up in this view attributed to that request.  This makes it very straightforward to
-                            quickly understand why requests take a long amount of real time to complete.
-                            You will only get this view if you collected data with the
-                            <a href="#ThreadTimeCheckbox">Thread </a>events.
-                            See <a href="#BlockedTimeInvestigation">
-                                Blocked time investigation
-                            </a> for more details
-                            on blocked time investigations.
-                        </li>
-                        <li>
-                            <strong><a id="ASP.NETThreadTime(withTasks)Stacks">ASP.NET Thread Time (with Tasks) Stacks</a></strong> -
-                            This view is basically a fusion of the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a> view
-                            and the <a href="#ThreadTime(withTasks)Stacks">Thread Time (With Tasks) Stacks</a> view.
-                            Like the ASP.NET THread time view it shows you time grouped by request.  But like the Thread Time with
-                            Tasks view if that request causes other tasks to be spawned as part of its operation those are
-                            considered 'children' of that request and show up in the call stack that way.   This is
-                            the most useful view if you are investigating a ASP.NET server that uses async as part of its implementation.
-                        </li>
-                        <li>
-                            <strong><a id="ASP.NETThreadTime(CPUONLY)Stacks">ASP.NET Thread Time Stacks (CPU ONLY)</a></strong> -
-                            Like the   <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a> view except
-                            that it indicates that only CPU sampling (not thread time events) were captured so the
-                            view is impoverished.  It only shows you the CPU time spent (but won't tell you where the
-                            request spent time blocked on networking/file/locks).   To get the full view the /threadTime
-                            option must be enabled during data collection.
-                        </li>
-                    </ul> <!-- END OF OLD GROUP -->
-                </li>
-                <li>
-                    <strong><a id="PerfViewAspNetStats">ASP .NET View</a></strong> - Show when ASP.NET
-                    events were collected (these are collected by default or when the &#39;ASP.NET&#39;
-                    provider is specified as a &#39;Additional Providers&#39;).&nbsp;&nbsp; This view
-                    give you an &#39;overall view of what your ASP.NET server processes were doing,
-                    including what the average throughput was, the average request response time, and
-                    other basic information to quickly assess your server&#39;s basic health.  You typically
-                    drill into more detail by using the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks view</a>.
-                </li>
-                <li>
-                    <strong><a id="PerfViewIisStats">IIS Stats</a></strong> - Show when IIS ETW
-                    events were collected (these are collected when the <b>IIS</b> checkbox or the <b>IIS:WWW Server</b>
-                    provider is specified as a &#39;Additional Providers&#39;).&nbsp;&nbsp; This view
-                    give you an &#39;overall view of request processing at an IIS level by analyzing IIS ETW events,
-                    provides you details on the Top 100 slowest requests in the trace, gives you details of the failed requests in the trace
-                    and allows you to drill down further on the modules causing slowness or failures. You can click on the individual requests
-                    to see all events fired in the IIS pipeline for that very request. This view helps you diagnose slow performance issues in
-                    various stages of request processing in the IIS pipeline.
-                </li>
-                <li>
-                    <strong><a id="ETLEventSource">Events View</a></strong> - The Events view is the
-                    &#39;raw&#39; view of the ETW events.&nbsp;&nbsp; Basically and ETL file is simply
-                    a sequence of event payloads where each event consists of an event type, a timestamp,
-                    an process and thread that generated the event, and additional event-specific information.&nbsp;&nbsp;
-                    The Event viewer allows this information to be filtered (by time, process, and text),
-                    and viewed in Excel.&nbsp;&nbsp;
-                </li>
-            </ul>
+                            <li>
+                                <strong><a id="PerfViewJitStats">JitStats View</a></strong> - The JitStats view show the
+                                activity of the .NET Just in time (JIT) compiler.&nbsp; It shows exactly which methods were
+                                JIT compiled, how big the are (both before and after JIT compilation) as well as the amount
+                                of time it took to JIT compile the methods.&nbsp;&nbsp;&nbsp; This allows you to quickly
+                                determine how much time can be saved by NGening various DLLs. This view also contains information
+                                about the &#39;Background JIT&#39; feature of V4.5 of the runtime (as exposed by
+                                System.Runtime.ProfileOptimization class) that speeds up startup of applications that
+                                were not NGENed by JIT compiling on multiple processors.&nbsp; If background JIT is enabled,
+                                this view will add two additional columns that track background JIT specific information.&nbsp;
+                                The first is called DistanceAhead, and specifies in milliseconds how early the method was compiled
+                                relative to when it was called.&nbsp; The second is called BlockedReason, and specifies why a method was not
+                                background compiled.&nbsp; The most common reasons are that a module dependency has not yet
+                                been loaded, or that playback aborted because of an unsatisfied module dependency triggering a
+                                timeout.&nbsp; If a module dependency has not been satisfied, the name of the module appears
+                                in this column.&nbsp; If a timeout is triggered, then the text &quot;Playback Aborted&quot; appears here.
+                            </li>
+                            <li>
+                                <strong><a id="PerfViewEventStats">EventStats View</a></strong> - The EventStats
+                                view shows the count roll-up of every event type that was collected in the trace.&nbsp;&nbsp;
+                                It also shows which events have stack traces associated with them.&nbsp;&nbsp; This
+                                view is mostly for PerfView diagnostic purposes when other views are not working
+                                properly.&nbsp; It lets you quickly determine what is in the ETL file so you can
+                                determine if it is a problem with data collection (the needed events are not present),
+                                or presentation.&nbsp;&nbsp;&nbsp;
+                            </li>
+                        </ul>  <!-- END OF ADVANCED GROUP -->
+                    </li>
+                    <li>
+                        <strong><a id="OldGroup">The Old Group</a></strong> - This folder contains
+                        views whose funtionality has likely been superceded by another (typically more
+                        general purpose view).   These are likely to go away in the future after confirming
+                        that all the functionality in them can be achieved using other views.
+                        <ul>
+                            <li>
+                                <strong><a id="ServerRequestCPUStacks">Server Request CPU Stacks</a></strong> -
+                                Shows CPU time (in milliseconds) rolled up by request.&nbsp; This view supports ASP.NET
+                                and ASP.NET hosted WCF services.
+                            </li>
+                            <li>
+                                <strong><a id="ServerRequestThreadTimeStacks">Server Request Thread Time Stacks</a></strong> -
+                                Shows wall clock time rolled up by request.&nbsp; Wall clock time is comprised of CPU
+                                time and blocked time and represents the amount of time that was spent on the request
+                                regardless of how many threads were used.&nbsp; Any asynchronous operations are not rolled
+                                up under the request, as they do not contribute to the wall clock time.&nbsp; This view supports
+                                ASP.NET and ASP.NET hosted WCF services.
+                            </li>
+                            <li>
+                                <strong><a id="ServerRequestManagedAllocationStacks">Server Request Managed Allocation Stacks</a></strong> -
+                                This view performs the same task as the <a href="#GCHeapAllocStacks">GC Heap Alloc Stacks</a>
+                                view, with the exception that results are rolled up by request. This view supports ASP.NET and
+                                ASP.NET hosted WCF services.
+                            </li>
+                            <li>
+                                <strong><a id="ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a></strong> -
+                                The <a href="#PerfViewAspNetStats">ASP.NET Stats view</a> gives you a high level, aggregated view
+                                of what is going on with ASP.NET requests over time.   The ASP.NEt Thread Time Stacks view
+                                lets you drill into more detail.   In particular this view works like the
+                                <a href="#ThreadTimeStacks">Thread Time Stacks</a> view in that it shows you what every thread
+                                is doing with is REAL (clock) time, however unlike the Thread Time Stacks view it groups the parts
+                                of threads that are actually doing work on behalf of an particular request together.  Thus when
+                                a request takes a long time (whether it be because of CPU or blocking on a database), that time
+                                will show up in this view attributed to that request.  This makes it very straightforward to
+                                quickly understand why requests take a long amount of real time to complete.
+                                You will only get this view if you collected data with the
+                                <a href="#ThreadTimeCheckbox">Thread </a>events.
+                                See <a href="#BlockedTimeInvestigation">
+                                    Blocked time investigation
+                                </a> for more details
+                                on blocked time investigations.
+                            </li>
+                            <li>
+                                <strong><a id="ASP.NETThreadTime(withTasks)Stacks">ASP.NET Thread Time (with Tasks) Stacks</a></strong> -
+                                This view is basically a fusion of the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a> view
+                                and the <a href="#ThreadTime(withTasks)Stacks">Thread Time (With Tasks) Stacks</a> view.
+                                Like the ASP.NET THread time view it shows you time grouped by request.  But like the Thread Time with
+                                Tasks view if that request causes other tasks to be spawned as part of its operation those are
+                                considered 'children' of that request and show up in the call stack that way.   This is
+                                the most useful view if you are investigating a ASP.NET server that uses async as part of its implementation.
+                            </li>
+                            <li>
+                                <strong><a id="ASP.NETThreadTime(CPUONLY)Stacks">ASP.NET Thread Time Stacks (CPU ONLY)</a></strong> -
+                                Like the   <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks</a> view except
+                                that it indicates that only CPU sampling (not thread time events) were captured so the
+                                view is impoverished.  It only shows you the CPU time spent (but won't tell you where the
+                                request spent time blocked on networking/file/locks).   To get the full view the /threadTime
+                                option must be enabled during data collection.
+                            </li>
+                        </ul> <!-- END OF OLD GROUP -->
+                    </li>
+                    <li>
+                        <strong><a id="PerfViewAspNetStats">ASP .NET View</a></strong> - Show when ASP.NET
+                        events were collected (these are collected by default or when the &#39;ASP.NET&#39;
+                        provider is specified as a &#39;Additional Providers&#39;).&nbsp;&nbsp; This view
+                        give you an &#39;overall view of what your ASP.NET server processes were doing,
+                        including what the average throughput was, the average request response time, and
+                        other basic information to quickly assess your server&#39;s basic health.  You typically
+                        drill into more detail by using the <a href="#ASP.NETThreadTimeStacks">ASP.NET Thread Time Stacks view</a>.
+                    </li>
+                    <li>
+                        <strong><a id="PerfViewIisStats">IIS Stats</a></strong> - Show when IIS ETW
+                        events were collected (these are collected when the <b>IIS</b> checkbox or the <b>IIS:WWW Server</b>
+                        provider is specified as a &#39;Additional Providers&#39;).&nbsp;&nbsp; This view
+                        give you an &#39;overall view of request processing at an IIS level by analyzing IIS ETW events,
+                        provides you details on the Top 100 slowest requests in the trace, gives you details of the failed requests in the trace
+                        and allows you to drill down further on the modules causing slowness or failures. You can click on the individual requests
+                        to see all events fired in the IIS pipeline for that very request. This view helps you diagnose slow performance issues in
+                        various stages of request processing in the IIS pipeline.
+                    </li>
+                    <li>
+                        <strong><a id="ETLEventSource">Events View</a></strong> - The Events view is the
+                        &#39;raw&#39; view of the ETW events.&nbsp;&nbsp; Basically and ETL file is simply
+                        a sequence of event payloads where each event consists of an event type, a timestamp,
+                        an process and thread that generated the event, and additional event-specific information.&nbsp;&nbsp;
+                        The Event viewer allows this information to be filtered (by time, process, and text),
+                        and viewed in Excel.&nbsp;&nbsp;
+                    </li>
+                </ul>
         <li>
             <strong><a id="CSVPerfViewData">XPERF CSV files (.CSV, .CSVZ files)</a></strong>
             - PerfView has the capability to read the .CSV files that XPERF can generated from
@@ -4024,6 +4030,11 @@
             Note that this only affect processes that start AFTER data collection has started.
             You can however start tracing, start the program then start and stop collection
             (mulitple times) afterward to capture different scenenarios.
+            <p> 
+                The events from this option are called 'CallEnter' and show up in the 'AnyStacks' 
+                view in the 'Advanced Group' view.  Most likely you will want to filter out all other
+                events in the view by selecting the CallEnter node -> right click -> Include Item.  
+            </p>
             <p>
                 This option tends to have a VERY noticeable impact on performance (5X or more).
                 If the application runs alot of code (common), it may be necessary to make
@@ -4870,6 +4881,24 @@
         to find the next instance of the pattern.&nbsp; When all the text has been searched
         the app will beep.&nbsp; The next F3 after that starts over.
         &nbsp;
+    </p>
+    <!--  ****************** -->
+    <h3>
+        <a id="Preset">Presets (Save Grouping and Folding Preferences)</a>
+    </h3>
+    <p>
+        <a href="#GroupPatsTextBox">GroupPats</a>, <a href="#FoldPatsTextBox">FoldPats</a> and <a href="#FoldPercentTextBox">Fold%</a>
+        text boxes can be edited to contain custom patterns. These patterns combined together can be saved as a named preset.
+    </p>
+    <p>
+        In order to create new preset use Preset -&gt; Save As Preset menu item. If <a href="#GroupPatsTextBox">GroupPats</a>
+        text box contains description (enclosed in []), then the description will be offered as a preset name.
+        Otherwise automatically generated name will be suggested.
+    </p>
+    <p>
+        All created presets are added to the Preset menu for all active PerfView windows. Select menu item in the Preset menu
+        to activate a preset. The name of the preset will be shown in [] in the <a href="#GroupPatsTextBox">GroupPats</a> textbox.
+        Presets are saved across sessions. Preset -&gt; Manage Presets menu item allows editing existing presets as well as deleting them.
     </p>
     <hr />
     <!--  ********************************** -->

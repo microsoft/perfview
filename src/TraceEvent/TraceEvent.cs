@@ -1198,6 +1198,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (ProviderGuid != Guid.Empty && !ProviderName.Contains(ProviderGuid.ToString()))
                 XmlAttrib(sb, "ProviderGuid", ProviderGuid);
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
+            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber); 
             sb.AppendLine().Append(" ");
 
 #if !DOTNET_V35
@@ -3046,6 +3047,7 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 Debug.WriteLine("Error: exception thrown during callback.  Will be swallowed!");
                 Debug.WriteLine("Exception: " + e.Message);
+                Debug.Assert(false, "Thrown exception " + e.GetType().Name +  " '" + e.Message + "'");
             }
 #endif
         }

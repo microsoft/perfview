@@ -152,11 +152,14 @@
 
   <!-- ******************* Signing Support *********************** -->
   <ItemGroup>
+    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageSpec)'==''">
     <FilesToSign Include="$(TargetPath)">
         <Authenticode>Microsoft</Authenticode>
         <StrongName>StrongName</StrongName>
     </FilesToSign>
-    <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
   </ItemGroup>
 
   <!-- .NET Strong Name Signing -->
@@ -166,5 +169,4 @@
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-
 </Project>

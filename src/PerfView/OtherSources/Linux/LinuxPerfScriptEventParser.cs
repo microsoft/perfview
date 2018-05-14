@@ -285,7 +285,7 @@ namespace Diagnostics.Tracing.StackSources
         {
             this.EventCount = 0;
             this.Pattern = null;
-            this.MaxSamples = 50000;
+            this.MaxSamples = long.MaxValue;
         }
 
         private IEnumerable<LinuxEvent> NextEvent(Regex regex, FastStream source)

@@ -199,7 +199,6 @@
                     <MenuItem Header="Parent _Window" Click="DoOpenParent"/>
                     <MenuItem Header="Set Symbol _Path" Click="DoSetSymbolPath" ToolTip="Sets the locations to look for symbolic information (PDB files)."/>
                     <MenuItem Header="Set Source Path" Click="DoSetSourcePath" ToolTip="Sets the locations to look for source code."/>
-                    <MenuItem Header="Set As Default Grouping/Folding" Click="DoSetDefaultGroupingFolding" ToolTip="Sets the default values of Group Patterns and Fold Patterns and % to the current values."/>
                     <MenuItem Header="Save" Command="{x:Static src:StackWindow.SaveCommand}" />
                     <MenuItem Header="Save View As" Command="{x:Static src:StackWindow.SaveAsCommand}" />
                     <MenuItem Header="_Close" Click="DoClose"/>
@@ -208,6 +207,7 @@
                 </MenuItem>
                 <MenuItem Name="DiffMenu" Header="_Diff"/>
                 <MenuItem Name="RegressionMenu" Header="_Regression"/>
+                <MenuItem Name="PresetMenu" Header="_Preset"/>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_Help on Stack Viewer" Command="Help" CommandParameter="StackViewerQuickStart" />
                     <MenuItem Header="_Users Guide" Command="{x:Static src:StackWindow.UsersGuideCommand}" CommandParameter="UsersGuide"/>

@@ -31,7 +31,11 @@ namespace TraceEventTests
         protected void PrepareTestData()
         {
             Assert.True(Directory.Exists(TestDataDir));
+            TestDataDir = Path.GetFullPath(TestDataDir);
+            Assert.True(Directory.Exists(OriginalBaselineDir));
+            OriginalBaselineDir = Path.GetFullPath(OriginalBaselineDir);
 
+            // This is atomic because this method is synchronized.  
             if (!s_fileUnzipped)
             {
                 Directory.CreateDirectory(UnZippedDataDir);
@@ -54,9 +58,19 @@ namespace TraceEventTests
 
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
-
             Directory.CreateDirectory(OutputDir);
             Output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            Assert.True(Directory.Exists(OutputDir));
+
+            Directory.CreateDirectory(NewBaselineDir);
+            NewBaselineDir = Path.GetFullPath(NewBaselineDir);
+            Output.WriteLine(string.Format("NewBaselineDir: {0}", NewBaselineDir));
+
+            Assert.True(Directory.Exists(UnZippedDataDir));
+            UnZippedDataDir = Path.GetFullPath(UnZippedDataDir);
+            Assert.True(Directory.Exists(BaseOutputDir));
+            BaseOutputDir = Path.GetFullPath(BaseOutputDir);
+            Assert.True(Directory.Exists(NewBaselineDir));
         }
     }
 }

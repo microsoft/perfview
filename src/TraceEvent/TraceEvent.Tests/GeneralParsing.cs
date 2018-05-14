@@ -11,8 +11,6 @@ namespace TraceEventTests
 {
     public class GeneralParsing : EtlTestBase
     {
-        static string NewBaselineDir = @".\newBaseLines";
-
         public GeneralParsing(ITestOutputHelper output)
             : base(output)
         {
@@ -32,12 +30,13 @@ namespace TraceEventTests
 
             string etlFilePath = Path.Combine(UnZippedDataDir, etlFileName);
             bool anyFailure = false;
-            Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", Path.GetFullPath(etlFilePath)));
+            Output.WriteLine(string.Format("Processing the file {0}, Making ETLX and scanning.", etlFilePath));
             string eltxFilePath = Path.ChangeExtension(etlFilePath, ".etlx");
 
             // See if we have a cooresponding baseline file 
-            string baselineName = Path.Combine(Path.GetFullPath(TestDataDir),
+            string baselineName = Path.Combine(TestDataDir,
                 Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
+
             string newBaselineName = Path.Combine(NewBaselineDir,
                 Path.GetFileNameWithoutExtension(etlFilePath) + ".baseline.txt");
             string outputName = Path.Combine(OutputDir,
@@ -50,13 +49,11 @@ namespace TraceEventTests
             else
             {
                 Output.WriteLine("WARNING: No baseline file");
-                Output.WriteLine(string.Format("    ETL FILE: {0}", Path.GetFullPath(etlFilePath)));
+                Output.WriteLine(string.Format("    ETL FILE: {0}", etlFilePath));
                 Output.WriteLine(string.Format("    NonExistant Baseline File: {0}", baselineName));
                 Output.WriteLine("To Create a baseline file");
-                Output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"",
-                    Path.GetFullPath(newBaselineName),
-                    Path.GetFullPath(baselineName)
-                    ));
+                Output.WriteLine(string.Format("    copy /y \"{0}\" \"{1}\"", newBaselineName, baselineName));
+                anyFailure = true;
             }
 
             bool unexpectedUnknownEvent = false;
@@ -135,10 +132,7 @@ namespace TraceEventTests
                         Output.WriteLine(string.Format("   Actual  : {0}", parsedEvent));
 
                         Output.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                        Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                            Path.GetFullPath(newBaselineName),
-                            Path.GetFullPath(baselineName)
-                            ));
+                        Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"", newBaselineName, baselineName));
                     }
                 }
 
@@ -187,30 +181,22 @@ namespace TraceEventTests
                 if (!histogramMismatch && expectedistogramLine != histogramLine)
                 {
                     histogramMismatch = true;
+                    anyFailure = true;
                     Output.WriteLine(string.Format("ERROR: File {0}: histogram not equal on  {1}", etlFilePath, lineNum));
                     Output.WriteLine(string.Format("   Expected: {0}", expectedistogramLine));
                     Output.WriteLine(string.Format("   Actual  : {0}", histogramLine));
 
                     Output.WriteLine("To Compare output and baseline (baseline is SECOND)");
-                    Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"",
-                        Path.GetFullPath(newBaselineName),
-                        Path.GetFullPath(baselineName)
-                        ));
-                    anyFailure = true;
+                    Output.WriteLine(string.Format("    windiff \"{0}\" \"{1}\"", newBaselineName, baselineName));
                 }
             }
 
             outputFile.Close();
-            if (mismatchCount > 0)
+            if (anyFailure)
             {
-                Output.WriteLine(string.Format("ERROR: File {0}: had {1} mismatches", etlFilePath, mismatchCount));
-
-                if (!Directory.Exists(NewBaselineDir))
-                    Directory.CreateDirectory(NewBaselineDir);
+                Output.WriteLine(string.Format("ERROR: File {0}: had a failure {1} mismatches. histogram mismatches: {2}", etlFilePath, mismatchCount, histogramMismatch));
                 File.Copy(outputName, newBaselineName, true);
-
-                Output.WriteLine(string.Format("To Update: xcopy /s \"{0}\" \"{1}\"", 
-                    Path.GetFullPath(NewBaselineDir), OriginalBaselineDir));
+                Output.WriteLine(string.Format("To Update: xcopy /s \"{0}\" \"{1}\"", NewBaselineDir, OriginalBaselineDir));
             }
 
             // If this fires, check the output for the TraceLine just before it for more details.  

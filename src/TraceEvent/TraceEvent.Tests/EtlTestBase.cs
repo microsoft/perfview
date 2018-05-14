@@ -61,15 +61,32 @@ namespace TraceEventTests
             s_fileUnzipped = true;
         }
 
+        [MethodImpl(MethodImplOptions.Synchronized)]
         protected void PrepareTestData()
         {
+            Assert.True(Directory.Exists(TestDataDir));
+            TestDataDir = Path.GetFullPath(TestDataDir);
+            Assert.True(Directory.Exists(OriginalBaselineDir));
+            OriginalBaselineDir = Path.GetFullPath(OriginalBaselineDir);
+
+            // This is all atomic because this method is synchronized.  
             Assert.True(Directory.Exists(TestDataDir));
             UnzipDataFiles();
             if (Directory.Exists(OutputDir))
                 Directory.Delete(OutputDir, true);
-
             Directory.CreateDirectory(OutputDir);
-            Output.WriteLine(string.Format("OutputDir: {0}", Path.GetFullPath(OutputDir)));
+            Output.WriteLine(string.Format("OutputDir: {0}", OutputDir));
+            Assert.True(Path.GetFullPath(OutputDir) == OutputDir);
+
+            Directory.CreateDirectory(NewBaselineDir);
+            NewBaselineDir = Path.GetFullPath(NewBaselineDir);
+            Output.WriteLine(string.Format("NewBaselineDir: {0}", NewBaselineDir));
+
+            Assert.True(Directory.Exists(UnZippedDataDir));
+            UnZippedDataDir = Path.GetFullPath(UnZippedDataDir);
+            Assert.True(Directory.Exists(BaseOutputDir));
+            BaseOutputDir = Path.GetFullPath(BaseOutputDir);
+            Assert.True(Directory.Exists(NewBaselineDir));
         }
     }
 }
