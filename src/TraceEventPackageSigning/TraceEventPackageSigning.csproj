@@ -19,7 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FilesToSign Include="$(OutDir)\*.nupkg">
+    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.$(TraceEventVersion).nupkg">
+       <Authenticode>Nuget</Authenticode>
+    </FilesToSign>
+    <FilesToSign Include="$(OutDir)\Microsoft.Diagnostics.Tracing.TraceEvent.$(TraceEventVersion).symbols.nupkg">
        <Authenticode>Nuget</Authenticode>
     </FilesToSign>
   </ItemGroup>
