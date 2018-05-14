@@ -173,6 +173,8 @@
   <!-- Nuget Package Signing -->
   <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'!=''" AfterTargets="Pack">
     <ItemGroup>
+       <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
+
       <PackagesToSign Include="$(OutputPath)*.nupkg">
         <Authenticode>NuGet</Authenticode>
       </PackagesToSign>
