@@ -169,19 +169,4 @@
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\MSFT.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-
-  <!-- Nuget Package Signing -->
-  <Target Name="SignPackages" Condition="'$(SIGNING_BUILD)'!=''" AfterTargets="Pack">
-    <ItemGroup>
-       <PackageReference Include="MicroBuild.Core" Version="0.2.0" />
-
-      <PackagesToSign Include="$(OutputPath)*.nupkg">
-        <Authenticode>NuGet</Authenticode>
-      </PackagesToSign>
-    </ItemGroup> 
-
-    <Message Importance="High" Text="Attempting to sign package '%(PackagesToSign.Identity)'" /> 
-    <SignFiles Files="@(PackagesToSign)" Type="$(SignType)" BinariesDirectory="$(OutputPath)" IntermediatesDirectory="$(IntermediateOutputPath)" ESRPSigning="$(ESRPSigning)" UseBearerToken="$(UseBearerToken)"
-               Condition=" '@(PackagesToSign)' != '' " />
-  </Target>
 </Project>
