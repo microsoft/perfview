@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- This project is here only to support MicroBuild Signing of the Microsoft.Diagnostics.Tracing.TraceEvent package.
+       In theory this could be rold into the TraceEvent.csproj project, but after several attempts  (the last
+       of which were that the fact that we build for several frameworks, makes it so that it can't seem to load
+       the microbuild package from the PackageReference element propertly.   If we care we can make another
+       attempt, but this should get us unblocked.  
+    -->
+
+  <PropertyGroup>
+    <OutputType>library</OutputType>
+    <TargetFramework>net45</TargetFramework>
+  </PropertyGroup>
+   
+  <ItemGroup>
+    <None Include="..\TraceEvent\bin\$(Configuration)\*.nupkg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FilesToSign Include="$(OutDir)\*.nupkg">
+       <Authenticode>Nuget</Authenticode>
+    </FilesToSign>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Message Importance="High" Text="Done with attempt to Sign '%(FilesToSign.Identity)'" /> 
+  </Target>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" /> 
+  </Target>
+</Project>
