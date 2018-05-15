@@ -8213,6 +8213,9 @@ table {
 
                 // Get all ETL files
                 AddEtlResourcesAsChildren(worker, dhPackage);
+
+                // Extract the symbols contained in the package
+                ExtractSymbolResources(worker, dhPackage);
             }
 
             return null;
@@ -8244,6 +8247,26 @@ table {
         }
 
         /// <summary>
+        /// Gets a new local path for the given resource, extracting it from the .diagsession if required
+        /// </summary>
+        /// <param name="packageFilePath">The file path to the package</param>
+        /// <param name="package">The diagsession package object (opened from the file path)</param>
+        /// <param name="resource">The diagsession resource object</param>
+        /// <returns>The full local path to the resource</returns>
+        private static string GetLocalDirPath(string packageFilePath, DhPackage package, ResourceInfo resource)
+        {
+            string localDirName = resource.Name;
+            string localDirPath = CacheFiles.FindFile(packageFilePath, "_" + localDirName);
+
+            if (!Directory.Exists(localDirPath))
+            {
+                package.ExtractResourceToPath(ref resource.ResourceId, localDirPath);
+            }
+
+            return localDirPath;
+        }
+
+        /// <summary>
         /// Adds child files from resources in the DhPackage
         /// </summary>
         private void AddResourcesAsChildren(StatusBar worker, DhPackage dhPackage, string resourceIdentity, string fileExtension, Func<string/*localFileName*/, PerfViewFile> getPerfViewFile)
@@ -8263,6 +8286,59 @@ table {
                 this.Children.Add(perfViewFile);
 
                 worker.Log("Loaded " + resource.Name + ". Loading ...");
+            }
+        }
+
+        /// <summary>
+        /// Extract symbols from the DhPackage
+        /// </summary>
+        private void ExtractSymbolResources(StatusBar worker, DhPackage dhPackage)
+        {
+            string symbolCachePath = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+
+            try
+            {
+                ResourceInfo[] resources;
+                dhPackage.GetResourceInformationByType("DiagnosticsHub.Resource.SymbolCache", out resources);
+
+                foreach (var resource in resources)
+                {
+                    string localDirPath = GetLocalDirPath(FilePath, dhPackage, resource);
+
+                    worker.Log("Found '" + resource.ResourceId + "' resource '" + resource.Name + "'. Loading ...");
+
+                    foreach (var subPath in Directory.EnumerateDirectories(localDirPath))
+                    {
+                        // The directories contained in the symbol cache resource _are_ in the symbol cache format
+                        // which means directories are in the form of /<file.ext>/<hash>/file.ext so in this case
+                        // we use the GetFileName API since it will consider the dictory name a file name.
+                        var targetDir = Path.Combine(symbolCachePath, Path.GetFileName(subPath));
+
+                        if (!Directory.Exists(targetDir))
+                        {
+                            Directory.Move(subPath, targetDir);
+                        }
+                        else
+                        {
+                            // The directory exists, so we must merge the two cache directories
+                            foreach (var symbolVersionDir in Directory.EnumerateDirectories(subPath))
+                            {
+                                var targetVersionDir = Path.Combine(targetDir, Path.GetFileName(symbolVersionDir));
+                                if (!Directory.Exists(targetVersionDir))
+                                {
+                                    Directory.Move(symbolVersionDir, targetVersionDir);
+                                }
+                            }
+                        }
+                    }
+
+                    // Clean up the extracted symbol cache
+                    Directory.Delete(localDirPath, true);
+                }
+            }
+            catch (Exception e)
+            {
+                worker.Log($"Failed to extract symbols from {Path.GetFileName(FilePath)} ... (Exception: {e.Message})");
             }
         }
 
