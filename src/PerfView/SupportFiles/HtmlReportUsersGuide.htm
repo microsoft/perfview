@@ -165,7 +165,7 @@
         <li>The &#39;Trigger&#39; column of each method indicates whether the compilation happened in the foreground.</li>
     </ol>
     <p><strong>What can go wrong with background JIT compilation.</strong></p>
-    <p>It your program has used SetProfileRoot and StartProfile, but JIT compilation (as shown in the JITStats view) does not show any or very little background JIT compilation, there are several issues that may be responsible.&nbsp;&nbsp; Fundamentally a important design goal was to insure that background JIT compilation did not change the behavior of the program under <strong>any circumstances</strong>.&nbsp;&nbsp;&nbsp; Unfortunately, it means that the algorithm tends to bail out quickly.&nbsp;&nbsp; In particular</p>
+    <p>If your program has used SetProfileRoot and StartProfile, but JIT compilation (as shown in the JITStats view) does not show any or very little background JIT compilation, there are several issues that may be responsible.&nbsp;&nbsp; Fundamentally a important design goal was to insure that background JIT compilation did not change the behavior of the program under <strong>any circumstances</strong>.&nbsp;&nbsp;&nbsp; Unfortunately, it means that the algorithm tends to bail out quickly.&nbsp;&nbsp; In particular</p>
     <ol>
         <li>When modules are loaded, a module constructor <strong>could</strong> be called, which <strong>could</strong> have side effects (even this is very rare).&nbsp;&nbsp; Thus if background JITTing would cause a module to be loaded earlier than it otherwise would be, it <strong>could</strong> expose (rare) bugs.&nbsp; Because background JIT had a very high compatibility bar, it protects against this by taging each method with the EXACT modules that were loaded at the time of JIT compilation, and only allows them to be background JIT compiled after all those EXACT modules were also loaded in the current run.&nbsp;&nbsp; Thus if you have a scenario (say a menu opening), where sometimes more or fewer modules are loaded (because previous user actions caused different modules to load), then background JIT may not work well.&nbsp; </li>
         <li>If you have attached a callback to the <strong>System.Assembly.ModuleResolve</strong> event, it is possible (although extremely unlikely and very bad design) that background JITing could have side effects if the ModuleResolve callback returned different answers on the second run than it did on the first run.&nbsp;&nbsp; Because of this background JIT compilation is suspended the first time an ModuleResolve callback in invoked.</li>
@@ -196,7 +196,7 @@
         <li>The method could be jitted by a foreground thread just prior to its first execution, in which case it is contained in the 'Foreground' group</li>
         <li>If the Background JIT feature is enabled the method's usage may have been accurately predicted and jitted in advance on the Multicore JIT background thread, in which case it is accounted for in the 'Multicore JIT Background' group</li>
     </ol>
-    <p>In the individual method listings the column 'Trigger' contains the value 'TC' for each Tier1 background recompilation due to Tiered compilation</p>
+    <p>In the individual method listings the column 'Trigger' contains the value 'TC' for each Tier1 background recompilation due to Tiered Compilation</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>
     <p>&nbsp;</p>

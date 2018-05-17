@@ -472,7 +472,7 @@ namespace Stats
                 stats.TotalBGJITStats = new JITStats();
                 foreach (TraceJittedMethod _method in mang.JIT.Methods)
                 {
-                    stats.TotalBGJITStats.Update(_method);
+                    stats.TotalBGJITStats.AddMethodToStatistics(_method);
                 }
             }
 
@@ -487,7 +487,7 @@ namespace Stats
                         stats.TotalModuleStats.Add(_method.ModuleILPath, new JITStats());
                     }
                     JITStats moduleStats = stats.TotalModuleStats[_method.ModuleILPath];
-                    moduleStats.Update(_method);
+                    moduleStats.AddMethodToStatistics(_method);
                 }
             }
 

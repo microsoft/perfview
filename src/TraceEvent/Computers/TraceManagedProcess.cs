@@ -3412,29 +3412,29 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public HashSet<string> SymbolsMissing = new HashSet<string>();
 
         /// <summary>
-        /// Update method statistics
+        /// Aggregate a method to be included in the statistics
         /// </summary>
-        /// <param name="_method"></param>
-        public void Update(TraceJittedMethod _method)
+        /// <param name="method"></param>
+        public void AddMethodToStatistics(TraceJittedMethod method)
         {
             Count++;
-            TotalCpuTimeMSec += _method.CompileCpuTimeMSec;
-            TotalILSize += _method.ILSize;
-            TotalNativeSize += _method.NativeSize;
-            if (_method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
+            TotalCpuTimeMSec += method.CompileCpuTimeMSec;
+            TotalILSize += method.ILSize;
+            TotalNativeSize += method.NativeSize;
+            if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
             {
                 CountBackgroundMultiCoreJit++;
-                TotalBackgroundMultiCoreJitCpuTimeMSec += _method.CompileCpuTimeMSec;
+                TotalBackgroundMultiCoreJitCpuTimeMSec += method.CompileCpuTimeMSec;
             }
-            else if (_method.CompilationThreadKind == CompilationThreadKind.TieredCompilationBackground)
+            else if (method.CompilationThreadKind == CompilationThreadKind.TieredCompilationBackground)
             {
                 CountBackgroundTieredCompilation++;
-                TotalBackgroundTieredCompilationCpuTimeMSec += _method.CompileCpuTimeMSec;
+                TotalBackgroundTieredCompilationCpuTimeMSec += method.CompileCpuTimeMSec;
             }
-            else if(_method.CompilationThreadKind == CompilationThreadKind.Foreground)
+            else if(method.CompilationThreadKind == CompilationThreadKind.Foreground)
             {
                 CountForeground++;
-                TotalForegroundCpuTimeMSec += _method.CompileCpuTimeMSec;
+                TotalForegroundCpuTimeMSec += method.CompileCpuTimeMSec;
             }
         }
 
@@ -3479,7 +3479,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
 
             _method.Completed++;
-            stats.JIT.m_stats.Update(_method);
+            stats.JIT.m_stats.AddMethodToStatistics(_method);
 
             return _method;
         }
@@ -3678,6 +3678,17 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// Thread id where JIT'd
         /// </summary>
         public int ThreadID;
+        /// <summary>
+        /// Indication of if it was JIT'd in the background
+        /// </summary>
+        [Obsolete("Use CompilationThreadKind")]
+        public bool IsBackground
+        {
+            get
+            {
+                return CompilationThreadKind != CompilationThreadKind.Foreground;
+            }
+        }
         /// <summary>
         /// Indication of if it was JIT'd in the background and why
         /// </summary>
