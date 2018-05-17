@@ -1131,7 +1131,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         var stats = currentManagedProcess(data);
 
                         bool createdNewMethod;
-                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, JITStats.GetMethodName(data), data.MethodID, out createdNewMethod);
+                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, JITStats.GetMethodName(data), data.MethodID, (int)data.ReJITID, out createdNewMethod);
 
                         // fire event - but only once
                         if (createdNewMethod && stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
@@ -1147,7 +1147,7 @@ namespace Microsoft.Diagnostics.Tracing.Analysis
                         var stats = currentManagedProcess(data);
 
                         bool createdNewMethod;
-                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, "", data.MethodID, out createdNewMethod);
+                        var _method = JITStats.MethodComplete(stats, data, data.MethodSize, data.ModuleID, "", data.MethodID, 0, out createdNewMethod);
 
                         // fire event - but only once
                         if (createdNewMethod && stats.JITMethodStart != null) stats.JITMethodStart(process, _method);
@@ -3322,6 +3322,30 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// </summary>
         public double TotalCpuTimeMSec;
         /// <summary>
+        /// Number of methods JITT'd by foreground threads just prior to execution
+        /// </summary>
+        public long CountForeground;
+        /// <summary>
+        /// Total time spent compiling methods on foreground threads
+        /// </summary>
+        public double TotalForegroundCpuTimeMSec;
+        /// <summary>
+        /// Number of methods JITT'd by the multicore JIT background threads
+        /// </summary>
+        public long CountBackgroundMultiCoreJit;
+        /// <summary>
+        /// Total time spent compiling methods on background threads for multicore JIT
+        /// </summary>
+        public double TotalBackgroundMultiCoreJitCpuTimeMSec;
+        /// <summary>
+        /// Number of methods JITT'd by the tiered compilation background threads
+        /// </summary>
+        public long CountBackgroundTieredCompilation;
+        /// <summary>
+        /// Total time spent compiling methods on background threads for tiered compilation
+        /// </summary>
+        public double TotalBackgroundTieredCompilationCpuTimeMSec;
+        /// <summary>
         /// Total IL size for all JITT'd methods
         /// </summary>
         public long TotalILSize;
@@ -3388,22 +3412,37 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public HashSet<string> SymbolsMissing = new HashSet<string>();
 
         /// <summary>
-        /// Update method statistics
+        /// Aggregate a method to be included in the statistics
         /// </summary>
-        /// <param name="_method"></param>
-        internal void Update(TraceJittedMethod _method)
+        /// <param name="method"></param>
+        public void AddMethodToStatistics(TraceJittedMethod method)
         {
             Count++;
-            TotalCpuTimeMSec += _method.CompileCpuTimeMSec;
-            TotalILSize += _method.ILSize;
-            TotalNativeSize += _method.NativeSize;
+            TotalCpuTimeMSec += method.CompileCpuTimeMSec;
+            TotalILSize += method.ILSize;
+            TotalNativeSize += method.NativeSize;
+            if (method.CompilationThreadKind == CompilationThreadKind.MulticoreJitBackground)
+            {
+                CountBackgroundMultiCoreJit++;
+                TotalBackgroundMultiCoreJitCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
+            else if (method.CompilationThreadKind == CompilationThreadKind.TieredCompilationBackground)
+            {
+                CountBackgroundTieredCompilation++;
+                TotalBackgroundTieredCompilationCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
+            else if(method.CompilationThreadKind == CompilationThreadKind.Foreground)
+            {
+                CountForeground++;
+                TotalForegroundCpuTimeMSec += method.CompileCpuTimeMSec;
+            }
         }
 
         #region private
         /// <summary>
         /// Legacgy
         /// </summary>
-        internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, TraceEvent data, int methodNativeSize, long moduleID, string methodName, long methodID, out bool createdNewMethod)
+        internal static TraceJittedMethod MethodComplete(TraceLoadedDotNetRuntime stats, TraceEvent data, int methodNativeSize, long moduleID, string methodName, long methodID, int rejitID, out bool createdNewMethod)
         {
             TraceJittedMethod _method = stats.JIT.m_stats.FindIncompleteJitEventOnThread(stats, data.ThreadID);
             createdNewMethod = false;
@@ -3426,8 +3465,21 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
             }
             _method.NativeSize = methodNativeSize;
             _method.CompileCpuTimeMSec = data.TimeStampRelativeMSec - _method.StartTimeMSec;
+            _method.VersionID = rejitID;
+
+            if(stats.JIT.Stats().BackgroundJitThread != 0 && _method.ThreadID == stats.JIT.Stats().BackgroundJitThread)
+            {
+                _method.CompilationThreadKind = CompilationThreadKind.MulticoreJitBackground;
+            }
+            else
+            {            
+                // This isn't always true, but we don't yet have enough data to distinguish tiered compilation from other causes of versioned compilation (ie profiler ReJIT)
+                _method.CompilationThreadKind = _method.IsDefaultVersion ? CompilationThreadKind.Foreground : CompilationThreadKind.TieredCompilationBackground;
+
+            }
+
             _method.Completed++;
-            stats.JIT.m_stats.Update(_method);
+            stats.JIT.m_stats.AddMethodToStatistics(_method);
 
             return _method;
         }
@@ -3586,6 +3638,13 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         public string Reason;
     }
 
+    public enum CompilationThreadKind
+    {
+        Foreground,
+        MulticoreJitBackground,
+        TieredCompilationBackground
+    }
+
     /// <summary>
     /// Per method information
     /// </summary>
@@ -3622,7 +3681,18 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// <summary>
         /// Indication of if it was JIT'd in the background
         /// </summary>
-        public bool IsBackGround;
+        [Obsolete("Use CompilationThreadKind")]
+        public bool IsBackground
+        {
+            get
+            {
+                return CompilationThreadKind != CompilationThreadKind.Foreground;
+            }
+        }
+        /// <summary>
+        /// Indication of if it was JIT'd in the background and why
+        /// </summary>
+        public CompilationThreadKind CompilationThreadKind;
         /// <summary>
         /// Amount of time the method was forcasted to JIT
         /// </summary>
@@ -3664,6 +3734,14 @@ namespace Microsoft.Diagnostics.Tracing.Analysis.JIT
         /// Number of cpu samples for this method
         /// </summary>
         public double RunCpuTimeMSec;
+
+        /// <summary>
+        /// The version id that is created by the runtime code versioning feature. This is an incrementing counter that starts at 0 for each method.
+        /// The ETW events historically name this as the ReJITID event parameter in the payload, but we have now co-opted its usage.
+        /// </summary>
+        public int VersionID;
+
+        public bool IsDefaultVersion { get { return VersionID == 0; } }
 
         #region private
         /// <summary>
