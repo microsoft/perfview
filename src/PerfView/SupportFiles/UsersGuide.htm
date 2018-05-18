@@ -2019,7 +2019,7 @@
     </p>
     <ul>
         <li>
-            <strong>The Local Symbol Directory</strong> - The default symbol cache (%TEMP%\symbols),
+            <strong>The Local Symbol Directory</strong> - The default symbol cache (%TEMP%\SymbolCache),
             works well if either all the symbol files (PDBs) needed to understand the .ETL file
             are on the default symbol server, or the ETL file will not be shared with other
             users.&nbsp; However if you desire to place the ETL file on a file share so that
@@ -7516,12 +7516,12 @@
     </p>
     <ul>
         <li>
-            _NT_SYMBOL_PATH=SRV*%TEMP%\symbols*http://msdl.microsoft.com/download/symbols
+            _NT_SYMBOL_PATH=SRV*%TEMP%\SymbolCache*http://msdl.microsoft.com/download/symbols
         </li>
     </ul>
     <p>
         This says is to look up PDB at the standard Microsoft PDB server http://msdl.microsoft.com/download/symbols
-        and cache them locally in %TEMP%\symbols.&nbsp;&nbsp; Thus by default you can always
+        and cache them locally in %TEMP%\SymbolCache.&nbsp;&nbsp; Thus by default you can always
         find the PDBs for standard Microsoft DLLs.&nbsp;
     </p>
     <p>
@@ -7550,7 +7550,7 @@
             Syntax of the form SRV*<strong><em>localPath</em></strong>*<strong><em>symbolServer</em></strong>.&nbsp;&nbsp;
             Where <strong><em>localPath</em></strong> is optional and specifies a location on
             your local machine to cache files fetched from the symbol server.&nbsp;&nbsp; Using
-            this is always recommended and PerfView will add it for you (using %TEMP%\symbols)
+            this is always recommended and PerfView will add it for you (using %TEMP%\SymbolCache)
             if you don&#39;t enter it.&nbsp;&nbsp;&nbsp; <strong><em>SymbolServer</em></strong>
             is the name of the symbol server.&nbsp; It is either a UNC file name (e.g. \\MySymbols\symbols)
             or a URL (e.g. http://msdl.microsoft.com/download/symbols)
@@ -8142,14 +8142,25 @@
     </li>
     -->
         <li>
+            Version 2.0.15 5/14/18
+            <ul>
+                <li> Changed the default symbol cache to %TEMP%\SymbolCache.   This aligns PerfView with what Visual Studio does 
+                which saves some space.  Because PerfView remembers the symbol path from invokation to invokation, this change
+                will not affect existing places where PerfView is run.  To use the new cache locaiton you need to use the
+                file -> Clear User Config, and restart.  But mostly you should not care.  
+                </li>
+
+            </ul>
+        </li>
+        <li>
             Version 2.0.2 1/12/18
             <ul>
                 <li>
-                    Added support for SourceLink for 'Goto Source' functionality.   
+                    Added support for SourceLink for 'Goto Source' functionality.
                     Symlink is a technique of finding source files by placing a mapping from built time file name to URL into the
-                    symbol file so that the source code can be fetched by url at debug/profiling time.  
+                    symbol file so that the source code can be fetched by url at debug/profiling time.
                     .NET Core annotates all its symbol files this way.   The result is that 'Goto Source' on .NET Core assemblies
-                    (that is the framework and ASP.NET) just work in PerfView (it will bring up the relevant source).  
+                    (that is the framework and ASP.NET) just work in PerfView (it will bring up the relevant source).
                 </li>
 
             </ul>
