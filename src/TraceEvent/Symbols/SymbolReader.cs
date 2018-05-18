@@ -354,7 +354,7 @@ namespace Microsoft.Diagnostics.Symbols
         }
         /// <summary>
         /// Where symbols are downloaded if needed.   Derived from symbol path.  It is the first
-        /// directory on the local machine in a SRV*DIR*LOC spec, and %TEMP%\Symbols otherwise.  
+        /// directory on the local machine in a SRV*DIR*LOC spec, and %TEMP%\SymbolCache otherwise.  
         /// </summary>
         public string SymbolCacheDirectory
         {
