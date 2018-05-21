@@ -1421,10 +1421,15 @@ ProcessCollectedData()
 		    WriteStatus "...FINISHED"
 
 		else
-	            LogAppend "crossgen not found, skipping native image map generation."
-		    WriteStatus "...SKIPPED"
+        if [ "$buildidList" != "" ]
+        then
+            LogAppend "crossgen not found, skipping native image map generation."
+            WriteStatus "...SKIPPED"
             WriteWarning "Crossgen not found.  Framework symbols will be unavailable."
             WriteWarning "See https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/linux-performance-tracing.md#resolving-framework-symbols for details."
+        else
+            WriteWarning "libcoreclr.so not found in perf data. Please verify that your .NET Core process is running and consuming CPU."
+        fi
 		fi
 
 		IFS=$OLDIFS
