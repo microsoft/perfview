@@ -82,8 +82,9 @@ namespace Microsoft.Diagnostics.Tracing
             if (!m_traceLoggingEventMap.TryGetValue(key, out ret))
             {
                 // No then get the next ID for this particular provider (and allocate a new one)
-                m_nextTraceLoggingIDForProvider.TryGetValue(eventRecord->EventHeader.ProviderId, out ret);
-                ret++;
+                if (!m_nextTraceLoggingIDForProvider.TryGetValue(eventRecord->EventHeader.ProviderId, out ret))
+                    ret = 0xFF00;   // We arbitrarily pick the 'high end' of the event ID range to stay way from user-allocated IDs.   However we also avoid the last 256 ID just in case.  
+                --ret;
                 m_nextTraceLoggingIDForProvider[eventRecord->EventHeader.ProviderId] = ret;
                 if (ret == 0) // means we wrapped around.  We have no more!
                     throw new InvalidOperationException("Error ran out of TraceLogging Event IDs for provider " + eventRecord->EventHeader.ProviderId);
