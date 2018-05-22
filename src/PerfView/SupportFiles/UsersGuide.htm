@@ -8142,12 +8142,24 @@
     </li>
     -->
         <li>
+            Version 2.0.16 5/22/18
+            <ul>
+                <li>
+                    Fix bug when parsing 'mixed' EventSources that use both Manifest events and self-describing events
+                    in the same EventSource, leading to the self-descdribing events being parsed as (garbled) manifest
+                    events.    This can happen when using EventCounters pretty easily since EventCounters use the self-decribing
+                    format.  
+                </li>
+            </ul>
+        </li>
+        <li>
             Version 2.0.15 5/14/18
             <ul>
-                <li> Changed the default symbol cache to %TEMP%\SymbolCache.   This aligns PerfView with what Visual Studio does 
-                which saves some space.  Because PerfView remembers the symbol path from invokation to invokation, this change
-                will not affect existing places where PerfView is run.  To use the new cache locaiton you need to use the
-                file -> Clear User Config, and restart.  But mostly you should not care.  
+                <li> 
+                    Changed the default symbol cache to %TEMP%\SymbolCache.   This aligns PerfView with what Visual Studio does
+                    which saves some space.  Because PerfView remembers the symbol path from invokation to invokation, this change
+                    will not affect existing places where PerfView is run.  To use the new cache locaiton you need to use the
+                    file -> Clear User Config, and restart.  But mostly you should not care.
                 </li>
 
             </ul>
