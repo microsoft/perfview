@@ -2710,18 +2710,24 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         {
             if (!condition)
             {
+                TextWriter writer = null;
+                if (options != null)
+                    writer = options.ConversionLog;
+                bool debugBuild = false;
+#if DEBUG
+                debugBuild = true;
+#endif
+                if (writer == null && !debugBuild)
+                    return;
+
                 Trace.Write("WARNING: ");
                 string prefix = "";
                 if (data != null)
                 {
                     prefix = "Time: " + data.TimeStampRelativeMSec.ToString("f4").PadLeft(12) + " PID: " + data.ProcessID.ToString().PadLeft(4) + ": ";
-                    Trace.Write(prefix);
+                    Debug.Write(prefix);
                 }
                 Trace.WriteLine(message);
-
-                TextWriter writer = null;
-                if (options != null)
-                    writer = options.ConversionLog;
 
                 if (writer == null)
                     return;
