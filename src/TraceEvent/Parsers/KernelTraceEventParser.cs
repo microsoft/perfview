@@ -648,6 +648,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 4, ThreadTaskGuid);
             }
         }
+        public event Action<ThreadSetNameTraceData> ThreadSetName
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                source.RegisterEventTemplate(new ThreadSetNameTraceData(value, 0xFFFF, 2, "Thread", ThreadTaskGuid, 72, "SetName", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 72, ThreadTaskGuid);
+            }
+        }
         public event Action<CSwitchTraceData> ThreadCSwitch
         {
             add
@@ -2866,7 +2878,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[193];
+                var templates = new TraceEvent[194];
                 templates[0] = new EventTraceHeaderTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 0, "Header", ProviderGuid, ProviderName, null);
                 templates[1] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 5, "Extension", ProviderGuid, ProviderName, null);
                 templates[2] = new HeaderExtensionTraceData(null, 0xFFFF, 0, "EventTrace", EventTraceTaskGuid, 32, "EndExtension", ProviderGuid, ProviderName, null);
@@ -3065,6 +3077,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[190] = new ObjectTypeNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 37, "TypeDCEnd", ProviderGuid, ProviderName, null);
                 templates[191] = new ObjectNameTraceData(null, 0xFFFF, 0, "Object", ObjectTaskGuid, 39, "HandleDCEnd", ProviderGuid, ProviderName, null);
                 templates[192] = new ISRTraceData(null, 0xFFFF, 11, "PerfInfo", PerfInfoTaskGuid, 50, "ISR", ProviderGuid, ProviderName, null);
+                templates[193] = new ThreadSetNameTraceData(null, 0xFFFF, 2, "Thread", ThreadTaskGuid, 72, "SetName", ProviderGuid, ProviderName);
                 s_templates = templates;
             }
             foreach (var template in s_templates)
@@ -4094,6 +4107,12 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         // Not present in V2 public int WaitMode { get { if (Version >= 1) return GetByteAt(HostOffset(32, 6)); return 0; } }
         public Address TebBase { get { if (Version >= 2) return GetAddressAt(HostOffset(32, 6)); return 0; } }
         public int SubProcessTag { get { if (Version >= 2) return GetInt32At(HostOffset(36, 7)); return 0; } }
+        public int BasePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(41, 7)) return GetByteAt(HostOffset(40, 7)); return 0; } }
+        public int PagePriority { get { if (Version >= 3 && EventDataLength >= HostOffset(42, 7)) return GetByteAt(HostOffset(41, 7)); return 0; } }
+        public int IoPriority { get { if (Version >= 3 && EventDataLength >= HostOffset(43, 7)) return GetByteAt(HostOffset(42, 7)); return 0; } }
+        public int ThreadFlags { get { if (Version >= 3 && EventDataLength >= HostOffset(44, 7)) return GetByteAt(HostOffset(43, 7)); return 0; } }
+        public string ThreadName { get { if (Version >= 3 && EventDataLength >= HostOffset(46, 7)) return GetUnicodeStringAt(HostOffset(44, 7)); return ""; } }
+
         // The thread that started this thread (only in start events 
         public int ParentThreadID
         {
@@ -4139,6 +4158,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
         public override StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
+            XmlAttrib(sb, "ThreadName", ThreadName);
             XmlAttribHex(sb, "StackBase", StackBase);
             XmlAttribHex(sb, "StackLimit", StackLimit);
             XmlAttribHex(sb, "UserStackBase", UserStackBase);
@@ -4158,7 +4178,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "StackBase", "StackLimit", "UserStackBase", "UserStackLimit", "StartAddr", "Win32StartAddr", "TebBase", "SubProcessTag", "ParentThreadID", "ParentProcessID" };
+                    payloadNames = new string[] { "StackBase", "StackLimit", "UserStackBase", "UserStackLimit",
+                        "StartAddr", "Win32StartAddr", "TebBase", "SubProcessTag",
+                        "BasePriority", "PagePriority", "IoPriority", "ThreadFlags", "ThreadName", "ParentThreadID", "ParentProcessID"
+                    };
                 return payloadNames;
             }
         }
@@ -4184,8 +4207,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
                 case 7:
                     return SubProcessTag;
                 case 8:
-                    return ParentThreadID;
+                    return BasePriority;
                 case 9:
+                    return PagePriority;
+                case 10:
+                    return IoPriority;
+                case 11:
+                    return ThreadFlags;
+                case 12:
+                    return ThreadName;
+                case 13:
+                    return ParentThreadID;
+                case 14:
                     return ParentProcessID;
                 default:
                     Debug.Assert(false, "Bad field index");
@@ -4228,6 +4261,72 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Kernel
             // callBack(this, Win32StartAddr);
             return true;
         }
+        #endregion
+    }
+
+    public sealed class ThreadSetNameTraceData : TraceEvent
+    {
+        // public int ProcessID { get { return GetInt32At(0); } }
+        // public int ThreadID { get { return GetInt32At(4); } }
+
+        public string ThreadName {  get { return GetUnicodeStringAt(8);  } }
+
+        #region Private
+        internal ThreadSetNameTraceData(Action<ThreadSetNameTraceData> action, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.NeedsFixup = true;
+            this.Action = action;
+        }
+        protected internal override Delegate Target
+        {
+            get { return Action; }
+            set { Action = (Action<ThreadSetNameTraceData>)value; }
+        }
+        protected internal override void Dispatch()
+        {
+            Debug.Assert(!(Version >= 2 && EventDataLength >= SkipUnicodeString(8)));
+            Action(this);
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "ThreadName", ThreadName);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "ThreadName" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return ThreadName;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<ThreadSetNameTraceData> Action;
+
+        internal unsafe override void FixupData()
+        {
+            Debug.Assert(eventRecord->EventHeader.ProcessId == -1);
+            eventRecord->EventHeader.ProcessId = GetInt32At(0);
+            eventRecord->EventHeader.ThreadId = GetInt32At(4);
+        }
+
         #endregion
     }
     public sealed class CSwitchTraceData : TraceEvent

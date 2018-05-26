@@ -1041,12 +1041,22 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     }
                 }
             };
+
+            kernelParser.ThreadSetName += delegate(ThreadSetNameTraceData data)
+            {
+                CategorizeThread(data, data.ThreadName);
+            };
+
             kernelParser.ThreadEndGroup += delegate (ThreadTraceData data)
             {
                 TraceProcess process = this.processes.GetOrCreateProcess(data.ProcessID, data.TimeStampQPC);
                 TraceThread thread = this.Threads.GetOrCreateThread(data.ThreadID, data.TimeStampQPC, process);
                 if (thread.process == null)
                     thread.process = process;
+
+                if (data.ThreadName.Length > 0)
+                    CategorizeThread(data, data.ThreadName);
+
                 Debug.Assert(thread.process == process, "Different events disagree on the process object!");
                 DebugWarn(thread.endTimeQPC == long.MaxValue || thread.ThreadID == 0,
                     "Thread end on a terminated thread " + data.ThreadID + " that ended at " + QPCTimeToRelMSec(thread.endTimeQPC), data);
@@ -1491,7 +1501,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     process.isServerGC = true;
                     foreach (var thread in process.Threads)
                     {
-                        if (process.markThreadsInGC.ContainsKey(thread.ThreadID))
+                        if (thread.threadInfo == null && process.markThreadsInGC.ContainsKey(thread.ThreadID))
                         {
                             thread.threadInfo = ".NET Server GC Thread(" + process.markThreadsInGC[thread.ThreadID] + ")";
                         }
