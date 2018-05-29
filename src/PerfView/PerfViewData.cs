@@ -463,11 +463,40 @@ namespace PerfView
             return Path.Combine(dirName, fileName);
         }
 
+        /// <summary>
+        /// for extensions of PerfView that don't have access to the GuiApp.MainWindow
+        /// </summary>
+        /// <param name="doAfter"></param>
+        public void Open(Action doAfter = null)
+        {
+            this.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
             if (!m_opened)
             {
-                worker.StartWork("Opening " + Name, delegate ()
+                if (worker.IsWorking)
+                {
+                    Action<Action> continuation = OpenImpl(parentWindow, worker);
+
+                    m_opened = true;
+                    FirePropertyChanged("Children");
+
+                    IsExpanded = true;
+                    var defaultSource = GetStackSource();
+                    if (defaultSource != null)
+                        defaultSource.IsSelected = true;
+
+                    if (continuation != null)
+                        continuation(doAfter);
+                    else
+                        doAfter?.Invoke();
+                }
+                else
+                {
+
+                    worker.StartWork("Opening " + Name, delegate ()
                 {
                     Action<Action> continuation = OpenImpl(parentWindow, worker);
                     ExecuteOnOpenCommand(worker);
@@ -487,6 +516,7 @@ namespace PerfView
                             doAfter?.Invoke();
                     });
                 });
+                }
             }
             else
             {
