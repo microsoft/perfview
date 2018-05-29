@@ -665,7 +665,7 @@ InitializeLog()
 
 	# The system information.
 	LogAppend 'Machine info: '  `uname -a`
-	LogAppend 'perf version:'   `perf --version`
+	LogAppend 'perf version:'   `$perfcmd --version`
 	LogAppend 'LTTng version: ' `lttng --version`
 	LogAppend
 }
@@ -758,6 +758,20 @@ EnsureRoot()
 DiscoverCommands()
 {
 	perfcmd=`GetCommandFullPath "perf"`
+	if [ "$(IsDebian)" == "1" ]
+	then
+		# Test perf to see if it successfully runs or fails because it doesn't match the kernel version.
+		$perfcmd --version > /dev/null 2>&1
+		if [ "$?" == "1" ]
+		then
+			perf49Cmd=`GetCommandFullPath "perf_4.9"`
+			$perf49Cmd --version > /dev/null 2>&1
+			if [ "$?" == "0" ]
+			then
+				perfcmd=$perf49Cmd
+			fi
+		fi
+	fi
 	lttngcmd=`GetCommandFullPath "lttng"`
 	zipcmd=`GetCommandFullPath "zip"`
 	unzipcmd=`GetCommandFullPath "unzip"`
@@ -796,6 +810,9 @@ IsDebian()
 	local debian=0
 	local uname=`uname -a`
 	if [[ $uname =~ .*Debian.* ]]
+	then
+		debian=1
+	elif [ -f /etc/debian_version ]
 	then
 		debian=1
 	fi
@@ -1041,7 +1058,7 @@ EnsurePrereqsInstalled()
 	fi
 
 	# If LTTng is installed, consider using it.
-	if [ "$lttngcmd" == "" ]
+	if [ "$lttngcmd" == "" ] && [ "$useLTTng" == "1" ]
 	then
 		RedText
 		echo "LTTng not installed."
@@ -1830,11 +1847,11 @@ then
 	exit 0
 fi
 
-# Initialize the log.
-InitializeLog
-
 # Ensure prerequisites are installed.
 EnsurePrereqsInstalled
+
+# Initialize the log.
+InitializeLog
 
 # Process arguments.
 ProcessArguments $@
