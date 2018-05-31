@@ -463,14 +463,24 @@ namespace PerfView
             return Path.Combine(dirName, fileName);
         }
 
+        /// <summary>
+        /// for extensions of PerfView that don't have access to the GuiApp.MainWindow
+        /// </summary>
+        /// <param name="doAfter"></param>
+        public void Open(Action doAfter = null)
+        {
+            this.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
+        }
+
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
             if (!m_opened)
             {
-                worker.StartWork("Opening " + Name, delegate ()
+                    worker.StartWork("Opening " + Name, delegate ()
                 {
                     Action<Action> continuation = OpenImpl(parentWindow, worker);
                     ExecuteOnOpenCommand(worker);
+
                     worker.EndWork(delegate ()
                     {
                         m_opened = true;
@@ -744,7 +754,13 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[group classes]            {%!*}.%(->class $1;{%!*}::->class $1");
         }
 
-        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread) 
+        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread)
+        // public is consumed by external extensions
+        public void OpenWithoutWorker()
+        {
+            OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+        }
+
         internal void OpenWithoutWorker(Window parentWindow, StatusBar worker)
         {
             OpenImpl(parentWindow, worker);
