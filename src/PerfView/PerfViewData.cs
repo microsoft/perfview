@@ -476,30 +476,11 @@ namespace PerfView
         {
             if (!m_opened)
             {
-                if (worker.IsWorking)
-                {
-                    Action<Action> continuation = OpenImpl(parentWindow, worker);
-
-                    m_opened = true;
-                    FirePropertyChanged("Children");
-
-                    IsExpanded = true;
-                    var defaultSource = GetStackSource();
-                    if (defaultSource != null)
-                        defaultSource.IsSelected = true;
-
-                    if (continuation != null)
-                        continuation(doAfter);
-                    else
-                        doAfter?.Invoke();
-                }
-                else
-                {
-
                     worker.StartWork("Opening " + Name, delegate ()
                 {
                     Action<Action> continuation = OpenImpl(parentWindow, worker);
                     ExecuteOnOpenCommand(worker);
+
                     worker.EndWork(delegate ()
                     {
                         m_opened = true;
@@ -516,7 +497,6 @@ namespace PerfView
                             doAfter?.Invoke();
                     });
                 });
-                }
             }
             else
             {
@@ -774,7 +754,13 @@ namespace PerfView
             stackWindow.GroupRegExTextBox.Items.Add(@"[group classes]            {%!*}.%(->class $1;{%!*}::->class $1");
         }
 
-        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread) 
+        // ideally this function would not exist.  Does the open logic on the current thread (likely GUI thread)
+        // public is consumed by external extensions
+        public void OpenWithoutWorker()
+        {
+            OpenWithoutWorker(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar);
+        }
+
         internal void OpenWithoutWorker(Window parentWindow, StatusBar worker)
         {
             OpenImpl(parentWindow, worker);
