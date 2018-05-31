@@ -989,7 +989,7 @@ namespace Microsoft.Diagnostics.Tracing
                         var asStruct = elem as IDictionary<string, object>;
                         if (asStruct != null && asStruct.Count == 2 && asStruct.ContainsKey("Key") && asStruct.ContainsKey("Value"))
                             sb.Append(asStruct["Key"]).Append("->\"").Append(asStruct["Value"]).Append("\"");
-                        else 
+                        else
                             sb.Append(elem.ToString());
                     }
                     sb.Append(']');
@@ -1198,7 +1198,7 @@ namespace Microsoft.Diagnostics.Tracing
             if (ProviderGuid != Guid.Empty && !ProviderName.Contains(ProviderGuid.ToString()))
                 XmlAttrib(sb, "ProviderGuid", ProviderGuid);
             XmlAttrib(sb, "ClassicProvider", IsClassicProvider);
-            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber); 
+            XmlAttrib(sb, "ProcessorNumber", ProcessorNumber);
             sb.AppendLine().Append(" ");
 
 #if !DOTNET_V35
@@ -1763,7 +1763,7 @@ namespace Microsoft.Diagnostics.Tracing
                 size = bytes.Length;
             StringWriter sw = new StringWriter();
             DumpBytes(bytes, size, sw, "");
-    
+
             return sw.ToString();
         }
 
@@ -2872,7 +2872,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             // Make a new dispatcher which calls the hook with the old dispatcher.   
             Action<TraceEvent> oldUserDefinedDispatch = userDefinedDispatch ?? DoDispatch;
-            userDefinedDispatch = delegate(TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
+            userDefinedDispatch = delegate (TraceEvent anEvent) { hook(anEvent, oldUserDefinedDispatch); };
         }
 
         #region protected
@@ -3014,33 +3014,33 @@ namespace Microsoft.Diagnostics.Tracing
             try
             {
 #endif
-                if (anEvent.Target != null)
-                    anEvent.Dispatch();
-                if (anEvent.next != null)
+            if (anEvent.Target != null)
+                anEvent.Dispatch();
+            if (anEvent.next != null)
+            {
+                TraceEvent nextEvent = anEvent;
+                for (; ; )
                 {
-                    TraceEvent nextEvent = anEvent;
-                    for (;;)
+                    nextEvent = nextEvent.next;
+                    if (nextEvent == null)
+                        break;
+                    if (nextEvent.Target != null)
                     {
-                        nextEvent = nextEvent.next;
-                        if (nextEvent == null)
-                            break;
-                        if (nextEvent.Target != null)
-                        {
-                            nextEvent.eventRecord = anEvent.eventRecord;
-                            nextEvent.userData = anEvent.userData;
-                            nextEvent.eventIndex = anEvent.eventIndex;
-                            nextEvent.Dispatch();
-                            nextEvent.eventRecord = null;
-                        }
+                        nextEvent.eventRecord = anEvent.eventRecord;
+                        nextEvent.userData = anEvent.userData;
+                        nextEvent.eventIndex = anEvent.eventIndex;
+                        nextEvent.Dispatch();
+                        nextEvent.eventRecord = null;
                     }
                 }
-                if (AllEvents != null)
-                {
-                    if (unhandledEventTemplate == anEvent)
-                        unhandledEventTemplate.PrepForCallback();
-                    AllEvents(anEvent);
-                }
-                anEvent.eventRecord = null;
+            }
+            if (AllEvents != null)
+            {
+                if (unhandledEventTemplate == anEvent)
+                    unhandledEventTemplate.PrepForCallback();
+                AllEvents(anEvent);
+            }
+            anEvent.eventRecord = null;
 #if DEBUG
             }
             catch (Exception e)
@@ -3081,7 +3081,7 @@ namespace Microsoft.Diagnostics.Tracing
             // inlined, and is replicated in TraceEventDispatcher.Insert
             int* guidPtr = (int*)&eventRecord->EventHeader.ProviderId;   // This is the taskGuid for Classic events.  
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3172,7 +3172,7 @@ namespace Microsoft.Diagnostics.Tracing
             ushort eventID = (ushort)eventID_;
             int* guidPtr = (int*)&guid;
             int hash = (*guidPtr + ((ushort)eventID) * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3306,7 +3306,7 @@ namespace Microsoft.Diagnostics.Tracing
             int* guidPtr = (int*)&eventGuid;
             int hash = (*guidPtr + (int)eventID * 9) & templatesLengthMask;
             TemplateEntry* entry;
-            for (;;)
+            for (; ; )
             {
                 entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;
@@ -3473,7 +3473,7 @@ namespace Microsoft.Diagnostics.Tracing
 
             int* guidPtr = (int*)&providerGuid;
             int hash = (*guidPtr + eventID * 9) & templatesLengthMask;
-            for (;;)
+            for (; ; )
             {
                 TemplateEntry* entry = &templatesInfo[hash];
                 int* tableGuidPtr = (int*)&entry->eventGuid;

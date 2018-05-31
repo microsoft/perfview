@@ -1042,7 +1042,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 }
             };
 
-            kernelParser.ThreadSetName += delegate(ThreadSetNameTraceData data)
+            kernelParser.ThreadSetName += delegate (ThreadSetNameTraceData data)
             {
                 CategorizeThread(data, data.ThreadName);
             };
@@ -2560,6 +2560,9 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
         /// </summary>
         private void CategorizeThread(TraceEvent data, string category)
         {
+            if (string.IsNullOrWhiteSpace(category))
+                return;
+
             var thread = Threads.GetThread(data.ThreadID, data.TimeStampQPC);
             if (thread == null)
                 return;
@@ -3686,7 +3689,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
 
         internal TraceLogEventSource realTimeSource;               // used to call back in real time case.  
         private Queue<QueueEntry> realTimeQueue;                   // We have to wait a bit to hook up stacks, so we put real time entries in the queue
-        
+
         // These can ONLY be accessed by the thread calling RealTimeEventSource.Process();
         private Timer realTimeFlushTimer;                          // Insures the queue gets flushed even if there are no incoming events.  
         private Func<TraceEvent, ulong, bool> fnAddAddressToCodeAddressMap; // PERF: Cached delegate to avoid allocations in inner loop
@@ -5923,7 +5926,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 if (0 < suffixPos)
                 {
                     // We treat the image as the native path
-                    nativeModulePath = ilModulePath;                    
+                    nativeModulePath = ilModulePath;
                     // and make up a dummy IL path.  
                     ilModulePath = ilModulePath.Substring(0, suffixPos) + ".il" + ilModulePath.Substring(suffixPos);
                 }

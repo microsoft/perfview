@@ -463,40 +463,31 @@ namespace PerfView
             return Path.Combine(dirName, fileName);
         }
 
-        /// <summary>
-        /// for extensions of PerfView that don't have access to the GuiApp.MainWindow
-        /// </summary>
-        /// <param name="doAfter"></param>
-        public void Open(Action doAfter = null)
-        {
-            this.Open(GuiApp.MainWindow, GuiApp.MainWindow.StatusBar, doAfter);
-        }
-
         public override void Open(Window parentWindow, StatusBar worker, Action doAfter = null)
         {
             if (!m_opened)
             {
-                    worker.StartWork("Opening " + Name, delegate ()
+                worker.StartWork("Opening " + Name, delegate ()
+            {
+                Action<Action> continuation = OpenImpl(parentWindow, worker);
+                ExecuteOnOpenCommand(worker);
+
+                worker.EndWork(delegate ()
                 {
-                    Action<Action> continuation = OpenImpl(parentWindow, worker);
-                    ExecuteOnOpenCommand(worker);
+                    m_opened = true;
+                    FirePropertyChanged("Children");
 
-                    worker.EndWork(delegate ()
-                    {
-                        m_opened = true;
-                        FirePropertyChanged("Children");
+                    IsExpanded = true;
+                    var defaultSource = GetStackSource();
+                    if (defaultSource != null)
+                        defaultSource.IsSelected = true;
 
-                        IsExpanded = true;
-                        var defaultSource = GetStackSource();
-                        if (defaultSource != null)
-                            defaultSource.IsSelected = true;
-
-                        if (continuation != null)
-                            continuation(doAfter);
-                        else
-                            doAfter?.Invoke();
-                    });
+                    if (continuation != null)
+                        continuation(doAfter);
+                    else
+                        doAfter?.Invoke();
                 });
+            });
             }
             else
             {
@@ -4852,6 +4843,7 @@ table {
                                     var asPMCCounter = data as PMCCounterProfTraceData;
                                     if (asPMCCounter != null)
                                     {
+                                        stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("EventData Processor " + asPMCCounter.ProcessorNumber), stackIndex);
                                         var source = "EventData ProfileSourceID " + asPMCCounter.ProfileSource;
                                         var sourceIndex = stackSource.Interner.FrameIntern(source);
                                         stackIndex = stackSource.Interner.CallStackIntern(sourceIndex, stackIndex);
