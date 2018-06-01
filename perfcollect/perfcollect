@@ -769,7 +769,14 @@ DiscoverCommands()
 			if [ "$?" == "0" ]
 			then
 				perfcmd=$perf49Cmd
-			fi
+		    else
+                perf316Cmd=`GetCommandFullPath "perf_3.16"`
+                $perf316Cmd --version > /dev/null 2>&1
+                if [ "$?" == "0" ]
+                then
+                    perfcmd=$perf316Cmd
+                fi
+            fi
 		fi
 	fi
 	lttngcmd=`GetCommandFullPath "lttng"`
@@ -826,7 +833,7 @@ InstallPerf_Debian()
 	EnsureRoot
 
 	# Install zip and perf.
-	apt-get install zip linux-tools
+	apt-get install zip linux-tools binutils
 }
 
 IsSUSE()
