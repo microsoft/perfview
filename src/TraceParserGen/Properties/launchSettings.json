@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TraceParserGen": {
+      "commandName": "Project",
+      "commandLineArgs": "Microsoft-Windows-DxgKrnl.manifest.xml"
+    }
+  }
+}
