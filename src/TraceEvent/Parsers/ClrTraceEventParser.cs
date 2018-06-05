@@ -1200,6 +1200,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 source.UnregisterEventTemplate(value, 50, AppDomainResourceManagementTaskGuid);
             }
         }
+        public event Action<EventSourceTraceData> EventSourceEvent
+        {
+            add
+            {
+                // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
+                RegisterTemplate(new EventSourceTraceData(value, 270, 0, "EventSourceEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName));
+            }
+            remove
+            {
+                source.UnregisterEventTemplate(value, 270, ProviderGuid);
+            }
+        }
         public event Action<ThreadTerminatedOrTransitionTraceData> AppDomainResourceManagementThreadTerminated
         {
             add
@@ -1708,7 +1720,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
         {
             if (s_templates == null)
             {
-                var templates = new TraceEvent[116];
+                var templates = new TraceEvent[117];
                 templates[0] = new GCStartTraceData(null, 1, 1, "GC", GCTaskGuid, 1, "Start", ProviderGuid, ProviderName);
                 templates[1] = new GCEndTraceData(null, 2, 1, "GC", GCTaskGuid, 2, "Stop", ProviderGuid, ProviderName);
                 templates[2] = new GCNoUserDataTraceData(null, 3, 1, "GC", GCTaskGuid, 132, "RestartEEStop", ProviderGuid, ProviderName);
@@ -1829,6 +1841,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
                 templates[113] = new ThreadPoolIOWorkTraceData(null, 65, 23, "ThreadPool", ThreadPoolTaskGuid, 15, "IOPack", ProviderGuid, ProviderName);
                 templates[114] = new MethodJitInliningFailedAnsiTraceData(null, 186, 9, "Method", MethodTaskGuid, 84, "InliningFailedAnsi", ProviderGuid, ProviderName);
                 templates[115] = new MethodJitTailCallFailedAnsiTraceData(null, 189, 9, "Method", MethodTaskGuid, 86, "TailCallFailedAnsi", ProviderGuid, ProviderName);
+                templates[116] = new EventSourceTraceData(null, 270, 0, "EventSourceEvent", Guid.Empty, 0, "", ProviderGuid, ProviderName);
+
 
                 s_templates = templates;
             }
@@ -8487,6 +8501,76 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Clr
         private event Action<AppDomainLoadUnloadTraceData> Action;
         #endregion
     }
+    public sealed class EventSourceTraceData : TraceEvent
+    {
+        public int EventID { get { return GetInt32At(0); } }
+        public string Name { get { return GetUnicodeStringAt(4); } }
+        public string EventSourceName { get { return GetUnicodeStringAt(SkipUnicodeString(4)); } }
+        public string Payload { get { return GetUnicodeStringAt(SkipUnicodeString(SkipUnicodeString(4))); } }
+
+        #region Private
+        internal EventSourceTraceData(Action<EventSourceTraceData> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
+            : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
+        {
+            this.m_target = target;
+        }
+        protected internal override void Dispatch()
+        {
+            m_target(this);
+        }
+        protected internal override void Validate()
+        {
+            Debug.Assert(!(Version == 0 && EventDataLength != SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(4)))));
+            Debug.Assert(!(Version > 0 && EventDataLength < SkipUnicodeString(SkipUnicodeString(SkipUnicodeString(4)))));
+        }
+        protected internal override Delegate Target
+        {
+            get { return m_target; }
+            set { m_target = (Action<EventSourceTraceData>)value; }
+        }
+        public override StringBuilder ToXml(StringBuilder sb)
+        {
+            Prefix(sb);
+            XmlAttrib(sb, "EventID", EventID);
+            XmlAttrib(sb, "Name", Name);
+            XmlAttrib(sb, "EventSourceName", EventSourceName);
+            XmlAttrib(sb, "Payload", Payload);
+            sb.Append("/>");
+            return sb;
+        }
+
+        public override string[] PayloadNames
+        {
+            get
+            {
+                if (payloadNames == null)
+                    payloadNames = new string[] { "EventID", "Name", "EventSourceName", "Payload" };
+                return payloadNames;
+            }
+        }
+
+        public override object PayloadValue(int index)
+        {
+            switch (index)
+            {
+                case 0:
+                    return EventID;
+                case 1:
+                    return Name;
+                case 2:
+                    return EventSourceName;
+                case 3:
+                    return Payload;
+                default:
+                    Debug.Assert(false, "Bad field index");
+                    return null;
+            }
+        }
+
+        private event Action<EventSourceTraceData> m_target;
+        #endregion
+    }
+
     public sealed class StrongNameVerificationTraceData : TraceEvent
     {
         public int VerificationFlags { get { return GetInt32At(0); } }

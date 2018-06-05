@@ -684,6 +684,10 @@ namespace PerfView
             {
                 return ((ETLPerfViewData)dataFile).TryGetTraceLog();
             }
+            if (dataFile is LinuxPerfViewData)
+            {
+                return ((LinuxPerfViewData)dataFile).TryGetTraceLog();
+            }
             else if (dataFile is EventPipePerfViewData)
             {
                 return ((EventPipePerfViewData)dataFile).TryGetTraceLog();
