@@ -7534,6 +7534,8 @@ table {
             return m_traceLog;
         }
 
+        public TraceLog TryGetTraceLog() { return m_traceLog; }
+
         #region Private
         TraceLog m_traceLog;
         bool m_noTraceLogInfo;
