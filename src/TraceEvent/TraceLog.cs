@@ -1135,7 +1135,7 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                 hasPdbInfo = true;
 
                 // The ImageIDDbgID_RSDS may be after the ImageLoad
-                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && lastTraceModuleFile.pdbName == null)
+                if (lastTraceModuleFile != null && lastTraceModuleFileQPC == data.TimeStampQPC && string.IsNullOrEmpty(lastTraceModuleFile.pdbName))
                 {
                     lastTraceModuleFile.pdbName = data.PdbFileName;
                     lastTraceModuleFile.pdbSignature = data.GuidSig;
