@@ -69,7 +69,7 @@ to your new nuget packages.    This this change is only for local testing (at th
 
 Nuget now requires that all Microsoft owned packages use nuget's package signing in order
 to be uploaded.  You also need special permission to upload them.   See 
-[Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmaster#Updating-PerfView-Nuget-Support-Packages) for more on this.   
+[Internal Docs](https://devdiv.visualstudio.com/DevDiv/_git/perfview?_a=preview&path=%2Fdocumentation%2Finternal%2FinternalDocs.md&version=GBmaster) for more on this.   
 
 It does take a few minutes after uploading for the packages to become visible.   Be patient.  
 
