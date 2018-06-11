@@ -3918,27 +3918,27 @@
             event to be logged every time a page fault or other primitive memory operation is
             done. A stack is logged for this event.
             Adding the Memory flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Memory)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="FileIOCheckBox">File I/O Checkbox </a></strong>- Causes a kernel
             event to be logged every time a file operation is initiated. Many of these may not
             cause disk events because the data is in the file system cache.
             Adding the FileIOInit flags to the '/kernelEvents' option (e.g. /kernelEvents=default+FileIOInit)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="RegistryCheckBox">Registry CheckBox</a></strong> - Causes a kernel
             event to be logged every time a registry operation is performed.
             Adding the Registry flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Registry)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="VirtualAllocCheckBox">Virtual Alloc CheckBox</a></strong> - Causes
             a kernel event to be logged every time a VirtualAlloc call (primitive memory allocation)
             is make (or freed). See <a href="#UnmanagedMemoryAnalysis">Unmanaged Memory Analysis</a> for more.
             Adding the VirtualAlloc+VAMap flags to the '/kernelEvents' option (e.g. /kernelEvents=default+VirtualAlloc+VAMap)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="IISCheckbox">IIS CheckBox</a></strong> - Causes detailed logging for
@@ -3953,7 +3953,7 @@
             kernel events associated with memory usage (called Reference Set) to be logged.
             This information can be viewed in the 'Any Stacks' view (look for PageAccess).
             Adding the ReferenceSet flags to the '/kernelEvents' option (e.g. /kernelEvents=default+ReferenceSet)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="HandleCheckBox">Handle CheckBox</a></strong> - Causes detailed
@@ -3961,7 +3961,7 @@
             You will see 'Windows Kernel/Object/*' events to show up in the 'events' view as well
             as activating the <a href="#WindowsHandleRefCountStacks">Windows OS Handle Stacks</a> view (as well as the 'Any Stacks' view).
             Adding the Handle flags to the '/kernelEvents' option (e.g. /kernelEvents=default+Handle)
-            can be used to turn this option on the comand line.
+            can be used to turn this option on the command line.
         </li>
         <li>
             The <strong><a id="DotNetAllocCheckBox">.NET Alloc CheckBox</a></strong> - Causes
@@ -4138,7 +4138,7 @@
         </li>
         <li>
             The <strong><a id="AdditionalProvidersTextBox">Additional Providers TextBox</a></strong>
-            - A comma separated list of specifications for providers cooresponding to the /providers comand line qualifier.
+            - A comma separated list of specifications for providers cooresponding to the /providers command line qualifier.
             This can be specified by using the ... button or by the following textual specification.  Each provider
             specification has the general form of <em>provider</em>:<em>keywords</em>:<em>level:values</em>.
             The keyword and levels specification parts are optional and can be omitted (For example <em>provider:keywords:values</em> or <em>provider:values </em>is legal).&nbsp;&nbsp;
