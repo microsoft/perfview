@@ -67,13 +67,6 @@ namespace PerfViewExtensibility
             {
                 if (reader.Name == "StackWindowGuiState")
                     guiState.ReadFromXml(reader);
-                // These are here for backward compatibility.  Can remove after 2013.  
-                else if (reader.Name == "FilterXml")
-                    guiState.FilterGuiState.ReadFromXml(reader);
-                else if (reader.Name == "Log")
-                    guiState.Log = reader.ReadElementContentAsString().Trim();
-                else if (reader.Name == "Notes")
-                    guiState.Notes = reader.ReadElementContentAsString().Trim();
                 else
                     reader.Skip();
             });
@@ -1837,16 +1830,16 @@ namespace PerfViewModel
                     switch (reader.Name)
                     {
                         case "Start":
-                            Start.ReadFromXml(reader);
+                            Start.ReadFromXml(reader, true);
                             break;
                         case "End":
-                            End.ReadFromXml(reader);
+                            End.ReadFromXml(reader, true);
                             break;
                         case "GroupRegEx":
                             GroupRegEx.ReadFromXml(reader);
                             break;
                         case "FoldPercent":
-                            FoldPercent.ReadFromXml(reader);
+                            FoldPercent.ReadFromXml(reader, true);
                             break;
                         case "FoldRegEx":
                             FoldRegEx.ReadFromXml(reader);
@@ -1919,7 +1912,7 @@ namespace PerfViewModel
         ///      </History>
         ///    </MyName>
         /// </summary>
-        public TextBoxGuiState ReadFromXml(XmlReader reader)
+        public TextBoxGuiState ReadFromXml(XmlReader reader, bool validateIsDouble = false)
         {
             if (reader.NodeType != XmlNodeType.Element)
                 throw new InvalidOperationException("Must advance to XML element (e.g. call ReadToDescendant)");
@@ -1944,6 +1937,11 @@ namespace PerfViewModel
                 else if (!reader.Read())
                     break;
             }
+
+            // If the value needs to be a syntatically correct double check and set to emp
+            double dummy;
+            if (validateIsDouble && Value != null && !double.TryParse(Value, out dummy))
+                Value = null;
             return this;
         }
         public void WriteToXml(string name, XmlWriter writer)
