@@ -2343,8 +2343,19 @@
                                 view is designed to track down issues with unreasonable memory growth in the .NET
                                 garbage collector because of excessive pinning of GC objects (which make it hard
                                 for the GC to do its job).   By default this view shows you how many objects are pinned
-                                at each GC.  However if you turn on the 'clrPrivate' provider, it will give additional
-                                information on the exact stack where the pinning took place for each such pinned object.
+                                at each GC.  However if you turn on the 'clrPrivate' provider with stacks (clrPrivate:@StacksEnabled=true), 
+                                it will give additional information on the exact stack where the pinning took place 
+                                for each such pinned object.   If you instead collect with /DotNetAlloc (very expensive)
+                                it will tell you were the pinned object was allocated (if it has not scrolled off the
+                                circular buffer)
+                            </li>
+                            <li>
+                                <strong><a id="PinningStacks">Pinning Stacks</a></strong> - This  view is designed to
+                                track down issues with unreasonable memory growth in the .NET garbage collector because
+                                of excessive pinning of GC objects (which make it hard for the GC to do its job).   It
+                                only displays if the 'clrPrivate' provider is turned on with stacks (clrPrivate:@StacksEnabled=true).    
+                                It works much like allocation stacks displaying all live GC pinning handles over their lifetime with the stack where they
+                                were created.
                             </li>
                             <li>
                                 <strong><a id="DiskI/OStacks">Disk I/O Stacks</a></strong> - The stacks at which
@@ -2365,8 +2376,8 @@
                                 If you have a WinRT or COM object that is not being removed, it is because this
                                 reference counter is not going to zero.  This view shows everywhere the count changed
                                 which allows you to debug the problem.   In order for this view to be shown you need
-                                to collect the trace with the ClrPrivate provider (thus /Providers=ClrPrivate or placing
-                                ClrPrivate in the 'Additional Providers' textbox).
+                                to collect the trace with the ClrPrivate provider (thus /Providers=ClrPrivate:@StacksEnabled=true or placing
+                                ClrPrivate:@StrackEnabled=true in the 'Additional Providers' textbox).
                             </li>
                             <li>
                                 <strong><a id="WindowsHandleRefCountStacks">Windows Handle Ref Count Stacks</a></strong> -
@@ -2382,7 +2393,7 @@
                             </li>
                             <li>
                                 <strong><a id="HeapSnapshotPinningStacks">Heap Snapshot Pinning Stacks</a></strong> -
-                                This view is used when a heap snapshot is taken along with the ETW events for where
+                                (Experimental) This view is used when a heap snapshot is taken along with the ETW events for where
                                 pinning happens (Providers include ClrPrivate).   This view shows for every object
                                 in the heap snapshot that is pinned, the stacks at which is was pinned.  This includes
                                 objects pinned because they are pointed to by a async pinned handle at the time of
@@ -2390,7 +2401,7 @@
                             </li>
                             <li>
                                 <strong><a id="HeapSnapshotPinnedObjectAllocationStacks">Heap Snapshot Pinned Object Allocation Stacks</a></strong> -
-                                This view is used when a heap snapshot is taken along with the ETW events for where
+                                (Experimental) This view is used when a heap snapshot is taken along with the ETW events for where
                                 pinning happens (Providers include ClrPrivate).   This view shows for every object
                                 in the heap snapshot that is pinned, the stacks at which is was allocated.  This includes
                                 objects pinned because they are pointed to by a async pinned handle at the time of

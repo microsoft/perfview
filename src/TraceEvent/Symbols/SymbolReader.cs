@@ -1626,9 +1626,10 @@ namespace Microsoft.Diagnostics.Symbols
                 }
 
                 var curIdx = 0;
+                char[] seps = new char[] { '\\', '/' }; 
                 for (; ; )
                 {
-                    var sepIdx = BuildTimeFilePath.IndexOf('\\', curIdx);
+                    var sepIdx = BuildTimeFilePath.IndexOfAny(seps, curIdx);
                     if (sepIdx < 0)
                         break;
                     curIdx = sepIdx + 1;
@@ -1726,7 +1727,7 @@ namespace Microsoft.Diagnostics.Symbols
             }
 
             // If we don't match but we have nothinging better, remember it.   Otherwise do nothing as first hit is better.  
-            if (filePath == null)
+            if (_filePath == null)
             {
                 _filePath = filePath;
                 _log.WriteLine("Checksum does NOT match for {0}, but it is our best guess.", filePath);

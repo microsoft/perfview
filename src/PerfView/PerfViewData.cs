@@ -7546,7 +7546,7 @@ table {
     {
         public override string FormatName => "EventPipe";
 
-        public override string[] FileExtensions => new string[] { ".netperf" };
+        public override string[] FileExtensions => new string[] { ".netperf", ".netperf.zip" };
 
         protected internal override EventSource OpenEventSourceImpl(TextWriter log)
         {
@@ -7716,6 +7716,8 @@ table {
                 return null;
 
             var dataFileName = FilePath;
+            UnZipIfNecessary(ref dataFileName);
+
             var options = new TraceLogOptions();
             options.ConversionLog = log;
             if (App.CommandLineArgs.KeepAllEvents)
@@ -7786,6 +7788,40 @@ table {
                 });
             }
             return m_traceLog;
+        }
+
+        private void UnZipIfNecessary(ref string inputFileName)
+        {
+            string extension = Path.GetExtension(inputFileName);
+            string rest = Path.GetFileNameWithoutExtension(inputFileName);
+            if (string.Compare(extension, ".zip", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                string subExtension = Path.GetExtension(rest);
+                if (subExtension.Length > 0)
+                {
+                    string unzippedFile = CacheFiles.FindFile(inputFileName, subExtension);
+                    if (File.Exists(unzippedFile) && File.GetLastWriteTimeUtc(inputFileName) <= File.GetLastWriteTimeUtc(unzippedFile))
+                    {
+                        inputFileName = unzippedFile;
+                        return;
+                    }
+
+                    using (var zipArchive = ZipFile.OpenRead(inputFileName))
+                    {
+                        int count = zipArchive.Entries.Count;
+                        foreach (var entry in zipArchive.Entries)
+                        {
+                            if (zipArchive.Entries.Count == 1 || entry.FullName.EndsWith(subExtension, StringComparison.OrdinalIgnoreCase))
+                            {
+                                entry.ExtractToFile(unzippedFile, true);
+                                File.SetLastWriteTime(unzippedFile, DateTime.Now); // touch the file. 
+                                break;
+                            }
+                        }
+                    }
+                    inputFileName = unzippedFile;
+                }
+            }
         }
 
         public TraceLog TryGetTraceLog() { return m_traceLog; }

@@ -5619,7 +5619,10 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 if (verboseThreadName == null)
                 {
-                    verboseThreadName = string.Format("Thread ({0}) CPU={1:f0}ms", ThreadID, CPUMSec);
+                    if (CPUMSec != 0)
+                        verboseThreadName = string.Format("Thread ({0}) CPU={1:f0}ms", ThreadID, CPUMSec);
+                    else 
+                        verboseThreadName = string.Format("Thread ({0})", ThreadID);
                     if (ThreadInfo != null)
                         verboseThreadName += " (" + ThreadInfo + ")";
                 }
