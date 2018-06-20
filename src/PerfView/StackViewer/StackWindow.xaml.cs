@@ -2072,7 +2072,6 @@ namespace PerfView
 
                         // TODO FIX NOW this is a hack
                         var notepad2 = Command.FindOnPath("notepad2.exe");
-
                         Window dialogParentWindow = this;
                         if (notepad2 != null)
                             Command.Run(Command.Quote(notepad2) + " /g " + sourceLocation.LineNumber + " "
@@ -2087,13 +2086,8 @@ namespace PerfView
                             textEditorWindow.Show();
                             textEditorWindow.TextEditor.GotoLine(sourceLocation.LineNumber);
                         }
-
                         if (!checksumMatches)
-                        {
-                            MessageBox.Show(dialogParentWindow, "CheckSum Mismatch",
-                                "WARNING: The source file being shown does not precisely match the build time version.\r\n" +
-                                "The source code and line numbers are at best approximate.");
-                        }
+                            StatusBar.LogError("Warning: Source code Mismatch for " + Path.GetFileName(logicalSourcePath));
                     }
                 });
             });
