@@ -249,7 +249,7 @@ namespace Diagnostics.Tracing.StackSources
                     }
                 }
 
-                analyzers[i].FinishAnalyizing(lastTimeStamp);
+                analyzers[i].FinishAnalyzing(lastTimeStamp);
             }
         }
 
@@ -338,7 +338,7 @@ namespace Diagnostics.Tracing.StackSources
                 this.AddSample(this.CreateSampleFor(linuxEvent, blockedTimeAnalyzer));
             }
 
-            blockedTimeAnalyzer?.FinishAnalyizing();
+            blockedTimeAnalyzer?.FinishAnalyzing();
             // TODO: Sort things in blocked time anaylizer
             // this.threadBlockedPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
 
@@ -510,15 +510,15 @@ namespace Diagnostics.Tracing.StackSources
             return this.EndingStates.ContainsKey(threadId) && this.EndingStates[threadId].Key == LinuxThreadState.BLOCKED_TIME;
         }
 
-        public void FinishAnalyizing(double endTime)
+        public void FinishAnalyzing(double endTime)
         {
             this.FlushBlockedThreadsAt(endTime);
             this.BlockedThreadPeriods.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
         }
 
-        public void FinishAnalyizing()
+        public void FinishAnalyzing()
         {
-            this.FinishAnalyizing(this.TimeStamp);
+            this.FinishAnalyzing(this.TimeStamp);
         }
 
         public void FlushBlockedThreadsAt(double endTime)
