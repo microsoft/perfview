@@ -1031,7 +1031,7 @@ using System.Collections.Generic;
 // OTHER
 // Ability to sort by name in ByName view. 
 // Keeping track of checkboxes properly in CallTreeView when cells change
-// Anomolies in Find in CallTreeView
+// Anomalies in Find in CallTreeView
 // SamplesComplete main page. 
 // When Kernel mapping fails symbol lookup is painful
 // Check for version compatility of ETLX format being read
