@@ -1093,8 +1093,8 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
                     // But at least we have the DLL file name (not the path). 
                     if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                     {
-                        var anonomizedIdx = fileName.IndexOf("########");
-                        fileName = fileName.Substring(0, anonomizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
+                        var anonymizedIdx = fileName.IndexOf("########");
+                        fileName = fileName.Substring(0, anonymizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
                     }
                 }
 
