@@ -132,7 +132,7 @@ namespace Microsoft.Samples.Debugging.Native
     /// </summary>
     public struct DumpPointer
     {
-        // This is dangerous because its lets you create a new arbitary dump pointer.
+        // This is dangerous because its lets you create a new arbitrary dump pointer.
         static public DumpPointer DangerousMakeDumpPointer(IntPtr rawPointer, uint size)
         {
             return new DumpPointer(rawPointer, size);
