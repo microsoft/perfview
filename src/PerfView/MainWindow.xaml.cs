@@ -204,7 +204,7 @@ using System.Collections.Generic;
 // Capture the Path and timestamp and file size of the ETL file an ETLa file come vefro m anhtamp int the file pane.  o rtepen d reject it if the timestamps don't match.  
 // Make dumping very large heaps (over 125M objects) work by either : sampling segments randomly, or, collecting multiple graphs and combining the sampled graphs. 
 // FIx ASP.NET Stats to work per-process.  
-// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anaonymous delegate
+// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anonymous delegate
 // Make triggering work for process starts (maybe just allow pattern matching on etw fields) 
 // Document the /StartOnPerfCouner for taking heap snapshots (also allow periodic).  
 // Add a registeredTraceEventParser example to the trace eventSamples.  
