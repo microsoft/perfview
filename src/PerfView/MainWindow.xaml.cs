@@ -201,7 +201,7 @@ using System.Collections.Generic;
 // Add the parent Process and Thread ID that created the thread to the threadStart event
 // When you open from the command line, sometimes it does not oonpe it.s  theyou n
 // Add Tool Tip that shows size for the files and timesode (X
-// Capture the Path and timestamp and file size of the ETL file an ETLa file come vefro m anhtamp int the file pane.  o rtepen d reject it if the timestamps don't match.  
+// Capture the Path and timestamp and file size of the ETL file and reject it if the timestamps don't match.  
 // Make dumping very large heaps (over 125M objects) work by either : sampling segments randomly, or, collecting multiple graphs and combining the sampled graphs. 
 // FIx ASP.NET Stats to work per-process.  
 // Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anonymous delegate
