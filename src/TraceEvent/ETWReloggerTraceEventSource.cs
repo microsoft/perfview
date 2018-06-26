@@ -233,7 +233,7 @@ namespace Microsoft.Diagnostics.Tracing
                             toPtr[i] = fromPtr[i];
                         toPtr[asString.Length] = '\0';
                     }
-                    curBlobPtr += newCurBlobPtr;
+                    curBlobPtr = newCurBlobPtr;
                 }
                 else if (argType == typeof(int))
                 {
