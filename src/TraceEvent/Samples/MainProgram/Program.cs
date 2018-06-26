@@ -5,6 +5,6 @@ class Program
 {
     static void Main(string[] args)
     {
-        TraceEventSamples.SimpleFileRelogger.Run();
+        TraceEventSamples.AllSamples.Run();
     }
 }

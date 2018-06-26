@@ -35,11 +35,11 @@ namespace TraceEventSamples
             var outFileName = "ReloggerFileOutput.etl";
 
             // Create some data by listening for 10 seconds
-            //DataCollection(inputFileName);
+            DataCollection(inputFileName);
 
             FilterData(inputFileName, outFileName);
 
-            //DataProcessing(outFileName);
+            DataProcessing(outFileName);
         }
 
         /// <summary>
@@ -62,13 +62,6 @@ namespace TraceEventSamples
                 {
                     if (0 <= data.FileName.IndexOf("clr", StringComparison.OrdinalIgnoreCase))
                         relogger.WriteEvent(data);
-
-
-                    var manifestDescr = new TraceReloggerLib._EVENT_DESCRIPTOR() { Id = (ushort)data.ID, Task = (ushort)data.Task, Opcode = (byte)data.Opcode, Keyword = (ulong)data.Keywords };
-
-                    object[] payloads = { data.PayloadByName("ImageBase"), data.PayloadByName("ImageSize") };
-
-                    relogger.WriteEvent(new Guid("9e814aad-3204-11d2-9a82-006008a86939"), ref manifestDescr, data, payloads);
                 };
 
                 // Keep all the process start events 
@@ -91,11 +84,7 @@ namespace TraceEventSamples
                 {
                     Console.WriteLine("Unknown Event " + data);
                 };
-#endif
-
-
-
-
+#endif 
                 relogger.Process();
             }
         }

@@ -71,8 +71,6 @@ namespace Microsoft.Diagnostics.Tracing
             m_relogger.SetOutputFilename(outputFileName);
             m_myCallbacks = new ReloggerCallbacks(this);
             m_relogger.RegisterCallback(m_myCallbacks);
-            m_scratchBufferSize = 0;
-            m_scratchBuffer = null;
         }
 
         /// <summary>
@@ -104,21 +102,21 @@ namespace Microsoft.Diagnostics.Tracing
             m_eventListener.EnableEvents(eventSource, EventLevel.Verbose, (EventKeywords)(-1));
         }
 
-#if true // TODO Decide if we want to expose these or not, ConnenctEventSource may be enough.  These are a bit clunky especially but do allow the
+#if false // TODO Decide if we want to expose these or not, ConnenctEventSource may be enough.  These are a bit clunky especially but do allow the
           // ability to modify events you don't own, which may be useful.  
 
         /// <summary>
         /// Writes an event that did not exist previously into the data stream, The context data (time, process, thread, activity, comes from 'an existing event') 
         /// </summary>
-        public unsafe void WriteEvent(Guid providerId, ref _EVENT_DESCRIPTOR eventDescriptor, TraceEvent template, params object[] payload)
+        public unsafe void WriteEvent(Guid providerId, ref EventDescriptor eventDescriptor, TraceEvent template, params object[] payload)
         {
-            if (template.eventRecord != m_curTraceEventRecord)
+            if (template != m_curTraceEvent)
                 throw new InvalidOperationException("Currently can only write the event being processed by the callback");
 
             // Make a copy of the template so we can modify it
             var newEvent = m_curITraceEvent.Clone();
 
-            fixed (_EVENT_DESCRIPTOR* fixedEventDescr = &eventDescriptor)
+            fixed (EventDescriptor* fixedEventDescr = &eventDescriptor)
             {
                 // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to 
                 // bridge the gap.  
@@ -133,14 +131,14 @@ namespace Microsoft.Diagnostics.Tracing
         /// <summary>
         /// Writes an event that did not exist previously into the data stream, The context data (time, process, thread, activity, comes from 'an existing event') is given explicitly
         /// </summary>
-        public unsafe void WriteEvent(Guid providerId, ref _EVENT_DESCRIPTOR eventDescriptor, DateTime timeStamp, int processId, int processorIndex, int threadID, Guid activityID, params object[] payload)
+        public unsafe void WriteEvent(Guid providerId, ref EventDescriptor eventDescriptor, DateTime timeStamp, int processId, int processorIndex, int threadID, Guid activityID, params object[] payload)
         {
 
             // Today we always create 64 bit events on 64 bit OSes.  
             var newEvent = m_relogger.CreateEventInstance(m_traceHandleForFirstStream,
                 (pointerSize == 8) ? TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER : TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER);
 
-            fixed (_EVENT_DESCRIPTOR* fixedEventDescr = &eventDescriptor)
+            fixed (EventDescriptor* fixedEventDescr = &eventDescriptor)
             {
                 // The interop assembly has its own def of EventDescriptor, but they are identical, so we use unsafe casting to 
                 // bridge the gap.  
@@ -253,27 +251,20 @@ namespace Microsoft.Diagnostics.Tracing
                     *((double*)&m_scratchBuffer[curBlobPtr]) = (double)payloadArg;
                     curBlobPtr += 8;
                 }
-                else if (argType == typeof(UInt64))
-                {
-                    EnsureSratchBufferSpace(curBlobPtr + 8);
-                    *((UInt64*)&m_scratchBuffer[curBlobPtr]) = (UInt64)payloadArg;
-                    curBlobPtr += 8;
-                }
                 else
                     throw new NotImplementedException();
             }
             newEvent.SetPayload(ref *m_scratchBuffer, (uint)curBlobPtr);
         }
-                
+
         private void EnsureSratchBufferSpace(int requriedSize)
         {
             if (m_scratchBufferSize < requriedSize)
             {
-                if ((IntPtr)m_scratchBuffer != IntPtr.Zero)
-                    m_scratchBuffer = (byte*)Marshal.ReAllocHGlobal((IntPtr)m_scratchBuffer, (IntPtr)requriedSize);
-                else
-                    m_scratchBuffer = (byte*)Marshal.AllocHGlobal(requriedSize);
+                if (m_scratchBuffer != null)
+                    Marshal.FreeHGlobal((IntPtr)m_scratchBuffer);
 
+                m_scratchBuffer = (byte*)Marshal.AllocHGlobal(requriedSize);
                 m_scratchBufferSize = requriedSize;
             }
         }
