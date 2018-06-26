@@ -605,7 +605,7 @@ namespace ETWManifest
                     case "opcode":
                         m_opcodeId = reader.Value;
                         break;
-                    case "keyword":
+                    case "keywords":
                         m_keywordsId = reader.Value;
                         break;
                     case "level":
@@ -649,7 +649,14 @@ namespace ETWManifest
                 id = m_keywordsId;
                 m_keywordsId = null;
                 if (id != null)
-                    Keywords = m_provider.m_keywordValues[id];
+                    if (m_provider.m_keywordValues != null)
+                    {
+                        var keywordsList = id.Split(' ');
+                        foreach (var currKeyword in keywordsList)
+                        {
+                            Keywords |= m_provider.m_keywordValues[currKeyword];
+                        }
+                    }
 
                 id = TemplateName;
                 if (id != null)
@@ -801,4 +808,3 @@ namespace ETWManifest
         #endregion
     }
 }
-
