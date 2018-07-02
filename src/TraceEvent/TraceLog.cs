@@ -1086,15 +1086,15 @@ namespace Microsoft.Diagnostics.Tracing.Etlx
             {
                 var isLoad = ((data.Opcode == (TraceEventOpcode)10) || (data.Opcode == TraceEventOpcode.DataCollectionStart));
 
-                // TODO is this a good idea?   It tries to undo the anonimization a bit.  
+                // TODO is this a good idea?   It tries to undo the anonymization a bit.  
                 var fileName = data.FileName;
                 if (fileName.EndsWith("########"))  // We threw away the DLL name
                 {
                     // But at least we have the DLL file name (not the path). 
                     if (lastImageIDData != null && data.TimeStampQPC == lastImageIDData.TimeStampQPC)
                     {
-                        var anonomizedIdx = fileName.IndexOf("########");
-                        fileName = fileName.Substring(0, anonomizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
+                        var anonymizedIdx = fileName.IndexOf("########");
+                        fileName = fileName.Substring(0, anonymizedIdx + 8) + @"\" + lastImageIDData.OriginalFileName;
                     }
                 }
 

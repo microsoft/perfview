@@ -201,10 +201,10 @@ using System.Collections.Generic;
 // Add the parent Process and Thread ID that created the thread to the threadStart event
 // When you open from the command line, sometimes it does not oonpe it.s  theyou n
 // Add Tool Tip that shows size for the files and timesode (X
-// Capture the Path and timestamp and file size of the ETL file an ETLa file come vefro m anhtamp int the file pane.  o rtepen d reject it if the timestamps don't match.  
+// Capture the Path and timestamp and file size of the ETL file and reject it if the timestamps don't match.  
 // Make dumping very large heaps (over 125M objects) work by either : sampling segments randomly, or, collecting multiple graphs and combining the sampled graphs. 
 // FIx ASP.NET Stats to work per-process.  
-// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anaonymous delegate
+// Look into races associated with having the log window open.   We seem to get indexout of range error in the 'StringBuilder.ToString' in Flush's anonymous delegate
 // Make triggering work for process starts (maybe just allow pattern matching on etw fields) 
 // Document the /StartOnPerfCouner for taking heap snapshots (also allow periodic).  
 // Add a registeredTraceEventParser example to the trace eventSamples.  
@@ -1031,7 +1031,7 @@ using System.Collections.Generic;
 // OTHER
 // Ability to sort by name in ByName view. 
 // Keeping track of checkboxes properly in CallTreeView when cells change
-// Anomolies in Find in CallTreeView
+// Anomalies in Find in CallTreeView
 // SamplesComplete main page. 
 // When Kernel mapping fails symbol lookup is painful
 // Check for version compatility of ETLX format being read

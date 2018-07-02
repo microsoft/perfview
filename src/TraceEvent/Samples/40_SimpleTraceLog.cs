@@ -195,7 +195,7 @@ namespace TraceEventSamples
             Out.WriteLine("Zipping the raw files into a single '{0}' file.", dataFileName);
 
             // At this point you have multiple ETL files that don't have all the information 
-            // inside them necessary for analysis off the currentn machine.    To do analsysis
+            // inside them necessary for analysis off the current machine.    To do analysis
             // of the machine you need to merge the ETL files (which can be done with
             //        TraceEventSession.MergeInPlace(dataFileName, Out);
             // However this does not get the symbolic information (NGEN PDBS) needed to
