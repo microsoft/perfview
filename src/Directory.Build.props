@@ -23,7 +23,7 @@
   <PropertyGroup>
     <!-- These are the versions of the things we are CREATING in this repository -->
     <PerfViewVersion>2.0.21</PerfViewVersion>
-    <TraceEventVersion>2.0.21</TraceEventVersion>
+    <TraceEventVersion>2.0.21-criteo</TraceEventVersion>
   </PropertyGroup>
 
   <!-- versions of dependencies that more than one project use -->
