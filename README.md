@@ -9,6 +9,10 @@ started information.
 Please see the [PerfView Download Page](documentation/Downloading.md) for the link and instructions for downloading the 
 current version of PerfView.  
 
+### Are you here about TraceEvent?
+
+PerfView is built on a library called Microsoft.Diagnostics.Tracing.TraceEvent, that knows how to both collect and parse Event Tracing for Window (ETW) data.   Thus if there is any information that PerfView collects and processes that you would like to manipulate or build tooling around see  the [Microsoft.Diagnostics.Tracing.TraceEvent page](documentation/TraceEvetn.md). 
+
 ### Learning about PerfView 
 
 The PerfView User's Guide is part of the application itself. In addition, you can click the
