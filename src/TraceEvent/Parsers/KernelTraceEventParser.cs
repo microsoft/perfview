@@ -193,7 +193,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             /// <summary>
             /// These are the kernel events that are not allowed in containers.  Can be subtracted out.  
             /// </summary>
-            NonContainer = ~(Process | Thread | ImageLoad | Profile | ContextSwitch),
+            NonContainer = Process | Thread | ImageLoad | Profile | ContextSwitch,
 
             // These are ones that I have made up  
             // All = 0x07B3FFFF, so 4'0000, 8'0000, 40'0000, and F000'00000 are free.  
