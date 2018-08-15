@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Dynamic;
 #endif
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using Address = System.UInt64;

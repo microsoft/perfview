@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.Serialization.Json;
 using System.Xml;
+using System.Diagnostics;
 
 namespace Diagnostics.Tracing.StackSources
 {

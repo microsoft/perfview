@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Media;
 using System.Text;
@@ -159,9 +160,9 @@ namespace Controls
                         Body.Selection.Select(start, end);
                         start.Paragraph.BringIntoView();
 #if DEBUG
-                    var selectedText = Body.Selection.Text;
-                    match = pat.Match(selectedText);
-                    Debug.Assert(match.Success && match.Index == 0 && match.Length == selectedText.Length);
+                        var selectedText = Body.Selection.Text;
+                        match = pat.Match(selectedText);
+                        Debug.Assert(match.Success && match.Index == 0 && match.Length == selectedText.Length);
 #endif
                         Body.Focus();
                         return start;

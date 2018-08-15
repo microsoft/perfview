@@ -1,8 +1,12 @@
-﻿using System.Text;
-using System.Text.RegularExpressions;
+﻿using System;
+using System.Text;
 using System.Windows;
-using System.Windows.Controls;
+using System.Text.RegularExpressions;
 using System.Windows.Media;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Diagnostics;
+using System.Globalization;
 
 namespace Utilities
 {
