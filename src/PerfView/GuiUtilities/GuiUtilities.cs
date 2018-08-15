@@ -18,12 +18,17 @@ namespace Utilities
         {
             var textBlock = obj as TextBlock;
             if (textBlock != null)
+            {
                 return textBlock.Text;
+            }
 
             string ret = "";
             var childCount = VisualTreeHelper.GetChildrenCount(obj);
             for (int i = 0; i < childCount; i++)
+            {
                 ret += GetText(VisualTreeHelper.GetChild(obj, i));
+            }
+
             return ret;
         }
 
@@ -31,7 +36,9 @@ namespace Utilities
         {
             var asFrameElem = obj as FrameworkElement;
             if (asFrameElem != null && asFrameElem.Name == nodeName)
+            {
                 return obj;
+            }
 
             DependencyObject ret = null;
             var childCount = VisualTreeHelper.GetChildrenCount(obj);
@@ -39,7 +46,9 @@ namespace Utilities
             {
                 ret = FindVisualNode(VisualTreeHelper.GetChild(obj, i), nodeName);
                 if (ret != null)
+                {
                     break;
+                }
             }
             return ret;
         }
@@ -66,14 +75,22 @@ namespace Utilities
             for (; ; )
             {
                 if (obj == null)
+                {
                     return null;
+                }
+
                 T asT = obj as T;
                 if (asT != null)
+                {
                     return asT;
+                }
 
                 // TODO this is a hack.  GetParent throws an exception 
                 if (obj is System.Windows.Documents.Hyperlink)
+                {
                     return null;
+                }
+
                 obj = VisualTreeHelper.GetParent(obj);
             }
         }
@@ -81,20 +98,28 @@ namespace Utilities
         {
             var asDepObj = obj as DependencyObject;
             if (asDepObj != null)
+            {
                 return VisualTreeHelper.GetParent(asDepObj);
+            }
+
             return null;
         }
         public static DependencyObject RootVisual(this object obj)
         {
             var asDepObj = obj as DependencyObject;
             if (asDepObj == null)
+            {
                 return null;
+            }
 
             for (; ; )
             {
                 var parent = VisualTreeHelper.GetParent(asDepObj);
                 if (parent == null)
+                {
                     return asDepObj;
+                }
+
                 asDepObj = parent;
             }
         }
@@ -107,8 +132,12 @@ namespace Utilities
                 {
                     var childCount = VisualTreeHelper.GetChildrenCount(parent);
                     for (int i = 0; i < childCount; i++)
+                    {
                         if (VisualTreeHelper.GetChild(parent, i) == obj)
+                        {
                             return i;
+                        }
+                    }
                 }
             }
             return -1;
@@ -122,11 +151,19 @@ namespace Utilities
             while (asDepObj != null)
             {
                 if (asDepObj is DataGridColumn)
+                {
                     column = ((DataGridColumn)asDepObj).DisplayIndex;
+                }
+
                 if (asDepObj is DataGridCell)
+                {
                     column = ((DataGridCell)asDepObj).Column.DisplayIndex;
+                }
                 else if (asDepObj is DataGridRow)
+                {
                     row = ((DataGridRow)asDepObj).IndexInParent();
+                }
+
                 asDepObj = VisualTreeHelper.GetParent(asDepObj);
             }
             return "[" + row.ToString() + "," + column.ToString() + "]";
@@ -140,11 +177,15 @@ namespace Utilities
             var name = match.Groups[1].Value;
             string arg = match.Groups[2].Value;
             if (obj is TextBlock)
+            {
                 arg = (obj as TextBlock).Text;
+            }
 
             sb.Append(' ', depth).Append('<').Append(name);
             if (arg.Length > 0)
+            {
                 sb.Append(" Arg=\"").Append(arg).Append('"');
+            }
 
             sb.Append(" Hash=\"").Append(obj.GetHashCode()).Append('"');
 
@@ -154,7 +195,9 @@ namespace Utilities
             {
                 var elemName = asFrameElem.Name;
                 if (!string.IsNullOrEmpty(elemName))
+                {
                     sb.Append(" Name=\"").Append(elemName).Append('"');
+                }
 
                 var dataContext = asFrameElem.DataContext;
                 if (dataContext != null)
@@ -171,14 +214,21 @@ namespace Utilities
                 {
                     sb.AppendLine(">");
                     for (int i = 0; i < childCount; i++)
+                    {
                         VisualTree(VisualTreeHelper.GetChild(asDepObj, i), sb, depth + 1);
+                    }
+
                     sb.Append(' ', depth).Append("</").Append(name).Append('>').AppendLine();
                 }
                 else
+                {
                     sb.AppendLine("/>");
+                }
             }
             else
+            {
                 sb.AppendLine("/>");
+            }
         }
 
         private static void LogicalTree(object obj, StringBuilder sb, int depth)
@@ -188,11 +238,15 @@ namespace Utilities
             var name = match.Groups[1].Value;
             string arg = match.Groups[2].Value;
             if (obj is TextBlock)
+            {
                 arg = (obj as TextBlock).Text;
+            }
 
             sb.Append(' ', depth).Append('<').Append(name);
             if (arg.Length > 0)
+            {
                 sb.Append(" Arg=\"").Append(arg).Append('"');
+            }
 
             sb.Append(" Hash=\"").Append(obj.GetHashCode()).Append('"');
 
@@ -202,11 +256,15 @@ namespace Utilities
             {
                 var elemName = asFrameElem.Name;
                 if (!string.IsNullOrEmpty(elemName))
+                {
                     sb.Append(" Name=\"").Append(elemName).Append('"');
+                }
 
                 var dataContext = asFrameElem.DataContext;
                 if (dataContext != null)
+                {
                     sb.Append(" DataContextHashCode=\"").Append(dataContext.GetHashCode()).Append('"');
+                }
             }
 
             var asDepObj = obj as DependencyObject;
@@ -214,29 +272,50 @@ namespace Utilities
             {
                 sb.AppendLine(">");
                 foreach (var child in LogicalTreeHelper.GetChildren(asDepObj))
+                {
                     LogicalTree(child, sb, depth + 1);
+                }
+
                 sb.Append(' ', depth).Append("</").Append(name).Append('>').AppendLine();
             }
             else
+            {
                 sb.AppendLine("/>");
+            }
         }
 
         private static void AppendPath(DependencyObject obj, StringBuilder sb)
         {
             if (obj == null)
+            {
                 return;
+            }
+
             var parent = VisualTreeHelper.GetParent(obj);
             if (parent != null)
+            {
                 AppendPath(parent, sb);
+            }
+
             string name;
             if (obj is DataGridColumn)
+            {
                 name = " DataGridColumn(" + ((DataGridColumn)obj).DisplayIndex.ToString() + ")";
+            }
+
             if (obj is DataGridCell)
+            {
                 name = " DataGridCell(" + ((DataGridCell)obj).Column.DisplayIndex.ToString() + ")";
+            }
             else if (obj is DataGridRow)
+            {
                 name = " DataGridRow(" + ((DataGridRow)obj).IndexInParent().ToString() + ")";
+            }
             else
+            {
                 name = obj.GetType().Name;
+            }
+
             sb.Append(name);
             sb.AppendLine();
         }

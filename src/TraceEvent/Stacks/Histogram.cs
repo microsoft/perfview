@@ -50,7 +50,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             Debug.Assert(0 <= bucket && bucket < Count);
 
             if (m_singleBucketNum < 0)
+            {
                 m_singleBucketNum = bucket;
+            }
+
             if (m_singleBucketNum == bucket)
             {
                 m_singleBucketValue += metric;
@@ -76,11 +79,15 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 {
                     var val = histArray[i];
                     if (val != 0)
+                    {
                         AddMetric(val, i);
+                    }
                 }
             }
             else if (0 <= histogram.m_singleBucketNum)
-                this.AddMetric((float)(histogram.m_singleBucketValue * weight), histogram.m_singleBucketNum);
+            {
+                AddMetric((float)(histogram.m_singleBucketValue * weight), histogram.m_singleBucketNum);
+            }
         }
 
         /// <summary>
@@ -110,11 +117,17 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 Debug.Assert(0 <= index && index < Count);
                 if (m_buckets != null)
+                {
                     return m_buckets[index];
+                }
                 else if (m_singleBucketNum == index)
+                {
                     return m_singleBucketValue;
+                }
                 else
+                {
                     return 0;
+                }
             }
         }
 
@@ -173,7 +186,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         {
             int end = Count;
             for (int i = 0; i < end; i++)
+            {
                 yield return this[i];
+            }
         }
 
         /// <summary>
@@ -278,14 +293,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public static string HistogramString(IEnumerable<float> buckets, int bucketCount, double scale, int maxLegalBucket = 0)
         {
             if (buckets == null)
+            {
                 return "";
+            }
+
             var chars = new char[bucketCount];
             int i = 0;
             foreach (float metric in buckets)
             {
                 char val = '_';
                 if (0 < maxLegalBucket && maxLegalBucket <= i)
+                {
                     val = '?';
+                }
+
                 int valueBucket = (int)(metric / scale * 10);       // TODO should we round?
                 if (metric > 0)
                 {
@@ -297,16 +318,22 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                         {
                             val = 'o';
                             if (metric / scale < .001)
+                            {
                                 val = '.';
+                            }
                         }
                     }
                     else
                     {
                         valueBucket -= 10;
                         if (valueBucket < 25)
+                        {
                             val = (char)('A' + valueBucket);          // We go through the alphabet too.
+                        }
                         else
+                        {
                             val = '*';                                // Greater than 3.6X CPUs 
+                        }
                     }
                 }
                 else if (metric < 0)
@@ -314,9 +341,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     valueBucket = -valueBucket;
                     // TODO we are not symetric, we use digits on the positive side but not negative.  
                     if (valueBucket < 25)
+                    {
                         val = (char)('a' + valueBucket);          // We go through the alphabet too.
+                    }
                     else
+                    {
                         val = '@';
+                    }
                 }
                 chars[i] = val;
                 i++;
@@ -356,7 +387,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             // Return half the max of the absolute values in the top histogram 
             double max = 0;
             for (int i = 0; i < hist.Count; i++)
+            {
                 max = Math.Max(Math.Abs(hist[i]), max);
+            }
+
             return max / 2;
         }
 
@@ -471,9 +505,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         public string GetNameForScenario(int scenario)
         {
             if (m_scenarioNames != null)
+            {
                 return m_scenarioNames[scenario];
+            }
             else
+            {
                 return string.Format("<scenario #{0}>", scenario);
+            }
         }
 
         /// <summary>
@@ -489,12 +527,20 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             for (var bucket = start; bucket < end; bucket++)
             {
                 if (bucket == start)
+                {
                     sb.Append("Scenarios: ");
+                }
+
                 foreach (int scenario in m_scenariosFromCharacter[(int)bucket])
+                {
                     sb.AppendFormat("{0}, ", GetNameForScenario(scenario));
+                }
             }
             if (2 <= sb.Length)
+            {
                 sb.Remove(sb.Length - 2, 2);
+            }
+
             return sb.ToString();
         }
 
@@ -512,7 +558,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             for (int i = 0; i < histogram.Count; i++)
             {
                 if (m_characterFromScenario[i] != HistogramCharacterIndex.Invalid)
+                {
                     displayBuckets[(int)m_characterFromScenario[i]] += histogram[i];
+                }
             }
 
             for (int i = 0; i < displayBuckets.Length; i++)
@@ -606,9 +654,13 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
         protected override double CalculateScale()
         {
             if (Tree.ScalingPolicy == ScalingPolicyKind.TimeMetric)
+            {
                 return BucketDuration;
+            }
             else
+            {
                 return CalculateAverageScale(Tree.Root.InclusiveMetricByTime);
+            }
         }
         /// <summary>
         /// Implements HistogramController interface
@@ -633,7 +685,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 for (; ; )
                 {
                     if (BucketCount <= bucketIndex)
+                    {
                         break;
+                    }
 
                     var metricInBucket = Math.Min(nextBucketStart, endSample) - startSampleInBucket;
                     histogram.AddMetric((float)metricInBucket * metricSign, bucketIndex);
@@ -642,7 +696,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                     startSampleInBucket = nextBucketStart;
                     nextBucketStart += bucketDuration;
                     if (startSampleInBucket > endSample)
+                    {
                         break;
+                    }
                 }
             }
             else
@@ -650,7 +706,10 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
                 // Put the sample in the right bucket.  Note that because we allow inclusive times on the end
                 // point we could get bucketIndex == Length, so put that sample in the last bucket.  
                 if (bucketIndex >= BucketCount)
+                {
                     bucketIndex = BucketCount - 1;
+                }
+
                 histogram.AddMetric(sample.Metric, bucketIndex);
             }
         }
@@ -667,7 +726,9 @@ namespace Microsoft.Diagnostics.Tracing.Stacks
             {
                 float cumStart = 0;
                 for (int i = 0; i < (int)start; i++)
+                {
                     cumStart += histogram[i];
+                }
 
                 float cum = cumStart;
                 float cumMax = cumStart;

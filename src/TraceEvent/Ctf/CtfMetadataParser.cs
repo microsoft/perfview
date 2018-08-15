@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// The abstract metadata parser class.
     /// </summary>
-    abstract class CtfMetadataParser
+    internal abstract class CtfMetadataParser
     {
         public abstract IEnumerable<CtfMetadataDeclaration> Parse();
     }
@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// The types that may be declared in CtfMetatdata.
     /// </summary>
-    enum CtfDeclarationTypes
+    internal enum CtfDeclarationTypes
     {
         Unknown,
         TypeAlias,
@@ -29,7 +29,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// <summary>
     /// This class represents the top level entry 
     /// </summary>
-    class CtfMetadataDeclaration
+    internal class CtfMetadataDeclaration
     {
         public CtfDeclarationTypes Definition { get; private set; }
         public CtfPropertyBag Properties { get; private set; }
@@ -47,7 +47,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             Debug.Assert(name == null || name == name.Trim());
         }
-        
+
         public CtfMetadataDeclaration(CtfDeclarationTypes declaration, CtfPropertyBag bag, string name, string text)
         {
             Definition = declaration;
@@ -75,8 +75,8 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
     /// </summary>
     internal class CtfPropertyBag
     {
-        Dictionary<string, string> _properties = new Dictionary<string, string>();
-        Dictionary<string, CtfMetadataType> _typeProperties = new Dictionary<string, CtfMetadataType>();
+        private Dictionary<string, string> _properties = new Dictionary<string, string>();
+        private Dictionary<string, CtfMetadataType> _typeProperties = new Dictionary<string, CtfMetadataType>();
 
         public CtfPropertyBag()
         {
@@ -87,7 +87,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _properties.Clear();
             _typeProperties.Clear();
         }
-        
+
         public bool GetBoolean(string name)
         {
             string value = _properties[name];
@@ -117,7 +117,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _properties.TryGetValue(name, out value);
 
             if (value == null)
+            {
                 return null;
+            }
 
             return short.Parse(value);
         }
@@ -135,7 +137,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             _properties.TryGetValue(name, out value);
 
             if (value == null)
+            {
                 return null;
+            }
 
             return int.Parse(value);
         }
@@ -144,7 +148,7 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             return int.Parse(_properties[name]);
         }
-        
+
         public ulong GetUlong(string name)
         {
             return ulong.Parse(_properties[name]);

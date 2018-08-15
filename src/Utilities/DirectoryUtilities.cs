@@ -8,7 +8,6 @@
 /****************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.Diagnostics.Utilities
@@ -17,10 +16,10 @@ namespace Microsoft.Diagnostics.Utilities
     /// <summary>
     /// General purpose utilities dealing with archiveFile system directories. 
     /// </summary>
-#if UTILITIES_PUBLIC 
+#if UTILITIES_PUBLIC
     public 
 #endif
-    static class DirectoryUtilities
+    internal static class DirectoryUtilities
     {
         /// <summary>
         /// SafeCopy sourceDirectory to directoryToVersion recursively. The target directory does
@@ -39,7 +38,9 @@ namespace Microsoft.Diagnostics.Utilities
         public static void Copy(string sourceDirectory, string targetDirectory, SearchOption searchOptions)
         {
             if (!Directory.Exists(targetDirectory))
+            {
                 Directory.CreateDirectory(targetDirectory);
+            }
 
             foreach (string sourceFile in Directory.GetFiles(sourceDirectory))
             {
@@ -66,15 +67,23 @@ namespace Microsoft.Diagnostics.Utilities
         public static int Clean(string directory)
         {
             if (!Directory.Exists(directory))
+            {
                 return 0;
+            }
 
             int ret = 0;
             foreach (string file in Directory.GetFiles(directory))
+            {
                 if (!FileUtilities.ForceDelete(file))
+                {
                     ret++;
+                }
+            }
 
             foreach (string subDir in Directory.GetDirectories(directory))
+            {
                 ret += Clean(subDir);
+            }
 
             if (ret == 0)
             {
@@ -88,7 +97,10 @@ namespace Microsoft.Diagnostics.Utilities
                 }
             }
             else
+            {
                 ret++;
+            }
+
             return ret;
         }
 
@@ -102,14 +114,18 @@ namespace Microsoft.Diagnostics.Utilities
         public static bool DeleteOldest(string directoryPath, int numberToKeep)
         {
             if (!Directory.Exists(directoryPath))
+            {
                 return true;
+            }
 
             string[] dirs = Directory.GetDirectories(directoryPath);
             int numToDelete = dirs.Length - numberToKeep;
             if (numToDelete <= 0)
+            {
                 return true;
+            }
 
-            Array.Sort<string>(dirs, delegate(string x, string y)
+            Array.Sort<string>(dirs, delegate (string x, string y)
             {
                 return File.GetLastWriteTimeUtc(x).CompareTo(File.GetLastWriteTimeUtc(y));
             });

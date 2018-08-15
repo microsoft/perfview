@@ -1,5 +1,5 @@
 using Diagnostics.Tracing.StackSources;
-using EventSources;
+using global::DiagnosticsHub.Packaging.Interop;
 using Graphs;
 using Microsoft.Diagnostics.Symbols;
 using Microsoft.Diagnostics.Tracing;
@@ -7,20 +7,18 @@ using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.EventPipe;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.AspNet;
-using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ClrPrivate;
 using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
+using Microsoft.Diagnostics.Tracing.Parsers.IIS_Trace;
+using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
 using Microsoft.Diagnostics.Tracing.Parsers.JSDumpHeap;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
-using Microsoft.Diagnostics.Tracing.Parsers.InteropEventProvider;
-using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Utilities;
-using global::DiagnosticsHub.Packaging.Interop;
 using Microsoft.DiagnosticsHub.Packaging.InteropEx;
 using PerfView.GuiUtilities;
+using PerfViewExtensibility;
 using PerfViewModel;
 using System;
 using System.Collections.Generic;
@@ -29,18 +27,15 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
 using System.Xml;
-using Triggers;
 using Utilities;
 using Address = System.UInt64;
 using EventSource = EventSources.EventSource;
-using PerfViewExtensibility;
 
 namespace PerfView
 {
@@ -63,7 +58,7 @@ namespace PerfView
         /// All items have some sort of file path that is associated with them.  
         /// </summary>
         public virtual string FilePath { get { return m_filePath; } }
-        public virtual string HelpAnchor { get { return this.GetType().Name; } }
+        public virtual string HelpAnchor { get { return GetType().Name; } }
 
         public bool IsExpanded { get { return m_isExpanded; } set { m_isExpanded = value; FirePropertyChanged("IsExpanded"); } }
         public bool IsSelected { get { return m_isSelected; } set { m_isSelected = value; FirePropertyChanged("IsSelected"); } }
@@ -93,14 +88,13 @@ namespace PerfView
         /// </summary>
         public virtual ImageSource Icon { get { return GuiApp.MainWindow.Resources["StackSourceBitmapImage"] as ImageSource; } }
         #region private
-        public override string ToString() { if (FilePath != null) return FilePath; return Name; }
+        public override string ToString() { if (FilePath != null) { return FilePath; } return Name; }
 
         protected List<PerfViewTreeItem> m_Children;
         protected List<PerfViewReport> m_UserDeclaredChildren;
         protected string m_filePath;
-
-        bool m_isExpanded;
-        bool m_isSelected;
+        private bool m_isExpanded;
+        private bool m_isSelected;
         #endregion
     }
 
@@ -144,11 +138,15 @@ namespace PerfView
                                 {
                                     // Filter out kernel, rundown files etc. 
                                     if (Regex.IsMatch(filePath, @"\.(kernel|clr|user)[^.]*\.etl$", RegexOptions.IgnoreCase))
+                                    {
                                         continue;
+                                    }
 
                                     // Filter out any items we were asked to filter out.  
                                     if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(filePath)))
+                                    {
                                         continue;
+                                    }
 
                                     m_Children.Add(PerfViewFile.Get(filePath, template));
                                 }
@@ -158,10 +156,14 @@ namespace PerfView
                             {
                                 // Filter out any items we were asked to filter out.  
                                 if (m_filter != null && !m_filter.IsMatch(Path.GetFileName(dir)))
+                                {
                                     continue;
+                                }
                                 // We know that .NGENPDB directories are uninteresting, filter them out.  
                                 if (dir.EndsWith(".NENPDB", StringComparison.OrdinalIgnoreCase))
+                                {
                                     continue;
+                                }
 
                                 m_Children.Add(new PerfViewDirectory(dir));
                             }
@@ -186,7 +188,9 @@ namespace PerfView
         {
             var mainWindow = parentWindow as MainWindow;
             if (mainWindow != null)
+            {
                 mainWindow.OpenPath(FilePath);
+            }
 
             doAfter?.Invoke();
         }
@@ -199,39 +203,49 @@ namespace PerfView
 
         #region private
 
-        class DirCacheEntry
+        private class DirCacheEntry
         {
             public string[] FilesInDirectory;
             public string[] DirsInDirectory;
             public DateTime LastWriteTimeUtc;
         }
-        // To speed things up we remember the list list of directory items we fetched from disk
-        static Dictionary<string, DirCacheEntry> s_dirCache = new Dictionary<string, DirCacheEntry>();
 
-        static string[] FilesInDirectory(string directoryPath)
+        // To speed things up we remember the list list of directory items we fetched from disk
+        private static Dictionary<string, DirCacheEntry> s_dirCache = new Dictionary<string, DirCacheEntry>();
+
+        private static string[] FilesInDirectory(string directoryPath)
         {
             var entry = GetDirEntry(directoryPath);
             if (entry.FilesInDirectory == null)
+            {
                 entry.FilesInDirectory = Directory.GetFiles(directoryPath);
+            }
+
             return entry.FilesInDirectory;
         }
-        static string[] DirsInDirectory(string directoryPath)
+
+        private static string[] DirsInDirectory(string directoryPath)
         {
             var entry = GetDirEntry(directoryPath);
             if (entry.DirsInDirectory == null)
+            {
                 entry.DirsInDirectory = Directory.GetDirectories(directoryPath);
+            }
+
             return entry.DirsInDirectory;
         }
 
         /// <summary>
         /// Gets a cache entry, nulls it out if it is out of date.  
         /// </summary>
-        static DirCacheEntry GetDirEntry(string directoryPath)
+        private static DirCacheEntry GetDirEntry(string directoryPath)
         {
             DateTime lastWrite = Directory.GetLastWriteTimeUtc(directoryPath);
             DirCacheEntry entry;
             if (!s_dirCache.TryGetValue(directoryPath, out entry))
+            {
                 s_dirCache[directoryPath] = entry = new DirCacheEntry();
+            }
 
             if (lastWrite != entry.LastWriteTimeUtc)
             {
@@ -303,7 +317,10 @@ namespace PerfView
         {
             var ret = TryGet(filePath, format);
             if (ret == null)
+            {
                 throw new ApplicationException("Could not determine data Template from the file extension for " + filePath + ".");
+            }
+
             return ret;
         }
         /// <summary>
@@ -325,7 +342,9 @@ namespace PerfView
                     };
                 }
                 if (format == null)
+                {
                     return null;
+                }
             }
 
             string fullPath = Path.GetFullPath(filePath);
@@ -341,11 +360,15 @@ namespace PerfView
             {
                 var dir = Path.GetDirectoryName(ret.FilePath);
                 if (dir.Length == 0)
+                {
                     dir = ".";
+                }
 
                 var wildCard = ret.Name.Insert(ret.Name.Length - 4, ".*");
                 if (Directory.GetFiles(dir, wildCard).Length > 0)
+                {
                     ret.Name += " (unmerged)";
+                }
             }
             return ret;
         }
@@ -358,7 +381,9 @@ namespace PerfView
             foreach (PerfViewFile potentalFormat in Formats)
             {
                 if (potentalFormat.IsMyFormat(extension))
+                {
                     return potentalFormat;
+                }
             }
             var ret = new PerfViewUserFile(extension + " file", new string[] { extension });
             Formats.Add(ret);
@@ -372,7 +397,10 @@ namespace PerfView
         public void OnOpenFile(string userCommand)
         {
             if (userCommands == null)
+            {
                 userCommands = new List<string>();
+            }
+
             userCommands.Add(userCommand);
         }
 
@@ -384,7 +412,9 @@ namespace PerfView
         public void DeclareFileView(string viewName, string userCommand)
         {
             if (m_UserDeclaredChildren == null)
+            {
                 m_UserDeclaredChildren = new List<PerfViewReport>();
+            }
 
             m_UserDeclaredChildren.Add(new PerfViewReport(viewName, delegate (string reportFileName, string reportViewName)
             {
@@ -398,12 +428,17 @@ namespace PerfView
             {
                 // The m_UserDeclaredChildren are templates.  We need to instantiate them to this file before adding them as children. 
                 foreach (var userDeclaredChild in m_UserDeclaredChildren)
+                {
                     m_Children.Add(new PerfViewReport(userDeclaredChild, this));
+                }
+
                 m_UserDeclaredChildren = null;
             }
             // Add the command to the list 
             if (userCommands == null)
+            {
                 return;
+            }
 
             var args = new string[] { FilePath };
             foreach (string command in userCommands)
@@ -422,7 +457,7 @@ namespace PerfView
         }
 
         // A list of user commands to be executed when a file is opened 
-        List<string> userCommands;
+        private List<string> userCommands;
 
         /// <summary>
         /// Retrieves the base file name from a PerfView data source's name.
@@ -480,19 +515,27 @@ namespace PerfView
                     IsExpanded = true;
                     var defaultSource = GetStackSource();
                     if (defaultSource != null)
+                    {
                         defaultSource.IsSelected = true;
+                    }
 
                     if (continuation != null)
+                    {
                         continuation(doAfter);
+                    }
                     else
+                    {
                         doAfter?.Invoke();
+                    }
                 });
             });
             }
             else
             {
                 if (m_singletonStackSource != null && m_singletonStackSource.Viewer != null)
+                {
                     m_singletonStackSource.Viewer.Focus();
+                }
             }
         }
         public override void Close()
@@ -516,7 +559,9 @@ namespace PerfView
             {
                 sourceName = DefaultStackSourceName;
                 if (sourceName == null)
+                {
                     return null;
+                }
             }
 
             Debug.Assert(m_opened);
@@ -526,7 +571,10 @@ namespace PerfView
                 {
                     var asStackSource = child as PerfViewStackSource;
                     if (asStackSource != null && asStackSource.SourceName == sourceName)
+                    {
                         return asStackSource;
+                    }
+
                     var asGroup = child as PerfViewTreeGroup;
                     if (asGroup != null && asGroup.Children != null)
                     {
@@ -534,7 +582,9 @@ namespace PerfView
                         {
                             asStackSource = groupChild as PerfViewStackSource;
                             if (asStackSource != null && asStackSource.SourceName == sourceName)
+                            {
                                 return asStackSource;
+                            }
                         }
                     }
                 }
@@ -543,7 +593,9 @@ namespace PerfView
             {
                 var asStackSource = m_singletonStackSource as PerfViewStackSource;
                 if (asStackSource != null)
+                {
                     return asStackSource;
+                }
             }
             return null;
         }
@@ -582,7 +634,10 @@ namespace PerfView
 
             var dataSource = GetStackSource(DefaultStackSourceName);
             if (dataSource == null)
+            {
                 return null;
+            }
+
             StackSource stackSource = dataSource.GetStackSource(log);
 
             // maps call stack indexes to callStack closest to the root.
@@ -600,16 +655,25 @@ namespace PerfView
                         process.CPUTimeMSec += sample.Metric;
                         long sampleTicks = start.Ticks + (long)(sample.TimeRelativeMSec * 10000);
                         if (sampleTicks < process.StartTime.Ticks)
+                        {
                             process.StartTime = new DateTime(sampleTicks);
+                        }
+
                         if (sampleTicks > process.EndTime.Ticks)
+                        {
                             process.EndTime = new DateTime(sampleTicks);
+                        }
+
                         Debug.Assert(process.EndTime >= process.StartTime);
                     }
                 }
             });
             processes.Sort();
             if (processes.Count == 0)
+            {
                 processes = null;
+            }
+
             return processes;
         }
 
@@ -724,24 +788,36 @@ namespace PerfView
             }
 
             if (removeScenarios)
+            {
                 stackWindow.RemoveColumn("WhichColumn");
+            }
 
             if (removeIncAvg)
+            {
                 stackWindow.RemoveColumn("IncAvgColumn");
+            }
 
             var defaultEntry = stackWindow.GetDefaultFoldPat();
             stackWindow.FoldRegExTextBox.Text = defaultEntry;
             stackWindow.FoldRegExTextBox.Items.Clear();
             if (!string.IsNullOrWhiteSpace(defaultEntry))
+            {
                 stackWindow.FoldRegExTextBox.Items.Add(defaultEntry);
+            }
+
             if (windows && defaultEntry != "ntoskrnl!%ServiceCopyEnd")
+            {
                 stackWindow.FoldRegExTextBox.Items.Add("ntoskrnl!%ServiceCopyEnd");
+            }
 
             stackWindow.GroupRegExTextBox.Text = stackWindow.GetDefaultGroupPat();
             stackWindow.GroupRegExTextBox.Items.Clear();
             stackWindow.GroupRegExTextBox.Items.Add(@"[no grouping]");
             if (windows)
+            {
                 stackWindow.GroupRegExTextBox.Items.Add(@"[group CLR/OS entries] \Temporary ASP.NET Files\->;v4.0.30319\%!=>CLR;v2.0.50727\%!=>CLR;mscoree=>CLR;\mscorlib.*!=>LIB;\System.*!=>LIB;Presentation%=>WPF;WindowsBase%=>WPF;system32\*!=>OS;syswow64\*!=>OS;{%}!=> module $1");
+            }
+
             stackWindow.GroupRegExTextBox.Items.Add(@"[group modules]           {%}!->module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group module entries]  {%}!=>module $1");
             stackWindow.GroupRegExTextBox.Items.Add(@"[group full path module entries]  {*}!=>module $1");
@@ -789,7 +865,9 @@ namespace PerfView
         {
             // TODO FIX NOW.   WE need reference counting 
             if (m_singletonStackSource != null)
+            {
                 m_opened = false;
+            }
         }
 
         protected PerfViewFile() { }        // Don't allow public default constructor
@@ -804,7 +882,9 @@ namespace PerfView
 
             IProcessForStackSource ret;
             if (rootMostFrameCache.TryGetValue(callStack, out ret))
+            {
                 return ret;
+            }
 
             var caller = stackSource.GetCallerIndex(callStack);
             if (caller == StackSourceCallStackIndex.Invalid)
@@ -816,16 +896,24 @@ namespace PerfView
                     var processIDStr = m.Groups[3].Value;
                     var processName = m.Groups[1].Value;
                     if (processName.Length == 0)
+                    {
                         processName = "(" + processIDStr + ")";
+                    }
+
                     ret = new IProcessForStackSource(processName);
                     int processID;
                     if (int.TryParse(processIDStr, out processID))
+                    {
                         ret.ProcessID = processID;
+                    }
+
                     processes.Add(ret);
                 }
             }
             else
+            {
                 ret = GetProcessFromStack(caller, stackSource, rootMostFrameCache, processes);
+            }
 
             rootMostFrameCache.Add(callStack, ret);
             return ret;
@@ -834,12 +922,17 @@ namespace PerfView
         protected bool IsMyFormat(string fileName)
         {
             foreach (var extension in FileExtensions)
+            {
                 if (fileName.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                {
                     return true;
+                }
+            }
+
             return false;
         }
         protected bool m_opened;
-        internal protected DateTime m_utcLastWriteAtOpen;
+        protected internal DateTime m_utcLastWriteAtOpen;
 
         // If we have only one stack source put it here
         protected PerfViewStackSource m_singletonStackSource;
@@ -849,7 +942,7 @@ namespace PerfView
     }
 
     // Used for new user defined file formats.  
-    class PerfViewUserFile : PerfViewFile
+    internal class PerfViewUserFile : PerfViewFile
     {
         public PerfViewUserFile(string formatName, string[] fileExtensions)
         {
@@ -862,8 +955,8 @@ namespace PerfView
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker) { return null; }
 
         #region private
-        string m_formatName;
-        string[] m_fileExtensions;
+        private string m_formatName;
+        private string[] m_fileExtensions;
         #endregion
     }
 
@@ -896,7 +989,7 @@ namespace PerfView
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["HtmlReportBitmapImage"] as ImageSource; } }
         #endregion
         #region private
-        Action<string, string> m_onOpen;
+        private Action<string, string> m_onOpen;
         #endregion
     }
 
@@ -1030,7 +1123,9 @@ table {
                                     Viewer.StatusBar.EndWork(delegate ()
                                     {
                                         if (message != null)
+                                        {
                                             Viewer.StatusBar.Log(message);
+                                        }
 
                                         continuation?.Invoke();
                                     });
@@ -1101,16 +1196,27 @@ table {
             }
             catch (Exception) { }
             if (len > 0)
+            {
                 writer.WriteLine("<TR><TD>ETL File Size (MB)</TD><TD Align=\"Center\">{0:n1}</TD></TR>", len);
+            }
+
             string logPath = null;
 
             Debug.Assert(fileName.EndsWith("TraceInfo.html"));
             if (fileName.EndsWith(".TraceInfo.html"))
+            {
                 logPath = fileName.Substring(0, fileName.Length - 15) + ".LogFile.txt";
+            }
+
             if (logPath != null && File.Exists(logPath))
+            {
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> <A HREF=\"command:displayLog:{0}\">View data collection log file</A></TD></TR>", logPath);
+            }
             else
+            {
                 writer.WriteLine("<TR><TD colspan=\"2\" Align=\"Center\"> No data collection log file found</A></TD></TR>");
+            }
+
             writer.WriteLine("</Table>");
         }
 
@@ -1151,7 +1257,10 @@ table {
             {
                 var ret = y.CPUMSec.CompareTo(x.CPUMSec);
                 if (ret != 0)
+                {
                     return ret;
+                }
+
                 return y.StartTimeRelativeMsec.CompareTo(x.StartTimeRelativeMsec);
             });
 
@@ -1160,12 +1269,19 @@ table {
             foreach (var process in m_processes)
             {
                 if (process.ProcessID < 0)
+                {
                     continue;
+                }
+
                 if (process.StartTimeRelativeMsec == 0 &&
                     process.EndTimeRelativeMsec == dataFile.SessionEndTimeRelativeMSec)
+                {
                     longProcs.Add(process);
+                }
                 else
+                {
                     shortProcs.Add(process);
+                }
             }
 
             writer.WriteLine("<H2>Process Summary</H2>");
@@ -1197,7 +1313,7 @@ table {
                 if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                     File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
-                    this.MakeProcessesCsv(m_processes, csvFile);
+                    MakeProcessesCsv(m_processes, csvFile);
                 }
                 Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                 System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -1209,7 +1325,7 @@ table {
                 if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                     File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
-                    this.MakeModuleCsv(m_processes, csvFile);
+                    MakeModuleCsv(m_processes, csvFile);
                 }
                 Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                 System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -1222,7 +1338,9 @@ table {
         {
             bool showBitness = false;
             if (processes.Count > 0)
+            {
                 showBitness = (processes[0].Log.PointerSize == 8);
+            }
 
             writer.WriteLine("<Table Border=\"1\">");
             writer.Write("<TR>");
@@ -1230,7 +1348,10 @@ table {
             writer.Write("<TH Align=\"Center\">ID</TH>");
             writer.Write("<TH Align=\"Center\">Parent<BR/>ID</TH>");
             if (showBitness)
+            {
                 writer.Write("<TH Align=\"Center\">Bitness</TH>");
+            }
+
             writer.Write("<TH Align=\"Center\" Title=\"The amount of CPU time used (on any processor).\" >CPU<BR/>MSec</TH>");
             writer.Write("<TH Align=\"Center\" Title=\"The CPU used divided by the duration.\">Ave Procs<BR/>Used</TH>");
             if (showExit)
@@ -1248,7 +1369,10 @@ table {
                 writer.Write("<TD Align=\"Right\">{0}</TD>", process.ProcessID);
                 writer.Write("<TD Align=\"Right\">{0}</TD>", process.ParentID);
                 if (showBitness)
+                {
                     writer.Write("<TD Align=\"Center\">{0}</TD>", process.Is64Bit ? 64 : 32);
+                }
+
                 writer.Write("<TD Align=\"Right\">{0:n0}</TD>", process.CPUMSec);
                 writer.Write("<TD Align=\"Right\">{0:n3}</TD>", process.CPUMSec / (process.EndTimeRelativeMsec - process.StartTimeRelativeMsec));
                 if (showExit)
@@ -1326,8 +1450,8 @@ table {
 
     public class PerfViewIisStats : PerfViewHtmlReport
     {
-        Dictionary<Guid, IisRequest> m_Requests = new Dictionary<Guid, IisRequest>();
-        List<ExceptionDetails> allExceptions = new List<ExceptionDetails>();
+        private Dictionary<Guid, IisRequest> m_Requests = new Dictionary<Guid, IisRequest>();
+        private List<ExceptionDetails> allExceptions = new List<ExceptionDetails>();
 
         public PerfViewIisStats(PerfViewFile dataFile) : base(dataFile, "IIS Stats") { }
 
@@ -1399,7 +1523,9 @@ table {
                 // would be called twice for the same request. At this 
                 // point, I don't think that is causing any problems to us
                 if (!m_Requests.ContainsKey(request.ContextId))
+                {
                     m_Requests.Add(request.ContextId, req);
+                }
 
                 startcount++;
 
@@ -1907,8 +2033,9 @@ table {
 
                 // limit display of URL to specific charachter length only otherwise the table is expanding crazily
                 if (requestPath.Length > 85)
+                {
                     requestPath = requestPath.Substring(0, 80) + "...";
-
+                }
 
                 string threadTimeStacks = "";
                 string activityStacks = "";
@@ -1916,8 +2043,9 @@ table {
                 // limit display of even the module names to specific charachter length only otherwise the table is expanding crazily
                 string slowestPipelineEventDisplay = slowestPipelineEvent.ToString();
                 if (slowestPipelineEventDisplay.Length > 55)
+                {
                     slowestPipelineEventDisplay = slowestPipelineEventDisplay.Substring(0, 50) + "...";
-
+                }
 
                 if (slowestPipelineEvent.StartThreadId == slowestPipelineEvent.EndThreadId)
                 {
@@ -1975,7 +2103,9 @@ table {
                     // limit display of URL to 100 charachters only
                     // otherwise the table is expanding crazily
                     if (requestPath.Length > 100)
+                    {
                         requestPath = requestPath.Substring(0, 100) + "...";
+                    }
 
                     string detailedRequestCommandString = $"detailedrequestevents:{request.ContextId};{request.StartTimeRelativeMSec};{request.EndTimeRelativeMSec}";
 
@@ -2083,7 +2213,9 @@ table {
                     foreach (var eventName in events.EventNames)
                     {
                         if (eventName.Contains("IIS_Trace") || eventName.Contains("AspNet"))
+                        {
                             desiredEvents.Add(eventName);
+                        }
                     }
                     events.SetEventFilter(desiredEvents);
 
@@ -2362,7 +2494,7 @@ table {
             return unknownEvent;
         }
 
-        class ExceptionDetails
+        private class ExceptionDetails
         {
             public string ExceptionType;
             public string ExceptionMessage;
@@ -2371,7 +2503,7 @@ table {
             public double TimeStampRelativeMSec;
         }
 
-        class IisRequest
+        private class IisRequest
         {
             public string Method;
             public string Path;
@@ -2386,7 +2518,8 @@ table {
             public List<IisPipelineEvent> PipelineEvents = new List<IisPipelineEvent>();
             public Guid RelatedActivityId;
         }
-        class IisPipelineEvent
+
+        private class IisPipelineEvent
         {
             public string Name;
             public int ProcessId;
@@ -2400,7 +2533,8 @@ table {
                 return Name;
             }
         }
-        class AspNetPipelineModuleEvent : IisPipelineEvent
+
+        private class AspNetPipelineModuleEvent : IisPipelineEvent
         {
             public string ModuleName;
             public bool foundEndEvent = false;
@@ -2411,7 +2545,7 @@ table {
             }
         }
 
-        class IisModuleEvent : IisPipelineEvent
+        private class IisModuleEvent : IisPipelineEvent
         {
             public RequestNotification Notification;
             public bool fIsPostNotification;
@@ -2423,7 +2557,7 @@ table {
             }
         }
 
-        class IisPrebeginModuleEvent : IisPipelineEvent
+        private class IisPrebeginModuleEvent : IisPipelineEvent
         {
             public override string ToString()
             {
@@ -2431,7 +2565,7 @@ table {
             }
         }
 
-        class RequestFailureDetails
+        private class RequestFailureDetails
         {
             public string ModuleName;
             public RequestNotification Notification;
@@ -2468,33 +2602,45 @@ table {
 
             var byTimeStats = new ByTimeRequestStats[numBuckets];
             for (int i = 0; i < byTimeStats.Length; i++)
+            {
                 byTimeStats[i] = new ByTimeRequestStats();
+            }
 
             var requestsProcessing = 0;
 
             dispatcher.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
             {
                 if (data.ProcessID == 0)    // Non-idle time.  
+                {
                     return;
+                }
 
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
+                {
                     byTimeStats[idx].CpuMSec++;
+                }
             };
 
             dispatcher.Clr.RuntimeStart += delegate (RuntimeInformationTraceData data)
             {
                 if ((data.StartupFlags & StartupFlags.SERVER_GC) != 0)
+                {
                     GCType = "Server";
+                }
                 else
+                {
                     GCType = "Client";
+                }
             };
 
             dispatcher.Clr.ContentionStart += delegate (ContentionTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
+                {
                     byTimeStats[idx].Contentions++;
+                }
             };
 
             dispatcher.Clr.GCStop += delegate (GCEndTraceData data)
@@ -2504,7 +2650,9 @@ table {
                 {
                     byTimeStats[idx].NumGcs++;
                     if (data.Depth >= 2)
+                    {
                         byTimeStats[idx].NumGen2Gcs++;
+                    }
                 }
             };
 
@@ -2547,25 +2695,33 @@ table {
             {
                 // Compute the disk service time.  
                 if (data.DiskNumber >= lastDiskEndMSec.Count)
+                {
                     lastDiskEndMSec.Count = data.DiskNumber + 1;
+                }
 
                 var elapsedMSec = data.ElapsedTimeMSec;
                 double serviceTimeMSec = elapsedMSec;
                 double durationSinceLastIOMSec = data.TimeStampRelativeMSec - lastDiskEndMSec[data.DiskNumber];
                 if (durationSinceLastIOMSec < serviceTimeMSec)
+                {
                     serviceTimeMSec = durationSinceLastIOMSec;
+                }
 
                 // Add it to the stats.  
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
+                {
                     byTimeStats[idx].DiskIOMsec += serviceTimeMSec;
+                }
             });
 
             dispatcher.Kernel.ThreadCSwitch += delegate (CSwitchTraceData data)
             {
                 int idx = GetBucket(data.TimeStampRelativeMSec, startIntervalMSec, bucketIntervalMSec, byTimeStats.Length);
                 if (idx >= 0)
+                {
                     byTimeStats[idx].ContextSwitch++;
+                }
             };
 
             aspNet.AspNetReqStart += delegate (AspNetStartTraceData data)
@@ -2624,7 +2780,9 @@ table {
                     }
                 }
                 else
+                {
                     log.WriteLine("WARNING: stop event without a start at {0:n3} Msec.", data.TimeStampRelativeMSec);
+                }
             };
 
 
@@ -2635,7 +2793,10 @@ table {
                 {
                     // allow this routine to be called twice for the same event.  
                     if (request.HandlerStartTimeRelativeMSec != 0)
+                    {
                         return;
+                    }
+
                     Debug.Assert(request.StopTimeRelativeMSec == 0);
 
                     request.HandlerStartTimeRelativeMSec = timeStampRelativeMSec;
@@ -2691,11 +2852,15 @@ table {
 
                 // Throw out receive counts that don't have a end event
                 if (req.StopTimeRelativeMSec == 0)
+                {
                     recAdjust++;
+                }
 
                 // Throw out process counts that don't have a stop handler or a stop.   
                 if (0 < req.HandlerStartTimeRelativeMSec && (req.HandlerStopTimeRelativeMSec == 0 || req.StopTimeRelativeMSec == 0))
+                {
                     procAdjust++;
+                }
 
                 // Fix up the requests 
                 req.RequestsReceived -= recAdjust;
@@ -2708,14 +2873,20 @@ table {
 
                 // A this point req is accurate.   Calcuate global and byTime stats from that.  
                 if (globalMaxRequestsReceived < req.RequestsReceived)
+                {
                     globalMaxRequestsReceived = req.RequestsReceived;
+                }
 
                 if (globalMaxRequestsProcessing < req.RequestsProcessing)
+                {
                     globalMaxRequestsProcessing = req.RequestsProcessing;
+                }
 
                 var requestsQueued = req.RequestsQueued;
                 if (globalMaxRequestsQueued < requestsQueued)
+                {
                     globalMaxRequestsQueued = requestsQueued;
+                }
 
                 if (req.StopTimeRelativeMSec > 0)
                 {
@@ -2729,9 +2900,14 @@ table {
                 }
             }
             if (recAdjust != 0)
+            {
                 log.WriteLine("There were {0} event starts without a matching event end in the trace", recAdjust);
+            }
+
             if (procAdjust != 0)
+            {
                 log.WriteLine("There were {0} handler starts without a matching handler end in the trace", procAdjust);
+            }
 
             writer.WriteLine("<H2>ASP.Net Statistics</H2>");
             writer.WriteLine("<UL>");
@@ -2779,16 +2955,24 @@ table {
             // to have one without the other 
             var limit = numBuckets;
             while (0 < limit && byTimeStats[limit - 1].CpuMSec == 0)
+            {
                 --limit;
+            }
+
             if (limit == 0)             // Something went wrong (e.g no CPU sampling turned on), give up on trimming.
+            {
                 limit = numBuckets;
+            }
 
             bool wroteARow = false;
             for (int i = 0; i < limit; i++)
             {
                 var byTimeStat = byTimeStats[i];
                 if (byTimeStat.NumRequests == 0 && !wroteARow)       // Skip initial cases if any. 
+                {
                     continue;
+                }
+
                 wroteARow = true;
                 var startBucketMSec = startIntervalMSec + i * bucketIntervalMSec;
                 writer.Write("<TR>");
@@ -2819,14 +3003,20 @@ table {
             {
                 // Skip requests that did not finish.  
                 if (request.StopTimeRelativeMSec == 0)
+                {
                     continue;
+                }
 
                 var key = request.Method + request.Path + request.QueryString;
                 ByRequestStats stats;
                 if (!byRequestType.TryGetValue(key, out stats))
+                {
                     byRequestType.Add(key, new ByRequestStats(request));
+                }
                 else
+                {
                     stats.AddRequest(request);
+                }
             }
 
             var requestStats = new List<ByRequestStats>(byRequestType.Values);
@@ -2861,7 +3051,10 @@ table {
                 writer.Write("<TD Align=\"Center\">{0}</TD>", requestStat.MaxRequest.Path);
                 var queryString = requestStat.MaxRequest.QueryString;
                 if (string.IsNullOrWhiteSpace(queryString))
+                {
                     queryString = "&nbsp;";
+                }
+
                 writer.Write("<TD Align=\"Center\">{0}</TD>", queryString);
                 writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequests);
                 writer.Write("<TD Align=\"Center\">{0:n0}</TD>", requestStat.NumRequest1Sec);
@@ -2911,7 +3104,7 @@ table {
         }
 
         #region private
-        class AspNetRequest
+        private class AspNetRequest
         {
             public TraceProcess Process;
             public double DurationMSec { get { return Math.Max(StopTimeRelativeMSec - StartTimeRelativeMSec, 0); } }
@@ -2923,7 +3116,10 @@ table {
                     // Missing Handler events can cause this.  Typically they are the first events in the system.
                     // TODO is this too misleading?  
                     if (!(HandlerStartTimeRelativeMSec >= StartTimeRelativeMSec))
+                    {
                         return 0;
+                    }
+
                     return HandlerStartTimeRelativeMSec - StartTimeRelativeMSec;
                 }
             }
@@ -2948,7 +3144,7 @@ table {
             public Guid ID;
         }
 
-        class ByTimeRequestStats
+        private class ByTimeRequestStats
         {
             public ByTimeRequestStats()
             {
@@ -2982,7 +3178,7 @@ table {
             internal int MeanRequestsProcessingCount;
         };
 
-        class ByRequestStats
+        private class ByRequestStats
         {
             public ByRequestStats(AspNetRequest request)
             {
@@ -2992,17 +3188,28 @@ table {
             public void AddRequest(AspNetRequest request)
             {
                 if (request.DurationMSec > MaxRequest.DurationMSec)
+                {
                     MaxRequest = request;
+                }
+
                 TotalDurationMSec += request.DurationMSec;
                 Debug.Assert(request.DurationMSec >= 0);
                 Debug.Assert(TotalDurationMSec >= 0);
                 NumRequests++;
                 if (request.DurationMSec > 1000)
+                {
                     NumRequest1Sec++;
+                }
+
                 if (request.DurationMSec > 5000)
+                {
                     NumRequest5Sec++;
+                }
+
                 if (request.DurationMSec > 10000)
+                {
                     NumRequest10Sec++;
+                }
             }
             public double MeanRequestMSec { get { return TotalDurationMSec / NumRequests; } }
 
@@ -3018,10 +3225,16 @@ table {
         private static int GetBucket(double timeStampMSec, int startIntervalMSec, int bucketIntervalMSec, int maxBucket)
         {
             if (timeStampMSec < startIntervalMSec)
+            {
                 return -1;
+            }
+
             int idx = (int)(timeStampMSec / bucketIntervalMSec);
             if (idx >= maxBucket)
+            {
                 return -1;
+            }
+
             return idx;
         }
 
@@ -3035,7 +3248,9 @@ table {
                 foreach (var request in requests)
                 {
                     if (request.StopTimeRelativeMSec == 0)       // Skip incomplete entries
+                    {
                         continue;
+                    }
 
                     csvFile.WriteLine("{1}{0}{2}{0}{3}{0}{4:f3}{0}{5:f2}{0}{6:f3}{0}{7:f2}{0}{8}{0}{9}{0}{10}{0}{11}{0}{12}", listSeparator,
                         request.Method, EventWindow.EscapeForCsv(request.Path, ","), EventWindow.EscapeForCsv(request.QueryString, ","),
@@ -3046,7 +3261,7 @@ table {
             }
         }
 
-        List<AspNetRequest> m_requests;
+        private List<AspNetRequest> m_requests;
         #endregion
     }
 
@@ -3092,7 +3307,7 @@ table {
                     File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                 {
                     //make the csv
-                    this.MakeEventStatCsv(m_counts, csvFile);
+                    MakeEventStatCsv(m_counts, csvFile);
                 }
                 Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                 System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -3144,9 +3359,13 @@ table {
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         if (raw.Length != 0)
+                        {
                             Stats.GcStats.PerGenerationCsv(csvFile, mang);
+                        }
                         else
+                        {
                             Stats.GcStats.ToCsv(csvFile, mang);
+                        }
                     }
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
@@ -3184,13 +3403,17 @@ table {
                         File.GetLastWriteTimeUtc(xmlOutputName) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
                     {
                         using (var writer = File.CreateText(xmlOutputName))
+                        {
                             Stats.GcStats.ToXml(writer, gcProc, mang, "");
+                        }
                     }
 
                     // TODO FIX NOW Need a way of viewing it.  
                     var viewer = Command.FindOnPath("xmlView");
                     if (viewer == null)
+                    {
                         viewer = "notepad";
+                    }
 
                     Command.Run(viewer + " " + Command.Quote(xmlOutputName),
                         new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite).AddNoThrow());
@@ -3213,12 +3436,18 @@ table {
                 });
                 source.Process();
                 foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                    if (!m_gcStats.ContainsKey(proc.ProcessID) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null) m_gcStats.Add(proc.ProcessID, proc);
+                {
+                    if (!m_gcStats.ContainsKey(proc.ProcessID) && Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null)
+                    {
+                        m_gcStats.Add(proc.ProcessID, proc);
+                    }
+                }
+
                 Stats.ClrStats.ToHtml(writer, m_gcStats.Values.ToList(), fileName, "GCStats", Stats.ClrStats.ReportType.GC, true);
             }
         }
 
-        Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
+        private Dictionary<int/*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_gcStats;
     }
 
     public class PerfViewJitStats : PerfViewHtmlReport
@@ -3237,7 +3466,10 @@ table {
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                    {
                         Stats.JitStats.ToCsv(csvFile, mang);
+                    }
+
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -3254,7 +3486,10 @@ table {
                     var csvFile = CacheFiles.FindFile(FilePath, ".jitInliningStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                    {
                         Stats.JitStats.ToInliningCsv(csvFile, mang);
+                    }
+
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -3272,7 +3507,10 @@ table {
                     var csvFile = CacheFiles.FindFile(FilePath, ".BGjitStats." + processId.ToString() + ".csv");
                     if (!File.Exists(csvFile) || File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(FilePath) ||
                         File.GetLastWriteTimeUtc(csvFile) < File.GetLastWriteTimeUtc(SupportFiles.MainAssemblyPath))
+                    {
                         Stats.JitStats.BackgroundDiagCsv(csvFile, mang, events);
+                    }
+
                     Command.Run(Command.Quote(csvFile), new CommandOptions().AddStart().AddTimeout(CommandOptions.Infinite));
                     System.Threading.Thread.Sleep(500);     // Give it time to start a bit.  
                     return "Opening CSV " + csvFile;
@@ -3293,12 +3531,20 @@ table {
             var clrPrivate = new ClrPrivateTraceEventParser(source);
             clrPrivate.ClrMulticoreJitCommon += delegate (MulticoreJitPrivateTraceData data)
             {
-                if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!m_bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 m_bgJitEvents[data.ProcessID].Add(data.Clone());
             };
             source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
             {
-                if (!m_bgJitEvents.ContainsKey(data.ProcessID)) m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                if (!m_bgJitEvents.ContainsKey(data.ProcessID))
+                {
+                    m_bgJitEvents.Add(data.ProcessID, new List<object>());
+                }
+
                 m_bgJitEvents[data.ProcessID].Add(data.Clone());
             };
 
@@ -3306,12 +3552,18 @@ table {
             Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.NeedLoadedDotNetRuntimes(source);
             source.Process();
             foreach (var proc in Microsoft.Diagnostics.Tracing.Analysis.TraceProcessesExtensions.Processes(source))
-                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !m_jitStats.ContainsKey(proc.ProcessID)) m_jitStats.Add(proc.ProcessID, proc);
+            {
+                if (Microsoft.Diagnostics.Tracing.Analysis.TraceLoadedDotNetRuntimeExtensions.LoadedDotNetRuntime(proc) != null && !m_jitStats.ContainsKey(proc.ProcessID))
+                {
+                    m_jitStats.Add(proc.ProcessID, proc);
+                }
+            }
+
             Stats.ClrStats.ToHtml(output, m_jitStats.Values.ToList(), fileName, "JITStats", Stats.ClrStats.ReportType.JIT, true);
         }
 
-        Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_jitStats;
-        Dictionary<int /*pid*/, List<object>> m_bgJitEvents;
+        private Dictionary<int /*pid*/, Microsoft.Diagnostics.Tracing.Analysis.TraceProcess> m_jitStats;
+        private Dictionary<int /*pid*/, List<object>> m_bgJitEvents;
     }
 
     /// <summary>
@@ -3352,7 +3604,9 @@ table {
                     {
                         // Look for induced GCs.  and remember their when it happened.    
                         if (data.Depth == 2 && data.Reason == GCReason.Induced)
+                        {
                             lastGCStartsRelMSec[data.ProcessID] = data.TimeStampRelativeMSec;
+                        }
                     };
                     source.Clr.GCBulkNode += delegate (GCBulkNodeTraceData data)
                     {
@@ -3362,7 +3616,10 @@ table {
                             var processName = "";
                             var process = data.Process();
                             if (process != null)
+                            {
                                 processName = process.Name;
+                            }
+
                             newChildren.Add(new PerfViewHeapSnapshot(DataFile, data.ProcessID, processName, lastGCStartRelMSec, ".NET"));
 
                             lastGCStartsRelMSec.Remove(data.ProcessID);     // Remove it since so we ignore the rest of the node events.  
@@ -3374,7 +3631,10 @@ table {
                         var processName = "";
                         var process = data.Process();
                         if (process != null)
+                        {
                             processName = process.Name;
+                        }
+
                         newChildren.Add(new PerfViewHeapSnapshot(DataFile, data.ProcessID, processName, data.TimeStampRelativeMSec, "JS"));
                     };
                     source.Process();
@@ -3401,7 +3661,7 @@ table {
     /// <summary>
     /// Represents a single heap snapshot in a ETL file (currently only JScript).  
     /// </summary>
-    class PerfViewHeapSnapshot : HeapDumpPerfViewFile
+    internal class PerfViewHeapSnapshot : HeapDumpPerfViewFile
     {
         /// <summary>
         /// snapshotKinds should be .NET or JS
@@ -3441,7 +3701,10 @@ table {
         {
             Debug.Assert(m_eventSource != null, "Open must be called first");
             if (m_needClone)
+            {
                 return m_eventSource.Clone();
+            }
+
             m_needClone = true;
             return m_eventSource;
         }
@@ -3453,11 +3716,17 @@ table {
                 worker.StartWork("Opening " + Name, delegate ()
                 {
                     if (m_eventSource == null || !DataFile.IsUpToDate)
+                    {
                         m_eventSource = DataFile.OpenEventSourceImpl(worker.LogWriter);
+                    }
+
                     worker.EndWork(delegate ()
                     {
                         if (m_eventSource == null)
+                        {
                             throw new ApplicationException("Not a file type that supports the EventView.");
+                        }
+
                         Viewer = new EventWindow(parentWindow, this);
                         Viewer.Show();
                         doAfter?.Invoke();
@@ -3486,9 +3755,13 @@ table {
             DataFile = dataFile;
             SourceName = sourceName;
             if (sourceName.EndsWith(" TaskTree"))   // Special case, call it 'TaskTree' to make it clearer that it is not a call stack
+            {
                 Name = SourceName;
+            }
             else
+            {
                 Name = SourceName + " Stacks";
+            }
         }
         public PerfViewFile DataFile { get; private set; }
         public string SourceName { get; private set; }
@@ -3498,16 +3771,26 @@ table {
         public virtual StackSource GetStackSource(TextWriter log, double startRelativeMSec = 0, double endRelativeMSec = double.PositiveInfinity)
         {
             if (m_StackSource != null && DataFile.IsUpToDate && startRelativeMSec == 0 && endRelativeMSec == double.PositiveInfinity)
+            {
                 return m_StackSource;
+            }
 
             StackSource ret = DataFile.OpenStackSourceImpl(SourceName, log, startRelativeMSec, endRelativeMSec);
             if (ret == null)
+            {
                 ret = DataFile.OpenStackSourceImpl(log);
+            }
+
             if (ret == null)
+            {
                 throw new ApplicationException("Not a file type that supports the StackView.");
+            }
 
             if (startRelativeMSec == 0 && endRelativeMSec == double.PositiveInfinity)
+            {
                 m_StackSource = ret;
+            }
+
             return ret;
         }
 
@@ -3535,9 +3818,14 @@ table {
                         // Compute the stack events
                         m_StackSource = OpenStackSource(SourceName, worker.LogWriter);
                         if (m_StackSource == null)
+                        {
                             m_StackSource = OpenStackSourceImpl(worker.LogWriter);
+                        }
+
                         if (m_StackSource == null)
+                        {
                             throw new ApplicationException("Not a file type that supports the StackView.");
+                        }
                     }
 
                     // Get the process summary if needed. 
@@ -3566,7 +3854,10 @@ table {
                                 foreach (var process in selectedProcesses)
                                 {
                                     if (incPat.Length != 0)
+                                    {
                                         incPat += "|";
+                                    }
+
                                     incPat += "Process% " + process.Name + " (" + process.ProcessID + ")";
                                     processIDs.Add(process.ProcessID);
                                 }
@@ -3597,6 +3888,7 @@ table {
                                 {
                                     // Catch the error if you don't merge and move to a new machine.  
                                     if (traceLog != null && !traceLog.CurrentMachineIsCollectionMachine() && !traceLog.HasPdbInfo)
+                                    {
                                         MessageBox.Show(parentWindow,
                                             "Warning!   This file was not merged and was moved from the collection\r\n" +
                                             "machine.  This means the data is incomplete and symbolic name resolution\r\n" +
@@ -3605,6 +3897,7 @@ table {
                                             "\r\n" +
                                             "See merging and zipping in the users guide for more information.",
                                             "Data not merged before leaving the machine!");
+                                    }
 
                                     Viewer.SetStackSource(m_StackSource, delegate ()
                                     {
@@ -3642,7 +3935,9 @@ table {
                             }
                         }
                         else
+                        {
                             launchViewer(null);
+                        }
                     });
                 });
             }
@@ -3686,7 +3981,9 @@ table {
                     {
                         // if there is any process we can't determine is 64 bit, then we assume it might be.  
                         if (!child.Name.StartsWith("Process32 "))
+                        {
                             is64bit = true;
+                        }
                     }
                     return WarnAboutBrokenStacks(parentWindow, brokenPercent, is64bit, log);
                 }
@@ -3696,7 +3993,10 @@ table {
         private static bool WarnAboutBrokenStacks(Window parentWindow, float brokenPercent, bool is64Bit, TextWriter log)
         {
             if (brokenPercent > 1)
+            {
                 log.WriteLine("Finished aggregating stacks.  (" + brokenPercent.ToString("f1") + "% Broken Stacks)");
+            }
+
             if (brokenPercent > 10)
             {
                 if (is64Bit)
@@ -3712,10 +4012,13 @@ table {
                         "Broken Stacks");
                 }
                 else
+                {
                     MessageBox.Show(parentWindow, "Warning: There are " + brokenPercent.ToString("f1") + "% stacks that are broken\r\n" +
                         "Top down analysis is suspect, however bottom up approaches are still valid.\r\n\r\n" +
                         "Use the troubleshooting link at the top of the view for more information.\r\n",
                         "Broken Stacks");
+                }
+
                 return true;
             }
             return false;
@@ -3727,7 +4030,7 @@ table {
         #endregion
     }
 
-    class DiffPerfViewData : PerfViewStackSource
+    internal class DiffPerfViewData : PerfViewStackSource
     {
         public DiffPerfViewData(PerfViewStackSource data, PerfViewStackSource baseline)
             : base(data.DataFile, data.SourceName)
@@ -3751,15 +4054,15 @@ table {
         }
 
         #region private
-        PerfViewStackSource m_data;
-        PerfViewStackSource m_baseline;
+        private PerfViewStackSource m_data;
+        private PerfViewStackSource m_baseline;
         #endregion
     }
 
     /// <summary>
     /// These are the data Templates that PerfView understands.  
     /// </summary>
-    class CSVPerfViewData : PerfViewFile
+    internal class CSVPerfViewData : PerfViewFile
     {
         public override string FormatName { get { return "XPERF CSV"; } }
         public override string[] FileExtensions { get { return new string[] { ".csvz", ".etl.csv" }; } }
@@ -3771,7 +4074,10 @@ table {
 
             m_Children.Add(new PerfViewEventSource(this));
             foreach (var stackEventName in m_csvReader.StackEventNames)
+            {
                 m_Children.Add(new PerfViewStackSource(this, stackEventName));
+            }
+
             return null;
         }
         public override void Close()
@@ -3833,13 +4139,19 @@ table {
             if (!streamName.Contains("TaskTree") && !streamName.Contains("Tasks)"))
             {
                 if (predicate != null)
+                {
                     events = events.Filter(predicate);
+                }
             }
             else
+            {
                 startRelativeMSec = 0;    // These require activity computers and thus need earlier events.   
+            }
 
             if (startRelativeMSec != 0 || endRelativeMSec != double.PositiveInfinity)
+            {
                 events = events.FilterByTime(startRelativeMSec, endRelativeMSec);
+            }
 
             var eventSource = events.GetSource();
             var sample = new StackSourceSample(stackSource);
@@ -3855,9 +4167,13 @@ table {
             else if (streamName.StartsWith("ASP.NET Thread Time"))
             {
                 if (streamName == "ASP.NET Thread Time (with Tasks)")
+                {
                     return eventLog.ThreadTimeWithTasksAspNetStacks();
+                }
                 else
+                {
                     return eventLog.ThreadTimeAspNetStacks();
+                }
             }
             else if (streamName.StartsWith("Thread Time (with StartStop Activities)"))
             {
@@ -4066,7 +4382,10 @@ table {
                 {
                     var process = data.Process();
                     if (process == null)
+                    {
                         return;
+                    }
+
                     curGCGen[(int)process.ProcessIndex] = data.Depth;
                     curGCIndex[(int)process.ProcessIndex] = data.Count;
                 };
@@ -4076,14 +4395,21 @@ table {
                 Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
+                    {
                         return;
+                    }
 
                     var process = data.Process();
                     if (process == null)
+                    {
                         return;
+                    }
+
                     var liveHandles = allLiveHandles[(int)process.ProcessIndex];
                     if (liveHandles == null)
+                    {
                         allLiveHandles[(int)process.ProcessIndex] = liveHandles = new Dictionary<Address, GCHandleInfo>();
+                    }
 
                     GCHandleInfo info;
                     var handle = data.HandleID;
@@ -4108,15 +4434,22 @@ table {
                 {
                     var process = data.Process();
                     if (process == null)
+                    {
                         return;
+                    }
+
                     var liveHandles = allLiveHandles[(int)process.ProcessIndex];
                     if (liveHandles == null)
+                    {
                         allLiveHandles[(int)process.ProcessIndex] = liveHandles = new Dictionary<Address, GCHandleInfo>();
+                    }
 
                     GCHandleInfo info;
                     var handle = data.HandleID;
                     if (liveHandles.TryGetValue(handle, out info))
+                    {
                         liveHandles.Remove(handle);
+                    }
                 };
                 clrPrivate.GCDestroyGCHandle += onDestroyHandle;
                 eventSource.Clr.GCDestoryGCHandle += onDestroyHandle;
@@ -4149,11 +4482,16 @@ table {
                 {
                     var thread = data.Thread();
                     if (thread == null)
+                    {
                         return;
+                    }
+
                     var process = thread.Process;
                     var liveHandles = allLiveHandles[(int)process.ProcessIndex];
                     if (liveHandles == null)
+                    {
                         allLiveHandles[(int)process.ProcessIndex] = liveHandles = new Dictionary<Address, GCHandleInfo>();
+                    }
 
                     string pinKind = "UnknownPinned";
                     double pinStartTimeRelativeMSec = 0;
@@ -4173,7 +4511,9 @@ table {
                             gcGen = info.GCGen;
                         }
                         else if (data.ObjectID == info.ObjectAddress)
+                        {
                             pinStartTimeRelativeMSec = info.PinStartTimeRelativeMSec;
+                        }
                         else
                         {
                             info.PinStartTimeRelativeMSec = data.TimeStampRelativeMSec;     // Restart trying to guess how long this lives
@@ -4195,7 +4535,9 @@ table {
                     {
                         var lastHandleInfo = lastHandleInfoForThreads[(int)thread.ThreadIndex];
                         if (lastHandleInfo == null)
+                        {
                             lastHandleInfoForThreads[(int)thread.ThreadIndex] = lastHandleInfo = new PerThreadGCHandleInfo();
+                        }
 
                         // If we see a handle that 
                         if (data.HandleID - lastHandleInfo.LikelyAsyncHandleTable1 < 128)
@@ -4234,13 +4576,17 @@ table {
 
                                 var size = 1024;
                                 while (size < objectInfo.Size)
+                                {
                                     size = size * 2;
+                                }
 
                                 frameName += " <= " + (size / 1024).ToString() + "K";
                                 allocStack = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(frameName), allocStack);
                             }
                             else
+                            {
                                 allocStack = stackSource.Interner.CallStackIntern(objectInfo.ClassFrame, allocStack);
+                            }
                         }
                     }
 
@@ -4293,7 +4639,9 @@ table {
                     {
                         var gcThread = data.Thread();
                         if (gcThread == null)
+                        {
                             return;             // TODO WARN
+                        }
 
                         sample.StackIndex = stackSource.GetCallStackForThread(gcThread);
                         sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("GC Location"), sample.StackIndex);
@@ -4319,7 +4667,9 @@ table {
                     // Add the type and size 
                     var typeName = data.TypeName;
                     if (data.ObjectSize > 0)
+                    {
                         sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Type " + typeName + " Size: 0x" + data.ObjectSize.ToString("x")), sample.StackIndex);
+                    }
 
                     // Add the generation.
                     sample.StackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern("Generation " + gcGen), sample.StackIndex);
@@ -4347,7 +4697,9 @@ table {
                 Action<SetGCHandleTraceData> onSetHandle = delegate (SetGCHandleTraceData data)
                 {
                     if (!(data.Kind == GCHandleKind.AsyncPinned || data.Kind == GCHandleKind.Pinned))
+                    {
                         return;
+                    }
 
                     GCHandleInfo info;
                     var handle = (long)data.HandleID;
@@ -4392,7 +4744,9 @@ table {
                 eventSource.Process();
                 // Pick up any handles that were never destroyed.  
                 foreach (var info in liveHandles.Values)
+                {
                     LogGCHandleLifetime(stackSource, sample, info, eventLog.SessionDuration.TotalMilliseconds, log);
+                }
 
                 stackSource.DoneAddingSamples();
                 log.WriteLine("The maximum number of live pinning handles is {0} at {1:n3} Msec ", maxLiveHandles, maxLiveHandleRelativeMSec);
@@ -4400,12 +4754,12 @@ table {
 
             else if (streamName == "Heap Snapshot Pinning")
             {
-                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample, log);
+                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(FilePath, eventLog, stackSource, sample, log);
                 pinnedObjectAnalyzer.Execute(GCPinnedObjectViewType.PinnedHandles);
             }
             else if (streamName == "Heap Snapshot Pinned Object Allocation")
             {
-                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(this.FilePath, eventLog, stackSource, sample, log);
+                GCPinnedObjectAnalyzer pinnedObjectAnalyzer = new GCPinnedObjectAnalyzer(FilePath, eventLog, stackSource, sample, log);
                 pinnedObjectAnalyzer.Execute(GCPinnedObjectViewType.PinnedObjectAllocations);
             }
             else if (streamName == "CCW Ref Count")
@@ -4419,7 +4773,9 @@ table {
 
                     var operation = data.Operation;
                     if (operation.StartsWith("Release", StringComparison.OrdinalIgnoreCase))
+                    {
                         sample.Metric = -1;
+                    }
 
                     var ccwRefKindName = "CCW " + operation;
                     var ccwRefKindIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
@@ -4448,7 +4804,9 @@ table {
 
                     var operation = data.Operation;
                     if (operation.StartsWith("Release", StringComparison.OrdinalIgnoreCase))
+                    {
                         sample.Metric = -1;
+                    }
 
                     var ccwRefKindName = "CCW " + operation;
                     var ccwRefKindIndex = stackSource.Interner.FrameIntern(ccwRefKindName);
@@ -4504,9 +4862,14 @@ table {
                         string objectType = "Object Type ";
                         string typeName;
                         if (typeToNameMap.TryGetValue(typeId, out typeName))
+                        {
                             objectType += typeName;
+                        }
                         else
+                        {
                             objectType += "0x" + typeId;
+                        }
+
                         var objectTypeIndex = stackSource.Interner.FrameIntern(objectType);
                         stackIndex = stackSource.Interner.CallStackIntern(objectTypeIndex, stackIndex);
                     }
@@ -4523,7 +4886,9 @@ table {
                 interopTraceEventParser.AddCallbackForEvent<TaskCCWCreationArgs>(null, args =>
                 {
                     if (!objectToTypeMap.ContainsKey(args.objectID))
+                    {
                         objectToTypeMap.Add(args.objectID, args.targetObjectIDType);
+                    }
 
                     // Attempt to resolve the type name.
                     if (!typeToNameMap.ContainsKey(args.targetObjectIDType))
@@ -4533,7 +4898,9 @@ table {
                         {
                             string typeName = typeNameSymbolResolver.ResolveTypeName((int)(args.targetObjectIDType - module.ModuleFile.ImageBase), module.ModuleFile, TypeNameSymbolResolver.TypeNameOptions.StripModuleName);
                             if (typeName != null)
+                            {
                                 typeToNameMap.Add(args.targetObjectIDType, typeName);
+                            }
                         }
                     }
                 });
@@ -4576,7 +4943,9 @@ table {
                         long key = (((long)handleProcess) << 32) + handleInstance;
                         StackSourceCallStackIndex stackIndex;
                         if (allocationsStacks.TryGetValue(key, out stackIndex))
+                        {
                             sample.StackIndex = stackIndex;
+                        }
                         // TODO should we keep track of the ref count and remove the entry when it drops past zero?  
                     }
 
@@ -4592,7 +4961,9 @@ table {
                             stackIndex = StackSourceCallStackIndex.Invalid;
                             TraceProcess process = eventLog.Processes.GetProcess(handleProcess, data.TimeStampRelativeMSec);
                             if (process != null)
+                            {
                                 stackIndex = stackSource.GetCallStackForProcess(process);
+                            }
 
                             var markerIndex = stackSource.Interner.FrameIntern("Handle Allocated Out of Process");
                             stackIndex = stackSource.Interner.CallStackIntern(markerIndex, stackIndex);
@@ -4643,7 +5014,9 @@ table {
                         // TODO This is a clone of the logic below, factor it.  
                         TraceThread thread = data.Thread();
                         if (thread != null)
+                        {
                             return;
+                        }
 
                         StackSourceCallStackIndex stackIndex;
                         if (isAnyTaskTree)
@@ -4659,7 +5032,9 @@ table {
                         {
                             Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
                             if (isAnyWithStartStop)
+                            {
                                 topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                            }
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
@@ -4673,7 +5048,9 @@ table {
                     };
 
                     if (isAnyWithStartStop || isAnyStartStopTreeNoCallStack)
+                    {
                         startStopComputer = new StartStopActivityComputer(eventSource, activityComputer);
+                    }
                 }
 
                 StackSourceFrameIndex blockingFrame = stackSource.Interner.FrameIntern("Event Kernel/Thread/BLOCKING CSwitch");
@@ -4689,7 +5066,9 @@ table {
                     {
                         TraceThread thread = data.Thread();
                         if (thread == null)
+                        {
                             return;
+                        }
 
                         if (isAnyTaskTree)
                         {
@@ -4704,7 +5083,9 @@ table {
                         {
                             Func<TraceThread, StackSourceCallStackIndex> topFrames = null;
                             if (isAnyWithStartStop)
+                            {
                                 topFrames = delegate (TraceThread topThread) { return startStopComputer.GetCurrentStartStopActivityStack(stackSource, thread, topThread); };
+                            }
 
                             // Use the call stack 
                             stackIndex = activityComputer.GetCallStack(stackSource, data, topFrames);
@@ -4715,9 +5096,13 @@ table {
                         // Normal case, get the calls stack of frame names.  
                         var callStackIdx = data.CallStackIndex();
                         if (callStackIdx != CallStackIndex.Invalid)
+                        {
                             stackIndex = stackSource.GetCallStack(callStackIdx, data);
+                        }
                         else
+                        {
                             stackIndex = StackSourceCallStackIndex.Invalid;
+                        }
                     }
 
                     var asCSwitch = data as CSwitchTraceData;
@@ -4750,7 +5135,9 @@ table {
                     }
 
                     if (stackIndex == StackSourceCallStackIndex.Invalid)
+                    {
                         return;
+                    }
 
                     var asSampledProfile = data as SampledProfileTraceData;
                     if (asSampledProfile != null)
@@ -4814,7 +5201,10 @@ table {
                         var pageKind = asPageAccess.PageKind;
                         string fileName = asPageAccess.FileName;
                         if (fileName == null)
+                        {
                             fileName = "";
+                        }
+
                         stackIndex = stackSource.Interner.CallStackIntern(stackSource.Interner.FrameIntern(pageKind.ToString() + " " + fileName), stackIndex);
 
                         // If it is the range of a module, log that as well, as well as it bucket.  
@@ -4923,18 +5313,26 @@ table {
                 {
                     StackSourceCallStackIndex stackIdx;
                     if (diskStartStack.TryGetValue(data.Irp, out stackIdx))
+                    {
                         diskStartStack.Remove(data.Irp);
+                    }
                     else
+                    {
                         stackIdx = StackSourceCallStackIndex.Invalid;
+                    }
 
                     var diskNumber = data.DiskNumber;
                     if (diskNumber >= lastDiskEndMSec.Count)
+                    {
                         lastDiskEndMSec.Count = diskNumber + 1;
+                    }
 
                     // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
                     var filePath = data.FileName;
                     if (filePath.Length == 0)
+                    {
                         filePath = "UNKNOWN";
+                    }
 
                     var nodeName = "I/O Size 0x" + data.TransferSize.ToString("x");
                     var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
@@ -5029,7 +5427,9 @@ table {
                     // Create a call stack that ends with 'Disk READ <fileName> (<fileDirectory>)'
                     var filePath = data.FileName;
                     if (filePath.Length == 0)
+                    {
                         filePath = "UNKNOWN";
+                    }
 
                     var nodeName = string.Format("File {0}: {1} ({2})", data.OpcodeName,
                         GetFileName(filePath), GetDirectoryName(filePath));
@@ -5056,7 +5456,10 @@ table {
                         sample.StackIndex = StackSourceCallStackIndex.Invalid;
                         StackSourceCallStackIndex allocIdx;
                         if (loadedImages.TryGetValue(imageKey, out allocIdx))
+                        {
                             sample.StackIndex = allocIdx;
+                        }
+
                         sample.Metric = -sample.Metric;
                     }
                     else
@@ -5100,7 +5503,9 @@ table {
                                         var processIndex = processWhereMemoryAllocated.ProcessIndex;
                                         var memState = memStates[(int)processIndex];
                                         if (memState == null)
+                                        {
                                             memState = memStates[(int)processIndex] = new MemState();
+                                        }
 
                                         // Commit and decommit not both on together.  
                                         Debug.Assert((data.Flags &
@@ -5116,10 +5521,14 @@ table {
                                             var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
                                             var thread = data.Thread();
                                             if (thread != null)
+                                            {
                                                 processIDAllocatingMemory = thread.Process.ProcessID;
+                                            }
 
                                             if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
+                                            {
                                                 stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                            }
                                             else
                                             {
                                                 stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
@@ -5141,7 +5550,9 @@ table {
                                 });
                 eventSource.Process();
                 if (droppedEvents != 0)
+                {
                     log.WriteLine("WARNING: {0} events were dropped because their process could not be determined.", droppedEvents);
+                }
             }
             else if (streamName == "Net Virtual Reserve")
             {
@@ -5170,7 +5581,10 @@ table {
                         var nodeName = "MapFile";
                         var fileName = data.FileName;
                         if (fileName.Length > 0)
+                        {
                             nodeName = nodeName + " " + GetFileName(fileName) + " (" + GetDirectoryName(fileName) + ")";
+                        }
+
                         var nodeIndex = stackSource.Interner.FrameIntern(nodeName);
                         sample.StackIndex = stackSource.Interner.CallStackIntern(nodeIndex, stackSource.GetCallStack(data.CallStackIndex(), data));
                         mappedImages[data.FileKey] = sample.StackIndex;
@@ -5207,7 +5621,9 @@ table {
                                         var processIndex = processWhereMemoryAllocated.ProcessIndex;
                                         var memState = memStates[(int)processIndex];
                                         if (memState == null)
+                                        {
                                             memState = memStates[(int)processIndex] = new MemState();
+                                        }
 
                                         // Commit and decommit not both on together.  
                                         Debug.Assert((data.Flags &
@@ -5229,10 +5645,14 @@ table {
                                             var processIDAllocatingMemory = processWhereMemoryAllocated.ProcessID;  // This is not right, but it sets the condition properly below 
                                             var thread = data.Thread();
                                             if (thread != null)
+                                            {
                                                 processIDAllocatingMemory = thread.Process.ProcessID;
+                                            }
 
                                             if (data.TimeStampRelativeMSec >= processWhereMemoryAllocated.StartTimeRelativeMsec && processIDAllocatingMemory == processWhereMemoryAllocated.ProcessID)
+                                            {
                                                 stackIndex = stackSource.GetCallStack(data.CallStackIndex(), data);
+                                            }
                                             else
                                             {
                                                 stackIndex = stackSource.GetCallStackForProcess(processWhereMemoryAllocated);
@@ -5255,7 +5675,9 @@ table {
                                 });
                 eventSource.Process();
                 if (droppedEvents != 0)
+                {
                     log.WriteLine("WARNING: {0} events were dropped because their process could not be determined.", droppedEvents);
+                }
             }
             else if (streamName == "Net OS Heap Alloc")
             {
@@ -5277,7 +5699,9 @@ table {
                                 {
                                     var allocs = lastHeapAllocs;
                                     if (data.HeapHandle != lastHeapHandle)
+                                    {
                                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+                                    }
 
                                     sample.TimeRelativeMSec = data.TimeStampRelativeMSec;
                                     sample.Metric = data.AllocSize;
@@ -5300,7 +5724,9 @@ table {
                 {
                     var allocs = lastHeapAllocs;
                     if (data.HeapHandle != lastHeapHandle)
+                    {
                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+                    }
 
                     StackSourceSample alloc;
                     if (allocs.TryGetValue(data.FreeAddress, out alloc))
@@ -5326,11 +5752,15 @@ table {
                     // so there is nothing to do for those events.  But when the address is
                     // the same we need to resize 
                     if (data.OldAllocAddress != data.NewAllocAddress)
+                    {
                         return;
+                    }
 
                     var allocs = lastHeapAllocs;
                     if (data.HeapHandle != lastHeapHandle)
+                    {
                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+                    }
 
                     // This is a clone of the Free code 
                     StackSourceSample alloc;
@@ -5373,7 +5803,9 @@ table {
                     // Heap is dieing, kill all objects in it.   
                     var allocs = lastHeapAllocs;
                     if (data.HeapHandle != lastHeapHandle)
+                    {
                         allocs = GetHeap(data.HeapHandle, heaps, ref lastHeapAllocs, ref lastHeapHandle);
+                    }
 
                     foreach (StackSourceSample alloc in allocs.Values)
                     {
@@ -5395,7 +5827,9 @@ table {
                 var aveCumMetric = sumCumMetric / cumCount;
                 log.WriteLine("Peak Heap Size: {0:n3} MB   Average Heap size: {1:n3} MB", peakMetric / 1000000.0F, aveCumMetric / 1000000.0F);
                 if (peakSample != null)
+                {
                     log.WriteLine("Peak happens at {0:n3} Msec into the trace.", peakSample.TimeRelativeMSec);
+                }
 
                 log.WriteLine("Trimming alloc-free pairs < 3 msec apart: Before we have {0:n1}K events now {1:n1}K events",
                     cumCount / 1000.0, stackSource.SampleIndexLimit / 1000.0);
@@ -5412,7 +5846,10 @@ table {
                 eventSource.Process();
                 return stackSource;
             }
-            else throw new Exception("Unknown stream " + streamName);
+            else
+            {
+                throw new Exception("Unknown stream " + streamName);
+            }
 
             log.WriteLine("Produced {0:n3}K events", stackSource.SampleIndexLimit / 1000.0);
             stackSource.DoneAddingSamples();
@@ -5427,7 +5864,9 @@ table {
             // This maps a process Index to the stack that represents that process.  
             StackSourceCallStackIndex[] processStackCache = new StackSourceCallStackIndex[traceLog.Processes.Count];
             for (int i = 0; i < processStackCache.Length; i++)
+            {
                 processStackCache[i] = StackSourceCallStackIndex.Invalid;
+            }
 
             var stackSource = new MutableTraceEventStackSource(eventSource.TraceLog);
 
@@ -5472,7 +5911,9 @@ table {
         private static StackSourceCallStackIndex GetStackForProcess(TraceProcess process, TraceLog traceLog, MutableTraceEventStackSource stackSource, StackSourceCallStackIndex[] processStackCache)
         {
             if (process == null)
+            {
                 return StackSourceCallStackIndex.Invalid;
+            }
 
             var ret = processStackCache[(int)process.ProcessIndex];
             if (ret == StackSourceCallStackIndex.Invalid)
@@ -5482,11 +5923,16 @@ table {
 
                 string parent = "";
                 if (parentStack == StackSourceCallStackIndex.Invalid)
+                {
                     parent += ",Parent=" + process.ParentID;
+                }
 
                 string command = process.CommandLine;
                 if (string.IsNullOrWhiteSpace(command))
+                {
                     command = process.ImageFileName;
+                }
+
                 string processFrameString = string.Format("Process({0}{1}): {2}", process.ProcessID, parent, command);
 
                 StackSourceFrameIndex processFrameIdx = stackSource.Interner.FrameIntern(processFrameString);
@@ -5500,7 +5946,10 @@ table {
             // We need long (over 260) file name support so we do this by hand.  
             var lastSlash = filePath.LastIndexOf('\\');
             if (lastSlash < 0)
+            {
                 return "";
+            }
+
             return filePath.Substring(0, lastSlash + 1);
         }
 
@@ -5509,7 +5958,10 @@ table {
             // We need long (over 260) file name support so we do this by hand.  
             var lastSlash = filePath.LastIndexOf('\\');
             if (lastSlash < 0)
+            {
                 return filePath;
+            }
+
             return filePath.Substring(lastSlash + 1);
         }
 
@@ -5555,7 +6007,7 @@ table {
             stackSource.AddSample(sample);
         }
 
-        class PerThreadGCHandleInfo
+        private class PerThreadGCHandleInfo
         {
             public Address LastHandle;
             public Address LastObject;
@@ -5563,7 +6015,7 @@ table {
             public Address LikelyAsyncHandleTable2;
         }
 
-        class GCHandleInfo
+        private class GCHandleInfo
         {
             public double PinStartTimeRelativeMSec;
             public Address ObjectAddress;
@@ -5617,7 +6069,10 @@ table {
                     // Update the curIdx.   Note that you can have multiple entries pointing to the same location (this is how we delete regions
                     // without having to shuffle the table.
                     while (curIdx < m_searchTable.Count && m_searchTable[curIdx] == cur)
+                    {
                         curIdx++;
+                    }
+
                     Debug.Assert(m_searchTable.Count <= curIdx || cur.MemAddr < m_searchTable[curIdx].MemAddr);
 
                     Debug.Assert(prev.MemAddr < cur.MemAddr);     // strictly increasing
@@ -5696,13 +6151,21 @@ table {
             {
                 Debug.Assert(startAddr != 0);                   // No on can allocate this virtual address.
                 if (startAddr == 0)
+                {
                     return;
+                }
+
                 Address endAddr = startAddr + (Address)length;  // end of range
                 if (endAddr == 0)                               // It is possible to wrap around (if you allocate the last region of memory. 
+                {
                     endAddr = ulong.MaxValue;                   // Avoid this case by adjust it down a bit.  
+                }
+
                 Debug.Assert(endAddr > startAddr);
                 if (!isAlloc)
+                {
                     allocStack = Region.FreeStackIndex;
+                }
 
                 m_totalUpdates++;
 #if DEBUG
@@ -5740,7 +6203,9 @@ table {
                         prev.Next = cur = new Region(endAddr, prev.AllocStack, null);
                         m_numRegions++;
                         if (chainLength > MaxChainLength)
+                        {
                             m_searchTable.Add(cur);
+                        }
                     }
 
                     // Does the new region start after (or at) prev and strictly before than cur? (that is, does the region overlap with prev?)
@@ -5751,7 +6216,9 @@ table {
                         // Can I reuse the node (it starts at exactly the right place, or it is the same stack 
                         // (which I can coalesce))
                         if (startAddr == prev.MemAddr || prevAllocStack == allocStack)
+                        {
                             prev.AllocStack = allocStack;
+                        }
                         else
                         {
                             prev.Next = new Region(startAddr, allocStack, cur);
@@ -5764,14 +6231,18 @@ table {
                         {
                             Debug.Assert(searchTableIdx < m_searchTable.Count);
                             if (searchTableIdx + 1 == m_searchTable.Count)
+                            {
                                 m_searchTable.Add(prev);
+                            }
                             else
                             {
                                 Debug.Assert(m_searchTable[searchTableIdx].MemAddr <= prev.MemAddr);
                                 // Make sure we remain sorted.   Note that we can exceed the next slot in the table because
                                 // the region we are inserting 'covers' many table entries.   
                                 if (m_searchTable.Count <= searchTableIdx + 2 || prev.MemAddr < m_searchTable[searchTableIdx + 2].MemAddr)
+                                {
                                     m_searchTable[searchTableIdx + 1] = prev;
+                                }
                             }
                             searchTableIdx++;
                             chainLength = 0;
@@ -5800,13 +6271,19 @@ table {
                         if (allocStack != Region.FreeStackIndex)        // Is the update an allocation.  
                         {
                             if (prevAllocStack != Region.FreeStackIndex)
+                            {
                                 net = 0;                                // committing a committed region, do nothing
+                            }
+
                             stackToLog = allocStack;
                         }
                         else    // The update is a free.  
                         {
                             if (prevAllocStack == Region.FreeStackIndex)
+                            {
                                 net = 0;                                // freeing a freed region, do nothing  
+                            }
+
                             net = -net;                                 // frees have negative weight. 
                             stackToLog = prevAllocStack;                // We attribute the free to the allocation call stack  
                         }
@@ -5858,7 +6335,9 @@ table {
                         ClassInvarient();
                     }
                     else
+                    {
                         prev = cur;                 // prev advances to cur 
+                    }
 
                     cur = cur.Next;
                 }
@@ -5879,11 +6358,12 @@ table {
                 Debug.Assert(m_searchTable.Count == m_numRegions);
             }
 
-            const int MaxChainLength = 8;           // We don't want chain lengths bigger than this.  
-                                                    // The state of memory is represented as a (sorted) linked list of addresses (with a stack), 
-                                                    // Some of the regions are free (marked by FreeStackIndex)  They only have a start address so by 
-                                                    // construction they can't overlap.  
-            class Region
+            private const int MaxChainLength = 8;           // We don't want chain lengths bigger than this.  
+                                                            // The state of memory is represented as a (sorted) linked list of addresses (with a stack), 
+                                                            // Some of the regions are free (marked by FreeStackIndex)  They only have a start address so by 
+                                                            // construction they can't overlap.  
+
+            private class Region
             {
                 // The special value that represents a free region.  
                 public const StackSourceCallStackIndex FreeStackIndex = (StackSourceCallStackIndex)(-2);
@@ -5918,12 +6398,12 @@ table {
             /// not necessarily to this binary search table.   From time to time we will 'fixup' this table to 
             /// be perfect again.   
             /// </summary>
-            GrowableArray<Region> m_searchTable;        // always non-empty, first entry is linked list to all entries.  
+            private GrowableArray<Region> m_searchTable;        // always non-empty, first entry is linked list to all entries.  
 
             // Keep track of enough to compute the average chain length on lookups.   
-            int m_totalChainTraverals;                  // links we have to traverse from the search table to get to the entry we want.
-            int m_totalUpdates;                         // Number of lookups we did.  (We reset after every table expansion).   
-            int m_numRegions;                           // total number of entries in our linked list (may be larger than the search table) 
+            private int m_totalChainTraverals;                  // links we have to traverse from the search table to get to the entry we want.
+            private int m_totalUpdates;                         // Number of lookups we did.  (We reset after every table expansion).   
+            private int m_numRegions;                           // total number of entries in our linked list (may be larger than the search table) 
         }
 
 
@@ -5950,9 +6430,14 @@ table {
                 log2Metric++;
             }
             if (log2Metric < AllocNames.Length)
+            {
                 allocName = AllocNames[log2Metric];
+            }
             else
+            {
                 allocName = "Alloc >= 32768";
+            }
+
             return allocName;
         }
         #endregion
@@ -5980,7 +6465,9 @@ table {
 
                 // If the new pattern is a superset of the old, then use it.  
                 if (taskFoldPat.StartsWith(stackWindow.FoldRegExTextBox.Text))
+                {
                     stackWindow.FoldRegExTextBox.Text = taskFoldPat;
+                }
 
                 stackWindow.GroupRegExTextBox.Items.Insert(0, @"[Nuget] System.%!=>OTHER;Microsoft.%!=>OTHER;mscorlib%=>OTHER;v4.0.30319%\%!=>OTHER;system32\*!=>OTHER;syswow64\*!=>OTHER");
 
@@ -5993,10 +6480,15 @@ table {
             if (stackSourceName == "CPU" || stackSourceName.Contains("Thread Time"))
             {
                 if (m_traceLog != null)
-                    stackWindow.ExtraTopStats += " TotalProcs " + this.m_traceLog.NumberOfProcessors;
+                {
+                    stackWindow.ExtraTopStats += " TotalProcs " + m_traceLog.NumberOfProcessors;
+                }
+
                 stackWindow.ScalingPolicy = ScalingPolicyKind.TimeMetric;
                 if (!stackSourceName.Contains("Thread Time"))
+                {
                     stackWindow.FoldPercentTextBox.Text = stackWindow.GetDefaultFoldPercentage();
+                }
             }
 
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName == "Image Load" || stackSourceName == "Disk I/O" ||
@@ -6046,23 +6538,32 @@ table {
 
             if (stackSourceName == "Net OS Heap Alloc" || stackSourceName.StartsWith("GC Heap Net Mem") ||
                 stackSourceName.StartsWith("Virtual") || stackSourceName.StartsWith("GC Heap Alloc Ignore Free"))
+            {
                 stackWindow.ComputeMaxInTopStats = true;
+            }
 
             if (stackSourceName == "Net OS Heap Alloc")
+            {
                 stackWindow.FoldRegExTextBox.Items.Insert(0, "^Alloc");
+            }
 
             if (stackSourceName.StartsWith("ASP.NET Thread Time"))
             {
                 var prev = stackWindow.FoldRegExTextBox.Text;
                 if (0 < prev.Length)
+                {
                     prev += ";";
+                }
+
                 prev += "^Request URL";
                 stackWindow.FoldRegExTextBox.Text = prev;
                 stackWindow.FoldRegExTextBox.Items.Insert(0, prev);
             }
 
             if (m_extraTopStats != null)
+            {
                 stackWindow.ExtraTopStats = m_extraTopStats;
+            }
         }
         public override bool SupportsProcesses { get { return true; } }
 
@@ -6084,7 +6585,9 @@ table {
                     foreach (var loadedModule in process.LoadedModules)
                     {
                         if (string.Compare(loadedModule.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                        {
                             moduleFiles[(int)loadedModule.ModuleFile.ModuleFileIndex] = loadedModule.ModuleFile;
+                        }
                     }
                 }
             }
@@ -6095,17 +6598,26 @@ table {
                 foreach (var moduleFile in m_traceLog.ModuleFiles)
                 {
                     if (string.Compare(moduleFile.Name, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         moduleFiles[(int)moduleFile.ModuleFileIndex] = moduleFile;
+                    }
                 }
             }
 
             if (moduleFiles.Count == 0)
+            {
                 throw new ApplicationException("Could not find module " + simpleModuleName + " in trace.");
+            }
 
             if (moduleFiles.Count > 1)
+            {
                 log.WriteLine("Found {0} modules with name {1}", moduleFiles.Count, simpleModuleName);
+            }
+
             foreach (var moduleFile in moduleFiles.Values)
+            {
                 m_traceLog.CodeAddresses.LookupSymbolsForModule(symReader, moduleFile);
+            }
         }
         protected override Action<Action> OpenImpl(Window parentWindow, StatusBar worker)
         {
@@ -6179,70 +6691,147 @@ table {
             {
                 var name = counts.EventName;
                 if (!hasCPUStacks && name.StartsWith("PerfInfo"))
+                {
                     hasCPUStacks = true;                // Even without true stacks we can display something in the stack viewer.  
+                }
+
                 if (!hasAspNet && name.StartsWith("AspNetReq"))
+                {
                     hasAspNet = true;
+                }
+
                 if (!hasIis && name.StartsWith("IIS"))
+                {
                     hasIis = true;
+                }
+
                 if (counts.ProviderGuid == ApplicationServerTraceEventParser.ProviderGuid)
+                {
                     hasWCFRequests = true;
+                }
+
                 if (name.StartsWith("JSDumpHeapEnvelope"))
+                {
                     hasJSHeapDumps = true;
+                }
+
                 if (name.StartsWith("GC/Start"))
+                {
                     hasGCEvents = true;
+                }
 
                 if (name.StartsWith("GC/BulkNode"))
+                {
                     hasDotNetHeapDumps = true;
+                }
 
                 if (name.StartsWith("GC/PinObjectAtGCTime"))
+                {
                     hasPinObjectAtGCTime = true;
+                }
 
                 if (name.StartsWith("GC/BulkSurvivingObjectRanges") || name.StartsWith("GC/BulkMovedObjectRanges"))
+                {
                     hasObjectUpdate = true;
+                }
 
                 if (counts.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
+                {
                     hasTpl = true;
+                }
 
                 if (counts.StackCount > 0)
                 {
                     hasAnyStacks = true;
                     if (counts.ProviderGuid == ETWClrProfilerTraceEventParser.ProviderGuid && name.StartsWith("ObjectAllocated"))
+                    {
                         hasMemAllocStacks = true;
+                    }
+
                     if (name.StartsWith("GC/SampledObjectAllocation"))
+                    {
                         hasMemAllocStacks = true;
+                    }
+
                     if (name.StartsWith("GC/CCWRefCountChange"))
+                    {
                         hasCCWRefCountStacks = true;
+                    }
+
                     if (name.StartsWith("TaskCCWRef"))
+                    {
                         hasNetNativeCCWRefCountStacks = true;
+                    }
+
                     if (name.StartsWith("Object/CreateHandle"))
+                    {
                         hasWindowsRefCountStacks = true;
+                    }
+
                     if (name.StartsWith("Image"))
+                    {
                         hasDllStacks = true;
+                    }
+
                     if (name.StartsWith("HeapTrace"))
+                    {
                         hasHeapStacks = true;
+                    }
+
                     if (name.StartsWith("Thread/CSwitch"))
+                    {
                         hasCSwitchStacks = true;
+                    }
+
                     if (name.StartsWith("GC/AllocationTick"))
+                    {
                         hasGCAllocationTicks = true;
+                    }
+
                     if (name.StartsWith("Exception") || name.StartsWith("PageFault/AccessViolation"))
+                    {
                         hasExceptions = true;
+                    }
+
                     if (name.StartsWith("GC/SetGCHandle"))
+                    {
                         hasGCHandleStacks = true;
+                    }
+
                     if (name.StartsWith("Loader/ModuleLoad"))
+                    {
                         hasManagedLoads = true;
+                    }
+
                     if (name.StartsWith("VirtualMem"))
+                    {
                         hasVirtAllocStacks = true;
+                    }
+
                     if (name.StartsWith("Dispatcher/ReadyThread"))
+                    {
                         hasReadyThreadStacks = true;
+                    }
+
                     if (counts.ProviderGuid == TplEtwProviderTraceEventParser.ProviderGuid)
+                    {
                         hasTplStacks = true;
+                    }
 
                     if (name.StartsWith("DiskIO"))
+                    {
                         hasDiskStacks = true;
+                    }
+
                     if (name.StartsWith("FileIO"))
+                    {
                         hasFileStacks = true;
+                    }
+
                     if (name.StartsWith("MethodEntry"))
+                    {
                         hasProjectNExecutionTracingEvents = true;
+                    }
                 }
             }
 
@@ -6252,7 +6841,10 @@ table {
             m_Children.Add(new PerfViewStackSource(this, "Processes / Files / Registry") { SkipSelectProcess = true });
 
             if (hasCPUStacks)
+            {
                 m_Children.Add(new PerfViewStackSource(this, "CPU"));
+            }
+
             if (hasCSwitchStacks)
             {
                 if (hasTplStacks)
@@ -6262,20 +6854,35 @@ table {
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities)"));
                 }
                 else
+                {
                     m_Children.Add(new PerfViewStackSource(this, "Thread Time"));
+                }
+
                 if (hasReadyThreadStacks)
+                {
                     advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with ReadyThread)"));
+                }
             }
             else if (hasCPUStacks && hasTplStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Thread Time (with StartStop Activities) (CPU ONLY)"));
+            }
 
             if (hasDiskStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Disk I/O"));
+            }
+
             if (hasFileStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "File I/O"));
+            }
 
             if (hasHeapStacks)
+            {
                 memory.Children.Add(new PerfViewStackSource(this, "Net OS Heap Alloc"));
+            }
+
             if (hasVirtAllocStacks)
             {
                 memory.Children.Add(new PerfViewStackSource(this, "Net Virtual Alloc"));
@@ -6298,31 +6905,53 @@ table {
             }
 
             if (hasDllStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Image Load"));
+            }
+
             if (hasManagedLoads)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Managed Load"));
+            }
+
             if (hasExceptions)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Exceptions"));
+            }
+
             if (hasGCHandleStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Pinning"));
+            }
+
             if (hasPinObjectAtGCTime)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Pinning At GC Time"));
+            }
 
             if (hasGCEvents && hasCPUStacks && AppLog.InternalUser)
+            {
                 memory.Children.Add(new PerfViewStackSource(this, "Server GC"));
+            }
 
             if (hasCCWRefCountStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "CCW Ref Count"));
+            }
 
             if (hasNetNativeCCWRefCountStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, ".NET Native CCW Ref Count"));
+            }
 
             if (hasWindowsRefCountStacks)
+            {
                 advanced.Children.Add(new PerfViewStackSource(this, "Windows Handle Ref Count"));
+            }
 
             if (hasGCHandleStacks && hasMemAllocStacks)
             {
-                bool matchingHeapSnapshotExists = GCPinnedObjectAnalyzer.ExistsMatchingHeapSnapshot(this.FilePath);
+                bool matchingHeapSnapshotExists = GCPinnedObjectAnalyzer.ExistsMatchingHeapSnapshot(FilePath);
                 if (matchingHeapSnapshotExists)
                 {
                     advanced.Children.Add(new PerfViewStackSource(this, "Heap Snapshot Pinning"));
@@ -6372,7 +7001,10 @@ table {
                         obsolete.Children.Add(new PerfViewStackSource(this, "ASP.NET Thread Time (with Tasks)"));
                     }
                     else if (!hasCSwitchStacks)
+                    {
                         name += " (CPU ONLY)";
+                    }
+
                     obsolete.Children.Add(new PerfViewStackSource(this, name));
                 }
             }
@@ -6391,10 +7023,14 @@ table {
 
             // TODO currently this is experimental enough that we don't show it publicly.  
             if (AppLog.InternalUser)
+            {
                 memory.Children.Add(new MemoryAnalyzer(this));
+            }
 
             if (hasJSHeapDumps || hasDotNetHeapDumps)
+            {
                 memory.Children.Add(new PerfViewHeapSnapshots(this));
+            }
 
             advanced.Children.Add(new PerfViewJitStats(this));
 
@@ -6403,11 +7039,19 @@ table {
             m_Children.Add(new PerfViewEventSource(this));
 
             if (0 < memory.Children.Count)
+            {
                 m_Children.Add(memory);
+            }
+
             if (0 < advanced.Children.Count)
+            {
                 m_Children.Add(advanced);
+            }
+
             if (0 < obsolete.Children.Count)
+            {
                 m_Children.Add(obsolete);
+            }
 
             return null;
         }
@@ -6418,7 +7062,10 @@ table {
             if (m_traceLog != null)
             {
                 if (IsUpToDate)
+                {
                     return m_traceLog;
+                }
+
                 m_traceLog.Dispose();
                 m_traceLog = null;
             }
@@ -6426,7 +7073,10 @@ table {
             var options = new TraceLogOptions();
             options.ConversionLog = log;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -6437,7 +7087,9 @@ table {
             // But if there is a directory called EtwManifests exists, look in there instead. 
             var etwManifestDirPath = Path.Combine(Path.GetDirectoryName(dataFileName), "EtwManifests");
             if (Directory.Exists(etwManifestDirPath))
+            {
                 options.ExplicitManifestDir = etwManifestDirPath;
+            }
 
             CommandProcessor.UnZipIfNecessary(ref dataFileName, log);
 
@@ -6453,7 +7105,9 @@ table {
 
                     var dataFileSize = "Unknown";
                     if (File.Exists(dataFileName))
+                    {
                         dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
+                    }
 
                     log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
                 }
@@ -6479,14 +7133,18 @@ table {
                     // Delete the file and try again.  
                     FileUtilities.ForceDelete(etlxFile);
                     if (!File.Exists(etlxFile))
+                    {
                         return GetTraceLog(log, onLostEvents);
+                    }
                 }
                 throw;
             }
 
             m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
             if (App.CommandLineArgs.UnsafePDBMatch)
+            {
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
+            }
 
             if (m_traceLog.Truncated)   // Warn about truncation.  
             {
@@ -6523,7 +7181,9 @@ table {
                 result = MessageBox.Show(parentWindow, warning, "Lost Events", MessageBoxButton.OKCancel);
                 worker.LogWriter.WriteLine(warning);
                 if (result != MessageBoxResult.OK)
+                {
                     worker.AbortWork();
+                }
             });
         }
         public override void Close()
@@ -6537,7 +7197,7 @@ table {
         }
         public override ImageSource Icon { get { return GuiApp.MainWindow.Resources["FileBitmapImage"] as ImageSource; } }
 
-        static internal List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile, double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
+        internal static List<TraceModuleFile> GetInterestingModuleFiles(ETLPerfViewData etlFile, double pdbThresholdPercent, TextWriter log, List<int> focusProcessIDs = null)
         {
             // If a DLL is loaded into multiple processes or at different locations we can get repeats, strip them.  
             var ret = new List<TraceModuleFile>();
@@ -6558,10 +7218,15 @@ table {
                 {
                     processtotalCpu += (int)process.CPUMSec;
                     if (!focusProcessIDs.Contains(process.ProcessID))
+                    {
                         continue;
+                    }
+
                     log.WriteLine("Restricting to process {0} ({1})", process.Name, process.ProcessID);
                     foreach (var mod in process.LoadedModules)
+                    {
                         processModuleList.Add(mod.ModuleFile);
+                    }
                 }
                 if (processtotalCpu != 0 && processModuleList.Count > 0)
                 {
@@ -6569,7 +7234,9 @@ table {
                     moduleList = processModuleList;
                 }
                 else
+                {
                     log.WriteLine("ERROR: could not find any CPU in focus processes, using machine wide total.");
+                }
             }
             log.WriteLine("Total CPU = {0} samples", totalCpu);
             int pdbThreshold = (int)((pdbThresholdPercent * totalCpu) / 100.0);
@@ -6578,20 +7245,26 @@ table {
             foreach (var moduleFile in moduleList)
             {
                 if (moduleFile.CodeAddressesInModule == 0)
+                {
                     continue;
+                }
 
                 int count = 0;
                 if (moduleCodeAddressCounts.TryGetValue(moduleFile.FilePath, out count))
                 {
                     // We have already hit the threshold so we don't need to do anything. 
                     if (count >= pdbThreshold)
+                    {
                         continue;
+                    }
                 }
 
                 count += moduleFile.CodeAddressesInModule;
                 moduleCodeAddressCounts[moduleFile.FilePath] = count;
                 if (count < pdbThreshold)
+                {
                     continue;                   // Have not reached threshold
+                }
 
                 log.WriteLine("Addr Count = {0} >= {1}, adding: {2}", count, pdbThreshold, moduleFile.FilePath);
                 ret.Add(moduleFile);
@@ -6612,26 +7285,29 @@ table {
                 var codeMarkerGuid = new Guid(0x143A31DB, 0x0372, 0x40B6, 0xB8, 0xF1, 0xB4, 0xB1, 0x6A, 0xDB, 0x5F, 0x54);
                 var measurementBlockGuid = new Guid(0x641D7F6C, 0x481C, 0x42E8, 0xAB, 0x7E, 0xD1, 0x8D, 0xC5, 0xE5, 0xCB, 0x9E);
                 foreach (var stats in traceLog.Stats)
+                {
                     if (stats.ProviderGuid == codeMarkerGuid || stats.ProviderGuid == measurementBlockGuid)
                     {
                         m_hasVSEvents = true;
                         break;
                     }
+                }
+
                 m_checkedForVSEvents = true;
             }
             return m_hasVSEvents;
         }
-        bool m_checkedForVSEvents;
-        bool m_hasVSEvents;
 
-        TraceLog m_traceLog;
-        bool m_notifiedAboutLostEvents;
-        bool m_notifiedAboutWin8;
-        string m_extraTopStats;
+        private bool m_checkedForVSEvents;
+        private bool m_hasVSEvents;
+        private TraceLog m_traceLog;
+        private bool m_notifiedAboutLostEvents;
+        private bool m_notifiedAboutWin8;
+        private string m_extraTopStats;
         #endregion
     }
 
-    class WTPerfViewFile : PerfViewFile
+    internal class WTPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "CDB WT calls"; } }
         public override string[] FileExtensions { get { return new string[] { ".wt" }; } }
@@ -6647,7 +7323,7 @@ table {
         }
     }
 
-    class OffProfPerfViewFile : PerfViewFile
+    internal class OffProfPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Office Profiler"; } }
         public override string[] FileExtensions { get { return new string[] { ".offtree" }; } }
@@ -6665,7 +7341,7 @@ table {
         }
     }
 
-    class DebuggerStackPerfViewFile : PerfViewFile
+    internal class DebuggerStackPerfViewFile : PerfViewFile
     {
         public override string FormatName
         {
@@ -6690,7 +7366,7 @@ table {
         }
     }
 
-    class XmlTreeFile : PerfViewFile
+    internal class XmlTreeFile : PerfViewFile
     {
         public override string FormatName { get { return "Tree XML FILE"; } }
         public override string[] FileExtensions { get { return new string[] { ".tree.xml" }; } }
@@ -6701,7 +7377,7 @@ table {
         }
     }
 
-    class XmlPerfViewFile : PerfViewFile
+    internal class XmlPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "PerfView XML FILE"; } }
         public override string[] FileExtensions { get { return new string[] { ".perfView.xml", ".perfView.xml.zip", ".perfView.json", ".perfView.json.zip" }; } }
@@ -6713,16 +7389,26 @@ table {
             return new XmlStackSource(FilePath, delegate (XmlReader reader)
             {
                 if (reader.Name == "StackWindowGuiState")
+                {
                     m_guiState = m_guiState.ReadFromXml(reader);
+                }
                 // These are only here for backward compatibility
                 else if (reader.Name == "FilterXml")
+                {
                     m_guiState.FilterGuiState.ReadFromXml(reader);
+                }
                 else if (reader.Name == "Log")
+                {
                     m_guiState.Log = reader.ReadElementContentAsString().Trim();
+                }
                 else if (reader.Name == "Notes")
+                {
                     m_guiState.Notes = reader.ReadElementContentAsString().Trim();
+                }
                 else
+                {
                     reader.Read();
+                }
             });
         }
 
@@ -6733,7 +7419,9 @@ table {
         protected internal override void FirstAction(StackWindow stackWindow)
         {
             if (m_guiState != null)
+            {
                 stackWindow.GuiState = m_guiState;
+            }
 
             m_guiState = null;
         }
@@ -6745,10 +7433,10 @@ table {
                 "Consider the right click -> Lookup Warm Symbols command");
         }
 
-        StackWindowGuiState m_guiState;
+        private StackWindowGuiState m_guiState;
     }
 
-    class VmmapPerfViewFile : PerfViewFile
+    internal class VmmapPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Vmmap data file"; } }
         public override string[] FileExtensions { get { return new string[] { ".mmp" }; } }
@@ -6761,7 +7449,9 @@ table {
                 var xmlStream = dataStream;
                 XmlReaderSettings settings = new XmlReaderSettings() { IgnoreWhitespace = true, IgnoreComments = true };
                 using (XmlReader reader = XmlTextReader.Create(xmlStream, settings))
+                {
                     return new VMMapStackSource(reader);
+                }
             }
         }
 
@@ -6783,7 +7473,7 @@ table {
 
         #region private
         [Flags]
-        enum PageProtection
+        private enum PageProtection
         {
             PAGE_EXECUTE = 0x10,
             PAGE_EXECUTE_READ = 0x20,
@@ -6795,7 +7485,7 @@ table {
             PAGE_WRITECOPY = 0x08,
         }
 
-        enum UseType
+        private enum UseType
         {
             Heap = 0,
             Stack = 1,
@@ -6810,7 +7500,7 @@ table {
             Unusable = 10,
         }
 
-        class MemoryNode
+        private class MemoryNode
         {
             public static MemoryNode Root()
             {
@@ -6855,7 +7545,9 @@ table {
             {
                 Debug.Assert(Address <= newNode.Address && newNode.End <= End);
                 if (Children == null)
+                {
                     Children = new List<MemoryNode>();
+                }
 
                 // Search backwards for efficiency.  
                 for (int i = Children.Count; 0 < i;)
@@ -6889,18 +7581,21 @@ table {
                 Details = reader.GetAttribute("Details") ?? "";
             }
 
-            static ulong FetchLong(XmlReader reader, string attributeName)
+            private static ulong FetchLong(XmlReader reader, string attributeName)
             {
                 ulong ret = 0L;
                 var attrValue = reader.GetAttribute(attributeName);
                 if (attrValue != null)
+                {
                     ulong.TryParse(attrValue, out ret);
+                }
+
                 return ret;
             }
             #endregion
         }
 
-        class VMMapStackSource : InternStackSource
+        private class VMMapStackSource : InternStackSource
         {
             public VMMapStackSource(XmlReader reader)
             {
@@ -6913,14 +7608,21 @@ table {
                         // Start over if we see another snapshot.  THus we read the last one.   
                         // THis is present VMMAP behavior.  TODO We should think about doing better.   
                         if (reader.Name == "Snapshot")
+                        {
                             top = MemoryNode.Root();
+                        }
                         else if (reader.Name == "Region")
+                        {
                             top.Add(reader);
+                        }
                     }
                 }
 
                 foreach (var child in top.Children)
+                {
                     AddToSource(child, StackSourceCallStackIndex.Invalid);
+                }
+
                 Interner.DoneInterning();
             }
 
@@ -6935,19 +7637,28 @@ table {
                 {
                     // At the topmost level we have group (UseType), for the node
                     if (parentStack == StackSourceCallStackIndex.Invalid)
+                    {
                         parentStack = AddFrame("Group " + node.UseType.ToString(), parentStack);
+                    }
 
                     if (node.Details.Length != 0)
                     {
                         // Group directories together.  
                         if (node.UseType == UseType.Image || node.UseType == UseType.MappedFile)
+                        {
                             parentStack = AddDirPathNodes(node.Details, parentStack, false, node.UseType);
+                        }
                         else
+                        {
                             parentStack = AddFrame(node.Details, parentStack);
+                        }
                     }
 
                     foreach (var child in node.Children)
+                    {
                         AddToSource(child, parentStack);
+                    }
+
                     return;
                 }
 
@@ -6958,16 +7669,22 @@ table {
                 }
 
                 if (details.Length == 0)
+                {
                     details = node.Type;
+                }
 
                 var frameName = string.Format("{0,-20} address 0x{1:x} size 0x{2:x}", details, node.Address, node.Size);
                 StackSourceCallStackIndex nodeStack = AddFrame(frameName, parentStack);
 
                 if (node.PrivateWS != 0)
+                {
                     AddSample("Block Private", node.PrivateWS, nodeStack);
+                }
 
                 if (node.ShareableWS != 0)
+                {
                     AddSample("Block Sharable", node.ShareableWS, nodeStack);
+                }
             }
             /// <summary>
             /// Adds nodes for each parent directory that has more than one 'child' (its count is different than it child) 
@@ -6998,13 +7715,14 @@ table {
                 var frameIdx = Interner.FrameIntern(frameName, moduleIdx);
                 return Interner.CallStackIntern(frameIdx, parentStack);
             }
-            StackSourceSample m_sample;
+
+            private StackSourceSample m_sample;
 
         }
         #endregion
     }
 
-    class PdbScopePerfViewFile : PerfViewFile
+    internal class PdbScopePerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return ".NET Native Size Graph"; } }
         public override string[] FileExtensions { get { return new string[] { ".imageSize.xml", ".pdb.xml" }; } }   // TODO remove pdb.xml after 1/2015
@@ -7044,7 +7762,7 @@ table {
         }
     }
 
-    class ClrProfilerHeapPerfViewFile : PerfViewFile
+    internal class ClrProfilerHeapPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "CLR Profiler Heap"; } }
         public override string[] FileExtensions { get { return new string[] { ".gcheap", ".clrprofiler" }; } }
@@ -7079,7 +7797,7 @@ table {
         }
     }
 
-    class HeapDumpPerfViewFile : PerfViewFile
+    internal class HeapDumpPerfViewFile : PerfViewFile
     {
         internal const string Gen0WalkableObjectsViewName = "Gen 0 Walkable Objects";
         internal const string Gen1WalkableObjectsViewName = "Gen 1 Walkable Objects";
@@ -7137,8 +7855,10 @@ table {
             ComputeUnreachableMemory(ret, out unreachableMemory, out totalMemory);
 
             if (unreachableMemory != 0)
+            {
                 m_extraTopStats += string.Format(" Unreachable Memory: {0:n3}MB ({1:f1}%)",
                     unreachableMemory / 1000000.0, unreachableMemory * 100.0 / totalMemory);
+            }
 
             if (gcDump.CountMultipliersByType != null)
             {
@@ -7178,7 +7898,9 @@ table {
                 }
 
                 if (advanced.Children.Count > 0)
+                {
                     m_Children.Add(advanced);
+                }
 
                 return null;
             }
@@ -7243,7 +7965,9 @@ table {
                 {
 
                     if (FilePath.EndsWith(".gcDump.xml", StringComparison.OrdinalIgnoreCase))
+                    {
                         m_gcDump = XmlGcHeapDump.ReadGCHeapDumpFromXml(FilePath);
+                    }
                     else
                     {
                         m_gcDump = new GCHeapDump(FilePath);
@@ -7256,16 +7980,28 @@ table {
 
 
                 if (m_gcDump.TimeCollected.Ticks != 0)
+                {
                     log.WriteLine("GCDump collected on {0}", m_gcDump.TimeCollected);
+                }
                 else
+                {
                     log.WriteLine("GCDump collected from a DMP file no time/machine/process info");
+                }
 
                 if (m_gcDump.MachineName != null)
+                {
                     log.WriteLine("GCDump collected on Machine {0}", m_gcDump.MachineName);
+                }
+
                 if (m_gcDump.ProcessName != null)
+                {
                     log.WriteLine("GCDump collected on Process {0} ({1})", m_gcDump.MachineName, m_gcDump.ProcessName, m_gcDump.ProcessID);
+                }
+
                 if (m_gcDump.TotalProcessCommit != 0)
+                {
                     log.WriteLine("Total Process CommitSize {0:n1} MB Working Set {1:n1} MB", m_gcDump.TotalProcessCommit / 1000000.0, m_gcDump.TotalProcessWorkingSet / 1000000.0);
+                }
 
                 if (m_gcDump.CollectionLog != null)
                 {
@@ -7308,7 +8044,9 @@ table {
         private static bool IsUnreachable(StackSource memoryStackSource, StackSourceCallStackIndex stackIdx, UnreachableCacheEntry[] cache, int depth)
         {
             if (stackIdx == StackSourceCallStackIndex.Invalid)
+            {
                 return false;
+            }
 
             int entryIdx = ((int)stackIdx) % cache.Length;
             UnreachableCacheEntry entry = cache[entryIdx];
@@ -7322,7 +8060,9 @@ table {
                     entry.unreachable = string.Compare(name, "[not reachable from roots]", StringComparison.OrdinalIgnoreCase) == 0;
                 }
                 else
+                {
                     entry.unreachable = IsUnreachable(memoryStackSource, callerIdx, cache, depth + 1);
+                }
 
                 entry.stack = stackIdx;
                 entry.valid = true;
@@ -7341,15 +8081,17 @@ table {
             {
                 totalMemory += sample.Metric;
                 if (IsUnreachable(memoryStackSource, sample.StackIndex, cache, 0))
+                {
                     unreachableMemory += sample.Metric;
+                }
             });
 
             unreachableMemoryRet = unreachableMemory;
             totalMemoryRet = totalMemory;
         }
 
-        internal protected GCHeapDump m_gcDump;
-        string m_extraTopStats;
+        protected internal GCHeapDump m_gcDump;
+        private string m_extraTopStats;
         #endregion
     }
 
@@ -7379,18 +8121,18 @@ table {
 
                 if (streamName == "Thread Time (experimental)")
                 {
-                    xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.threadtime.xml.zip");
+                    xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.threadtime.xml.zip");
                     doThreadTime = true;
                 }
                 else
                 {
-                    xmlPath = CacheFiles.FindFile(this.FilePath, ".perfscript.cpu.xml.zip");
+                    xmlPath = CacheFiles.FindFile(FilePath, ".perfscript.cpu.xml.zip");
                 }
 
-                if (!CacheFiles.UpToDate(xmlPath, this.FilePath))
+                if (!CacheFiles.UpToDate(xmlPath, FilePath))
                 {
                     XmlStackSourceWriter.WriteStackViewAsZippedXml(
-                        new ParallelLinuxPerfScriptStackSource(this.FilePath, doThreadTime), xmlPath);
+                        new ParallelLinuxPerfScriptStackSource(FilePath, doThreadTime), xmlPath);
                 }
 
                 return new XmlStackSource(xmlPath);
@@ -7411,9 +8153,13 @@ table {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
                 {
                     if (eventStats.EventName.StartsWith("GC/Start"))
+                    {
                         hasGC = true;
+                    }
                     else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
+                    {
                         hasJIT = true;
+                    }
                 }
             }
 
@@ -7423,7 +8169,9 @@ table {
 
             m_Children.Add(new PerfViewStackSource(this, "CPU"));
             if (AppLog.InternalUser)
+            {
                 advanced.AddChild(new PerfViewStackSource(this, "Thread Time (experimental)"));
+            }
 
             if (m_traceLog != null)
             {
@@ -7431,17 +8179,25 @@ table {
                 m_Children.Add(new PerfViewEventStats(this));
 
                 if (hasGC)
+                {
                     memory.AddChild(new PerfViewGCStats(this));
+                }
 
                 if (hasJIT)
+                {
                     advanced.AddChild(new PerfViewJitStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
+            {
                 m_Children.Add(memory);
+            }
 
             if (advanced.Children.Count > 0)
+            {
                 m_Children.Add(advanced);
+            }
 
             return null;
         }
@@ -7469,18 +8225,26 @@ table {
             if (m_traceLog != null)
             {
                 if (IsUpToDate)
+                {
                     return m_traceLog;
+                }
+
                 m_traceLog.Dispose();
                 m_traceLog = null;
             }
             else if (m_noTraceLogInfo)
+            {
                 return null;
+            }
 
             var dataFileName = FilePath;
             var options = new TraceLogOptions();
             options.ConversionLog = log;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -7501,7 +8265,9 @@ table {
                 catch (Exception e)        // Throws this if there is no CTF Information
                 {
                     if (e is EndOfStreamException)
+                    {
                         log.WriteLine("Warning: Trying to open CTF stream failed, no CTF (lttng) information");
+                    }
                     else
                     {
                         log.WriteLine("Error: Exception CTF conversion: {0}", e.ToString());
@@ -7516,14 +8282,20 @@ table {
 
             var dataFileSize = "Unknown";
             if (File.Exists(dataFileName))
+            {
                 dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
+            }
+
             log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
 
             // Open the ETLX file.  
             m_traceLog = new TraceLog(etlxFile);
             m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
             if (App.CommandLineArgs.UnsafePDBMatch)
+            {
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
+            }
+
             if (m_traceLog.Truncated)   // Warn about truncation.  
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -7537,8 +8309,8 @@ table {
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
-        TraceLog m_traceLog;
-        bool m_noTraceLogInfo;
+        private TraceLog m_traceLog;
+        private bool m_noTraceLogInfo;
         #endregion
     }
 
@@ -7567,12 +8339,18 @@ table {
                 foreach (TraceEventCounts eventStats in m_traceLog.Stats)
                 {
                     if (eventStats.StackCount > 0)
+                    {
                         hasAnyStacks = true;
+                    }
 
                     if (eventStats.EventName.StartsWith("GC/Start"))
+                    {
                         hasGC = true;
+                    }
                     else if (eventStats.EventName.StartsWith("Method/JittingStarted"))
+                    {
                         hasJIT = true;
+                    }
                 }
             }
 
@@ -7592,17 +8370,25 @@ table {
                 }
 
                 if (hasGC)
+                {
                     memory.AddChild(new PerfViewGCStats(this));
+                }
 
                 if (hasJIT)
+                {
                     advanced.AddChild(new PerfViewJitStats(this));
+                }
             }
 
             if (memory.Children.Count > 0)
+            {
                 m_Children.Add(memory);
+            }
 
             if (advanced.Children.Count > 0)
+            {
                 m_Children.Add(advanced);
+            }
 
             return null;
         }
@@ -7624,7 +8410,9 @@ table {
                         TraceEvents events = eventLog.Events;
 
                         if (startRelativeMSec != 0 || endRelativeMSec != double.PositiveInfinity)
+                        {
                             events = events.FilterByTime(startRelativeMSec, endRelativeMSec);
+                        }
 
                         var eventSource = events.GetSource();
                         var sample = new StackSourceSample(stackSource);
@@ -7708,12 +8496,17 @@ table {
             if (m_traceLog != null)
             {
                 if (IsUpToDate)
+                {
                     return m_traceLog;
+                }
+
                 m_traceLog.Dispose();
                 m_traceLog = null;
             }
             else if (m_noTraceLogInfo)
+            {
                 return null;
+            }
 
             var dataFileName = FilePath;
             UnZipIfNecessary(ref dataFileName);
@@ -7721,7 +8514,10 @@ table {
             var options = new TraceLogOptions();
             options.ConversionLog = log;
             if (App.CommandLineArgs.KeepAllEvents)
+            {
                 options.KeepAllEvents = true;
+            }
+
             options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
             options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
             options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -7757,7 +8553,10 @@ table {
 
             var dataFileSize = "Unknown";
             if (File.Exists(dataFileName))
+            {
                 dataFileSize = ((new System.IO.FileInfo(dataFileName)).Length / 1000000.0).ToString("n3") + " MB";
+            }
+
             log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB", dataFileSize, (new System.IO.FileInfo(etlxFile)).Length / 1000000.0);
 
             // Open the ETLX file. 
@@ -7772,14 +8571,19 @@ table {
                     //  Delete the file and try again.
                     FileUtilities.ForceDelete(etlxFile);
                     if (!File.Exists(etlxFile))
+                    {
                         return GetTraceLog(log);
+                    }
                 }
                 throw;
             }
 
             m_utcLastWriteAtOpen = File.GetLastWriteTimeUtc(FilePath);
             if (App.CommandLineArgs.UnsafePDBMatch)
+            {
                 m_traceLog.CodeAddresses.UnsafePDBMatching = true;
+            }
+
             if (m_traceLog.Truncated)   // Warn about truncation.  
             {
                 GuiApp.MainWindow.Dispatcher.BeginInvoke((Action)delegate ()
@@ -7827,15 +8631,15 @@ table {
         public TraceLog TryGetTraceLog() { return m_traceLog; }
 
         #region Private
-        TraceLog m_traceLog;
-        bool m_noTraceLogInfo;
+        private TraceLog m_traceLog;
+        private bool m_noTraceLogInfo;
         #endregion
     }
 
     /// <summary>
     /// A simple helper class that looks up symbols for Project N GCDumps 
     /// </summary>
-    class TypeNameSymbolResolver
+    internal class TypeNameSymbolResolver
     {
         public enum TypeNameOptions
         {
@@ -7888,22 +8692,33 @@ table {
                 return null;
             }
             if (module.PdbGuid == m_badPdb && m_badPdb != Guid.Empty)
+            {
                 return null;
-            if (m_pdbLookupFailures != null && m_pdbLookupFailures.ContainsKey(module.PdbGuid))  // TODO we are assuming unique PDB names (at least for failures). 
-                return null;
+            }
 
+            if (m_pdbLookupFailures != null && m_pdbLookupFailures.ContainsKey(module.PdbGuid))  // TODO we are assuming unique PDB names (at least for failures). 
+            {
+                return null;
+            }
 
             if (m_symReader == null)
+            {
                 m_symReader = App.GetSymbolReader(m_contextFilePath);
+            }
 
             NativeSymbolModule symbolModule = null;
             var pdbPath = m_symReader.FindSymbolFilePath(module.PdbName, module.PdbGuid, module.PdbAge, module.Path);
             if (pdbPath != null)
+            {
                 symbolModule = m_symReader.OpenNativeSymbolFile(pdbPath);
+            }
             else
             {
                 if (m_pdbLookupFailures == null)
+                {
                     m_pdbLookupFailures = new Dictionary<Guid, bool>();
+                }
+
                 m_pdbLookupFailures.Add(module.PdbGuid, true);
             }
 
@@ -7926,7 +8741,9 @@ table {
                     }
                     m_log.WriteLine("Failed to find PDB for module {0} to look up type 0x{1:x}", module.Path, typeID);
                     if (m_numFailures == 5)
+                    {
                         m_log.WriteLine("Discontinuing PDB module lookup messages");
+                    }
                 }
                 return null;
             }
@@ -7953,16 +8770,16 @@ table {
         }
 
         #region private 
-        TextWriter m_log;
-        string m_contextFilePath;
-        SymbolReader m_symReader;
-        int m_numFailures;
-        Guid m_badPdb;        // If we hit a bad PDB remember it to avoid logging too much 
-        Dictionary<Guid, bool> m_pdbLookupFailures;
+        private TextWriter m_log;
+        private string m_contextFilePath;
+        private SymbolReader m_symReader;
+        private int m_numFailures;
+        private Guid m_badPdb;        // If we hit a bad PDB remember it to avoid logging too much 
+        private Dictionary<Guid, bool> m_pdbLookupFailures;
         #endregion
     }
 
-    class ClrProfilerCodeSizePerfViewFile : PerfViewFile
+    internal class ClrProfilerCodeSizePerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Clr Profiler Code Size"; } }
         public override string[] FileExtensions { get { return new string[] { ".codesize" }; } }
@@ -7982,7 +8799,7 @@ table {
         }
     }
 
-    class ClrProfilerAllocStacksPerfViewFile : PerfViewFile
+    internal class ClrProfilerAllocStacksPerfViewFile : PerfViewFile
     {
         public override string FormatName { get { return "Clr Profiler Alloc"; } }
         public override string[] FileExtensions { get { return new string[] { ".allocStacks" }; } }
@@ -8035,7 +8852,9 @@ table {
             }
 
             if (pathDict.Count == 0)
+            {
                 throw new ApplicationException("No scenarios found");
+            }
 
             // Open XmlStackSources on each of our paths.
             var sources = pathDict.Select(
@@ -8079,10 +8898,14 @@ table {
             Debug.Assert(filePattern != null);
 
             if (baseDir == null)
+            {
                 baseDir = Path.GetDirectoryName(FilePath);
+            }
 
             if (namePattern == null)
+            {
                 namePattern = "scenario $1";
+            }
 
             string replacePattern = Regex.Escape(filePattern)
                                     .Replace(@"\*", @"([^\\]*)")
@@ -8090,14 +8913,18 @@ table {
 
             if (!(filePattern.EndsWith(".perfView.xml", StringComparison.OrdinalIgnoreCase) ||
                   filePattern.EndsWith(".perfView.xml.zip", StringComparison.OrdinalIgnoreCase)))
+            {
                 throw new ApplicationException("Files must be PerfView XML files");
+            }
 
             string pattern = Path.GetFileName(filePattern);
             string dir = Path.GetDirectoryName(filePattern);
 
             // Tack on the base directory if we're not already an absolute path.
             if (!Path.IsPathRooted(dir))
+            {
                 dir = Path.Combine(baseDir, dir);
+            }
 
             var replaceRegex = new Regex(replacePattern, RegexOptions.IgnoreCase);
             var defaultRegex = new Regex(@"(.*)", RegexOptions.IgnoreCase);
@@ -8107,10 +8934,14 @@ table {
             {
                 // Filter out those that don't match the include pattern 
                 if (includePattern != null && !Regex.IsMatch(file, includePattern))
+                {
                     continue;
+                }
                 // or do match the exclude pattern.  
                 if (excludePattern != null && Regex.IsMatch(file, excludePattern))
+                {
                     continue;
+                }
 
                 string name = null;
                 if (namePattern != null)
@@ -8119,7 +8950,9 @@ table {
 
                     // We won't have a group to match if there were no wildcards in the pattern.
                     if (match.Groups.Count < 1)
+                    {
                         match = defaultRegex.Match(GetFileNameWithoutExtension(file));
+                    }
 
                     name = match.Result(namePattern);
                 }
@@ -8176,10 +9009,14 @@ table {
             var pathDict = new Dictionary<string, string>();
 
             if (!reader.ReadToDescendant("ScenarioSet"))
+            {
                 throw new ApplicationException("The file " + FilePath + " does not have a Scenario element");
+            }
 
             if (!reader.ReadToDescendant("Scenarios"))
+            {
                 throw new ApplicationException("No scenarios specified");
+            }
 
             do
             {
@@ -8189,7 +9026,9 @@ table {
                 string excludePattern = reader["excludePattern"];
 
                 if (filePattern == null)
+                {
                     throw new ApplicationException("File path is required.");
+                }
 
                 AddScenariosToDictionary(filePattern, namePattern, includePattern, excludePattern, pathDict, log);
             }
@@ -8338,7 +9177,7 @@ table {
                 PerfViewFile perfViewFile = getPerfViewFile(localFilePath);
                 perfViewFile.Name = resource.Name;
 
-                this.Children.Add(perfViewFile);
+                Children.Add(perfViewFile);
 
                 worker.Log("Loaded " + resource.Name + ". Loading ...");
             }
@@ -8409,7 +9248,7 @@ table {
             {
                 worker.Log("Found  resource '" + resource.Name + "'. Loading ...");
 
-                this.Children.Add(resource);
+                Children.Add(resource);
 
                 worker.Log("Loaded '" + resource.Name + "'. Loading ...");
             }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Microsoft.Diagnostics.Tracing.Stacks
+﻿namespace Microsoft.Diagnostics.Tracing.Stacks
 {
     /// <summary>
     /// This structure provides a clean API for a lightweight recursion stack guard to prevent StackOverflow exceptions

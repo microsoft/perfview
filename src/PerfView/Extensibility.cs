@@ -1,32 +1,21 @@
-﻿using System;
+﻿using Diagnostics.Tracing.StackSources;
+using Microsoft.Diagnostics.Symbols;
+using Microsoft.Diagnostics.Tracing.Etlx;
+using Microsoft.Diagnostics.Tracing.Stacks;
+using Microsoft.Diagnostics.Utilities;
+using PerfView;
+using PerfViewModel;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml;
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Stacks;
-using PerfView;
-using PerfViewModel;
-using Microsoft.Diagnostics.Symbols;
 using Utilities;
-using FastSerialization;
-using Microsoft.Diagnostics.Utilities;
-using Microsoft.Diagnostics.Tracing.Etlx;
-using Microsoft.Diagnostics.Tracing.Session;
-using Diagnostics.Tracing.StackSources;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Address = System.UInt64;
-using System.Threading.Tasks;
-using System.ComponentModel;
 
 #if !PERFVIEW_COLLECT
 using Graphs;
@@ -66,9 +55,13 @@ namespace PerfViewExtensibility
             var source = new XmlStackSource(perfViewXmlFileName, delegate (XmlReader reader)
             {
                 if (reader.Name == "StackWindowGuiState")
+                {
                     guiState.ReadFromXml(reader);
+                }
                 else
+                {
                     reader.Skip();
+                }
             });
             var ret = new Stacks(source, perfViewXmlFileName);
             ret.GuiState = guiState;
@@ -137,11 +130,16 @@ namespace PerfViewExtensibility
         public static void Run(string commandLine, string dataFile = null, CommandLineArgs parsedCommandLine = null)
         {
             if (parsedCommandLine == null)
+            {
                 parsedCommandLine = App.CommandLineArgs;
+            }
 
             parsedCommandLine.CommandLine = commandLine;
             if (dataFile != null)
+            {
                 parsedCommandLine.DataFile = dataFile;
+            }
+
             App.CommandProcessor.Run(parsedCommandLine);
         }
         /// <summary>
@@ -153,10 +151,15 @@ namespace PerfViewExtensibility
         public static void Collect(string dataFile = null, CommandLineArgs parsedCommandLine = null)
         {
             if (parsedCommandLine == null)
+            {
                 parsedCommandLine = App.CommandLineArgs;
+            }
 
             if (dataFile != null)
+            {
                 parsedCommandLine.DataFile = dataFile;
+            }
+
             App.CommandProcessor.Collect(parsedCommandLine);
         }
         /// <summary>
@@ -169,7 +172,10 @@ namespace PerfViewExtensibility
         {
             CommandLineArgs.Process = process;
             if (outputFileName != null)
+            {
                 CommandLineArgs.DataFile = outputFileName;
+            }
+
             App.CommandProcessor.HeapSnapshot(CommandLineArgs);
         }
         /// <summary>
@@ -181,7 +187,10 @@ namespace PerfViewExtensibility
         {
             CommandLineArgs.ProcessDumpFile = inputDumpFile;
             if (outputFileName != null)
+            {
                 CommandLineArgs.DataFile = outputFileName;
+            }
+
             App.CommandProcessor.HeapSnapshot(CommandLineArgs);
         }
 
@@ -401,9 +410,9 @@ namespace PerfViewExtensibility
         public void Close() { Dispose(); }
         public virtual void Dispose() { }
 
-#region private
+        #region private
         protected string m_FilePath;
-#endregion
+        #endregion
     }
 
     /// <summary>
@@ -468,7 +477,7 @@ namespace PerfViewExtensibility
             var etlOrEtlXFileName = FilePath;
             UnZipIfNecessary(ref etlOrEtlXFileName, log);
 
-            for (;;)  // RETRY Loop 
+            for (; ; )  // RETRY Loop 
             {
                 var usedAnExistingEtlxFile = false;
                 var etlxFileName = etlOrEtlXFileName;
@@ -485,7 +494,10 @@ namespace PerfViewExtensibility
                         var options = new TraceLogOptions();
                         options.ConversionLog = log;
                         if (App.CommandLineArgs.KeepAllEvents)
+                        {
                             options.KeepAllEvents = true;
+                        }
+
                         options.MaxEventCount = App.CommandLineArgs.MaxEventCount;
                         options.ContinueOnError = App.CommandLineArgs.ContinueOnError;
                         options.SkipMSec = App.CommandLineArgs.SkipMSec;
@@ -498,7 +510,9 @@ namespace PerfViewExtensibility
 
                         var dataFileSize = "Unknown";
                         if (File.Exists(etlOrEtlXFileName))
+                        {
                             dataFileSize = ((new System.IO.FileInfo(etlOrEtlXFileName)).Length / 1000000.0).ToString("n3") + " MB";
+                        }
 
                         log.WriteLine("ETL Size {0} ETLX Size {1:n3} MB",
                             dataFileSize, (new System.IO.FileInfo(etlxFileName)).Length / 1000000.0);
@@ -517,7 +531,9 @@ namespace PerfViewExtensibility
                         log.WriteLine("Could not open the ETLX file, regenerating...");
                         FileUtilities.ForceDelete(etlxFileName);
                         if (!File.Exists(etlxFileName))
+                        {
                             continue;       // Retry 
+                        }
                     }
                     throw;
                 }
@@ -526,7 +542,9 @@ namespace PerfViewExtensibility
 
             // Yeah we have opened the log file!
             if (App.CommandLineArgs.UnsafePDBMatch)
+            {
                 m_TraceLog.CodeAddresses.UnsafePDBMatching = true;
+            }
         }
         /// <summary>
         /// Lookup all symbols for any module with 'simpleFileName'.   If processID==0 then all processes are searched. 
@@ -549,7 +567,9 @@ namespace PerfViewExtensibility
                 {
                     var baseName = Path.GetFileNameWithoutExtension(loadedModule.Name);
                     if (string.Compare(baseName, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         moduleFiles[(int)loadedModule.ModuleFile.ModuleFileIndex] = loadedModule.ModuleFile;
+                    }
                 }
             }
 
@@ -560,17 +580,26 @@ namespace PerfViewExtensibility
                 {
                     var baseName = Path.GetFileNameWithoutExtension(moduleFile.Name);
                     if (string.Compare(baseName, simpleModuleName, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         moduleFiles[(int)moduleFile.ModuleFileIndex] = moduleFile;
+                    }
                 }
             }
 
             if (moduleFiles.Count == 0)
+            {
                 throw new ApplicationException("Could not find module " + simpleModuleName + " in trace.");
+            }
 
             if (moduleFiles.Count > 1)
+            {
                 log.WriteLine("Found {0} modules with name {1}", moduleFiles.Count, simpleModuleName);
+            }
+
             foreach (var moduleFile in moduleFiles.Values)
+            {
                 TraceLog.CodeAddresses.LookupSymbolsForModule(symbolReader, moduleFile);
+            }
         }
 
         /// <summary>
@@ -595,7 +624,7 @@ namespace PerfViewExtensibility
             m_TraceLog.Dispose();
             m_TraceLog = null;
         }
-#region private
+        #region private
 
         private static void UnZipIfNecessary(ref string inputFileName, TextWriter log, bool unpackInCache = true)
         {
@@ -615,7 +644,10 @@ namespace PerfViewExtensibility
                 else
                 {
                     if (!inputFileName.EndsWith(".etl.zip", StringComparison.OrdinalIgnoreCase))
+                    {
                         throw new ApplicationException("File does not end with the .etl.zip file extension");
+                    }
+
                     unzipedEtlFile = inputFileName.Substring(0, inputFileName.Length - 4);
                 }
 
@@ -629,7 +661,9 @@ namespace PerfViewExtensibility
                 foreach (var entry in zipArchive.Entries)
                 {
                     if (entry.Length == 0)  // Skip directories. 
+                    {
                         continue;
+                    }
 
                     var fullName = entry.FullName;
                     if (fullName.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
@@ -637,14 +671,20 @@ namespace PerfViewExtensibility
                         fullName = fullName.Replace('/', '\\');     // normalize separator convention 
                         string pdbRelativePath = null;
                         if (fullName.StartsWith(@"symbols\", StringComparison.OrdinalIgnoreCase))
+                        {
                             pdbRelativePath = fullName.Substring(8);
+                        }
                         else if (fullName.StartsWith(@"ngenpdbs\", StringComparison.OrdinalIgnoreCase))
+                        {
                             pdbRelativePath = fullName.Substring(9);
+                        }
                         else
                         {
                             var m = Regex.Match(fullName, @"^[^\\]+\.ngenpdbs?\\(.*)", RegexOptions.IgnoreCase);
                             if (m.Success)
+                            {
                                 pdbRelativePath = m.Groups[1].Value;
+                            }
                             else
                             {
                                 log.WriteLine("WARNING: found PDB file that was not in a symbol server style directory, skipping extraction");
@@ -657,12 +697,20 @@ namespace PerfViewExtensibility
                         {
                             var inputDir = Path.GetDirectoryName(inputFileName);
                             if (inputDir.Length == 0)
+                            {
                                 inputDir = ".";
+                            }
+
                             var symbolsDir = Path.Combine(inputDir, "symbols");
                             if (Directory.Exists(symbolsDir))
+                            {
                                 dirForPdbs = symbolsDir;
+                            }
                             else
+                            {
                                 dirForPdbs = new SymbolPath(App.SymbolPath).DefaultSymbolCache();
+                            }
+
                             log.WriteLine("Putting symbols in {0}", dirForPdbs);
                         }
 
@@ -673,7 +721,10 @@ namespace PerfViewExtensibility
                             var firstNameInRelativePath = pdbRelativePath;
                             var sepIdx = firstNameInRelativePath.IndexOf('\\');
                             if (sepIdx >= 0)
+                            {
                                 firstNameInRelativePath = firstNameInRelativePath.Substring(0, sepIdx);
+                            }
+
                             var firstNamePath = Path.Combine(dirForPdbs, firstNameInRelativePath);
                             if (File.Exists(firstNamePath))
                             {
@@ -684,17 +735,24 @@ namespace PerfViewExtensibility
                             AtomicExtract(entry, pdbTargetPath);
                         }
                         else
+                        {
                             log.WriteLine("PDB {0} exists, skipping", pdbRelativePath);
+                        }
                     }
                     else if (fullName.EndsWith(".etl", StringComparison.OrdinalIgnoreCase))
                     {
                         if (zippedEtlFile != null)
+                        {
                             throw new ApplicationException("The ZIP file does not have exactly 1 ETL file in it, can't auto-extract.");
+                        }
+
                         zippedEtlFile = entry;
                     }
                 }
                 if (zippedEtlFile == null)
+                {
                     throw new ApplicationException("The ZIP file does not have any ETL files in it!");
+                }
 
                 AtomicExtract(zippedEtlFile, unzipedEtlFile);
                 log.WriteLine("Zipped size = {0:f3} MB Unzipped = {1:f3} MB",
@@ -722,9 +780,9 @@ namespace PerfViewExtensibility
             }
         }
 
-        TraceLog m_TraceLog;
-        TraceProcess m_FilterProcess;       // Only care about this process. 
-#endregion
+        private TraceLog m_TraceLog;
+        private TraceProcess m_FilterProcess;       // Only care about this process. 
+        #endregion
     }
 
 #if !PERFVIEW_COLLECT
@@ -809,7 +867,7 @@ namespace PerfViewExtensibility
             m_EtlFile = etlFile;
         }
 
-#region private
+    #region private
         /// <summary>
         /// Returns a string that is will be exactly one field of a CSV file.  Thus it escapes , and ""
         /// </summary>
@@ -828,7 +886,7 @@ namespace PerfViewExtensibility
         }
 
         internal ETLDataFile m_EtlFile;
-#endregion
+    #endregion
     }
 #endif
 
@@ -854,12 +912,16 @@ namespace PerfViewExtensibility
                 return m_CallTree;
             }
         }
-        IEnumerable<CallTreeNodeBase> ByName
+
+        private IEnumerable<CallTreeNodeBase> ByName
         {
             get
             {
                 if (m_byName == null || m_CallTree == null || m_StackSource == null)
+                {
                     m_byName = CallTree.ByIDSortedExclusiveMetric();
+                }
+
                 return m_byName;
             }
         }
@@ -869,7 +931,9 @@ namespace PerfViewExtensibility
             foreach (var node in ByName)
             {
                 if (regEx.IsMatch(node.Name))
+                {
                     return node;
+                }
             }
             return CallTree.Root;
         }
@@ -903,7 +967,9 @@ namespace PerfViewExtensibility
             }
             string etlFilepath = null;
             if (m_EtlFile != null)
+            {
                 etlFilepath = m_EtlFile.FilePath;
+            }
 
             var reader = App.GetSymbolReader(etlFilepath, symbolFlags);
             asTraceEventStackSource.LookupWarmSymbols(minCount, reader, StackSource);
@@ -943,14 +1009,20 @@ namespace PerfViewExtensibility
 
             Action<XmlWriter> additionalData = null;
             if (includeGuiState)
+            {
                 additionalData = new Action<XmlWriter>((XmlWriter writer) => { GuiState.WriteToXml("StackWindowGuiState", writer); });
+            }
 
             // Intern to compact it, only take samples in the view but leave the names unmorphed. 
             InternStackSource source = new InternStackSource(StackSource, m_rawStackSource);
             if (zip)
+            {
                 XmlStackSourceWriter.WriteStackViewAsZippedXml(source, outputFileName, additionalData);
+            }
             else
+            {
                 XmlStackSourceWriter.WriteStackViewAsXml(source, outputFileName, additionalData);
+            }
 
             GuiState.Log = null;        // Save some space. 
         }
@@ -974,7 +1046,10 @@ namespace PerfViewExtensibility
             get
             {
                 if (m_StackSource == null)
+                {
                     m_StackSource = new FilterStackSource(m_Filter, m_rawStackSource, ScalingPolicyKind.ScaleToData);
+                }
+
                 return m_StackSource;
             }
         }
@@ -1003,7 +1078,10 @@ namespace PerfViewExtensibility
             get
             {
                 if (m_GuiState == null)
+                {
                     m_GuiState = DefaultCallStackWindowState("CPU");
+                }
+
                 return m_GuiState;
             }
             set { m_GuiState = value; }
@@ -1063,7 +1141,10 @@ namespace PerfViewExtensibility
             var sw = new System.IO.StringWriter();
             sw.Write("<Stacks");
             if (Name != null)
+            {
                 sw.Write(" Name=\"{0}\"", Name);
+            }
+
             sw.WriteLine(">");
             sw.Write(" <RootStats ");
             CallTree.Root.ToXmlAttribs(sw);
@@ -1072,7 +1153,7 @@ namespace PerfViewExtensibility
             return sw.ToString();
         }
 
-#region private
+        #region private
         /// <summary>
         /// TODO should not have to specify the ETL file. 
         /// </summary>
@@ -1091,15 +1172,17 @@ namespace PerfViewExtensibility
         /// <summary>
         /// Unwind the wrapped sources to get to a TraceEventStackSource if possible. 
         /// </summary>
-        static internal TraceEventStackSource GetTraceEventStackSource(StackSource source)
+        internal static TraceEventStackSource GetTraceEventStackSource(StackSource source)
         {
             StackSourceStacks rawSource = source;
             TraceEventStackSource asTraceEventStackSource = null;
-            for (;;)
+            for (; ; )
             {
                 asTraceEventStackSource = rawSource as TraceEventStackSource;
                 if (asTraceEventStackSource != null)
+                {
                     return asTraceEventStackSource;
+                }
 
                 var asCopyStackSource = rawSource as CopyStackSource;
                 if (asCopyStackSource != null)
@@ -1125,11 +1208,11 @@ namespace PerfViewExtensibility
         private FilterParams m_Filter;
         internal ETLDataFile m_EtlFile;                 // If this stack came from and ETL File this is that file.  
         internal string m_fileName;                     // TODO is this a hack.  This is the file name if present.  
-        StackWindowGuiState m_GuiState;
-#endregion
+        private StackWindowGuiState m_GuiState;
+        #endregion
     }
 
-#region internal classes
+    #region internal classes
     internal static class Extensions
     {
         public static string ExtensionsDirectory
@@ -1141,9 +1224,13 @@ namespace PerfViewExtensibility
                     var exeDir = Path.GetDirectoryName(SupportFiles.MainAssemblyPath);
                     // This is for development ease development of perfView itself.  
                     if (exeDir.EndsWith(@"\perfView\bin\Release", StringComparison.OrdinalIgnoreCase))
+                    {
                         exeDir = exeDir.Substring(0, exeDir.Length - 20);
+                    }
                     else if (exeDir.EndsWith(@"\perfView\bin\Debug", StringComparison.OrdinalIgnoreCase))
+                    {
                         exeDir = exeDir.Substring(0, exeDir.Length - 18);
+                    }
 
                     s_ExtensionsDirectory = Path.Combine(exeDir, "PerfViewExtensions");
                 }
@@ -1235,7 +1322,9 @@ namespace PerfViewExtensibility
                     using (var peFile = new PEFile.PEFile(dll))
                     {
                         if (!peFile.Header.IsManaged || peFile.Header.IsPE64)
+                        {
                             continue;
+                        }
                     }
                     yield return dll;
                 }
@@ -1254,7 +1343,11 @@ namespace PerfViewExtensibility
 
                 // Get command name
                 var idx = commandSummary.IndexOf(' ');
-                if (idx < 0) idx = commandSummary.Length;
+                if (idx < 0)
+                {
+                    idx = commandSummary.Length;
+                }
+
                 var commandName = commandSummary.Substring(0, idx);
 
                 // Print extra help
@@ -1268,7 +1361,9 @@ namespace PerfViewExtensibility
                     {
                         log.WriteLine("  Parameters: ");
                         foreach (var param in commandHelp.Params)
+                        {
                             WriteWrapped("      " + param.Name + ": ", param.Help, "          ", 80, log);
+                        }
                     }
                 }
             }
@@ -1286,7 +1381,9 @@ namespace PerfViewExtensibility
 
                 log.WriteLine(body.Substring(idx, nextBreak - idx));
                 if (body.Length <= nextBreak)
+                {
                     break;
+                }
 
                 idx = nextBreak + 1;
                 log.Write(wrap);
@@ -1303,15 +1400,21 @@ namespace PerfViewExtensibility
         {
             var curPos = startIdx + (maxColumn - startColumn);
             if (curPos >= str.Length)
+            {
                 return str.Length;
+            }
 
             var spaceIdx = str.LastIndexOf(' ', curPos, curPos - startIdx);
             if (0 <= spaceIdx)
+            {
                 return spaceIdx;
+            }
 
             spaceIdx = str.IndexOf(' ', curPos);
             if (0 <= spaceIdx)
+            {
                 return spaceIdx;
+            }
 
             return str.Length;
         }
@@ -1324,7 +1427,9 @@ namespace PerfViewExtensibility
             var methods = typeof(PerfViewExtensibility.Commands).GetMethods(
                 BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             foreach (var method in methods)
+            {
                 ret.Add(method);
+            }
 
             // Find all the ones that are in user extension dlls.  
             foreach (var extensionDllPath in GetExtensionDlls())
@@ -1338,7 +1443,9 @@ namespace PerfViewExtensibility
                         methods = commandType.GetMethods(
                             BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance | BindingFlags.DeclaredOnly);
                         foreach (var method in methods)
+                        {
                             ret.Add(method);
+                        }
                     }
                 }
                 catch (Exception)
@@ -1362,7 +1469,9 @@ namespace PerfViewExtensibility
             var assembly = method.DeclaringType.Assembly;
             var assemblyName = Path.GetFileNameWithoutExtension(assembly.ManifestModule.FullyQualifiedName);
             if (string.Compare(assemblyName, "Global", StringComparison.OrdinalIgnoreCase) != 0 && assembly != Assembly.GetExecutingAssembly())
+            {
                 sb.Append(assemblyName).Append('.');
+            }
 
             sb.Append(method.Name);
             foreach (var param in method.GetParameters())
@@ -1370,14 +1479,20 @@ namespace PerfViewExtensibility
                 sb.Append(' ');
                 var defaultValue = param.RawDefaultValue;
                 if (defaultValue != System.DBNull.Value)
+                {
                     sb.Append('[').Append(param.Name).Append(']');
+                }
                 else
                 {
                     var attribs = param.GetCustomAttributes(typeof(ParamArrayAttribute), false);
                     if (attribs.Length != 0)
+                    {
                         sb.Append('[').Append(param.Name).Append("...]");
+                    }
                     else
+                    {
                         sb.Append(param.Name);
+                    }
                 }
             }
             var ret = sb.ToString();
@@ -1428,10 +1543,16 @@ namespace PerfViewExtensibility
                                 {
                                     var endIdx = xmlMemberName.IndexOf('(');
                                     if (endIdx < 0)
+                                    {
                                         endIdx = xmlMemberName.Length;
+                                    }
+
                                     var name = xmlMemberName.Substring(11, endIdx - 11);
                                     if (extName != "Global")
+                                    {
                                         name = extName + "." + name;
+                                    }
+
                                     userComandHelp.Add(name, new CommandHelp(name, reader));
                                 }
                                 else if (extName.Length == 0 && xmlMemberName.StartsWith("M:PerfViewExtensibility.Commands."))
@@ -1439,18 +1560,27 @@ namespace PerfViewExtensibility
                                     // Handle the case for user commands defined in PerfView.exe itself.  
                                     var endIdx = xmlMemberName.IndexOf('(');
                                     if (endIdx < 0)
+                                    {
                                         endIdx = xmlMemberName.Length;
+                                    }
+
                                     var name = xmlMemberName.Substring(33, endIdx - 33);
                                     userComandHelp[name] = new CommandHelp(name, reader);
                                 }
                                 else
+                                {
                                     reader.Skip();
+                                }
                             }
                             else
+                            {
                                 reader.Skip();
+                            }
                         }
                         else if (!reader.Read())
+                        {
                             break;
+                        }
                     }
 
                 }
@@ -1483,21 +1613,30 @@ namespace PerfViewExtensibility
                     if (reader.NodeType == XmlNodeType.Element)
                     {
                         if (reader.Name == "summary")
-                            this.Summary = reader.ReadElementContentAsString().Trim();
+                        {
+                            Summary = reader.ReadElementContentAsString().Trim();
+                        }
                         else if (reader.Name == "param")
                         {
                             if (Params == null)
+                            {
                                 Params = new List<CommandHelpParam>();
+                            }
+
                             var newParam = new CommandHelpParam();
                             newParam.Name = reader.GetAttribute("name");
                             newParam.Help = reader.ReadElementContentAsString().Trim();
                             Params.Add(newParam);
                         }
                         else
+                        {
                             reader.Skip();
+                        }
                     }
                     else if (!reader.Read())
+                    {
                         break;
+                    }
                 }
             }
         }
@@ -1511,7 +1650,7 @@ namespace PerfViewExtensibility
         }
 
 
-#region private
+        #region private
         private static string s_ExtensionsDirectory;
 
         private static Dictionary<string, object> LoadedObjects;
@@ -1535,7 +1674,9 @@ namespace PerfViewExtensibility
                 // It is a global command, first try look in PerfView itself 
                 instanceType = typeof(Commands);
                 if (instanceType.GetMethod(methodSpec) != null)
+                {
                     instance = new Commands();
+                }
             }
 
             // Could not find it in perfView, look in extensions.  
@@ -1543,14 +1684,19 @@ namespace PerfViewExtensibility
             {
                 // Find the instance of 'Commands' that we may have created previously, otherwise make a new one
                 if (LoadedObjects == null)
+                {
                     LoadedObjects = new Dictionary<string, object>();
+                }
+
                 if (!LoadedObjects.TryGetValue(fileSpec, out instance))
                 {
                     var fullFilePath = Path.Combine(ExtensionsDirectory, fileSpec + ".dll");
                     if (!File.Exists(fullFilePath))
                     {
                         if (fileSpec == "Global")
+                        {
                             throw new FileNotFoundException("Could not find " + methodSpec + " in PerfView's built in user commands.");
+                        }
 
                         throw new FileNotFoundException("Could not find file " + fullFilePath + " for for user extensions.", fullFilePath);
                     }
@@ -1558,12 +1704,17 @@ namespace PerfViewExtensibility
 
                     instanceType = assembly.GetType("Commands");
                     if (instanceType == null)
+                    {
                         throw new ApplicationException("Could not find type 'Commands' in " + fullFilePath);
+                    }
+
                     instance = Activator.CreateInstance(instanceType);
                     LoadedObjects[fileSpec] = instance;
                 }
                 else
+                {
                     instanceType = instance.GetType();
+                }
             }
 
             // Actually invoke the method.  
@@ -1589,7 +1740,7 @@ namespace PerfViewExtensibility
                     "Could not find user command {0} that takes {1} arguments.  Use /userCommandHelp for help.", methodSpec, args == null ? 0 : args.Length));
             }
         }
-#endregion
+        #endregion
     }
 
 #if false
@@ -1663,7 +1814,7 @@ static class GuiModel
     }
 }
 #endif
-#endregion
+    #endregion
 }
 
 // PerfViewModel contains things that are not very important for the user to see 
@@ -1680,7 +1831,9 @@ namespace PerfViewModel
         public StackWindowGuiState ReadFromXml(XmlReader reader)
         {
             if (reader.NodeType != XmlNodeType.Element)
+            {
                 throw new InvalidOperationException("Must advance to XML element (e.g. call ReadToDescendant)");
+            }
 
             var inputDepth = reader.Depth;
             // This is here for backward compatibility.  Can remove after 2013.  
@@ -1713,9 +1866,14 @@ namespace PerfViewModel
                         case "ScalingPolicy":
                             valueStr = reader.ReadElementContentAsString().Trim();
                             if (string.Compare(valueStr, "TimeMetric", StringComparison.OrdinalIgnoreCase) == 0)
+                            {
                                 ScalingPolicy = ScalingPolicyKind.TimeMetric;
+                            }
                             else
+                            {
                                 Debug.Assert(string.Compare(valueStr, "ScaleToData", StringComparison.OrdinalIgnoreCase) == 0);
+                            }
+
                             break;
                         case "TabSelected":
                             TabSelected = reader.ReadElementContentAsString().Trim();
@@ -1747,7 +1905,9 @@ namespace PerfViewModel
                     }
                 }
                 else if (!reader.Read())
+                {
                     break;
+                }
             }
             return this;
         }
@@ -1762,7 +1922,10 @@ namespace PerfViewModel
             {
                 writer.WriteStartElement("Columns");
                 foreach (var columnName in Columns)
+                {
                     writer.WriteElementString("string", columnName);
+                }
+
                 writer.WriteEndElement();
             }
             writer.WriteElementString("NotesPaneHidden", NotesPaneHidden.ToString());
@@ -1820,7 +1983,10 @@ namespace PerfViewModel
         public FilterGuiState ReadFromXml(XmlReader reader)
         {
             if (reader.NodeType != XmlNodeType.Element)
+            {
                 throw new InvalidOperationException("Must advance to XML element (e.g. call ReadToDescendant)");
+            }
+
             var inputDepth = reader.Depth;
             reader.Read();      // Advance to children 
             while (inputDepth < reader.Depth)
@@ -1863,7 +2029,9 @@ namespace PerfViewModel
                     }
                 }
                 else if (!reader.Read())
+                {
                     break;
+                }
             }
             return this;
         }
@@ -1915,7 +2083,10 @@ namespace PerfViewModel
         public TextBoxGuiState ReadFromXml(XmlReader reader, bool validateIsDouble = false)
         {
             if (reader.NodeType != XmlNodeType.Element)
+            {
                 throw new InvalidOperationException("Must advance to XML element (e.g. call ReadToDescendant)");
+            }
+
             var inputDepth = reader.Depth;
             reader.Read();      // Advance to children 
             while (inputDepth < reader.Depth)
@@ -1923,11 +2094,17 @@ namespace PerfViewModel
                 if (reader.NodeType == XmlNodeType.Element)
                 {
                     if (reader.Name == "Value")
+                    {
                         Value = reader.ReadElementContentAsString().Trim();
+                    }
                     else if (reader.Name == "History")
+                    {
                         History = ReadStringList(reader);
+                    }
                     else
+                    {
                         reader.Skip();
+                    }
                 }
                 // This is here for compatibilty
                 else if (reader.NodeType == XmlNodeType.Text || Value == null)
@@ -1935,25 +2112,36 @@ namespace PerfViewModel
                     Value = reader.ReadString().Trim();
                 }
                 else if (!reader.Read())
+                {
                     break;
+                }
             }
 
             // If the value needs to be a syntatically correct double check and set to emp
             double dummy;
             if (validateIsDouble && Value != null && !double.TryParse(Value, out dummy))
+            {
                 Value = null;
+            }
+
             return this;
         }
         public void WriteToXml(string name, XmlWriter writer)
         {
             writer.WriteStartElement(name);
             if (Value != null)
+            {
                 writer.WriteElementString("Value", Value);
+            }
+
             if (History != null)
             {
                 writer.WriteStartElement("History");
                 foreach (var str in History)
+                {
                     writer.WriteElementString("string", str);
+                }
+
                 writer.WriteEndElement();
             }
             writer.WriteEndElement();
@@ -1975,7 +2163,10 @@ namespace PerfViewModel
         {
             var ret = new List<string>();
             if (reader.NodeType != XmlNodeType.Element)
+            {
                 throw new InvalidOperationException("Must advance to XML element (e.g. call ReadToDescendant)");
+            }
+
             var inputDepth = reader.Depth;
             reader.Read();      // Advance to children 
             while (inputDepth < reader.Depth)
@@ -1984,17 +2175,23 @@ namespace PerfViewModel
                 {
                     // HistoryItem and Column is there for compatibility.  Can be removed after 2013
                     if (reader.Name == "string" || reader.Name == "HistoryItem")
+                    {
                         ret.Add(reader.ReadElementContentAsString().Trim());
+                    }
                     else if (reader.Name == "Column")
                     {
                         ret.Add(reader.GetAttribute("Name").Trim());
                         reader.Skip();
                     }
                     else
+                    {
                         reader.Skip();
+                    }
                 }
                 else if (!reader.Read())
+                {
                     break;
+                }
             }
             return ret;
         }

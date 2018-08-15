@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace PerfView.Dialogs
 {
@@ -21,7 +21,10 @@ namespace PerfView.Dialogs
             Owner = mainWindow;
             InitializeComponent();
             if (App.IsElevated)
+            {
                 Title = Title + " (Administrator)";
+            }
+
             m_mainWindow.StatusBar.Status = "Memory Collection dialog open.";
 
             // TODO FIX NOW when clrProfilerFormat is selected Freeze must be.
@@ -48,7 +51,9 @@ namespace PerfView.Dialogs
                 // Show the warning if we are not elevated.  
                 bool isElevated = App.IsElevated;
                 if (isElevated)
+                {
                     ElevateWarning.Visibility = Visibility.Collapsed;
+                }
 
                 MakeProcessList();
             }
@@ -70,19 +75,21 @@ namespace PerfView.Dialogs
                     {
                         var m = Regex.Match(newSelection.CommandLine, @" -ServerName:\s*(\S+).wwa");
                         if (m.Success)
+                        {
                             name = m.Groups[1].Value;
+                        }
                     }
-                    if (this.m_args.DumpHeap)
+                    if (m_args.DumpHeap)
                     {
                         string heapSnapshotFileName = GCPinnedObjectAnalyzer.GetHeapSnapshotPath(m_args.DataFile);
                         DataFileNameTextBox.Text = System.IO.Path.GetFileName(heapSnapshotFileName);
                     }
                     else
                     {
-                    DataFileNameTextBox.Text = CommandProcessor.GetNewFile(name + ".gcDump");
+                        DataFileNameTextBox.Text = CommandProcessor.GetNewFile(name + ".gcDump");
+                    }
                 }
             }
-        }
         }
 
         private void DumpClick(object sender, RoutedEventArgs e)
@@ -94,7 +101,9 @@ namespace PerfView.Dialogs
         {
             Close();
             if (m_tookASnapshot && m_continuation != null)
+            {
                 m_continuation();
+            }
         }
         private void DumpHeap(bool closeOnComplete)
         {
@@ -105,7 +114,9 @@ namespace PerfView.Dialogs
                 // Set the process ID 
                 var selectedProcess = Processes.SelectedItem as ProcessInfo;
                 if (selectedProcess != null)
+                {
                     m_args.Process = selectedProcess.ProcessID.ToString();
+                }
                 else
                 {
                     StatusBar.Log("No selection made");
@@ -158,10 +169,12 @@ namespace PerfView.Dialogs
             {
                 m_mainWindow.StatusBar.Status = StatusBar.Status;
                 if (closeOnComplete)
+                {
                     Close();
+                }
                 else
                 {
-                    
+
                     StatusBar.Status = "Data in: " + DataFileNameTextBox.Text + ".  Press 'Close' or 'Dump GC Heap' to continue.";
                     DataFileNameTextBox.Text = CommandProcessor.GetNewFile(DataFileNameTextBox.Text);
                 }
@@ -196,7 +209,9 @@ namespace PerfView.Dialogs
         private void FilterTextKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Down)
+            {
                 Processes.Focus();
+            }
         }
         private void FilterTextChanged(object sender, TextChangedEventArgs e)
         {
@@ -225,15 +240,21 @@ namespace PerfView.Dialogs
                 var commandLine = elem.CommandLine;
                 var wwaIndex = commandLine.IndexOf("-ServerName:", StringComparison.OrdinalIgnoreCase);
                 if (0 <= wwaIndex)
+                {
                     wwaAppName = commandLine.Substring(wwaIndex);
+                }
 
                 if (elem.Name != null && (filterRegex.IsMatch(elem.Name)) || filterRegex.IsMatch(wwaAppName) || filterRegex.IsMatch(elem.ProcessID.ToString()))
+                {
                     filteredList.Add(elem);
+                }
             }
             Processes.ItemsSource = filteredList;
 
             if (filteredList.Count > 0)
+            {
                 Processes.SelectedItem = filteredList[0];
+            }
         }
         private void AllProcsClick(object sender, RoutedEventArgs e)
         {
@@ -245,7 +266,9 @@ namespace PerfView.Dialogs
             // Set the process ID 
             var selectedProcess = Processes.SelectedItem as ProcessInfo;
             if (selectedProcess != null)
+            {
                 m_args.Process = selectedProcess.ProcessID.ToString();
+            }
             else
             {
                 StatusBar.LogError("No selection made.");
@@ -268,7 +291,9 @@ namespace PerfView.Dialogs
             var allProcs = AllProcsCheckBox.IsChecked ?? false;
             m_procsWithHeaps = null;
             if (!allProcs && m_procsWithHeaps == null)
+            {
                 m_procsWithHeaps = GCHeapDump.GetProcessesWithGCHeaps();
+            }
 
             // Create a list of processes, exclude myself
             m_processList = new List<ProcessInfo>();
@@ -276,22 +301,31 @@ namespace PerfView.Dialogs
             {
                 // If the name is null, it is likely a system process, it will not have managed code, so don't bother.   
                 if (process.Name == null)
+                {
                     continue;
+                }
+
                 if (process.ProcessID == myProcessId)
+                {
                     continue;
+                }
 
                 // Only show processes with GC heaps.  
                 if (!allProcs && !m_procsWithHeaps.ContainsKey(process.ProcessID))
+                {
                     continue;
+                }
 
                 m_processList.Add(process);
             }
-            m_processList.Sort(delegate(ProcessInfo x, ProcessInfo y)
+            m_processList.Sort(delegate (ProcessInfo x, ProcessInfo y)
             {
                 // Sort by name 
                 var ret = string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
                 if (ret != 0)
+                {
                     return ret;
+                }
                 // Then by process ID 
                 return x.ProcessID - y.ProcessID;
             });
@@ -300,11 +334,11 @@ namespace PerfView.Dialogs
             FilterTextBox.Focus();
         }
 
-        List<ProcessInfo> m_processList;
-        Dictionary<int, GCHeapDump.ProcessInfo> m_procsWithHeaps;
-        Action m_continuation;
-        CommandLineArgs m_args;
-        MainWindow m_mainWindow;
-        bool m_tookASnapshot;
+        private List<ProcessInfo> m_processList;
+        private Dictionary<int, GCHeapDump.ProcessInfo> m_procsWithHeaps;
+        private Action m_continuation;
+        private CommandLineArgs m_args;
+        private MainWindow m_mainWindow;
+        private bool m_tookASnapshot;
     }
 }

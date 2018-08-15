@@ -1,9 +1,6 @@
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Address = System.UInt64;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -14,10 +11,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 
     [System.CodeDom.Compiler.GeneratedCode("traceparsergen", "2.0")]
-    public sealed class TplEtwProviderTraceEventParser : TraceEventParser 
+    public sealed class TplEtwProviderTraceEventParser : TraceEventParser
     {
         public static readonly string ProviderName = "System.Threading.Tasks.TplEventSource";
-        public static readonly Guid ProviderGuid = new Guid(unchecked((int) 0x2e5dba47), unchecked((short) 0xa3d2), unchecked((short) 0x4d16), 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5);
+        public static readonly Guid ProviderGuid = new Guid(unchecked((int)0x2e5dba47), unchecked((short)0xa3d2), unchecked((short)0x4d16), 0x8e, 0xe0, 0x66, 0x71, 0xff, 0xdc, 0xd7, 0xb5);
         public enum Keywords : long
         {
             None = 0,
@@ -32,7 +29,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Default = Tasktransfer | Tasks | Parallel | Asynccausalityoperation | Asynccausalityrelation | Asynccausalitysynchronouswork | Taskstops | TasksFlowActivityIds,
         };
 
-        public TplEtwProviderTraceEventParser(TraceEventSource source) : base(source) {}
+        public TplEtwProviderTraceEventParser(TraceEventSource source) : base(source) { }
 
         public event Action<AwaitTaskContinuationScheduledArgs> AwaitTaskContinuationScheduledSend
         {
@@ -238,75 +235,75 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
 
         static private AwaitTaskContinuationScheduledArgs AwaitTaskContinuationScheduledSendTemplate(Action<AwaitTaskContinuationScheduledArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new AwaitTaskContinuationScheduledArgs(action, 12, 7, "AwaitTaskContinuationScheduled", Guid.Empty, 9, "Send", ProviderGuid, ProviderName );
+            return new AwaitTaskContinuationScheduledArgs(action, 12, 7, "AwaitTaskContinuationScheduled", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
         }
         static private ParallelForkArgs ForkJoinStartTemplate(Action<ParallelForkArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelForkArgs(action, 5, 5, "ForkJoin", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new ParallelForkArgs(action, 5, 5, "ForkJoin", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private ParallelJoinArgs ForkJoinStopTemplate(Action<ParallelJoinArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelJoinArgs(action, 6, 5, "ForkJoin", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new ParallelJoinArgs(action, 6, 5, "ForkJoin", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private ParallelInvokeBeginArgs InvokeStartTemplate(Action<ParallelInvokeBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelInvokeBeginArgs(action, 3, 2, "Invoke", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new ParallelInvokeBeginArgs(action, 3, 2, "Invoke", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private ParallelInvokeEndArgs InvokeStopTemplate(Action<ParallelInvokeEndArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelInvokeEndArgs(action, 4, 2, "Invoke", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new ParallelInvokeEndArgs(action, 4, 2, "Invoke", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private ParallelLoopBeginArgs LoopStartTemplate(Action<ParallelLoopBeginArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelLoopBeginArgs(action, 1, 1, "Loop", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new ParallelLoopBeginArgs(action, 1, 1, "Loop", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private ParallelLoopEndArgs LoopStopTemplate(Action<ParallelLoopEndArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new ParallelLoopEndArgs(action, 2, 1, "Loop", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new ParallelLoopEndArgs(action, 2, 1, "Loop", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private TaskStartedArgs TaskExecuteStartTemplate(Action<TaskStartedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskStartedArgs(action, 8, 3, "TaskExecute", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new TaskStartedArgs(action, 8, 3, "TaskExecute", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private TaskCompletedArgs TaskExecuteStopTemplate(Action<TaskCompletedArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskCompletedArgs(action, 9, 3, "TaskExecute", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new TaskCompletedArgs(action, 9, 3, "TaskExecute", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private TaskScheduledArgs TaskScheduledSendTemplate(Action<TaskScheduledArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskScheduledArgs(action, 7, 6, "TaskScheduled", Guid.Empty, 9, "Send", ProviderGuid, ProviderName );
+            return new TaskScheduledArgs(action, 7, 6, "TaskScheduled", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
         }
         static private TaskWaitContinuationCompleteArgs TaskWaitContinuationCompleteTemplate(Action<TaskWaitContinuationCompleteArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskWaitContinuationCompleteArgs(action, 13, 65521, "TaskWaitContinuationComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TaskWaitContinuationCompleteArgs(action, 13, 65521, "TaskWaitContinuationComplete", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TaskWaitSendArgs TaskWaitSendTemplate(Action<TaskWaitSendArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskWaitSendArgs(action, 10, 4, "TaskWait", Guid.Empty, 9, "Send", ProviderGuid, ProviderName );
+            return new TaskWaitSendArgs(action, 10, 4, "TaskWait", Guid.Empty, 9, "Send", ProviderGuid, ProviderName);
         }
         static private TaskWaitStopArgs TaskWaitStopTemplate(Action<TaskWaitStopArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TaskWaitStopArgs(action, 11, 4, "TaskWait", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new TaskWaitStopArgs(action, 11, 4, "TaskWait", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private TraceOperationRelationArgs TraceOperationRelationTemplate(Action<TraceOperationRelationArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TraceOperationRelationArgs(action, 16, 65518, "TraceOperationRelation", Guid.Empty, 0, "", ProviderGuid, ProviderName );
+            return new TraceOperationRelationArgs(action, 16, 65518, "TraceOperationRelation", Guid.Empty, 0, "", ProviderGuid, ProviderName);
         }
         static private TraceOperationStartArgs TraceOperationStartTemplate(Action<TraceOperationStartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TraceOperationStartArgs(action, 14, 8, "TraceOperation", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new TraceOperationStartArgs(action, 14, 8, "TraceOperation", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private TraceOperationStopArgs TraceOperationStopTemplate(Action<TraceOperationStopArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TraceOperationStopArgs(action, 15, 8, "TraceOperation", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new TraceOperationStopArgs(action, 15, 8, "TraceOperation", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
         static private TraceSynchronousWorkStartArgs TraceSynchronousWorkStartTemplate(Action<TraceSynchronousWorkStartArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TraceSynchronousWorkStartArgs(action, 17, 9, "TraceSynchronousWork", Guid.Empty, 1, "Start", ProviderGuid, ProviderName );
+            return new TraceSynchronousWorkStartArgs(action, 17, 9, "TraceSynchronousWork", Guid.Empty, 1, "Start", ProviderGuid, ProviderName);
         }
         static private TraceSynchronousWorkStopArgs TraceSynchronousWorkStopTemplate(Action<TraceSynchronousWorkStopArgs> action)
         {                  // action, eventid, taskid, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName
-            return new TraceSynchronousWorkStopArgs(action, 18, 9, "TraceSynchronousWork", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName );
+            return new TraceSynchronousWorkStopArgs(action, 18, 9, "TraceSynchronousWork", Guid.Empty, 2, "Stop", ProviderGuid, ProviderName);
         }
 
         static private volatile TraceEvent[] s_templates;
@@ -356,7 +353,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal AwaitTaskContinuationScheduledArgs(Action<AwaitTaskContinuationScheduledArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -370,16 +367,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<AwaitTaskContinuationScheduledArgs>) value; }
+            set { m_target = (Action<AwaitTaskContinuationScheduledArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ContinuationId", ContinuationId);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ContinuationId", ContinuationId);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -387,7 +384,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ContinuationId"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ContinuationId" };
+                }
+
                 return payloadNames;
             }
         }
@@ -421,7 +421,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelForkArgs(Action<ParallelForkArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -435,16 +435,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelForkArgs>) value; }
+            set { m_target = (Action<ParallelForkArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -452,7 +452,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -486,7 +489,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelJoinArgs(Action<ParallelJoinArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -500,16 +503,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelJoinArgs>) value; }
+            set { m_target = (Action<ParallelJoinArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -517,7 +520,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -553,7 +559,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelInvokeBeginArgs(Action<ParallelInvokeBeginArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -567,18 +573,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelInvokeBeginArgs>) value; }
+            set { m_target = (Action<ParallelInvokeBeginArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             XmlAttrib(sb, "OperationType", OperationType);
-             XmlAttrib(sb, "ActionCount", ActionCount);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            XmlAttrib(sb, "OperationType", OperationType);
+            XmlAttrib(sb, "ActionCount", ActionCount);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -586,7 +592,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "OperationType", "ActionCount"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "OperationType", "ActionCount" };
+                }
+
                 return payloadNames;
             }
         }
@@ -624,7 +633,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelInvokeEndArgs(Action<ParallelInvokeEndArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -638,16 +647,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelInvokeEndArgs>) value; }
+            set { m_target = (Action<ParallelInvokeEndArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -655,7 +664,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -692,7 +704,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelLoopBeginArgs(Action<ParallelLoopBeginArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -706,19 +718,19 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelLoopBeginArgs>) value; }
+            set { m_target = (Action<ParallelLoopBeginArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             XmlAttrib(sb, "OperationType", OperationType);
-             XmlAttrib(sb, "InclusiveFrom", InclusiveFrom);
-             XmlAttrib(sb, "ExclusiveTo", ExclusiveTo);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            XmlAttrib(sb, "OperationType", OperationType);
+            XmlAttrib(sb, "InclusiveFrom", InclusiveFrom);
+            XmlAttrib(sb, "ExclusiveTo", ExclusiveTo);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -726,7 +738,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "OperationType", "InclusiveFrom", "ExclusiveTo"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "OperationType", "InclusiveFrom", "ExclusiveTo" };
+                }
+
                 return payloadNames;
             }
         }
@@ -767,7 +782,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal ParallelLoopEndArgs(Action<ParallelLoopEndArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -781,17 +796,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<ParallelLoopEndArgs>) value; }
+            set { m_target = (Action<ParallelLoopEndArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
-             XmlAttrib(sb, "TotalIterations", TotalIterations);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "ForkJoinContextID", ForkJoinContextID);
+            XmlAttrib(sb, "TotalIterations", TotalIterations);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -799,7 +814,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "TotalIterations"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "ForkJoinContextID", "TotalIterations" };
+                }
+
                 return payloadNames;
             }
         }
@@ -835,7 +853,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TaskStartedArgs(Action<TaskStartedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -849,16 +867,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskStartedArgs>) value; }
+            set { m_target = (Action<TaskStartedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "TaskID", TaskID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "TaskID", TaskID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -866,7 +884,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -901,7 +922,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TaskCompletedArgs(Action<TaskCompletedArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -915,17 +936,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskCompletedArgs>) value; }
+            set { m_target = (Action<TaskCompletedArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "IsExceptional", IsExceptional);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "IsExceptional", IsExceptional);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -933,7 +954,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "IsExceptional"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "IsExceptional" };
+                }
+
                 return payloadNames;
             }
         }
@@ -971,7 +995,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TaskScheduledArgs(Action<TaskScheduledArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -985,18 +1009,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskScheduledArgs>) value; }
+            set { m_target = (Action<TaskScheduledArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "CreatingTaskID", CreatingTaskID);
-             XmlAttrib(sb, "TaskCreationOptions", TaskCreationOptions);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "CreatingTaskID", CreatingTaskID);
+            XmlAttrib(sb, "TaskCreationOptions", TaskCreationOptions);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1004,7 +1028,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "CreatingTaskID", "TaskCreationOptions"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "CreatingTaskID", "TaskCreationOptions" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1040,7 +1067,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TaskWaitContinuationCompleteArgs(Action<TaskWaitContinuationCompleteArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1054,14 +1081,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskWaitContinuationCompleteArgs>) value; }
+            set { m_target = (Action<TaskWaitContinuationCompleteArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TaskID", TaskID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TaskID", TaskID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1069,7 +1096,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TaskID"};
+                {
+                    payloadNames = new string[] { "TaskID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1094,14 +1124,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         public int OriginatingTaskSchedulerID { get { return GetInt32At(0); } }
         public int OriginatingTaskID { get { return GetInt32At(4); } }
         public int TaskID { get { return GetInt32At(8); } }
-        public TaskWaitBehavior Behavior { get { if (EventDataLength < 16) return 0;  return (TaskWaitBehavior)GetInt32At(12); } }
-        public int ContinueWithTaskID { get { if (EventDataLength < 20) return 0; return GetInt32At(16); } }
+        public TaskWaitBehavior Behavior { get { if (EventDataLength < 16) { return 0; } return (TaskWaitBehavior)GetInt32At(12); } }
+        public int ContinueWithTaskID { get { if (EventDataLength < 20) { return 0; } return GetInt32At(16); } }
 
         #region Private
         internal TaskWaitSendArgs(Action<TaskWaitSendArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1115,18 +1145,18 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskWaitSendArgs>) value; }
+            set { m_target = (Action<TaskWaitSendArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "Behavior", Behavior);
-             XmlAttrib(sb, "ContinueWithTaskID", ContinueWithTaskID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "Behavior", Behavior);
+            XmlAttrib(sb, "ContinueWithTaskID", ContinueWithTaskID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1134,7 +1164,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "Behavior", "ContinueWithTaskID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID", "Behavior", "ContinueWithTaskID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1172,7 +1205,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TaskWaitStopArgs(Action<TaskWaitStopArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1186,16 +1219,16 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TaskWaitStopArgs>) value; }
+            set { m_target = (Action<TaskWaitStopArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
-             XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
-             XmlAttrib(sb, "TaskID", TaskID);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "OriginatingTaskSchedulerID", OriginatingTaskSchedulerID);
+            XmlAttrib(sb, "OriginatingTaskID", OriginatingTaskID);
+            XmlAttrib(sb, "TaskID", TaskID);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1203,7 +1236,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID"};
+                {
+                    payloadNames = new string[] { "OriginatingTaskSchedulerID", "OriginatingTaskID", "TaskID" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1236,7 +1272,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TraceOperationRelationArgs(Action<TraceOperationRelationArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1250,15 +1286,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TraceOperationRelationArgs>) value; }
+            set { m_target = (Action<TraceOperationRelationArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "Relation", Relation);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "Relation", Relation);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1266,7 +1302,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TaskID", "Relation"};
+                {
+                    payloadNames = new string[] { "TaskID", "Relation" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1298,7 +1337,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TraceOperationStartArgs(Action<TraceOperationStartArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1306,22 +1345,22 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         }
         protected internal override void Validate()
         {
-            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(4)+8));
-            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(4)+8));
+            Debug.Assert(!(Version == 1 && EventDataLength != SkipUnicodeString(4) + 8));
+            Debug.Assert(!(Version > 1 && EventDataLength < SkipUnicodeString(4) + 8));
         }
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TraceOperationStartArgs>) value; }
+            set { m_target = (Action<TraceOperationStartArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "OperationName", OperationName);
-             XmlAttrib(sb, "RelatedContext", RelatedContext);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "OperationName", OperationName);
+            XmlAttrib(sb, "RelatedContext", RelatedContext);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1329,7 +1368,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TaskID", "OperationName", "RelatedContext"};
+                {
+                    payloadNames = new string[] { "TaskID", "OperationName", "RelatedContext" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1362,7 +1404,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TraceOperationStopArgs(Action<TraceOperationStopArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1376,15 +1418,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TraceOperationStopArgs>) value; }
+            set { m_target = (Action<TraceOperationStopArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "Status", Status);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "Status", Status);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1392,7 +1434,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TaskID", "Status"};
+                {
+                    payloadNames = new string[] { "TaskID", "Status" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1423,7 +1468,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TraceSynchronousWorkStartArgs(Action<TraceSynchronousWorkStartArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1437,15 +1482,15 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TraceSynchronousWorkStartArgs>) value; }
+            set { m_target = (Action<TraceSynchronousWorkStartArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "TaskID", TaskID);
-             XmlAttrib(sb, "Work", Work);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "TaskID", TaskID);
+            XmlAttrib(sb, "Work", Work);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1453,7 +1498,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "TaskID", "Work"};
+                {
+                    payloadNames = new string[] { "TaskID", "Work" };
+                }
+
                 return payloadNames;
             }
         }
@@ -1483,7 +1531,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         internal TraceSynchronousWorkStopArgs(Action<TraceSynchronousWorkStopArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
+            m_target = target;
         }
         protected internal override void Dispatch()
         {
@@ -1497,14 +1545,14 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
         protected internal override Delegate Target
         {
             get { return m_target; }
-            set { m_target = (Action<TraceSynchronousWorkStopArgs>) value; }
+            set { m_target = (Action<TraceSynchronousWorkStopArgs>)value; }
         }
         public override StringBuilder ToXml(StringBuilder sb)
         {
-             Prefix(sb);
-             XmlAttrib(sb, "Work", Work);
-             sb.Append("/>");
-             return sb;
+            Prefix(sb);
+            XmlAttrib(sb, "Work", Work);
+            sb.Append("/>");
+            return sb;
         }
 
         public override string[] PayloadNames
@@ -1512,7 +1560,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.Tpl
             get
             {
                 if (payloadNames == null)
-                    payloadNames = new string[] { "Work"};
+                {
+                    payloadNames = new string[] { "Work" };
+                }
+
                 return payloadNames;
             }
         }

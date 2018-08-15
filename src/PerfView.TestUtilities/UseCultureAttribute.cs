@@ -19,11 +19,10 @@ namespace PerfView.TestUtilities
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class UseCultureAttribute : BeforeAfterTestAttribute
     {
-        readonly Lazy<CultureInfo> culture;
-        readonly Lazy<CultureInfo> uiCulture;
-
-        CultureInfo originalCulture;
-        CultureInfo originalUICulture;
+        private readonly Lazy<CultureInfo> culture;
+        private readonly Lazy<CultureInfo> uiCulture;
+        private CultureInfo originalCulture;
+        private CultureInfo originalUICulture;
 
         /// <summary>
         /// Replaces the culture and UI culture of the current thread with

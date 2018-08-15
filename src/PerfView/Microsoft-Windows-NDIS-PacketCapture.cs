@@ -1,10 +1,7 @@
+using Microsoft.Diagnostics.Utilities;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Address = System.UInt64;
-using Microsoft.Diagnostics.Utilities;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -110,7 +107,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
     }
 
     #region internal classes 
-    unsafe class MicrosoftWindowsNDISPacketCaptureTraceEventParserState
+    internal unsafe class MicrosoftWindowsNDISPacketCaptureTraceEventParserState
     {
 
         public MicrosoftWindowsNDISPacketCaptureTraceEventParserState()
@@ -156,7 +153,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
 
                 // TODO FIX NOW This is probably a hack
                 if (m_state == null)
+                {
                     m_state = new MicrosoftWindowsNDISPacketCaptureTraceEventParserState();
+                }
+
                 bool TCPHeaderInPreviousFragment = m_state.m_TCPHeaderInPreviousFragment;
                 m_state.m_TCPHeaderInPreviousFragment = false;
 
@@ -176,13 +176,17 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                 m_state.m_FragmentActivity = ActivityID;
                 m_state.m_FragmentEventIndex = EventIndex;
                 if (packetStart == null)
+                {
                     packetStart = FindIPHeader(frag, fragEnd);
+                }
 
                 if (packetStart != null)
                 {
                     StringBuilder sb = new StringBuilder();
                     if (isContinuationFragment)
+                    {
                         sb.Append("CONT ").Append(ActivityID.ToString().Substring(6, 2)).Append(" ");
+                    }
 
                     IPHeader ip = new IPHeader(packetStart);
                     sb.Append("IP");
@@ -204,31 +208,63 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                         sb.Append(" SPort=").Append(tcp.SourcePort);
                         sb.Append(" DPort=").Append(tcp.DestPort);
                         if (tcp.Cwr)
+                        {
                             sb.Append(" CWR");
+                        }
+
                         if (tcp.Ece)
+                        {
                             sb.Append(" ECE");
+                        }
+
                         if (tcp.Urg)
+                        {
                             sb.Append(" URG");
+                        }
+
                         if (tcp.Ack)
+                        {
                             sb.Append(" ACK");
+                        }
+
                         if (tcp.Psh)
+                        {
                             sb.Append(" PSH");
+                        }
+
                         if (tcp.Rst)
+                        {
                             sb.Append(" RST");
+                        }
+
                         if (tcp.Syn)
+                        {
                             sb.Append(" SYN");
+                        }
+
                         if (tcp.Fin)
+                        {
                             sb.Append(" FIN");
+                        }
+
                         if (tcp.AnyOptions)
                         {
                             var scale = tcp.WindowScale;
                             if (0 <= scale)
+                            {
                                 sb.Append(" WindowScale=").Append(scale);
+                            }
+
                             var maxSeg = tcp.MaximumSegmentSize;
                             if (0 <= maxSeg)
+                            {
                                 sb.Append(" MaxSeg=").Append(maxSeg);
+                            }
+
                             if (tcp.SelectivAckAllowed)
+                            {
                                 sb.Append(" SelectiveAck");
+                            }
 
                             sb.Append(" TcpHdrLen=").Append(tcp.TCPHeaderSize);
                         }
@@ -254,7 +290,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                                 if (m_state.m_TCPHeaderMax < headerSize)
                                 {
                                     if (m_state.m_TCPHeader != null)
+                                    {
                                         System.Runtime.InteropServices.Marshal.FreeHGlobal((IntPtr)m_state.m_TCPHeader);
+                                    }
 
                                     m_state.m_TCPHeaderMax = headerSize + 16;
                                     m_state.m_TCPHeader = (byte*)System.Runtime.InteropServices.Marshal.AllocHGlobal(m_state.m_TCPHeaderMax);
@@ -262,28 +300,40 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                                 m_state.m_TCPHeaderEnd = m_state.m_TCPHeader + headerSize;
                                 var ptr = packetStart;
                                 for (int i = 0; i < headerSize; i++)
+                                {
                                     m_state.m_TCPHeader[i] = *ptr++;
+                                }
                             }
 
                             sb.Append(" HTTP");
                             if (httpBase < fragEnd)
+                            {
                                 AppendPrintable(httpBase, fragEnd, sb, " Stream=", 16);
+                            }
                         }
                     }
                     else
                     {
                         sb.Append(" Len=").Append(ip.Length - ip.IPHeaderSize);
                         if (ip.Protocol == 17)        // UDP
+                        {
                             sb.Append(" UDP");
+                        }
                         else
+                        {
                             sb.Append("IP(").Append(ip.Protocol.ToString()).Append(")");
+                        }
                     }
                     return sb.ToString();
                 }
                 else if (isContinuationFragment)
-                    return "CONTINUATION FRAGMENT " + ActivityID.ToString().Substring(6,2) +  " SIZE=" + FragmentSize;
+                {
+                    return "CONTINUATION FRAGMENT " + ActivityID.ToString().Substring(6, 2) + " SIZE=" + FragmentSize;
+                }
                 else
+                {
                     return "NON-IP FRAGMENT " + ActivityID.ToString().Substring(6, 2) + " SIZE=" + FragmentSize;
+                }
             }
         }
         public unsafe string TcpStreamSample
@@ -292,7 +342,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             {
                 string sample = FindPrintableTcpStream(Fragment, FragmentSize, 128, true);
                 if (sample == null)
+                {
                     return "";
+                }
+
                 return sample.Replace("\r\n", " ");
             }
         }
@@ -306,19 +359,27 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
         {
             var limit = frag + max;
             if (limit < fragEnd)
+            {
                 fragEnd = limit;
+            }
 
             if (!IsPrintable(frag, fragEnd))
+            {
                 return;
+            }
 
             // Then print it 
             sb.Append(prefix);
             for (byte* ptr = frag; ptr < fragEnd; ptr++)
             {
                 if ((byte)' ' <= *ptr)
+                {
                     sb.Append((char)*ptr);
+                }
                 else
+                {
                     sb.Append(' ');
+                }
             }
             sb.Append("...");
         }
@@ -329,7 +390,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             for (byte* ptr = frag; ptr < fragEnd; ptr++)
             {
                 if (!((byte)'\n' <= *ptr && *ptr < 128))
+                {
                     return false;
+                }
             }
             return true;
         }
@@ -383,22 +446,39 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                 while (optionPtr < optionsEnd)
                 {
                     if (*optionPtr == 0)
+                    {
                         break;
+                    }
+
                     if (*optionPtr == 1)
+                    {
                         optionPtr++;
-                    else 
+                    }
+                    else
                     {
                         var len = optionPtr[1];
                         if (len < 2 || 10 < len)        // protect against errors. 
+                        {
                             break;
+                        }
+
                         if (*optionPtr == optionID)
                         {
                             if (len == 2)
+                            {
                                 return 0;
+                            }
+
                             if (len == 3)
+                            {
                                 return optionPtr[2];
+                            }
+
                             if (len == 4)
+                            {
                                 return (optionPtr[2] << 8) + optionPtr[3];
+                            }
+
                             break;
                         }
                         optionPtr += len;
@@ -416,7 +496,9 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
 
             // Only search out at most 50 bytes.  
             if (&frag[50] < fragEnd)
+            {
                 fragEnd = &frag[50];
+            }
 
             byte* bestSoFar = null;
             while (frag < fragEnd)
@@ -427,14 +509,21 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                     uint checkSum = 0;
                     ushort* ptr = (ushort*)frag;
                     for (int i = 0; i < 10; i++)
+                    {
                         checkSum += *ptr++;
+                    }
 
                     checkSum = (ushort)checkSum + (checkSum >> 16);
                     if (checkSum == 0xFFFF)
+                    {
                         return frag;
+                    }
+
                     var ip = new IPHeader(frag);
-                    if (ip.CheckSum == 0 &&     bestSoFar == null)
+                    if (ip.CheckSum == 0 && bestSoFar == null)
+                    {
                         bestSoFar = frag;
+                    }
                 }
                 frag++;
             }
@@ -444,8 +533,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
         internal PacketFragmentArgs(Action<PacketFragmentArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, MicrosoftWindowsNDISPacketCaptureTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
-            this.m_state = state;
+            m_target = target;
+            m_state = state;
         }
         protected override void Dispatch()
         {
@@ -461,7 +550,7 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             get { return m_target; }
             set { m_target = (Action<PacketFragmentArgs>)value; }
         }
-        public unsafe override StringBuilder ToXml(StringBuilder sb)
+        public override unsafe StringBuilder ToXml(StringBuilder sb)
         {
             Prefix(sb);
             XmlAttrib(sb, "MiniportIfIndex", MiniportIfIndex);
@@ -479,50 +568,72 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
                 sb.Append("</Event>");
             }
             else
+            {
                 sb.Append("/>");
+            }
+
             return sb;
         }
 
-        private unsafe string FindPrintableTcpStream(byte* fragment, int fragmentSize, int maxLength, bool oneLine=false)
+        private unsafe string FindPrintableTcpStream(byte* fragment, int fragmentSize, int maxLength, bool oneLine = false)
         {
             if (fragmentSize < 16)
+            {
                 return null;
+            }
 
             byte* fragmentEnd = fragment + fragmentSize;
             if (!IsPrintable(fragment, fragment + 16))
             {
                 byte* ipStart = FindIPHeader(fragment, fragmentEnd);
                 if (ipStart == null)
+                {
                     return null;
+                }
+
                 IPHeader ip = new IPHeader(ipStart);
                 if (ip.Protocol != 6)   // TCP
+                {
                     return null;
+                }
+
                 TCPHeader tcp = new TCPHeader(ipStart + ip.IPHeaderSize);
                 var streamStart = tcp.TCPHeaderSize + ip.IPHeaderSize + ipStart;
 
                 if (fragmentEnd - streamStart < 16)
+                {
                     return null;
+                }
 
                 if (!IsPrintable(streamStart, streamStart + 16))
+                {
                     return null;
+                }
+
                 fragment = streamStart;
             }
 
             StringBuilder sb = new StringBuilder();
             if (maxLength < fragmentEnd - fragment)
+            {
                 fragmentEnd = fragment + maxLength;
+            }
 
             // As this point the fragment points at printable characters.   Keep going until it becomes unprintable 
             while (fragment < fragmentEnd)
             {
                 byte b = *fragment;
                 if (!((byte)'\n' <= b && b < 128))
+                {
                     break;
+                }
 
                 if (oneLine && (b == '\r' || b == '\n'))
+                {
                     break;
+                }
 
-                sb.Append((char) b);
+                sb.Append((char)b);
                 fragment++;
             }
 
@@ -534,7 +645,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MiniportIfIndex", "LowerIfIndex", "FragmentSize", "ParsedPacket", "TcpStreamSample" };
+                }
+
                 return payloadNames;
             }
         }
@@ -577,8 +691,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
         internal PacketMetaDataArgs(Action<PacketMetaDataArgs> target, int eventID, int task, string taskName, Guid taskGuid, int opcode, string opcodeName, Guid providerGuid, string providerName, MicrosoftWindowsNDISPacketCaptureTraceEventParserState state)
             : base(eventID, task, taskName, taskGuid, opcode, opcodeName, providerGuid, providerName)
         {
-            this.m_target = target;
-            this.m_state = state;
+            m_target = target;
+            m_state = state;
         }
         protected override void Dispatch()
         {
@@ -609,7 +723,10 @@ namespace Microsoft.Diagnostics.Tracing.Parsers.MicrosoftWindowsNDISPacketCaptur
             get
             {
                 if (payloadNames == null)
+                {
                     payloadNames = new string[] { "MiniportIfIndex", "LowerIfIndex", "MetadataSize" };
+                }
+
                 return payloadNames;
             }
         }

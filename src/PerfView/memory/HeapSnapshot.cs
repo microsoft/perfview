@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
-using System.Text.RegularExpressions;
 using Utilities;
-using Address = System.UInt64;
-using PerfView;
 
 namespace PerfView
 {
@@ -22,11 +16,15 @@ namespace PerfView
         public static void DumpGCHeap(int processID, string outputFile, TextWriter log = null, string qualifiers = "")
         {
             if (!App.IsElevated)
+            {
                 throw new ApplicationException("Must be Administrator (elevated).");
+            }
 
             var arch = GetArchForProcess(processID);
             if (log != null)
+            {
                 log.WriteLine("Starting Heap dump on Process {0} running architecture {1}.", processID, arch);
+            }
 
             DumpGCHeap(qualifiers, processID.ToString(), outputFile, log, arch);
             log.WriteLine("Finished Heap Dump.");
@@ -59,22 +57,30 @@ namespace PerfView
         {
             // We force a GC by turning on an ETW provider, which needs admin to do.  
             if (!App.IsElevated)
+            {
                 throw new ApplicationException("Must be Administrator (elevated) to use Force GC option.");
+            }
 
             var arch = GetArchForProcess(processID);
             if (log != null)
+            {
                 log.WriteLine("Starting Heap dump on Process {0} running architecture {1}.", processID, arch);
+            }
 
             var heapDumpExe = Path.Combine(SupportFiles.SupportFileDir, arch + @"\HeapDump.exe");
             var options = new CommandOptions().AddNoThrow().AddTimeout(1 * 3600 * 1000);
             if (log != null)
+            {
                 options.AddOutputStream(log);
+            }
 
             var commandLine = string.Format("\"{0}\" /ForceGC {1}", heapDumpExe, processID.ToString());
             log.WriteLine("Exec: {0}", commandLine);
             var cmd = Command.Run(commandLine, options);
             if (cmd.ExitCode != 0)
+            {
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode + ".  See log for details.");
+            }
         }
 
         /// <summary>
@@ -125,15 +131,22 @@ namespace PerfView
             // It is a name find the youngest process with that name.  
             // remove .exe if present.
             if (processNameOrID.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
                 processNameOrID = processNameOrID.Substring(0, processNameOrID.Length - 4);
+            }
+
             Process youngestProcess = null;
             foreach (var process in Process.GetProcessesByName(processNameOrID))
             {
                 if (youngestProcess == null || process.StartTime > youngestProcess.StartTime)
+                {
                     youngestProcess = process;
+                }
             }
             if (youngestProcess != null)
+            {
                 return youngestProcess.Id;
+            }
 
             return -1;
         }
@@ -146,7 +159,9 @@ namespace PerfView
 
             var options = new CommandOptions().AddNoThrow().AddTimeout(CommandOptions.Infinite);
             if (log != null)
+            {
                 options.AddOutputStream(log);
+            }
 
             // TODO breaking abstraction to know about StackWindow. 
             options.AddEnvironmentVariable("_NT_SYMBOL_PATH", App.SymbolPath);
@@ -157,10 +172,14 @@ namespace PerfView
             PerfViewLogger.Log.TriggerHeapSnapshot(outputFile, inputArg, qualifiers);
             var cmd = Command.Run(commandLine, options);
             if (cmd.ExitCode != 0)
+            {
                 throw new ApplicationException("HeapDump failed with exit code " + cmd.ExitCode);
+            }
 
             if (log != null)
+            {
                 log.WriteLine("Completed Heap Dump for {0} to {1}", inputArg, outputFile);
+            }
         }
 
         /// <summary>
@@ -176,18 +195,24 @@ namespace PerfView
 
                 // Currently only AMD64 has a wow.
                 if (!Environment.Is64BitOperatingSystem)
+                {
                     return ProcessorArchitecture.X86;
+                }
 
                 bool is32Bit = false;
                 bool ret = IsWow64Process(process.Handle, out is32Bit);
                 GC.KeepAlive(process);
                 if (ret)
+                {
                     return is32Bit ? ProcessorArchitecture.X86 : ProcessorArchitecture.Amd64;
+                }
             }
             catch (System.Runtime.InteropServices.ExternalException e)
             {
                 if ((uint)e.ErrorCode == 0x80004005)
+                {
                     throw new ApplicationException("Access denied to inspect process (Not Elevated?).");
+                }
             }
             catch (Exception) { }
             throw new ApplicationException("Could not determine the process architecture for process with ID " + processID);

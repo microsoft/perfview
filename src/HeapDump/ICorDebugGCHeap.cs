@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
+﻿using Microsoft.Diagnostics.Runtime;
 using Microsoft.Samples.Debugging.CorDebug.NativeApi;
 using Microsoft.Samples.Debugging.CorMetadata.NativeApi;
-using Address = System.UInt64;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Microsoft.Diagnostics.Runtime;
+using System.Text;
+using Address = System.UInt64;
 
 namespace ClrMemory
 {
@@ -20,7 +20,9 @@ namespace ClrMemory
             int isRunning;
             process.IsRunning(out isRunning);
             if (isRunning != 0)
+            {
                 throw new InvalidOperationException("The process must be stopped to dump the GC ");
+            }
 
             m_typeTable = new Dictionary<COR_TYPEID, ICorDebugGCHeapType>();
             m_types = new List<ICorDebugGCHeapType>();
@@ -35,13 +37,17 @@ namespace ClrMemory
             m_process = process;
             m_process5 = process as ICorDebugProcess5;
             if (m_process5 == null)
-                throw new Exception("The process is not running V4.5 of the .NET Framework (or V5.0 of silverlight), can't dump the GC Heap.");  
+            {
+                throw new Exception("The process is not running V4.5 of the .NET Framework (or V5.0 of silverlight), can't dump the GC Heap.");
+            }
 
             COR_HEAPINFO heapInfo;
             m_process5.GetGCHeapInformation(out heapInfo);
 
             if (heapInfo.areGCStructuresValid == 0)
+            {
                 throw new Exception("The process is at a point where the GC structures are being updated.  A heap dump is not possible at this time.");
+            }
 
             m_pointerSize = (int)heapInfo.pointerSize;
             Debug.Assert(PointerSize == 4 || PointerSize == 8);
@@ -57,7 +63,10 @@ namespace ClrMemory
             {
                 regionEnum.Next(1, corSegment, out fetched);
                 if (fetched == 0)
+                {
                     break;
+                }
+
                 segmentList.Add(new ICorDebugGCHeapSegment(this, ref corSegment[0]));
             }
             m_icorDebugSegments = segmentList.ToArray();
@@ -69,7 +78,9 @@ namespace ClrMemory
             m_data = new byte[1024];
             m_pinningHandle = GCHandle.Alloc(m_data, GCHandleType.Pinned);
             fixed (byte* ptr = m_data)
+            {
                 m_dataPtr = ptr;
+            }
         }
         public override ClrType GetObjectType(Address objRef)
         {
@@ -84,7 +95,9 @@ namespace ClrMemory
                 Debug.Assert(IsInHeap(objRef));
                 var typeIndex = (int)FetchIntPtrAt(objRef, 0) - ICorDebugGCHeapType.TypeIndexStart;
                 if ((uint)typeIndex < (uint)m_types.Count)
+                {
                     return m_types[typeIndex];
+                }
 
                 // Return a bad type
                 Debug.WriteLine(string.Format("Error: object ref 0x{0:x} does not point at the begining of an object.", objRef));
@@ -92,16 +105,19 @@ namespace ClrMemory
                 return m_types[0];
             }
         }
-        
+
         public override IEnumerable<ClrRoot> EnumerateRoots() { return EnumerateRoots(false); }
-        public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) InitRoots(); return m_roots; }
+        public override IEnumerable<ClrRoot> EnumerateRoots(bool enumStatics) { if (m_roots == null) { InitRoots(); } return m_roots; }
 
         #region private
         private static ICorDebugGCHeapType GetTypeFromNames(Dictionary<string, ICorDebugGCHeapType> types, string className, string moduleFilePath, ICorDebugGCHeap heap)
         {
             ICorDebugGCHeapType ret;
             if (types.TryGetValue(className, out ret))
+            {
                 return ret;
+            }
+
             ret = new ICorDebugGCHeapType(heap, className, moduleFilePath);
             types.Add(className, ret);
             return ret;
@@ -116,7 +132,9 @@ namespace ClrMemory
 
             ICorDebugGCHeapType ret;
             if (m_typeTable.TryGetValue(typeID, out ret))
+            {
                 return ret;
+            }
 
             ret = new ICorDebugGCHeapType(this, typeID);
             return ret;
@@ -125,41 +143,47 @@ namespace ClrMemory
         internal ulong FetchIntPtrAt(Address address, int offset)
         {
             Debug.Assert(offset >= 0);
-            address += (uint) offset;
+            address += (uint)offset;
 
             TRY_AGAIN:
             // The fast path.  
-            long delta = (long) (address - m_dataStart);
+            long delta = (long)(address - m_dataStart);
             if (0 <= delta && delta < m_dataLength)
             {
                 if (PointerSize == 4)
-                    return *((uint*) (m_dataPtr + (int) delta));
-                else 
-                    return *((ulong*) (m_dataPtr + (int) delta));
+                {
+                    return *((uint*)(m_dataPtr + (int)delta));
+                }
+                else
+                {
+                    return *((ulong*)(m_dataPtr + (int)delta));
+                }
             }
 
             IntPtr readSizeIntPtr = IntPtr.Zero;
             m_dataStart = address;
-            m_process.ReadMemory(m_dataStart, (uint) m_data.Length, m_data, out readSizeIntPtr);
-            m_dataLength = (int) readSizeIntPtr - 8;        // Allows an intPtr size read (under all circumstances.  
+            m_process.ReadMemory(m_dataStart, (uint)m_data.Length, m_data, out readSizeIntPtr);
+            m_dataLength = (int)readSizeIntPtr - 8;        // Allows an intPtr size read (under all circumstances.  
             Debug.Assert(m_dataLength >= 0);
             if (m_dataLength >= 0)
+            {
                 goto TRY_AGAIN;
+            }
 
             throw new InvalidOperationException("Illegal fetch at " + address.ToString("x"));
         }
-        
-        byte[] m_data;
-        Address m_dataStart;
-        int m_dataLength;           // This allows an IntPtr size read 
-        byte* m_dataPtr;
-        GCHandle m_pinningHandle;
+
+        private byte[] m_data;
+        private Address m_dataStart;
+        private int m_dataLength;           // This allows an IntPtr size read 
+        private byte* m_dataPtr;
+        private GCHandle m_pinningHandle;
         protected ClrSegment[] m_segments;
-        ulong[] m_sizeByGen = new Address[4];
-        ulong m_totalHeapSize;
+        private ulong[] m_sizeByGen = new Address[4];
+        private ulong m_totalHeapSize;
         protected int m_lastSegmentIdx;       // The last segment we looked at. 
-        ulong m_minAddr, m_maxAddr;
-        int m_pointerSize;
+        private ulong m_minAddr, m_maxAddr;
+        private int m_pointerSize;
 
         /// <summary>
         /// Sadly this is a bit subtle.  We only want to scan the GC heap once, the read of
@@ -178,7 +202,9 @@ namespace ClrMemory
             // TODO FIX NOW we can have collisions (it happens with generics right now). 
             var types = new Dictionary<string, ICorDebugGCHeapType>();
             foreach (var type in m_types)
+            {
                 types[type.Name] = type;
+            }
 
             var roots = new List<ICorDebugGCHeapRoot>();
             ICorDebugGCReferenceEnum refEnum;
@@ -190,9 +216,14 @@ namespace ClrMemory
             {
                 refEnum.Next(256, corRoots, out fetched);
                 if (fetched == 0)
+                {
                     break;
+                }
+
                 for (int i = 0; i < fetched; i++)
+                {
                     roots.Add(new ICorDebugGCHeapRoot(ref corRoots[i], this, buffer));
+                }
             }
             m_roots = roots.ToArray();
             //Console.WriteLine("Root count = {0}", m_roots.Length);
@@ -202,17 +233,17 @@ namespace ClrMemory
         internal ICorDebugProcess5 m_process5;
         internal ICorDebugProcess m_process;
         internal Dictionary<COR_TYPEID, ICorDebugGCHeapType> m_typeTable;
-        ICorDebugGCHeapRoot[] m_roots;
+        private ICorDebugGCHeapRoot[] m_roots;
 
         internal List<ICorDebugGCHeapType> m_types;
         internal ICorDebugGCHeapSegment[] m_icorDebugSegments;  // This alwasy points at m_segments, but has the stronger type for the array. 
 
         // Heap enumeration fields
         #region HeapEnumeration
-        ICorDebugHeapEnum m_heapEnum;
-        COR_HEAPOBJECT[] m_heapObjs;
-        uint m_heapObjsLimit;
-        uint m_heapObjsCur;
+        private ICorDebugHeapEnum m_heapEnum;
+        private COR_HEAPOBJECT[] m_heapObjs;
+        private uint m_heapObjsLimit;
+        private uint m_heapObjsCur;
 
         internal Address GetCurObject(out ICorDebugGCHeapType objType)
         {
@@ -253,10 +284,10 @@ namespace ClrMemory
             }
         }
 
-        void UpdateSegments(ClrSegment[] segments)
+        private void UpdateSegments(ClrSegment[] segments)
         {
             // sort the segments.  
-            Array.Sort(segments, delegate(ClrSegment x, ClrSegment y) { return x.Start.CompareTo(y.Start); });
+            Array.Sort(segments, delegate (ClrSegment x, ClrSegment y) { return x.Start.CompareTo(y.Start); });
             m_segments = segments;
 
             m_minAddr = Address.MaxValue;
@@ -266,13 +297,20 @@ namespace ClrMemory
             foreach (var gcSegment in m_segments)
             {
                 if (gcSegment.Start < m_minAddr)
+                {
                     m_minAddr = gcSegment.Start;
+                }
+
                 if (m_maxAddr < gcSegment.End)
+                {
                     m_maxAddr = gcSegment.End;
+                }
 
                 m_totalHeapSize += gcSegment.Length;
                 if (gcSegment.IsLarge)
+                {
                     m_sizeByGen[3] += gcSegment.Length;
+                }
                 else
                 {
                     m_sizeByGen[2] += gcSegment.Gen2Length;
@@ -306,9 +344,14 @@ namespace ClrMemory
                     // Get the next segment loop until you come back to where you started.  
                     curIdx++;
                     if (curIdx >= Segments.Count)
+                    {
                         curIdx = 0;
+                    }
+
                     if (curIdx == m_lastSegmentIdx)
+                    {
                         break;
+                    }
                 }
             }
             return null;
@@ -409,16 +452,16 @@ namespace ClrMemory
             m_heapNum = (int)corSegment.heap;
         }
 
-        Address m_start;
-        Address m_end;
-        ICorDebugGCHeap m_heap;
-        int m_heapNum;
+        private Address m_start;
+        private Address m_end;
+        private ICorDebugGCHeap m_heap;
+        private int m_heapNum;
         #endregion
     }
 
     public class ICorDebugAD : ClrAppDomain
     {
-        string m_name;
+        private string m_name;
 
         public ICorDebugAD(string name)
         {
@@ -439,7 +482,7 @@ namespace ClrMemory
         {
             get { return m_name; }
         }
-        
+
 
         public override string ConfigurationFile
         {
@@ -494,7 +537,7 @@ namespace ClrMemory
             Address objRef = 0;
             root.Location.GetAddress(out address);
             m_addressOfRoot = address;
-            
+
             string adName = "";
 
             if (root.Domain != null)
@@ -518,7 +561,9 @@ namespace ClrMemory
                 m_heapReference = objRef;
             }
             else
+            {
                 Console.WriteLine("ERROR! could not fetch value from root 0x{0:x}", address);
+            }
 
             Debug.Assert(Object == 0 || heap.IsInHeap(Object));
 
@@ -702,7 +747,10 @@ namespace ClrMemory
                         {
                             var val = m_heap.FetchIntPtrAt(objRef, offset);
                             if (val != 0)
+                            {
                                 action(val, offset);
+                            }
+
                             offset += m_array.elementSize;
                         }
                     }
@@ -721,9 +769,11 @@ namespace ClrMemory
             {
                 // Do the base type's references
                 if (BaseType != null)
+                {
                     BaseType.EnumerateRefsOfObjectCarefully(objRef, action);
+                }
                 // And then my fields.  
-                this.EnumerateRefsOfUnboxedClass(objRef, m_boxOffset, action);
+                EnumerateRefsOfUnboxedClass(objRef, m_boxOffset, action);
             }
         }
 
@@ -778,7 +828,10 @@ namespace ClrMemory
                 case CorElementType.ELEMENT_TYPE_CLASS:
                     // TODO Hack
                     if (Name == "System.String")
+                    {
                         goto case CorElementType.ELEMENT_TYPE_STRING;
+                    }
+
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I8:
@@ -817,14 +870,16 @@ namespace ClrMemory
             Debug.Assert(m_heap.GetObjectType(objRef) == this);
             Debug.Assert(IsArray);
             Debug.Assert(0 <= index && index < GetArrayLength(objRef));
-            
+
             //var addr = 
             ulong address = GetArrayElementAddress(objRef, index);
             var val = m_heap.FetchIntPtrAt(address, 0);
 
             CorElementType elemType = (CorElementType)ClrElementType.Unknown;
             if (ComponentType != null)
+            {
                 elemType = (CorElementType)ComponentType.ElementType;
+            }
 
             return InnerGetValue(val, elemType);
         }
@@ -850,14 +905,18 @@ namespace ClrMemory
             childFieldOffset = 0;
             return false;
         }
-        public override IList<ClrInstanceField> Fields { get { if (m_fields == null) m_fields = new ICorDebugGCHeapField[0]; return m_fields; } }
+        public override IList<ClrInstanceField> Fields { get { if (m_fields == null) { m_fields = new ICorDebugGCHeapField[0]; } return m_fields; } }
         public override ClrType BaseType { get { return m_baseType; } }
 
         public override ClrInstanceField GetFieldByName(string name)
         {
             foreach (var field in Fields)
+            {
                 if (field.Name == name)
+                {
                     return field;
+                }
+            }
 
             return null;
         }
@@ -894,24 +953,35 @@ namespace ClrMemory
 
                 m_moduleFilePath = ComponentType.Module.FileName;
                 if (m_typeKind == CorElementType.ELEMENT_TYPE_SZARRAY)
+                {
                     m_name = ComponentType.Name + "[]";
+                }
                 else if (m_typeKind == CorElementType.ELEMENT_TYPE_ARRAY)
                 {
                     if (m_array.numRanks == 1)
+                    {
                         m_name = ComponentType.Name + "[*]";
+                    }
                     else
+                    {
                         m_name = ComponentType.Name + "[" + new string(',', m_array.numRanks - 1) + "]";
+                    }
 
                     Debug.Assert(m_array.firstElementOffset > m_array.rankOffset);
                 }
                 else if (m_typeKind == CorElementType.ELEMENT_TYPE_STRING)
+                {
                     m_name = "System.String";
+                }
+
                 Debug.Assert(m_array.firstElementOffset > 0);
             }
             else
             {
                 if (header.parentID.token1 != 0 || header.parentID.token2 != 0) // If we have a parent get it.  
+                {
                     m_baseType = heap.GetObjectTypeFromID(header.parentID);
+                }
 
                 SetNameModuleAndFields(m_typeKind, typeID, header.numFields);
 #if DEBUG
@@ -944,7 +1014,9 @@ namespace ClrMemory
             // THere is recursion in the definition of primitive types (they have a value field of the primtitive type.
             // Cut this off here.  
             if (GCRootNames.IsPrimitiveType(typeKind))
+            {
                 numFields = 0;
+            }
 
             var buffer = new StringBuilder(1024);
             IMetadataImport metaData = null;
@@ -983,8 +1055,10 @@ namespace ClrMemory
                     IntPtr sigBlob, fieldVal;
                     buffer.Length = 0;
                     if (metaData != null)
+                    {
                         metaData.GetFieldProps(corFields[i].token, out fieldTypeToken, buffer, buffer.Capacity, out bufferSizeRet,
                             out fieldAttr, out sigBlob, out sigBlobSize, out cplusTypeFlab, out fieldVal, out fieldValSize);
+                    }
 
                     var fieldName = buffer.ToString();
                     ICorDebugGCHeapType fieldType = null;
@@ -997,7 +1071,9 @@ namespace ClrMemory
 
                         // TODO FIX NOW remove the condition
                         if (!GCRootNames.IsReferenceType(corFields[i].fieldType))
+                        {
                             fieldType = m_heap.GetObjectTypeFromID(corFields[i].id);
+                        }
                     }
                     else
                     {
@@ -1025,7 +1101,9 @@ namespace ClrMemory
         private void EnumerateRefsOfUnboxedClass(Address objref, int offsetInObject, Action<ulong, int> action)
         {
             if (m_fields == null)
+            {
                 return;
+            }
 
             for (int i = 0; i < m_fields.Length; i++)
             {
@@ -1036,7 +1114,9 @@ namespace ClrMemory
                 {
                     var val = m_heap.FetchIntPtrAt(objref, offset);
                     if (val != 0)
+                    {
                         action(val, offset);
+                    }
                 }
                 else if (field.m_ComponentType == CorElementType.ELEMENT_TYPE_VALUETYPE)
                 {
@@ -1054,12 +1134,12 @@ namespace ClrMemory
         internal ICorDebugGCHeapField[] m_fields;             // Only valid if it is a class
         internal ICorDebugGCHeapType m_baseType;              // Only valid if it is a class
         private ICorDebugGCHeap m_heap;
-        string m_name;
-        string m_moduleFilePath;
-        bool m_isArray;
-        ICorDebugGCHeapType m_elementType;
+        private string m_name;
+        private string m_moduleFilePath;
+        private bool m_isArray;
+        private ICorDebugGCHeapType m_elementType;
         private CorElementType m_typeKind;
-        int m_index;
+        private int m_index;
         #endregion
 
         #region Unimplemented
@@ -1140,7 +1220,7 @@ namespace ClrMemory
     public class ICorDebugGCHeapField : ClrInstanceField
     {
         public override string Name { get { return m_name; } }
-        public override int Offset { get { return m_offset; } } 
+        public override int Offset { get { return m_offset; } }
         public override ClrType Type { get { return m_type; } }
         public override Address GetAddress(Address objRef, bool interior)
         {
@@ -1172,7 +1252,7 @@ namespace ClrMemory
         {
             return Type.GetValue(GetAddress(objRef, interior));
         }
-        
+
         public override object GetValue(Address objRef, bool interior, bool convertStrings)
         {
             return Type.GetValue(GetAddress(objRef, interior));
@@ -1188,8 +1268,8 @@ namespace ClrMemory
         }
 
         internal CorElementType m_ComponentType;
-        string m_name;
-        int m_offset;
+        private string m_name;
+        private int m_offset;
         internal ICorDebugGCHeapType m_type;
 
         #endregion

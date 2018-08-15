@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Diagnostics.Tracing.Ctf
 {
-    sealed class CtfChannel : Stream
+    internal sealed class CtfChannel : Stream
     {
         private CtfMetadata _metadata;
         private CtfStream _ctfStream;
@@ -36,7 +36,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         {
             base.Dispose(disposing);
             if (_handle.IsAllocated)
+            {
                 _handle.Free();
+            }
         }
 
         private bool ReadContext()
@@ -56,10 +58,14 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
                 }
 
                 if (!ReadTraceHeader())
+                {
                     return false;
+                }
 
                 if (!ReadPacketContext())
+                {
                     return false;
+                }
             } while (_contentSize == 0);
 
             return true;
@@ -72,15 +78,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             int traceHeaderSize = traceHeader.GetSize();
             if (traceHeaderSize == CtfEvent.SizeIndeterminate)
+            {
                 throw new FormatException("Unexpected metadata format.");
+            }
 
             int magicOffset = traceHeader.GetFieldOffset("magic");
             if (magicOffset < 0)
+            {
                 throw new FormatException("Unexpected metadata format: No magic field.");
+            }
 
             int streamIdOffset = traceHeader.GetFieldOffset("stream_id");
             if (streamIdOffset < 0)
+            {
                 throw new FormatException("Unexpected metadata format: No stream_id field.");
+            }
 
             // Convert to bytes instead of bits
             magicOffset /= 8;
@@ -88,7 +100,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             traceHeaderSize /= 8;
 
             if (_stream.Read(_buffer, 0, traceHeaderSize) != traceHeaderSize)
+            {
                 return false;
+            }
 
 #if DEBUG
             _fileOffset += traceHeaderSize;
@@ -96,7 +110,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 
             uint magic = BitConverter.ToUInt32(_buffer, magicOffset);
             if (magic != 0xc1fc1fc1)
+            {
                 throw new FormatException("Unknown magic number in trace header.");
+            }
 
             uint streamId = BitConverter.ToUInt32(_buffer, streamIdOffset);
             _ctfStream = _metadata.Streams[streamId];
@@ -110,15 +126,21 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             CtfStruct packetContext = _ctfStream.PacketContext;
             int packetContextSize = packetContext.GetSize();
             if (packetContextSize == CtfEvent.SizeIndeterminate)
+            {
                 throw new FormatException("Unexpected metadata format.");
+            }
 
             int contentSizeOffset = packetContext.GetFieldOffset("content_size");
             if (contentSizeOffset < 0)
+            {
                 throw new FormatException("Unexpected metadata format: No context_size field.");
+            }
 
             int packetSizeOffset = packetContext.GetFieldOffset("packet_size");
             if (packetSizeOffset < 0)
+            {
                 throw new FormatException("Unexpected metadata format: No packet_size field.");
+            }
 
             // Convert to bytes instead of bits
             packetContextSize /= 8;
@@ -126,7 +148,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             packetSizeOffset /= 8;
 
             if (_stream.Read(_buffer, 0, packetContextSize) != packetContextSize)
+            {
                 return false;
+            }
 
 #if DEBUG
             _fileOffset += packetContextSize;
@@ -175,7 +199,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
         public override int ReadByte()
         {
             if (_contentSize == 0 && !ReadContext())
+            {
                 return -1;
+            }
 
             _contentSize--;
             _packetSize--;
@@ -196,7 +222,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
             while (read < count)
             {
                 if (_contentSize == 0 && !ReadContext())
+                {
                     break;
+                }
 
                 int toRead = count > _contentSize ? (int)_contentSize : count;
                 int curr = _stream.Read(buffer, offset + read, toRead);
@@ -210,7 +238,9 @@ namespace Microsoft.Diagnostics.Tracing.Ctf
 #endif
 
                 if (curr != toRead)
+                {
                     break;
+                }
             }
 
             return read;

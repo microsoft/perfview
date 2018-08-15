@@ -2,13 +2,11 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text.RegularExpressions;
 public enum Address : long { };
 
-class Program
+internal class Program
 {
     /// <summary>
     /// This program generates C# code for manipulating ETW events given the event XML schema definition 
@@ -50,7 +48,9 @@ class Program
                     }
                 }
                 if (!foundEventSource)
+                {
                     throw new ApplicationException("Could not find an eventSource named " + commandLine.EventSource + " in " + exe);
+                }
             }
 
             Console.WriteLine("Reading manifest file " + commandLine.ManifestFile);
@@ -503,7 +503,10 @@ class Program
         {
             int newLineIndex = str.IndexOf('\n', startIndex, length);
             if (newLineIndex < 0)
+            {
                 return ret;
+            }
+
             length -= newLineIndex - startIndex + 1;
             startIndex = newLineIndex + 1;
             ret++;
@@ -514,7 +517,7 @@ class Program
 /// <summary>
 /// EventSourceFinder is a class that can find all the EventSources in a file and can 
 /// </summary>
-static class EventSourceFinder
+internal static class EventSourceFinder
 {
     // TODO remove and depend on framework for these instead.  
     public static Guid GetGuid(Type eventSource)
@@ -565,9 +568,13 @@ static class EventSourceFinder
         try
         {
             if (allowInvoke)
+            {
                 assembly = System.Reflection.Assembly.LoadFrom(fileName);
+            }
             else
+            {
                 assembly = System.Reflection.Assembly.ReflectionOnlyLoadFrom(fileName);
+            }
         }
         catch (Exception e)
         {
@@ -586,7 +593,9 @@ static class EventSourceFinder
                 foreach (Type type in subAssembly.GetTypes())
                 {
                     if (type.BaseType != null && type.BaseType.Name == "EventSource")
+                    {
                         eventSources.Add(type);
+                    }
                 }
             }
             catch (Exception)
@@ -652,14 +661,18 @@ static class EventSourceFinder
                 string childPath = Path.Combine(assemblyDirectory, childAssemblyName.Name + ".dll");
                 Assembly childAssembly = null;
                 if (File.Exists(childPath))
+                {
                     childAssembly = Assembly.ReflectionOnlyLoadFrom(childPath);
+                }
 
                 //TODO do we care about things in the GAC?   it expands the search quite a bit. 
                 //else
                 //    childAssembly = Assembly.Load(childAssemblyName);
 
                 if (childAssembly != null && !soFar.ContainsKey(childAssembly))
+                {
                     GetStaticReferencedAssemblies(childAssembly, soFar);
+                }
             }
             catch (Exception)
             {
@@ -678,12 +691,12 @@ static class EventSourceFinder
 /// 
 /// See code:CommandLineParser for more on parser itself.   
 /// </summary>
-class CommandLine
+internal class CommandLine
 {
     public CommandLine()
     {
         bool usersGuide = false;
-        CommandLineParser.ParseForConsoleApplication(delegate(CommandLineParser parser)
+        CommandLineParser.ParseForConsoleApplication(delegate (CommandLineParser parser)
         {
             // #CommandLineDefinitions
             parser.DefineParameterSet("UsersGuide", ref usersGuide, true, "Display the users guide.");
@@ -714,7 +727,9 @@ class CommandLine
 #endif
         });
         if (usersGuide)
+        {
             UsersGuide.DisplayConsoleAppUsersGuide("UsersGuide.htm");
+        }
     }
     public string ManifestFile;
     public string OutputFile
@@ -722,7 +737,10 @@ class CommandLine
         get
         {
             if (outputFile == null)
+            {
                 outputFile = Path.ChangeExtension(ManifestFile, ".cs");
+            }
+
             return outputFile;
         }
     }
@@ -731,7 +749,10 @@ class CommandLine
         get
         {
             if (baseFile == null)
+            {
                 baseFile = Path.ChangeExtension(outputFile, ".base.cs");
+            }
+
             return baseFile;
         }
     }

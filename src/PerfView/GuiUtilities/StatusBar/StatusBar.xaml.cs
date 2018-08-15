@@ -1,20 +1,20 @@
-﻿using System;
+﻿using Controls;
+using Microsoft.Diagnostics.Utilities;
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Media;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
-using System.Threading;
-using System.Media;
-using System.Diagnostics;
-using System.Windows.Media;
-using Controls;
-using System.IO;
-using System.Text.RegularExpressions;
-using System.ComponentModel;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
 using Utilities;
-using Microsoft.Diagnostics.Utilities;
-using System.Threading.Tasks;
 
 namespace PerfView
 {
@@ -33,7 +33,7 @@ namespace PerfView
 
             InitializeComponent();
 
-            m_StatusMessage.PreviewMouseDoubleClick += delegate(object sender, MouseButtonEventArgs e)
+            m_StatusMessage.PreviewMouseDoubleClick += delegate (object sender, MouseButtonEventArgs e)
             {
                 e.Handled = StatusBar.ExpandSelectionByANumber(m_StatusMessage);
                 return;
@@ -75,11 +75,13 @@ namespace PerfView
                     m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
                 }
                 else
+                {
                     Dispatcher.BeginInvoke((Action)delegate ()
                     {
                         Status = errorMessage;
                         m_StatusMessage.RaiseEvent(new RoutedEventArgs(StatusBar.HighlightMessageEvent, this));
                     });
+                }
             }
             LoggedError = true;
 
@@ -119,12 +121,17 @@ namespace PerfView
         public static void AttachWriterToLogStream(TextWriter writer)
         {
             if (s_logWriter == null)
+            {
                 s_logWriter = new TextEditorWriter(LogWindow.TextEditor);
+            }
 
             if (writer != null)
             {
                 if (!(s_logWriter is TextEditorWriter))
+                {
                     throw new InvalidOperationException("Only one writer can be attached to the log stream simultaneously");
+                }
+
                 s_logWriter = new TeeTextWriter(writer, s_logWriter);
             }
         }
@@ -173,7 +180,9 @@ namespace PerfView
         {
             // We only call this from the GUI thread
             if (Dispatcher.Thread != Thread.CurrentThread)
+            {
                 throw new InvalidOperationException("Work can only be started from the UI thread.");
+            }
 
             // Because we are only called on the GUI thread, there is no race.
             if (m_work != null)
@@ -190,7 +199,10 @@ namespace PerfView
             m_worker = null;
             m_finally = finally_;
             if (m_parentWindow == null)
+            {
                 m_parentWindow = Helpers.AncestorOfType<Window>(this);
+            }
+
             if (m_parentWindow != null)
             {
                 m_origCursor = m_parentWindow.Cursor;
@@ -235,20 +247,25 @@ namespace PerfView
                             m_worker = Thread.CurrentThread;    // At this point we can be aborted.  
                             // If abort was called before m_worker was initialized we need to kill this thread ourselves.  
                             if (m_abortStarted)
+                            {
                                 throw new ThreadInterruptedException();
+                            }
+
                             work();
                             Debug.Assert(m_endWorkStarted, "User did not call EndWork before returning from work body.");
                         }
                         catch (Exception ex)
                         {
-                            EndWork(delegate()
+                            EndWork(delegate ()
                             {
                                 if (!(ex is ThreadInterruptedException))
                                 {
                                     bool userLevel;
                                     var errorMessage = ExceptionMessage.GetUserMessage(ex, out userLevel);
                                     if (userLevel)
+                                    {
                                         LogError(errorMessage);
+                                    }
                                     else
                                     {
                                         Log(errorMessage);
@@ -262,8 +279,12 @@ namespace PerfView
                         // If we started an abort, then a thread-interrupt might happen at any time until the abort is completed.  
                         // Thus we should wait around until the abort completes.  
                         if (m_abortStarted)
+                        {
                             while (!m_abortDidInterrupt)
+                            {
                                 Thread.Sleep(1);
+                            }
+                        }
                     }
                     catch (ThreadInterruptedException) { }      // we 'expect' ThreadInterruptedException so don't let them leak out. 
 
@@ -272,7 +293,9 @@ namespace PerfView
 
                     Debug.Assert(m_endWorkStarted);
                     if (m_abortStarted)
+                    {
                         Log("Cancellation Complete on thread " + Thread.CurrentThread.ManagedThreadId + " : (Elapsed Time: " + Duration.TotalSeconds.ToString("f3") + " sec)");
+                    }
                 }
                 finally
                 {
@@ -298,7 +321,7 @@ namespace PerfView
             Debug.Assert(m_worker == null || Thread.CurrentThread == m_worker);
             Debug.Assert(m_work != null, "Called EndWork before work was started");
             m_endWorkStarted = true;
-            Dispatcher.BeginInvoke((Action)delegate()
+            Dispatcher.BeginInvoke((Action)delegate ()
             {
                 // m_endWorkDone insures that we call EndWork at most once. 
                 if (!m_endWorkCompleted)
@@ -314,12 +337,16 @@ namespace PerfView
                     // We don't want important status being lost
                     // Only update the status if there were no other updates 
                     if (!m_loggedStatus)
+                    {
                         Status = message;
+                    }
 
                     // PerfViewLogger.Log.DebugMessage("Stopping working " + m_workMessage);
                     m_workMessage = "";
                     if (m_parentWindow != null)
+                    {
                         m_parentWindow.Cursor = m_origCursor;
+                    }
 
                     m_work = null;
                     SignalPropertyChange(nameof(IsWorking));
@@ -339,11 +366,17 @@ namespace PerfView
         public void AbortWork(bool silent = false)
         {
             if (!silent)
+            {
                 Log("Abort Requested.");
+            }
+
             if (m_work == null)
             {
                 if (!silent)
+                {
                     Log("No work in progress.  Abort skipped.");
+                }
+
                 return;
             }
 
@@ -357,7 +390,10 @@ namespace PerfView
                 if (worker != null)
                 {
                     if (!silent)
+                    {
                         Log("Cancelation Started on thread " + worker.ManagedThreadId + " : " + m_workMessage + " (Elapsed Time: " + Duration.TotalSeconds.ToString("f3") + " sec)");
+                    }
+
                     worker.Interrupt();           // kill any work in process;
                 }
                 m_abortDidInterrupt = true;       // Indicate that we will never send an interrupt again
@@ -366,7 +402,9 @@ namespace PerfView
                 ThreadPool.QueueUserWorkItem(delegate
                 {
                     while (m_worker != null)          // Wait for abort to complete.  
+                    {
                         Thread.Sleep(10);
+                    }
 
                     // Because we interrupted the worker, We can't rely on the worker to do EndWork, so we do it.  
                     // EndWork will insure that if we try to do the work twice, only the first will succeed.  
@@ -387,10 +425,10 @@ namespace PerfView
         /// </summary>
         public void DoWork(string message, Action work)
         {
-            StartWork(message, delegate()
+            StartWork(message, delegate ()
             {
                 work();
-                EndWork(delegate()
+                EndWork(delegate ()
                 {
                     Status = "Complete: " + message;
                 });
@@ -414,7 +452,9 @@ namespace PerfView
             while (true)
             {
                 if (!IsWorking)
+                {
                     return;
+                }
 
                 var work = m_work;
                 if (work != null)
@@ -435,28 +475,41 @@ namespace PerfView
         {
             var text = textBox.Text;
             if (text.Length == 0)
+            {
                 return false;
+            }
 
             var start = textBox.SelectionStart;
             if (start >= text.Length)
+            {
                 start = text.Length - 1;
+            }
+
             var end = start;
             while (start > 0)
             {
                 var c = text[start - 1];
                 if (!(Char.IsDigit(c) || c == ',' || c == '.'))
+                {
                     break;
+                }
+
                 --start;
             }
             // We accept negative numbers too.  
             if (start > 0 && text[start - 1] == '-')
+            {
                 --start;
+            }
 
             while (end < text.Length)
             {
                 var c = text[end];
                 if (!(Char.IsDigit(c) || c == ',' || c == '.'))
+                {
                     break;
+                }
+
                 end++;
             }
 
@@ -495,27 +548,27 @@ namespace PerfView
         }
 
         // These are GUI state, and only the GUI thread cares about it.    
-        static TextEditorWindow s_log;
-        static TextWriter s_logWriter;           // This is  IS shared.  
-        StatusTextWriter m_logWriter;            // This is a StatusTextWriter and is NOT shared.
+        private static TextEditorWindow s_log;
+        private static TextWriter s_logWriter;           // This is  IS shared.  
+        private StatusTextWriter m_logWriter;            // This is a StatusTextWriter and is NOT shared.
 
-        DispatcherTimer m_timer;
-        int m_workTimeSec;
-        DateTime m_startTime;
+        private DispatcherTimer m_timer;
+        private int m_workTimeSec;
+        private DateTime m_startTime;
         internal string m_workMessage;
-        Brush m_blinkColor;
-        Window m_parentWindow;
-        System.Windows.Input.Cursor m_origCursor;
-        Task m_work;
-        Action m_finally;                   // work that is done wehther the command succeeds or not 
-        bool m_loggedStatus;                // Did we send anything to the status bar?
+        private Brush m_blinkColor;
+        private Window m_parentWindow;
+        private System.Windows.Input.Cursor m_origCursor;
+        private Task m_work;
+        private Action m_finally;                   // work that is done wehther the command succeeds or not 
+        private bool m_loggedStatus;                // Did we send anything to the status bar?
 
         // State touched by the worker thread. 
-        volatile bool m_abortStarted;        // The Abort() API was called.   Set in Gui, read in worker
-        volatile bool m_abortDidInterrupt;      // The Abort() API is finished.  Set in Gui, read in worker
-        volatile Thread m_worker;            // As long as this is set, we could be aborted aynchronously.  
-        bool m_endWorkStarted;               // always set from worker thread, just for asserts. 
-        bool m_endWorkCompleted;             // Did we do all the work in endWork, we use this to only do EndWork no more than once.  
+        private bool m_abortStarted;        // The Abort() API was called.   Set in Gui, read in worker
+        private bool m_abortDidInterrupt;      // The Abort() API is finished.  Set in Gui, read in worker
+        private Thread m_worker;            // As long as this is set, we could be aborted aynchronously.  
+        private bool m_endWorkStarted;               // always set from worker thread, just for asserts. 
+        private bool m_endWorkCompleted;             // Did we do all the work in endWork, we use this to only do EndWork no more than once.  
         #endregion
     }
 
@@ -547,22 +600,27 @@ namespace PerfView
         private void UpdateStatus(string value)
         {
             if (value == null)
+            {
                 return;
+            }
 
             Match m = Regex.Match(value, @"^\s*\[(.*)\]\s*$");
             if (m.Success)
             {
-                m_statusBar.Dispatcher.BeginInvoke((Action)delegate()
+                m_statusBar.Dispatcher.BeginInvoke((Action)delegate ()
                 {
                     if (m_statusBar.Visibility != Visibility.Visible)
+                    {
                         m_statusBar.Visibility = Visibility.Visible;
+                    }
+
                     m_statusBar.Status = m.Groups[1].Value;
                 });
             }
         }
 
-        StatusBar m_statusBar;
-        TextWriter m_stream;
+        private StatusBar m_statusBar;
+        private TextWriter m_stream;
     }
 
 }

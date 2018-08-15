@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using FastSerialization;
-using System;
+using System.Collections.Generic;
 using Address = System.UInt64;
 
 public class DotNetHeapInfo : IFastSerializable
@@ -33,12 +32,17 @@ public class DotNetHeapInfo : IFastSerializable
         if ((m_lastSegment == null) || !(m_lastSegment.Start <= obj && obj < m_lastSegment.End))
         {
             if (Segments == null)
+            {
                 return -1;
+            }
 
             for (int i = 0; ; i++)
             {
                 if (i >= Segments.Count)
+                {
                     return -1;
+                }
+
                 var segment = Segments[i];
                 if (segment.Start <= obj && obj < segment.End)
                 {
@@ -49,13 +53,25 @@ public class DotNetHeapInfo : IFastSerializable
         }
 
         if (obj < m_lastSegment.Gen3End)
+        {
             return 3;
+        }
+
         if (obj < m_lastSegment.Gen2End)
+        {
             return 2;
+        }
+
         if (obj < m_lastSegment.Gen1End)
+        {
             return 1;
+        }
+
         if (obj < m_lastSegment.Gen0End)
+        {
             return 0;
+        }
+
         return -1;
     }
 
@@ -67,10 +83,14 @@ public class DotNetHeapInfo : IFastSerializable
         {
             serializer.Write(Segments.Count);
             foreach (var segment in Segments)
+            {
                 serializer.Write(segment);
+            }
         }
         else
+        {
             serializer.Write(0);
+        }
     }
     void IFastSerializable.FromStream(Deserializer deserializer)
     {
@@ -78,10 +98,12 @@ public class DotNetHeapInfo : IFastSerializable
         var count = deserializer.ReadInt();
         Segments = new List<GCHeapDumpSegment>(count);
         for (int i = 0; i < count; i++)
+        {
             Segments.Add((GCHeapDumpSegment)deserializer.ReadObject());
+        }
     }
 
-    GCHeapDumpSegment m_lastSegment;    // cache for GenerationFor
+    private GCHeapDumpSegment m_lastSegment;    // cache for GenerationFor
     #endregion
 }
 

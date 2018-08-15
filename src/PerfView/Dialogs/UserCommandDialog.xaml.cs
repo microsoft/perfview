@@ -1,16 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.ComponentModel;
 
 namespace PerfView.Dialogs
 {
@@ -28,13 +20,15 @@ namespace PerfView.Dialogs
             // Initialize from persistent store. 
             var history = App.ConfigData["UserCommandHistory"];
             if (history != null)
+            {
                 CommandTextBox.SetHistory(history.Split(';'));
+            }
 
-            Loaded += delegate(object sender, RoutedEventArgs e)
+            Loaded += delegate (object sender, RoutedEventArgs e)
             {
                 CommandTextBox.Focus();
             };
-            Closing += delegate(object sender, CancelEventArgs e)
+            Closing += delegate (object sender, CancelEventArgs e)
             {
                 CommandTextBox.Text = "";
                 CommandTextBox.Focus();
@@ -57,7 +51,10 @@ namespace PerfView.Dialogs
             foreach (string item in CommandTextBox.Items)
             {
                 if (sb.Length != 0)
+                {
                     sb.Append(';');
+                }
+
                 sb.Append(item);
             }
             App.ConfigData["UserCommandHistory"] = sb.ToString();
@@ -86,7 +83,8 @@ namespace PerfView.Dialogs
         {
             GuiApp.MainWindow.DoUserCommandHelp(null, null);
         }
-        Action<string> m_DoCommand;
+
+        private Action<string> m_DoCommand;
         #endregion
 
     }

@@ -4,18 +4,18 @@
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
 // 
+using Microsoft.Diagnostics.Tracing.Compatibility;
+using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Compatibility;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
-using Address = System.UInt64;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Utilities;
+using Address = System.UInt64;
 
 // code:System.Diagnostics.ETWTraceEventSource definition.
 namespace Microsoft.Diagnostics.Tracing
@@ -32,7 +32,7 @@ namespace Microsoft.Diagnostics.Tracing
     /// * See also #ETWTraceEventSourceInternals
     /// * See also #ETWTraceEventSourceFields
     /// </summary>    
-    public unsafe sealed class ETWTraceEventSource : TraceEventDispatcher, IDisposable
+    public sealed unsafe class ETWTraceEventSource : TraceEventDispatcher, IDisposable
     {
         /// <summary>
         /// Open a ETW event trace moduleFile (ETL moduleFile) for processing.  
@@ -76,7 +76,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             stopProcessing = false;
             if (processTraceCalled)
+            {
                 Reset();
+            }
+
             processTraceCalled = true;
 
             if (fileNames != null)
@@ -87,7 +90,9 @@ namespace Microsoft.Diagnostics.Tracing
                     {
                         Debug.Assert(handles.Length == 1);
                         if (handles[0] != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                        {
                             TraceEventNativeMethods.CloseTrace(handles[0]);
+                        }
                     }
 
                     Initialize(fileName, TraceEventSourceType.FileOnly);
@@ -108,7 +113,11 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // If the session is real time, set he sessionEndTime (since the session is stopping).  
                 if (sessionEndTimeQPC == long.MaxValue)
-                    sessionEndTimeQPC = QPCTime.GetUTCTimeAsQPC(DateTime.UtcNow); OnCompleted();
+                {
+                    sessionEndTimeQPC = QPCTime.GetUTCTimeAsQPC(DateTime.UtcNow);
+                }
+
+                OnCompleted();
                 return ret;
             }
         }
@@ -123,7 +132,7 @@ namespace Microsoft.Diagnostics.Tracing
         [Obsolete("Not obsolete but experimental.   We may change this in the future.")]
         public void ReprocessEvent(TraceEvent ev)
         {
-            this.RawDispatch(ev.eventRecord);
+            RawDispatch(ev.eventRecord);
         }
 
         /// <summary> 
@@ -147,7 +156,9 @@ namespace Microsoft.Diagnostics.Tracing
                 {
                     var fileName = logFiles[i].LogFileName;
                     if (File.Exists(fileName))
+                    {
                         ret += new FileInfo(fileName).Length;
+                    }
                 }
                 return ret;
             }
@@ -162,7 +173,10 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 int ret = 0;
                 for (int i = 0; i < logFiles.Length; i++)
+                {
                     ret += (int)logFiles[i].LogfileHeader.EventsLost;
+                }
+
                 return ret;
             }
         }
@@ -189,7 +203,10 @@ namespace Microsoft.Diagnostics.Tracing
         public void SynchronizeClock()
         {
             if (!IsRealTime)
+            {
                 throw new InvalidOperationException("SynchronizeClock is only for Real-Time Sessions");
+            }
+
             DateTime utcNow = DateTime.UtcNow;
             _syncTimeQPC = QPCTime.GetUTCTimeAsQPC(utcNow);
             _syncTimeUTC = utcNow;
@@ -242,15 +259,23 @@ namespace Microsoft.Diagnostics.Tracing
                         // TODO can rip this out when we don't package ready-to-run images
                         var windowsIdx = fileName.IndexOf(@"\windows\", StringComparison.OrdinalIgnoreCase);
                         if (0 <= windowsIdx && windowsIdx <= 2)
+                        {
                             return;
+                        }
+
                         if (!File.Exists(fileName))
+                        {
                             return;
+                        }
+
                         try
                         {
                             using (var peFile = new PEFile.PEFile(fileName))
                             {
                                 if (!peFile.IsManagedReadyToRun)
+                                {
                                     return;
+                                }
                             }
                         }
                         catch { return; }
@@ -263,7 +288,10 @@ namespace Microsoft.Diagnostics.Tracing
                 source.Kernel.StackWalkStack += delegate (StackWalkStackTraceData data)
                 {
                     if (data.ProcessID == 0)
+                    {
                         return;
+                    }
+
                     var processId = data.ProcessID;
                     for (int i = 0; i < data.FrameCount; i++)
                     {
@@ -285,7 +313,10 @@ namespace Microsoft.Diagnostics.Tracing
                 source.Kernel.PerfInfoSample += delegate (SampledProfileTraceData data)
                 {
                     if (data.ProcessID == 0)
+                    {
                         return;
+                    }
+
                     var processId = data.ProcessID;
                     var address = (data.InstructionPointer & 0xFFFFFFFFFFFF0000L) + ((Address)(processId & 0xFFFF));
                     addressCounts[address] = 1;
@@ -326,10 +357,16 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 var ret = BaseAddress.CompareTo(other.BaseAddress);
                 if (ret != 0)
+                {
                     return ret;
+                }
+
                 ret = ProcessID - other.ProcessID;
                 if (ret != 0)
+                {
                     return ret;
+                }
+
                 return DllName.CompareTo(other.DllName);
             }
 
@@ -357,13 +394,17 @@ namespace Microsoft.Diagnostics.Tracing
 
                 logFiles = new TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[allLogFiles.Count];
                 for (int i = 0; i < allLogFiles.Count; i++)
+                {
                     logFiles[i].LogFileName = allLogFiles[i];
+                }
             }
             else
             {
                 logFiles = new TraceEventNativeMethods.EVENT_TRACE_LOGFILEW[1];
                 if (type == TraceEventSourceType.FileOnly)
+                {
                     logFiles[0].LogFileName = fileOrSessionName;
+                }
                 else
                 {
                     Debug.Assert(type == TraceEventSourceType.Session);
@@ -375,7 +416,7 @@ namespace Microsoft.Diagnostics.Tracing
             handles = new ulong[logFiles.Length];
 
             // Fill  out the first log file information (we will clone it later if we have multiple files). 
-            logFiles[0].BufferCallback = this.TraceEventBufferCallback;
+            logFiles[0].BufferCallback = TraceEventBufferCallback;
             handles[0] = TraceEventNativeMethods.INVALID_HANDLE_VALUE;
             useClassicETW = !OperatingSystemVersion.AtLeast(OperatingSystemVersion.Vista);
             if (useClassicETW)
@@ -410,27 +451,37 @@ namespace Microsoft.Diagnostics.Tracing
             {
                 handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
                 if (handles[i] == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                {
                     Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
+                }
 
                 // Start time is minimum of all start times
                 DateTime logFileStartTimeUTC = SafeFromFileTimeUtc(logFiles[i].LogfileHeader.StartTime);
                 DateTime logFileEndTimeUTC = SafeFromFileTimeUtc(logFiles[i].LogfileHeader.EndTime);
 
                 if (logFileStartTimeUTC < minSessionStartTimeUTC)
+                {
                     minSessionStartTimeUTC = logFileStartTimeUTC;
+                }
                 // End time is maximum of all start times
                 if (logFileEndTimeUTC > maxSessionEndTimeUTC)
+                {
                     maxSessionEndTimeUTC = logFileEndTimeUTC;
+                }
 
                 // TODO do we even need log pointer size anymore?   
                 // We take the max pointer size.  
                 if ((int)logFiles[i].LogfileHeader.PointerSize > pointerSize)
+                {
                     pointerSize = (int)logFiles[i].LogfileHeader.PointerSize;
+                }
             }
 
             _QPCFreq = logFiles[0].LogfileHeader.PerfFreq;
             if (_QPCFreq == 0)
+            {
                 _QPCFreq = Stopwatch.Frequency;
+            }
 
             // Real time providers don't set this to something useful
             if ((logFiles[0].LogFileMode & TraceEventNativeMethods.EVENT_TRACE_REAL_TIME_MODE) != 0)
@@ -452,8 +503,8 @@ namespace Microsoft.Diagnostics.Tracing
 
                 // UTCDateTimeToQPC is actually going to give the wrong value for these because we have
                 // not set _syncTimeQPC, but will be adjusted when we see the event Header and know _syncTypeQPC.  
-                sessionStartTimeQPC = this.UTCDateTimeToQPC(minSessionStartTimeUTC);
-                sessionEndTimeQPC = this.UTCDateTimeToQPC(maxSessionEndTimeUTC);
+                sessionStartTimeQPC = UTCDateTimeToQPC(minSessionStartTimeUTC);
+                sessionEndTimeQPC = UTCDateTimeToQPC(maxSessionEndTimeUTC);
             }
             Debug.Assert(_QPCFreq != 0);
             if (pointerSize == 0 || IsRealTime)  // We get on x64 OS 4 as pointer size which is wrong for realtime sessions. Fix it up. 
@@ -471,7 +522,9 @@ namespace Microsoft.Diagnostics.Tracing
             // SystemTime is like a QPC time that happens 10M times a second (100ns).  
             // ReservedFlags is actually the ClockType 0 = Raw, 1 = QPC, 2 = SystemTimne 3 = CpuTick (we don't support)
             if (logFiles[0].LogfileHeader.ReservedFlags == 2)   // If ClockType == EVENT_TRACE_CLOCK_SYSTEMTIME
+            {
                 _QPCFreq = 10000000;
+            }
 
             Debug.Assert(_QPCFreq != 0);
             int ver = (int)logFiles[0].LogfileHeader.Version;
@@ -489,12 +542,20 @@ namespace Microsoft.Diagnostics.Tracing
                 string path = data.KernelImageFileName;
                 int startIdx = path.LastIndexOf('\\');
                 if (0 <= startIdx)
+                {
                     startIdx++;
+                }
                 else
+                {
                     startIdx = 0;
+                }
+
                 int endIdx = path.LastIndexOf('.');
                 if (endIdx <= startIdx)
+                {
                     endIdx = path.Length;
+                }
+
                 processNameForID[data.ProcessID] = path.Substring(startIdx, endIdx - startIdx);
             };
             kernelParser.ProcessEndGroup += delegate (ProcessTraceData data)
@@ -520,7 +581,9 @@ namespace Microsoft.Diagnostics.Tracing
         internal static int GetOSPointerSize()
         {
             if (IntPtr.Size == 8)
+            {
                 return 8;
+            }
 #if !NETSTANDARD1_6
             bool is64bitOS = Environment.Is64BitOperatingSystem;
 #else
@@ -535,7 +598,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             ulong maxTime = (ulong)DateTime.MaxValue.ToFileTimeUtc();
             if (maxTime < (ulong)fileTime)
+            {
                 return DateTime.MaxValue;
+            }
+
             return DateTime.FromFileTimeUtc(fileTime);
         }
 
@@ -543,7 +609,7 @@ namespace Microsoft.Diagnostics.Tracing
         /// This is a little helper class that maps QueryPerformanceCounter (QPC) ticks to DateTime.  There is an error of
         /// a few msec, but as long as every one uses the same one, we probably don't care.  
         /// </summary>
-        class QPCTime
+        private class QPCTime
         {
             public static long GetUTCTimeAsQPC(DateTime utcTime)
             {
@@ -552,7 +618,7 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             #region private
-            long _GetUTCTimeAsQPC(DateTime utcTime)
+            private long _GetUTCTimeAsQPC(DateTime utcTime)
             {
                 // Convert to seconds from the baseline
                 double deltaSec = (utcTime.Ticks - m_timeAsDateTimeUTC.Ticks) / 10000000.0;
@@ -560,7 +626,7 @@ namespace Microsoft.Diagnostics.Tracing
                 return (long)(deltaSec * Stopwatch.Frequency) + m_timeAsQPC;
             }
 
-            QPCTime()
+            private QPCTime()
             {
                 // We call Now and GetTimeStame at one point (it will be off by the latency of
                 // one call to these functions).   However since UtcNow only changes once every 16
@@ -583,8 +649,8 @@ namespace Microsoft.Diagnostics.Tracing
             }
 
             // A QPC object just needs to hold a point in time in both units (DateTime and QPC). 
-            DateTime m_timeAsDateTimeUTC;
-            long m_timeAsQPC;
+            private DateTime m_timeAsDateTimeUTC;
+            private long m_timeAsQPC;
 
             #endregion
         }
@@ -594,7 +660,10 @@ namespace Microsoft.Diagnostics.Tracing
             string fileBaseName = Path.GetFileNameWithoutExtension(fileName);
             string dir = Path.GetDirectoryName(fileName);
             if (dir.Length == 0)
+            {
                 dir = ".";
+            }
+
             List<string> allLogFiles = new List<string>();
             allLogFiles.AddRange(Directory.GetFiles(dir, fileBaseName + ".etl"));
             allLogFiles.AddRange(Directory.GetFiles(dir, fileBaseName + ".kernel*.etl"));
@@ -602,7 +671,9 @@ namespace Microsoft.Diagnostics.Tracing
             allLogFiles.AddRange(Directory.GetFiles(dir, fileBaseName + ".user*.etl"));
 
             if (allLogFiles.Count == 0)
+            {
                 throw new FileNotFoundException("Could not find file     " + fileName);
+            }
 
             return allLogFiles;
         }
@@ -611,11 +682,15 @@ namespace Microsoft.Diagnostics.Tracing
         {
             int dwErr = TraceEventNativeMethods.ProcessTrace(handles, (uint)handles.Length, (IntPtr)0, (IntPtr)0);
             if (dwErr == 6)
+            {
                 throw new ApplicationException("Error opening ETL file.  Most likely caused by opening a Win8 Trace on a Pre Win8 OS.");
+            }
 
             // ETW returns 1223 when you stop processing explicitly 
             if (!(dwErr == 1223 && stopProcessing))
+            {
                 Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRFromWin32(dwErr));
+            }
 
             return !stopProcessing;
         }
@@ -643,9 +718,13 @@ namespace Microsoft.Diagnostics.Tracing
             // TODO Figure out if there is a marker that is used in the WOW for the classic providers 
             // right now I assume they are all the same as the machine.  
             if (pointerSize == 8)
+            {
                 eventData->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_64_BIT_HEADER;
+            }
             else
+            {
                 eventData->EventHeader.Flags |= TraceEventNativeMethods.EVENT_HEADER_FLAG_32_BIT_HEADER;
+            }
 
             // EventProperty
             eventData->EventHeader.ThreadId = oldStyleHeader->Header.ThreadId;
@@ -677,10 +756,15 @@ namespace Microsoft.Diagnostics.Tracing
         private void RawDispatch(TraceEventNativeMethods.EVENT_RECORD* rawData)
         {
             if (stopProcessing)
+            {
                 return;
+            }
 
             if (lockObj != null)
+            {
                 Monitor.Enter(lockObj);
+            }
+
             Debug.Assert(rawData->EventHeader.HeaderType == 0);     // if non-zero probably old-style ETW header
 
             // Give it an event ID if it does not have one.  
@@ -697,12 +781,16 @@ namespace Microsoft.Diagnostics.Tracing
             anEvent.DebugValidate();
 
             if (anEvent.NeedsFixup)
+            {
                 anEvent.FixupData();
+            }
 
             Dispatch(anEvent);
 
             if (lockObj != null)
+            {
                 Monitor.Exit(lockObj);
+            }
         }
 
         /// <summary>
@@ -717,8 +805,13 @@ namespace Microsoft.Diagnostics.Tracing
                 if (handles != null)
                 {
                     foreach (ulong handle in handles)
+                    {
                         if (handle != TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                        {
                             TraceEventNativeMethods.CloseTrace(handle);
+                        }
+                    }
+
                     handles = null;
                 }
 
@@ -746,7 +839,9 @@ namespace Microsoft.Diagnostics.Tracing
         private void Reset()
         {
             if (!CanReset)
+            {
                 throw new InvalidOperationException("Event stream is not resetable (e.g. real time).");
+            }
 
             if (handles != null)
             {
@@ -767,7 +862,9 @@ namespace Microsoft.Diagnostics.Tracing
                     handles[i] = TraceEventNativeMethods.OpenTrace(ref logFiles[i]);
 
                     if (handles[i] == TraceEventNativeMethods.INVALID_HANDLE_VALUE)
+                    {
                         Marshal.ThrowExceptionForHR(TraceEventNativeMethods.GetHRForLastWin32Error());
+                    }
                 }
             }
         }
@@ -807,7 +904,10 @@ namespace Microsoft.Diagnostics.Tracing
         {
             string ret;
             if (!processNameForID.TryGetValue(processID, out ret))
+            {
                 ret = "";
+            }
+
             return ret;
         }
         #endregion

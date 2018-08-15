@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-using System.Diagnostics;
+﻿using Microsoft.Diagnostics.Utilities;
 using PerfView;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Reflection;
-using Microsoft.Diagnostics.Utilities;
-using Utilities;
 
 namespace Utilities
 {
@@ -47,7 +44,7 @@ namespace Utilities
     /// zero.  You have to write your own '/uninstall' or 'Cleanup' that deletes SupportFileDir
     /// if you want this.  
     /// </summary>
-    static class SupportFiles
+    internal static class SupportFiles
     {
         /// <summary>
         /// Unpacks any resource that beginning with a .\ (so it looks like a relative path name)
@@ -79,20 +76,29 @@ namespace Utilities
                 var simpleName = args.Name;
                 var commaIdx = simpleName.IndexOf(',');
                 if (0 <= commaIdx)
+                {
                     simpleName = simpleName.Substring(0, commaIdx);
+                }
+
                 string fileName = Path.Combine(SupportFileDir, simpleName + ".dll");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // Also look in processor specific location
                 fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".dll");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // And look for an exe (we need this for HeapDump.exe)
                 fileName = Path.Combine(SupportFileDir, ProcessArchitectureDirectory, simpleName + ".exe");
                 if (File.Exists(fileName))
+                {
                     return System.Reflection.Assembly.LoadFrom(fileName);
+                }
 
                 // If asked, look in other locations as well. 
                 if (s_managedDllSearchPaths != null)
@@ -101,7 +107,9 @@ namespace Utilities
                     {
                         fileName = Path.Combine(dir, simpleName + ".dll");
                         if (File.Exists(fileName))
+                        {
                             return System.Reflection.Assembly.LoadFrom(fileName);
+                        }
                     }
                 }
                 return null;
@@ -111,7 +119,9 @@ namespace Utilities
             // Note we do this AFTER setting up the Assemble Resolve event because we use FileUtiltities that
             // may not be in the EXE itself.  
             if (unpacked || File.Exists(Path.Combine(SupportFileDirBase, "CleanupNeeded")))
+            {
                 Cleanup();
+            }
 
             return unpacked;
         }
@@ -151,7 +161,9 @@ namespace Utilities
                     {
                         appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                         if (appData == null)
+                        {
                             appData = Path.GetFileName(MainAssemblyPath);
+                        }
                     }
                     s_supportFileDirBase = Path.Combine(appData, appName);
                 }
@@ -184,7 +196,10 @@ namespace Utilities
             get
             {
                 if (s_exePath == null)
+                {
                     s_exePath = Assembly.GetEntryAssembly().ManifestModule.FullyQualifiedName;
+                }
+
                 return s_exePath;
             }
         }
@@ -200,7 +215,9 @@ namespace Utilities
                 {
                     var processorArchitecture = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
                     if (!Enum.TryParse(processorArchitecture, ignoreCase: true, result: out s_ProcessArch))
+                    {
                         s_ProcessArch = Environment.Is64BitProcess ? ProcessorArchitecture.Amd64 : ProcessorArchitecture.X86;
+                    }
                 }
 
                 return s_ProcessArch;
@@ -242,7 +259,9 @@ namespace Utilities
                     {
                         var x86FullPath = Path.Combine(SupportFileDir, "x86", relativePath);
                         if (File.Exists(x86FullPath))
+                        {
                             throw new ApplicationException("This operation is not supported for the " + ProcessArch + " architecture.");
+                        }
                     }
                     throw new ApplicationException("Could not find DLL " + archPath + " in distribution.  Application Error.");
                 }
@@ -257,9 +276,15 @@ namespace Utilities
         {
             Debug.Assert(Directory.Exists(directory));
             if (s_managedDllSearchPaths == null)
+            {
                 s_managedDllSearchPaths = new List<string>();
+            }
+
             if (s_managedDllSearchPaths.Contains(directory))
+            {
                 return;
+            }
+
             s_managedDllSearchPaths.Add(directory);
         }
 
@@ -282,7 +307,9 @@ namespace Utilities
                     // Unpack everything, inefficient, but insures ldr64 works.  
                     string targetPath = Path.Combine(prepDir, resourceName);
                     if (!ResourceUtilities.UnpackResourceAsFile(resourceName, targetPath, resourceAssembly))
+                    {
                         throw new ApplicationException("Could not unpack support file " + resourceName);
+                    }
                 }
             }
 
@@ -297,12 +324,15 @@ namespace Utilities
                 catch (Exception)
                 {
                     if (retries > 5)
+                    {
                         throw;
+                    }
                 }
                 System.Threading.Thread.Sleep(100);
             }
         }
-        static void Cleanup()
+
+        private static void Cleanup()
         {
             string cleanupMarkerFile = Path.Combine(SupportFileDirBase, "CleanupNeeded");
             var dirs = Directory.GetDirectories(SupportFileDirBase, "VER.*");
@@ -314,7 +344,9 @@ namespace Utilities
                 {
                     // Don't clean up myself
                     if (string.Compare(dir, s_supportFileDir, StringComparison.OrdinalIgnoreCase) == 0)
+                    {
                         continue;
+                    }
 
                     // We first try to move the directory and only delete it if that succeeds.  
                     // That way directories that are in use don't get cleaned up.    
@@ -322,9 +354,14 @@ namespace Utilities
                     {
                         var deletingName = dir + ".deleting";
                         if (dir.EndsWith(".deleting"))
+                        {
                             deletingName = dir;
+                        }
                         else
+                        {
                             Directory.Move(dir, deletingName);
+                        }
+
                         DirectoryUtilities.Clean(deletingName);
                     }
                     catch (Exception) { }

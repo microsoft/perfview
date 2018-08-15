@@ -1,4 +1,4 @@
-﻿    //     Copyright (c) Microsoft Corporation.  All rights reserved.
+﻿//     Copyright (c) Microsoft Corporation.  All rights reserved.
 // This file is best viewed using outline mode (Ctrl-M Ctrl-O)
 //
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
@@ -14,10 +14,10 @@ namespace Microsoft.Diagnostics.Utilities
     /// The important thing about these general utilities is that they have only dependencies on mscorlib and
     /// System (they can be used from anywhere).  
     /// </summary>
-#if UTILITIES_PUBLIC 
+#if UTILITIES_PUBLIC
     public 
 #endif
-    class XmlUtilities
+    internal class XmlUtilities
     {
         /// <summary>
         /// Given an XML element, remove the closing operator for it, so you can add new child elements to it by concatination. 
@@ -25,11 +25,17 @@ namespace Microsoft.Diagnostics.Utilities
         public static string OpenXmlElement(string xmlElement)
         {
             if (xmlElement.EndsWith("/>"))
+            {
                 return xmlElement.Substring(0, xmlElement.Length - 2) + ">";
+            }
+
             int endTagIndex = xmlElement.LastIndexOf("</");
             Debug.Assert(endTagIndex > 0);
             while (endTagIndex > 0 && Char.IsWhiteSpace(xmlElement[endTagIndex - 1]))
+            {
                 --endTagIndex;
+            }
+
             return xmlElement.Substring(0, endTagIndex);
         }
 
@@ -62,16 +68,21 @@ namespace Microsoft.Diagnostics.Utilities
                     case '>':
                         entity = "&gt;";
                         goto APPEND;
-                    APPEND:
+                        APPEND:
                         {
                             if (sb == null)
                             {
                                 sb = new StringBuilder();
                                 if (quote)
+                                {
                                     sb.Append('"');
+                                }
                             }
                             while (copied < i)
+                            {
                                 sb.Append(str[copied++]);
+                            }
+
                             sb.Append(entity);
                             copied++;
                         }
@@ -82,13 +93,22 @@ namespace Microsoft.Diagnostics.Utilities
             if (sb != null)
             {
                 while (copied < str.Length)
+                {
                     sb.Append(str[copied++]);
+                }
+
                 if (quote)
+                {
                     sb.Append('"');
+                }
+
                 return sb.ToString();
             }
             if (quote)
+            {
                 str = "\"" + str + "\"";
+            }
+
             return str;
         }
         /// <summary>

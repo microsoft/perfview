@@ -1,10 +1,5 @@
-using System;
-using System.Diagnostics;
-using System.Diagnostics.Tracing;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Address = System.UInt64;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System;
 
 #pragma warning disable 1591        // disable warnings on XML comments not being present
 
@@ -30,7 +25,8 @@ namespace Microsoft.Diagnostics.Tracing.Parsers
             Createnewfile = 0x1000,
         };
 
-        public MicrosoftWindowsKernelFileTraceEventParser(TraceEventSource source) : base(source) {
+        public MicrosoftWindowsKernelFileTraceEventParser(TraceEventSource source) : base(source)
+        {
             StateObject = Source.Kernel.StateObject;
         }
 

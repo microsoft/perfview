@@ -5,7 +5,6 @@
 // It is available from http://www.codeplex.com/hyperAddin 
 // using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using System;
 using Address = System.UInt64;
 
 namespace Microsoft.Diagnostics.Tracing

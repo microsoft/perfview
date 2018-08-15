@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Diagnostics.Tracing.Parsers;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler;
 using Microsoft.Diagnostics.Tracing.Stacks;
-using Address = System.UInt64;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Address = System.UInt64;
 
 namespace PerfView
 {
@@ -24,7 +24,7 @@ namespace PerfView
             m_source = source;
             m_stackSource = stackSource;
             m_log = log;
-            
+
             // Save a symbol resolver for this trace log.
             s_typeNameSymbolResolvers[traceLog.FilePath] = new TypeNameSymbolResolver(traceLog.FilePath, log);
 
@@ -37,7 +37,7 @@ namespace PerfView
         /// If set (before the source is processed), indicates that only the GC Allocation Ticks (100K samples) should be used 
         /// in the analysis even if other object allocation events are present.   
         /// </summary>
-        public bool UseOnlyAllocTicks { get; set; } 
+        public bool UseOnlyAllocTicks { get; set; }
 
         public GCHeapSimulator this[TraceProcess process]
         {
@@ -45,7 +45,10 @@ namespace PerfView
             {
                 var ret = m_simulators[(int)process.ProcessIndex];
                 if (ret == null)
+                {
                     m_simulators[(int)process.ProcessIndex] = ret = CreateNewSimulator(process);
+                }
+
                 return ret;
             }
         }
@@ -62,44 +65,49 @@ namespace PerfView
 
         #region private
 
-        void CheckForNewProcessForTick(GCAllocationTickTraceData data)
+        private void CheckForNewProcessForTick(GCAllocationTickTraceData data)
         {
             if (UseOnlyAllocTicks)
+            {
                 CheckForNewProcess(data);
+            }
         }
 
-        void CheckForNewProcess(TraceEvent data)
+        private void CheckForNewProcess(TraceEvent data)
         {
             var process = data.Process();
             if (process != null)
             {
                 if (m_simulators[(int)process.ProcessIndex] == null)
+                {
                     m_simulators[(int)process.ProcessIndex] = CreateNewSimulator(process);
+                }
             }
         }
 
-        GCHeapSimulator CreateNewSimulator(TraceProcess process)
+        private GCHeapSimulator CreateNewSimulator(TraceProcess process)
         {
             var ret = new GCHeapSimulator(m_source, process, m_stackSource, m_log, UseOnlyAllocTicks);
             OnNewGCHeapSimulator?.Invoke(ret);
             return ret;
         }
 
-        TraceEventDispatcher m_source;
-
-        GCHeapSimulator[] m_simulators;
-        MutableTraceEventStackSource m_stackSource;
-        TextWriter m_log;
+        private TraceEventDispatcher m_source;
+        private GCHeapSimulator[] m_simulators;
+        private MutableTraceEventStackSource m_stackSource;
+        private TextWriter m_log;
 
         // Map of FilePath to symbol resolvers.
-        static Dictionary<string, TypeNameSymbolResolver> s_typeNameSymbolResolvers = new Dictionary<string, TypeNameSymbolResolver>();
+        private static Dictionary<string, TypeNameSymbolResolver> s_typeNameSymbolResolvers = new Dictionary<string, TypeNameSymbolResolver>();
 
         IEnumerator<GCHeapSimulator> IEnumerable<GCHeapSimulator>.GetEnumerator()
         {
             foreach (var simulator in m_simulators)
             {
                 if (simulator != null)
+                {
                     yield return simulator;
+                }
             }
         }
 
@@ -128,7 +136,7 @@ namespace PerfView
         /// either the etwClrProfiler or GCSampledObjectAllocation as allocation events (so you can reliably 
         /// get a coarse sampled simulation independent of what other events are in the trace).  
         /// </summary>
-        public GCHeapSimulator(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource, TextWriter log, bool useOnlyAllocationTicks=false)
+        public GCHeapSimulator(TraceEventDispatcher source, TraceProcess process, MutableTraceEventStackSource stackSource, TextWriter log, bool useOnlyAllocationTicks = false)
         {
             m_processID = process.ProcessID;
             m_process = process;
@@ -141,7 +149,10 @@ namespace PerfView
 
             m_ObjsInGen = new Dictionary<Address, GCHeapSimulatorObject>[4];   // generation 0-2 + 1 for gen 2    
             for (int i = 0; i < m_ObjsInGen.Length; i++)
+            {
                 m_ObjsInGen[i] = new Dictionary<Address, GCHeapSimulatorObject>(10000);        // Stays in small object heap 
+            }
+
             m_classNamesAsFrames = new Dictionary<ulong, TypeInfo>(500);
             m_stackSource = stackSource;
 
@@ -151,34 +162,41 @@ namespace PerfView
             if (!useOnlyAllocationTicks)
             {
                 var etwClrProfilerTraceEventParser = new ETWClrProfilerTraceEventParser(source);
-                etwClrProfilerTraceEventParser.GCStart += delegate(Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler.GCStartArgs data)
+                etwClrProfilerTraceEventParser.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.ETWClrProfiler.GCStartArgs data)
                 {
 
                     m_useEtlClrProfilerEvents = true;
                     OnGCStart(data, data.GCID, data.Generation);
                 };
-                etwClrProfilerTraceEventParser.ObjectAllocated += delegate(ObjectAllocatedArgs data)
+                etwClrProfilerTraceEventParser.ObjectAllocated += delegate (ObjectAllocatedArgs data)
                 {
                     m_useEtlClrProfilerEvents = true;
                     OnObjectAllocated(data, data.ObjectID, data.ClassID, data.Size, data.RepresentativeSize);
                 };
                 etwClrProfilerTraceEventParser.ObjectsMoved += OnObjectMoved;
                 etwClrProfilerTraceEventParser.ObjectsSurvived += OnObjectSurvived;
-                etwClrProfilerTraceEventParser.GCStop += delegate(GCStopArgs data) { OnGCStop(data, data.GCID); };
+                etwClrProfilerTraceEventParser.GCStop += delegate (GCStopArgs data) { OnGCStop(data, data.GCID); };
                 etwClrProfilerTraceEventParser.ClassIDDefintion += OnClassIDDefintion;
-            // TODO do we need module info?
-            // etwClrProfileTraceEventParser.ModuleIDDefintion += OnModuleIDDefintion;            
+                // TODO do we need module info?
+                // etwClrProfileTraceEventParser.ModuleIDDefintion += OnModuleIDDefintion;            
             }
 
-            source.Clr.GCStart += delegate(Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data) {
-                if (m_useEtlClrProfilerEvents)
-                    return;
-                OnGCStart(data, data.Count, data.Depth);
-            };
-            source.Clr.GCStop += delegate(GCEndTraceData data)
+            source.Clr.GCStart += delegate (Microsoft.Diagnostics.Tracing.Parsers.Clr.GCStartTraceData data)
             {
                 if (m_useEtlClrProfilerEvents)
+                {
                     return;
+                }
+
+                OnGCStart(data, data.Count, data.Depth);
+            };
+            source.Clr.GCStop += delegate (GCEndTraceData data)
+            {
+                if (m_useEtlClrProfilerEvents)
+                {
+                    return;
+                }
+
                 OnGCStop(data, data.Count);
             };
             source.Clr.GCBulkMovedObjectRanges += OnEtwObjectMoved;
@@ -187,19 +205,23 @@ namespace PerfView
 
             if (!useOnlyAllocationTicks)
             {
-                source.Clr.GCSampledObjectAllocation += delegate(GCSampledObjectAllocationTraceData data)
+                source.Clr.GCSampledObjectAllocation += delegate (GCSampledObjectAllocationTraceData data)
                 {
                     //  Compute size per object, Projecting against divide by zero.  
                     long representativeSize = data.TotalSizeForTypeSample;
                     var objectCount = data.ObjectCountForTypeSample;
                     if (objectCount > 1)
+                    {
                         representativeSize = representativeSize / objectCount;
+                    }
 
                     OnObjectAllocated(data, data.Address, data.TypeID, data.TotalSizeForTypeSample, representativeSize);
                 };
             }
-            else 
+            else
+            {
                 source.Clr.GCAllocationTick += OnEtwGCAllocationTick;
+            }
         }
 
         /// <summary>
@@ -250,20 +272,24 @@ namespace PerfView
         /// <summary>
         /// Allows you to enumerate all objects on the heap at the current point in time.  
         /// </summary>
-        IEnumerable<KeyValuePair<Address, GCHeapSimulatorObject>> AllObjects
+        private IEnumerable<KeyValuePair<Address, GCHeapSimulatorObject>> AllObjects
         {
             get
             {
                 for (int i = 2; 0 <= i; --i)
+                {
                     foreach (var keyValue in m_ObjsInGen[i])
+                    {
                         yield return keyValue;
+                    }
+                }
             }
         }
 
         /// <summary>
         /// The process of interest.  Events from other processes are ignored.
         /// </summary>
-        public TraceProcess Process {  get { return m_process; } }
+        public TraceProcess Process { get { return m_process; } }
 
         /// <summary>
         /// The stack source where allocation stacks are interned.  
@@ -301,19 +327,24 @@ namespace PerfView
 
         #region private
         // Event Callbacks
-        void OnGCStart(TraceEvent data, int gcID, int condemedGeneration)
+        private void OnGCStart(TraceEvent data, int gcID, int condemedGeneration)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             m_pointerSize = data.PointerSize;   // Make sure our pointer size is accurate. 
             m_condemedGenerationNum = condemedGeneration;
             Debug.WriteLine(string.Format("GC Start Gen {0} at {1:f3}", m_condemedGenerationNum, data.TimeStampRelativeMSec));
         }
-        void OnObjectAllocated(TraceEvent data, Address objectID, Address classID, long size, long representativeSize)
+
+        private void OnObjectAllocated(TraceEvent data, Address objectID, Address classID, long size, long representativeSize)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             Debug.Assert(GetObjectInfo(objectID) == null);            // new objects should be unique.
             var objectData = AllocateObject();
@@ -323,7 +354,10 @@ namespace PerfView
             // Add object type as a pseudo-frame to the stack 
             TypeInfo typeInfo;
             if (!m_classNamesAsFrames.TryGetValue(classID, out typeInfo))
+            {
                 typeInfo.FrameIdx = m_stackSource.Interner.FrameIntern("Type <Unknown>");
+            }
+
             objectData.ClassFrame = typeInfo.FrameIdx;
             objectData.AllocStack = stackIndex;
 
@@ -345,20 +379,29 @@ namespace PerfView
             Debug.WriteLine(string.Format("Object Allocated {0:x} Size {1:x} Rep {2:x} {3}", objectID, size, representativeSize, typeInfo.TypeName));
             m_currentHeapSize += (uint)objectData.RepresentativeSize;
             if (OnObjectCreate != null)
+            {
                 if (!OnObjectCreate(objectID, objectData))
+                {
                     return;
+                }
+            }
 
             var allocGen = 0;
             if (objectData.Size >= 85000)     // Large objects go into Gen 2
+            {
                 allocGen = 2;
+            }
 
             m_ObjsInGen[allocGen][(Address)objectID] = objectData;       // Put the object into Gen 0; 
         }
-        void OnGCStop(TraceEvent data, int GCID)
+
+        private void OnGCStop(TraceEvent data, int GCID)
         {
             Debug.WriteLine("GC Stop");
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             double gcTime = data.TimeStampRelativeMSec;
             OnGC?.Invoke(gcTime, m_condemedGenerationNum);
@@ -390,18 +433,23 @@ namespace PerfView
         }
 
         #region ETWClrProfiler specific event callbacks
-        void OnClassIDDefintion(ClassIDDefintionArgs data)
+        private void OnClassIDDefintion(ClassIDDefintionArgs data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             // TODO add module name to type name
             m_classNamesAsFrames[data.ClassID] = new TypeInfo() { TypeName = data.Name, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + data.Name) };
         }
-        void OnObjectMoved(ObjectsMovedArgs data)
+
+        private void OnObjectMoved(ObjectsMovedArgs data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -411,10 +459,13 @@ namespace PerfView
                 CopyPlugToNextGen(fromPtr, fromEnd, toPtr);
             }
         }
-        void OnObjectSurvived(ObjectsSurvivedArgs data)
+
+        private void OnObjectSurvived(ObjectsSurvivedArgs data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -426,12 +477,17 @@ namespace PerfView
         #endregion
 
         #region V4.5.1 Runtime specific event callbacks
-        void OnEtwClassIDDefintion(GCBulkTypeTraceData data)
+        private void OnEtwClassIDDefintion(GCBulkTypeTraceData data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
+
             if (m_useEtlClrProfilerEvents)
+            {
                 return;
+            }
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -443,27 +499,39 @@ namespace PerfView
                     for (int j = 0; j < typeData.TypeParameterCount; j++)
                     {
                         if (j != 0)
+                        {
                             typeName += ",";
+                        }
 
                         TypeInfo paramInfo;
                         if (m_classNamesAsFrames.TryGetValue(typeData.TypeParameterID(j), out paramInfo))
+                        {
                             typeName += paramInfo.TypeName;
+                        }
                     }
                     typeName += ">";
                 }
                 if (typeData.CorElementType == 0x1d)                // SZArray
-                    typeName += "[]";           
+                {
+                    typeName += "[]";
+                }
                 // TODO FIX NOW make sure the COR_ELEMENT_TYPES are covered.  
 
                 m_classNamesAsFrames[typeData.TypeID] = new TypeInfo() { TypeName = typeName, FrameIdx = m_stackSource.Interner.FrameIntern("Type " + typeName) };
             }
         }
-        void OnEtwObjectMoved(GCBulkMovedObjectRangesTraceData data)
+
+        private void OnEtwObjectMoved(GCBulkMovedObjectRangesTraceData data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
+
             if (m_useEtlClrProfilerEvents)
+            {
                 return;
+            }
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -472,12 +540,18 @@ namespace PerfView
                 CopyPlugToNextGen(fromPtr, fromPtr + range.RangeLength, range.NewRangeBase);
             }
         }
-        void OnEtwObjectSurvived(GCBulkSurvivingObjectRangesTraceData data)
+
+        private void OnEtwObjectSurvived(GCBulkSurvivingObjectRangesTraceData data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
+
             if (m_useEtlClrProfilerEvents)
+            {
                 return;
+            }
 
             for (int i = 0; i < data.Count; i++)
             {
@@ -486,10 +560,13 @@ namespace PerfView
                 CopyPlugToNextGen(fromPtr, fromPtr + range.RangeLength, fromPtr);
             }
         }
-        void OnEtwGCAllocationTick(GCAllocationTickTraceData data)
+
+        private void OnEtwGCAllocationTick(GCAllocationTickTraceData data)
         {
             if (data.ProcessID != m_processID)
+            {
                 return;
+            }
 
             // Check to see if we have cached type info. 
             var typeName = data.TypeName;
@@ -521,16 +598,20 @@ namespace PerfView
             {
                 alloc = data.AllocationAmount;
                 if (alloc == 0)
+                {
                     alloc = 100000;
+                }
             }
 
             // The representative size needs to be  >= 85K for large objects and < 85 K for small to properly simulate the generation
             // where the object is allocated.  We arbitrarily pick 100 for the representative size for small objects.  
             long reprsentativeSize = alloc;
             if (data.AllocationKind == GCAllocationKind.Small)
+            {
                 reprsentativeSize = 100;
-           
-            OnObjectAllocated(data, data.Address, data.TypeID, alloc, reprsentativeSize);     
+            }
+
+            OnObjectAllocated(data, data.Address, data.TypeID, alloc, reprsentativeSize);
         }
         #endregion 
 
@@ -568,9 +649,15 @@ namespace PerfView
                     {
                         foundGen = true;
                         sizeToNextObj = (uint)((objInfo.Size + pointerSizeMask) & ~pointerSizeMask);
-                        if (sizeToNextObj < (uint) m_pointerSize)
-                            sizeToNextObj = (uint) m_pointerSize;
-                        if (fromGenNum > m_condemedGenerationNum) Debug.WriteLine(string.Format("Found in old generation, already alive."));
+                        if (sizeToNextObj < (uint)m_pointerSize)
+                        {
+                            sizeToNextObj = (uint)m_pointerSize;
+                        }
+
+                        if (fromGenNum > m_condemedGenerationNum)
+                        {
+                            Debug.WriteLine(string.Format("Found in old generation, already alive."));
+                        }
 
                         // Note even if we find this in in an non-condemned generation we do the logic to move it because we basically were incorrect
                         // to have put it in the older generation (the GC obviously had demoted the plug).   
@@ -583,11 +670,15 @@ namespace PerfView
                     // Once we have found a plug's generation everything in the plug will have the same gen, so we don't
                     // need to search more than once before we fail in that case.   
                     if (foundGen)
+                    {
                         break;
+                    }
 
                     --fromGenNum;               // decrement with wrap around.  
                     if (fromGenNum < 0)
+                    {
                         fromGenNum = 2;         // We search all generations not just condemned because things may be demoted and we want to walk the plug efficiently. 
+                    }
 
                     if (genStartSearch != fromGenNum)
                     {
@@ -597,7 +688,9 @@ namespace PerfView
                 }
 
                 if (sizeToNextObj == m_pointerSize)
+                {
                     Debug.WriteLine(string.Format("Synching {0:x}", fromPtr));
+                }
 
                 fromPtr += sizeToNextObj;
                 toPtr += sizeToNextObj;
@@ -605,25 +698,24 @@ namespace PerfView
         }
 
         // Fields
-        ulong m_currentHeapSize = 0;
-        Dictionary<ulong, TypeInfo> m_classNamesAsFrames;
+        private ulong m_currentHeapSize = 0;
+        private Dictionary<ulong, TypeInfo> m_classNamesAsFrames;
 
-        struct TypeInfo
+        private struct TypeInfo
         {
             public string TypeName;
             public StackSourceFrameIndex FrameIdx;
         }
 
-        Dictionary<Address, GCHeapSimulatorObject>[] m_ObjsInGen;
-        MutableTraceEventStackSource m_stackSource;
-        TypeNameSymbolResolver m_typeNameSymbolResolver;
-
-        int m_processID;
-        TraceProcess m_process;
-        int m_pointerSize;                  // Size of a pointer for the process (4 or 8).  Note it may be 4 when it should be 8 if some events are dropped.  
-        int m_condemedGenerationNum = 0;
-        double m_lastAllocTimeRelativeMSec;
-        bool m_useEtlClrProfilerEvents;     // If true we use ETWCLrProfiler events, false we use built in Clr events (if we can). 
+        private Dictionary<Address, GCHeapSimulatorObject>[] m_ObjsInGen;
+        private MutableTraceEventStackSource m_stackSource;
+        private TypeNameSymbolResolver m_typeNameSymbolResolver;
+        private int m_processID;
+        private TraceProcess m_process;
+        private int m_pointerSize;                  // Size of a pointer for the process (4 or 8).  Note it may be 4 when it should be 8 if some events are dropped.  
+        private int m_condemedGenerationNum = 0;
+        private double m_lastAllocTimeRelativeMSec;
+        private bool m_useEtlClrProfilerEvents;     // If true we use ETWCLrProfiler events, false we use built in Clr events (if we can). 
         #endregion
     }
 
